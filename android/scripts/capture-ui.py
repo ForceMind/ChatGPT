@@ -42,20 +42,24 @@ def text(label):
     tap(find(lambda a: a.get('text') == label))
 
 def badge(name=None):
-    return find(lambda a: a.get('content-desc', '').startswith('账号与操作菜单') and (name is None or name in a['content-desc']))
+    return find(lambda a: a.get('content-desc', '').startswith('账号与操作菜单') and (name is None or a['content-desc'] == '账号与操作菜单，当前：' + name))
 
 def screenshot(name):
     (out / name).write_bytes(adb('exec-out', 'screencap', '-p'))
 
 # All text input is into native account metadata fields, never the ChatGPT webpage.
 tap(badge('个人账号')); text('添加账号')
-fields = list(tree().iter('node')); fields = [n for n in fields if n.get('class') == 'android.widget.EditText']
-assert len(fields) == 2, 'Expected native name/email fields'
-tap(fields[0]); adb('shell', 'input', 'text', 'Work')
-tap(fields[1]); adb('shell', 'input', 'text', 'work@example.test')
+def field(index):
+    fields = [n for n in tree().iter('node') if n.get('class') == 'android.widget.EditText']
+    assert len(fields) == 2, 'Expected native name/email fields'
+    return fields[index]
+
+tap(field(0)); adb('shell', 'input', 'text', 'Work')
+# The IME changes dialog bounds. Read the current tree before the second tap.
+tap(field(1)); adb('shell', 'input', 'text', 'work@example.test')
 text('保存'); badge('Work')
 tap(badge('Work')); text('切换账号')
-find(lambda a: 'Work' in a.get('text', ''))
+find(lambda a: 'Work' in a.get('text', '') and 'work@example.test' in a.get('text', ''))
 personal = find(lambda a: '个人账号' in a.get('text', ''))
 screenshot('android-accounts.png'); tap(personal); badge('个人账号')
 adb('shell', 'am', 'force-stop', package)

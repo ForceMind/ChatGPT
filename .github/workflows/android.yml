@@ -14,6 +14,10 @@ on:
         description: Run only device acceptance against an already built source tree
         type: boolean
         default: false
+      ui_only:
+        description: Capture native UI only; reuse previously passed isolation results
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
@@ -77,7 +81,7 @@ jobs:
           timeout 180 adb wait-for-device
           timeout 240 bash -c 'until adb shell getprop sys.boot_completed | tr -d "\r" | grep -q 1; do sleep 2; done'
           adb shell input keyevent 82
-          ./gradlew --no-daemon connectedDebugAndroidTest
+          if [ "${{ inputs.ui_only }}" != true ]; then ./gradlew --no-daemon connectedDebugAndroidTest; fi
           ./gradlew --no-daemon installDebug
           adb shell am start -n com.forcemind.chatgpt.profiles.debug/com.forcemind.chatgpt.profiles.MainActivity
           sleep 15
