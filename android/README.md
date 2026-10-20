@@ -71,6 +71,14 @@ keyPassword=YOUR_LOCAL_SECRET
 
 维护者应离线备份密钥和密码；丢失密钥后无法为已安装版本提供同签名更新。签名在本机完成，密钥不上传到 GitHub。CI 使用显式的 `-PunsignedRelease` 生成未签名构建；它必须经过本机 `zipalign` / `apksigner` 签名与校验才能作为安装包发布。
 
+下载 CI 未签名包后，也可设置 `JAVA_HOME` 和 `ANDROID_HOME`（或直接设置 `APKSIGNER_JAR`），运行：
+
+```sh
+python3 scripts/sign-apk.py /path/to/app-release-unsigned.apk
+```
+
+脚本检查 ZIP 对齐、使用本机固定身份签名并验证，输出到 `android/release/`。Gradle 生成的包已有对齐；未对齐的输入会明确停止，需先使用 SDK 的 `zipalign` 处理。
+
 ## 参考
 
 - [Android WebView 多档案绑定](https://developer.android.com/reference/androidx/webkit/WebViewCompat#setProfile(android.webkit.WebView,java.lang.String))

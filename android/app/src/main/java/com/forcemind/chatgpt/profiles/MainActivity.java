@@ -1,7 +1,6 @@
 package com.forcemind.chatgpt.profiles;
 
 import android.Manifest;
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
@@ -43,13 +42,15 @@ import android.widget.Toast;
 import androidx.webkit.ProfileStore;
 import androidx.webkit.WebViewCompat;
 import androidx.webkit.WebViewFeature;
+import androidx.activity.ComponentActivity;
+import androidx.activity.OnBackPressedCallback;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
-public final class MainActivity extends Activity {
+public final class MainActivity extends ComponentActivity {
     private static final int INK = Color.rgb(23, 23, 23), GRAY = Color.rgb(244, 244, 244);
     private WorkspaceState state;
     private StateStore store;
@@ -69,7 +70,9 @@ public final class MainActivity extends Activity {
         super.onCreate(bundle);
         WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG);
         buildLayout();
-        if (Build.VERSION.SDK_INT >= 33) getOnBackInvokedDispatcher().registerOnBackInvokedCallback(0, this::navigateBack);
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override public void handleOnBackPressed() { navigateBack(); }
+        });
         boolean supportsProfiles;
         try { supportsProfiles = WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE); }
         catch (RuntimeException error) { supportsProfiles = false; }
@@ -350,7 +353,6 @@ public final class MainActivity extends Activity {
         else if (ready && !fatal && popupOwners.containsKey(state.current().activeTab)) closeTab(state.activeAccount, state.current().activeTab);
         else moveTaskToBack(true);
     }
-    @Override public void onBackPressed() { navigateBack(); }
     @Override protected void onResume() { super.onResume(); WebView web = currentWeb(); if (web != null) web.onResume(); }
     @Override protected void onPause() { WebView web = currentWeb(); if (web != null) web.onPause(); super.onPause(); }
     @Override protected void onStop() {
