@@ -15,6 +15,7 @@ if (!dataDir || !path.isAbsolute(dataDir)) throw new Error('无效的数据目�
 mkdirSync(dataDir, { recursive: true, mode: 0o700 });
 app.setPath('userData', dataDir);
 app.setName('ChatGPT Profiles');
+if (process.platform === 'win32') app.setAppUserModelId('com.forcemind.chatgpt.profiles');
 protocol.registerSchemesAsPrivileged([{ scheme: 'app', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
 const single = app.requestSingleInstanceLock();
 if (!single) app.quit();
