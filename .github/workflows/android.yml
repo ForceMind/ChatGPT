@@ -6,10 +6,6 @@ on:
     paths: ['android/**', '.github/workflows/android.yml']
   workflow_dispatch:
     inputs:
-      build_release:
-        description: Build an unsigned release APK for subsequent local signing
-        type: boolean
-        default: false
       run_device_tests:
         description: Run WebView isolation tests on an Android 15 emulator
         type: boolean
@@ -37,11 +33,7 @@ jobs:
         run: sdkmanager 'platforms;android-36' 'build-tools;35.0.0'
       - name: Verify and build
         working-directory: android
-        run: ./gradlew --no-daemon testDebugUnitTest lintDebug assembleDebug
-      - name: Build unsigned release
-        if: github.event_name == 'workflow_dispatch' && inputs.build_release
-        working-directory: android
-        run: ./gradlew --no-daemon -PunsignedRelease assembleRelease
+        run: ./gradlew --no-daemon -PunsignedRelease testDebugUnitTest lintDebug assembleDebug assembleRelease
       - uses: actions/upload-artifact@v4
         with:
           name: android-apks

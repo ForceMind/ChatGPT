@@ -52,7 +52,7 @@ cd android
 
 调试 APK 位于 `app/build/outputs/apk/debug/`。单元测试验证账号/标签状态、清除后的档案轮换和导航边界。设备测试使用拦截的本地 fixture（明确标记非 ChatGPT）验证 Cookie、LocalStorage、IndexedDB、CacheStorage 隔离，以及清除记录在损坏恢复时的保护；不会发送模型消息或使用真实凭据。
 
-GitHub Actions 默认运行检查和调试构建。维护者手动运行 `Android` 工作流，可以另外启用模拟器验收或未签名 release 构建。检查与设备测试结果分别保留，不把编译通过描述为真实登录验收。
+GitHub Actions 默认运行检查、调试与未签名 release 构建。维护者手动运行 `Android` 工作流，可以另外启用模拟器验收；已完成构建时可选择仅运行设备检查。检查与设备测试结果分别保留，不把编译通过描述为真实登录验收。
 
 ## 签名构建
 

@@ -9,6 +9,7 @@ import android.webkit.URLUtil;
 import android.webkit.WebView;
 import android.widget.Toast;
 import androidx.webkit.WebViewCompat;
+import androidx.webkit.WebViewFeature;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
@@ -31,6 +32,7 @@ final class DownloadHelper {
     }
     DownloadHelper(Activity activity) { this.activity = activity; }
     void choose(WebView web, String url, String agent, String disposition, String mime) {
+        if (!WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE)) { notifyUser("WebView 独立空间能力不可用"); return; }
         if (!NavigationPolicy.https(url)) { notifyUser("当前仅支持 HTTPS 文件下载；blob 文件请在系统浏览器保存。"); return; }
         if (pending != null) { notifyUser("请先完成当前文件选择"); return; }
         pending = new Selection(url, agent, WebViewCompat.getProfile(web).getCookieManager());

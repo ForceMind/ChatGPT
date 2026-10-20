@@ -82,6 +82,7 @@ public final class MainActivity extends ComponentActivity {
         }
         try {
             store = new StateStore(getFilesDir()); state = store.load();
+            if (!WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE)) throw new IllegalStateException("WebView 多档案能力不可用，请重新打开应用");
             // Delete before binding any WebView. Loaded profiles cannot be deleted in this process.
             List<String> cleared = new ArrayList<>();
             for (String id : state.pendingDeletes) {
@@ -149,6 +150,7 @@ public final class MainActivity extends ComponentActivity {
 
     @SuppressWarnings("SetJavaScriptEnabled")
     private WebView makeWebView(String accountId, String tabId, String storageId) {
+        if (!WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE)) throw new IllegalStateException("WebView 不支持独立账号空间");
         WebView web = new WebView(this);
         try { WebViewCompat.setProfile(web, WorkspaceState.profile(storageId)); }
         catch (RuntimeException e) { web.destroy(); throw e; }
@@ -356,7 +358,9 @@ public final class MainActivity extends ComponentActivity {
     @Override protected void onResume() { super.onResume(); WebView web = currentWeb(); if (web != null) web.onResume(); }
     @Override protected void onPause() { WebView web = currentWeb(); if (web != null) web.onPause(); super.onPause(); }
     @Override protected void onStop() {
-        for (WebView web : views.values()) WebViewCompat.getProfile(web).getCookieManager().flush();
+        if (WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE)) {
+            for (WebView web : views.values()) WebViewCompat.getProfile(web).getCookieManager().flush();
+        }
         super.onStop();
     }
     @Override protected void onDestroy() {
