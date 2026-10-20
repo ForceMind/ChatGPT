@@ -1,0 +1,101 @@
+name: Android
+on:
+  push:
+    paths: ['android/**', '.github/workflows/android.yml']
+  pull_request:
+    paths: ['android/**', '.github/workflows/android.yml']
+  workflow_dispatch:
+    inputs:
+      sign_release:
+        description: Build an APK with the repository signing identity
+        type: boolean
+        default: false
+      run_device_tests:
+        description: Run WebView isolation tests on an Android 15 emulator
+        type: boolean
+        default: false
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install compile SDK
+        run: sdkmanager 'platforms;android-36' 'build-tools;35.0.0'
+      - name: Verify and build
+        working-directory: android
+        run: ./gradlew --no-daemon testDebugUnitTest lintDebug assembleDebug
+      - name: Restore release identity
+        if: github.event_name == 'workflow_dispatch' && inputs.sign_release
+        env:
+          SIGNING_KEY: ${{ secrets.ANDROID_RELEASE_KEY }}
+          SIGNING_PASSWORD: ${{ secrets.ANDROID_RELEASE_PASSWORD }}
+        run: |
+          test -n "$SIGNING_KEY" && test -n "$SIGNING_PASSWORD"
+          umask 077
+          mkdir -p android/.signing
+          printf '%s' "$SIGNING_KEY" | base64 --decode > android/.signing/android-release.p12
+          printf 'storeFile=.signing/android-release.p12\nstorePassword=%s\nkeyAlias=chatgpt-profiles\nkeyPassword=%s\n' "$SIGNING_PASSWORD" "$SIGNING_PASSWORD" > android/keystore.properties
+      - name: Build signed release
+        if: github.event_name == 'workflow_dispatch' && inputs.sign_release
+        working-directory: android
+        run: ./gradlew --no-daemon assembleRelease
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-apks
+          path: android/app/build/outputs/apk/**/*.apk
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-check-reports
+          path: |
+            android/app/build/reports/
+            android/app/build/test-results/
+      - name: Remove signing material
+        if: always()
+        run: rm -f android/keystore.properties android/.signing/android-release.p12
+  device:
+    if: github.event_name == 'workflow_dispatch' && inputs.run_device_tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Enable emulator acceleration
+        run: sudo chmod 666 /dev/kvm
+      - name: Install emulator
+        run: sdkmanager 'platforms;android-36' 'build-tools;35.0.0' 'emulator' 'system-images;android-35;google_apis;x86_64'
+      - name: Boot and verify
+        working-directory: android
+        run: |
+          echo no | avdmanager create avd --name profiles-test --package 'system-images;android-35;google_apis;x86_64'
+          "$ANDROID_HOME/emulator/emulator" -avd profiles-test -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect > /tmp/emulator.log 2>&1 &
+          adb wait-for-device
+          timeout 240 bash -c 'until adb shell getprop sys.boot_completed | tr -d "\r" | grep -q 1; do sleep 2; done'
+          adb shell input keyevent 82
+          ./gradlew --no-daemon connectedDebugAndroidTest
+          adb shell am start -n com.forcemind.chatgpt.profiles.debug/com.forcemind.chatgpt.profiles.MainActivity
+          sleep 15
+          mkdir -p app/build/device-evidence
+          adb exec-out screencap -p > app/build/device-evidence/android-phone.png
+          adb shell dumpsys webviewupdate > app/build/device-evidence/webview.txt
+          adb shell wm size 1600x2560
+          adb shell wm density 240
+          sleep 5
+          adb exec-out screencap -p > app/build/device-evidence/android-tablet.png
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-device-evidence
+          path: |
+            android/app/build/reports/androidTests/
+            android/app/build/outputs/androidTest-results/
+            android/app/build/device-evidence/

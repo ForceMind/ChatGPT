@@ -1,0 +1,59 @@
+{
+  "name": "chatgpt-profiles",
+  "version": "3.0.0-alpha.1",
+  "private": true,
+  "description": "A local-first macOS workspace for independent ChatGPT accounts",
+  "author": "ForceMind",
+  "main": "dist/main/main.cjs",
+  "type": "module",
+  "scripts": {
+    "postinstall": "install-electron",
+    "setup": "install-electron",
+    "build": "node scripts/build.mjs",
+    "start": "npm run build && electron .",
+    "start:built": "electron .",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test tests/state.test.ts",
+    "test:e2e": "npm run build && playwright test",
+    "check": "npm run typecheck && npm test && npm run build",
+    "dist:mac": "npm run check && node scripts/icon.mjs && node scripts/package-mac.mjs"
+  },
+  "dependencies": {
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1",
+    "@resvg/resvg-js": "^2.6.2",
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "electron": "44.9.1",
+    "electron-builder": "26.15.3",
+    "esbuild": "0.28.2",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.3",
+    "vite": "8.3.4"
+  },
+  "build": {
+    "appId": "com.forcemind.chatgpt.profiles",
+    "productName": "ChatGPT Profiles",
+    "artifactName": "${productName}-${version}-${arch}.${ext}",
+    "directories": { "output": "release", "buildResources": "assets" },
+    "files": ["dist/**/*", "package.json", "!**/._*", "!**/.DS_Store"],
+    "asar": true,
+    "electronDist": "node_modules/electron/dist",
+    "npmRebuild": false,
+    "mac": {
+      "category": "public.app-category.productivity",
+      "icon": "assets/icon.icns",
+      "identity": "-",
+      "hardenedRuntime": false,
+      "extendInfo": {
+        "NSMicrophoneUsageDescription": "允许 ChatGPT 网页使用麦克风进行语音对话。",
+        "NSCameraUsageDescription": "允许 ChatGPT 网页在你选择时使用摄像头。"
+      }
+    },
+    "dmg": { "title": "ChatGPT Profiles", "window": { "width": 540, "height": 360 } }
+  }
+}

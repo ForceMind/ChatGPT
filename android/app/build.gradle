@@ -1,0 +1,50 @@
+plugins { id 'com.android.application' }
+
+def signingFile = rootProject.file('keystore.properties')
+def signing = new Properties()
+if (signingFile.exists()) signingFile.withInputStream { signing.load(it) }
+
+android {
+    namespace 'com.forcemind.chatgpt.profiles'
+    compileSdk 36
+    defaultConfig {
+        applicationId 'com.forcemind.chatgpt.profiles'
+        minSdk 28
+        targetSdk 36
+        versionCode 3000001
+        versionName '3.0.0-alpha.1'
+        testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
+    }
+    signingConfigs {
+        if (signingFile.exists()) {
+            localRelease {
+                storeFile rootProject.file(signing.getProperty('storeFile'))
+                storePassword signing.getProperty('storePassword')
+                keyAlias signing.getProperty('keyAlias')
+                keyPassword signing.getProperty('keyPassword')
+            }
+        }
+    }
+    buildTypes {
+        debug { applicationIdSuffix '.debug'; versionNameSuffix '-dev' }
+        release {
+            if (signingFile.exists()) signingConfig signingConfigs.localRelease
+            minifyEnabled false
+        }
+    }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+    buildFeatures { buildConfig true }
+    testOptions { unitTests.returnDefaultValues = true }
+}
+tasks.register('requireReleaseKey') {
+    doLast { if (!signingFile.exists()) throw new GradleException('Release requires local keystore.properties. See README.md; never commit signing secrets.') }
+}
+tasks.matching { it.name == 'preReleaseBuild' }.configureEach { dependsOn 'requireReleaseKey' }
+dependencies {
+    implementation 'androidx.webkit:webkit:1.17.1'
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.json:json:20240303'
+    androidTestImplementation 'androidx.test:runner:1.6.2'
+    androidTestImplementation 'androidx.test:rules:1.6.1'
+    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
+}

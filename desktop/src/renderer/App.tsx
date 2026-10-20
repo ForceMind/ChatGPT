@@ -1,0 +1,136 @@
+import { useCallback, useEffect, useRef, useState, type FormEvent, type CSSProperties } from 'react';
+import { createRoot } from 'react-dom/client';
+import { COLORS, SHELL_HEIGHT, type Bridge, type Command, type Snapshot } from '../shared/model';
+import { Icon, Mark, type IconName } from './icons';
+import './style.css';
+declare global { interface Window { profiles: Bridge } }
+type Editor = { kind:'add' } | { kind:'edit'; id:string };
+function Tool({icon,label,disabled=false,active=false,onClick}:{icon:IconName;label:string;disabled?:boolean;active?:boolean;onClick:()=>void}) { return <button type="button" className={`tool ${active?'is-active':''}`} title={label} aria-label={label} disabled={disabled} onClick={onClick}><Icon name={icon}/></button>; }
+function App() {
+  const [state,setState] = useState<Snapshot>();
+  const [fatal,setFatal] = useState('');
+  const [editor,setEditor] = useState<Editor>();
+  const [menuOpen,setMenuOpen] = useState(false);
+  const menuRef = useRef(false);
+  const accountButton = useRef<HTMLButtonElement>(null);
+  const accountMenu = useRef<HTMLDivElement>(null);
+  const [toast,setToast] = useState('');
+  const [busy,setBusy] = useState(false);
+  const [formError,setFormError] = useState('');
+  const current = useRef<Snapshot|undefined>(undefined);
+  const toastTimer = useRef<ReturnType<typeof setTimeout>|undefined>(undefined);
+  const modal = useRef<HTMLDivElement>(null);
+  const dragged = useRef<string|undefined>(undefined);
+  const showToast = useCallback((message:string)=>{setToast(message);clearTimeout(toastTimer.current);toastTimer.current=setTimeout(()=>setToast(''),4500);},[]);
+  const send = useCallback(async(command:Command)=>{
+    try { const reply=await window.profiles.command(command);if(!reply.ok){showToast(reply.error);return false;}return true; }
+    catch {showToast('无法连接客户端，请重新打开窗口。');return false;}
+  },[showToast]);
+  const openEditor = useCallback(async(value:Editor)=>{if(await send({type:'overlay',open:true})){menuRef.current=false;setMenuOpen(false);setFormError('');setEditor(value);}},[send]);
+  const closeEditor = useCallback(async()=>{setEditor(undefined);setFormError('');await send({type:'overlay',open:false});},[send]);
+  const closeAccounts = useCallback(async()=>{menuRef.current=false;setMenuOpen(false);await send({type:'overlay',open:false});accountButton.current?.focus();},[send]);
+  const toggleAccounts = useCallback(async()=>{if(menuRef.current){await closeAccounts();return;}if(await send({type:'overlay',open:true})){setEditor(undefined);menuRef.current=true;setMenuOpen(true);}},[send,closeAccounts]);
+  useEffect(()=>{
+    if(!menuOpen)return;
+    accountMenu.current?.querySelector<HTMLElement>('[aria-checked="true"]')?.focus();
+    const handle=(event:KeyboardEvent)=>{
+      if(event.key==='Escape'){event.preventDefault();void closeAccounts();return;}
+      const items=Array.from(accountMenu.current?.querySelectorAll<HTMLElement>('button:not(:disabled)')??[]);if(!items.length)return;
+      const index=items.indexOf(document.activeElement as HTMLElement);
+      if(event.key==='ArrowDown'||event.key==='ArrowUp'){event.preventDefault();items[(index+(event.key==='ArrowDown'?1:-1)+items.length)%items.length].focus();}
+      if(event.key==='Tab'&&((event.shiftKey&&index===0)||(!event.shiftKey&&index===items.length-1))){event.preventDefault();items[event.shiftKey?items.length-1:0].focus();}
+    };
+    window.addEventListener('keydown',handle);return()=>window.removeEventListener('keydown',handle);
+  },[menuOpen,closeAccounts]);
+  useEffect(()=>{
+    if(!window.profiles){setFatal('请从 ChatGPT Profiles 客户端打开此界面。');return;}
+    let mounted=true;
+    const apply=(s:Snapshot)=>{if(mounted){current.current=s;setState(s);}};
+    const unsubscribe=window.profiles.subscribe(apply);
+    window.profiles.snapshot().then(s=>{apply(s);if(s.notice)showToast(s.notice);}).catch(()=>setFatal('账号空间加载失败，请重新打开客户端。'));
+    const unshortcut=window.profiles.onShortcut(key=>{if(key==='add-profile')void openEditor({kind:'add'});else if(key==='toggle-accounts')void toggleAccounts();else if(key.startsWith('notice:'))showToast(key.slice(7));});
+    return ()=>{mounted=false;unsubscribe();unshortcut();clearTimeout(toastTimer.current);};
+  },[openEditor,showToast,toggleAccounts]);
+  useEffect(()=>{
+    if(!editor)return;
+    const prior=document.activeElement as HTMLElement|null;
+    modal.current?.querySelector<HTMLInputElement>('input')?.focus();
+    const handler=(event:KeyboardEvent)=>{
+      if(event.key==='Escape'&&!busy){event.preventDefault();void closeEditor();}
+      if(event.key==='Tab'){
+        const items=Array.from(modal.current?.querySelectorAll<HTMLElement>('input,button:not(:disabled),[tabindex="0"]')??[]);
+        const first=items[0],last=items.at(-1);
+        if(event.shiftKey&&document.activeElement===first){event.preventDefault();last?.focus();}
+        else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first?.focus();}
+      }
+    };
+    window.addEventListener('keydown',handler);
+    return()=>{window.removeEventListener('keydown',handler);prior?.focus();};
+  },[editor,busy,closeEditor]);
+  if(fatal)return <div className="boot"><Mark size={48}/><h1>暂时无法打开工作区</h1><p>{fatal}</p></div>;
+  if(!state)return <div className="boot"><Mark size={48}/><p>正在恢复账号空间…</p></div>;
+  const profile=state.profiles.find(p=>p.id===state.activeProfileId)!;
+  const tabs=state.tabs.filter(t=>t.profileId===profile.id);
+  const tab=tabs.find(t=>t.id===profile.activeTabId)!;
+  const status=state.tabStatus[tab.id];
+  const editing=editor?.kind==='edit'?state.profiles.find(p=>p.id===editor.id):undefined;
+  const style={'--shell-height':SHELL_HEIGHT+'px'} as CSSProperties;
+  const submit=async(event:FormEvent<HTMLFormElement>)=>{
+    event.preventDefault();if(busy)return;setBusy(true);setFormError('');
+    const form=new FormData(event.currentTarget);
+    const fields={name:String(form.get('name')||'').trim(),email:String(form.get('email')||'').trim(),color:String(form.get('color')||COLORS[0])};
+    try{
+      const result=await window.profiles.command(editing?{type:'profile:edit',id:editing.id,...fields}:{type:'profile:add',...fields});
+      if(result.ok){await closeEditor();showToast(editing?'账号备注已保存':'账号空间已创建，请在网页内登录。');}else setFormError(result.error);
+    }catch{setFormError('保存失败，请重试。');}finally{setBusy(false);}
+  };
+  const accountAction=async(type:'profile:clear'|'profile:remove',id:string)=>{setBusy(true);if(await send({type,id}))await closeEditor();setBusy(false);};
+  return <main className="workspace" style={style}>
+    <header className="titlebar" aria-label="客户端标题栏">
+      <div className="traffic-space" aria-hidden="true"/>
+      <div className="tabs" role="tablist" aria-label={`${profile.name}的标签页`}>
+        {tabs.map(t=><div key={t.id} className={`tab ${t.id===tab.id?'active':''} ${t.pinned?'pinned':''}`} draggable onContextMenu={e=>{e.preventDefault();void send({type:'tab:menu',id:t.id});}} onDragStart={()=>{dragged.current=t.id;}} onDragEnd={()=>{dragged.current=undefined;}} onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();const from=dragged.current;if(!from||from===t.id)return;const ids=tabs.map(x=>x.id),index=ids.indexOf(from),target=ids.indexOf(t.id);if(index<0||target<0)return;ids.splice(index,1);ids.splice(target,0,from);void send({type:'tab:reorder',ids});}}>
+          <button className="tab-select" role="tab" aria-selected={t.id===tab.id} title={`${profile.name} · ${t.title}`} onClick={()=>void send({type:'tab:activate',id:t.id})}>
+            {state.tabStatus[t.id]?.loading?<span className="spinner"/>:<Icon name="chat" size={13}/>}<span>{t.title||'ChatGPT'}</span>{t.pinned&&<Icon name="pin" size={12}/>}</button>
+          <button className="tab-close" title="关闭标签页" aria-label={`关闭标签 ${t.title}`} onClick={()=>void send({type:'tab:close',id:t.id})}><Icon name="close" size={13}/></button>
+        </div>)}
+      </div>
+      <Tool icon="plus" label="新建标签页" onClick={()=>void send({type:'tab:new'})}/>
+      <div className="drag-space" aria-label="窗口拖动区域"/>
+      <button ref={accountButton} className="current-account" aria-label="切换账号" aria-haspopup="menu" aria-expanded={menuOpen} disabled={busy} onClick={()=>void toggleAccounts()} title={profile.name+(profile.email?' · '+profile.email:'')}><span className="dot" style={{background:profile.color}}/><span>{profile.name}</span><Icon name="chevron" size={12}/></button>
+    </header>
+    <section className="web-stage" aria-label="网页区域">
+      {status?.error?<div className="page-state" role="alert"><span className="page-state-icon"><Icon name="alert" size={28}/></span><h1>网页暂时无法打开</h1><p>{profile.name} 的账号空间已保留，可以重新加载。</p><code>{status.error}</code><button className="primary" onClick={()=>void send({type:'reload'})}><Icon name="refresh" size={16}/>重新加载</button></div>:<div className="page-state loading-state"><Mark size={38}/><h1>正在打开 ChatGPT</h1><p>{profile.name} · 独立账号空间</p><span className="spinner"/></div>}
+      {(editor||menuOpen)&&state.overlayImage&&<img className="page-preview" src={state.overlayImage} alt="" aria-hidden="true"/>}
+    </section>
+    {toast&&<div className="toast" role="status"><Icon name="check" size={15}/>{toast}<button aria-label="关闭提示" onClick={()=>setToast('')}><Icon name="close" size={13}/></button></div>}
+    {menuOpen&&<div className="menu-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)void closeAccounts();}}>
+      <div className="account-menu" role="menu" aria-label="账号空间" ref={accountMenu}>
+        <div className="menu-heading">账号空间<span>本机独立保存</span></div>
+        <div className="account-list">{state.profiles.map(p=><button key={p.id} className={'account-item '+(p.id===profile.id?'selected':'')} role="menuitemradio" aria-label={'切换到 '+p.name} aria-checked={p.id===profile.id} onClick={async()=>{if(await send({type:'profile:activate',id:p.id}))await closeAccounts();}}>
+          <span className="dot" style={{background:p.color}}/><span className="account-copy"><strong>{p.name}</strong><small>{p.email||'未填写邮箱备注'}</small></span>{p.id===profile.id&&<Icon name="check" size={14}/>}
+        </button>)}</div>
+        <div className="menu-separator"/>
+        <button className="menu-action" role="menuitem" onClick={()=>void openEditor({kind:'add'})}><Icon name="plus" size={15}/>添加账号<span>⌘⇧N</span></button>
+        <button className="menu-action" role="menuitem" aria-label={'管理 '+profile.name} onClick={()=>void openEditor({kind:'edit',id:profile.id})}><Icon name="settings" size={15}/>管理当前账号</button>
+        <div className="menu-foot">账号名称与邮箱为手动备注。<br/>每个账号拥有自己的登录状态和标签页。</div>
+      </div>
+    </div>}
+    {editor&&<div className="modal-backdrop" onMouseDown={event=>{if(event.target===event.currentTarget&&!busy)void closeEditor();}}>
+      <div className="modal" role="dialog" aria-modal="true" aria-labelledby="editor-title" ref={modal}>
+        <div className="modal-header"><span className="modal-symbol"><Icon name={editing?'edit':'plus'} size={22}/></span><button className="tool" aria-label="关闭账号管理" disabled={busy} onClick={()=>void closeEditor()}><Icon name="close"/></button></div>
+        <h1 id="editor-title">{editing?'管理账号空间':'添加账号空间'}</h1><p className="modal-description">{editing?'设置清晰的标识，切换时一眼认出账号。':'创建独立的浏览器空间，然后在 ChatGPT 网页内登录。'}</p>
+        <form key={editing?.id||'new'} onSubmit={event=>void submit(event)}>
+          <label>账号名称<input name="name" placeholder="例如：个人账号、工作账号" maxLength={40} required defaultValue={editing?.name||''} disabled={busy}/></label>
+          <label>邮箱备注 <span>选填</span><input name="email" placeholder="name@example.com" maxLength={120} defaultValue={editing?.email||''} disabled={busy}/></label>
+          <fieldset disabled={busy}><legend>标识颜色</legend><div className="color-options">{COLORS.map((color,i)=><label key={color} className="color-option" title={`颜色 ${i+1}`} style={{'--swatch':color} as CSSProperties}><input type="radio" name="color" value={color} defaultChecked={(editing?.color||COLORS[0])===color} aria-label={`颜色 ${i+1}`}/><span/></label>)}</div></fieldset>
+          <div className="identity-note"><Icon name="shield" size={17}/><p>名称与邮箱是手动备注，实际登录身份以网页内显示为准。密码由登录网页处理。</p></div>
+          {formError&&<p className="form-error" role="alert">{formError}</p>}
+          <div className="modal-actions"><button type="button" className="secondary" disabled={busy} onClick={()=>void closeEditor()}>取消</button><button type="submit" className="primary" disabled={busy}>{busy?'处理中…':editing?'保存修改':'创建并打开网页'}</button></div>
+        </form>
+        {editing&&<div className="account-maintenance"><div className="account-order"><span>账号排序</span><Tool icon="arrowUp" label="账号上移" disabled={busy||state.profiles[0].id===editing.id} onClick={()=>void send({type:'profile:move',id:editing.id,direction:-1})}/><Tool icon="arrowDown" label="账号下移" disabled={busy||state.profiles.at(-1)?.id===editing.id} onClick={()=>void send({type:'profile:move',id:editing.id,direction:1})}/></div><div className="danger-actions"><button disabled={busy} onClick={()=>void accountAction('profile:clear',editing.id)}>清除本机登录数据</button><button disabled={busy||state.profiles.length===1} title={state.profiles.length===1?'至少保留一个账号空间':''} onClick={()=>void accountAction('profile:remove',editing.id)}>移除账号空间</button></div></div>}
+      </div>
+    </div>}
+  </main>;
+}
+createRoot(document.getElementById('root')!).render(<App/>);
