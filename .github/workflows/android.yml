@@ -67,7 +67,12 @@ jobs:
         run: |
           mkdir -p app/build/device-evidence
           trap 'tail -100 app/build/device-evidence/emulator.log || true' ERR
-          echo no | avdmanager create avd --name profiles-test --package 'system-images;android-35;google_apis;x86_64'
+          export ANDROID_USER_HOME="$RUNNER_TEMP/profiles-android"
+          export ANDROID_AVD_HOME="$ANDROID_USER_HOME/avd"
+          mkdir -p "$ANDROID_AVD_HOME"
+          avdmanager create avd --force --name profiles-test --device pixel_6 --path "$ANDROID_AVD_HOME/profiles-test.avd" --package 'system-images;android-35;google_apis;x86_64'
+          test -f "$ANDROID_AVD_HOME/profiles-test.ini"
+          "$ANDROID_HOME/emulator/emulator" -list-avds
           "$ANDROID_HOME/emulator/emulator" -avd profiles-test -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect > app/build/device-evidence/emulator.log 2>&1 &
           timeout 180 adb wait-for-device
           timeout 240 bash -c 'until adb shell getprop sys.boot_completed | tr -d "\r" | grep -q 1; do sleep 2; done'
