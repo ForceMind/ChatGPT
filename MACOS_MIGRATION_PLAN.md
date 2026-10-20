@@ -101,6 +101,8 @@
 
 ## Windows 首版（2026-10-20）
 
+- [本轮已完成] Windows x64 `3.0.0-alpha.2` EXE/ZIP 已生成并取回 `desktop/release/windows/`，本机 SHA-256 与 CI 索引一致。完整 Windows CI、安装启动、正常退出、卸载保留数据与实际渲染验收通过；真实账号及客户端真机验证保留待验，未新增公开 Release。
+
 - 用户已要求开始制作 Windows。基线 `main` / `origin/main` 为 `cadfc44f4e58851c3ca4bfea9c7ab8fa28134f09`，已 fetch 且工作区干净。沿用单智能体执行。
 - 本轮交付 `3.0.0-alpha.2` Windows x64 试用 EXE/ZIP；已有 Mac/Android `alpha.1` Release 保留。本轮不改动原 Release，不处理商店上架、Windows ARM64 或证书申请。
 - 涉及 `desktop/` 的平台窗口、原生菜单、快捷键、Windows 图标与打包入口，以及 Windows CI、README 和本记录。账号 schema/session 映射保持兼容，各设备不建设同步。
@@ -110,7 +112,7 @@
 - 本地 `alpha.2` 类型检查、5 项状态测试、构建通过。Mac 界面回归运行至原生全屏断言时未进入全屏；临时导出已发布 `cadfc44` 源码、同一 Electron 运行时的对照也在同一断言失败。未发现本次 Windows 改动引入的差异，未修改 Mac 全屏逻辑；本轮 Mac 原生全屏自动验证保持未通过，不用历史通过记录替代。
 - Windows [运行验收](https://github.com/ForceMind/ChatGPT/actions/runs/39442759920) 的类型检查、5 项状态测试与 3 项 Electron 流程通过。覆盖 Cookie/LocalStorage/IndexedDB/CacheStorage/Service Worker 隔离、同账号共享与弹窗归属、多次重启、单账号清理、账号/标签管理、标题栏安全区、原生窗口状态及 900×700 / 1360×900 布局。
 - 原生鼠标拖动记录：`WM_NCHITTEST=HTCAPTION(2)`，`GUI_INMOVESIZE` 已进入原生移动循环；指针输入后的真实窗口位移为 `80×45` 像素。测试只在初始化时放置窗口，实际位移由原生鼠标输入产生，没有用设置窗口坐标替代拖动结果。前两轮脚本从按下即计位移，包含系统拖动阈值，现已在原生移动循环建立后测量，原精确位移断言保留。
-- EXE/ZIP 初次已经生成，随后包内核对因 ASAR 读取使用 `/` 路径失败；已修复为 Windows 原生相对路径，公开摘要键仍使用 `/`。当前安装包及卸载保留账号目录的最终结果待核对。
+- EXE/ZIP 初次已经生成，随后包内核对因 ASAR 读取使用 `/` 路径失败；已修复为 Windows 原生相对路径，公开摘要键仍使用 `/`。该轮失败记录保留；最终安装与卸载结果见下方成功 CI。
 - 最终 Windows [完整 CI](https://github.com/ForceMind/ChatGPT/actions/runs/39443940258) 通过，构建源码 `bf2baf9d2318f23a6c2fdc91a606aa1c5a413e02`：类型检查、5 项状态测试、3 项 Electron 流程、NSIS/ZIP、x64 PE、包内版本与全部构建文件逐字节核对。
 - 安装验证在 NT `10.0.26100.0` 完成：EXE 静默安装、已安装程序启动、默认账号/标签创建、正常退出、卸载程序、保留同一账号状态均通过。实际 Authenticode 状态 `NotSigned`；PE 数字产品版本 `3.0.0.0`，应用包声明与运行时版本 `3.0.0-alpha.2`。截图 `docs/images/windows-installed.png` 展示真正已安装客户端加载未登录 ChatGPT，没有输入消息或登录。
 - 截图与原生窗口证据另见 `docs/images/windows-native.png`、`docs/images/windows-accounts.png`；后两者使用明确标记的本地验收网页，不能冒充真实 ChatGPT 业务验证。
