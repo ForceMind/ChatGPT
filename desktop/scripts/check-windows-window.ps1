@@ -34,6 +34,8 @@ $foreground = [WindowInputProbe]::GetForegroundWindow() -eq $hwnd
 if ($available -and $foreground) {
     Start-Sleep -Milliseconds 150
     [WindowInputProbe]::mouse_event(2,0,0,0,[UIntPtr]::Zero)
+    # Wait for the native caption move loop before delivering the first movement.
+    Start-Sleep -Milliseconds 250
     try { for($step=1;$step -le 8;$step++){ [void][WindowInputProbe]::SetCursorPos(($x+$step*10),($y+[int][Math]::Round($step*45.0/8)));Start-Sleep -Milliseconds 30 } }
     finally { [WindowInputProbe]::mouse_event(4,0,0,0,[UIntPtr]::Zero) }
     Start-Sleep -Milliseconds 400
@@ -42,7 +44,7 @@ $after = New-Object WindowInputProbe+Rect
 $pointer = New-Object WindowInputProbe+Point
 [void][WindowInputProbe]::GetWindowRect($hwnd,[ref]$after)
 [void][WindowInputProbe]::GetCursorPos([ref]$pointer)
-$result = @{ inputAvailable=$available;foreground=$foreground;dpiScale=$scale;dx=$after.L-$before.L;dy=$after.T-$before.T;pointerX=$pointer.X;pointerY=$pointer.Y;expectedX=$x+80;expectedY=$y+45 }
+$result = @{ inputAvailable=$available;foreground=$foreground;dpiScale=$scale;before=@{x=$before.L;y=$before.T;width=$before.R-$before.L;height=$before.B-$before.T};after=@{x=$after.L;y=$after.T;width=$after.R-$after.L;height=$after.B-$after.T};dx=$after.L-$before.L;dy=$after.T-$before.T;pointerX=$pointer.X;pointerY=$pointer.Y;expectedX=$x+80;expectedY=$y+45 }
 $result.passed = $available -and $foreground -and [Math]::Abs($result.dx-80) -le 4 -and [Math]::Abs($result.dy-45) -le 4
 try {
  $bitmap=New-Object Drawing.Bitmap(($after.R-$after.L),($after.B-$after.T));$graphics=[Drawing.Graphics]::FromImage($bitmap)

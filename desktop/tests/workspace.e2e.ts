@@ -124,6 +124,10 @@ test('Windows 原生拖动、窗口按钮安全区和窗口状态',async({},info
   test.skip(process.platform!=='win32','Windows native input acceptance');
   const dir=mkdtempSync(path.join(tmpdir(),'profiles-windows-'));const {app,shell}=await launch(dir);
   try{
+    // Initial placement fits the runner display; the probe measures its baseline
+    // afterwards and only native pointer input may produce the tested movement.
+    await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].setBounds({x:24,y:24,width:900,height:650}));
+    await expect.poll(()=>shell.evaluate(()=>innerWidth)).toBe(900);
     const rect=await shell.getByLabel('窗口拖动区域').boundingBox();expect(rect).not.toBeNull();
     const handle=await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].getNativeWindowHandle().readBigUInt64LE().toString());
     const {stdout}=await promisify(execFile)('powershell.exe',['-NoProfile','-ExecutionPolicy','Bypass','-File',path.resolve('scripts/check-windows-window.ps1'),'-Handle',handle,'-DragX',String(rect!.x+rect!.width/2),'-DragY',String(rect!.y+rect!.height/2),'-Screenshot',info.outputPath('windows-native.png')],{timeout:30000});
