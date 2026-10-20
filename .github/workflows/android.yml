@@ -14,10 +14,15 @@ on:
         description: Run WebView isolation tests on an Android 15 emulator
         type: boolean
         default: false
+      device_only:
+        description: Run only device acceptance against an already built source tree
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
   build:
+    if: github.event_name != 'workflow_dispatch' || !inputs.device_only
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -68,15 +73,16 @@ jobs:
       - name: Boot and verify
         working-directory: android
         run: |
+          mkdir -p app/build/device-evidence
+          trap 'tail -100 app/build/device-evidence/emulator.log || true' ERR
           echo no | avdmanager create avd --name profiles-test --package 'system-images;android-35;google_apis;x86_64'
-          "$ANDROID_HOME/emulator/emulator" -avd profiles-test -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect > /tmp/emulator.log 2>&1 &
-          adb wait-for-device
+          "$ANDROID_HOME/emulator/emulator" -avd profiles-test -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect > app/build/device-evidence/emulator.log 2>&1 &
+          timeout 180 adb wait-for-device
           timeout 240 bash -c 'until adb shell getprop sys.boot_completed | tr -d "\r" | grep -q 1; do sleep 2; done'
           adb shell input keyevent 82
           ./gradlew --no-daemon connectedDebugAndroidTest
           adb shell am start -n com.forcemind.chatgpt.profiles.debug/com.forcemind.chatgpt.profiles.MainActivity
           sleep 15
-          mkdir -p app/build/device-evidence
           adb exec-out screencap -p > app/build/device-evidence/android-phone.png
           adb shell dumpsys webviewupdate > app/build/device-evidence/webview.txt
           adb shell wm size 1600x2560
