@@ -17,19 +17,20 @@ final class StateStore {
     StateStore(File directory) { file = new AtomicFile(new File(directory, "workspace.json")); backup = new File(directory, "workspace.backup.json"); revoked = new AtomicFile(new File(directory, "revoked-profiles.json")); }
     WorkspaceState load() throws Exception {
         if (!file.getBaseFile().exists() && !new File(file.getBaseFile() + ".bak").exists()) {
-            if (backup.exists()) return protect(readBackup());
+            if (backupExists()) return protect(readBackup());
             WorkspaceState fresh = WorkspaceState.fresh(); save(fresh); return fresh;
         }
         byte[] original = file.readFully();
         try { return protect(WorkspaceState.parse(new String(original, StandardCharsets.UTF_8))); }
         catch (Exception e) {
-            if (!backup.exists()) throw new IOException("账号记录损坏，已停止启动以保护登录空间。请保留应用数据并反馈。", e);
+            if (!backupExists()) throw new IOException("账号记录损坏，已停止启动以保护登录空间。请保留应用数据并反馈。", e);
             WorkspaceState recovered = protect(readBackup());
             Files.write(new File(file.getBaseFile().getParent(), "workspace.corrupt-" + System.currentTimeMillis() + ".json").toPath(), original);
             write(file, recovered.json().toString().getBytes(StandardCharsets.UTF_8)); return recovered;
         }
     }
-    private WorkspaceState readBackup() throws Exception { return WorkspaceState.parse(new String(Files.readAllBytes(backup.toPath()), StandardCharsets.UTF_8)); }
+    private boolean backupExists() { return backup.exists() || new File(backup + ".bak").exists(); }
+    private WorkspaceState readBackup() throws Exception { return WorkspaceState.parse(new String(new AtomicFile(backup).readFully(), StandardCharsets.UTF_8)); }
     private Set<String> revokedIds() throws Exception {
         Set<String> ids = new LinkedHashSet<>();
         if (revoked.getBaseFile().exists() || new File(revoked.getBaseFile() + ".bak").exists()) {
