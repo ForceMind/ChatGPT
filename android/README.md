@@ -52,7 +52,7 @@ cd android
 
 调试 APK 位于 `app/build/outputs/apk/debug/`。单元测试验证账号/标签状态、清除后的档案轮换和导航边界。设备测试使用拦截的本地 fixture（明确标记非 ChatGPT）验证 Cookie、LocalStorage、IndexedDB、CacheStorage 隔离，以及清除记录在损坏恢复时的保护；不会发送模型消息或使用真实凭据。
 
-GitHub Actions 默认运行检查和调试构建。维护者手动运行 `Android` 工作流，可以另外启用模拟器验收或签名构建。检查与设备测试结果分别保留，不把编译通过描述为真实登录验收。
+GitHub Actions 默认运行检查和调试构建。维护者手动运行 `Android` 工作流，可以另外启用模拟器验收或未签名 release 构建。检查与设备测试结果分别保留，不把编译通过描述为真实登录验收。
 
 ## 签名构建
 
@@ -69,7 +69,7 @@ keyPassword=YOUR_LOCAL_SECRET
 ./gradlew assembleRelease
 ```
 
-维护者应离线备份密钥和密码；丢失密钥后无法为已安装版本提供同签名更新。CI 签名仅在维护者显式启用时使用仓库的 `ANDROID_RELEASE_KEY`（Base64 PKCS12）与 `ANDROID_RELEASE_PASSWORD` Secrets。普通 PR 检查不读取它们。
+维护者应离线备份密钥和密码；丢失密钥后无法为已安装版本提供同签名更新。签名在本机完成，密钥不上传到 GitHub。CI 使用显式的 `-PunsignedRelease` 生成未签名构建；它必须经过本机 `zipalign` / `apksigner` 签名与校验才能作为安装包发布。
 
 ## 参考
 

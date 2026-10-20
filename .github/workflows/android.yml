@@ -6,8 +6,8 @@ on:
     paths: ['android/**', '.github/workflows/android.yml']
   workflow_dispatch:
     inputs:
-      sign_release:
-        description: Build an APK with the repository signing identity
+      build_release:
+        description: Build an unsigned release APK for subsequent local signing
         type: boolean
         default: false
       run_device_tests:
@@ -30,21 +30,10 @@ jobs:
       - name: Verify and build
         working-directory: android
         run: ./gradlew --no-daemon testDebugUnitTest lintDebug assembleDebug
-      - name: Restore release identity
-        if: github.event_name == 'workflow_dispatch' && inputs.sign_release
-        env:
-          SIGNING_KEY: ${{ secrets.ANDROID_RELEASE_KEY }}
-          SIGNING_PASSWORD: ${{ secrets.ANDROID_RELEASE_PASSWORD }}
-        run: |
-          test -n "$SIGNING_KEY" && test -n "$SIGNING_PASSWORD"
-          umask 077
-          mkdir -p android/.signing
-          printf '%s' "$SIGNING_KEY" | base64 --decode > android/.signing/android-release.p12
-          printf 'storeFile=.signing/android-release.p12\nstorePassword=%s\nkeyAlias=chatgpt-profiles\nkeyPassword=%s\n' "$SIGNING_PASSWORD" "$SIGNING_PASSWORD" > android/keystore.properties
-      - name: Build signed release
-        if: github.event_name == 'workflow_dispatch' && inputs.sign_release
+      - name: Build unsigned release
+        if: github.event_name == 'workflow_dispatch' && inputs.build_release
         working-directory: android
-        run: ./gradlew --no-daemon assembleRelease
+        run: ./gradlew --no-daemon -PunsignedRelease assembleRelease
       - uses: actions/upload-artifact@v4
         with:
           name: android-apks
@@ -56,9 +45,6 @@ jobs:
           path: |
             android/app/build/reports/
             android/app/build/test-results/
-      - name: Remove signing material
-        if: always()
-        run: rm -f android/keystore.properties android/.signing/android-release.p12
   device:
     if: github.event_name == 'workflow_dispatch' && inputs.run_device_tests
     runs-on: ubuntu-latest

@@ -37,7 +37,7 @@ android {
     testOptions { unitTests.returnDefaultValues = true }
 }
 tasks.register('requireReleaseKey') {
-    doLast { if (!signingFile.exists()) throw new GradleException('Release requires local keystore.properties. See README.md; never commit signing secrets.') }
+    doLast { if (!signingFile.exists() && !project.hasProperty('unsignedRelease')) throw new GradleException('Release requires local keystore.properties. CI may explicitly use -PunsignedRelease for later local signing.') }
 }
 tasks.matching { it.name == 'preReleaseBuild' }.configureEach { dependsOn 'requireReleaseKey' }
 dependencies {
