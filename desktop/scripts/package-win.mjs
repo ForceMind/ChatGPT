@@ -17,7 +17,7 @@ const archive=path.join(output,'win-unpacked/resources/app.asar');
 if(JSON.parse(asar.extractFile(archive,'package.json').toString()).version!==pkg.version)throw new Error('包内版本不一致。');
 const hash=data=>createHash('sha256').update(data).digest('hex');
 const payload={};
-function check(dir){for(const entry of readdirSync(dir,{withFileTypes:true})){const file=path.join(dir,entry.name);if(entry.isDirectory())check(file);else if(!entry.name.startsWith('._')){const key=path.relative(root,file).split(path.sep).join('/');const source=readFileSync(file),packed=asar.extractFile(archive,key);if(!source.equals(packed))throw new Error('包内文件不一致：'+key);payload[key]=hash(packed);}}}
+function check(dir){for(const entry of readdirSync(dir,{withFileTypes:true})){const file=path.join(dir,entry.name);if(entry.isDirectory())check(file);else if(!entry.name.startsWith('._')){const relative=path.relative(root,file),key=relative.split(path.sep).join('/');const source=readFileSync(file),packed=asar.extractFile(archive,relative);if(!source.equals(packed))throw new Error('包内文件不一致：'+key);payload[key]=hash(packed);}}}
 check(path.join(root,'dist'));
 const artifacts=readdirSync(output).filter(file=>/\.(exe|zip|blockmap)$/.test(file)&&!file.startsWith('._')).map(file=>{const data=readFileSync(path.join(output,file));return{file,bytes:data.length,sha256:hash(data)};});
 if(!artifacts.some(a=>a.file.endsWith('-setup.exe'))||!artifacts.some(a=>a.file.endsWith('.zip')))throw new Error('安装包或 ZIP 缺失。');
