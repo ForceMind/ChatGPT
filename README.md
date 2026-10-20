@@ -4,7 +4,7 @@
 
 ChatGPT Profiles 是一个非官方 ChatGPT 网页客户端。它保留网页本身的使用体验，在顶部增加轻量的账号与标签管理：白色、浅灰、黑色控件，没有地址栏，账号只用小色点辅助区分。
 
-当前版本：**3.0.0-alpha.1**。提供 macOS 安装包与 Android 首版签名 APK。Windows x64 正在制作 `3.0.0-alpha.2` 试用构建。真实账号登录与切换仍待人工验收，不能将存储隔离测试等同于所有登录方式都已通过。
+当前版本：**3.0.0-alpha.1**。提供 macOS 安装包与 Android 首版签名 APK。Windows x64 另提供 `3.0.0-alpha.2` CI 试用构建，尚未新增公开 Release。真实账号登录与切换仍待人工验收，不能将存储隔离测试等同于所有登录方式都已通过。
 
 ![macOS 沉浸式界面](docs/images/macos-immersive.jpg)
 
@@ -16,13 +16,17 @@ ChatGPT Profiles 是一个非官方 ChatGPT 网页客户端。它保留网页本
 | --- | --- | --- |
 | macOS · Apple Silicon | [DMG](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.1/ChatGPT-Profiles-3.0.0-alpha.1-mac-arm64.dmg) · [ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.1/ChatGPT-Profiles-3.0.0-alpha.1-mac-arm64.zip) | macOS 13+，当前在 macOS 26.2 / ARM64 验证 |
 | Android · 手机 / 平板 | [APK](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.1/ChatGPT-Profiles-3.0.0-alpha.1-android.apk) | Android 9+，并要求系统 WebView 支持多档案 |
-| Windows · x64 | 试用包构建中 | EXE 安装包与免安装 ZIP，待 Windows 验证 |
+| Windows · x64 | [EXE 安装包](https://github.com/ForceMind/ChatGPT/actions/runs/39443940258/artifacts/12274469728) · [免安装 ZIP](https://github.com/ForceMind/ChatGPT/actions/runs/39443940258/artifacts/12275384158) | `alpha.2` CI 试用包；Windows runner 已验证，客户端真机待验 |
 | Intel Mac、Linux | 暂无 | 后续适配与实机验收 |
 | iPhone / iPad | 暂无 | 后续验证独立 WKWebView 数据空间 |
 
 macOS：打开 DMG，将应用拖入“应用程序”后启动。当前构建使用 ad-hoc 签名，**尚未经过 Developer ID 签名和 Apple 公证**。若首次打开被拦截，确认来源与摘要后，可在“系统设置 → 隐私与安全性”中选择“仍要打开”，参见 [Apple 官方说明](https://support.apple.com/zh-cn/102445)。新版与旧版应用的数据分开，不会自动带入旧登录。
 
 Android：下载 APK，按系统提示允许当前来源安装。安装后如果出现 WebView 更新提示，请先更新 Android System WebView / Chrome，再重新启动；应用不会在不支持隔离的设备上退回共享账号空间。
+
+Windows 试用包来自 Actions，下载需登录 GitHub，产物保留至 2027-01-18。下载的外层压缩包解压后，EXE 为安装程序；ZIP 产物中包含程序 ZIP，解压后运行 `ChatGPT Profiles.exe`。未配置 Authenticode 证书，系统可能显示未知发布者或 SmartScreen 提醒；请核对构建来源与摘要。
+
+![Windows 已安装客户端，未登录 ChatGPT](docs/images/windows-installed.png)
 
 每个 Release 附 `SHA256SUMS.txt`。Mac 上可用 `shasum -a 256 文件名` 核对下载摘要。当前不包含自动更新服务，后续安装同平台新包升级；Android 需要保持相同签名。
 
@@ -46,7 +50,7 @@ Android 原生账号菜单（模拟器、未登录，名称与邮箱均为测试
 
 ## 账号隔离与隐私
 
-| 行为 | macOS | Android |
+| 行为 | 桌面端（Mac / Windows） | Android |
 | --- | --- | --- |
 | 账号空间 | 独立持久 Electron session | 独立 WebView Profile |
 | 同账号标签 / 登录弹窗 | 共用该账号 session | 共用该账号 Profile |
@@ -61,22 +65,24 @@ Android 原生账号菜单（模拟器、未登录，名称与邮箱均为测试
 - 账号隔离不改变 IP，也不伪造硬件或浏览器指纹，不提供代理、验证码绕过或风控规避功能。
 - 系统浏览器独立保存自己的登录，外部打开链接不会自动继承应用内账号。
 
-## Mac 快捷键
+## 桌面快捷键
 
-| 操作 | 快捷键 |
-| --- | --- |
-| 新建 / 关闭标签 | `⌘T` / `⌘W` |
-| 恢复关闭标签 | `⌘⇧T` |
-| 添加账号 | `⌘⇧N` |
-| 打开账号菜单 | `⌘B` |
-| 切换标签 | `⌃Tab` / `⌃⇧Tab` |
-| 重新加载 | `⌘R` |
-| 后退 / 前进 | `⌘[` / `⌘]` |
-| 进入 / 退出全屏 | `⌃⌘F` |
+| 操作 | Mac | Windows |
+| --- | --- | --- |
+| 新建 / 关闭标签 | `⌘T` / `⌘W` | `Ctrl+T` / `Ctrl+W` |
+| 恢复关闭标签 | `⌘⇧T` | `Ctrl+Shift+T` |
+| 添加账号 | `⌘⇧N` | `Ctrl+Shift+N` |
+| 打开账号菜单 | `⌘B` | `Ctrl+B` |
+| 切换标签 | `⌃Tab` / `⌃⇧Tab` | `Ctrl+Tab` / `Ctrl+Shift+Tab` |
+| 重新加载 | `⌘R` | `Ctrl+R` |
+| 后退 / 前进 | `⌘[` / `⌘]` | `Ctrl+[` / `Ctrl+]` |
+| 进入 / 退出全屏 | `⌃⌘F` | `F11` |
+
+Windows 顶部使用原生最小化、最大化、关闭按钮，账号菜单避开系统按钮区域。刷新、导航和标签恢复也可从账号菜单操作，按 `Alt` 临时显示系统菜单。卸载默认保留本机账号数据。
 
 ## 数据与恢复
 
-macOS 安装版保存在 `~/Library/Application Support/ChatGPT Profiles/`；开发版保存在 `desktop/.local-data/`。`state.json` 记录账号与标签，`state.backup.json` 保留前一个有效状态，`Partitions/profile-<UUID>/` 保存对应账号的浏览器数据。
+macOS 安装版保存在 `~/Library/Application Support/ChatGPT Profiles/`，Windows 安装版及 ZIP 使用 `%APPDATA%\ChatGPT Profiles\`；桌面开发版保存在 `desktop/.local-data/`。`state.json` 记录账号与标签，`state.backup.json` 保留前一个有效状态，`Partitions/profile-<UUID>/` 保存对应账号的浏览器数据。
 
 Android 数据保存在应用私有目录。`workspace.json`、备份与撤销记录共同保护账号归属；损坏恢复也不能重新启用已清除档案。系统备份已禁用。卸载应用会删除该安装的本机空间。
 
@@ -87,7 +93,7 @@ Android 数据保存在应用私有目录。`workspace.json`、备份与撤销�
 仓库不需要后端服务或 OpenAI API Key。网页服务及订阅仍由 ChatGPT 自身提供，应用不附带订阅权益。
 
 ```text
- desktop/               Electron + React + TypeScript macOS 客户端
+ desktop/               Electron + React + TypeScript Mac / Windows 客户端
  android/               原生 Java + AndroidX WebKit 客户端
  docs/                  原目录摘要与实际界面截图
  MACOS_MIGRATION_PLAN.md 授权、迁移进度、验证与发布记录
@@ -111,6 +117,18 @@ npm run dist:mac
 
 打包脚本在临时目录工作，避开外部磁盘 AppleDouble 文件干扰；产物与构建摘要写入 `desktop/release/`。更多数据、安全和构建说明见 [macOS 开发说明](desktop/README.md)。
 
+### Windows
+
+在 Windows x64、Node 26 环境中：
+
+```sh
+cd desktop
+npm ci
+npm run dist:win
+```
+
+产物位于 `desktop/release/windows/`。版本、源码、包内文件及安装包摘要见 `windows-build-info.json` 与 `SHA256SUMS.txt`。更多 Windows 使用、数据和快捷键说明见 [桌面开发说明](desktop/README.md)。
+
 ### Android
 
 需要 JDK 17、Android SDK Platform 36、Build Tools 35.0.0。Gradle Wrapper 固定版本及分发校验摘要。
@@ -128,13 +146,14 @@ cd android
 
 ## 当前验证边界
 
-- Mac：类型检查、5 项状态测试、2 项本地 Electron 集成流程已通过；覆盖存储隔离、登录弹窗归属、重启恢复、单账号清理与界面管理。普通窗口拖动已由用户手动确认；实际未登录 ChatGPT 网页已渲染。
+- Mac（已发布 `alpha.1` 构建）：类型检查、5 项状态测试、2 项本地 Electron 集成流程已通过；覆盖存储隔离、登录弹窗归属、重启恢复、单账号清理与界面管理。普通窗口拖动已由用户手动确认；实际未登录 ChatGPT 网页已渲染。
+- Windows：类型检查、5 项状态测试、3 项 Electron 流程、原生鼠标拖动及窗口状态、安装/启动/正常退出/卸载保留账号目录均已通过。实际已安装客户端加载了未登录 ChatGPT 页面；测试系统为 `windows-2025` / NT 10.0.26100，Windows 10/11 客户端真机和真实登录仍待验。
 - Android：编译、5 项状态/导航测试、Lint、签名校验，以及 Android 15 模拟器中的 2 项隔离/损坏恢复测试已通过；调试包的原生账号名称/邮箱录入、切换、重启恢复和手机/平板尺寸渲染已检查。发布 APK 已签名校验，真机尚未验收。详情见 [验证记录](MACOS_MIGRATION_PLAN.md)。
 - **待人工验收**：两个真实 ChatGPT 账号的登录、切换、身份及重启后的登录保持。第三方登录、语音、真实上传下载需要按设备分别验证。
 - Google、Apple 等身份提供商可能限制嵌入式浏览器；不承诺所有登录渠道可用。Android 首版暂不支持 `blob:` 文件下载。
 - Android 模拟器截图时部分页面仍在 Cloudflare 校验；这不构成真实登录通过的证据。Android 真机尚未验收。
 - Android 进程被系统回收时，未发送草稿和网页任务可能中断；恢复标签不等于恢复网页任务的执行。
-- Mac 的 Developer ID、公证、Intel 构建，其他平台及商店上架均未完成。
+- Mac 的 Developer ID、公证、Intel 构建，Windows Authenticode 签名、Linux、iPhone/iPad 及商店上架均未完成。本轮未改变 Mac/Android `alpha.1` 已发布安装包。
 
 复现问题时请提供平台、应用版本、WebView 版本（Android）、操作步骤和脱敏截图。不要在 Issue 中发送密码、验证码或登录数据。
 

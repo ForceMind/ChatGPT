@@ -89,4 +89,6 @@ npm run dist:win
 
 输出在 `release/windows/`，含 EXE 安装包、ZIP、`windows-build-info.json` 与 `SHA256SUMS.txt`。安装包默认按当前用户安装，不要求管理员权限；ZIP 解压后运行 `ChatGPT Profiles.exe`。退出应用后可更新程序文件，保留账号数据目录。卸载默认保留账号数据；在应用内清除账号才会清除相应登录。
 
-当前未配置 Authenticode 证书，试用包未签名，SmartScreen 或组织策略可能拦截；请核对来源与摘要。CI 只验证本地 fixture 隔离、窗口、安装与卸载，不代表 Windows 10/11 真机与真实 ChatGPT 登录已经通过。最新检查及安装包入口见根目录进度记录。
+当前未配置 Authenticode 证书，试用包未签名，SmartScreen 或组织策略可能拦截；请核对来源与摘要。CI 隔离验收使用本地 fixture，安装包启动只打开未登录网页；这些结果不代表 Windows 10/11 客户端真机与真实 ChatGPT 登录已经通过。最新检查及安装包入口见根目录进度记录。
+
+本轮 Windows 验证入口：[完整构建与安装验收](https://github.com/ForceMind/ChatGPT/actions/runs/39443940258)。5 项状态测试、3 项 Electron 流程及安装/卸载保留账号数据通过，原生鼠标拖动实测位移 80×45 像素。试用包入口见根 README。

@@ -108,3 +108,14 @@
 - 验收：类型检查、既有状态测试；Windows Electron 存储隔离、弹窗与重启/清理流程，原生视图及标题栏安全区、代表性尺寸和窗口状态；实际渲染；EXE 安装/启动/卸载与保留账号目录。Mac 做必要回归，原始源码不变。
 - Windows 构建由本仓库 CI 执行，按已有仓库同步授权提交推送本次文件；最终安装包和摘要作为试用成果交付，未授权的公开新 Release 不在本轮自动执行。未配置 Authenticode 证书，试用包会明确标记未签名。真实账号由用户手动验收。
 - 本地 `alpha.2` 类型检查、5 项状态测试、构建通过。Mac 界面回归运行至原生全屏断言时未进入全屏；临时导出已发布 `cadfc44` 源码、同一 Electron 运行时的对照也在同一断言失败。未发现本次 Windows 改动引入的差异，未修改 Mac 全屏逻辑；本轮 Mac 原生全屏自动验证保持未通过，不用历史通过记录替代。
+- Windows [运行验收](https://github.com/ForceMind/ChatGPT/actions/runs/39442759920) 的类型检查、5 项状态测试与 3 项 Electron 流程通过。覆盖 Cookie/LocalStorage/IndexedDB/CacheStorage/Service Worker 隔离、同账号共享与弹窗归属、多次重启、单账号清理、账号/标签管理、标题栏安全区、原生窗口状态及 900×700 / 1360×900 布局。
+- 原生鼠标拖动记录：`WM_NCHITTEST=HTCAPTION(2)`，`GUI_INMOVESIZE` 已进入原生移动循环；指针输入后的真实窗口位移为 `80×45` 像素。测试只在初始化时放置窗口，实际位移由原生鼠标输入产生，没有用设置窗口坐标替代拖动结果。前两轮脚本从按下即计位移，包含系统拖动阈值，现已在原生移动循环建立后测量，原精确位移断言保留。
+- EXE/ZIP 初次已经生成，随后包内核对因 ASAR 读取使用 `/` 路径失败；已修复为 Windows 原生相对路径，公开摘要键仍使用 `/`。当前安装包及卸载保留账号目录的最终结果待核对。
+- 最终 Windows [完整 CI](https://github.com/ForceMind/ChatGPT/actions/runs/39443940258) 通过，构建源码 `bf2baf9d2318f23a6c2fdc91a606aa1c5a413e02`：类型检查、5 项状态测试、3 项 Electron 流程、NSIS/ZIP、x64 PE、包内版本与全部构建文件逐字节核对。
+- 安装验证在 NT `10.0.26100.0` 完成：EXE 静默安装、已安装程序启动、默认账号/标签创建、正常退出、卸载程序、保留同一账号状态均通过。实际 Authenticode 状态 `NotSigned`；PE 数字产品版本 `3.0.0.0`，应用包声明与运行时版本 `3.0.0-alpha.2`。截图 `docs/images/windows-installed.png` 展示真正已安装客户端加载未登录 ChatGPT，没有输入消息或登录。
+- 截图与原生窗口证据另见 `docs/images/windows-native.png`、`docs/images/windows-accounts.png`；后两者使用明确标记的本地验收网页，不能冒充真实 ChatGPT 业务验证。
+- 试用下载：[EXE Actions 产物](https://github.com/ForceMind/ChatGPT/actions/runs/39443940258/artifacts/12274469728)、[ZIP Actions 产物](https://github.com/ForceMind/ChatGPT/actions/runs/39443940258/artifacts/12275384158)。GitHub 产物需登录下载，保留至 2027-01-18；本轮未增加公开 Release 或更改既有 v3.0.0-alpha.1 附件。
+- 未验：Windows 10/11 客户端真机、真实双账号登录、第三方登录与真实语音/文件流程。Mac 本轮原生全屏自动对照仍未通过，不能将 Windows 的全屏验证替代 Mac；已有 Mac 包未改变。
+- Windows 产物摘要（CI 计算，随试用包提供）：
+  - `ChatGPT-Profiles-3.0.0-alpha.2-windows-x64-setup.exe`：`2ac551b0298696494621f64e10d708f87b69ffa0aeb820b05edd00955a3c01e8`，112306244 bytes。
+  - `ChatGPT-Profiles-3.0.0-alpha.2-windows-x64.zip`：`4f9408a4f9fe36871533d0a6e0c7c2bc74601f4add788a4c2b7be7b3c6b9820c`，154817621 bytes。
