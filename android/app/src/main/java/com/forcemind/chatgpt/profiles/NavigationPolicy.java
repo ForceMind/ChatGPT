@@ -5,8 +5,8 @@ import java.util.Set;
 
 public final class NavigationPolicy {
     public static final String HOME = "https://chatgpt.com/";
-    private static final Set<String> CHAT = Set.of("chatgpt.com", "chat.openai.com");
-    private static final Set<String> AUTH = Set.of("auth.openai.com", "auth0.openai.com", "accounts.google.com",
+    private static final Set<String> CHAT = hosts("chatgpt.com", "chat.openai.com");
+    private static final Set<String> AUTH = hosts("auth.openai.com", "auth0.openai.com", "accounts.google.com",
             "appleid.apple.com", "idmsa.apple.com", "login.live.com", "login.microsoftonline.com", "login.microsoft.com", "account.live.com");
     public static boolean https(String value) {
         if (value == null || value.length() > 8192) return false;
@@ -28,5 +28,6 @@ public final class NavigationPolicy {
         // Do not persist OAuth query parameters, fragments, or third-party login URLs.
         return "https://" + u.getHost() + (u.getRawPath().isEmpty() ? "/" : u.getRawPath());
     }
+    private static Set<String> hosts(String... names) { return java.util.Collections.unmodifiableSet(new java.util.HashSet<>(java.util.Arrays.asList(names))); }
     private NavigationPolicy() {}
 }

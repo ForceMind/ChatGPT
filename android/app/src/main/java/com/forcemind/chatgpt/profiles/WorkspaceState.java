@@ -28,7 +28,7 @@ public final class WorkspaceState {
         public final List<Tab> tabs = new ArrayList<>();
         public final List<Tab> closedTabs = new ArrayList<>();
         public Account() { Tab t = new Tab(); tabs.add(t); activeTab = t.id; }
-        public Tab current() { return tabs.stream().filter(t -> t.id.equals(activeTab)).findFirst().orElseThrow(); }
+        public Tab current() { return tabs.stream().filter(t -> t.id.equals(activeTab)).findFirst().orElseThrow(() -> new IllegalStateException("Missing account or tab")); }
         JSONObject json() throws JSONException {
             JSONArray ts = new JSONArray(), cs = new JSONArray();
             for (Tab t : tabs) ts.put(t.json()); for (Tab t : closedTabs) cs.put(t.json());
@@ -39,8 +39,8 @@ public final class WorkspaceState {
     public static WorkspaceState fresh() {
         WorkspaceState s = new WorkspaceState(); Account a = new Account(); s.accounts.add(a); s.activeAccount = a.id; return s;
     }
-    public Account current() { return accounts.stream().filter(a -> a.id.equals(activeAccount)).findFirst().orElseThrow(); }
-    public Account find(String accountId) { return accounts.stream().filter(a -> a.id.equals(accountId)).findFirst().orElseThrow(); }
+    public Account current() { return accounts.stream().filter(a -> a.id.equals(activeAccount)).findFirst().orElseThrow(() -> new IllegalStateException("Missing account or tab")); }
+    public Account find(String accountId) { return accounts.stream().filter(a -> a.id.equals(accountId)).findFirst().orElseThrow(() -> new IllegalStateException("Missing account or tab")); }
     public Account addAccount(String name, String email, String color) {
         if (accounts.size() >= MAX_ACCOUNTS) throw new IllegalStateException("最多 30 个账号空间");
         Account a = new Account(); a.name = label(name, 40); a.email = label(email, 120); a.color = color; accounts.add(a); activeAccount = a.id; return a;
@@ -50,7 +50,7 @@ public final class WorkspaceState {
         Tab t = new Tab(); a.tabs.add(t); a.activeTab = t.id; return t;
     }
     public void closeTab(Account a, String tabId) {
-        Tab t = a.tabs.stream().filter(x -> x.id.equals(tabId)).findFirst().orElseThrow();
+        Tab t = a.tabs.stream().filter(x -> x.id.equals(tabId)).findFirst().orElseThrow(() -> new IllegalStateException("Missing account or tab"));
         a.closedTabs.add(t); if (a.closedTabs.size() > 10) a.closedTabs.remove(0);
         int index = a.tabs.indexOf(t); a.tabs.remove(t);
         if (a.tabs.isEmpty()) { Tab fresh = new Tab(); a.tabs.add(fresh); }
@@ -97,7 +97,7 @@ public final class WorkspaceState {
         Set<String> ids = new HashSet<>(), stores = new HashSet<>();
         for (Account a : accounts) {
             if (!validId(a.id) || !ids.add(a.id) || !validId(a.storageId) || !stores.add(a.storageId)
-                    || a.name.isBlank() || a.name.length() > 40 || a.email.length() > 120 || !List.of(COLORS).contains(a.color)
+                    || a.name.trim().isEmpty() || a.name.length() > 40 || a.email.length() > 120 || !java.util.Arrays.asList(COLORS).contains(a.color)
                     || a.tabs.isEmpty() || a.tabs.size() > MAX_TABS || a.closedTabs.size() > 10) throw new IllegalArgumentException("Invalid account");
             Set<String> ts = new HashSet<>();
             for (Tab t : a.tabs) validateTab(t, ts);

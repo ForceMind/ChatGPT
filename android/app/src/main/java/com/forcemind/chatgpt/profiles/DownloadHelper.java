@@ -35,7 +35,7 @@ final class DownloadHelper {
         if (pending != null) { notifyUser("请先完成当前文件选择"); return; }
         pending = new Selection(url, agent, WebViewCompat.getProfile(web).getCookieManager());
         Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
-                .setType(mime == null || mime.isBlank() ? "application/octet-stream" : mime)
+                .setType(mime == null || mime.trim().isEmpty() ? "application/octet-stream" : mime)
                 .putExtra(Intent.EXTRA_TITLE, URLUtil.guessFileName(url, disposition, mime));
         try { activity.startActivityForResult(intent, REQUEST_SAVE); }
         catch (RuntimeException e) { pending = null; notifyUser("无法打开文件保存器"); }

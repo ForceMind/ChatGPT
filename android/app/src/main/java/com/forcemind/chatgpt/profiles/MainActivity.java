@@ -165,7 +165,7 @@ public final class MainActivity extends Activity {
             }
             @Override public void onPageFinished(WebView view, String url) {
                 if (!exists(accountId, tabId)) return;
-                change(s -> s.find(accountId).tabs.stream().filter(t -> t.id.equals(tabId)).findFirst().orElseThrow().url = NavigationPolicy.restorable(url));
+                change(s -> s.find(accountId).tabs.stream().filter(t -> t.id.equals(tabId)).findFirst().orElseThrow(() -> new IllegalStateException("Missing account or tab")).url = NavigationPolicy.restorable(url));
             }
             @Override public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
                 if (request.isForMainFrame() && active(tabId)) showMessage("网页暂时无法加载", "请检查网络后重试。账号登录数据仍保留。", "重试", () -> { showCurrent(); currentWeb().loadUrl(state.current().current().url); });
@@ -181,8 +181,8 @@ public final class MainActivity extends Activity {
         });
         web.setWebChromeClient(new WebChromeClient() {
             @Override public void onReceivedTitle(WebView view, String title) {
-                if (title == null || title.isBlank() || !exists(accountId, tabId)) return;
-                if (change(s -> s.find(accountId).tabs.stream().filter(t -> t.id.equals(tabId)).findFirst().orElseThrow().title = title.substring(0, Math.min(120, title.length()))) && active(tabId)) renderHeader();
+                if (title == null || title.trim().isEmpty() || !exists(accountId, tabId)) return;
+                if (change(s -> s.find(accountId).tabs.stream().filter(t -> t.id.equals(tabId)).findFirst().orElseThrow(() -> new IllegalStateException("Missing account or tab")).title = title.substring(0, Math.min(120, title.length()))) && active(tabId)) renderHeader();
             }
             @Override public void onProgressChanged(WebView view, int value) {
                 if (active(tabId)) { progress.setProgress(value); progress.setVisibility(value >= 100 ? View.INVISIBLE : View.VISIBLE); }
@@ -203,7 +203,7 @@ public final class MainActivity extends Activity {
                 cancelRequests(); fileCallback = callback; fileOwner = tabId;
                 Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("*/*");
                 intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, params.getMode() == FileChooserParams.MODE_OPEN_MULTIPLE);
-                String[] accepts = params.getAcceptTypes(); if (accepts.length > 0 && !accepts[0].isBlank()) intent.putExtra(Intent.EXTRA_MIME_TYPES, accepts);
+                String[] accepts = params.getAcceptTypes(); if (accepts.length > 0 && !accepts[0].trim().isEmpty()) intent.putExtra(Intent.EXTRA_MIME_TYPES, accepts);
                 try { startActivityForResult(intent, 10); } catch (ActivityNotFoundException e) { cancelRequests(); toast("设备没有可用的文件选择器"); }
                 return true;
             }
@@ -242,7 +242,7 @@ public final class MainActivity extends Activity {
         CharSequence[] labels = new CharSequence[state.accounts.size()];
         for (int i = 0; i < labels.length; i++) {
             WorkspaceState.Account a = state.accounts.get(i);
-            SpannableString s = new SpannableString("● " + a.name + (a.id.equals(state.activeAccount) ? "  ✓" : "") + (a.email.isBlank() ? "" : "\n    " + a.email));
+            SpannableString s = new SpannableString("● " + a.name + (a.id.equals(state.activeAccount) ? "  ✓" : "") + (a.email.trim().isEmpty() ? "" : "\n    " + a.email));
             s.setSpan(new ForegroundColorSpan(Color.parseColor(a.color)), 0, 1, 0); labels[i] = s;
         }
         new AlertDialog.Builder(this).setTitle("切换账号").setItems(labels, (d, i) -> { String id = state.accounts.get(i).id; if (change(s -> s.activeAccount = id)) showCurrent(); }).setNeutralButton("添加账号", (d, w) -> editAccount(null)).show();
@@ -283,10 +283,10 @@ public final class MainActivity extends Activity {
         }).show();
     }
     private void showTabMenu(String accountId, String tabId) {
-        WorkspaceState.Tab tab = state.find(accountId).tabs.stream().filter(t -> t.id.equals(tabId)).findFirst().orElseThrow();
+        WorkspaceState.Tab tab = state.find(accountId).tabs.stream().filter(t -> t.id.equals(tabId)).findFirst().orElseThrow(() -> new IllegalStateException("Missing account or tab"));
         new AlertDialog.Builder(this).setTitle(tab.title).setItems(new String[]{tab.pinned ? "取消固定" : "固定标签页", "向前移动", "向后移动", "关闭标签页"}, (d, i) -> {
             if (i == 3) { closeTab(accountId, tabId); return; }
-            if (change(s -> { WorkspaceState.Account a = s.find(accountId); WorkspaceState.Tab t = a.tabs.stream().filter(v -> v.id.equals(tabId)).findFirst().orElseThrow(); if (i == 0) t.pinned = !t.pinned; else { int from = a.tabs.indexOf(t), to = from + (i == 1 ? -1 : 1); if (to >= 0 && to < a.tabs.size()) java.util.Collections.swap(a.tabs, from, to); } })) renderHeader();
+            if (change(s -> { WorkspaceState.Account a = s.find(accountId); WorkspaceState.Tab t = a.tabs.stream().filter(v -> v.id.equals(tabId)).findFirst().orElseThrow(() -> new IllegalStateException("Missing account or tab")); if (i == 0) t.pinned = !t.pinned; else { int from = a.tabs.indexOf(t), to = from + (i == 1 ? -1 : 1); if (to >= 0 && to < a.tabs.size()) java.util.Collections.swap(a.tabs, from, to); } })) renderHeader();
         }).show();
     }
     private void closeTab(String accountId, String tabId) {
