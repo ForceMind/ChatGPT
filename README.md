@@ -4,7 +4,7 @@
 
 ChatGPT Profiles 是一个非官方 ChatGPT 网页客户端。它保留网页本身的使用体验，在顶部增加轻量的账号与标签管理：白色、浅灰、黑色控件，没有地址栏，账号只用小色点辅助区分。
 
-当前版本：**3.0.0-alpha.1**。macOS 版可供先行使用，Android 版处于首轮验证阶段。真实账号登录与切换仍待人工验收，不能将本地存储隔离测试等同于所有登录方式都已通过。
+当前版本：**3.0.0-alpha.1**。提供 macOS 安装包与 Android 首版签名 APK。真实账号登录与切换仍待人工验收，不能将存储隔离测试等同于所有登录方式都已通过。
 
 ![macOS 沉浸式界面](docs/images/macos-immersive.jpg)
 
@@ -19,7 +19,7 @@ ChatGPT Profiles 是一个非官方 ChatGPT 网页客户端。它保留网页本
 | Intel Mac、Windows、Linux | 暂无 | 后续适配与实机验收 |
 | iPhone / iPad | 暂无 | 后续验证独立 WKWebView 数据空间 |
 
-macOS：打开 DMG，将应用拖入“应用程序”后启动。当前构建使用 ad-hoc 签名，**尚未经过 Developer ID 签名和 Apple 公证**，系统可能阻止首次打开；请依据系统提示核对来源并处理。新版与旧版应用的数据分开，不会自动带入旧登录。
+macOS：打开 DMG，将应用拖入“应用程序”后启动。当前构建使用 ad-hoc 签名，**尚未经过 Developer ID 签名和 Apple 公证**。若首次打开被拦截，确认来源与摘要后，可在“系统设置 → 隐私与安全性”中选择“仍要打开”，参见 [Apple 官方说明](https://support.apple.com/zh-cn/102445)。新版与旧版应用的数据分开，不会自动带入旧登录。
 
 Android：下载 APK，按系统提示允许当前来源安装。安装后如果出现 WebView 更新提示，请先更新 Android System WebView / Chrome，再重新启动；应用不会在不支持隔离的设备上退回共享账号空间。
 
@@ -38,6 +38,10 @@ Android：下载 APK，按系统提示允许当前来源安装。安装后如果
 Mac 顶部空白区可拖动普通窗口；原生全屏的窗口管理遵循 macOS 行为。导航、刷新等操作位于系统菜单及快捷键；Android 的这些操作位于账号菜单，返回键优先后退网页。
 
 ![账号切换菜单](docs/images/macos-accounts.jpg)
+
+Android 原生账号菜单（模拟器、未登录，名称与邮箱均为测试备注）：
+
+<img src="docs/images/android-accounts.png" width="320" alt="Android 独立账号与邮箱备注菜单" />
 
 ## 账号隔离与隐私
 
@@ -124,9 +128,11 @@ cd android
 ## 当前验证边界
 
 - Mac：类型检查、5 项状态测试、2 项本地 Electron 集成流程已通过；覆盖存储隔离、登录弹窗归属、重启恢复、单账号清理与界面管理。普通窗口拖动已由用户手动确认；实际未登录 ChatGPT 网页已渲染。
-- Android：代码已实现，构建、设备隔离与实际界面检查正在进行，结果统一更新到 [验证记录](MACOS_MIGRATION_PLAN.md)。
+- Android：编译、5 项状态/导航测试、Lint、签名校验，以及 Android 15 模拟器中的 2 项隔离/损坏恢复测试已通过；调试包的原生账号名称/邮箱录入、切换、重启恢复和手机/平板尺寸渲染已检查。发布 APK 已签名校验，真机尚未验收。详情见 [验证记录](MACOS_MIGRATION_PLAN.md)。
 - **待人工验收**：两个真实 ChatGPT 账号的登录、切换、身份及重启后的登录保持。第三方登录、语音、真实上传下载需要按设备分别验证。
 - Google、Apple 等身份提供商可能限制嵌入式浏览器；不承诺所有登录渠道可用。Android 首版暂不支持 `blob:` 文件下载。
+- Android 模拟器截图时部分页面仍在 Cloudflare 校验；这不构成真实登录通过的证据。Android 真机尚未验收。
+- Android 进程被系统回收时，未发送草稿和网页任务可能中断；恢复标签不等于恢复网页任务的执行。
 - Mac 的 Developer ID、公证、Intel 构建，其他平台及商店上架均未完成。
 
 复现问题时请提供平台、应用版本、WebView 版本（Android）、操作步骤和脱敏截图。不要在 Issue 中发送密码、验证码或登录数据。

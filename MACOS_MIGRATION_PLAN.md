@@ -9,7 +9,7 @@
 
 ## 基线与恢复
 
-- 本地 `main` / `origin/main`：`df64b07661e645fc37fe9448346c3bf78bb8d15a`；本次会话已通过远端只读查询核对。
+- 开发起始 `main` / `origin/main` 基线：`df64b07661e645fc37fe9448346c3bf78bb8d15a`；追加发布工作前已 fetch 并核对一致。
 - 新版目标版本 `3.0.0-alpha.1`。开发数据与安装版数据分离，隔离测试只使用临时数据与本地网页。
 
 ## 顺序、归属与验收
@@ -38,7 +38,7 @@
 - 本地网页证明 Cookie、LocalStorage、IndexedDB、弹窗、跨账号清理、重启恢复和权限边界，不代表真实 ChatGPT 登录通过。
 - 不向 ChatGPT 发送隐藏测试消息，不读取或复用已有应用的真实登录数据。
 - 真实账号登录由用户手动完成；Google/Apple 等登录流程、语音及真实上传下载按实际证据记录。
-- 当前采用本机 ad-hoc 签名；Developer ID 签名、公证及公开分发未完成。
+- Mac 采用 ad-hoc 签名；Developer ID 签名和公证未完成。本轮按追加授权准备 GitHub 预发布分发。
 - 遇到运行故障先保存状态并修复；必要外部条件缺失时完成其他独立工作，记录补验条件。
 
 ## 后续平台
@@ -76,7 +76,7 @@
 - 拖动诊断：临时窗口实测 `isMovable=true`、`isMaximized=false`、`isFullScreen=false`；Retina 坐标已用本地网页鼠标事件校准，CSS / Electron 调试标记确认顶部区域为 `drag`，但自动拖动未产生位置变化。`hiddenInset` 与无框窗口 A/B 均未获得通过证据；无框实验已回退，不把它描述为修复。
 - 系统原生标题栏对照在 CUA 读取阶段连续超时，未取得可比较结果；因此不能据此确认是 App 故障或工具限制。实际退出状态另以进程查询核对，未依赖 UI 工具缓存。
 - 用户人工验收反馈（2026-10-20）：当前新 App 的普通窗口顶部空白区“可以正常拖动”，此项通过。两个真实 ChatGPT 账号登录与切换的反馈为“稍后手动验收”，保持待验证；本地会话隔离测试不替代真实登录验收。
-- 旧源码 74 个文件再次 SHA-256 复核无变化。尚未提交或推送；本轮无发布、无覆盖旧 App、无其他平台实现。
+- Mac 阶段结束时，旧源码 74 个文件 SHA-256 复核无变化，未覆盖旧 App；当时尚未提交或推送。之后的 Android 与发布工作按下方追加授权推进。
 
 ## Android 与首次发布（2026-10-20 追加授权）
 
@@ -86,3 +86,15 @@
 - 清理/移除账号采用新档案与待删除队列，下一进程启动时删除旧档案，避免 Android 不允许删除已加载档案的限制；不触碰其他账号。
 - 验收：Android 编译、相关状态/导航测试、隔离集成与实际渲染（设备可用时）；发布前核对凭据排除、旧源码摘要、安装包摘要，推送后回读 commit/tag/release。真实账号登录与切换继续由用户稍后验收。
 - 环境：远端与本地基线均为 `df64b07661e645fc37fe9448346c3bf78bb8d15a`，已 fetch。GitHub 仓库现有可见性为 public，保持不变。JDK/SDK 在临时目录准备，初始无连接 Android 设备。
+- 已实现：原生账号/标签管理、独立 WebView Profile、同账号登录弹窗、重启恢复、清除后的档案轮换、撤销记录防止备份重新启用旧空间、文件选择、HTTPS 下载及摄像头/麦克风来源授权。Android 12+ 另显式排除云备份和设备迁移。
+- Android 最终应用源码：`0fbfccd3b9e6d7579e65438b5807976d4fcf8d45`；[构建与检查](https://github.com/ForceMind/ChatGPT/actions/runs/39408218670) 通过，5 项状态/导航测试通过、Lint 无错误、调试与未签名 release 构建成功。后续 CI 目录修正不改变应用源码。
+- APK 使用本机固定身份签名，校验通过（v3，最低 Android 9）；证书 SHA-256：`8b6eef928fded91f291ad954e20976b2cc6011b55e8cbec0152695fe1f05cf19`。当前 APK SHA-256：`fb7943017f42e7d915c00ce93b57fda6d194fad6cda295b257529da73d165ab2`。
+- 自动审批拒绝把私钥及密码写入 GitHub Secrets，理由为发布授权不覆盖签名凭据外传。已采用安全替代：CI 仅生成未签名 APK，本机完成签名；未上传私钥或设置对应 Secrets。密钥与密码位于被 Git 排除的 `android/.signing/` 和 `android/keystore.properties`，应由维护者离线备份。
+- 本机大附件上传曾发生 HTTP 408；发布草稿已建立。Mac 改由 Apple Silicon runner 构建与上传相同源码，发布前核对包内前端摘要。两种 Mac 构建使用相同应用版本，安装包文件摘要会因重新打包而不同，以 Release 的 `SHA256SUMS.txt` 为分发依据。
+- 模拟器启动曾因 AVD 目录不一致失败，已修正明确路径、设备定义检查、启动时限与日志。测试框架卸载调试 App 后导致截图失败，已在截图前重新安装。
+- [Android 设备流程](https://github.com/ForceMind/ChatGPT/actions/runs/39409542052) 通过：2 项隔离/损坏恢复测试，原生账号新增、切换、重启恢复，1080×2400 手机与 1600×2560 平板尺寸截图。环境为 Android 15 / API 35、WebView `124.0.6367.219`，不等于真机验收。
+- 查看截图后发现验收脚本未在键盘弹出后更新邮箱输入坐标，邮箱被输入账号名称；这是验收脚本错误。已改为读取当前控件位置，并严格检查名称和邮箱；仅界面流程重新验收，复用已通过的隔离结果。应用源码与签名 APK 未变。
+- [修正后的原生界面验收](https://github.com/ForceMind/ChatGPT/actions/runs/39410439551) 通过：严格校验 `Work` 名称、独立的 `work@example.test` 邮箱备注、账号切换与重启恢复；手机、账号菜单和平板截图保留于 `docs/images/android-*.png`。界面和隔离验证使用调试包；发布 APK 为同应用源码的 release 构建，经本机签名校验。真机与真实登录继续待验。
+- Android 截图中部分页面处于 Cloudflare 校验，另一空间出现未登录 ChatGPT 界面；不将这些截图当作真实登录通过。真实账号、第三方登录、语音与实际文件上传下载继续待验。
+- [Mac 云端打包](https://github.com/ForceMind/ChatGPT/actions/runs/39408599689) 通过：`codesign --verify --deep --strict`，包内 7 个前端文件与本机构建摘要一致。服务器端安装包摘要已回读匹配：DMG `45654422d523a1ccb465adbe02cbe18f0da323fda4bf7cdb9c99671b3cb70140`；ZIP `4819d4e4aba9c3c5e7130d1a5197801220e0a708584f8ef9e21c6f8ce3b24dd4`。
+- 分发版本：[v3.0.0-alpha.1](https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.1)，使用预发布渠道；附件包含 Mac DMG/ZIP、Android APK、`SHA256SUMS.txt`、`release-info.json` 与 `mac-release-info.json`。最终源码由同名 Git tag 固定；各包的构建源码和摘要由公开索引固定。仓库保持 public、`main` 更新，未覆盖旧应用，未实现其他平台或商店上架。
