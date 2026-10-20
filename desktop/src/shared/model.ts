@@ -1,4 +1,4 @@
-export const APP_VERSION = '3.0.0-alpha.1';
+export const APP_VERSION = '3.0.0-alpha.2';
 export const SHELL_HEIGHT = 46;
 export const HOME = 'https://chatgpt.com/';
 export const COLORS = ['#32745d', '#5275a0', '#9b6eab', '#bb8050', '#b05f73', '#667485'] as const;
@@ -6,7 +6,7 @@ export type Profile = { id: string; name: string; email: string; color: string; 
 export type Tab = { id: string; profileId: string; url: string; title: string; pinned: boolean };
 export type SavedState = { schema: 1; profiles: Profile[]; tabs: Tab[]; activeProfileId: string; sidebarOpen: boolean; closedTabs: Tab[]; bounds: { width: number; height: number; x?: number; y?: number } };
 export type TabStatus = { loading: boolean; error?: string; canGoBack: boolean; canGoForward: boolean; crashed?: boolean; url?: string };
-export type Snapshot = SavedState & { version: string; tabStatus: Record<string, TabStatus>; fullScreen: boolean; testMode: boolean; notice?: string; overlayImage?: string };
+export type Snapshot = SavedState & { version: string; platform: string; tabStatus: Record<string, TabStatus>; fullScreen: boolean; testMode: boolean; notice?: string; overlayImage?: string };
 export type Command =
   | { type: 'profile:add'; name: string; email: string; color: string }
   | { type: 'profile:edit'; id: string; name: string; email: string; color: string }

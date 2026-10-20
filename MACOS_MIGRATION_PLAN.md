@@ -98,3 +98,12 @@
 - Android 截图中部分页面处于 Cloudflare 校验，另一空间出现未登录 ChatGPT 界面；不将这些截图当作真实登录通过。真实账号、第三方登录、语音与实际文件上传下载继续待验。
 - [Mac 云端打包](https://github.com/ForceMind/ChatGPT/actions/runs/39408599689) 通过：`codesign --verify --deep --strict`，包内 7 个前端文件与本机构建摘要一致。服务器端安装包摘要已回读匹配：DMG `45654422d523a1ccb465adbe02cbe18f0da323fda4bf7cdb9c99671b3cb70140`；ZIP `4819d4e4aba9c3c5e7130d1a5197801220e0a708584f8ef9e21c6f8ce3b24dd4`。
 - 分发版本：[v3.0.0-alpha.1](https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.1)，使用预发布渠道；附件包含 Mac DMG/ZIP、Android APK、`SHA256SUMS.txt`、`release-info.json` 与 `mac-release-info.json`。最终源码由同名 Git tag 固定；各包的构建源码和摘要由公开索引固定。仓库保持 public、`main` 更新，未覆盖旧应用，未实现其他平台或商店上架。
+
+## Windows 首版（2026-10-20）
+
+- 用户已要求开始制作 Windows。基线 `main` / `origin/main` 为 `cadfc44f4e58851c3ca4bfea9c7ab8fa28134f09`，已 fetch 且工作区干净。沿用单智能体执行。
+- 本轮交付 `3.0.0-alpha.2` Windows x64 试用 EXE/ZIP；已有 Mac/Android `alpha.1` Release 保留。本轮不改动原 Release，不处理商店上架、Windows ARM64 或证书申请。
+- 涉及 `desktop/` 的平台窗口、原生菜单、快捷键、Windows 图标与打包入口，以及 Windows CI、README 和本记录。账号 schema/session 映射保持兼容，各设备不建设同步。
+- Windows 顶部使用原生最小化/最大化/关闭按钮与拖动区，控件为标题栏原生区域留空；F11 全屏，Ctrl 系列快捷键，账号菜单补充导航。保持白灰黑、无地址栏、打开即网页。
+- 验收：类型检查、既有状态测试；Windows Electron 存储隔离、弹窗与重启/清理流程，原生视图及标题栏安全区、代表性尺寸和窗口状态；实际渲染；EXE 安装/启动/卸载与保留账号目录。Mac 做必要回归，原始源码不变。
+- Windows 构建由本仓库 CI 执行，按已有仓库同步授权提交推送本次文件；最终安装包和摘要作为试用成果交付，未授权的公开新 Release 不在本轮自动执行。未配置 Authenticode 证书，试用包会明确标记未签名。真实账号由用户手动验收。

@@ -3,6 +3,8 @@ import { createServer, type Server } from 'node:http';
 import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import type { Snapshot } from '../src/shared/model';
 
 let server:Server,origin:string;
@@ -102,6 +104,12 @@ test('账号与标签交互、沙箱边界、窗口状态和代表性尺寸',asy
     const layout=await app.evaluate(({BrowserWindow})=>{const w=BrowserWindow.getAllWindows()[0],v=(w.contentView.children as Electron.WebContentsView[]).find(v=>v.getVisible())!;return{view:v.getBounds(),size:w.getContentSize()};});
     const headerBottom=await shell.getByLabel('客户端标题栏').evaluate(el=>el.getBoundingClientRect().bottom);
     expect(layout.view).toEqual({x:0,y:headerBottom,width:layout.size[0],height:layout.size[1]-headerBottom});
+    if(process.platform==='win32'){
+      expect((await state(shell)).platform).toBe('win32');
+      expect(await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].isMenuBarVisible())).toBe(false);
+      const safe=await shell.evaluate(()=>{const overlay=(navigator as Navigator & {windowControlsOverlay:{visible:boolean;getTitlebarAreaRect:()=>DOMRect}}).windowControlsOverlay;const rect=overlay.getTitlebarAreaRect();const account=document.querySelector('.current-account')!.getBoundingClientRect();return{visible:overlay.visible,right:rect.right,accountRight:account.right,traffic:getComputedStyle(document.querySelector('.traffic-space')!).display};});
+      expect(safe.visible).toBe(true);expect(safe.traffic).toBe('none');expect(safe.accountRight).toBeLessThanOrEqual(safe.right);
+    }
     await accounts(shell);await expect(shell.locator('.page-preview')).toBeVisible();expect((await state(shell)).overlayImage).toMatch(/^data:image\/png;base64,/);
     await shell.screenshot({path:info.outputPath('account-menu.png')});
     expect(readFileSync(path.join(dir,'state.json'),'utf8')).not.toContain('overlayImage');
@@ -109,5 +117,22 @@ test('账号与标签交互、沙箱边界、窗口状态和代表性尺寸',asy
     expect((await state(shell)).overlayImage).toBeUndefined();
     await menuAction(app,'toggle-fullscreen');await expect.poll(async()=>(await state(shell)).fullScreen).toBe(true);await menuAction(app,'toggle-fullscreen');await expect.poll(async()=>(await state(shell)).fullScreen).toBe(false);
     expect(errors).toEqual([]);
+  }finally{await app.close().catch(()=>{});}
+});
+
+test('Windows 原生拖动、窗口按钮安全区和窗口状态',async({},info)=>{
+  test.skip(process.platform!=='win32','Windows native input acceptance');
+  const dir=mkdtempSync(path.join(tmpdir(),'profiles-windows-'));const {app,shell}=await launch(dir);
+  try{
+    const rect=await shell.getByLabel('窗口拖动区域').boundingBox();expect(rect).not.toBeNull();
+    const handle=await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].getNativeWindowHandle().readBigUInt64LE().toString());
+    const {stdout}=await promisify(execFile)('powershell.exe',['-NoProfile','-ExecutionPolicy','Bypass','-File',path.resolve('scripts/check-windows-window.ps1'),'-Handle',handle,'-DragX',String(rect!.x+rect!.width/2),'-DragY',String(rect!.y+rect!.height/2),'-Screenshot',info.outputPath('windows-native.png')],{timeout:30000});
+    const evidence=JSON.parse(stdout.trim());writeFileSync(info.outputPath('windows-native-input.json'),JSON.stringify(evidence,null,2));
+    if(evidence.inputAvailable&&evidence.foreground)expect(evidence.passed,'Native pointer events must move the actual window; no SetWindowPos is used').toBe(true);
+    await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].maximize());await expect.poll(()=>app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].isMaximized())).toBe(true);
+    await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].unmaximize());await expect.poll(()=>app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].isMaximized())).toBe(false);
+    await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].minimize());await expect.poll(()=>app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].isMinimized())).toBe(true);
+    await app.evaluate(({BrowserWindow})=>{const w=BrowserWindow.getAllWindows()[0];w.restore();w.focus();});
+    await shell.screenshot({path:info.outputPath('windows-shell.png')});
   }finally{await app.close().catch(()=>{});}
 });

@@ -1,6 +1,6 @@
-# ChatGPT Profiles for macOS
+# ChatGPT Profiles Desktop
 
-版本：`3.0.0-alpha.1`。Electron `44.9.1`、React `19.3.1`、TypeScript。各设备独立使用，本版不需要自建服务。
+桌面开发版本：`3.0.0-alpha.2`（Windows 首版试用）；已公开的 Mac 安装包仍为 `3.0.0-alpha.1`。Electron `44.9.1`、React `19.3.1`、TypeScript。各设备独立使用，本版不需要自建服务。
 
 ## 使用
 
@@ -39,7 +39,8 @@ npm start
 ## 数据和恢复
 
 - 开发版：项目内 `.local-data/`。
-- 安装版：`~/Library/Application Support/ChatGPT Profiles/`。
+- Mac 安装版：`~/Library/Application Support/ChatGPT Profiles/`。
+- Windows 安装版及 ZIP：`%APPDATA%\ChatGPT Profiles\`。免安装 ZIP 仍使用该数据目录，不把登录数据写入程序文件夹。
 - `state.json`：账号备注、标签、窗口位置；`state.backup.json`：上一个有效状态。
 - `Partitions/profile-<UUID>/`：每账号独立持久浏览器数据。
 - 损坏主状态文件时，从有效备份恢复并保留损坏原件；主文件与备份均损坏时停止启动，避免静默清空账号。
@@ -74,3 +75,18 @@ npm run dist:mac
 - Electron 安全建议：https://www.electronjs.org/docs/latest/tutorial/security
 
 本轮依赖审计：生产依赖 0 个已报告漏洞；打包工具 `electron-builder` 的间接依赖链报告 8 个 moderate 告警，根项为 `sprintf-js` 格式化拒绝服务问题。打包工具不随 App 分发；未使用强制降级或放宽检查掩盖告警。
+
+## Windows 构建与使用
+
+目标为 Windows x64；Windows ARM64 暂不原生打包。顶部使用 Windows 原生窗口按钮，账号菜单为按钮区域留空，不显示地址栏。`Ctrl+T/W/Shift+T` 分别新建、关闭、恢复标签；`Ctrl+Shift+N` 添加账号，`Ctrl+B` 切换菜单，`F11` 全屏。按 `Alt` 可临时显示系统菜单。
+
+在 Windows x64、Node 26 环境执行：
+
+```sh
+npm ci
+npm run dist:win
+```
+
+输出在 `release/windows/`，含 EXE 安装包、ZIP、`windows-build-info.json` 与 `SHA256SUMS.txt`。安装包默认按当前用户安装，不要求管理员权限；ZIP 解压后运行 `ChatGPT Profiles.exe`。退出应用后可更新程序文件，保留账号数据目录。卸载默认保留账号数据；在应用内清除账号才会清除相应登录。
+
+当前未配置 Authenticode 证书，试用包未签名，SmartScreen 或组织策略可能拦截；请核对来源与摘要。CI 只验证本地 fixture 隔离、窗口、安装与卸载，不代表 Windows 10/11 真机与真实 ChatGPT 登录已经通过。最新检查及安装包入口见根目录进度记录。

@@ -1,8 +1,8 @@
 {
   "name": "chatgpt-profiles",
-  "version": "3.0.0-alpha.1",
+  "version": "3.0.0-alpha.2",
   "private": true,
-  "description": "A local-first macOS workspace for independent ChatGPT accounts",
+  "description": "Independent ChatGPT account workspaces for macOS and Windows",
   "author": "ForceMind",
   "main": "dist/main/main.cjs",
   "type": "module",
@@ -16,7 +16,8 @@
     "test": "node --import tsx --test tests/state.test.ts",
     "test:e2e": "npm run build && playwright test",
     "check": "npm run typecheck && npm test && npm run build",
-    "dist:mac": "npm run check && node scripts/icon.mjs && node scripts/package-mac.mjs"
+    "dist:mac": "npm run check && node scripts/icon.mjs && node scripts/package-mac.mjs",
+    "dist:win": "npm run check && node scripts/icon.mjs && node scripts/package-win.mjs"
   },
   "dependencies": {
     "react": "19.3.1",
@@ -39,8 +40,16 @@
     "appId": "com.forcemind.chatgpt.profiles",
     "productName": "ChatGPT Profiles",
     "artifactName": "${productName}-${version}-${arch}.${ext}",
-    "directories": { "output": "release", "buildResources": "assets" },
-    "files": ["dist/**/*", "package.json", "!**/._*", "!**/.DS_Store"],
+    "directories": {
+      "output": "release",
+      "buildResources": "assets"
+    },
+    "files": [
+      "dist/**/*",
+      "package.json",
+      "!**/._*",
+      "!**/.DS_Store"
+    ],
     "asar": true,
     "electronDist": "node_modules/electron/dist",
     "npmRebuild": false,
@@ -54,6 +63,41 @@
         "NSCameraUsageDescription": "允许 ChatGPT 网页在你选择时使用摄像头。"
       }
     },
-    "dmg": { "title": "ChatGPT Profiles", "window": { "width": 540, "height": 360 } }
+    "dmg": {
+      "title": "ChatGPT Profiles",
+      "window": {
+        "width": 540,
+        "height": 360
+      }
+    },
+    "win": {
+      "icon": "assets/icon.ico",
+      "artifactName": "ChatGPT-Profiles-${version}-windows-${arch}.${ext}",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "artifactName": "ChatGPT-Profiles-${version}-windows-${arch}-setup.${ext}",
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "deleteAppDataOnUninstall": false,
+      "runAfterFinish": false
+    }
   }
 }

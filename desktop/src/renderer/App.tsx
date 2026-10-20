@@ -85,7 +85,7 @@ function App() {
     }catch{setFormError('保存失败，请重试。');}finally{setBusy(false);}
   };
   const accountAction=async(type:'profile:clear'|'profile:remove',id:string)=>{setBusy(true);if(await send({type,id}))await closeEditor();setBusy(false);};
-  return <main className="workspace" style={style}>
+  return <main className="workspace" data-platform={state.platform} data-fullscreen={state.fullScreen} style={style}>
     <header className="titlebar" aria-label="客户端标题栏">
       <div className="traffic-space" aria-hidden="true"/>
       <div className="tabs" role="tablist" aria-label={`${profile.name}的标签页`}>
@@ -111,8 +111,17 @@ function App() {
           <span className="dot" style={{background:p.color}}/><span className="account-copy"><strong>{p.name}</strong><small>{p.email||'未填写邮箱备注'}</small></span>{p.id===profile.id&&<Icon name="check" size={14}/>}
         </button>)}</div>
         <div className="menu-separator"/>
-        <button className="menu-action" role="menuitem" onClick={()=>void openEditor({kind:'add'})}><Icon name="plus" size={15}/>添加账号<span>⌘⇧N</span></button>
+        <button className="menu-action" role="menuitem" onClick={()=>void openEditor({kind:'add'})}><Icon name="plus" size={15}/>添加账号<span>{state.platform==='darwin'?'⌘⇧N':'Ctrl+Shift+N'}</span></button>
         <button className="menu-action" role="menuitem" aria-label={'管理 '+profile.name} onClick={()=>void openEditor({kind:'edit',id:profile.id})}><Icon name="settings" size={15}/>管理当前账号</button>
+        {state.platform==='win32'&&<>
+          <div className="menu-separator"/>
+          <button className="menu-action" role="menuitem" onClick={async()=>{await closeAccounts();await send({type:'reload'});}}><Icon name="refresh" size={15}/>重新加载网页<span>Ctrl+R</span></button>
+          <button className="menu-action" role="menuitem" onClick={async()=>{await closeAccounts();await send({type:'back'});}}>后退<span>Ctrl+[</span></button>
+          <button className="menu-action" role="menuitem" onClick={async()=>{await closeAccounts();await send({type:'forward'});}}>前进<span>Ctrl+]</span></button>
+          <button className="menu-action" role="menuitem" onClick={async()=>{await closeAccounts();await send({type:'home'});}}>返回 ChatGPT 首页</button>
+          <button className="menu-action" role="menuitem" onClick={async()=>{await closeAccounts();await send({type:'tab:restore'});}}>恢复关闭的标签页<span>Ctrl+Shift+T</span></button>
+          <button className="menu-action" role="menuitem" onClick={async()=>{await closeAccounts();await send({type:'fullscreen'});}}>进入/退出全屏<span>F11</span></button>
+        </>}
         <div className="menu-foot">账号名称与邮箱为手动备注。<br/>每个账号拥有自己的登录状态和标签页。</div>
       </div>
     </div>}

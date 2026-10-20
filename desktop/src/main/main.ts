@@ -33,7 +33,7 @@ const permissionGrants = new Map<string, Set<string>>();
 const pendingProfiles = new Set<string>();
 const homepage = () => homeURL(fixtureOrigin);
 const activeProfile = () => { const s = store.read(); return s.profiles.find(p => p.id === s.activeProfileId)!; };
-const snapshot = (): Snapshot => ({ ...store.read(), version: APP_VERSION, fullScreen: win?.isFullScreen() ?? false, tabStatus: Object.fromEntries(status), testMode, notice: store.recoveryNotice, overlayImage });
+const snapshot = (): Snapshot => ({ ...store.read(), version: APP_VERSION, platform: process.platform, fullScreen: win?.isFullScreen() ?? false, tabStatus: Object.fromEntries(status), testMode, notice: store.recoveryNotice, overlayImage });
 function publish(): void { if (win && !win.isDestroyed()) win.webContents.send('profiles:state', snapshot()); }
 function notice(message: string): void { if (win && !win.isDestroyed()) win.webContents.send('profiles:shortcut', `notice:${message}`); }
 function report(error: unknown): void { notice(error instanceof Error ? error.message : '操作失败，请重试。'); }
@@ -273,7 +273,7 @@ function installMenu(): void {
   const action = (command: Command) => () => queueCommandInternal(() => dispatch(command));
   const tabStep = (delta: number) => () => { const p = activeProfile(), tabs = store.read().tabs.filter(t => t.profileId === p.id), i = tabs.findIndex(t => t.id === p.activeTabId); action({ type: 'tab:activate', id: tabs[(i+delta+tabs.length)%tabs.length].id })(); };
   const template: Electron.MenuItemConstructorOptions[] = [
-    { label: 'ChatGPT Profiles', submenu: [{ role: 'about', label: '关于 ChatGPT Profiles' }, { type: 'separator' }, { role: 'services', label: '服务' }, { role: 'hide', label: '隐藏' }, { role: 'hideOthers', label: '隐藏其他' }, { role: 'unhide', label: '显示全部' }, { type: 'separator' }, { role: 'quit', label: '退出' }] },
+    { label: 'ChatGPT Profiles', submenu: [{ role: 'about', label: '关于 ChatGPT Profiles' }, ...(process.platform === 'darwin' ? [{ type: 'separator' as const }, { role: 'services' as const, label: '服务' }, { role: 'hide' as const, label: '隐藏' }, { role: 'hideOthers' as const, label: '隐藏其他' }, { role: 'unhide' as const, label: '显示全部' }] : []), { type: 'separator' }, { role: 'quit', label: '退出' }] },
     { label: '文件', submenu: [{ label: '新建标签页', accelerator: 'CmdOrCtrl+T', click: action({type:'tab:new'}) }, { label: '恢复关闭的标签页', accelerator: 'CmdOrCtrl+Shift+T', click: action({type:'tab:restore'}) }, { label: '添加账号', accelerator: 'CmdOrCtrl+Shift+N', click: () => win?.webContents.send('profiles:shortcut','add-profile') }, { type:'separator' }, { label:'关闭标签页', accelerator:'CmdOrCtrl+W', click: () => { const focused=BrowserWindow.getFocusedWindow(); if(focused&&focused!==win) focused.close(); else action({type:'tab:close',id:activeProfile().activeTabId})(); } }, { role:'close', label:'关闭窗口', accelerator:'CmdOrCtrl+Shift+W' }] },
     { label: '编辑', submenu: [{role:'undo',label:'撤销'},{role:'redo',label:'重做'},{type:'separator'},{role:'cut',label:'剪切'},{role:'copy',label:'复制'},{role:'paste',label:'粘贴'},{role:'selectAll',label:'全选'}] },
     { label: '显示', submenu: [
@@ -281,13 +281,13 @@ function installMenu(): void {
       {label:'后退',accelerator:'CmdOrCtrl+[',click:action({type:'back'})},{label:'前进',accelerator:'CmdOrCtrl+]',click:action({type:'forward'})},
       {label:'返回 ChatGPT 首页',click:action({type:'home'})},{label:'在系统浏览器打开',click:action({type:'external'})},{type:'separator'},
       {id:'toggle-accounts',label:'切换账号',accelerator:'CmdOrCtrl+B',click:()=>win?.webContents.send('profiles:shortcut','toggle-accounts')},
-      {id:'toggle-fullscreen',label:'进入/退出全屏',accelerator:'Ctrl+Cmd+F',click:action({type:'fullscreen'})},
+      {id:'toggle-fullscreen',label:'进入/退出全屏',accelerator:process.platform==='darwin'?'Ctrl+Cmd+F':'F11',click:action({type:'fullscreen'})},
       {label:'实际大小',accelerator:'CmdOrCtrl+0',click:()=>activeContents()?.setZoomFactor(1)},
       {label:'放大网页',accelerator:'CmdOrCtrl+Plus',click:()=>{const c=activeContents();if(c)c.setZoomFactor(Math.min(2,c.getZoomFactor()+0.1));}},
       {label:'缩小网页',accelerator:'CmdOrCtrl+-',click:()=>{const c=activeContents();if(c)c.setZoomFactor(Math.max(0.5,c.getZoomFactor()-0.1));}}
     ] },
     { label: '标签页', submenu: [{id:'pin-current-tab',label:'固定/取消固定当前标签',click:()=>action({type:'tab:pin',id:activeProfile().activeTabId})()},{id:'restore-tab',label:'恢复关闭的标签页',click:action({type:'tab:restore'})},{type:'separator'}, {label:'下一个标签页',accelerator:'Ctrl+Tab',click:tabStep(1)},{label:'上一个标签页',accelerator:'Ctrl+Shift+Tab',click:tabStep(-1)}, ...Array.from({length:9},(_,i)=>({label:`切换标签 ${i+1}`,accelerator:`CmdOrCtrl+${i+1}`,click:()=>{const tabs=store.read().tabs.filter(t=>t.profileId===activeProfile().id),t=tabs[i===8?tabs.length-1:i];if(t)action({type:'tab:activate',id:t.id})();}}))] },
-    { label:'窗口',submenu:[{role:'minimize',label:'最小化'},{label:'缩放窗口',click:action({type:'maximize'})},{role:'front',label:'前置全部窗口'}] }
+    { label:'窗口',submenu:[{role:'minimize',label:'最小化'},{label:'缩放窗口',click:action({type:'maximize'})},...(process.platform==='darwin'?[{role:'front' as const,label:'前置全部窗口'}]:[])] }
   ];
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 }
@@ -306,7 +306,11 @@ function registerProtocol(): void {
 function createWindow(): void {
   const b = store.read().bounds;
   const onScreen = screen.getAllDisplays().some(d => b.x !== undefined && b.y !== undefined && b.x+Math.min(b.width,200)>d.workArea.x && b.x<d.workArea.x+d.workArea.width && b.y+40>d.workArea.y && b.y<d.workArea.y+d.workArea.height);
-  win = new BrowserWindow({ ...b, ...(!onScreen ? {x:undefined,y:undefined} : {}), minWidth:800,minHeight:600,movable:true,title:'ChatGPT Profiles',titleBarStyle:'hiddenInset',trafficLightPosition:{x:18,y:17},backgroundColor:'#ffffff',show:false,webPreferences:{preload:path.join(__dirname,'preload.cjs'),sandbox:true,contextIsolation:true,nodeIntegration:false,webSecurity:true} });
+  const chrome: Electron.BrowserWindowConstructorOptions = process.platform === 'win32'
+    ? { titleBarStyle:'hidden', titleBarOverlay:{color:'#f8f8f8',symbolColor:'#171717',height:SHELL_HEIGHT},autoHideMenuBar:true,icon:path.join(__dirname,'icon.png') }
+    : { titleBarStyle:'hiddenInset',trafficLightPosition:{x:18,y:17} };
+  win = new BrowserWindow({ ...b, ...(!onScreen ? {x:undefined,y:undefined} : {}), ...chrome, minWidth:800,minHeight:600,movable:true,title:'ChatGPT Profiles',backgroundColor:'#ffffff',show:false,webPreferences:{preload:path.join(__dirname,'preload.cjs'),sandbox:true,contextIsolation:true,nodeIntegration:false,webSecurity:true} });
+  if (process.platform === 'win32') win.setMenuBarVisibility(false);
   win.webContents.setWindowOpenHandler(()=>({action:'deny'}));
   win.webContents.on('will-navigate',event=>event.preventDefault());
   win.on('resize',()=>{layout();clearTimeout(boundsTimer);boundsTimer=setTimeout(()=>{try{saveBounds();}catch(error){report(error);}},250);});

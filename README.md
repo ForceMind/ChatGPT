@@ -4,7 +4,7 @@
 
 ChatGPT Profiles 是一个非官方 ChatGPT 网页客户端。它保留网页本身的使用体验，在顶部增加轻量的账号与标签管理：白色、浅灰、黑色控件，没有地址栏，账号只用小色点辅助区分。
 
-当前版本：**3.0.0-alpha.1**。提供 macOS 安装包与 Android 首版签名 APK。真实账号登录与切换仍待人工验收，不能将存储隔离测试等同于所有登录方式都已通过。
+当前版本：**3.0.0-alpha.1**。提供 macOS 安装包与 Android 首版签名 APK。Windows x64 正在制作 `3.0.0-alpha.2` 试用构建。真实账号登录与切换仍待人工验收，不能将存储隔离测试等同于所有登录方式都已通过。
 
 ![macOS 沉浸式界面](docs/images/macos-immersive.jpg)
 
@@ -16,7 +16,8 @@ ChatGPT Profiles 是一个非官方 ChatGPT 网页客户端。它保留网页本
 | --- | --- | --- |
 | macOS · Apple Silicon | [DMG](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.1/ChatGPT-Profiles-3.0.0-alpha.1-mac-arm64.dmg) · [ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.1/ChatGPT-Profiles-3.0.0-alpha.1-mac-arm64.zip) | macOS 13+，当前在 macOS 26.2 / ARM64 验证 |
 | Android · 手机 / 平板 | [APK](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.1/ChatGPT-Profiles-3.0.0-alpha.1-android.apk) | Android 9+，并要求系统 WebView 支持多档案 |
-| Intel Mac、Windows、Linux | 暂无 | 后续适配与实机验收 |
+| Windows · x64 | 试用包构建中 | EXE 安装包与免安装 ZIP，待 Windows 验证 |
+| Intel Mac、Linux | 暂无 | 后续适配与实机验收 |
 | iPhone / iPad | 暂无 | 后续验证独立 WKWebView 数据空间 |
 
 macOS：打开 DMG，将应用拖入“应用程序”后启动。当前构建使用 ad-hoc 签名，**尚未经过 Developer ID 签名和 Apple 公证**。若首次打开被拦截，确认来源与摘要后，可在“系统设置 → 隐私与安全性”中选择“仍要打开”，参见 [Apple 官方说明](https://support.apple.com/zh-cn/102445)。新版与旧版应用的数据分开，不会自动带入旧登录。
