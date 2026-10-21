@@ -10,9 +10,10 @@ export function Workbench({ state, close, panel, notice }: {state:Snapshot;close
   useEffect(()=>{
     if(!root.current||!state.panel)return;
     const profile=state.profiles.find(p=>p.id===state.activeProfileId)!;
-    controller.current=new WorkbenchUI(root.current,window.profiles.workbench,profile,state.profiles,state.panel,{close:()=>callbacks.current.close(),panel:p=>callbacks.current.panel(p),notice:text=>callbacks.current.notice(text)});
+    controller.current=new WorkbenchUI(root.current,window.profiles.workbench,profile,state.profiles,state.panel,{close:()=>callbacks.current.close(),panel:p=>callbacks.current.panel(p),notice:text=>callbacks.current.notice(text),persist:(profileId,value,epoch)=>window.profiles.saveWorkbench(profileId,value,epoch)});
+    const checkpoint=(event:Event)=>{const detail=(event as CustomEvent<{pending:Promise<unknown>[]}>).detail;if(detail?.pending)detail.pending.push(controller.current?.flushView()||Promise.resolve());};window.addEventListener('profiles:checkpoint',checkpoint);
     const closeTop=()=>controller.current?.closeTop();window.addEventListener('workbench-close',closeTop);
-    return()=>{window.removeEventListener('workbench-close',closeTop);controller.current?.dispose();controller.current=undefined;};
+    return()=>{window.removeEventListener('profiles:checkpoint',checkpoint);window.removeEventListener('workbench-close',closeTop);controller.current?.dispose();controller.current=undefined;};
   },[]);
   const profileSignature=state.profiles.map(p=>`${p.id}:${p.name}:${p.color}`).join('|');
   useEffect(()=>{const profile=state.profiles.find(p=>p.id===state.activeProfileId)!;if(state.panel)controller.current?.update(profile,state.profiles,state.panel);},[state.activeProfileId,profileSignature,state.panel]);

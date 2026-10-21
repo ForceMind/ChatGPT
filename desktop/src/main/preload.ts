@@ -5,6 +5,7 @@ const bridge: Bridge = {
   command: (command: Command) => ipcRenderer.invoke('profiles:command', command),
   subscribe: handler => { const listener = (_event: unknown, state: Snapshot) => handler(state); ipcRenderer.on('profiles:state', listener); return () => ipcRenderer.removeListener('profiles:state', listener); },
   onShortcut: handler => { const listener = (_event: unknown, key: string) => handler(key); ipcRenderer.on('profiles:shortcut', listener); return () => ipcRenderer.removeListener('profiles:shortcut', listener); },
+  saveWorkbench:(profileId,state,epoch)=>ipcRenderer.invoke('profiles:workbench-view',profileId,state,epoch??0),
   diagnostics: {
     list:()=>ipcRenderer.invoke('login-links:list'),
     clear:()=>ipcRenderer.invoke('login-links:clear'),

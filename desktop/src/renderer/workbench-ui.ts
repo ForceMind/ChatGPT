@@ -1,3 +1,4 @@
+import type {WorkbenchViewState} from '../shared/recovery';
 import template from './workbench-template.html?raw';
 import type { Profile } from '../shared/model';
 import type { AssetAction, AssetItem, AssetPreview, WorkbenchAPI, WorkbenchPanel, ConversionOptions } from '../shared/workbench';
@@ -14,7 +15,7 @@ const statusName: Record<string,string> = {ready:'可用',downloading:'下载中
 const filters = [{id:'all',name:'全部资产',icon:'grid'},{id:'image',name:'图片',icon:'image'},{id:'web',name:'网页',icon:'web'},{id:'document',name:'文档',icon:'document'},{id:'data',name:'数据与代码',icon:'code'},{id:'favorite',name:'收藏',icon:'star'},{id:'converted',name:'最近转换',icon:'convert'},{id:'trash',name:'回收站',icon:'trash'}];
 function selectors(value: string): string { return value.replace(/#([a-zA-Z][\w-]*)/g,'#wb-$1').replace(/\.([a-zA-Z][\w-]*)/g,'.aw-$1'); }
 function message(error: unknown): string { return (error instanceof Error?error.message:'操作失败，请重试').replace(/^Error invoking remote method '[^']+':\s*(Error:\s*)?/,''); }
-type ViewOptions = {close:()=>void;panel:(panel:WorkbenchPanel)=>void;notice:(text:string)=>void};
+type ViewOptions = {close:()=>void;panel:(panel:WorkbenchPanel)=>void;notice:(text:string)=>void;persist:(profileId:string,state:WorkbenchViewState,epoch:number)=>Promise<void>};
 
 export class WorkbenchUI {
   private assets: AssetItem[] = [];
@@ -32,6 +33,14 @@ export class WorkbenchUI {
   private jobs:HandoffJob[]=[];private jobView?:'list'|'detail';private currentJob?:string;private submitting=false;private taskRequestId='';private unsubscribeJobs:()=>void;
   private modalVersion=0;
   private detailSignature='';
+  private savedViews=new Map<string,WorkbenchViewState>();private viewTimer?:ReturnType<typeof setTimeout>;private restoringPreview?:string;private assetScroll=0;private libraryScroll=0;
+  private scroller(kind='assets'):HTMLElement|null{return this.root.querySelector(kind==='assets'?'.aw-asset-scroll':'.aw-capability-scroll');}
+  private captureView():WorkbenchViewState{if(this.panel==='assets')this.assetScroll=this.scroller()?.scrollTop||0;else this.libraryScroll=this.scroller('library')?.scrollTop||0;return{filter:this.filter,query:this.query.slice(0,300),sort:this.sort as WorkbenchViewState['sort'],layout:this.layout as WorkbenchViewState['layout'],selected:this.selected,libraryKind:this.libraryKind,libraryFilter:this.libraryFilter,libraryQuery:this.libraryQuery.slice(0,300),librarySelected:this.librarySelected,favoritesOnly:this.favoritesOnly,preview:this.previewAsset?.id,scroll:this.assetScroll,libraryScroll:this.libraryScroll};}
+  flushView():Promise<void>{clearTimeout(this.viewTimer);const state=this.captureView();this.savedViews.set(this.profile.id,state);return this.options.persist(this.profile.id,state,this.profile.recoveryEpoch||0);}
+  private readonly scheduleView=():void=>{clearTimeout(this.viewTimer);this.viewTimer=setTimeout(()=>{void this.flushView().catch(error=>this.notify(error));},300);};
+  private restoreView(profile:Profile):void{const v=this.savedViews.get(profile.id)||profile.workspace?.workbench;this.filter=v?.filter||'all';this.query=v?.query||'';this.sort=v?.sort||'recent';this.layout=v?.layout||'grid';this.selected=v?.selected;this.explicitSelection=!!v?.selected;this.libraryKind=v?.libraryKind||'skills';this.libraryFilter=v?.libraryFilter||'all';this.libraryQuery=v?.libraryQuery||'';this.librarySelected=v?.librarySelected;this.favoritesOnly=!!v?.favoritesOnly;this.restoringPreview=v?.preview;this.assetScroll=v?.scroll||0;this.libraryScroll=v?.libraryScroll||0;this.$<HTMLInputElement>('#asset-search').value=this.query;this.$<HTMLSelectElement>('#asset-sort').value=this.sort;this.$<HTMLInputElement>('#capability-search').value=this.libraryQuery;}
+  private restoreScroll():void{const asset=this.scroller(),library=this.scroller('library');if(asset)asset.scrollTop=this.assetScroll;if(library)library.scrollTop=this.libraryScroll;}
+
   constructor(private readonly root:HTMLElement,private readonly api:WorkbenchAPI,profile:Profile,profiles:Profile[],panel:WorkbenchPanel,private readonly options:ViewOptions){
     this.profile=profile;this.profiles=profiles;this.panel=panel;root.innerHTML=template;
     root.querySelectorAll<HTMLElement>('[data-icon]').forEach(e=>e.innerHTML=icon(e.dataset.icon!));
@@ -43,23 +52,25 @@ export class WorkbenchUI {
     root.querySelectorAll('.aw-sidebar-bottom').forEach(e=>e.insertAdjacentHTML('afterbegin','<button class="aw-sidebar-action" data-action="handoff-history">'+icon('document')+'任务记录</button>'));
     this.unsubscribeJobs=api.subscribeHandoffs(()=>void this.refreshJobs());
     this.unsubscribe=api.subscribe(id=>{if(id===this.profile.id)void this.reload();});
+    this.restoreView(profile);for(const event of ['input','change','click','scroll'])root.addEventListener(event,this.scheduleView,true);
     this.update(profile,profiles,panel);void this.refreshJobs();void this.reload();void this.loadCatalog();
   }
   private $<T extends HTMLElement=HTMLElement>(selector:string):T { const node=this.root.querySelector<T>(selectors(selector));if(!node)throw new Error('工作台界面不完整：'+selector);return node; }
   private html(selector:string,value:string):void { this.$(selector).innerHTML=value.replace(/class="([^"]*)"/g,(_all,names:string)=>`class="${classes(names)}"`); }
   private notify(error:unknown):void { this.options.notice(typeof error==='string'?error:message(error)); }
   update(profile:Profile,profiles:Profile[],panel:WorkbenchPanel):void {
-    const changed=profile.id!==this.profile.id;const oldPanel=this.panel;this.profile=profile;this.profiles=profiles;this.panel=panel;
-    if(changed){this.generation++;this.previewGeneration++;this.assets=[];this.selected=undefined;this.checked.clear();this.query='';this.filter='all';this.explicitSelection=false;this.closeModal();this.jobs=[];void this.refreshJobs();this.$<HTMLInputElement>('#asset-search').value='';void this.reload();}
+    const changed=profile.id!==this.profile.id;const oldPanel=this.panel;if(changed||oldPanel!==panel)void this.flushView().catch(error=>this.notify(error));this.profile=profile;this.profiles=profiles;this.panel=panel;
+    if(changed){this.generation++;this.previewGeneration++;this.assets=[];this.selected=undefined;this.checked.clear();this.closeModal();this.restoreView(profile);this.jobs=[];void this.refreshJobs();this.$<HTMLInputElement>('#asset-search').value=this.query;void this.reload();}
     if(oldPanel!==panel){this.closeModal();if(oldPanel==='assets'){this.previewGeneration++;this.detailSignature='';this.$('#asset-grid').innerHTML='';this.$('#asset-detail').innerHTML='';}}
     this.$('#workbench').hidden=panel!=='assets';this.$('#capability-page').hidden=panel==='assets';
     this.$('#sidebar-account').textContent=profile.name+'的本机文件';
     if(panel==='assets'){if(changed||oldPanel!==panel||!this.loaded)this.renderAssets();}
     else { if(this.libraryKind!==panel){this.libraryFilter='all';this.libraryQuery='';this.librarySelected=undefined;this.$<HTMLInputElement>('#capability-search').value='';}this.libraryKind=panel;this.renderLibrary(); }
+    this.restoreScroll();
   }
   private async reload():Promise<void>{
     const ticket=++this.generation,profile=this.profile.id;
-    try{const assets=await this.api.assets(profile);if(this.disposed||ticket!==this.generation||profile!==this.profile.id)return;this.assets=assets;this.loaded=true;if(this.panel==='assets')this.renderAssets();}
+    try{const assets=await this.api.assets(profile);if(this.disposed||ticket!==this.generation||profile!==this.profile.id)return;this.assets=assets;this.loaded=true;if(this.panel==='assets'){this.renderAssets();this.restoreScroll();const preview=this.assets.find(a=>a.id===this.restoringPreview&&a.status==='ready'&&!a.trashedAt);this.restoringPreview=undefined;if(preview)void this.preview(preview);}}
     catch(error){if(this.disposed||ticket!==this.generation||profile!==this.profile.id)return;this.html('#asset-grid',`<div class="error-state"><h3>资产库暂时无法读取</h3><p>${esc(message(error))}</p><button class="secondary" data-action="reload-assets">重试</button><button class="secondary" data-action="asset-folder">打开资产目录</button></div>`);this.html('#asset-detail','<div class="empty-detail">文件与索引会保留，不会自动清空。</div>');}
   }
   private async loadCatalog():Promise<void>{try{const result=await this.api.capabilities();if(this.disposed)return;this.catalog=result;this.capabilityFavorites=new Set(result.favorites||[]);this.renderLibrary();}catch(error){if(!this.disposed)this.html('#capability-grid',`<div class="error-state"><h3>能力库暂时无法读取</h3><p>${esc(message(error))}</p><button class="secondary" data-action="reload-catalog">重试</button></div>`);}}
@@ -106,14 +117,15 @@ export class WorkbenchUI {
       this.$('.modal').classList.add('aw-preview-modal');
       if(source){const version=this.modalVersion,text=await this.api.readText(profile,asset.id);if(!this.disposed&&profile===this.profile.id&&version===this.modalVersion)this.html('#viewer',`<pre>${esc(text)}</pre>`);return;}
       await this.renderPreview(data,asset);
-    }catch(error){this.notify(error);}
+    }catch(error){if(!this.disposed&&profile===this.profile.id)this.notify(error);}
   }
   private async renderPreview(data:AssetPreview,asset:AssetItem):Promise<void>{
+    const viewer=this.$('#viewer'),profile=this.profile.id,version=this.modalVersion;const current=()=>!this.disposed&&viewer.isConnected&&this.profile.id===profile&&this.modalVersion===version;
     if(data.mode==='image'){this.html('#viewer',`<img src="${esc(data.url)}" alt="${esc(asset.name)}">`);return;}
     if(data.mode==='html'){this.html('#viewer',`<iframe sandbox="allow-scripts" title="${esc(asset.name)}" src="${esc(data.url)}"></iframe>`);return;}
-    if(data.mode==='pdf'){this.html('#viewer','<div class="empty-detail">正在读取 PDF…</div>');const {mountPDF}=await import('./workbench-pdf');await mountPDF(this.$('#viewer'),data.url!);return;}
-    if(data.mode==='markdown'){const {markdownHTML}=await import('../shared/formats');this.html('#viewer','<iframe sandbox="" title="Markdown 阅读视图"></iframe>');this.$('#viewer').querySelector('iframe')!.srcdoc=markdownHTML(data.text||'');return;}
-    if(data.mode==='table'){const {csvRows}=await import('../shared/formats');try{const rows=csvRows(data.text||'');this.html('#viewer','<table>'+rows.slice(0,501).map((row,i)=>'<tr>'+row.map(cell=>`<${i?'td':'th'}>${esc(cell)}</${i?'td':'th'}>`).join('')+'</tr>').join('')+'</table>');if(rows.length>501)this.notify('表格预览显示前 500 行，原文件完整保留。');}catch{this.html('#viewer',`<pre>${esc(data.text)}</pre>`);this.notify('CSV 结构不一致，已显示原文。');}return;}
+    if(data.mode==='pdf'){this.html('#viewer','<div class="empty-detail">正在读取 PDF…</div>');const {mountPDF}=await import('./workbench-pdf');if(!current())return;await mountPDF(viewer,data.url!);return;}
+    if(data.mode==='markdown'){const {markdownHTML}=await import('../shared/formats');if(!current())return;this.html('#viewer','<iframe sandbox="" title="Markdown 阅读视图"></iframe>');this.$('#viewer').querySelector('iframe')!.srcdoc=markdownHTML(data.text||'');return;}
+    if(data.mode==='table'){const {csvRows}=await import('../shared/formats');if(!current())return;try{const rows=csvRows(data.text||'');this.html('#viewer','<table>'+rows.slice(0,501).map((row,i)=>'<tr>'+row.map(cell=>`<${i?'td':'th'}>${esc(cell)}</${i?'td':'th'}>`).join('')+'</tr>').join('')+'</table>');if(rows.length>501)this.notify('表格预览显示前 500 行，原文件完整保留。');}catch{this.html('#viewer',`<pre>${esc(data.text)}</pre>`);this.notify('CSV 结构不一致，已显示原文。');}return;}
     if(data.mode==='unsupported'){this.html('#viewer','<div class="empty-detail">该格式支持保存、整理、另存为和交给 GPT。<br>暂不支持在 App 内预览。</div>');return;}
     this.html('#viewer',`<pre>${esc(data.text)}</pre>`);
   }
@@ -251,5 +263,5 @@ export class WorkbenchUI {
   private readonly dragleave=(event:DragEvent):void=>{if(!event.relatedTarget||!this.root.contains(event.relatedTarget as Node))this.$('.asset-main').classList.remove('aw-drop-target');};
   private readonly drop=(event:DragEvent):void=>{if(!event.dataTransfer?.files.length)return;event.preventDefault();this.$('.asset-main').classList.remove('aw-drop-target');const profile=this.profile.id;void this.api.importDropped(profile,[...event.dataTransfer.files]).then(()=>{if(profile===this.profile.id)return this.reload();}).catch(error=>this.notify(error));};
   closeTop():void {if(this.$('#modal-root').children.length)this.closeModal();else this.options.close();}
-  dispose():void {this.disposed=true;this.generation++;this.previewGeneration++;this.unsubscribe();this.unsubscribeJobs();this.root.removeEventListener('click',this.click);this.root.removeEventListener('keydown',this.keydown);this.root.removeEventListener('dblclick',this.doubleClick);this.root.removeEventListener('dragover',this.dragover);this.root.removeEventListener('dragleave',this.dragleave);this.root.removeEventListener('drop',this.drop);this.root.innerHTML='';}
+  dispose():void {void this.flushView().catch(()=>{});for(const event of ['input','change','click','scroll'])this.root.removeEventListener(event,this.scheduleView,true);this.disposed=true;this.generation++;this.previewGeneration++;this.unsubscribe();this.unsubscribeJobs();this.root.removeEventListener('click',this.click);this.root.removeEventListener('keydown',this.keydown);this.root.removeEventListener('dblclick',this.doubleClick);this.root.removeEventListener('dragover',this.dragover);this.root.removeEventListener('dragleave',this.dragleave);this.root.removeEventListener('drop',this.drop);this.root.innerHTML='';}
 }

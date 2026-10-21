@@ -115,7 +115,7 @@ test('账号与标签交互、沙箱边界、窗口状态和代表性尺寸',asy
     await accounts(shell);await expect(shell.locator('.page-preview')).toBeVisible();expect((await state(shell)).overlayImage).toMatch(/^data:image\/png;base64,/);
     await shell.screenshot({path:info.outputPath('account-menu.png')});
     expect(readFileSync(path.join(dir,'state.json'),'utf8')).not.toContain('overlayImage');
-    await shell.getByRole('menu').press('Escape');await expect(shell.getByRole('menu')).toHaveCount(0);await expect(shell.getByRole('button',{name:'切换账号',exact:true})).toBeFocused();
+    await app.evaluate(({app,BrowserWindow})=>{app.focus({steal:true});BrowserWindow.getAllWindows().find(w=>w.webContents.getURL()==='app://shell/index.html')!.focus();});await shell.getByRole('menu').press('Escape');await expect(shell.getByRole('menu')).toHaveCount(0);await expect.poll(()=>remote(app,'document.hasFocus()')).toBe(true);await expect(shell.getByRole('button',{name:'切换账号',exact:true})).not.toBeFocused();
     expect((await state(shell)).overlayImage).toBeUndefined();
     await menuAction(app,'toggle-fullscreen');await expect.poll(async()=>(await state(shell)).fullScreen).toBe(true);await menuAction(app,'toggle-fullscreen');await expect.poll(async()=>(await state(shell)).fullScreen).toBe(false);
     expect(errors).toEqual([]);

@@ -35,9 +35,9 @@ function App() {
   },[showToast]);
   const openEditor = useCallback(async(value:Editor)=>{if(await send({type:'overlay',open:true})){menuRef.current=false;setMenuOpen(false);setFormError('');setEditor(value);}},[send]);
   const closeEditor = useCallback(async()=>{setEditor(undefined);setFormError('');await send({type:'overlay',open:false});},[send]);
-  const closeDiagnostics=useCallback(async()=>{setDiagnosticsOpen(false);await send({type:'overlay',open:false});accountButton.current?.focus();},[send]);
+  const closeDiagnostics=useCallback(async()=>{setDiagnosticsOpen(false);await send({type:'overlay',open:false});},[send]);
   const openDiagnostics=useCallback(async()=>{if(await send({type:'overlay',open:true})){menuRef.current=false;setMenuOpen(false);setEditor(undefined);setDiagnosticsOpen(true);}},[send]);
-  const closeAccounts = useCallback(async()=>{menuRef.current=false;setMenuOpen(false);await send({type:'overlay',open:false});accountButton.current?.focus();},[send]);
+  const closeAccounts = useCallback(async()=>{menuRef.current=false;setMenuOpen(false);await send({type:'overlay',open:false});},[send]);
   const toggleAccounts = useCallback(async()=>{if(menuRef.current){await closeAccounts();return;}if(await send({type:'overlay',open:true})){setEditor(undefined);menuRef.current=true;setMenuOpen(true);}},[send,closeAccounts]);
   useEffect(()=>{
     if(!menuOpen)return;

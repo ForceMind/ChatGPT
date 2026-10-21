@@ -1,3 +1,4 @@
+import {validWorkspace} from '../shared/recovery';
 import { DEFAULT_LANGUAGE,validBrowserLanguage,validTimeZone } from '../shared/profile-preferences';
 import { randomUUID } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync, openSync, fsyncSync, closeSync } from 'node:fs';
@@ -26,15 +27,19 @@ export function validateState(raw: unknown, fixtureOrigin?: string): SavedState 
   for (const p of profiles) {
     if (!object(p) || !uuid(p.id) || ids.has(p.id) || !validLabel(p.name, 40, true) || !validLabel(p.email, 120) || !(COLORS as readonly string[]).includes(p.color) || !uuid(p.activeTabId) || !Number.isFinite(p.createdAt)) return fail();
     if((p.language!==undefined&&!validBrowserLanguage(p.language))||(p.timeZone!==undefined&&!validTimeZone(p.timeZone)))return fail();
+    if(p.recoveryEpoch!==undefined&&(!Number.isSafeInteger(p.recoveryEpoch)||p.recoveryEpoch<0))return fail();
+    if(p.workspace!==undefined&&!validWorkspace(p.workspace))return fail();
     ids.add(p.id);
   }
   if (!ids.has(raw.activeProfileId as string)) return fail();
   const tabIds = new Set<string>();
   for (const t of [...tabs, ...closedTabs]) {
     if (!object(t) || !uuid(t.id) || tabIds.has(t.id) || !ids.has(t.profileId) || !validLabel(t.title, 240) || !isAllowedURL(t.url, fixtureOrigin) || typeof t.pinned !== 'boolean') return fail();
+    if(t.loaded!==undefined&&typeof t.loaded!=='boolean'||t.closedPosition!==undefined&&(!Number.isSafeInteger(t.closedPosition)||t.closedPosition<0||t.closedPosition>MAX_TABS))return fail();
     tabIds.add(t.id);
   }
   for (const p of profiles) if (!tabs.some(t => t.id === p.activeTabId && t.profileId === p.id)) return fail();
+  if(raw.windowMode!==undefined&&(!object(raw.windowMode)||typeof raw.windowMode.maximized!=='boolean'||typeof raw.windowMode.fullscreen!=='boolean'))return fail();
   const b = raw.bounds;
   if (typeof b.width !== 'number' || typeof b.height !== 'number' || !Number.isFinite(b.width) || !Number.isFinite(b.height) || b.width < 700 || b.height < 480 || b.width > 10000 || b.height > 10000) return fail();
   for (const key of ['x', 'y']) if (b[key] !== undefined && (typeof b[key] !== 'number' || !Number.isFinite(b[key]))) return fail();
