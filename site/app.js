@@ -8,9 +8,9 @@ const platforms = {
     height: 728,
   },
   macos: {
-    image: "macos-immersive.jpg",
-    caption: "macOS · 客户端实际截图 / 沉浸式网页",
-    alt: "macOS 客户端实际截图：ChatGPT 网页与顶部标签及账号菜单，没有地址栏。",
+    image: "macos-window.jpg",
+    caption: "macOS · 普通窗口实际截图 / 未登录 ChatGPT",
+    alt: "macOS 客户端普通窗口实际截图：原生窗口按钮、未登录 ChatGPT、顶部标签与账号菜单，没有地址栏或远程控制标记。",
     width: 2720,
     height: 1800,
   },
