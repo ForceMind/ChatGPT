@@ -4,12 +4,14 @@ import { COLORS, SHELL_HEIGHT, type Bridge, type Command, type Snapshot } from '
 import { Icon, Mark, type IconName } from './icons';
 import './style.css';
 import { Workbench } from './Workbench';
+import { LoginDiagnostics } from './LoginDiagnostics';
 declare global { interface Window { profiles: Bridge } }
 type Editor = { kind:'add' } | { kind:'edit'; id:string };
 function Tool({icon,label,disabled=false,active=false,onClick}:{icon:IconName;label:string;disabled?:boolean;active?:boolean;onClick:()=>void}) { return <button type="button" className={`tool ${active?'is-active':''}`} title={label} aria-label={label} disabled={disabled} onClick={onClick}><Icon name={icon}/></button>; }
 function App() {
   const [state,setState] = useState<Snapshot>();
   const [fatal,setFatal] = useState('');
+  const [diagnosticsOpen,setDiagnosticsOpen]=useState(false);
   const [editor,setEditor] = useState<Editor>();
   const [menuOpen,setMenuOpen] = useState(false);
   const menuRef = useRef(false);
@@ -29,6 +31,8 @@ function App() {
   },[showToast]);
   const openEditor = useCallback(async(value:Editor)=>{if(await send({type:'overlay',open:true})){menuRef.current=false;setMenuOpen(false);setFormError('');setEditor(value);}},[send]);
   const closeEditor = useCallback(async()=>{setEditor(undefined);setFormError('');await send({type:'overlay',open:false});},[send]);
+  const closeDiagnostics=useCallback(async()=>{setDiagnosticsOpen(false);await send({type:'overlay',open:false});accountButton.current?.focus();},[send]);
+  const openDiagnostics=useCallback(async()=>{if(await send({type:'overlay',open:true})){menuRef.current=false;setMenuOpen(false);setEditor(undefined);setDiagnosticsOpen(true);}},[send]);
   const closeAccounts = useCallback(async()=>{menuRef.current=false;setMenuOpen(false);await send({type:'overlay',open:false});accountButton.current?.focus();},[send]);
   const toggleAccounts = useCallback(async()=>{if(menuRef.current){await closeAccounts();return;}if(await send({type:'overlay',open:true})){setEditor(undefined);menuRef.current=true;setMenuOpen(true);}},[send,closeAccounts]);
   useEffect(()=>{
@@ -103,7 +107,7 @@ function App() {
     </header>
     <section className="web-stage" aria-label="网页区域">
       {status?.error?<div className="page-state" role="alert"><span className="page-state-icon"><Icon name="alert" size={28}/></span><h1>网页暂时无法打开</h1><p>{profile.name} 的账号空间已保留，可以重新加载。</p><code>{status.error}</code><button className="primary" onClick={()=>void send({type:'reload'})}><Icon name="refresh" size={16}/>重新加载</button></div>:<div className="page-state loading-state"><Mark size={38}/><h1>正在打开 ChatGPT</h1><p>{profile.name} · 独立账号空间</p><span className="spinner"/></div>}
-      {(editor||menuOpen)&&state.overlayImage&&<img className="page-preview" src={state.overlayImage} alt="" aria-hidden="true"/>}
+      {(editor||menuOpen||diagnosticsOpen)&&state.overlayImage&&<img className="page-preview" src={state.overlayImage} alt="" aria-hidden="true"/>}
     </section>
     {state.platform==='darwin'&&state.panel&&<Workbench state={state} close={()=>void send({type:'panel'})} panel={panel=>void send({type:'panel',panel})} notice={showToast}/>}
     {toast&&<div className="toast" role="status"><Icon name="check" size={15}/>{toast}<button aria-label="关闭提示" onClick={()=>setToast('')}><Icon name="close" size={13}/></button></div>}
@@ -125,9 +129,11 @@ function App() {
           <button className="menu-action" role="menuitem" onClick={async()=>{await closeAccounts();await send({type:'tab:restore'});}}>恢复关闭的标签页<span>Ctrl+Shift+T</span></button>
           <button className="menu-action" role="menuitem" onClick={async()=>{await closeAccounts();await send({type:'fullscreen'});}}>进入/退出全屏<span>F11</span></button>
         </>}
+        {state.platform==='darwin'&&<button className="menu-action" role="menuitem" onClick={()=>void openDiagnostics()}><Icon name="shield" size={15}/>登录与链接记录</button>}
         <div className="menu-foot">账号名称与邮箱为手动备注。<br/>每个账号拥有自己的登录状态和标签页。</div>
       </div>
     </div>}
+    {diagnosticsOpen&&<LoginDiagnostics state={state} close={closeDiagnostics} notice={showToast}/>}
     {editor&&<div className="modal-backdrop" onMouseDown={event=>{if(event.target===event.currentTarget&&!busy)void closeEditor();}}>
       <div className="modal" role="dialog" aria-modal="true" aria-labelledby="editor-title" ref={modal}>
         <div className="modal-header"><span className="modal-symbol"><Icon name={editing?'edit':'plus'} size={22}/></span><button className="tool" aria-label="关闭账号管理" disabled={busy} onClick={()=>void closeEditor()}><Icon name="close"/></button></div>

@@ -1,3 +1,4 @@
+import type { LoginDiagnosticsAPI } from './diagnostics';
 import type { WorkbenchAPI, WorkbenchPanel } from './workbench';
 export const APP_VERSION = '3.0.0-alpha.2';
 export const SHELL_HEIGHT = 46;
@@ -20,4 +21,4 @@ export type Command =
   | { type: 'overlay'; open: boolean }
   | { type: 'panel'; panel?: WorkbenchPanel };
 export type Reply = { ok: true } | { ok: false; error: string };
-export type Bridge = { snapshot: () => Promise<Snapshot>; command: (command: Command) => Promise<Reply>; subscribe: (handler: (state: Snapshot) => void) => () => void; onShortcut: (handler: (key: string) => void) => () => void; workbench: WorkbenchAPI };
+export type Bridge = { snapshot: () => Promise<Snapshot>; command: (command: Command) => Promise<Reply>; subscribe: (handler: (state: Snapshot) => void) => () => void; onShortcut: (handler: (key: string) => void) => () => void; workbench: WorkbenchAPI; diagnostics: LoginDiagnosticsAPI };

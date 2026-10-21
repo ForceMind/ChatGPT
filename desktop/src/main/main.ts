@@ -13,6 +13,8 @@ import { installWorkbenchIPC } from './workbench-ipc';
 import type { WorkbenchPanel } from '../shared/workbench';
 import { AssetConversions } from './asset-conversions';
 import { localRendererResponse } from './local-renderer';
+import { LoginDiagnostics } from './login-diagnostics';
+import type { LinkKind } from '../shared/diagnostics';
 
 const testMode = !app.isPackaged && process.env.PROFILES_E2E === '1';
 if (testMode) app.commandLine.appendSwitch('use-mock-keychain');
@@ -34,6 +36,8 @@ let assetRuntime: AssetRuntime | undefined;
 let capabilityCatalog: CapabilityCatalog | undefined;
 let assetError: string | undefined;
 let capabilityError: string | undefined;
+let loginDiagnostics: LoginDiagnostics | undefined;
+let loginDiagnosticsError: string | undefined;
 let panel: WorkbenchPanel | undefined;
 let assetConversions: AssetConversions | undefined;
 const assetDownloads = new Map<string,AssetDownloads>();
@@ -73,11 +77,17 @@ function saveBounds(): void {
   const b = win.getBounds();
   store.commit(s => { s.bounds = b; });
 }
-async function externalFromPage(url: string): Promise<void> {
-  if (!win || !isWebURL(url)) return;
+function recordLink(profileId:string,kind:LinkKind,url:string,contents:WebContents):string|undefined {
+  try{return loginDiagnostics?.add(profileId,kind,url,contents.getURL()).id;}catch(error){report(error);return undefined;}
+}
+function recordLinkResult(id:string|undefined,result:'cancelled'|'browser-opened'|'browser-failed'):void {
+  if(id)try{loginDiagnostics?.result(id,result);}catch(error){report(error);}
+}
+async function externalFromPage(url: string,recordId?:string): Promise<void> {
+  if (!win || !isWebURL(url)) { notice('已拦截不受支持的链接，可在账号菜单的「登录与链接记录」查看站点与原因。'); return; }
   const u = new URL(url);
-  const result = await dialog.showMessageBox(win, { type: 'question', title: '打开外部链接', message: `在系统浏览器打开 ${u.hostname}？`, detail: '系统浏览器使用自己的账号登录状态。', buttons: ['取消', '打开浏览器'], defaultId: 0, cancelId: 0 });
-  if (result.response === 1) await shell.openExternal(url);
+  const result = await dialog.showMessageBox(win, { type: 'question', title: '打开外部链接', message: `在系统浏览器打开 ${u.hostname}？`, detail: '系统浏览器使用自己的账号登录状态。站点与原因可在账号菜单的「登录与链接记录」查看。', buttons: ['取消', '打开浏览器'], defaultId: 0, cancelId: 0 });
+  if(result.response===1){try{await shell.openExternal(url);recordLinkResult(recordId,'browser-opened');}catch(error){recordLinkResult(recordId,'browser-failed');throw error;}}else recordLinkResult(recordId,'cancelled');
 }
 function configureSession(profileId: string): Session {
   const partition = partitionFor(profileId); const ses = session.fromPartition(partition);
@@ -126,10 +136,11 @@ function configureSession(profileId: string): Session {
 }
 function secureWebPreferences(profileId: string) { return { session: configureSession(profileId), sandbox: true, contextIsolation: true, nodeIntegration: false, webSecurity: true, allowRunningInsecureContent: false, spellcheck: true }; }
 function configureRemote(contents: WebContents, profileId: string): void {
-  contents.on('will-navigate', (event, url) => { if (!isAllowedURL(url, fixtureOrigin)) { event.preventDefault(); void externalFromPage(url).catch(report); } });
-  contents.on('will-redirect', (event, url) => { if (!isAllowedURL(url, fixtureOrigin)) { event.preventDefault(); notice('已阻止跳转到未支持的站点，可从网页链接选择系统浏览器。'); } });
+  contents.on('did-navigate',(_event,url)=>{if(isAllowedURL(url,fixtureOrigin)&&!isChatURL(url)&&(!fixtureOrigin||!url.startsWith(fixtureOrigin)))recordLink(profileId,'login-page',url,contents);});
+  contents.on('will-navigate', (event, url) => { if (!isAllowedURL(url, fixtureOrigin)) { event.preventDefault(); const id=recordLink(profileId,'navigation',url,contents);void externalFromPage(url,id).catch(report); } });
+  contents.on('will-redirect', (event, url) => { if (!isAllowedURL(url, fixtureOrigin)) { event.preventDefault();recordLink(profileId,'redirect',url,contents);notice('已拦截不受支持的跳转，可在账号菜单的「登录与链接记录」查看站点与原因。'); } });
   contents.setWindowOpenHandler(({ url }) => {
-    if (url !== 'about:blank' && !isAllowedURL(url, fixtureOrigin)) { void externalFromPage(url).catch(report); return { action: 'deny' }; }
+    if (url !== 'about:blank' && !isAllowedURL(url, fixtureOrigin)) {const id=recordLink(profileId,'popup',url,contents);void externalFromPage(url,id).catch(report); return { action: 'deny' }; }
     if (isChatURL(url) && !/^\/(auth|api\/auth)(\/|$)/.test(new URL(url).pathname)) { queueCommandInternal(() => createTab(profileId, url)); return { action: 'deny' }; }
     return { action: 'allow', overrideBrowserWindowOptions: { parent: win, width: 560, height: 760, minWidth: 420, minHeight: 500, title: `${profileById(profileId).name} · 登录窗口`, webPreferences: secureWebPreferences(profileId) } };
   });
@@ -294,6 +305,8 @@ function trusted(event: IpcMainInvokeEvent): boolean {
   return event.senderFrame.url === 'app://shell/index.html';
 }
 function installIPC(): void {
+  ipcMain.handle('login-links:list',event=>{if(!trusted(event)||process.platform!=='darwin')throw new Error('拒绝非本地工具栏请求');if(!loginDiagnostics)throw new Error(loginDiagnosticsError||'登录记录暂不可用');return loginDiagnostics.list();});
+  ipcMain.handle('login-links:clear',event=>{if(!trusted(event)||process.platform!=='darwin')throw new Error('拒绝非本地工具栏请求');if(!loginDiagnostics)throw new Error(loginDiagnosticsError||'登录记录暂不可用');loginDiagnostics.clear();});
   ipcMain.handle('profiles:snapshot', event => { if (!trusted(event)) throw new Error('拒绝非本地工具栏请求'); return snapshot(); });
   ipcMain.handle('profiles:command', (event, value: unknown) => {
     if (!trusted(event)) return { ok: false, error: '拒绝非本地工具栏请求' } satisfies Reply;
@@ -360,6 +373,7 @@ if (single) {
   app.whenReady().then(()=>{
     store = new StateStore(dataDir, fixtureOrigin);
     if(process.platform==='darwin'){
+      try{loginDiagnostics=new LoginDiagnostics(dataDir,()=>win?.webContents.send('login-links:changed'));}catch(error){loginDiagnosticsError=error instanceof Error?error.message:'登录记录暂不可用';}
       try{assetStore=new AssetStore(dataDir);assetRuntime=new AssetRuntime(assetStore,()=>activeProfile().id);assetRuntime.register();}catch(error){assetError=error instanceof Error?error.message:'资产库无法读取';}
       if(assetStore)assetConversions=new AssetConversions(assetStore,{rendererRoot:path.join(__dirname,'../renderer'),profileAvailable:id=>!quitting&&!pendingProfiles.has(id)&&store.read().profiles.some(p=>p.id===id),changed:assetsChanged});
       try{capabilityCatalog=new CapabilityCatalog(path.join(__dirname,'../capabilities'));}catch(error){capabilityError=error instanceof Error?error.message:'能力资源无法读取';}

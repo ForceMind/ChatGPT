@@ -5,6 +5,11 @@ const bridge: Bridge = {
   command: (command: Command) => ipcRenderer.invoke('profiles:command', command),
   subscribe: handler => { const listener = (_event: unknown, state: Snapshot) => handler(state); ipcRenderer.on('profiles:state', listener); return () => ipcRenderer.removeListener('profiles:state', listener); },
   onShortcut: handler => { const listener = (_event: unknown, key: string) => handler(key); ipcRenderer.on('profiles:shortcut', listener); return () => ipcRenderer.removeListener('profiles:shortcut', listener); },
+  diagnostics: {
+    list:()=>ipcRenderer.invoke('login-links:list'),
+    clear:()=>ipcRenderer.invoke('login-links:clear'),
+    subscribe:handler=>{const listener=()=>handler();ipcRenderer.on('login-links:changed',listener);return()=>ipcRenderer.removeListener('login-links:changed',listener);}
+  },
   workbench: {
     assets: profileId => ipcRenderer.invoke('assets:snapshot', profileId),
     act: (profileId, action) => ipcRenderer.invoke('assets:action', profileId, action),

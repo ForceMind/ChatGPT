@@ -163,3 +163,10 @@
 - 本地转换引擎及实际界面已接入：图像 PNG/JPEG/WebP（尺寸/质量）、SVG 解码、HTML→PDF/PNG、Markdown→HTML/PDF、CSV↔JSON、PDF 选页→PNG/JPEG。图形/文档在独立临时 session 的隐藏沙箱窗口处理，禁止外网、权限和下载，不使用 ChatGPT 登录空间。新副本先登记 processing，写入并校验后 ready，保留原件与派生链；重启中断不伪装成功。
 - `npm run check` 目前为 30/30 单元测试及构建通过（新增批量资产编辑原子性、CSV/JSON/Markdown）。CSV 库的 UndetectableDelimiter 是默认逗号回退诊断，合法单列 CSV 仍需支持；保留本地列数/表头校验与非法数据断言，未隐藏结构错误。JSON→CSV 转义公式前缀并保留原 JSON，CSV→JSON 不猜测日期/数值类型。
 - `tests/conversions.e2e.ts` 已在真实 Electron 通过：SVG→PNG/JPEG/WebP、HTML→PDF/PNG、Markdown→HTML/PDF、CSV→JSON、JSON→CSV、PDF 第 1 页→PNG，共 10 份真实副本；核对签名、Chromium 实际解码尺寸 300×200、原件字节不变、同账号归属和派生关系，以及真实 PDF 画布加载。WebP 不再用仅适合部分格式的 nativeImage 作为预览判据，仍独立检查 WebP 签名与实际浏览器解码。当前网页自动上传/发送尚未接入。
+
+- 用户追加本批范围：增加可查的第三方登录/外链记录；核对电脑与 Chrome 通行密钥的使用边界，现有登录正常不改认证行为；重新拍摄官网 Mac 干净窗口。
+- 官网旧 Mac 图片混入屏幕共享/远程控制紫色系统标记。已用公开版本对应源码（main 9b44b0f）启动全新匿名空间，确认真实 chatgpt.com 未登录页面，在非全屏窗口直接抓取 2720×1800 原生窗口；替换为 `site/assets/macos-window.jpg`，无生成或修改网页内容、无测试消息。
+- 登录记录已接入账号菜单：本机最多 200 条，记录账号 ID、时间、来源/目标协议和站点、导航/跳转/弹窗与结果。路径、查询、片段、用户信息均不保存；支持筛选、复制脱敏记录和清空。未扩大现有登录站点白名单。
+- 已核对本项目 Electron 44.9.1 实际 API：仅有需相应代码签名 entitlement 的 `configureWebAuthn.touchID`（设备绑定），不是 iCloud/Chrome 密钥导入。当前 App 未接入已有系统通行密钥选择器，Chrome 的 Google Password Manager 与本 App 独立；帮助页明确说明，不能将 Chrome 登录当作 App 登录。实际通行密钥仍待特定设备/凭据提供方集成与验证，不修改当前正常登录流程。
+- 本批验证：`npm run check` 32/32 单元测试、严格类型检查及构建通过；新增真实 Electron 本地重定向验收通过，核对拦截、不泄漏 OAuth 码/路径、菜单记录与登录帮助、关闭后恢复网页、重启保留及清空。页面实际渲染见 `docs/images/macos-login-records.png`（本地验收素材）。
+- 官网截图修正已部署：Pages `04ce5f41`，源码 `b86b5e9650d7df639526923b5f3ac3e31b558664`。生产域 `https://chatgpt-profiles.pages.dev/` 的 `app.js` 与 `assets/macos-window.jpg` 均 HTTP 200 且 SHA-256 与提交文件一致；图片 137595 字节，SHA-256 `48c3c9c11315f62e349b0842afc763cd3442476d75ade0b7029a278ac0f5af9f`。官网安装包仍为已公开版本，登录记录随本次 macOS 工作台迭代交付。
