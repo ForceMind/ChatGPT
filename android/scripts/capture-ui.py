@@ -67,4 +67,23 @@ adb('shell', 'am', 'start', '-n', package + '/com.forcemind.chatgpt.profiles.Mai
 badge('个人账号'); time.sleep(5)
 screenshot('android-phone.png')
 (out / 'android-phone.xml').write_bytes(ET.tostring(tree(), encoding='utf-8'))
+# Homepage evidence must show the loaded webpage, with native menus closed.
+# The personal space may still be on Cloudflare's check; use the second,
+# isolated space only after its actual anonymous ChatGPT page is ready.
+tap(badge('个人账号')); text('切换账号')
+tap(find(lambda a: 'Work' in a.get('text', '') and 'work@example.test' in a.get('text', '')))
+badge('Work')
+for attempt in range(30):
+    current = tree()
+    labels = ' '.join(n.get('text', '') + ' ' + n.get('content-desc', '') for n in current.iter('node'))
+    logged_out = re.search(r'Log in|登录|登入', labels, re.I)
+    challenge = re.search(r'Verifying|Just a moment|Checking your browser|验证您是真人', labels, re.I)
+    if logged_out and 'ChatGPT' in labels and not challenge:
+        time.sleep(2)
+        screenshot('android-main.png')
+        (out / 'android-main.xml').write_bytes(ET.tostring(current, encoding='utf-8'))
+        break
+    time.sleep(2)
+else:
+    raise RuntimeError('No loaded anonymous ChatGPT page for the homepage; do not publish a challenge/menu screenshot.')
 print('Native account add, switch, restart restoration, and phone rendering passed. No login or chat input.')
