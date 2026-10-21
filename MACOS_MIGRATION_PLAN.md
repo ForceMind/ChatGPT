@@ -213,3 +213,12 @@
 - macOS `3.0.0-alpha.4` ARM64 本地 DMG / ZIP 已生成：220 个包内 dist 文件与最终编译文件逐字节一致；能力资源仅 manifest 与项目 Skill 两个文件，120 Skill / 0 预置角色；包内路径及文本无被移除项目标识。签名验证、DMG 完整性、ZIP 检查及摘要均通过；ad-hoc，未公证，未新建公开 Release。
 - ChatGPT Profiles-3.0.0-alpha.4-arm64.dmg：152779832 字节，SHA-256 `e5b9c423403ef006da86cd3ba9578db9eae1e07217c1db88636909a8f9e0d657`。
 - ChatGPT Profiles-3.0.0-alpha.4-arm64.zip：152857898 字节，SHA-256 `746fc0d81e558e1c47a63f9f101ff1d0d6ae7c2efcd7144fb4bd2b147e326cbf`。
+
+- 历史清理已原子推送并回读：主分支代码/说明提交 `8f11ef5b58934bb624b0251e907d95af3c2523b0`，macOS 功能提交 `2d8c281e15d73e7b043d9f09a8408f117907042a`；原有 29 条开发提交保留并重写标识，两个已发布标签同步清理。全部可达路径及 266 个 blob 检查未发现被移除项目标识；本地 144 个源码文件与新功能提交一致后，仅同步 refs/index，没有覆盖工作区文件。
+- GitHub 主分支 README 已逐字节回读匹配；仓库简介与官网入口已设置。两个既有 Release 的 10 个资产 ID、名称、大小、digest 保持一致，没有重新上传旧安装包。
+- 官网生产域 `https://chatgpt-profiles.pages.dev/` 已部署 Pages `2d212c29`，网站源码为 `8f11ef5b58934bb624b0251e907d95af3c2523b0`。生产 HTML、脚本、样式和 Mac PNG 与源文件逐字节一致；线上三尺寸白灰黑/里程碑检查、Mac 四角透明、Android 待更新状态实际渲染通过。
+- 生产文件 `index.html` SHA-256：`359c693eef3d52398f297965847872061259a79fb39fa1defe5d4cb967c0b8c5`。
+- 生产文件 `app.js` SHA-256：`81d21587b9e541ca1762f3b96476c3c1c7ada92ed878a05c1f6e353ecdee69e3`。
+- 生产文件 `styles.css` SHA-256：`1ad9c54991c780d21abb01086ce74178eca085514f1a6f1d1b5e1798823bcc7c`。
+- 生产文件 `assets/macos-window.png` SHA-256：`b562a84cb733ff295a28a6f385ae3a9583dc0d6d5b95ce60cf3edead16ddcc38`。
+- 剩余：Android 需要重新取得完整的实际主界面截图；两个真实账号及 ChatGPT 附件/首条消息由用户稍后人工验收。移动代理与其他平台工作台继续属于后续范围。
