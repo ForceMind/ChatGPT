@@ -1,0 +1,101 @@
+"use strict";
+const platforms = {
+  windows: {
+    image: "windows-installed.png",
+    caption: "Windows · 已安装客户端 / 未登录 ChatGPT",
+    alt: "Windows 已安装客户端实际截图：未登录 ChatGPT 页面、账号名称、标签页与原生窗口按钮，没有地址栏。",
+    width: 1040,
+    height: 728,
+  },
+  macos: {
+    image: "macos-immersive.jpg",
+    caption: "macOS · 客户端实际截图 / 沉浸式网页",
+    alt: "macOS 客户端实际截图：ChatGPT 网页与顶部标签及账号菜单，没有地址栏。",
+    width: 2720,
+    height: 1800,
+  },
+  android: {
+    image: "android-accounts.png",
+    caption: "Android · 模拟器 / 未登录 / 账号名称与邮箱为测试备注",
+    alt: "Android 模拟器的原生账号菜单，显示独立账号空间；名称与邮箱为测试备注，真实登录尚未验收。",
+    width: 1080,
+    height: 2400,
+  },
+};
+const tabs = [...document.querySelectorAll("[data-platform]")];
+const image = document.querySelector("#product-image");
+function selectPlatform(name) {
+  const entry = platforms[name];
+  if (!entry) return;
+  tabs.forEach((tab) => {
+    const selected = tab.dataset.platform === name;
+    tab.setAttribute("aria-selected", String(selected));
+    tab.tabIndex = selected ? 0 : -1;
+  });
+  document
+    .querySelector("#product-panel")
+    .setAttribute("aria-labelledby", `tab-${name}`);
+  image.src = `/assets/${entry.image}`;
+  image.alt = entry.alt;
+  image.width = entry.width;
+  image.height = entry.height;
+  image.classList.toggle("android", name === "android");
+  document.querySelector("#product-caption").textContent = entry.caption;
+}
+tabs.forEach((tab, index) => {
+  tab.addEventListener("click", () => selectPlatform(tab.dataset.platform));
+  tab.addEventListener("keydown", (event) => {
+    let next;
+    if (event.key === "ArrowRight") next = (index + 1) % tabs.length;
+    if (event.key === "ArrowLeft")
+      next = (index - 1 + tabs.length) % tabs.length;
+    if (event.key === "Home") next = 0;
+    if (event.key === "End") next = tabs.length - 1;
+    if (next === undefined) return;
+    event.preventDefault();
+    selectPlatform(tabs[next].dataset.platform);
+    tabs[next].focus();
+  });
+});
+const ua = navigator.userAgent;
+const os = /Android/i.test(ua)
+  ? "android"
+  : /iPhone|iPad|iPod/i.test(ua) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+    ? null
+    : /Mac/i.test(navigator.platform)
+      ? "macos"
+      : /Win/i.test(navigator.platform)
+        ? "windows"
+        : null;
+if (os) {
+  const card = document.querySelector(`[data-os="${os}"]`);
+  card.classList.add("recommended");
+  // Device detection suggests a platform; the download section keeps architecture and signing requirements visible.
+  document.querySelector("#primary-download span").textContent =
+    `获取 ${os === "macos" ? "macOS" : os === "windows" ? "Windows" : "Android"} 客户端`;
+}
+let toastTimer;
+function notify(message) {
+  const toast = document.querySelector(".toast");
+  clearTimeout(toastTimer);
+  toast.textContent = message;
+  toast.classList.add("visible");
+  toastTimer = setTimeout(() => toast.classList.remove("visible"), 4000);
+}
+document.querySelectorAll("[data-copy]").forEach((button) =>
+  button.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(button.dataset.copy);
+      notify("SHA-256 已复制");
+    } catch {
+      const code = button.parentElement.querySelector("code");
+      const range = document.createRange();
+      range.selectNodeContents(code);
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+      notify("请复制已选中的 SHA-256 文本");
+    }
+  }),
+);

@@ -129,3 +129,7 @@
 - 发布 `v3.0.0-alpha.2` Windows 预发布版，复用成功验收运行 `39443940258` 的原包；本地重新核对两个包的字节数和 SHA-256 一致。Actions 内再次校验源码、验收结论和包摘要，先上传草稿，核对附件后公开。已有 `alpha.1` Mac/Android 版本保留。
 - 主页放在 `site/`，包含产品说明、真实截图、平台版本与下载、使用步骤、安装与隔离边界。网站使用深色与克制霓虹；App 已确认的白灰黑 UI 保留。二进制直接从 GitHub Release 下载。
 - 验收：Release 公开状态、附件大小/摘要及匿名下载入口；网站桌面/手机实际渲染、下载与说明交互；Pages 正式部署、线上内容与源文件核对、Git 远端回读。真实双账号登录继续由用户稍后人工验收。
+- Windows [上传运行 39535798656](https://github.com/ForceMind/ChatGPT/actions/runs/39535798656) 成功：复用原始 EXE/ZIP，运行内再次核对成功构建源码、大小与 SHA-256，未重建或替换既有资产。GitHub Release ID `419094189`，附件共四个（EXE、ZIP、`windows-build-info.json`、`SHA256SUMS.txt`），服务器提供的两个二进制 digest 与本地及 CI 完全一致。
+- [v3.0.0-alpha.2](https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.2) 已于 `2026-10-21T03:05:31Z` 公开，`draft=false`、`prerelease=true`，目标提交 `a8d984c7652ecc89361438970086d4a46d51a36c`。两个下载 URL 的匿名 HEAD 均为 200，大小分别为 112306244 / 154817621 bytes。原始构建索引仍含未分发 blockmap 记录，Release 的校验清单仅列两个实际下载包。
+- 网站实际 Chromium 检查通过：1440×1000、1024×900、768×1024、390×844、360×800 均无横向溢出；三平台截图切换、键盘方向/Home 导航、FAQ 展开、SHA-256 剪贴板、下载区锚点和 Windows/Mac/Android/iPad 推荐逻辑通过；页面与资源无错误。修复了背景光晕与装饰轨道在窄屏超出容器的问题。截图为原始产品截图，Android 明确标记模拟器与测试备注。
+- Cloudflare 现有登录有效。使用 Wrangler `4.151.3`，新建独立 Pages 项目 `chatgpt-profiles`、正式分支 `main`；未改动其他网站。CLI 创建默认尝试 Workers 委派后未找到静态目录，按 CLI 说明仅在项目创建时使用 `--force` 直接创建 Pages；后续部署不使用该标志。

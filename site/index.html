@@ -1,0 +1,642 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0b0e0d" />
+    <meta
+      name="description"
+      content="ChatGPT Profiles：多个账号，独立浏览器空间，一个专注的入口。下载 Windows、macOS 与 Android 非官方 ChatGPT 客户端，了解安装方式与使用说明。"
+    />
+    <meta property="og:title" content="ChatGPT Profiles — 切换账号，保持专注" />
+    <meta
+      property="og:description"
+      content="独立账号空间 · 沉浸式网页 · 本机保存。下载 Windows、macOS 和 Android 预发布版。"
+    />
+    <meta property="og:type" content="website" />
+    <link rel="canonical" href="https://chatgpt-profiles.pages.dev/" />
+    <meta property="og:url" content="https://chatgpt-profiles.pages.dev/" />
+    <title>ChatGPT Profiles — 切换账号，保持专注</title>
+    <link rel="icon" type="image/svg+xml" href="/assets/icon.svg" />
+    <link rel="stylesheet" href="/styles.css" />
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">跳到主要内容</a>
+    <svg class="symbols" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <symbol id="arrow" viewBox="0 0 24 24">
+        <path d="M5 12h14m-6-6 6 6-6 6" />
+      </symbol>
+      <symbol id="download" viewBox="0 0 24 24">
+        <path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5" />
+      </symbol>
+      <symbol id="external" viewBox="0 0 24 24">
+        <path d="M5 19 19 5M7 5h12v12" />
+      </symbol>
+      <symbol id="windows" viewBox="0 0 24 24">
+        <path d="m3 5 8-1v8H3zm10-1 8-1v9h-8zM3 14h8v8l-8-1zm10 0h8v9l-8-1z" />
+      </symbol>
+      <symbol id="apple" viewBox="0 0 24 24">
+        <path
+          d="M16.3 2c.2 2-1.3 3.7-3.3 3.8-.2-1.8 1.4-3.6 3.3-3.8ZM19.8 16.7c-.6 1.4-1 2.2-1.8 3.3-1.2 1.7-2.9 3.8-4.4 2.7-1.4-.9-2.5-.9-4 0C8.1 23.6 6.7 21.7 5.5 20 2.2 15.2 3 8 7.6 7c1.9-.4 3.3.8 4.4.8 1 0 3.2-1.1 4.8-.8 1.2.2 2.3.7 3.1 1.7-3.6 2-3 6.7-.1 8Z"
+        />
+      </symbol>
+      <symbol id="android" viewBox="0 0 24 24">
+        <path
+          d="m6 4-2-3m14 3 2-3M3 12a9 9 0 0 1 18 0Zm0 2v7h18v-7ZM7 8h.01M17 8h.01"
+        />
+      </symbol>
+    </svg>
+    <header class="header">
+      <div class="nav-wrap container">
+        <a class="brand" href="#" aria-label="ChatGPT Profiles 首页"
+          ><span class="brand-mark">P<span>_</span></span
+          ><span>ChatGPT <b>Profiles</b></span></a
+        >
+        <nav aria-label="主导航">
+          <a href="#experience">体验</a><a href="#guide">使用指南</a
+          ><a href="#faq">常见问题</a
+          ><a
+            class="nav-github"
+            href="https://github.com/ForceMind/ChatGPT"
+            target="_blank"
+            rel="noopener noreferrer"
+            >GitHub <svg><use href="#external" /></svg
+          ></a>
+        </nav>
+        <a class="nav-download" href="#downloads"
+          >下载客户端 <svg><use href="#download" /></svg
+        ></a>
+      </div>
+    </header>
+    <main id="main">
+      <section class="hero container" aria-labelledby="hero-title">
+        <div class="hero-topline">
+          <span><i class="status-dot"></i> PERSONAL WORKSPACE, REDEFINED.</span
+          ><span class="hero-build"
+            >WINDOWS ALPHA.2 / NOW AVAILABLE <span>↗</span></span
+          >
+        </div>
+        <div class="hero-grid">
+          <div class="hero-copy">
+            <p class="eyebrow">ONE APP. YOUR MANY WORLDS.</p>
+            <h1 id="hero-title">
+              切换账号，<br />保持<span class="accent-word"
+                >专注<span class="title-cursor">_</span></span
+              >
+            </h1>
+            <p class="hero-description">
+              工作、个人、灵感探索。<br />让每个 ChatGPT 账号拥有自己的空间，<br />让打开
+              App，依然只是打开 ChatGPT。
+            </p>
+            <div class="hero-actions">
+              <a
+                class="button button-primary"
+                id="primary-download"
+                href="#downloads"
+                ><svg><use href="#download" /></svg
+                ><span>选择你的客户端</span></a
+              ><a class="text-link" href="#experience"
+                >探索体验 <svg><use href="#arrow" /></svg
+              ></a>
+            </div>
+            <div class="hero-meta">
+              <span>WINDOWS</span><span>macOS</span><span>ANDROID</span
+              ><span class="meta-divider">/</span><span>开源 · 预发布</span>
+            </div>
+          </div>
+          <div
+            class="identity-system"
+            role="img"
+            aria-label="三个独立账号空间的概念示意：工作、个人、探索，每个空间有自己的网页存储和标签。"
+          >
+            <div class="system-grid"></div>
+            <div class="orbital-background" aria-hidden="true">
+              <div class="orbit orbit-one"></div>
+              <div class="orbit orbit-two"></div>
+            </div>
+            <span class="coordinate coordinate-top">SYS.PROFILES / LOCAL</span
+            ><span class="coordinate coordinate-bottom"
+              >ISOLATED BY DESIGN</span
+            >
+            <div class="profile-card profile-back">
+              <div class="card-status">
+                <span class="dot cyan"></span> EXPLORER <span>03</span>
+              </div>
+              <div class="profile-card-title">探索空间 <span>↗</span></div>
+              <div class="data-blocks"><i></i><i></i><i></i><i></i><i></i></div>
+              <div class="card-foot">独立会话 <span>SPACE_003</span></div>
+            </div>
+            <div class="profile-card profile-middle">
+              <div class="card-status">
+                <span class="dot purple"></span> PERSONAL <span>02</span>
+              </div>
+              <div class="profile-card-title">个人空间 <span>↗</span></div>
+              <div class="data-blocks"><i></i><i></i><i></i><i></i><i></i></div>
+              <div class="card-foot">独立会话 <span>SPACE_002</span></div>
+            </div>
+            <div class="profile-card profile-front">
+              <div class="card-status">
+                <span class="dot lime"></span> WORKSPACE <span>01</span>
+              </div>
+              <div class="profile-card-title">工作空间 <span>↗</span></div>
+              <div class="profile-tabs">
+                <span>项目讨论</span><span>资料整理</span><b>+</b>
+              </div>
+              <div class="card-foot">
+                <span><i class="status-dot"></i> 独立会话与标签</span
+                ><span>SPACE_001</span>
+              </div>
+            </div>
+            <div class="system-label">
+              <span class="label-cross">+</span> YOUR ACCOUNTS.<br /><b
+                >YOUR CONTEXT.</b
+              >
+            </div>
+          </div>
+        </div>
+        <div class="hero-bottom">
+          <span>少一点重复登录，多一点思路连贯。</span
+          ><a href="#experience" aria-label="向下查看产品体验"
+            >SCROLL TO EXPLORE <span>↓</span></a
+          >
+        </div>
+      </section>
+
+      <section
+        class="experience section container"
+        id="experience"
+        aria-labelledby="experience-title"
+      >
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">01 / THE EXPERIENCE</p>
+            <h2 id="experience-title">
+              熟悉的网页。<br class="mobile-break" />更清晰的边界。
+            </h2>
+          </div>
+          <p>
+            不必重新学习一套工具。<br />熟悉的对话界面，加上恰到好处的账号管理。
+          </p>
+        </div>
+        <div class="product-stage">
+          <div class="stage-bar">
+            <span><i class="status-dot"></i> ACTUAL APP CAPTURE</span>
+            <div class="platform-tabs" role="tablist" aria-label="客户端截图">
+              <button
+                id="tab-windows"
+                role="tab"
+                aria-selected="true"
+                aria-controls="product-panel"
+                data-platform="windows"
+              >
+                Windows</button
+              ><button
+                id="tab-macos"
+                role="tab"
+                aria-selected="false"
+                aria-controls="product-panel"
+                data-platform="macos"
+                tabindex="-1"
+              >
+                macOS</button
+              ><button
+                id="tab-android"
+                role="tab"
+                aria-selected="false"
+                aria-controls="product-panel"
+                data-platform="android"
+                tabindex="-1"
+              >
+                Android
+              </button>
+            </div>
+          </div>
+          <div
+            class="screenshot-panel"
+            role="tabpanel"
+            id="product-panel"
+            aria-labelledby="tab-windows"
+            tabindex="0"
+          >
+            <img
+              id="product-image"
+              src="/assets/windows-installed.png"
+              alt="Windows 已安装客户端实际截图：未登录 ChatGPT 页面、账号名称、标签页与原生窗口按钮，没有地址栏。"
+              width="1040"
+              height="728"
+              loading="lazy"
+            />
+          </div>
+          <div class="stage-caption">
+            <span id="product-caption"
+              >Windows · 已安装客户端 / 未登录 ChatGPT</span
+            ><span>NO ADDRESS BAR. JUST YOUR WORKSPACE.</span>
+          </div>
+        </div>
+        <div class="feature-grid">
+          <article>
+            <div class="feature-icon"><span>▱</span><span>▱</span></div>
+            <span class="feature-number">/ 01</span>
+            <h3>账号之间，各自独立</h3>
+            <p>
+              Cookie、网页存储与登录会话按空间分开。同一账号的标签和登录弹窗，共享自己的空间。
+            </p>
+          </article>
+          <article>
+            <div class="feature-icon tab-icon">▤</div>
+            <span class="feature-number">/ 02</span>
+            <h3>标签跟着账号走</h3>
+            <p>
+              给账号写好名称和邮箱备注，一眼识别当前空间。切换账号时，一起切换它的整组标签。
+            </p>
+          </article>
+          <article>
+            <div class="feature-icon focus-icon">⌗</div>
+            <span class="feature-number">/ 03</span>
+            <h3>打开，就是熟悉的网页</h3>
+            <p>
+              没有地址栏，没有多余的入口。保留 ChatGPT
+              的网页体验，桌面端支持原生窗口与快捷键。
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section
+        class="download-section section"
+        id="downloads"
+        aria-labelledby="download-title"
+      >
+        <div class="container">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">02 / GET YOUR WORKSPACE</p>
+              <h2 id="download-title">
+                选择你的入口<span class="accent-text">.</span>
+              </h2>
+            </div>
+            <p>
+              三个平台，各自独立使用。<br />安装包直接来自 GitHub Releases。
+            </p>
+          </div>
+          <div class="download-grid">
+            <article class="download-card" data-os="windows">
+              <div class="download-card-top">
+                <svg class="os-icon filled"><use href="#windows" /></svg
+                ><span class="version">v3.0.0-alpha.2</span>
+              </div>
+              <h3>Windows <span>x64</span></h3>
+              <p class="system-requirement">Windows 10 / 11 · 64 位</p>
+              <p class="platform-description">
+                原生窗口操作，快捷切换。<br />安装版与免安装版，按习惯选择。
+              </p>
+              <a
+                class="button button-platform"
+                href="https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.2/ChatGPT-Profiles-3.0.0-alpha.2-windows-x64-setup.exe"
+                ><span>下载 EXE 安装包</span><svg><use href="#download" /></svg
+              ></a>
+              <div class="download-secondary">
+                <span>107.1 MiB</span
+                ><a
+                  href="https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.2/ChatGPT-Profiles-3.0.0-alpha.2-windows-x64.zip"
+                  >免安装 ZIP · 147.6 MiB <span>↗</span></a
+                >
+              </div>
+              <div class="platform-note">
+                未签名，可能出现 SmartScreen 提醒。ZIP 仍将账号数据保存在本机
+                AppData。
+              </div>
+              <details class="checksums">
+                <summary>版本说明与文件校验 <span>+</span></summary>
+                <p>
+                  客户端真机与真实登录待验。<a
+                    href="https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.2"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    >查看发布说明 ↗</a
+                  >
+                </p>
+                <div class="hash-row">
+                  <span>EXE · SHA-256</span
+                  ><button
+                    type="button"
+                    data-copy="2ac551b0298696494621f64e10d708f87b69ffa0aeb820b05edd00955a3c01e8"
+                  >
+                    复制</button
+                  ><code
+                    >2ac551b0298696494621f64e10d708f87b69ffa0aeb820b05edd00955a3c01e8</code
+                  >
+                </div>
+                <div class="hash-row">
+                  <span>ZIP · SHA-256</span
+                  ><button
+                    type="button"
+                    data-copy="4f9408a4f9fe36871533d0a6e0c7c2bc74601f4add788a4c2b7be7b3c6b9820c"
+                  >
+                    复制</button
+                  ><code
+                    >4f9408a4f9fe36871533d0a6e0c7c2bc74601f4add788a4c2b7be7b3c6b9820c</code
+                  >
+                </div>
+              </details>
+            </article>
+            <article class="download-card" data-os="macos">
+              <div class="download-card-top">
+                <svg class="os-icon filled"><use href="#apple" /></svg
+                ><span class="version">v3.0.0-alpha.1</span>
+              </div>
+              <h3>macOS <span>Apple Silicon</span></h3>
+              <p class="system-requirement">macOS 13+ · M 系列芯片</p>
+              <p class="platform-description">
+                轻量的顶部账号与标签管理。<br />保留 Mac 熟悉的窗口操作。
+              </p>
+              <a
+                class="button button-platform"
+                href="https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.1/ChatGPT-Profiles-3.0.0-alpha.1-mac-arm64.dmg"
+                ><span>下载 DMG 安装包</span><svg><use href="#download" /></svg
+              ></a>
+              <div class="download-secondary">
+                <span>123.6 MiB</span
+                ><a
+                  href="https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.1/ChatGPT-Profiles-3.0.0-alpha.1-mac-arm64.zip"
+                  >ZIP 压缩包 <span>↗</span></a
+                >
+              </div>
+              <div class="platform-note">
+                尚未经过 Apple 公证，首次打开可能被拦截。当前不提供 Intel Mac
+                构建。
+              </div>
+              <details class="checksums">
+                <summary>版本说明与文件校验 <span>+</span></summary>
+                <p>
+                  <a
+                    href="https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.1"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    >查看发布说明 ↗</a
+                  >
+                </p>
+                <div class="hash-row">
+                  <span>DMG · SHA-256</span
+                  ><button
+                    type="button"
+                    data-copy="45654422d523a1ccb465adbe02cbe18f0da323fda4bf7cdb9c99671b3cb70140"
+                  >
+                    复制</button
+                  ><code
+                    >45654422d523a1ccb465adbe02cbe18f0da323fda4bf7cdb9c99671b3cb70140</code
+                  >
+                </div>
+                <div class="hash-row">
+                  <span>ZIP · SHA-256</span
+                  ><button
+                    type="button"
+                    data-copy="4819d4e4aba9c3c5e7130d1a5197801220e0a708584f8ef9e21c6f8ce3b24dd4"
+                  >
+                    复制</button
+                  ><code
+                    >4819d4e4aba9c3c5e7130d1a5197801220e0a708584f8ef9e21c6f8ce3b24dd4</code
+                  >
+                </div>
+              </details>
+            </article>
+            <article class="download-card" data-os="android">
+              <div class="download-card-top">
+                <svg class="os-icon"><use href="#android" /></svg
+                ><span class="version">v3.0.0-alpha.1</span>
+              </div>
+              <h3>Android <span>手机 / 平板</span></h3>
+              <p class="system-requirement">
+                Android 9+ · 支持多档案的 WebView
+              </p>
+              <p class="platform-description">
+                原生账号菜单与标签管理。<br />随身的空间，独立的上下文。
+              </p>
+              <a
+                class="button button-platform"
+                href="https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.1/ChatGPT-Profiles-3.0.0-alpha.1-android.apk"
+                ><span>下载 APK 安装包</span><svg><use href="#download" /></svg
+              ></a>
+              <div class="download-secondary">
+                <span>5.5 MiB</span><span>已签名 APK</span>
+              </div>
+              <div class="platform-note">
+                需支持多档案的系统
+                WebView；不支持时会提示更新。手机与平板真机待验。
+              </div>
+              <details class="checksums">
+                <summary>版本说明与文件校验 <span>+</span></summary>
+                <p>
+                  <a
+                    href="https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.1"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    >查看发布说明 ↗</a
+                  >
+                </p>
+                <div class="hash-row">
+                  <span>APK · SHA-256</span
+                  ><button
+                    type="button"
+                    data-copy="fb7943017f42e7d915c00ce93b57fda6d194fad6cda295b257529da73d165ab2"
+                  >
+                    复制</button
+                  ><code
+                    >fb7943017f42e7d915c00ce93b57fda6d194fad6cda295b257529da73d165ab2</code
+                  >
+                </div>
+              </details>
+            </article>
+          </div>
+          <div class="download-footer">
+            <span
+              ><i class="status-dot"></i>
+              当前均为预发布版本，真实双账号登录与切换仍待人工验收。</span
+            ><span>iOS / iPadOS / Linux <b>暂未提供</b></span>
+          </div>
+        </div>
+      </section>
+
+      <section
+        class="guide section container"
+        id="guide"
+        aria-labelledby="guide-title"
+      >
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">03 / QUICK START</p>
+            <h2 id="guide-title">三步，进入状态。</h2>
+          </div>
+          <a
+            class="text-link"
+            href="https://github.com/ForceMind/ChatGPT#开始使用"
+            target="_blank"
+            rel="noopener noreferrer"
+            >完整使用文档 <svg><use href="#external" /></svg
+          ></a>
+        </div>
+        <div class="steps">
+          <article>
+            <span class="step-number">01<span>—</span></span>
+            <h3>安装，然后打开</h3>
+            <p>
+              下载对应平台的安装包。Mac 将 App 拖入“应用程序”；Windows 运行 EXE
+              或解压 ZIP；Android 按系统提示安装 APK。
+            </p>
+          </article>
+          <article>
+            <span class="step-number">02<span>—</span></span>
+            <h3>创建空间，登录账号</h3>
+            <p>
+              打开即进入
+              ChatGPT。在网页中手动登录，再从右上角账号菜单添加其他空间，为每个空间写好名称与邮箱备注。
+            </p>
+          </article>
+          <article>
+            <span class="step-number">03<span>↗</span></span>
+            <h3>切换账号，继续思考</h3>
+            <p>
+              从账号菜单切换空间，用标签组织不同对话。账号名称与邮箱均为手动备注，请在网页内核对实际登录身份。
+            </p>
+          </article>
+        </div>
+        <div class="shortcut-strip">
+          <span>DESKTOP SHORTCUTS</span>
+          <p>新建标签 <kbd>⌘ / Ctrl</kbd> <kbd>T</kbd></p>
+          <p>账号菜单 <kbd>⌘ / Ctrl</kbd> <kbd>B</kbd></p>
+          <p>添加账号 <kbd>⌘ / Ctrl</kbd> <kbd>⇧</kbd> <kbd>N</kbd></p>
+        </div>
+      </section>
+
+      <section
+        class="faq-section section container"
+        id="faq"
+        aria-labelledby="faq-title"
+      >
+        <div class="faq-intro">
+          <p class="eyebrow">04 / GOOD TO KNOW</p>
+          <h2 id="faq-title">开始前，<br />了解这些。</h2>
+          <p>清晰的说明，<br />也是体验的一部分。</p>
+          <a
+            class="text-link"
+            href="https://github.com/ForceMind/ChatGPT/issues"
+            target="_blank"
+            rel="noopener noreferrer"
+            >反馈问题 <svg><use href="#external" /></svg
+          ></a>
+        </div>
+        <div class="faq-list">
+          <details>
+            <summary>这是 OpenAI 官方应用吗？<span>+</span></summary>
+            <p>
+              不是。ChatGPT Profiles 是独立维护的非官方网页客户端。ChatGPT
+              服务和订阅由 OpenAI 提供，本项目不附带订阅，也不需要 OpenAI API
+              Key。
+            </p>
+          </details>
+          <details>
+            <summary>账号隔离具体意味着什么？<span>+</span></summary>
+            <p>
+              不同空间使用独立
+              Cookie、网页存储与登录会话，同一空间内的标签和登录弹窗共享会话。应用不收集密码，也不将
+              Cookie 上传至自建服务。隔离不会改变 IP
+              或伪装设备指纹，也不保证所有第三方登录渠道可用。
+            </p>
+          </details>
+          <details>
+            <summary>
+              Mac 或 Windows 提示无法打开，怎么办？<span>+</span>
+            </summary>
+            <p>
+              Mac 构建采用 ad-hoc 签名，未经过 Developer ID 签名与 Apple
+              公证；确认下载来源和文件摘要后，可按
+              <a
+                href="https://support.apple.com/zh-cn/102445"
+                target="_blank"
+                rel="noopener noreferrer"
+                >Apple 官方指引</a
+              >处理。Windows 构建未经过 Authenticode 签名，可能触发未知发布者或
+              SmartScreen 提醒。请确认文件来自本仓库
+              Release，按设备的安全策略决定是否运行。
+            </p>
+          </details>
+          <details>
+            <summary>账号会同步到其他设备吗？<span>+</span></summary>
+            <p>
+              不会。每台设备各自登录、各自保存账号与标签，没有跨设备同步服务。ChatGPT
+              本身的云端对话遵循其服务规则。macOS
+              账号数据在“~/Library/Application Support/ChatGPT
+              Profiles/”；Windows 安装版和 ZIP 均在“%APPDATA%\ChatGPT
+              Profiles\”；Android 在应用私有目录。
+            </p>
+          </details>
+          <details>
+            <summary>Android 为什么提示更新 WebView？<span>+</span></summary>
+            <p>
+              独立账号依赖系统 WebView 的多档案能力，Android 版本达标并不代表
+              WebView 已支持。请更新 Android System WebView / Chrome
+              后重试；不支持时应用会阻止使用，避免退回共享账号空间。首版暂不支持
+              blob: 文件下载。
+            </p>
+          </details>
+          <details>
+            <summary>如何校验下载、更新或清除账号？<span>+</span></summary>
+            <p>
+              下载卡片中可复制 SHA-256；Windows 使用 PowerShell 的
+              Get-FileHash，Mac 使用 shasum -a
+              256，对照结果。当前通过手动安装新版本更新，Android
+              需要保持相同签名。账号菜单可清除本机登录或移除空间，这不会删除
+              ChatGPT 云端对话。Windows 卸载默认保留账号数据，Android
+              卸载会删除本机空间。
+            </p>
+          </details>
+        </div>
+      </section>
+
+      <section class="final-cta container">
+        <div>
+          <p class="eyebrow">YOUR NEXT CONTEXT STARTS HERE.</p>
+          <h2>空间分开，思路<span class="accent-text">连贯。</span></h2>
+        </div>
+        <a class="button button-primary" href="#downloads"
+          >下载 ChatGPT Profiles <svg><use href="#arrow" /></svg
+        ></a>
+      </section>
+    </main>
+    <footer class="footer container">
+      <div class="footer-top">
+        <a class="brand" href="#"
+          ><span class="brand-mark">P<span>_</span></span
+          ><span>ChatGPT <b>Profiles</b></span></a
+        >
+        <div>
+          <a
+            href="https://github.com/ForceMind/ChatGPT"
+            target="_blank"
+            rel="noopener noreferrer"
+            >源代码 ↗</a
+          ><a
+            href="https://github.com/ForceMind/ChatGPT/releases"
+            target="_blank"
+            rel="noopener noreferrer"
+            >发布记录 ↗</a
+          ><a href="#guide">使用指南 ↑</a>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>
+          独立维护的非官方客户端。ChatGPT 与 OpenAI
+          的名称、网页及服务属于各自权利人。
+        </p>
+        <span>BUILT FOR FOCUS. / BY FORCEMIND</span>
+      </div>
+    </footer>
+    <div
+      class="toast"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+    ></div>
+  </body>
+</html>

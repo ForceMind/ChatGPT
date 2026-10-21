@@ -1,6 +1,6 @@
 # ChatGPT Profiles Desktop
 
-桌面开发版本：`3.0.0-alpha.2`（Windows 首版试用）；已公开的 Mac 安装包仍为 `3.0.0-alpha.1`。Electron `44.9.1`、React `19.3.1`、TypeScript。各设备独立使用，本版不需要自建服务。
+桌面开发版本：`3.0.0-alpha.2`（Windows 首个公开预发布版）；已公开的 Mac 安装包仍为 `3.0.0-alpha.1`。Electron `44.9.1`、React `19.3.1`、TypeScript。各设备独立使用，本版不需要自建服务。
 
 ## 使用
 
@@ -91,4 +91,4 @@ npm run dist:win
 
 当前未配置 Authenticode 证书，试用包未签名，SmartScreen 或组织策略可能拦截；请核对来源与摘要。CI 隔离验收使用本地 fixture，安装包启动只打开未登录网页；这些结果不代表 Windows 10/11 客户端真机与真实 ChatGPT 登录已经通过。最新检查及安装包入口见根目录进度记录。
 
-本轮 Windows 验证入口：[完整构建与安装验收](https://github.com/ForceMind/ChatGPT/actions/runs/39443940258)。5 项状态测试、3 项 Electron 流程及安装/卸载保留账号数据通过，原生鼠标拖动实测位移 80×45 像素。试用包入口见根 README。
+本轮 Windows 验证入口：[完整构建与安装验收](https://github.com/ForceMind/ChatGPT/actions/runs/39443940258)。5 项状态测试、3 项 Electron 流程及安装/卸载保留账号数据通过，原生鼠标拖动实测位移 80×45 像素。[公开 Release](https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.2) 已提供 EXE 和免安装 ZIP；网站下载入口见根 README。

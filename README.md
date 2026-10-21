@@ -4,7 +4,9 @@
 
 ChatGPT Profiles 是一个非官方 ChatGPT 网页客户端。它保留网页本身的使用体验，在顶部增加轻量的账号与标签管理：白色、浅灰、黑色控件，没有地址栏，账号只用小色点辅助区分。
 
-当前版本：**3.0.0-alpha.1**。提供 macOS 安装包与 Android 首版签名 APK。Windows x64 另提供 `3.0.0-alpha.2` CI 试用构建，尚未新增公开 Release。真实账号登录与切换仍待人工验收，不能将存储隔离测试等同于所有登录方式都已通过。
+**[访问项目主页与下载](https://chatgpt-profiles.pages.dev/)** · [GitHub Releases](https://github.com/ForceMind/ChatGPT/releases) · [使用指南](#开始使用)
+
+当前公开预发布版本：Windows x64 为 **3.0.0-alpha.2**，macOS 与 Android 为 **3.0.0-alpha.1**。真实账号登录与切换仍待人工验收，不能将存储隔离测试等同于所有登录方式都已通过。
 
 ![macOS 沉浸式界面](docs/images/macos-immersive.jpg)
 
@@ -16,7 +18,7 @@ ChatGPT Profiles 是一个非官方 ChatGPT 网页客户端。它保留网页本
 | --- | --- | --- |
 | macOS · Apple Silicon | [DMG](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.1/ChatGPT-Profiles-3.0.0-alpha.1-mac-arm64.dmg) · [ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.1/ChatGPT-Profiles-3.0.0-alpha.1-mac-arm64.zip) | macOS 13+，当前在 macOS 26.2 / ARM64 验证 |
 | Android · 手机 / 平板 | [APK](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.1/ChatGPT-Profiles-3.0.0-alpha.1-android.apk) | Android 9+，并要求系统 WebView 支持多档案 |
-| Windows · x64 | [EXE 安装包](https://github.com/ForceMind/ChatGPT/actions/runs/39443940258/artifacts/12274469728) · [免安装 ZIP](https://github.com/ForceMind/ChatGPT/actions/runs/39443940258/artifacts/12275384158) | `alpha.2` CI 试用包；Windows runner 已验证，客户端真机待验 |
+| Windows · x64 | [EXE 安装包](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.2/ChatGPT-Profiles-3.0.0-alpha.2-windows-x64-setup.exe) · [免安装 ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.2/ChatGPT-Profiles-3.0.0-alpha.2-windows-x64.zip) | `alpha.2` 公开预发布；Windows runner 已验证，Windows 10/11 客户端真机待验 |
 | Intel Mac、Linux | 暂无 | 后续适配与实机验收 |
 | iPhone / iPad | 暂无 | 后续验证独立 WKWebView 数据空间 |
 
@@ -24,7 +26,7 @@ macOS：打开 DMG，将应用拖入“应用程序”后启动。当前构建�
 
 Android：下载 APK，按系统提示允许当前来源安装。安装后如果出现 WebView 更新提示，请先更新 Android System WebView / Chrome，再重新启动；应用不会在不支持隔离的设备上退回共享账号空间。
 
-Windows 试用包来自 Actions，下载需登录 GitHub，产物保留至 2027-01-18。下载的外层压缩包解压后，EXE 为安装程序；ZIP 产物中包含程序 ZIP，解压后运行 `ChatGPT Profiles.exe`。未配置 Authenticode 证书，系统可能显示未知发布者或 SmartScreen 提醒；请核对构建来源与摘要。
+Windows：EXE 与免安装 ZIP 已公开发布，无需登录 GitHub 下载。运行 EXE 按提示安装，无需管理员权限；或解压 ZIP 后运行 `ChatGPT Profiles.exe`。两者均将账号数据保存在 `%APPDATA%\ChatGPT Profiles\`，ZIP 不将数据放在程序目录。未配置 Authenticode 证书，系统可能显示未知发布者或 SmartScreen 提醒；请核对构建来源与摘要。
 
 ![Windows 已安装客户端，未登录 ChatGPT](docs/images/windows-installed.png)
 
@@ -96,6 +98,7 @@ Android 数据保存在应用私有目录。`workspace.json`、备份与撤销�
  desktop/               Electron + React + TypeScript Mac / Windows 客户端
  android/               原生 Java + AndroidX WebKit 客户端
  docs/                  原目录摘要与实际界面截图
+ site/                  下载说明主页，静态 HTML / CSS / JavaScript
  MACOS_MIGRATION_PLAN.md 授权、迁移进度、验证与发布记录
 ```
 
@@ -143,6 +146,19 @@ cd android
 ```
 
 签名材料与个人 SDK 路径不纳入 Git。构建、签名与设备要求见 [Android 开发说明](android/README.md)。
+
+### 下载主页与 Cloudflare Pages
+
+主页源文件位于 `site/`，无前端框架和构建依赖。安装包直接链接 GitHub Release，Pages 仅托管网页与产品截图。
+
+```sh
+# 本地预览
+python3 -m http.server 4178 --directory site
+# 使用已有 Cloudflare 登录发布到正式项目
+npx wrangler@4.151.3 pages deploy site --project-name chatgpt-profiles --branch main
+```
+
+Pages 项目使用 Direct Upload，Git 推送不会自动部署。发布前检查 `node --check site/app.js`、桌面/手机实际页面与下载链接。外部磁盘上的 `._*`、`.DS_Store` 等文件应排除出上传目录。部署来源、验证和部署 ID 集中记录在 [迁移与交付记录](MACOS_MIGRATION_PLAN.md)。
 
 ## 当前验证边界
 
