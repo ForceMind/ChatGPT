@@ -133,3 +133,7 @@
 - [v3.0.0-alpha.2](https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.2) 已于 `2026-10-21T03:05:31Z` 公开，`draft=false`、`prerelease=true`，目标提交 `a8d984c7652ecc89361438970086d4a46d51a36c`。两个下载 URL 的匿名 HEAD 均为 200，大小分别为 112306244 / 154817621 bytes。原始构建索引仍含未分发 blockmap 记录，Release 的校验清单仅列两个实际下载包。
 - 网站实际 Chromium 检查通过：1440×1000、1024×900、768×1024、390×844、360×800 均无横向溢出；三平台截图切换、键盘方向/Home 导航、FAQ 展开、SHA-256 剪贴板、下载区锚点和 Windows/Mac/Android/iPad 推荐逻辑通过；页面与资源无错误。修复了背景光晕与装饰轨道在窄屏超出容器的问题。截图为原始产品截图，Android 明确标记模拟器与测试备注。
 - Cloudflare 现有登录有效。使用 Wrangler `4.151.3`，新建独立 Pages 项目 `chatgpt-profiles`、正式分支 `main`；未改动其他网站。CLI 创建默认尝试 Workers 委派后未找到静态目录，按 CLI 说明仅在项目创建时使用 `--force` 直接创建 Pages；后续部署不使用该标志。
+- 正式站 **https://chatgpt-profiles.pages.dev/** 已上线。Cloudflare 部署 ID `4025f81e-c4d3-4722-8b06-7ba0e5f59d0f`，环境 `Production`、分支 `main`、网站源码提交 `0c044f7a3ecb8addb309a6e2a91c22bc6fc4240b`；部署专用地址 `https://4025f81e.chatgpt-profiles.pages.dev`。从该 Git 提交导出 11 个干净文件，未上传磁盘 AppleDouble 文件；10 个公开资源与 `_headers` 分别上传。
+- 线上 Chromium 再次通过同一组五种尺寸与完整交互验收，控制台及页面资源无错误。通过正式域名回读的 10/10 个公开文件 SHA-256 与来源提交完全一致；CSP、禁止嵌入、MIME 与权限响应头生效，未知页面返回正确的自定义 404。命令行检查对 `404.html` 的 Pages 308 规范链接重定向显式跟随后通过，不修改站点路由或放宽断言。
+- 网站五个安装包链接的匿名 HEAD 均为 200，字节数与 GitHub 附件一致。README、桌面说明已更新为公开 Windows Release 与主页入口。Pages 使用 Direct Upload，后续网站源文件更新仍须显式部署；本次后续文档提交不改变已经逐字节核对的网站文件。
+- 本轮交付完成：Windows EXE/ZIP 公开预发布、成熟数字朋克主页、三平台下载与说明、Cloudflare Pages 正式部署。App 代码和既有 Mac/Android 二进制未改变。真实双账号、Windows 客户端真机及既有文档标注的业务边界继续待用户人工验收。
