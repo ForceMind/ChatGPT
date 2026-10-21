@@ -262,3 +262,9 @@
 - 公开文件 `ChatGPT-Profiles-3.0.0-alpha.5-mac-arm64.dmg`：152841781 字节；SHA-256 `2368704e3932b4f0117bc3071610de3484c8e3214e9291a5d25393c6fffdac7a`。
 - 公开文件 `ChatGPT-Profiles-3.0.0-alpha.5-mac-arm64.zip`：152905343 字节；SHA-256 `6d9b69be35476b911987300040a25fbdcdd6310e13ffdf9b0d3ced8a993f3ef6`。
 - 官网本地浏览器 1440px / 390px 验证通过：Mac 下载指向 alpha.5，展示及复制摘要与最终包一致，里程碑标注公开预发布；Windows / Android 版本保持不变，无脚本或资源错误，无横向溢出。
+
+- GitHub Release 已公开为预发布 `v3.0.0-alpha.5`，ID `419624361`，发布源代码 / 标签为 `94d37134620bfb4a9e9f771d6126d66276deadd2`。仅上传标准命名 DMG、ZIP、SHA256SUMS.txt 共 3 个资产；服务端 digest / 大小全部与本地一致，三个公开下载地址均 HTTP 200。
+- main 仅同步 `README.md`、`site/index.html`，提交 `0c6152d69db694a1c413fb67621ea0c8cc3aeec1`，未合并其余 macOS 工作台源代码。远端 main、功能分支、alpha.5 标签均已回读确认。
+- 官网生产部署 `4ad60231-d672-479d-881f-f28d161ff600`，Pages Source `0c6152d`。`https://chatgpt-profiles.pages.dev/` 浏览器 HTTP 200，31686 字节，HTML SHA-256 `f443eaa4f5b2d448e6c028f3a75cc4ea15ea02a01b426e43f6e68a02d9e206fc` 与提交一致。线上 1440px / 390px 下载链接、摘要复制、里程碑及布局检查通过，无页面/资源错误。
+- 验收边界：已复现并验证系统缩略图/提示所用的应用图标；未触发真实聊天通知，也未操作个人安装或清除通知/图标缓存。通知中心历史条目可能保留旧图；安装修正包后的真实账号搜索、拖动、上传/发送及通知显示仍需用户实机复核。Mac 包仍为 ad-hoc、未公证。
+- 自定义域 `https://chatgpt.xincreates.com/` 浏览器 HTTP 200；返回 HTML 不与 Pages 原始文件逐字节相同，但实际 DOM 的 alpha.5 链接、摘要复制、里程碑、其他平台版本及 1440px / 390px 布局全部验证一致，无脚本/资源错误。命令行 urllib 访问曾遇 403，实际浏览器验证通过，不将命令行结果当作网站不可用。
