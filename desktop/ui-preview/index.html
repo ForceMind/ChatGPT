@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; frame-src 'self' data: blob:; font-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'" />
+    <title>ChatGPT Profiles · macOS 资产工作台交互预览</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="catalog.js" defer></script>
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <div class="preview-heading">
+      <div>
+        <strong>ChatGPT Profiles</strong><span>macOS · 下一版交互预览</span>
+      </div>
+      <p>示例文件 · 整理仅在本页生效 · 转换和发送仅演示流程</p>
+    </div>
+    <main class="app-window" aria-label="macOS 客户端交互预览">
+      <header class="titlebar">
+        <div class="traffic-lights" aria-hidden="true">
+          <i></i><i></i><i></i>
+        </div>
+        <div class="browser-tabs">
+          <button class="browser-tab active" data-action="chat">
+            <span class="inline-icon" data-icon="chat"></span><span>新对话</span
+            ><span class="tab-x">×</span></button
+          ><button class="browser-tab secondary-tab" data-action="source">
+            <span class="inline-icon" data-icon="chat"></span
+            ><span>落地页方案</span><span class="tab-x">×</span></button
+          ><button
+            class="icon-button new-tab"
+            data-action="new-chat"
+            aria-label="新建标签页"
+          >
+            +
+          </button>
+        </div>
+        <div class="window-drag" aria-label="窗口拖动区域示意"></div>
+        <button class="title-action" data-action="assets" id="asset-toggle">
+          <span class="inline-icon" data-icon="folder"></span>资产
+        </button>
+        <button class="title-action" data-action="skills" id="library-toggle">
+          <span class="inline-icon" data-icon="sparkles"></span>能力库
+        </button>
+        <div class="account-anchor">
+          <button
+            class="account-button"
+            id="account-button"
+            aria-expanded="false"
+            aria-haspopup="menu"
+          >
+            <span class="account-dot"></span
+            ><span id="account-label">工作账号</span
+            ><span class="inline-icon" data-icon="chevron"></span>
+          </button>
+          <div id="account-menu" class="account-menu" role="menu" hidden></div>
+        </div>
+      </header>
+      <div class="content-area">
+        <section
+          class="chat-page"
+          id="chat-page"
+          hidden
+          aria-label="ChatGPT 网页示意"
+        >
+          <aside class="chat-sidebar">
+            <div class="chat-brand">ChatGPT <span>◧</span></div>
+            <button data-action="new-chat">
+              <span class="inline-icon" data-icon="edit"></span>新对话</button
+            ><button data-action="assets">
+              <span class="inline-icon" data-icon="folder"></span>打开资产中心
+            </button>
+            <div class="chat-sidebar-label">对话示意</div>
+            <button data-action="source">落地页方案</button
+            ><button data-action="source">产品发布计划</button>
+            <p>网页布局示意<br />此处不连接真实 ChatGPT</p>
+          </aside>
+          <div class="chat-body">
+            <div class="chat-topline">
+              <strong>ChatGPT <span>⌄</span></strong
+              ><span id="chat-account-hint">工作账号 · 独立空间</span>
+            </div>
+            <div class="chat-welcome">
+              <div class="greeting-icon" data-icon="sparkles"></div>
+              <h1 id="chat-title">有什么可以帮忙的？</h1>
+              <p id="chat-subtitle">文件有自己的位置，思路继续留在这里。</p>
+              <div class="chat-composer">
+                <textarea
+                  aria-label="网页输入框示意"
+                  placeholder="询问任何问题"
+                ></textarea>
+                <div>
+                  <button
+                    class="icon-button"
+                    data-action="assets"
+                    aria-label="从资产中心选择文件"
+                  >
+                    +</button
+                  ><span>交互预览 · 不会发送消息</span
+                  ><button
+                    class="composer-send"
+                    data-action="demo-chat"
+                    aria-label="发送示意"
+                  >
+                    ↑
+                  </button>
+                </div>
+              </div>
+              <div class="chat-suggestions">
+                <button data-action="assets">查看最近下载</button
+                ><button data-action="skills">选择一个 Skill</button
+                ><button data-action="agents">找一位专业智能体</button>
+              </div>
+            </div>
+            <p class="chat-footnote">
+              预览中的网页为界面示意。实际 App 启动后仍直接进入 ChatGPT 网页。
+            </p>
+          </div>
+        </section>
+
+        <section class="workbench" id="workbench" aria-label="资产中心">
+          <aside class="sidebar">
+            <div class="sidebar-heading">
+              <div class="workspace-mark" data-icon="folder"></div>
+              <div>
+                <h1>资产中心</h1>
+                <p id="sidebar-account">工作账号的本机文件</p>
+              </div>
+            </div>
+            <nav id="asset-navigation" aria-label="资产分类"></nav>
+            <div class="sidebar-divider"></div>
+            <button class="sidebar-action" data-action="skills">
+              <span class="inline-icon" data-icon="sparkles"></span>Skill
+              库<span>120</span></button
+            ><button class="sidebar-action" data-action="agents">
+              <span class="inline-icon" data-icon="agents"></span>智能体库<span
+                >328</span
+              >
+            </button>
+            <div class="sidebar-bottom">
+              <span class="inline-icon" data-icon="shield"></span>
+              <div>文件按账号归属整理<small>此预览使用示例资产</small></div>
+            </div>
+          </aside>
+          <div class="asset-main">
+            <div class="page-heading">
+              <div>
+                <p class="breadcrumb">工作空间 <span>/</span> 资产</p>
+                <h2 id="asset-title">
+                  全部资产 <span id="asset-count"></span>
+                </h2>
+              </div>
+              <div class="heading-actions">
+                <button class="secondary" data-action="import">
+                  <span class="inline-icon" data-icon="plus"></span
+                  >导入文件</button
+                ><button
+                  class="icon-button close-panel"
+                  data-action="chat"
+                  aria-label="关闭资产中心，返回网页"
+                >
+                  <span class="inline-icon" data-icon="close"></span>
+                </button>
+              </div>
+            </div>
+            <div class="asset-toolbar">
+              <label class="search-box"
+                ><span class="inline-icon" data-icon="search"></span
+                ><input
+                  id="asset-search"
+                  type="search"
+                  placeholder="搜索文件名、标签或来源对话"
+                  aria-label="搜索资产"
+                /><kbd>⌘ K</kbd></label
+              >
+              <div class="toolbar-controls">
+                <select id="asset-sort" aria-label="资产排序">
+                  <option value="recent">最近添加</option>
+                  <option value="name">按名称</option>
+                  <option value="size">按大小</option>
+                </select>
+                <div class="view-switch" role="group" aria-label="文件视图">
+                  <button data-view="grid" class="active" aria-label="网格视图">
+                    <span class="inline-icon" data-icon="grid"></span></button
+                  ><button data-view="list" aria-label="列表视图">
+                    <span class="inline-icon" data-icon="list"></span>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="asset-context" id="asset-context"></div>
+            <div class="selection-bar" id="selection-bar" hidden></div>
+            <div class="asset-scroll">
+              <div id="asset-grid" class="asset-grid"></div>
+            </div>
+            <div class="asset-status" id="asset-status"></div>
+          </div>
+          <aside
+            class="asset-detail"
+            id="asset-detail"
+            aria-label="资产详情"
+          ></aside>
+        </section>
+
+        <section
+          class="capability-page"
+          id="capability-page"
+          hidden
+          aria-label="能力库"
+        >
+          <aside class="sidebar library-sidebar">
+            <div class="sidebar-heading">
+              <div class="workspace-mark" data-icon="sparkles"></div>
+              <div>
+                <h1>能力库</h1>
+                <p>给任务选合适的方法</p>
+              </div>
+            </div>
+            <div class="library-tabs">
+              <button data-action="skills" id="skills-nav">
+                <span class="inline-icon" data-icon="sparkles"></span>Skill<span
+                  >120</span
+                ></button
+              ><button data-action="agents" id="agents-nav">
+                <span class="inline-icon" data-icon="agents"></span>智能体<span
+                  >328</span
+                >
+              </button>
+            </div>
+            <div class="sidebar-divider"></div>
+            <nav id="capability-navigation" aria-label="能力分类"></nav>
+            <button class="sidebar-action back-assets" data-action="assets">
+              <span class="inline-icon" data-icon="folder"></span>回到资产中心
+            </button>
+            <div class="sidebar-bottom">
+              <span class="inline-icon" data-icon="book"></span>
+              <div>角色与任务分别选择<small>能力目录为预览内容</small></div>
+            </div>
+          </aside>
+          <div class="capability-main">
+            <div class="page-heading">
+              <div>
+                <p class="breadcrumb">工作空间 <span>/</span> 能力库</p>
+                <h2 id="capability-title">Skill <span>120</span></h2>
+                <p class="page-description" id="capability-description"></p>
+              </div>
+              <button
+                class="icon-button close-panel"
+                data-action="chat"
+                aria-label="关闭能力库，返回网页"
+              >
+                <span class="inline-icon" data-icon="close"></span>
+              </button>
+            </div>
+            <div class="library-toolbar">
+              <label class="search-box"
+                ><span class="inline-icon" data-icon="search"></span
+                ><input
+                  id="capability-search"
+                  type="search"
+                  placeholder="搜索能力、用途或关键词"
+                  aria-label="搜索能力库" /></label
+              ><button
+                class="secondary"
+                id="favorites-only"
+                aria-pressed="false"
+              >
+                <span class="inline-icon" data-icon="star"></span>收藏
+              </button>
+            </div>
+            <div class="library-notice" id="library-notice"></div>
+            <div class="capability-scroll">
+              <div
+                class="library-result-heading"
+                id="library-result-heading"
+              ></div>
+              <div id="capability-grid" class="capability-grid"></div>
+            </div>
+          </div>
+          <aside
+            class="capability-detail"
+            id="capability-detail"
+            aria-label="能力详情"
+          ></aside>
+        </section>
+      </div>
+    </main>
+    <input
+      type="file"
+      id="file-input"
+      multiple
+      hidden
+      accept="image/*,.html,.htm,.pdf,.md,.txt,.csv,.json"
+    />
+    <div id="modal-root"></div>
+    <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+    <footer class="preview-footer">
+      <span>界面预览 · macOS 优先</span
+      ><span>关闭面板恢复沉浸网页 · 账号色点仅作标识</span>
+    </footer>
+  </body>
+</html>
