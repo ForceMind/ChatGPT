@@ -10,6 +10,8 @@ ChatGPT Profiles 是一个非官方 ChatGPT 网页客户端。它保留网页本
 
 ![macOS 沉浸式界面](docs/images/macos-immersive.jpg)
 
+当前功能分支正在交付 macOS `3.0.0-alpha.3` 本地体验版：账号资产库、安全预览、本地格式转换、网页任务发送、120 个 Skill、328 个智能体（232 个互联网候选优先），以及脱敏登录链接记录。使用与验证边界见 [桌面说明](desktop/README.md#macos-工作台--alpha3)。官网仍指向已公开版本，Windows / Android 的工作台迭代后续安排。
+
 ## 下载与安装
 
 安装包从本仓库 [Releases](https://github.com/ForceMind/ChatGPT/releases) 获取。首个版本使用预发布渠道，便于在实际使用后继续修正。

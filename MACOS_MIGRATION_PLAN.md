@@ -170,3 +170,14 @@
 - 已核对本项目 Electron 44.9.1 实际 API：仅有需相应代码签名 entitlement 的 `configureWebAuthn.touchID`（设备绑定），不是 iCloud/Chrome 密钥导入。当前 App 未接入已有系统通行密钥选择器，Chrome 的 Google Password Manager 与本 App 独立；帮助页明确说明，不能将 Chrome 登录当作 App 登录。实际通行密钥仍待特定设备/凭据提供方集成与验证，不修改当前正常登录流程。
 - 本批验证：`npm run check` 32/32 单元测试、严格类型检查及构建通过；新增真实 Electron 本地重定向验收通过，核对拦截、不泄漏 OAuth 码/路径、菜单记录与登录帮助、关闭后恢复网页、重启保留及清空。页面实际渲染见 `docs/images/macos-login-records.png`（本地验收素材）。
 - 官网截图修正已部署：Pages `04ce5f41`，源码 `b86b5e9650d7df639526923b5f3ac3e31b558664`。生产域 `https://chatgpt-profiles.pages.dev/` 的 `app.js` 与 `assets/macos-window.jpg` 均 HTTP 200 且 SHA-256 与提交文件一致；图片 137595 字节，SHA-256 `48c3c9c11315f62e349b0842afc763cd3442476d75ade0b7029a278ac0f5af9f`。官网安装包仍为已公开版本，登录记录随本次 macOS 工作台迭代交付。
+
+- 一键网页处理已实现：固定来源和目标账号，校验并复制暂存附件，新建目标账号后台标签，正常网页文件控件上传并确认全部文件，填入选定 Skill / 完整角色的任务指令，发送一次，只有显示本次用户消息并清空输入框才记 submitted。HTML/SVG/代码附件显示 `.txt` 名称映射；原件及来源账号不变。
+- 本地持久任务记录接入工作台侧栏，可看状态、取消发送前任务、打开目标对话。相同 requestId 不能改变要求或重复提交；发送前持久化 sending，失败/重启时结果不确定的任务不自动重发。目标网页结构、登录与文件额度不满足时保留草稿并显示错误，不使用私有 API。
+- 首轮网页真实 DOM 集成验收通过：实际 multipart 字节、跨账号明确确认、目标 session Cookie、任务指令和别名、同任务不重发、打开目标账号、另一账号没有源资产、发送后未收到网页确认的 uncertain 状态与重启保持。素材为本地回环网页，不是 ChatGPT 真实账号验收。35/35 单元测试及构建通过。
+- 交付批次统一为 `3.0.0-alpha.3`（仅本地 macOS 体验安装包）；现有官网公开下载版本不变。待本批回归、安装包检查与用户真实网页上传/发送验收后，再判断完成状态。
+- 最终开发态回归：`npx playwright test assets.e2e.ts conversions.e2e.ts login-diagnostics.e2e.ts handoff.e2e.ts workspace.e2e.ts` 为 6 项通过、1 项 Windows 专属流程按平台跳过。实际覆盖附件控件按需挂载、文件选择拦截、上传字节、取消、发送不确定；无字符集声明的 UTF-8 HTML 中文预览已修正并增加实际断言。原有账号隔离、登录弹窗、重启/单账号清理、标签、沙箱、代表性尺寸、全屏切换本轮通过，未放宽旧断言。
+- 最新原生任务界面截图 `docs/images/macos-handoff-submitted.png` 使用明确本地验收素材。真实 ChatGPT 的账号登录、网页结构、附件接受与发送确认尚需人工验收；安装包不会自动向真实网页发测试消息。
+- 最终发送前检查已加固并通过针对性回归：正文与附件名称/数量在点击发送的同一网页执行段内重新核对；附件已移除、数量改变或正文被编辑时停止，不把准备时的状态当作发送时的状态。
+- 本地安装包已生成并核验，Apple Silicon / arm64，ad-hoc 签名、未公证；包内 main/preload/renderer 与最终 dist 字节一致，331 个能力资源含 manifest、330 个资源摘要及 328 份角色正确。`codesign --verify --deep --strict`、`hdiutil verify`、`unzip -tq` 通过；未自动安装/启动包去操作现有真实账号。
+- `desktop/release/ChatGPT Profiles-3.0.0-alpha.3-arm64.dmg`：154549634 字节，SHA-256 `072170a020ebb38a297f29fca9e0d243b9844275bb663f39e9c15dddd1a5f7d2`。ZIP：154623930 字节，SHA-256 `ebe612680679dc4dc85ed264d7f2030cec1de9494412a138653bf3e8e14d6d72`。摘要文件 `desktop/release/SHA256SUMS-alpha.3.txt`；仅本地体验交付，未新增公开 Release。
+- 最终独立条件：请用户在安装的 alpha.3 中，选择一个允许上传的非敏感文件，点击「交给 GPT → 新建对话并发送」，确认目标账号中的附件与第一条消息真实出现；未确认前不将本地回环验收宣称为 ChatGPT 业务验收。现有登录已由用户说明正常，第三方链接的具体触发站点等待后续记录；系统/Chrome 通行密钥选择器仍未接入。Windows/Android/iOS 工作台迁移不在本批。

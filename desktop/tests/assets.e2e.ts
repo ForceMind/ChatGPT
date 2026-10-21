@@ -14,7 +14,7 @@ test('macOS real download, account-scoped assets, safe HTML and full capability 
   try{
     server=createServer((request,response)=>{
       if(request.url?.startsWith('/leak')){leaks++;response.end('blocked target');return;}
-      if(request.url==='/download'){response.writeHead(200,{'Content-Type':'text/html','Content-Disposition':'attachment; filename="downloaded-page.html"'});response.end(`<!doctype html><html><body><h1>Native download fixture</h1><button id="counter" onclick="this.textContent='clicked'">click</button><script>try{window.parentBridge=!!parent.profiles}catch{window.parentBridge=false}fetch(${JSON.stringify('http://'+request.headers.host+'/leak')}).catch(()=>{})</script></body></html>`);return;}
+      if(request.url==='/download'){response.writeHead(200,{'Content-Type':'text/html','Content-Disposition':'attachment; filename="downloaded-page.html"'});response.end(`<!doctype html><html><body><h1>Native download fixture 中文</h1><button id="counter" onclick="this.textContent='clicked'">click</button><script>try{window.parentBridge=!!parent.profiles}catch{window.parentBridge=false}fetch(${JSON.stringify('http://'+request.headers.host+'/leak')}).catch(()=>{})</script></body></html>`);return;}
       response.writeHead(200,{'Content-Type':'text/html'});response.end('<!doctype html><title>Local asset acceptance fixture</title><h1>本地文件验收网页</h1><a id="download" href="/download" download>Download asset</a>');
     });
     await new Promise<void>(resolve=>server!.listen(0,'127.0.0.1',resolve));
@@ -33,7 +33,7 @@ test('macOS real download, account-scoped assets, safe HTML and full capability 
     await expect(shell.locator('#wb-asset-grid [data-status="ready"]')).toHaveCount(1);
     const ledger=new AssetStore(data);const downloaded=ledger.list(profile)[0];expect(downloaded.status).toBe('ready');expect(readFileSync(ledger.resolveFile(profile,downloaded.id),'utf8')).toContain('Native download fixture');
     await shell.locator('#wb-asset-detail [data-action="preview"]').first().click();
-    const frame=shell.frameLocator('#wb-viewer iframe');await expect(frame.locator('h1')).toHaveText('Native download fixture');
+    const frame=shell.frameLocator('#wb-viewer iframe');await expect(frame.locator('h1')).toHaveText('Native download fixture 中文');
     await app!.evaluate(({app,BrowserWindow})=>{app.focus({steal:true});const win=BrowserWindow.getAllWindows().find(w=>w.webContents.getURL()==='app://shell/index.html')!;win.focus();win.webContents.focus();});
     await expect.poll(()=>app!.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().find(w=>w.webContents.getURL()==='app://shell/index.html')!.isFocused())).toBeTruthy();
     await frame.locator('#counter').focus();await expect.poll(()=>frame.locator('body').evaluate(()=>document.hasFocus())).toBeTruthy();

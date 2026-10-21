@@ -1,3 +1,4 @@
+import type { HandoffJob } from './handoff';
 import type { AssetRecord } from './assets';
 import type { CapabilitySnapshot, TaskPromptOptions } from './capabilities';
 
@@ -25,6 +26,11 @@ export type WorkbenchAPI = {
   agent: (id: string) => Promise<string>;
   favoriteCapability: (id: string, favorite: boolean) => Promise<void>;
   convert: (profileId:string,ids:string[],options:ConversionOptions) => Promise<ConversionResult>;
+  startHandoff:(request:HandoffRequest)=>Promise<HandoffJob>;
+  handoffs:(profileId:string)=>Promise<HandoffJob[]>;
+  cancelHandoff:(profileId:string,id:string)=>Promise<HandoffJob>;
+  openHandoff:(profileId:string,id:string)=>Promise<void>;
+  subscribeHandoffs:(handler:()=>void)=>()=>void;
   compose: (options: TaskPromptOptions) => Promise<string>;
   subscribe: (handler: (profileId: string) => void) => () => void;
 };

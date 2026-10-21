@@ -3,6 +3,8 @@ import type { Profile } from '../shared/model';
 import type { AssetAction, AssetItem, AssetPreview, WorkbenchAPI, WorkbenchPanel, ConversionOptions } from '../shared/workbench';
 import type { AgentSummary, CapabilitySnapshot, SkillDefinition } from '../shared/capabilities';
 import { wbIcon as icon } from './workbench-icons';
+import { handoffStatusNames,type HandoffJob } from '../shared/handoff';
+import type { HandoffRequest } from '../shared/workbench';
 import { conversionFormats } from '../shared/conversion-formats';
 
 const esc = (v: unknown) => String(v ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
@@ -27,6 +29,7 @@ export class WorkbenchUI {
   private generation=0; private previewGeneration=0; private disposed=false; private loaded=false;
   private unsubscribe:()=>void; private lastFocus?:HTMLElement; private taskSkill?:string; private taskAgent?:string;
   private previewAsset?:AssetItem;
+  private jobs:HandoffJob[]=[];private jobView?:'list'|'detail';private currentJob?:string;private submitting=false;private taskRequestId='';private unsubscribeJobs:()=>void;
   private modalVersion=0;
   private detailSignature='';
   constructor(private readonly root:HTMLElement,private readonly api:WorkbenchAPI,profile:Profile,profiles:Profile[],panel:WorkbenchPanel,private readonly options:ViewOptions){
@@ -37,15 +40,17 @@ export class WorkbenchUI {
     this.$<HTMLSelectElement>('#asset-sort').addEventListener('change',e=>{this.sort=(e.target as HTMLSelectElement).value;this.renderAssets();});
     this.$<HTMLInputElement>('#capability-search').addEventListener('input',e=>{this.libraryQuery=(e.target as HTMLInputElement).value;this.renderLibrary();});
     this.$('#favorites-only').addEventListener('click',()=>{this.favoritesOnly=!this.favoritesOnly;this.renderLibrary();});
+    root.querySelectorAll('.aw-sidebar-bottom').forEach(e=>e.insertAdjacentHTML('afterbegin','<button class="aw-sidebar-action" data-action="handoff-history">'+icon('document')+'任务记录</button>'));
+    this.unsubscribeJobs=api.subscribeHandoffs(()=>void this.refreshJobs());
     this.unsubscribe=api.subscribe(id=>{if(id===this.profile.id)void this.reload();});
-    this.update(profile,profiles,panel);void this.reload();void this.loadCatalog();
+    this.update(profile,profiles,panel);void this.refreshJobs();void this.reload();void this.loadCatalog();
   }
   private $<T extends HTMLElement=HTMLElement>(selector:string):T { const node=this.root.querySelector<T>(selectors(selector));if(!node)throw new Error('工作台界面不完整：'+selector);return node; }
   private html(selector:string,value:string):void { this.$(selector).innerHTML=value.replace(/class="([^"]*)"/g,(_all,names:string)=>`class="${classes(names)}"`); }
   private notify(error:unknown):void { this.options.notice(typeof error==='string'?error:message(error)); }
   update(profile:Profile,profiles:Profile[],panel:WorkbenchPanel):void {
     const changed=profile.id!==this.profile.id;const oldPanel=this.panel;this.profile=profile;this.profiles=profiles;this.panel=panel;
-    if(changed){this.generation++;this.previewGeneration++;this.assets=[];this.selected=undefined;this.checked.clear();this.query='';this.filter='all';this.explicitSelection=false;this.closeModal();this.$<HTMLInputElement>('#asset-search').value='';void this.reload();}
+    if(changed){this.generation++;this.previewGeneration++;this.assets=[];this.selected=undefined;this.checked.clear();this.query='';this.filter='all';this.explicitSelection=false;this.closeModal();this.jobs=[];void this.refreshJobs();this.$<HTMLInputElement>('#asset-search').value='';void this.reload();}
     this.$('#workbench').hidden=panel!=='assets';this.$('#capability-page').hidden=panel==='assets';
     this.$('#sidebar-account').textContent=profile.name+'的本机文件';
     if(panel==='assets'){if(changed||oldPanel!==panel||!this.loaded)this.renderAssets();}
@@ -91,7 +96,7 @@ export class WorkbenchUI {
     this.html('#modal-root',`<div class="modal-backdrop"><section class="modal" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div class="modal-header"><div><h2>${esc(title)}</h2><p>${esc(description)}</p></div><button class="icon-button" data-action="close-modal" aria-label="关闭对话框">${icon('close')}</button></div><div class="modal-content">${content}</div>${footer?`<div class="modal-footer">${footer}</div>`:''}</section></div>`);
     requestAnimationFrame(()=>{this.root.querySelector<HTMLElement>('.aw-modal [autofocus],.aw-modal input,.aw-modal select,.aw-modal button')?.focus();});
   }
-  private closeModal():void {this.modalVersion++;this.$('#modal-root').innerHTML='';this.previewAsset=undefined;if(this.lastFocus?.isConnected)this.lastFocus.focus();}
+  private closeModal():void {this.jobView=undefined;this.currentJob=undefined;this.modalVersion++;this.$('#modal-root').innerHTML='';this.previewAsset=undefined;if(this.lastFocus?.isConnected)this.lastFocus.focus();}
   private async preview(asset=this.current(),source=false):Promise<void>{
     if(!asset||asset.status!=='ready')return;const profile=this.profile.id,request=++this.modalVersion;
     try{const data=await this.api.preview(profile,asset.id);if(this.disposed||profile!==this.profile.id||request!==this.modalVersion)return;this.previewAsset=asset;
@@ -136,11 +141,30 @@ export class WorkbenchUI {
   private taskFiles:AssetItem[]=[];
   private openTask(files:AssetItem[]):void {
     if(!this.catalog){this.notify('能力库正在加载，请稍后重试');return;}
+    this.taskRequestId=crypto.randomUUID();this.jobView=undefined;this.currentJob=undefined;
     this.taskFiles=files.filter(a=>a.status==='ready'&&!a.trashedAt);
     if(!this.taskSkill){const name=this.taskFiles[0]?.kind==='web'?'HTML 结构解读':this.taskFiles[0]?.kind==='image'?'截图问题分析':'文档摘要';this.taskSkill=this.catalog.skills.find(s=>s.name===name)?.id;}
     const options=(items:(SkillDefinition|AgentSummary)[],id?:string)=>items.map(i=>`<option value="${i.id}" ${i.id===id?'selected':''}>${esc(i.name)}</option>`).join('');
-    this.modal('交给 GPT','选择文件、任务、角色与目标账号。',`<div class="file-chips">${this.taskFiles.length?this.taskFiles.map(a=>`<div class="file-chip">${icon(a.kind==='image'?'image':'document')}${esc(a.name)}<small>${size(a.size)}</small></div>`).join(''):'<div class="file-chip">本次不附带文件</div>'}</div><div class="field-row"><div><label class="field-label">使用账号</label><select id="wb-task-account" class="field-select">${this.profiles.map(p=>`<option value="${p.id}" ${p.id===this.profile.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select></div><div><label class="field-label">输出语言</label><select id="wb-task-language" class="field-select"><option>简体中文</option><option>English</option><option>跟随文件语言</option></select></div></div><div id="wb-cross-account"></div><label class="field-label">处理任务 · Skill</label><select class="field-select" id="wb-task-skill"><option value="">不指定 Skill</option>${options(this.catalog.skills,this.taskSkill)}</select><label class="field-label">专业角色 · 选填</label><select class="field-select" id="wb-task-agent"><option value="">使用 ChatGPT 默认角色</option>${options(this.catalog.agents,this.taskAgent)}</select><label class="field-label">处理要求</label><textarea class="field-textarea" id="wb-task-instructions" placeholder="例如：保留风格，修复移动端排版，提供修改后的文件。"></textarea><div class="modal-note">${icon('shield')}<span>本批次正在接入网页上传与发送。当前可以审阅真实 Skill / 角色组成的处理指令；不会自动发送。</span></div><div id="wb-prompt-preview"></div>`,'<button class="secondary" data-action="task-prompt">查看处理指令</button><button class="primary" disabled title="网页上传与发送继续接入中">交给 GPT</button>');
+    this.modal('交给 GPT','选择文件、任务、角色与目标账号。',`<div class="file-chips">${this.taskFiles.length?this.taskFiles.map(a=>`<div class="file-chip">${icon(a.kind==='image'?'image':'document')}${esc(a.name)}<small>${size(a.size)}</small></div>`).join(''):'<div class="file-chip">本次不附带文件</div>'}</div><div class="field-row"><div><label class="field-label">使用账号</label><select id="wb-task-account" class="field-select">${this.profiles.map(p=>`<option value="${p.id}" ${p.id===this.profile.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select></div><div><label class="field-label">输出语言</label><select id="wb-task-language" class="field-select"><option>简体中文</option><option>English</option><option>跟随文件语言</option></select></div></div><div id="wb-cross-account"></div><label class="field-label">处理任务 · Skill</label><select class="field-select" id="wb-task-skill"><option value="">不指定 Skill</option>${options(this.catalog.skills,this.taskSkill)}</select><label class="field-label">专业角色 · 选填</label><select class="field-select" id="wb-task-agent"><option value="">使用 ChatGPT 默认角色</option>${options(this.catalog.agents,this.taskAgent)}</select><label class="field-label">处理要求</label><textarea class="field-textarea" id="wb-task-instructions" placeholder="例如：保留风格，修复移动端排版，提供修改后的文件。"></textarea><div class="modal-note">${icon('shield')}<span>将在所选账号中新建对话、上传附件并发送一次。HTML、SVG 与代码文件会使用 .txt 附件名保留原始内容。发送不确定时不会自动重试。</span></div><div id="wb-prompt-preview"></div>`,'<button class="secondary" data-action="task-prompt">查看处理指令</button><button class="primary" data-action="start-handoff">新建对话并发送</button>');
     this.$<HTMLSelectElement>('#task-account').addEventListener('change',()=>{this.html('#cross-account',this.$<HTMLSelectElement>('#task-account').value!==this.profile.id&&this.taskFiles.length?'<div class="cross-account-warning">文件将交给另一个账号处理。<label><input id="wb-cross-consent" type="checkbox">我确认使用所选账号处理这些文件</label></div>':'');});
+  }
+  private async refreshJobs():Promise<void>{
+    const profile=this.profile.id;try{const jobs=await this.api.handoffs(profile);if(this.disposed||this.profile.id!==profile)return;this.jobs=jobs;if(this.jobView==='list')this.showJobs();else if(this.jobView==='detail'&&this.currentJob)this.showJob(this.currentJob);}catch(error){if(this.jobView)this.notify(error);}
+  }
+  private showJobs():void{
+    this.jobView='list';this.modal('任务记录','本机保存；发送结果不确定的任务不会自动重发。',this.jobs.length?this.jobs.map(j=>`<button class="file-chip" data-job="${j.id}"><strong>${esc(j.label)}</strong><span>${esc(j.sourceProfileName)} → ${esc(j.targetProfileName)}</span><small>${esc(handoffStatusNames[j.status])} · ${new Date(j.createdAt).toLocaleString()}</small></button>`).join(''):'<p class="stage-notice">暂无任务。选择资产或 Skill，即可发起网页对话。</p>','<button class="secondary" data-action="close-modal">关闭</button>');
+  }
+  private showJob(id:string):void{
+    const j=this.jobs.find(j=>j.id===id);if(!j)return;this.jobView='detail';this.currentJob=id;
+    const active=['preparing','opening','uploading','drafting','sending'].includes(j.status);
+    this.modal(j.label,`${j.sourceProfileName} → ${j.targetProfileName} · ${handoffStatusNames[j.status]}`,`<p class="stage-notice">${esc(j.message)}</p><div class="file-chips">${j.files.map(f=>`<div class="file-chip">${icon('document')}${esc(f.name)}<small>${esc(f.uploadName)} · ${size(f.size)}</small></div>`).join('')}</div>${j.status==='uncertain'?'<p class="cross-account-warning">请先检查目标对话，确认是否已发送。再次创建任务可能产生重复消息。</p>':''}<details><summary>查看任务要求</summary><pre class="source-text">${esc(j.request.instructions||'使用选定 Skill / 角色的任务定义。')}</pre></details>`,'<button class="secondary" data-action="handoff-history">全部记录</button>'+(active&&j.status!=='sending'?'<button class="secondary" data-action="cancel-handoff">取消任务</button>':'')+(j.tabId?'<button class="primary" data-action="open-handoff">打开目标对话</button>':'') );
+  }
+  private async startHandoff():Promise<void>{
+    if(this.submitting)return;const profile=this.profile.id;
+    const request:HandoffRequest={requestId:this.taskRequestId,sourceProfileId:profile,targetProfileId:this.$<HTMLSelectElement>('#task-account').value,assetIds:this.taskFiles.map(f=>f.id),crossAccountConfirmed:!!this.root.querySelector<HTMLInputElement>('#wb-cross-consent')?.checked,skillId:this.$<HTMLSelectElement>('#task-skill').value||undefined,agentId:this.$<HTMLSelectElement>('#task-agent').value||undefined,language:this.$<HTMLSelectElement>('#task-language').value,instructions:this.$<HTMLTextAreaElement>('#task-instructions').value};
+    if(request.sourceProfileId!==request.targetProfileId&&request.assetIds.length&&!request.crossAccountConfirmed)throw Error('请确认使用另一个账号处理这些文件。');
+    this.submitting=true;this.modal('正在创建任务','来源和目标账号已固定。','<p class="stage-notice">正在校验文件，原件保留。</p>');const ticket=this.modalVersion;
+    try{const job=await this.api.startHandoff(request);if(this.disposed||this.profile.id!==profile||ticket!==this.modalVersion)return;this.jobs=[job,...this.jobs.filter(j=>j.id!==job.id)];this.showJob(job.id);await this.refreshJobs();}catch(error){if(!this.disposed&&profile===this.profile.id&&ticket===this.modalVersion)this.modal('任务未能创建','尚未发送消息。',`<p class="stage-notice">${esc(message(error))}</p>`,'<button class="secondary" data-action="close-modal">关闭</button>');throw error;}finally{this.submitting=false;}
   }
   private selectedFiles():AssetItem[]{return this.checked.size?this.assets.filter(a=>this.checked.has(a.id)):this.current()?[this.current()!]:[];}
   private convertFiles:AssetItem[]=[];
@@ -173,6 +197,7 @@ export class WorkbenchUI {
   private readonly click=(event:MouseEvent):void=>{void this.handleClick(event).catch(error=>this.notify(error));};
   private async handleClick(event:MouseEvent):Promise<void>{
     const element=event.target instanceof Element?event.target:undefined;if(!element)return;
+    const job=element.closest<HTMLElement>('[data-job]');if(job){this.showJob(job.dataset.job!);return;}
     if(element.classList.contains('aw-modal-backdrop')){this.closeModal();return;}
     const check=element.closest<HTMLElement>('[data-check]');if(check){const id=check.dataset.check!;this.checked.has(id)?this.checked.delete(id):this.checked.add(id);this.renderAssets();return;}
     const favorite=element.closest<HTMLElement>('[data-favorite]');if(favorite){const asset=this.assets.find(a=>a.id===favorite.dataset.favorite)!;await this.act({type:'favorite',ids:[asset.id],favorite:!asset.favorite});return;}
@@ -208,6 +233,10 @@ export class WorkbenchUI {
     if(action==='use-capability'){if(this.libraryKind==='skills')this.taskSkill=this.librarySelected;else this.taskAgent=this.librarySelected;this.openTask(this.explicitSelection?this.selectedFiles():[]);return;}
     if(action==='agent-source'){if(this.librarySelected)await this.act({type:'agent-source',id:this.librarySelected});return;}
     if(action==='agent-full'){const id=this.librarySelected;if(!id)return;const data=await this.api.agent(id);const name=this.catalog!.agents.find(a=>a.id===id)?.name||'角色定义';this.modal(name,'固定版本的完整角色原文。',`<pre class="source-text">${esc(data)}</pre>`);return;}
+    if(action==='start-handoff'){await this.startHandoff();return;}
+    if(action==='handoff-history'){this.showJobs();await this.refreshJobs();return;}
+    if(action==='cancel-handoff'&&this.currentJob){await this.api.cancelHandoff(this.profile.id,this.currentJob);await this.refreshJobs();return;}
+    if(action==='open-handoff'&&this.currentJob){await this.api.openHandoff(this.profile.id,this.currentJob);return;}
     if(action==='task-prompt'){const profile=this.profile.id;const prompt=await this.api.compose({skillId:this.$<HTMLSelectElement>('#task-skill').value||undefined,agentId:this.$<HTMLSelectElement>('#task-agent').value||undefined,language:this.$<HTMLSelectElement>('#task-language').value,instructions:this.$<HTMLTextAreaElement>('#task-instructions').value,files:this.taskFiles.map(a=>({name:a.name,mime:a.mime,size:a.size}))});if(profile===this.profile.id&&this.root.querySelector('#wb-prompt-preview'))this.html('#prompt-preview',`<pre class="source-text">${esc(prompt)}</pre>`);return;}
   }
   private readonly doubleClick=(event:MouseEvent):void=>{const element=event.target instanceof Element?event.target:undefined;const card=element?.closest<HTMLElement>('[data-asset]');if(card&&!element?.closest('button'))void this.preview(this.assets.find(a=>a.id===card.dataset.asset)).catch(error=>this.notify(error));};
@@ -222,5 +251,5 @@ export class WorkbenchUI {
   private readonly dragleave=(event:DragEvent):void=>{if(!event.relatedTarget||!this.root.contains(event.relatedTarget as Node))this.$('.asset-main').classList.remove('aw-drop-target');};
   private readonly drop=(event:DragEvent):void=>{if(!event.dataTransfer?.files.length)return;event.preventDefault();this.$('.asset-main').classList.remove('aw-drop-target');const profile=this.profile.id;void this.api.importDropped(profile,[...event.dataTransfer.files]).then(()=>{if(profile===this.profile.id)return this.reload();}).catch(error=>this.notify(error));};
   closeTop():void {if(this.$('#modal-root').children.length)this.closeModal();else this.options.close();}
-  dispose():void {this.disposed=true;this.generation++;this.previewGeneration++;this.unsubscribe();this.root.removeEventListener('click',this.click);this.root.removeEventListener('keydown',this.keydown);this.root.removeEventListener('dblclick',this.doubleClick);this.root.removeEventListener('dragover',this.dragover);this.root.removeEventListener('dragleave',this.dragleave);this.root.removeEventListener('drop',this.drop);this.root.innerHTML='';}
+  dispose():void {this.disposed=true;this.generation++;this.previewGeneration++;this.unsubscribe();this.unsubscribeJobs();this.root.removeEventListener('click',this.click);this.root.removeEventListener('keydown',this.keydown);this.root.removeEventListener('dblclick',this.doubleClick);this.root.removeEventListener('dragover',this.dragover);this.root.removeEventListener('dragleave',this.dragleave);this.root.removeEventListener('drop',this.drop);this.root.innerHTML='';}
 }

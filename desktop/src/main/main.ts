@@ -13,6 +13,9 @@ import { installWorkbenchIPC } from './workbench-ipc';
 import type { WorkbenchPanel } from '../shared/workbench';
 import { AssetConversions } from './asset-conversions';
 import { localRendererResponse } from './local-renderer';
+import { HandoffStore } from './handoff-store';
+import { HandoffRunner } from './handoff-runner';
+import type { HandoffJob } from '../shared/handoff';
 import { LoginDiagnostics } from './login-diagnostics';
 import type { LinkKind } from '../shared/diagnostics';
 
@@ -38,6 +41,8 @@ let assetError: string | undefined;
 let capabilityError: string | undefined;
 let loginDiagnostics: LoginDiagnostics | undefined;
 let loginDiagnosticsError: string | undefined;
+let handoffRunner:HandoffRunner|undefined;
+let handoffError:string|undefined;
 let panel: WorkbenchPanel | undefined;
 let assetConversions: AssetConversions | undefined;
 const assetDownloads = new Map<string,AssetDownloads>();
@@ -190,6 +195,15 @@ function destroyView(id: string): void {
   const view = views.get(id); views.delete(id); status.delete(id);
   if (view) { if (win && !win.isDestroyed()) win.contentView.removeChildView(view); if (!view.webContents.isDestroyed()) view.webContents.close({ waitForBeforeUnload: false }); }
 }
+function createHandoffTab(profileId:string):{tabId:string;contents:WebContents}{
+  profileById(profileId);if(store.read().tabs.length>=MAX_TABS)throw Error('标签页数量已满，请先关闭不需要的标签页。');
+  const tab=makeTab(profileId,homepage());store.commit(s=>{s.tabs.push(tab);});const view=ensureView(tab);layout();publish();return{tabId:tab.id,contents:view.webContents};
+}
+function revealHandoff(job:HandoffJob):void {
+  const p=profileById(job.request.targetProfileId);const tab=store.read().tabs.find(t=>t.id===job.tabId&&t.profileId===p.id);
+  if(!tab)throw Error('目标标签页已关闭。可从该账号的 ChatGPT 历史记录查找已发送的对话。');
+  assetRuntime?.revoke();panel=undefined;overlayOpen=false;overlayImage=undefined;store.commit(s=>{s.activeProfileId=p.id;s.profiles.find(x=>x.id===p.id)!.activeTabId=tab.id;});showActive();
+}
 function createTab(profileId: string, url = homepage()): void {
   profileById(profileId);
   if (!isAllowedURL(url, fixtureOrigin)) throw new Error('只能在账号空间中打开 ChatGPT 和支持的登录页面');
@@ -204,7 +218,7 @@ async function clearProfile(id: string, remove: boolean): Promise<void> {
   if (choice.response !== 1) return;
   pendingProfiles.add(id);
   try {
-    assetConversions?.cancelProfile(id);
+    assetConversions?.cancelProfile(id);handoffRunner?.cancelProfile(id);
     const tracker=assetDownloads.get(id);
     if(tracker){for(const assetId of tracker.activeIds())tracker.cancel(assetId);await tracker.whenIdle();if(remove){tracker.dispose();assetDownloads.delete(id);}}
     assetRuntime?.revoke(id);
@@ -313,6 +327,14 @@ function installIPC(): void {
     const run = async (): Promise<Reply> => { try { validateCommand(value); await dispatch(value); return { ok: true }; } catch (error) { return { ok: false, error: error instanceof Error ? error.message : '操作失败' }; } };
     const result = commandQueue.then(run, run); commandQueue = result.then(() => undefined); return result;
   });
+  if(process.platform==='darwin'){
+    const runner=()=>{if(!handoffRunner)throw Error(handoffError||'网页处理任务暂不可用');return handoffRunner;};
+    const access=(event:IpcMainInvokeEvent,profileId?:unknown)=>{if(!trusted(event))throw Error('拒绝非本地工具栏请求');if(profileId!==undefined&&profileId!==activeProfile().id)throw Error('账号已切换，请重新打开任务记录。');};
+    ipcMain.handle('handoff:start',(event,request:unknown)=>{access(event);return runner().start(request,activeProfile().id);});
+    ipcMain.handle('handoff:list',(event,profileId:unknown)=>{access(event,profileId);return runner().jobs.list(profileId as string);});
+    ipcMain.handle('handoff:cancel',(event,profileId:unknown,id:unknown)=>{access(event,profileId);if(typeof id!=='string')throw Error('无效任务');return runner().cancel(id,profileId as string);});
+    ipcMain.handle('handoff:open',(event,profileId:unknown,id:unknown)=>{access(event,profileId);if(typeof id!=='string')throw Error('无效任务');runner().open(id,profileId as string);});
+  }
   if(process.platform==='darwin')installWorkbenchIPC({
     dataDirectory:app.getPath('userData'),window:()=>win,trusted,currentProfile:activeProfile,state:()=>store.read(),
     store:()=>{if(!assetStore)throw new Error(assetError||'资产库暂不可用');return assetStore;},
@@ -378,9 +400,16 @@ if (single) {
       if(assetStore)assetConversions=new AssetConversions(assetStore,{rendererRoot:path.join(__dirname,'../renderer'),profileAvailable:id=>!quitting&&!pendingProfiles.has(id)&&store.read().profiles.some(p=>p.id===id),changed:assetsChanged});
       try{capabilityCatalog=new CapabilityCatalog(path.join(__dirname,'../capabilities'));}catch(error){capabilityError=error instanceof Error?error.message:'能力资源无法读取';}
     }
+    if(process.platform==='darwin'&&assetStore&&capabilityCatalog){try{
+      handoffRunner=new HandoffRunner(new HandoffStore(dataDir,fixtureOrigin),assetStore,capabilityCatalog,{
+        profile:profileById,available:id=>!quitting&&!pendingProfiles.has(id)&&store.read().profiles.some(p=>p.id===id),
+        open:createHandoffTab,reveal:revealHandoff,fixtureOrigin,failed:notice,
+        changed:job=>{if(win&&!win.isDestroyed()){win.webContents.send('handoff:changed');if(['submitted','failed','uncertain'].includes(job.status))notice(`${job.targetProfileName}：${job.message}`);}}
+      });
+    }catch(error){handoffError=error instanceof Error?error.message:'网页任务记录无法读取';}}
     registerProtocol();installIPC();installMenu();createWindow();
     app.on('activate',()=>{if(!win&&!quitting)createWindow();});
   }).catch(error=>{dialog.showErrorBox('无法安全恢复账号',error instanceof Error?error.message:String(error));app.quit();});
-  app.on('before-quit',()=>{quitting=true;assetConversions?.dispose();for(const tracker of assetDownloads.values())tracker.dispose();});
+  app.on('before-quit',()=>{quitting=true;handoffRunner?.dispose();assetConversions?.dispose();for(const tracker of assetDownloads.values())tracker.dispose();});
   app.on('window-all-closed',()=>{if(process.platform!=='darwin'||testMode)app.quit();});
 }

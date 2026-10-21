@@ -25,6 +25,11 @@ const bridge: Bridge = {
     agent: id => ipcRenderer.invoke('capabilities:agent', id),
     favoriteCapability: (id, favorite) => ipcRenderer.invoke('capabilities:favorite', id, favorite),
     convert: (profileId,ids,options) => ipcRenderer.invoke('assets:convert',profileId,ids,options),
+    startHandoff:request=>ipcRenderer.invoke('handoff:start',request),
+    handoffs:profileId=>ipcRenderer.invoke('handoff:list',profileId),
+    cancelHandoff:(profileId,id)=>ipcRenderer.invoke('handoff:cancel',profileId,id),
+    openHandoff:(profileId,id)=>ipcRenderer.invoke('handoff:open',profileId,id),
+    subscribeHandoffs:handler=>{const listener=()=>handler();ipcRenderer.on('handoff:changed',listener);return()=>ipcRenderer.removeListener('handoff:changed',listener);},
     compose: options => ipcRenderer.invoke('capabilities:compose', options),
     subscribe: handler => { const listener = (_event: unknown, profileId: string) => handler(profileId); ipcRenderer.on('assets:changed', listener); return () => ipcRenderer.removeListener('assets:changed', listener); }
   }

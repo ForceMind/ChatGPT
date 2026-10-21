@@ -1,6 +1,6 @@
 import { protocol } from 'electron';
 import { randomUUID } from 'node:crypto';
-import { constants, createReadStream, lstatSync, readFileSync, realpathSync, openSync } from 'node:fs';
+import { constants, createReadStream, lstatSync, readFileSync, realpathSync, openSync, readSync, closeSync } from 'node:fs';
 import { Readable } from 'node:stream';
 import path from 'node:path';
 import type { AssetRecord } from '../shared/assets';
@@ -9,6 +9,13 @@ import { AssetStore } from './asset-store';
 
 const mimeByExtension: Record<string,string> = { '.html':'text/html','.htm':'text/html','.md':'text/markdown','.txt':'text/plain','.json':'application/json','.csv':'text/csv','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.gif':'image/gif','.avif':'image/avif','.pdf':'application/pdf' };
 export const assetMime = (name: string, fallback = 'application/octet-stream'): string => mimeByExtension[path.extname(name).toLowerCase()] || fallback;
+function responseType(file:string,mime:string):string {
+  if(mime!=='text/html')return mime;
+  const fd=openSync(file,constants.O_RDONLY|(constants.O_NOFOLLOW||0));
+  try{const bytes=Buffer.alloc(16384);const count=readSync(fd,bytes,0,bytes.length,0);const head=bytes.subarray(0,count);if(/charset\s*=/i.test(head.toString('latin1')))return mime;
+    try{new TextDecoder('utf-8',{fatal:true}).decode(head,{stream:count===bytes.length});return mime+'; charset=utf-8';}catch{return mime;}
+  }finally{closeSync(fd);}
+}
 type Grant = { profileId: string; assetId: string; mode: 'raw' | 'html'; expires: number };
 const htmlCSP = "default-src 'none'; script-src 'unsafe-inline' asset:; style-src 'unsafe-inline' asset:; img-src asset: data: blob:; font-src asset: data:; media-src asset: data: blob:; connect-src asset:; frame-src 'none'; object-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'";
 const rawCSP = "default-src 'none'; script-src 'none'; style-src 'unsafe-inline'; img-src asset: data:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'";
@@ -73,7 +80,7 @@ export class AssetRuntime {
         if (!Number.isSafeInteger(start)||!Number.isSafeInteger(end)||start<0||start>end||start>=info.size) return new Response(null,{status:416,headers:{'Content-Range':`bytes */${info.size}`}});
         partial = true;
       }
-      const headers: Record<string,string> = {'Content-Type':assetMime(asset.fileName,asset.mime),'Cache-Control':'no-store','Content-Security-Policy':grant.mode==='html'?htmlCSP:rawCSP,'X-Content-Type-Options':'nosniff','Access-Control-Allow-Origin':'*','Accept-Ranges':'bytes','Content-Length':String(Math.max(0,end-start+1))};
+      const headers: Record<string,string> = {'Content-Type':responseType(file,assetMime(asset.fileName,asset.mime)),'Cache-Control':'no-store','Content-Security-Policy':grant.mode==='html'?htmlCSP:rawCSP,'X-Content-Type-Options':'nosniff','Access-Control-Allow-Origin':'*','Accept-Ranges':'bytes','Content-Length':String(Math.max(0,end-start+1))};
       if(partial)headers['Content-Range']=`bytes ${start}-${end}/${info.size}`;
       const stream = request.method==='HEAD'||info.size===0?null:Readable.toWeb(createReadStream(file,{start,end,fd:openSync(file,constants.O_RDONLY | (constants.O_NOFOLLOW || 0)),autoClose:true}));
       return new Response(stream as ReadableStream<Uint8Array> | null,{status:partial?206:200,headers});

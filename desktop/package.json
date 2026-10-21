@@ -1,6 +1,6 @@
 {
   "name": "chatgpt-profiles",
-  "version": "3.0.0-alpha.2",
+  "version": "3.0.0-alpha.3",
   "private": true,
   "description": "Independent ChatGPT account workspaces for macOS and Windows",
   "author": "ForceMind",
@@ -13,7 +13,7 @@
     "start": "npm run build && electron .",
     "start:built": "electron .",
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --test tests/state.test.ts tests/asset-store.test.ts tests/asset-downloads.test.ts tests/capabilities.test.ts tests/formats.test.ts tests/login-diagnostics.test.ts",
+    "test": "node --import tsx --test tests/state.test.ts tests/asset-store.test.ts tests/asset-downloads.test.ts tests/capabilities.test.ts tests/formats.test.ts tests/login-diagnostics.test.ts tests/handoff-store.test.ts",
     "test:e2e": "npm run build && playwright test",
     "check": "npm run typecheck && npm test && npm run build",
     "dist:mac": "npm run check && node scripts/icon.mjs && node scripts/package-mac.mjs",
