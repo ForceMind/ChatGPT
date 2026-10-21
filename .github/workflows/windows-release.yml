@@ -1,0 +1,61 @@
+name: Publish verified Windows packages
+on: workflow_dispatch
+permissions:
+  contents: write
+  actions: read
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check source acceptance run and draft release
+        run: |
+          test "$(gh api repos/$GH_REPO/actions/runs/39443940258 --jq .conclusion)" = success
+          test "$(gh api repos/$GH_REPO/actions/runs/39443940258 --jq .head_sha)" = bf2baf9d2318f23a6c2fdc91a606aa1c5a413e02
+          test "$(gh release view v3.0.0-alpha.2 --json isDraft --jq .isDraft)" = true
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows-x64-installer
+          path: release
+          run-id: 39443940258
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows-x64-zip
+          path: release
+          run-id: 39443940258
+          github-token: ${{ github.token }}
+      - name: Verify original packages and write download checksums
+        working-directory: release
+        run: |
+          node --input-type=module <<'JS'
+          import { readFileSync, writeFileSync } from 'node:fs';
+          import { createHash } from 'node:crypto';
+          import assert from 'node:assert/strict';
+          const info = JSON.parse(readFileSync('windows-build-info.json', 'utf8'));
+          assert.equal(info.version, '3.0.0-alpha.2');
+          assert.equal(info.sourceCommit, 'bf2baf9d2318f23a6c2fdc91a606aa1c5a413e02');
+          assert.equal(info.platform, 'win32');
+          assert.equal(info.architecture, 'x64');
+          const expected = {
+            'ChatGPT-Profiles-3.0.0-alpha.2-windows-x64-setup.exe': [112306244, '2ac551b0298696494621f64e10d708f87b69ffa0aeb820b05edd00955a3c01e8'],
+            'ChatGPT-Profiles-3.0.0-alpha.2-windows-x64.zip': [154817621, '4f9408a4f9fe36871533d0a6e0c7c2bc74601f4add788a4c2b7be7b3c6b9820c']
+          };
+          for (const [name, [bytes, hash]] of Object.entries(expected)) {
+            const body = readFileSync(name);
+            assert.equal(body.length, bytes);
+            assert.equal(createHash('sha256').update(body).digest('hex'), hash);
+            const entry = info.artifacts.find(item => item.file === name);
+            assert.equal(entry.bytes, bytes);
+            assert.equal(entry.sha256, hash);
+            console.log('Verified:', name, hash);
+          }
+          writeFileSync('SHA256SUMS.txt', Object.entries(expected).map(([name, [, hash]]) => `${hash}  ${name}\n`).join(''));
+          JS
+      - name: Upload to draft without replacing existing assets
+        run: |
+          gh release upload v3.0.0-alpha.2 release/*-setup.exe release/*.zip release/windows-build-info.json release/SHA256SUMS.txt

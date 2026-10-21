@@ -121,3 +121,11 @@
 - Windows 产物摘要（CI 计算，随试用包提供）：
   - `ChatGPT-Profiles-3.0.0-alpha.2-windows-x64-setup.exe`：`2ac551b0298696494621f64e10d708f87b69ffa0aeb820b05edd00955a3c01e8`，112306244 bytes。
   - `ChatGPT-Profiles-3.0.0-alpha.2-windows-x64.zip`：`4f9408a4f9fe36871533d0a6e0c7c2bc74601f4add788a4c2b7be7b3c6b9820c`，154817621 bytes。
+
+## Windows 公开发布与下载主页（2026-10-21 追加授权）
+
+- 用户明确授权将 Windows EXE、免安装 ZIP 发布至 GitHub Release，并制作成熟数字朋克风格的下载说明主页、部署到 Cloudflare Pages。
+- 基线 `main` / `origin/main` 均为 `1363a41b72fc815d92ba8dbf73182437bb69a8c8`，fetch 后工作区干净。沿用单智能体，提交推送本次负责文件。
+- 发布 `v3.0.0-alpha.2` Windows 预发布版，复用成功验收运行 `39443940258` 的原包；本地重新核对两个包的字节数和 SHA-256 一致。Actions 内再次校验源码、验收结论和包摘要，先上传草稿，核对附件后公开。已有 `alpha.1` Mac/Android 版本保留。
+- 主页放在 `site/`，包含产品说明、真实截图、平台版本与下载、使用步骤、安装与隔离边界。网站使用深色与克制霓虹；App 已确认的白灰黑 UI 保留。二进制直接从 GitHub Release 下载。
+- 验收：Release 公开状态、附件大小/摘要及匿名下载入口；网站桌面/手机实际渲染、下载与说明交互；Pages 正式部署、线上内容与源文件核对、Git 远端回读。真实双账号登录继续由用户稍后人工验收。
