@@ -13,7 +13,7 @@
     "start": "npm run build && electron .",
     "start:built": "electron .",
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --test tests/state.test.ts",
+    "test": "node --import tsx --test tests/state.test.ts tests/asset-store.test.ts tests/asset-downloads.test.ts",
     "test:e2e": "npm run build && playwright test",
     "check": "npm run typecheck && npm test && npm run build",
     "dist:mac": "npm run check && node scripts/icon.mjs && node scripts/package-mac.mjs",

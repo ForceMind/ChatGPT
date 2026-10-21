@@ -1,0 +1,32 @@
+export type AssetKind = 'image' | 'web' | 'document' | 'data' | 'audio' | 'video' | 'other';
+export type AssetStatus = 'downloading' | 'paused' | 'processing' | 'ready' | 'interrupted' | 'cancelled' | 'failed' | 'missing' | 'changed';
+export type AssetSource = {
+  kind: 'download' | 'import' | 'conversion';
+  profileName?: string;
+  tabId?: string;
+  conversationURL?: string;
+  title?: string;
+  fromAssetId?: string;
+  conversionFormat?: string;
+};
+export type AssetRecord = {
+  id: string;
+  profileId: string;
+  name: string;
+  fileName: string;
+  mime: string;
+  kind: AssetKind;
+  status: AssetStatus;
+  size: number;
+  receivedBytes: number;
+  totalBytes: number;
+  sha256?: string;
+  createdAt: number;
+  updatedAt: number;
+  tags: string[];
+  favorite: boolean;
+  trashedAt?: number;
+  error?: string;
+  source: AssetSource;
+};
+export type AssetLibrary = { schema: 1; assets: AssetRecord[] };
