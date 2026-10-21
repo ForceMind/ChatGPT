@@ -4,7 +4,7 @@ import path from 'node:path';
 import type {HandoffFile,HandoffJob,HandoffStatus} from '../shared/handoff';
 import type {HandoffRequest} from '../shared/workbench';
 import {isChatURL} from './policy';
-import {CAPABILITY_COMMIT} from './capabilities';
+import {CAPABILITY_REVISION} from './capabilities';
 
 const uuid=(v:unknown):v is string=>typeof v==='string'&&/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(v);
 const object=(v:unknown):v is Record<string,unknown>=>!!v&&typeof v==='object'&&!Array.isArray(v);
@@ -36,7 +36,7 @@ export class HandoffStore {
     const fail=():never=>{throw new Error('任务记录格式无效');};
     if(!object(raw)||raw.schema!==1||!Array.isArray(raw.jobs)||raw.jobs.length>1000)return fail();const ids=new Set<string>(),requests=new Set<string>();
     for(const item of raw.jobs){
-      if(!object(item)||!uuid(item.id)||ids.has(item.id)||!object(item.request)||!text(item.sourceProfileName,40)||!text(item.targetProfileName,40)||!text(item.label,120)||!phases.includes(item.status as HandoffStatus)||!text(item.message,1000)||!Number.isSafeInteger(item.createdAt)||!Number.isSafeInteger(item.updatedAt)||!Array.isArray(item.files)||item.catalogCommit!==CAPABILITY_COMMIT)return fail();
+      if(!object(item)||!uuid(item.id)||ids.has(item.id)||!object(item.request)||!text(item.sourceProfileName,40)||!text(item.targetProfileName,40)||!text(item.label,120)||!phases.includes(item.status as HandoffStatus)||!text(item.message,1000)||!Number.isSafeInteger(item.createdAt)||!Number.isSafeInteger(item.updatedAt)||!Array.isArray(item.files)||(typeof item.catalogCommit!=='string'||!(/^(project-skills-v[1-9][0-9]*|[a-f0-9]{40})$/).test(item.catalogCommit)))return fail();
       const request=normalizeHandoffRequest(item.request);if(requests.has(request.requestId)||item.fingerprint!==fingerprint(request)||item.files.length!==request.assetIds.length)return fail();
       const fileIds=new Set<string>();for(const file of item.files){if(!object(file)||!uuid(file.assetId)||fileIds.has(file.assetId)||!request.assetIds.includes(file.assetId)||file.profileId!==request.sourceProfileId||!text(file.name,240)||!text(file.uploadName,240)||/[\\/]/.test(file.uploadName)||!text(file.mime,160)||!text(file.uploadMime,160)||!Number.isSafeInteger(file.size)||(file.size as number)<0||typeof file.sha256!=='string'||!/^[a-f0-9]{64}$/.test(file.sha256))return fail();fileIds.add(file.assetId);}
       if(item.tabId!==undefined&&!uuid(item.tabId))return fail();if(item.conversationURL!==undefined&&(typeof item.conversationURL!=='string'||!(isChatURL(item.conversationURL)||(this.fixtureOrigin&&item.conversationURL.startsWith(this.fixtureOrigin+'/')))||new URL(item.conversationURL).search||new URL(item.conversationURL).hash))return fail();
@@ -52,7 +52,7 @@ export class HandoffStore {
   all():HandoffJob[]{return structuredClone(this.data.jobs);}
   create(request:HandoffRequest,files:HandoffFile[],sourceProfileName:string,targetProfileName:string,label:string):HandoffJob{
     const existing=this.find(request);if(existing)return existing;if(this.data.jobs.length>=1000)throw new Error('本机任务记录已达 1000 条，请先整理任务记录。');const now=Date.now();
-    const job:HandoffJob={id:randomUUID(),request:structuredClone(request),fingerprint:fingerprint(request),sourceProfileName,targetProfileName,label,status:'preparing',message:'正在校验选中的文件与目标账号。',createdAt:now,updatedAt:now,files:structuredClone(files),catalogCommit:CAPABILITY_COMMIT};
+    const job:HandoffJob={id:randomUUID(),request:structuredClone(request),fingerprint:fingerprint(request),sourceProfileName,targetProfileName,label,status:'preparing',message:'正在校验选中的文件与目标账号。',createdAt:now,updatedAt:now,files:structuredClone(files),catalogCommit:CAPABILITY_REVISION};
     const next=structuredClone(this.data);next.jobs.push(job);this.save(next);return this.get(job.id);
   }
   update(id:string,patch:Partial<Pick<HandoffJob,'status'|'message'|'tabId'|'conversationURL'>>):HandoffJob{

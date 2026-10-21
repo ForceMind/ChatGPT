@@ -13,3 +13,7 @@
 .workspace[data-platform=win32] .account-menu{right:calc(var(--caption-right) + 12px)}
 .workspace[data-platform=win32][data-fullscreen=true]{--caption-left:0px;--caption-right:0px}
 @media(max-width:1000px){.current-account{max-width:150px;min-width:110px}.drag-space{min-width:80px}.tabs{max-width:calc(100% - 310px)}.tab{min-width:118px;max-width:176px}.tab-select>span{max-width:112px}}@media(prefers-reduced-motion:reduce){*{transition:none!important}.spinner{animation-duration:1.8s}}
+
+.profile-preferences{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:12px;margin-bottom:18px}.profile-preferences label{min-width:0}.profile-preferences select{width:100%;min-width:0;border:1px solid #dedede;border-radius:9px;padding:10px;background:#fff;color:#222;font:inherit;font-size:13px}.profile-preferences p{grid-column:1/-1;color:#777;font-size:11px;line-height:1.6;margin:0}.modal{max-height:calc(100vh - 100px);overflow-y:auto}
+
+.workbench-loading{position:absolute;inset:46px 0 0;display:grid;place-items:center;background:#fff;color:#777;font-size:13px}

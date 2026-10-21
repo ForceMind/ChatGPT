@@ -1,3 +1,4 @@
+import{shellWindow}from'./helpers/shell';
 import { test, expect, _electron as electron, type ElectronApplication, type Page } from '@playwright/test';
 import { createServer, type Server } from 'node:http';
 import { mkdtempSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
@@ -22,10 +23,11 @@ test('macOS real download, account-scoped assets, safe HTML and full capability 
     const origin=`http://127.0.0.1:${address.port}`;
     const launch=async()=>{
       app=await electron.launch({args:[desktop],env:{...process.env,PROFILES_E2E:'1',PROFILES_TEST_DATA:data,PROFILES_FIXTURE_ORIGIN:origin}});
-      const shell=await app.firstWindow();await shell.waitForURL('app://shell/index.html');await expect(shell.locator('.current-account')).toBeVisible();return shell;
+      const shell=await shellWindow(app);await shell.waitForURL('app://shell/index.html');await expect(shell.locator('.current-account')).toBeVisible();return shell;
     };
     const state=(shell:Page)=>shell.evaluate(()=>window.profiles.snapshot());
     let shell=await launch();
+    await expect.poll(()=>app!.evaluate(({BrowserWindow})=>(BrowserWindow.getAllWindows().find(w=>w.webContents.getURL()==='app://shell/index.html')!.contentView.children[0] as Electron.WebContentsView)?.webContents.getURL())).toBe(origin+'/');
     const initial=await state(shell);const profile=initial.activeProfileId;
     await app!.evaluate(async({BrowserWindow})=>{const w=BrowserWindow.getAllWindows().find(w=>w.webContents.getURL()==='app://shell/index.html')!;const view=w.contentView.children[0] as Electron.WebContentsView;await view.webContents.executeJavaScript("document.getElementById('download').click()",true);});
     await shell.getByRole('button',{name:'资产中心',exact:true}).click();
@@ -54,11 +56,12 @@ test('macOS real download, account-scoped assets, safe HTML and full capability 
     await shell.evaluate(()=>window.profiles.command({type:'profile:add',name:'Second profile',email:'',color:'#5275a0'}));await expect(shell.locator('#wb-asset-grid .aw-empty-state')).toBeVisible();await expect(shell.locator('#wb-asset-grid [data-asset]')).toHaveCount(0);
     await shell.evaluate(id=>window.profiles.command({type:'profile:activate',id}),profile);await expect(shell.locator('#wb-asset-grid [data-asset]')).toHaveCount(3);
     await shell.getByRole('button',{name:'能力库',exact:true}).click();await expect(shell.locator('#wb-capability-grid [data-capability]')).toHaveCount(120);
-    await shell.locator('#wb-agents-nav').click();await expect(shell.locator('#wb-capability-grid [data-capability]')).toHaveCount(328);
-    const priorities=await shell.locator('[data-capability]').evaluateAll(items=>items.map(e=>(e as HTMLElement).dataset.priority));expect(priorities.slice(0,232).every(v=>v==='true')).toBeTruthy();expect(priorities.slice(232).every(v=>v==='false')).toBeTruthy();
     const favorite=shell.locator('[data-capability-favorite]').first();const favoriteId=await favorite.getAttribute('data-capability-favorite');await favorite.click();
-    await shell.locator('[data-action="agent-full"]').click();await expect(shell.locator('#wb-modal-root pre')).not.toBeEmpty();await shell.locator('#wb-modal-root [data-action="close-modal"]').click();
-    await shell.screenshot({path:info.outputPath('macos-native-agents.png')});
+    await expect(shell.locator('#wb-capability-detail')).toContainText('质量检查');
+    await shell.screenshot({path:info.outputPath('macos-native-skills.png')});
+    await shell.locator('#wb-agents-nav').click();await expect(shell.locator('#wb-capability-grid [data-capability]')).toHaveCount(0);
+    await expect(shell.getByRole('heading',{name:'暂无预置智能体',exact:true})).toHaveText('暂无预置智能体');
+    await shell.screenshot({path:info.outputPath('macos-native-library-empty.png')});
     await app!.close();app=undefined;shell=await launch();await shell.getByRole('button',{name:'资产中心',exact:true}).click();await expect(shell.locator('#wb-asset-grid [data-asset]')).toHaveCount(3);
     const after=await shell.evaluate(()=>window.profiles.workbench.capabilities());expect(after.favorites).toContain(favoriteId);
     await shell.locator('#wb-workbench [data-action="chat"]').click();expect((await state(shell)).panel).toBeUndefined();

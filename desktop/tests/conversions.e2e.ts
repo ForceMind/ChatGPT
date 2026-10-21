@@ -1,3 +1,4 @@
+import{shellWindow}from'./helpers/shell';
 import {test,expect,_electron as electron,type ElectronApplication} from '@playwright/test';
 import {createServer,type Server} from 'node:http';
 import {mkdtempSync,writeFileSync,readFileSync,rmSync} from 'node:fs';
@@ -11,7 +12,7 @@ test('macOS conversion produces real image/PDF/HTML/data assets with original li
   const root=mkdtempSync(path.join(os.tmpdir(),'profiles-conversions-')),data=path.join(root,'data');let app:ElectronApplication|undefined,server:Server|undefined;
   try{
     server=createServer((_request,response)=>{response.writeHead(200,{'Content-Type':'text/html'});response.end('<!doctype html><h1>Local conversion acceptance fixture</h1>');});await new Promise<void>(resolve=>server!.listen(0,'127.0.0.1',resolve));const address=server.address();if(!address||typeof address==='string')throw new Error('no fixture port');
-    app=await electron.launch({args:[desktop],env:{...process.env,PROFILES_E2E:'1',PROFILES_TEST_DATA:data,PROFILES_FIXTURE_ORIGIN:`http://127.0.0.1:${address.port}`}});const shell=await app.firstWindow();await shell.waitForURL('app://shell/index.html');await expect(shell.locator('.current-account')).toBeVisible();
+    app=await electron.launch({args:[desktop],env:{...process.env,PROFILES_E2E:'1',PROFILES_TEST_DATA:data,PROFILES_FIXTURE_ORIGIN:`http://127.0.0.1:${address.port}`}});const shell=await shellWindow(app);await shell.waitForURL('app://shell/index.html');await expect(shell.locator('.current-account')).toBeVisible();
     const profile=(await shell.evaluate(()=>window.profiles.snapshot())).activeProfileId;
     const fixtures:Record<string,string>={
       'drawing.svg':'<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400"><rect width="600" height="400" fill="#497b53"/><text x="50" y="150" fill="white">Conversion fixture</text></svg>',

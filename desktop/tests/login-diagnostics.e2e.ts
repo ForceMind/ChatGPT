@@ -1,10 +1,11 @@
+import{shellWindow}from'./helpers/shell';
 import {test,expect,_electron as electron,type ElectronApplication} from '@playwright/test';
 import {createServer,type Server} from 'node:http';import{mkdtempSync,readFileSync,rmSync}from'node:fs';import os from'node:os';import path from'node:path';import{fileURLToPath}from'node:url';
 const desktop=fileURLToPath(new URL('..',import.meta.url));
 test('Mac login link diagnostics record blocked navigations with no secrets and keep normal account sessions',async({},info)=>{
  test.skip(process.platform!=='darwin');const root=mkdtempSync(path.join(os.tmpdir(),'profiles-login-e2e-'));let app:ElectronApplication|undefined,server:Server|undefined;
  try{server=createServer((q,r)=>{if(q.url==='/redirect'){r.writeHead(302,{Location:'http://not-in-client.invalid/private-token?code=oauth-secret#secret'});r.end();return;}r.writeHead(200,{'Content-Type':'text/html'});r.end('<title>Local login diagnostics fixture</title><h1>本地登录记录验收</h1>');});await new Promise<void>(r=>server!.listen(0,'127.0.0.1',r));const a=server.address();if(!a||typeof a==='string')throw Error();const origin=`http://127.0.0.1:${a.port}`,data=path.join(root,'data');
- const launch=async()=>{app=await electron.launch({args:[desktop],env:{...process.env,PROFILES_E2E:'1',PROFILES_TEST_DATA:data,PROFILES_FIXTURE_ORIGIN:origin}});const shell=await app.firstWindow();await shell.waitForURL('app://shell/index.html');await expect(shell.getByRole('button',{name:'切换账号',exact:true})).toBeVisible();return shell;};
+ const launch=async()=>{app=await electron.launch({args:[desktop],env:{...process.env,PROFILES_E2E:'1',PROFILES_TEST_DATA:data,PROFILES_FIXTURE_ORIGIN:origin}});const shell=await shellWindow(app);await shell.waitForURL('app://shell/index.html');await expect(shell.getByRole('button',{name:'切换账号',exact:true})).toBeVisible();return shell;};
  let shell=await launch();await expect.poll(()=>app!.evaluate(({BrowserWindow})=>(BrowserWindow.getAllWindows()[0].contentView.children[0] as Electron.WebContentsView)?.webContents.getURL())).toBe(origin+'/');
  await app!.evaluate(async({BrowserWindow})=>{const c=(BrowserWindow.getAllWindows()[0].contentView.children[0] as Electron.WebContentsView).webContents;await c.executeJavaScript(`location.href='/redirect'`);});
  await expect.poll(()=>shell.evaluate(()=>window.profiles.diagnostics.list().then(r=>r.length))).toBe(1);

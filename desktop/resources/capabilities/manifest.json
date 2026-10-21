@@ -1,0 +1,12 @@
+{
+  "schema": 2,
+  "source": "project",
+  "skillCount": 120,
+  "agentCount": 0,
+  "internetAgentCount": 0,
+  "skillsFile": "skills.json",
+  "files": {
+    "skills.json": "3fa86a91baab95a8839accfa11de041c401c22346f1adbf66a4119039ca7ce92"
+  },
+  "agents": []
+}

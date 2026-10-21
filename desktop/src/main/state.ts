@@ -1,3 +1,4 @@
+import { DEFAULT_LANGUAGE,validBrowserLanguage,validTimeZone } from '../shared/profile-preferences';
 import { randomUUID } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync, openSync, fsyncSync, closeSync } from 'node:fs';
 import path from 'node:path';
@@ -13,7 +14,7 @@ export function makeTab(profileId: string, url: string): Tab { return { id: rand
 export function initialState(fixtureOrigin?: string): SavedState {
   const id = randomUUID();
   const tab = makeTab(id, homeURL(fixtureOrigin));
-  return { schema: 1, profiles: [{ id, name: '个人账号', email: '', color: COLORS[0], activeTabId: tab.id, createdAt: Date.now() }], tabs: [tab], activeProfileId: id, sidebarOpen: true, closedTabs: [], bounds: { width: 1360, height: 900 } };
+  return { schema: 1, profiles: [{ id, name: '个人账号', email: '', color: COLORS[0], activeTabId: tab.id, createdAt: Date.now(),language:DEFAULT_LANGUAGE,timeZone:'system' }], tabs: [tab], activeProfileId: id, sidebarOpen: true, closedTabs: [], bounds: { width: 1360, height: 900 } };
 }
 export function validateState(raw: unknown, fixtureOrigin?: string): SavedState {
   const fail = (): never => { throw new Error('账号状态文件格式无效，已停止覆盖现有数据。'); };
@@ -24,6 +25,7 @@ export function validateState(raw: unknown, fixtureOrigin?: string): SavedState 
   const ids = new Set<string>();
   for (const p of profiles) {
     if (!object(p) || !uuid(p.id) || ids.has(p.id) || !validLabel(p.name, 40, true) || !validLabel(p.email, 120) || !(COLORS as readonly string[]).includes(p.color) || !uuid(p.activeTabId) || !Number.isFinite(p.createdAt)) return fail();
+    if((p.language!==undefined&&!validBrowserLanguage(p.language))||(p.timeZone!==undefined&&!validTimeZone(p.timeZone)))return fail();
     ids.add(p.id);
   }
   if (!ids.has(raw.activeProfileId as string)) return fail();

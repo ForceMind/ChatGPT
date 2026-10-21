@@ -804,11 +804,11 @@ function renderLibrary() {
     ? "选择专业角色，与任务和文件一起进入新的对话。"
     : "把一个处理目标，变成清楚的输入、步骤和输出。";
   $("#library-notice").innerHTML =
-    `<span class="inline-icon">${icon(agent ? "agents" : "sparkles")}</span><span>${agent ? "互联网相关 232 个默认优先，其余 96 个角色完整保留。角色工具能力需按实际环境确认。" : "120 个独立任务的目录与流程草案。当前为 UI 预览，尚未接入真实执行。"}</span>`;
+    `<span class="inline-icon">${icon(agent ? "agents" : "sparkles")}</span><span>${agent ? "当前没有预置智能体，可使用 Skill 和自定义处理要求。" : "120 个独立任务的目录与流程草案。当前为 UI 预览，尚未接入真实执行。"}</span>`;
   const cats = [...new Set(all.map((i) => i.category))];
   $("#capability-navigation").innerHTML = [
     { id: "all", name: "全部" + (agent ? "角色" : "Skill"), count: all.length },
-    ...(agent ? [{ id: "internet", name: "互联网相关", count: 232 }] : []),
+    ...(agent ? [{ id: "internet", name: "互联网相关", count: all.filter(i => i.internetPriority).length }] : []),
     ...cats.map((c) => ({
       id: c,
       name: c,
@@ -854,6 +854,7 @@ function renderCapabilityDetail() {
   }
   const agent = state.libraryKind === "agents";
   $("#capability-detail").innerHTML =
+    `<div class="detail-topline"><span>${agent ? "智能体" : "Skill"}详情</span><span>${agent ? "角色定义" : "任务流程草案"}</span></div><div class="capability-symbol">${icon(agent ? "agents" : item.icon)}</div><h3>${esc(item.name)}</h3><div class="detail-tags"><span class="tag">${esc(item.category)}</span>${item.internetPriority ? '<span class="tag">互联网相关</span>' : ""}</div><p class="capability-description">${esc(item.description)}</p><button class="primary" data-action="use-capability"><span class="inline-icon">${icon("sparkles")}</span>${agent ? "选择此角色发起任务" : "选择此 Skill 发起任务"}</button>${agent ? `<div class="detail-field-label">在对话中使用</div><ol><li>选择需要处理的文件和任务</li><li>带入角色的专业要求与工作流程</li><li>按网页实际可用的工具完成处理</li></ol><div class="detail-field-label">能力边界</div><p class="capability-description">角色中提到的终端、MCP、部署等工具需要对应执行环境，导入角色不代表已接入这些能力。</p>` : `<div class="detail-field-label">适用文件</div><div>${item.inputs.map((t) => `<span class="tag">${esc(t)}</span>`).join("")}</div><div class="detail-field-label">可填写的参数</div><ul>${item.parameters.map((p) => `<li>${esc(p)}</li>`).join("")}</ul><div class="detail-field-label">处理流程</div><ol>${item.steps.map((s) => `<li>${esc(s)}</li>`).join("")}</ol><div class="detail-field-label">期望输出</div><p class="capability-description">${esc(item.output)}</p><div class="capability-source">此处为目录及流程草案。真实上传、提示词执行与输出校验在后续原生接入阶段完成。</div>`}`;
 }
 function renameOrTags(kind) {
   const a = currentAsset();

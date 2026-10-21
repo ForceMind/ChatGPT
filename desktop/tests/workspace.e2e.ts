@@ -1,3 +1,5 @@
+import{shellWindow}from'./helpers/shell';
+import{openNativePopup}from'./helpers/popup';
 import { test, expect, _electron, type ElectronApplication, type Page } from '@playwright/test';
 import { createServer, type Server } from 'node:http';
 import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
@@ -20,7 +22,7 @@ test.afterAll(async()=>{await new Promise<void>(resolve=>server.close(()=>resolv
 async function launch(dir:string):Promise<{app:ElectronApplication;shell:Page}>{
   const env=Object.fromEntries(Object.entries(process.env).filter((e):e is [string,string]=>e[1]!==undefined));delete env.ELECTRON_RUN_AS_NODE;
   const app=await _electron.launch({args:[path.resolve('.')],env:{...env,PROFILES_E2E:'1',PROFILES_TEST_DATA:dir,PROFILES_FIXTURE_ORIGIN:origin}});
-  const shell=await app.firstWindow();await shell.getByRole('button',{name:'切换账号',exact:true}).waitFor();
+  const shell=await shellWindow(app);await shell.getByRole('button',{name:'切换账号',exact:true}).waitFor();
   await expect.poll(async()=>remote(app,'document.readyState')).toBe('complete');return{app,shell};
 }
 async function remote(app:ElectronApplication,code:string):Promise<any>{
@@ -56,8 +58,8 @@ test('真实 Electron：同账号共享、跨账号隔离、登录弹窗、重�
     await add(shell,'工作账号','work@example.com');const b=(await state(shell)).activeProfileId;
     await expect.poll(()=>remote(app,'document.readyState')).toBe('complete');const empty=await remote(app,readMark);expect(empty).toMatchObject({cookie:'',local:null,indexed:null,cache:null,workers:0});
     expect(await remote(app,writeMark('beta'))).toBe(true);
-    const popupPromise=app.waitForEvent('window');expect(await remote(app,`Boolean(window.open('${origin}/popup','login-check','width=500,height=600'))`)).toBe(true);
-    const popup=await popupPromise;await popup.waitForLoadState();expect(await popup.evaluate(()=>localStorage.getItem('account'))).toBe('beta');
+    const popup=await openNativePopup(app,`Boolean(window.open('${origin}/popup','login-check','width=500,height=600'))`);
+    expect(await popup.evaluate(()=>localStorage.getItem('account'))).toBe('beta');
     await popup.evaluate(()=>{document.cookie='from_popup=beta;Max-Age=86400;path=/';});await expect.poll(()=>remote(app,'window.popupAck')).toBe('popup-ready');await popup.close();
     await switchAccount(shell,'个人账号');expect(await remote(app,'document.cookie')).not.toContain('from_popup');
     await switchAccount(shell,'工作账号');await app.close();

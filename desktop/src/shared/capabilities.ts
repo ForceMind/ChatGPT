@@ -7,11 +7,10 @@ export type SkillDefinition = {
 };
 export type AgentSummary = {
   id: string; name: string; description: string; category: string;
-  internetPriority: boolean; sourcePath: string; sourceURL: string;
+  internetPriority: boolean;
 };
 export type CapabilitySnapshot = {
   skills: SkillDefinition[]; agents: AgentSummary[];
-  sourceRepo: string; sourceCommit: string; license: string;
   favorites?: string[];
 };
 export type TaskPromptOptions = {

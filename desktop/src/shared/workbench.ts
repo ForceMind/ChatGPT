@@ -11,8 +11,7 @@ export type AssetAction =
   | { type: 'tags'; id: string; tags: string[] }
   | { type: 'favorite'; ids: string[]; favorite: boolean }
   | { type: 'trash'; ids: string[]; trashed: boolean }
-  | { type: 'reveal' | 'export' | 'source' | 'pause' | 'resume' | 'cancel' | 'conversion-cancel'; id: string }
-  | { type: 'agent-source'; id: string };
+  | { type: 'reveal' | 'export' | 'source' | 'pause' | 'resume' | 'cancel' | 'conversion-cancel'; id: string };
 export type ConversionOptions = { format: 'PNG' | 'JPEG' | 'WEBP' | 'PDF' | 'HTML' | 'JSON' | 'CSV'; name?:string; width?: number; quality?: number; pages?: number[] };
 export type ConversionResult = {assets:AssetItem[];failures:{name:string;error:string}[]};
 export type HandoffRequest = { requestId: string; sourceProfileId: string; targetProfileId: string; assetIds: string[]; crossAccountConfirmed: boolean; skillId?: string; agentId?: string; language: string; instructions: string };

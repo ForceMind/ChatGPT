@@ -1,3 +1,4 @@
+import{shellWindow}from'./helpers/shell';
 import {test,expect,_electron as electron,type ElectronApplication}from'@playwright/test';import {createServer,type Server}from'node:http';import{mkdtempSync,writeFileSync,readFileSync,rmSync}from'node:fs';import os from'node:os';import path from'node:path';import{fileURLToPath}from'node:url';
 import{StateStore}from'../src/main/state';import{AssetStore}from'../src/main/asset-store';import type{HandoffJob}from'../src/shared/handoff';
 const desktop=fileURLToPath(new URL('..',import.meta.url));
@@ -12,7 +13,7 @@ test('Mac handoff really uploads bytes to the selected session, sends once, pers
    </script>`);
   });await new Promise<void>(r=>server!.listen(0,'127.0.0.1',r));const address=server.address();if(!address||typeof address==='string')throw Error();const origin=`http://127.0.0.1:${address.port}`;
   const state=new StateStore(data,origin),sourceId=state.read().activeProfileId;const original=path.join(root,'source.html');writeFileSync(original,'<!doctype html><h1>Exact handoff source bytes 原件</h1>');const asset=await new AssetStore(data).importFile(sourceId,original,{kind:'import'},undefined,'text/html');
-  const launch=async()=>{app=await electron.launch({args:[desktop],env:{...process.env,PROFILES_E2E:'1',PROFILES_TEST_DATA:data,PROFILES_FIXTURE_ORIGIN:origin}});const shell=await app.firstWindow();await shell.waitForURL('app://shell/index.html');await expect(shell.getByRole('button',{name:'资产中心',exact:true})).toBeVisible();return shell;};let shell=await launch();
+  const launch=async()=>{app=await electron.launch({args:[desktop],env:{...process.env,PROFILES_E2E:'1',PROFILES_TEST_DATA:data,PROFILES_FIXTURE_ORIGIN:origin}});const shell=await shellWindow(app);await shell.waitForURL('app://shell/index.html');await expect(shell.getByRole('button',{name:'资产中心',exact:true})).toBeVisible();return shell;};let shell=await launch();
   await shell.evaluate(()=>window.profiles.command({type:'profile:add',name:'Target account',email:'',color:'#5275a0'}));const snapshot=await shell.evaluate(()=>window.profiles.snapshot()),targetId=snapshot.activeProfileId;
   await app!.evaluate(async({session},{sourceId,targetId,origin})=>{await session.fromPartition('persist:profile-'+sourceId).cookies.set({url:origin,name:'owner',value:'source'});await session.fromPartition('persist:profile-'+targetId).cookies.set({url:origin,name:'owner',value:'target'});},{sourceId,targetId,origin});
   await shell.evaluate(id=>window.profiles.command({type:'profile:activate',id}),sourceId);await shell.getByRole('button',{name:'资产中心',exact:true}).click();await expect(shell.locator('#wb-asset-grid [data-asset]')).toHaveCount(1);

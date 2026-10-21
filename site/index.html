@@ -181,7 +181,7 @@
         </div>
         <div class="product-stage">
           <div class="stage-bar">
-            <span><i class="status-dot"></i> ACTUAL APP CAPTURE</span>
+            <span><i class="status-dot"></i> <span id="product-capture-kind">ACTUAL APP CAPTURE</span></span>
             <div class="platform-tabs" role="tablist" aria-label="客户端截图">
               <button
                 id="tab-windows"
@@ -227,6 +227,12 @@
               height="728"
               loading="lazy"
             />
+            <div class="product-pending" id="product-pending" hidden>
+              <p class="eyebrow">ANDROID · PHONE &amp; TABLET</p>
+              <h3>主界面截图正在更新。</h3>
+              <p>Android 安装包可正常下载。清晰、完整的实际界面将在确认后补充展示。</p>
+              <a class="button button-primary" href="#downloads">下载 Android 版本 <span aria-hidden="true">↗</span></a>
+            </div>
           </div>
           <div class="stage-caption">
             <span id="product-caption"
@@ -514,8 +520,8 @@
         <ol class="milestone-list">
           <li><div class="milestone-version"><strong>独立账号空间</strong>2026.10.20 · alpha.1</div><div class="milestone-copy"><h3>打开 App，就进入 ChatGPT。</h3><p>macOS 与 Android 首个公开预发布版。每个账号拥有独立浏览器数据和标签组，支持清晰切换、会话恢复与无地址栏体验。</p><a href="https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.1" target="_blank" rel="noopener noreferrer">查看 alpha.1 发布记录 ↗</a></div><span class="milestone-status">已公开发布</span></li>
           <li><div class="milestone-version"><strong>Windows 与官网</strong>2026.10.21 · alpha.2</div><div class="milestone-copy"><h3>把独立空间带到 Windows。</h3><p>Windows x64 的 EXE 安装包和免安装 ZIP 已公开提供；上线下载官网、平台说明、安装指引与文件摘要。</p><a href="https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.2" target="_blank" rel="noopener noreferrer">查看 alpha.2 发布记录 ↗</a></div><span class="milestone-status">已公开发布</span></li>
-          <li><div class="milestone-version"><strong>macOS 资产工作台</strong>alpha.3</div><div class="milestone-copy"><h3>让生成的文件，成为可管理的资产。</h3><p>按账号归档、预览与整理文件，本地格式转换，一键交给 GPT；内置 120 个 Skill 和 328 个智能体，232 个互联网候选优先。增加脱敏登录链接记录。已交付本地体验安装包，真实 ChatGPT 上传与发送待人工验收。</p></div><span class="milestone-status local">本地体验</span></li>
-          <li data-milestone="macos-alpha4"><div class="milestone-version"><strong>保活与使用体验</strong>macOS · alpha.4</div><div class="milestone-copy"><h3>标签持续在线，图片更顺手。</h3><p>正在验证标签保活、CPU 与内存优化、每账号的语言和时区选择；同时完善 ChatGPT 网页图片的加载信息、重试与右键复制。这些能力尚未包含在公开下载版本中。</p></div><span class="milestone-status progress">开发与验证中</span></li>
+          <li><div class="milestone-version"><strong>macOS 资产工作台</strong>alpha.3</div><div class="milestone-copy"><h3>让生成的文件，成为可管理的资产。</h3><p>按账号归档、预览与整理文件，本地格式转换，一键交给 GPT；内置 120 个项目 Skill。增加脱敏登录链接记录。已交付本地体验安装包，真实 ChatGPT 上传与发送待人工验收。</p></div><span class="milestone-status local">本地体验</span></li>
+          <li data-milestone="macos-alpha4"><div class="milestone-version"><strong>保活与使用体验</strong>macOS · alpha.4</div><div class="milestone-copy"><h3>标签持续在线，图片更顺手。</h3><p>加入已打开标签的保活、工作台按需加载、每账号的语言和时区设置；网页图片支持右键复制、保存、重试与加载信息。macOS 本地体验包已生成，真实网页业务仍待验收，公开下载版本未变。</p></div><span class="milestone-status local">本地体验</span></li>
           <li><div class="milestone-version"><strong>跨平台继续完善</strong>后续计划</div><div class="milestone-copy"><h3>沿着真实使用反馈，逐步扩展。</h3><p>将工作台迁入 Windows 和 Android，继续研究 iPhone / iPad 的独立空间；推进通行密钥兼容、正式签名与平台实机验收。具体交付顺序与时间随验证结果更新。</p></div><span class="milestone-status planned">计划中</span></li>
         </ol><p class="milestone-note">当前公开版本仍为 macOS / Android alpha.1、Windows alpha.2。存储隔离、界面测试与真实账号业务验收分别记录。</p>
       </section>

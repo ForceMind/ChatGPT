@@ -42,3 +42,11 @@ test('仅接受精确的 HTTPS 站点；回环测试例外不进入正常模式'
   assert.equal(isAllowedURL('http://127.0.0.1:54321/','http://127.0.0.1:12345'),false);
   assert.throws(()=>partitionFor('../../other-profile'));
 });
+
+test('旧账号兼容；语言与时区独立保存，非法偏好不覆盖状态',()=>{
+ const dir=mkdtempSync(path.join(tmpdir(),'profiles-language-')),store=new StateStore(dir);const first=store.read();
+ assert.equal(first.profiles[0].language,'zh-CN');assert.equal(first.profiles[0].timeZone,'system');
+ const legacy=structuredClone(first);delete legacy.profiles[0].language;delete legacy.profiles[0].timeZone;assert.doesNotThrow(()=>validateState(legacy));
+ store.commit(s=>{s.profiles[0].language='ja-JP';s.profiles[0].timeZone='America/New_York';});const restart=new StateStore(dir);assert.equal(restart.read().profiles[0].language,'ja-JP');assert.equal(restart.read().profiles[0].timeZone,'America/New_York');
+ const before=readFileSync(store.file,'utf8');for(const value of ['Mars/Base','+08:00','../../bad',''])assert.throws(()=>store.commit(s=>{s.profiles[0].timeZone=value;}));assert.throws(()=>store.commit(s=>{s.profiles[0].language='not-a-locale';}));assert.equal(readFileSync(store.file,'utf8'),before);
+});

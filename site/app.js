@@ -8,18 +8,15 @@ const platforms = {
     height: 728,
   },
   macos: {
-    image: "macos-window.jpg",
+    image: "macos-window.png",
     caption: "macOS · 普通窗口实际截图 / 未登录 ChatGPT",
     alt: "macOS 客户端普通窗口实际截图：原生窗口按钮、未登录 ChatGPT、顶部标签与账号菜单，没有地址栏或远程控制标记。",
     width: 2720,
     height: 1800,
   },
   android: {
-    image: "android-accounts.png",
-    caption: "Android · 模拟器 / 未登录 / 账号名称与邮箱为测试备注",
-    alt: "Android 模拟器的原生账号菜单，显示独立账号空间；名称与邮箱为测试备注，真实登录尚未验收。",
-    width: 1080,
-    height: 2400,
+    image: null,
+    caption: "Android · 主界面截图待更新 / APK 可下载",
   },
 };
 const tabs = [...document.querySelectorAll("[data-platform]")];
@@ -35,10 +32,16 @@ function selectPlatform(name) {
   document
     .querySelector("#product-panel")
     .setAttribute("aria-labelledby", `tab-${name}`);
-  image.src = `/assets/${entry.image}`;
-  image.alt = entry.alt;
-  image.width = entry.width;
-  image.height = entry.height;
+  image.hidden = !entry.image;
+  document.querySelector("#product-pending").hidden = !!entry.image;
+  document.querySelector("#product-capture-kind").textContent = entry.image
+    ? "ACTUAL APP CAPTURE" : "ANDROID · PREVIEW PENDING";
+  if (entry.image) {
+    image.src = `/assets/${entry.image}`;
+    image.alt = entry.alt;
+    image.width = entry.width;
+    image.height = entry.height;
+  }
   image.classList.toggle("android", name === "android");
   document.querySelector("#product-caption").textContent = entry.caption;
 }

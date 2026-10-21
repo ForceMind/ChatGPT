@@ -1,4 +1,5 @@
 import type {WebContents} from 'electron';
+import {pageProtocol} from './page-protocol';
 import {isChatURL} from './policy';
 export type PageObservation={composer:boolean;input:boolean;send:boolean;text:string;attachments:string[];removers:number;busy:boolean;error:boolean;messages:number;lastMessage:string;generating:boolean;login:boolean;url:string};
 // Read only the current composer's controls and acknowledgement. No conversation
@@ -17,13 +18,13 @@ function observe():PageObservation {
 }
 const composerSelector='#prompt-textarea,textarea[data-testid="prompt-textarea"],textarea[placeholder*="Message"],textarea[placeholder*="询问"]';
 export class ChatPage {
-  private attached=false;private readonly previousThrottling:boolean;
+  private usedChooser=false;private readonly previousThrottling:boolean;
   constructor(readonly contents:WebContents,private readonly fixtureOrigin:string|undefined,private readonly check:()=>void) {this.previousThrottling=contents.getBackgroundThrottling();contents.setBackgroundThrottling(false);}
   private guard():void{this.check();if(this.contents.isDestroyed())throw Error('目标标签页已关闭');const url=this.contents.getURL();if(!isChatURL(url)&&!(this.fixtureOrigin&&url.startsWith(this.fixtureOrigin+'/')))throw Error('目标账号尚未进入 ChatGPT，请在目标标签页完成登录后重新发起任务。');}
   private async script<T>(body:string):Promise<T>{this.guard();const result=await this.contents.executeJavaScript(body,true);this.guard();return result as T;}
   state():Promise<PageObservation>{return this.script('('+observe.toString()+')()');}
-  private async command(method:string,params:Record<string,unknown>):Promise<any>{this.guard();if(!this.attached){if(this.contents.debugger.isAttached())throw Error('目标网页正在使用开发者调试器，请关闭后重试。');this.contents.debugger.attach('1.3');this.attached=true;}const result=await this.contents.debugger.sendCommand(method,params);this.guard();return result;}
-  async wait(predicate:(s:PageObservation)=>boolean,timeout:number,message:string):Promise<PageObservation>{const end=Date.now()+timeout;while(Date.now()<end){this.check();if(!this.contents.isDestroyed()&&!this.contents.isLoadingMainFrame()){const s=await this.state();if(s.login)throw Error('目标账号尚未登录，请打开目标标签页完成登录后重新发起。');if(s.error)throw Error('网页提示附件或输入错误，请打开目标标签页查看。');if(predicate(s))return s;}await new Promise(r=>setTimeout(r,250));}throw Error(message);}
+  private async command(method:string,params:Record<string,unknown>):Promise<any>{this.guard();if(method==='Page.setInterceptFileChooserDialog')this.usedChooser=true;const result=await pageProtocol(this.contents).send(method,params);this.guard();return result;}
+  async wait(predicate:(s:PageObservation)=>boolean,timeout:number,message:string):Promise<PageObservation>{const end=Date.now()+timeout;while(Date.now()<end){this.check();const url=this.contents.isDestroyed()?'':this.contents.getURL();const initializing=!url||url==='about:blank'||url.startsWith('file:');if(!initializing&&!this.contents.isDestroyed()&&!this.contents.isLoadingMainFrame()){const s=await this.state();if(s.login)throw Error('目标账号尚未登录，请打开目标标签页完成登录后重新发起。');if(s.error)throw Error('网页提示附件或输入错误，请打开目标标签页查看。');if(predicate(s))return s;}await new Promise(r=>setTimeout(r,250));}throw Error(message);}
   async ready():Promise<void>{await this.wait(s=>s.composer,45000,'未能找到 ChatGPT 输入框，可能需要登录或网页结构已更新。');}
   async upload(files:string[],names:string[]):Promise<void>{
     let state=await this.state();
@@ -47,5 +48,5 @@ export class ChatPage {
     const ack=await this.wait(s=>s.messages>before.messages&&normalize(s.lastMessage).includes(needle)&&!s.text.trim(),25000,'网页未确认收到消息，请检查目标对话；应用不会自动重发。');
     const clean=new URL(ack.url);clean.search='';clean.hash='';return clean.href;
   }
-  dispose():void{if(this.contents.isDestroyed())return;if(this.attached&&this.contents.debugger.isAttached()){void this.contents.debugger.sendCommand('Page.setInterceptFileChooserDialog',{enabled:false}).catch(()=>{});this.contents.debugger.detach();}this.contents.setBackgroundThrottling(this.previousThrottling);}
+  dispose():void{if(this.contents.isDestroyed())return;if(this.usedChooser&&this.contents.debugger.isAttached())void pageProtocol(this.contents).send('Page.setInterceptFileChooserDialog',{enabled:false}).catch(()=>{});pageProtocol(this.contents).release();this.contents.setBackgroundThrottling(this.previousThrottling);}
 }

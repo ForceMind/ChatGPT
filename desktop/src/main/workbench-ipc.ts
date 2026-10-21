@@ -64,7 +64,6 @@ export function installWorkbenchIPC(host: WorkbenchHost): void {
     if(!record(value)||typeof value.type!=='string')throw new Error('无效资产操作');
     const action=value as AssetAction;
     const id = 'id' in action && typeof action.id==='string' ? action.id : '';
-    if(action.type==='agent-source'){await shell.openExternal(host.catalog().agent(id).sourceURL);return;}
     if(action.type==='open-folder'){const directory=path.join(host.dataDirectory,'assets');if(lstatSync(directory).isSymbolicLink())throw new Error('资产目录是链接，请先检查应用数据目录。');const error=await shell.openPath(directory);if(error)throw new Error(error);return;}
     const profile=host.currentProfile(), store=host.store();
     switch(action.type) {

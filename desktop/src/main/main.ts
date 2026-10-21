@@ -1,4 +1,7 @@
 import { app, BrowserWindow, WebContentsView, ipcMain, protocol, dialog, Menu, shell, session, screen, systemPreferences, type WebContents, type Session, type IpcMainInvokeEvent } from 'electron';
+import {installImageContextMenu} from './image-context-menu';
+import { pageProtocol,type NativeAgentMetadata,type PageEnvironment } from './page-protocol';
+import { DEFAULT_LANGUAGE,preferredLanguages,validBrowserLanguage,validTimeZone } from '../shared/profile-preferences';
 import { randomUUID } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
@@ -51,6 +54,10 @@ let overlayImage: string | undefined;
 let quitting = false;
 let commandQueue: Promise<unknown> = Promise.resolve();
 let boundsTimer: ReturnType<typeof setTimeout> | undefined;
+const pageLanguages=new Map<number,string>();
+const nativeAgents=new Map<string,NativeAgentMetadata>();
+const viewLayout=new Map<string,{width:number;height:number;visible:boolean}>();
+let lastWindowTitle='';let publishTimer:ReturnType<typeof setTimeout>|undefined;
 const views = new Map<string, WebContentsView>();
 const status = new Map<string, TabStatus>();
 const popups = new Map<BrowserWindow, string>();
@@ -60,22 +67,21 @@ const pendingProfiles = new Set<string>();
 const homepage = () => homeURL(fixtureOrigin);
 const activeProfile = () => { const s = store.read(); return s.profiles.find(p => p.id === s.activeProfileId)!; };
 const snapshot = (): Snapshot => ({ ...store.read(), version: APP_VERSION, platform: process.platform, fullScreen: win?.isFullScreen() ?? false, tabStatus: Object.fromEntries(status), testMode, notice: store.recoveryNotice || assetStore?.recoveryNotice, overlayImage, panel, assetError });
-function publish(): void { if (win && !win.isDestroyed()) win.webContents.send('profiles:state', snapshot()); }
+function publish():void{if(publishTimer)return;publishTimer=setTimeout(()=>{publishTimer=undefined;if(win&&!win.isDestroyed())win.webContents.send('profiles:state',snapshot());},25);publishTimer.unref();}
 function notice(message: string): void { if (win && !win.isDestroyed()) win.webContents.send('profiles:shortcut', `notice:${message}`); }
 function report(error: unknown): void { notice(error instanceof Error ? error.message : '操作失败，请重试。'); }
 function assetsChanged(profileId:string):void { if(win&&!win.isDestroyed())win.webContents.send('assets:changed',profileId); }
 function profileById(id: string): Profile { const p = store.read().profiles.find(p => p.id === id); if (!p) throw new Error('账号已不存在'); return p; }
 function activeContents(): WebContents | undefined { return views.get(activeProfile().activeTabId)?.webContents; }
-function layout(): void {
-  if (!win || win.isDestroyed()) return;
-  const [width, height] = win.getContentSize(); const s = store.read();
-  const left = 0; const top = SHELL_HEIGHT;
-  const activeId = s.profiles.find(p => p.id === s.activeProfileId)!.activeTabId;
-  for (const [id, view] of views) {
-    view.setBounds({ x: left, y: top, width: Math.max(1, width - left), height: Math.max(1, height - top) });
-    view.setVisible(!overlayOpen && !panel && id === activeId && !status.get(id)?.error);
-  }
-  win.setTitle(`${activeProfile().name} — ChatGPT Profiles`);
+function layout():void {
+ if(!win||win.isDestroyed())return;const[width,height]=win.getContentSize(),s=store.read(),p=s.profiles.find(p=>p.id===s.activeProfileId)!;
+ const viewHeight=Math.max(1,height-SHELL_HEIGHT),viewWidth=Math.max(1,width);
+ for(const[id,view]of views){const nextVisible=!overlayOpen&&!panel&&id===p.activeTabId&&!status.get(id)?.error,previous=viewLayout.get(id);
+  if(!previous||previous.width!==viewWidth||previous.height!==viewHeight)view.setBounds({x:0,y:SHELL_HEIGHT,width:viewWidth,height:viewHeight});
+  if(!previous||previous.visible!==nextVisible)view.setVisible(nextVisible);
+  viewLayout.set(id,{width:viewWidth,height:viewHeight,visible:nextVisible});
+ }
+ const title=p.name+' — ChatGPT Profiles';if(title!==lastWindowTitle){win.setTitle(title);lastWindowTitle=title;}
 }
 function saveBounds(): void {
   if (!win || win.isDestroyed() || win.isFullScreen() || win.isMaximized() || win.isMinimized()) return;
@@ -97,6 +103,13 @@ async function externalFromPage(url: string,recordId?:string): Promise<void> {
 function configureSession(profileId: string): Session {
   const partition = partitionFor(profileId); const ses = session.fromPartition(partition);
   if (configuredSessions.has(partition)) return ses;
+  if(process.platform==='darwin')ses.webRequest.onBeforeSendHeaders({urls:['http://*/*','https://*/*']},(details,callback)=>{
+    const profile=store.read().profiles.find(p=>p.id===profileId);
+    if(!profile||pendingProfiles.has(profileId)){callback({cancel:true});return;}
+    const languages=(details.webContentsId===undefined?undefined:pageLanguages.get(details.webContentsId))||preferredLanguages(profile.language,app.getPreferredSystemLanguages());
+    const header=languages.split(',').map((language,i)=>i?language+';q='+Math.max(0.1,1-i*0.1).toFixed(1):language).join(',');
+    callback({requestHeaders:{...details.requestHeaders,'Accept-Language':header}});
+  });
   configuredSessions.add(partition); permissionGrants.set(profileId, new Set());
   ses.setPermissionCheckHandler((_contents, permission, origin) => {
     if (permission === 'clipboard-sanitized-write' && isChatURL(origin)) return true;
@@ -139,18 +152,43 @@ function configureSession(profileId: string): Session {
   });
   return ses;
 }
-function secureWebPreferences(profileId: string) { return { session: configureSession(profileId), sandbox: true, contextIsolation: true, nodeIntegration: false, webSecurity: true, allowRunningInsecureContent: false, spellcheck: true }; }
-function configureRemote(contents: WebContents, profileId: string): void {
+function secureWebPreferences(profileId:string){
+ const profile=profileById(profileId);
+ // Related login windows may share a renderer; native --lang avoids competing
+ // process-wide Emulation locale controllers while keeping Intl consistent.
+ const additionalArguments=process.platform==='darwin'&&profile.language&&profile.language!=='system'?[`--lang=${profile.language}`]:[];
+ return{session:configureSession(profileId),sandbox:true,contextIsolation:true,nodeIntegration:false,webSecurity:true,allowRunningInsecureContent:false,spellcheck:true,backgroundThrottling:process.platform!=='darwin',additionalArguments};
+}
+function pageEnvironment(profile:Profile,metadata:NativeAgentMetadata,contents:WebContents):PageEnvironment{return{metadata,userAgent:contents.getUserAgent(),acceptLanguages:preferredLanguages(profile.language,app.getPreferredSystemLanguages()),locale:profile.language&&profile.language!=='system'?profile.language.replaceAll('-','_'):'',timezoneId:profile.timeZone&&profile.timeZone!=='system'?profile.timeZone:''};}
+async function prepareProfilePage(contents:WebContents,profile:Profile,bootstrap:boolean,inherited?:PageEnvironment):Promise<void>{
+ let timer:ReturnType<typeof setTimeout>|undefined;
+ const setup=async()=>{
+  if(!bootstrap)await new Promise<void>(resolve=>setImmediate(resolve));
+  let metadata=nativeAgents.get(profile.id);
+  if(bootstrap){await contents.loadFile(path.join(__dirname,'../renderer/profile-empty.html'));if(!metadata){metadata=await contents.executeJavaScript(`(async()=>{const data=navigator.userAgentData;if(!data)throw Error('原生浏览器标识不可用');return data.getHighEntropyValues(['architecture','bitness','model','platformVersion','uaFullVersion','fullVersionList','wow64']);})()`);nativeAgents.set(profile.id,metadata!);}}
+  if(!metadata)throw Error('账号环境尚未准备好，请从主标签页重新打开登录窗口。');
+  await pageProtocol(contents).configure(inherited||pageEnvironment(profile,metadata,contents));
+ };
+ try{await Promise.race([setup(),new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(Error('账号语言与时区初始化超时，请重新加载网页。')),10000);})]);}finally{clearTimeout(timer);}
+}
+function configureRemote(contents: WebContents, profileId: string,initial?:Promise<void>,inherited?:PageEnvironment): void {
+ if(process.platform==='darwin')installImageContextMenu(contents,{window:()=>win,notice,fixtureOrigin});
+ if(process.platform==='darwin'){
+  pageLanguages.set(contents.id,inherited?.acceptLanguages||preferredLanguages(profileById(profileId).language,app.getPreferredSystemLanguages()));
+  const ready=initial||prepareProfilePage(contents,profileById(profileId),false,inherited);if(!initial)void ready.catch(error=>{if(!contents.isDestroyed())report(error);});
+  contents.once('destroyed',()=>pageLanguages.delete(contents.id));
+ }
+
   contents.on('did-navigate',(_event,url)=>{if(isAllowedURL(url,fixtureOrigin)&&!isChatURL(url)&&(!fixtureOrigin||!url.startsWith(fixtureOrigin)))recordLink(profileId,'login-page',url,contents);});
   contents.on('will-navigate', (event, url) => { if (!isAllowedURL(url, fixtureOrigin)) { event.preventDefault(); const id=recordLink(profileId,'navigation',url,contents);void externalFromPage(url,id).catch(report); } });
   contents.on('will-redirect', (event, url) => { if (!isAllowedURL(url, fixtureOrigin)) { event.preventDefault();recordLink(profileId,'redirect',url,contents);notice('已拦截不受支持的跳转，可在账号菜单的「登录与链接记录」查看站点与原因。'); } });
   contents.setWindowOpenHandler(({ url }) => {
     if (url !== 'about:blank' && !isAllowedURL(url, fixtureOrigin)) {const id=recordLink(profileId,'popup',url,contents);void externalFromPage(url,id).catch(report); return { action: 'deny' }; }
     if (isChatURL(url) && !/^\/(auth|api\/auth)(\/|$)/.test(new URL(url).pathname)) { queueCommandInternal(() => createTab(profileId, url)); return { action: 'deny' }; }
-    return { action: 'allow', overrideBrowserWindowOptions: { parent: win, width: 560, height: 760, minWidth: 420, minHeight: 500, title: `${profileById(profileId).name} · 登录窗口`, webPreferences: secureWebPreferences(profileId) } };
+    return { action: 'allow', overrideBrowserWindowOptions: { parent: win, width: 560, height: 760, minWidth: 420, minHeight: 500, title: `${profileById(profileId).name} · 登录窗口`, webPreferences: {...secureWebPreferences(profileId),additionalArguments:pageProtocol(contents).snapshot()?.locale?[`--lang=${pageProtocol(contents).snapshot()!.locale.replaceAll('_','-')}`]:[]} } };
   });
   contents.on('did-create-window', popup => {
-    popups.set(popup, profileId); configureRemote(popup.webContents, profileId);
+    popups.set(popup, profileId); configureRemote(popup.webContents,profileId,undefined,pageProtocol(contents).snapshot());
     popup.on('page-title-updated', event => { event.preventDefault(); const url = popup.webContents.getURL(); let host = ''; try { host = new URL(url).hostname; } catch { /* about:blank */ } popup.setTitle(`${profileById(profileId).name} · ${host || '登录窗口'}`); });
     popup.once('closed', () => popups.delete(popup));
   });
@@ -159,7 +197,7 @@ function ensureView(tab: Tab): WebContentsView {
   const existing = views.get(tab.id); if (existing && !existing.webContents.isDestroyed()) return existing;
   const view = new WebContentsView({ webPreferences: secureWebPreferences(tab.profileId) });
   views.set(tab.id, view); win!.contentView.addChildView(view); view.setBackgroundColor('#ffffff');
-  const c = view.webContents; configureRemote(c, tab.profileId);
+  const c = view.webContents;const prepared=process.platform==='darwin'?prepareProfilePage(c,profileById(tab.profileId),true):Promise.resolve();configureRemote(c,tab.profileId,prepared);
   const stillCurrent = () => views.get(tab.id) === view && !pendingProfiles.has(tab.profileId) && store.read().tabs.some(t => t.id === tab.id);
   const update = (patch: Partial<TabStatus>) => {
     if (!stillCurrent() || c.isDestroyed()) return;
@@ -184,7 +222,7 @@ function ensureView(tab: Tab): WebContentsView {
     update({ error: undefined });
   };
   c.on('did-navigate', navigated); c.on('did-navigate-in-page', navigated);
-  layout(); void c.loadURL(tab.url).catch(error => update({ loading: false, error: error.message }));
+  layout();void prepared.then(()=>{if(stillCurrent()&&!c.isDestroyed())return c.loadURL(tab.url);}).catch(error=>update({loading:false,error:error.message}));
   return view;
 }
 function showActive(focus = true): void {
@@ -192,7 +230,7 @@ function showActive(focus = true): void {
   const view = ensureView(t); layout(); if (focus && !overlayOpen && !panel) view.webContents.focus(); publish();
 }
 function destroyView(id: string): void {
-  const view = views.get(id); views.delete(id); status.delete(id);
+  const view = views.get(id);views.delete(id);status.delete(id);viewLayout.delete(id);
   if (view) { if (win && !win.isDestroyed()) win.contentView.removeChildView(view); if (!view.webContents.isDestroyed()) view.webContents.close({ waitForBeforeUnload: false }); }
 }
 function createHandoffTab(profileId:string):{tabId:string;contents:WebContents}{
@@ -227,7 +265,7 @@ async function clearProfile(id: string, remove: boolean): Promise<void> {
     const ses = configureSession(id); await ses.clearStorageData(); await ses.clearCache(); await ses.clearAuthCache(); permissionGrants.set(id, new Set());
     store.commit(s => {
       s.tabs = s.tabs.filter(t => t.profileId !== id); s.closedTabs = s.closedTabs.filter(t => t.profileId !== id);
-      if (remove) { s.profiles = s.profiles.filter(p => p.id !== id); if (s.activeProfileId === id) s.activeProfileId = s.profiles[0].id; }
+      if (remove) { nativeAgents.delete(id);s.profiles = s.profiles.filter(p => p.id !== id); if (s.activeProfileId === id) s.activeProfileId = s.profiles[0].id; }
       else { const tab = makeTab(id, homepage()); s.tabs.push(tab); s.profiles.find(p => p.id === id)!.activeTabId = tab.id; }
     });
     notice(remove ? `已移除 ${p.name}` : `${p.name} 的本机登录数据已清除`);
@@ -241,6 +279,7 @@ function validateCommand(value: unknown): asserts value is Command {
   if (!known.includes(c.type)) throw new Error('未知操作');
   if (['profile:edit','profile:activate','profile:remove','profile:clear','profile:move','tab:activate','tab:close','tab:pin','tab:menu'].includes(c.type) && (typeof c.id !== 'string' || !/^[a-f0-9-]{36}$/.test(c.id))) throw new Error('无效标识');
   if (['profile:add','profile:edit'].includes(c.type) && (!validLabel(c.name,40,true) || !validLabel(c.email,120) || !(COLORS as readonly unknown[]).includes(c.color))) throw new Error('请填写 1–40 字账号名称、有效备注与颜色。');
+  if(['profile:add','profile:edit'].includes(c.type)&&((c.language!==undefined&&!validBrowserLanguage(c.language))||(c.timeZone!==undefined&&!validTimeZone(c.timeZone))))throw Error('请选择有效浏览器语言与 IANA 时区。');
   if (c.type === 'profile:move' && c.direction !== -1 && c.direction !== 1) throw new Error('无效排序');
   if (c.type === 'tab:new' && c.url !== undefined && !isAllowedURL(c.url,fixtureOrigin)) throw new Error('网址不在支持范围');
   if (c.type === 'tab:reorder' && (!Array.isArray(c.ids) || c.ids.length > MAX_TABS || !c.ids.every(v => typeof v === 'string'))) throw new Error('无效排序');
@@ -252,9 +291,9 @@ async function dispatch(c: Command): Promise<void> {
     case 'profile:add': {
       if (store.read().profiles.length >= MAX_PROFILES) throw new Error(`最多支持 ${MAX_PROFILES} 个账号空间。`);
       const id = randomUUID(), tab = makeTab(id, homepage());
-      store.commit(s => { s.profiles.push({ id, name: c.name.trim(), email: c.email.trim(), color: c.color, activeTabId: tab.id, createdAt: Date.now() }); s.tabs.push(tab); s.activeProfileId = id; }); showActive(false); break;
+      store.commit(s => { s.profiles.push({ id, name: c.name.trim(), email: c.email.trim(), color: c.color, activeTabId: tab.id, createdAt: Date.now(),language:c.language||DEFAULT_LANGUAGE,timeZone:c.timeZone||'system' }); s.tabs.push(tab); s.activeProfileId = id; }); showActive(false); break;
     }
-    case 'profile:edit': profileById(c.id); store.commit(s => { Object.assign(s.profiles.find(p => p.id === c.id)!, { name: c.name.trim(), email: c.email.trim(), color: c.color }); }); layout(); break;
+    case 'profile:edit': profileById(c.id); store.commit(s => { Object.assign(s.profiles.find(p => p.id === c.id)!, { name: c.name.trim(), email: c.email.trim(), color: c.color,...(c.language!==undefined?{language:c.language}:{}),...(c.timeZone!==undefined?{timeZone:c.timeZone}:{}) }); }); layout(); break;
     case 'profile:activate': profileById(c.id);assetRuntime?.revoke(); store.commit(s => { s.activeProfileId = c.id; }); showActive(); break;
     case 'profile:remove': await clearProfile(c.id, true); break;
     case 'profile:clear': await clearProfile(c.id, false); break;
@@ -386,7 +425,7 @@ function createWindow(): void {
   win.on('move',()=>{clearTimeout(boundsTimer);boundsTimer=setTimeout(()=>{try{saveBounds();}catch(error){report(error);}},250);});
   win.on('enter-full-screen',()=>{layout();publish();});win.on('leave-full-screen',()=>{layout();publish();});
   win.on('close',()=>{clearTimeout(boundsTimer);try{saveBounds();}catch(error){report(error);} for(const id of [...views.keys()])destroyView(id);for(const popup of popups.keys())if(!popup.isDestroyed())popup.destroy();});
-  win.on('closed',()=>{win=undefined;overlayOpen=false;overlayImage=undefined;panel=undefined;assetRuntime?.revoke();});
+  win.on('closed',()=>{win=undefined;lastWindowTitle='';clearTimeout(publishTimer);publishTimer=undefined;overlayOpen=false;overlayImage=undefined;panel=undefined;assetRuntime?.revoke();});
   win.once('ready-to-show',()=>{win?.show();showActive();});
   void win.loadURL('app://shell/index.html').catch(error=>dialog.showErrorBox('界面加载失败',error.message));
 }

@@ -1,11 +1,15 @@
-import { useCallback, useEffect, useRef, useState, type FormEvent, type CSSProperties } from 'react';
+import { useCallback, useEffect, useRef, useState, lazy, Suspense, type FormEvent, type CSSProperties } from 'react';
 import { createRoot } from 'react-dom/client';
 import { COLORS, SHELL_HEIGHT, type Bridge, type Command, type Snapshot } from '../shared/model';
 import { Icon, Mark, type IconName } from './icons';
 import './style.css';
-import { Workbench } from './Workbench';
+const Workbench=lazy(()=>import('./Workbench').then(module=>({default:module.Workbench})));
+import { BROWSER_LANGUAGES,DEFAULT_LANGUAGE } from '../shared/profile-preferences';
 import { LoginDiagnostics } from './LoginDiagnostics';
 declare global { interface Window { profiles: Bridge } }
+const commonZones:Record<string,string>={'UTC':'UTC · 协调世界时','Asia/Shanghai':'上海 · 中国标准时间','Asia/Hong_Kong':'香港','Asia/Taipei':'台北','Asia/Tokyo':'东京','Asia/Singapore':'新加坡','America/New_York':'纽约','America/Los_Angeles':'洛杉矶','Europe/London':'伦敦'};
+const zoneOptions=[...new Set([...Object.keys(commonZones),...Intl.supportedValuesOf('timeZone')])];
+const systemZone=Intl.DateTimeFormat().resolvedOptions().timeZone;
 type Editor = { kind:'add' } | { kind:'edit'; id:string };
 function Tool({icon,label,disabled=false,active=false,onClick}:{icon:IconName;label:string;disabled?:boolean;active?:boolean;onClick:()=>void}) { return <button type="button" className={`tool ${active?'is-active':''}`} title={label} aria-label={label} disabled={disabled} onClick={onClick}><Icon name={icon}/></button>; }
 function App() {
@@ -83,7 +87,7 @@ function App() {
   const submit=async(event:FormEvent<HTMLFormElement>)=>{
     event.preventDefault();if(busy)return;setBusy(true);setFormError('');
     const form=new FormData(event.currentTarget);
-    const fields={name:String(form.get('name')||'').trim(),email:String(form.get('email')||'').trim(),color:String(form.get('color')||COLORS[0])};
+    const fields={name:String(form.get('name')||'').trim(),email:String(form.get('email')||'').trim(),color:String(form.get('color')||COLORS[0]),...(current.current?.platform==='darwin'?{language:String(form.get('language')||'system'),timeZone:String(form.get('timeZone')||'system')}:{})};
     try{
       const result=await window.profiles.command(editing?{type:'profile:edit',id:editing.id,...fields}:{type:'profile:add',...fields});
       if(result.ok){await closeEditor();showToast(editing?'账号备注已保存':'账号空间已创建，请在网页内登录。');}else setFormError(result.error);
@@ -109,7 +113,7 @@ function App() {
       {status?.error?<div className="page-state" role="alert"><span className="page-state-icon"><Icon name="alert" size={28}/></span><h1>网页暂时无法打开</h1><p>{profile.name} 的账号空间已保留，可以重新加载。</p><code>{status.error}</code><button className="primary" onClick={()=>void send({type:'reload'})}><Icon name="refresh" size={16}/>重新加载</button></div>:<div className="page-state loading-state"><Mark size={38}/><h1>正在打开 ChatGPT</h1><p>{profile.name} · 独立账号空间</p><span className="spinner"/></div>}
       {(editor||menuOpen||diagnosticsOpen)&&state.overlayImage&&<img className="page-preview" src={state.overlayImage} alt="" aria-hidden="true"/>}
     </section>
-    {state.platform==='darwin'&&state.panel&&<Workbench state={state} close={()=>void send({type:'panel'})} panel={panel=>void send({type:'panel',panel})} notice={showToast}/>}
+    {state.platform==='darwin'&&state.panel&&<Suspense fallback={<div className="workbench-loading" role="status">正在打开工作台…</div>}><Workbench state={state} close={()=>void send({type:'panel'})} panel={panel=>void send({type:'panel',panel})} notice={showToast}/></Suspense>}
     {toast&&<div className="toast" role="status"><Icon name="check" size={15}/>{toast}<button aria-label="关闭提示" onClick={()=>setToast('')}><Icon name="close" size={13}/></button></div>}
     {menuOpen&&<div className="menu-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)void closeAccounts();}}>
       <div className="account-menu" role="menu" aria-label="账号空间" ref={accountMenu}>
@@ -141,6 +145,7 @@ function App() {
         <form key={editing?.id||'new'} onSubmit={event=>void submit(event)}>
           <label>账号名称<input name="name" placeholder="例如：个人账号、工作账号" maxLength={40} required defaultValue={editing?.name||''} disabled={busy}/></label>
           <label>邮箱备注 <span>选填</span><input name="email" placeholder="name@example.com" maxLength={120} defaultValue={editing?.email||''} disabled={busy}/></label>
+          {state.platform==='darwin'&&<div className="profile-preferences"><label>浏览器语言<select aria-label="浏览器语言" name="language" defaultValue={editing?.language||(editing?'system':DEFAULT_LANGUAGE)} disabled={busy}>{BROWSER_LANGUAGES.map(l=><option key={l.id} value={l.id}>{l.name}</option>)}</select></label><label>时区<select aria-label="时区" name="timeZone" defaultValue={editing?.timeZone||'system'} disabled={busy}><option value="system">跟随系统（{systemZone}）</option>{zoneOptions.map(zone=><option key={zone} value={zone}>{commonZones[zone]?commonZones[zone]+' · ':''}{zone}</option>)}</select></label><p>{editing?'修改后从新建标签页起生效，现有网页和它的登录窗口沿用原设置。':'只应用于这个账号的网页，不改变电脑的语言和时间。'}网页自行保存的语言偏好可能优先。</p></div>}
           <fieldset disabled={busy}><legend>标识颜色</legend><div className="color-options">{COLORS.map((color,i)=><label key={color} className="color-option" title={`颜色 ${i+1}`} style={{'--swatch':color} as CSSProperties}><input type="radio" name="color" value={color} defaultChecked={(editing?.color||COLORS[0])===color} aria-label={`颜色 ${i+1}`}/><span/></label>)}</div></fieldset>
           <div className="identity-note"><Icon name="shield" size={17}/><p>名称与邮箱是手动备注，实际登录身份以网页内显示为准。密码由登录网页处理。</p></div>
           {formError&&<p className="form-error" role="alert">{formError}</p>}
