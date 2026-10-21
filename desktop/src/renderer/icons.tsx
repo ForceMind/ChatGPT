@@ -1,5 +1,7 @@
-export type IconName = 'chat' | 'settings' | 'plus' | 'close' | 'back' | 'forward' | 'refresh' | 'sidebar' | 'external' | 'more' | 'pin' | 'shield' | 'lock' | 'chevron' | 'home' | 'expand' | 'check' | 'arrowUp' | 'arrowDown' | 'alert' | 'edit' | 'restore';
+export type IconName = 'chat' | 'settings' | 'plus' | 'close' | 'back' | 'forward' | 'refresh' | 'sidebar' | 'external' | 'more' | 'pin' | 'shield' | 'lock' | 'chevron' | 'home' | 'expand' | 'check' | 'arrowUp' | 'arrowDown' | 'alert' | 'edit' | 'restore' | 'folder' | 'sparkles';
 const paths: Record<IconName, string> = {
+  folder:'M3 7V5a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z',
+  sparkles:'m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5ZM20 2v4M18 4h4',
   chat:'M4 4h16v13H10l-5 4v-4H4ZM8 9h8M8 12h5',
   settings:'M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1m8.6 8.6 2.1 2.1M5.6 18.4l2.1-2.1m8.6-8.6 2.1-2.1M17 12a5 5 0 1 1-10 0 5 5 0 0 1 10 0',
   plus:'M12 5v14M5 12h14',close:'m6 6 12 12M6 18 18 6',back:'m14 5-7 7 7 7',forward:'m10 5 7 7-7 7',refresh:'M20 11a8 8 0 1 0-2.4 6M20 4v7h-7',sidebar:'M4 4h16v16H4ZM9 4v16',external:'M14 4h6v6M20 4l-9 9M10 4H4v16h16v-6',more:'M5 11h.01M12 11h.01M19 11h.01',pin:'m8 3 8 0-1 6 4 4H5l4-4ZM12 13v8',shield:'m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6ZM8 12l3 3 5-6',lock:'M6 10h12v10H6ZM8 10V7a4 4 0 0 1 8 0v3',chevron:'m8 10 4 4 4-4',home:'m3 10 9-7 9 7M6 9v12h12V9M10 21v-7h4v7',expand:'M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5',check:'m5 12 4 4L19 6',arrowUp:'m6 12 6-6 6 6M12 6v14',arrowDown:'m6 12 6 6 6-6M12 18V4',alert:'m12 3 10 18H2ZM12 9v5M12 17h.01',edit:'m15 4 5 5M4 20l5-1L21 7l-5-5L4 14Z',restore:'M4 10a8 8 0 1 1 1 8M4 4v6h6M12 7v5l3 2'

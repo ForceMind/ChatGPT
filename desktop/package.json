@@ -13,13 +13,16 @@
     "start": "npm run build && electron .",
     "start:built": "electron .",
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --test tests/state.test.ts tests/asset-store.test.ts tests/asset-downloads.test.ts",
+    "test": "node --import tsx --test tests/state.test.ts tests/asset-store.test.ts tests/asset-downloads.test.ts tests/capabilities.test.ts tests/formats.test.ts",
     "test:e2e": "npm run build && playwright test",
     "check": "npm run typecheck && npm test && npm run build",
     "dist:mac": "npm run check && node scripts/icon.mjs && node scripts/package-mac.mjs",
     "dist:win": "npm run check && node scripts/icon.mjs && node scripts/package-win.mjs"
   },
   "dependencies": {
+    "marked": "18.1.1",
+    "papaparse": "5.7.0",
+    "pdfjs-dist": "6.4.299",
     "react": "19.3.1",
     "react-dom": "19.3.1"
   },
@@ -27,6 +30,7 @@
     "@playwright/test": "1.64.1",
     "@resvg/resvg-js": "^2.6.2",
     "@types/node": "^24.0.0",
+    "@types/papaparse": "5.5.2",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "electron": "44.9.1",

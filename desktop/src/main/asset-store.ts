@@ -153,7 +153,7 @@ export class AssetStore {
     if (this.current.assets.some(a => activeStatuses.has(a.status))) {
       const next = this.read();
       for (const asset of next.assets) if (activeStatuses.has(asset.status)) {
-        asset.status = 'interrupted'; asset.error = '应用退出时任务尚未完成，请从来源重新下载或导入。'; asset.updatedAt = Date.now();
+        asset.status = 'interrupted'; asset.error = asset.source.kind==='conversion'?'应用退出时转换尚未完成，原件已保留，可从原件重新转换。':'应用退出时任务尚未完成，请从来源重新下载或导入。'; asset.updatedAt = Date.now();
       }
       this.save(next);
     }
@@ -329,6 +329,21 @@ export class AssetStore {
   setFavorite(profileId: string, assetId: string, favorite: boolean): AssetRecord {
     if (typeof favorite !== 'boolean') throw new Error('收藏状态无效');
     return this.patch(profileId, assetId, a => { a.favorite = favorite; });
+  }
+  editMany(profileId: string, ids: string[], changes: { favorite?: boolean; trashed?: boolean }): void {
+    if (!Array.isArray(ids) || !ids.length || ids.length > 1000 || new Set(ids).size !== ids.length) throw new Error('请选择 1–1000 个不同的资产');
+    if (changes.favorite !== undefined && typeof changes.favorite !== 'boolean') throw new Error('收藏状态无效');
+    if (changes.trashed !== undefined && typeof changes.trashed !== 'boolean') throw new Error('回收站状态无效');
+    if (changes.trashed === undefined && changes.favorite === undefined) throw new Error('未指定需要修改的资产状态');
+    const owned = ids.map(id => this.get(profileId,id));
+    if (changes.trashed && owned.some(a => activeStatuses.has(a.status))) throw new Error('请先取消所选资产中正在进行的下载或转换');
+    const next = this.read(), selected = new Set(ids), now = Date.now();
+    for (const asset of next.assets) if (asset.profileId === profileId && selected.has(asset.id)) {
+      if (changes.favorite !== undefined) asset.favorite = changes.favorite;
+      if (changes.trashed !== undefined) { if (changes.trashed) asset.trashedAt = now; else delete asset.trashedAt; }
+      asset.updatedAt = now;
+    }
+    this.save(next);
   }
   setTrashed(profileId: string, assetId: string, trashed: boolean): AssetRecord {
     if (typeof trashed !== 'boolean') throw new Error('回收站状态无效');

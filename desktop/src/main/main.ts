@@ -1,10 +1,18 @@
 import { app, BrowserWindow, WebContentsView, ipcMain, protocol, dialog, Menu, shell, session, screen, systemPreferences, type WebContents, type Session, type IpcMainInvokeEvent } from 'electron';
 import { randomUUID } from 'node:crypto';
-import { readFileSync, existsSync, mkdirSync } from 'node:fs';
+import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { APP_VERSION, COLORS, SHELL_HEIGHT, type Command, type Profile, type Snapshot, type Tab, type TabStatus, type Reply } from '../shared/model';
 import { StateStore, makeTab, validLabel, MAX_PROFILES, MAX_TABS } from './state';
 import { homeURL, isAllowedURL, isChatURL, isWebURL, partitionFor } from './policy';
+import { AssetStore } from './asset-store';
+import { AssetDownloads } from './asset-downloads';
+import { AssetRuntime } from './asset-runtime';
+import { CapabilityCatalog } from './capabilities';
+import { installWorkbenchIPC } from './workbench-ipc';
+import type { WorkbenchPanel } from '../shared/workbench';
+import { AssetConversions } from './asset-conversions';
+import { localRendererResponse } from './local-renderer';
 
 const testMode = !app.isPackaged && process.env.PROFILES_E2E === '1';
 if (testMode) app.commandLine.appendSwitch('use-mock-keychain');
@@ -16,11 +24,19 @@ mkdirSync(dataDir, { recursive: true, mode: 0o700 });
 app.setPath('userData', dataDir);
 app.setName('ChatGPT Profiles');
 if (process.platform === 'win32') app.setAppUserModelId('com.forcemind.chatgpt.profiles');
-protocol.registerSchemesAsPrivileged([{ scheme: 'app', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
+protocol.registerSchemesAsPrivileged([{ scheme: 'app', privileges: { standard: true, secure: true, supportFetchAPI: true } }, ...(process.platform==='darwin'?[{scheme:'asset',privileges:{standard:true,secure:true,supportFetchAPI:true,corsEnabled:true,stream:true}}]:[])]);
 const single = app.requestSingleInstanceLock();
 if (!single) app.quit();
 let win: BrowserWindow | undefined;
 let store: StateStore;
+let assetStore: AssetStore | undefined;
+let assetRuntime: AssetRuntime | undefined;
+let capabilityCatalog: CapabilityCatalog | undefined;
+let assetError: string | undefined;
+let capabilityError: string | undefined;
+let panel: WorkbenchPanel | undefined;
+let assetConversions: AssetConversions | undefined;
+const assetDownloads = new Map<string,AssetDownloads>();
 let overlayOpen = false;
 let overlayImage: string | undefined;
 let quitting = false;
@@ -34,10 +50,11 @@ const permissionGrants = new Map<string, Set<string>>();
 const pendingProfiles = new Set<string>();
 const homepage = () => homeURL(fixtureOrigin);
 const activeProfile = () => { const s = store.read(); return s.profiles.find(p => p.id === s.activeProfileId)!; };
-const snapshot = (): Snapshot => ({ ...store.read(), version: APP_VERSION, platform: process.platform, fullScreen: win?.isFullScreen() ?? false, tabStatus: Object.fromEntries(status), testMode, notice: store.recoveryNotice, overlayImage });
+const snapshot = (): Snapshot => ({ ...store.read(), version: APP_VERSION, platform: process.platform, fullScreen: win?.isFullScreen() ?? false, tabStatus: Object.fromEntries(status), testMode, notice: store.recoveryNotice || assetStore?.recoveryNotice, overlayImage, panel, assetError });
 function publish(): void { if (win && !win.isDestroyed()) win.webContents.send('profiles:state', snapshot()); }
 function notice(message: string): void { if (win && !win.isDestroyed()) win.webContents.send('profiles:shortcut', `notice:${message}`); }
 function report(error: unknown): void { notice(error instanceof Error ? error.message : '操作失败，请重试。'); }
+function assetsChanged(profileId:string):void { if(win&&!win.isDestroyed())win.webContents.send('assets:changed',profileId); }
 function profileById(id: string): Profile { const p = store.read().profiles.find(p => p.id === id); if (!p) throw new Error('账号已不存在'); return p; }
 function activeContents(): WebContents | undefined { return views.get(activeProfile().activeTabId)?.webContents; }
 function layout(): void {
@@ -47,7 +64,7 @@ function layout(): void {
   const activeId = s.profiles.find(p => p.id === s.activeProfileId)!.activeTabId;
   for (const [id, view] of views) {
     view.setBounds({ x: left, y: top, width: Math.max(1, width - left), height: Math.max(1, height - top) });
-    view.setVisible(!overlayOpen && id === activeId && !status.get(id)?.error);
+    view.setVisible(!overlayOpen && !panel && id === activeId && !status.get(id)?.error);
   }
   win.setTitle(`${activeProfile().name} — ChatGPT Profiles`);
 }
@@ -90,7 +107,15 @@ function configureSession(profileId: string): Session {
       finish(allowed);
     } catch { finish(false); }
   });
-  ses.on('will-download', (_event, item) => {
+  if(process.platform==='darwin'&&assetStore) {
+    const tracker=new AssetDownloads(ses,profileId,assetStore,{
+      profileAvailable:()=>!pendingProfiles.has(profileId)&&store.read().profiles.some(p=>p.id===profileId),
+      source:contents=>{const p=profileById(profileId);const tab=[...views.entries()].find(([,view])=>view.webContents===contents);return {profileName:p.name,tabId:tab?.[0],conversationURL:contents.getURL(),title:contents.getTitle()};},
+      changed:asset=>{assetsChanged(profileId);if(asset.status==='ready')notice(`${asset.source.profileName||'当前账号'}：${asset.name} 已归档到资产中心`);},
+      failed:report
+    });
+    assetDownloads.set(profileId,tracker);
+  } else ses.on('will-download', (_event, item) => {
     const p = store.read().profiles.find(p => p.id === profileId);
     if (!p) { item.cancel(); return; }
     const filename = path.basename(item.getFilename()).replace(/[\u0000-\u001f]/g, '_');
@@ -148,7 +173,7 @@ function ensureView(tab: Tab): WebContentsView {
 }
 function showActive(focus = true): void {
   const p = activeProfile(); const t = store.read().tabs.find(t => t.id === p.activeTabId)!;
-  const view = ensureView(t); layout(); if (focus && !overlayOpen) view.webContents.focus(); publish();
+  const view = ensureView(t); layout(); if (focus && !overlayOpen && !panel) view.webContents.focus(); publish();
 }
 function destroyView(id: string): void {
   const view = views.get(id); views.delete(id); status.delete(id);
@@ -168,6 +193,10 @@ async function clearProfile(id: string, remove: boolean): Promise<void> {
   if (choice.response !== 1) return;
   pendingProfiles.add(id);
   try {
+    assetConversions?.cancelProfile(id);
+    const tracker=assetDownloads.get(id);
+    if(tracker){for(const assetId of tracker.activeIds())tracker.cancel(assetId);await tracker.whenIdle();if(remove){tracker.dispose();assetDownloads.delete(id);}}
+    assetRuntime?.revoke(id);
     for (const [popup, pid] of popups) if (pid === id && !popup.isDestroyed()) popup.destroy();
     for (const t of store.read().tabs.filter(t => t.profileId === id)) destroyView(t.id);
     const ses = configureSession(id); await ses.clearStorageData(); await ses.clearCache(); await ses.clearAuthCache(); permissionGrants.set(id, new Set());
@@ -183,7 +212,7 @@ function validateCommand(value: unknown): asserts value is Command {
   if (!value || typeof value !== 'object') throw new Error('无效操作');
   const c = value as Record<string, unknown>;
   if (typeof c.type !== 'string') throw new Error('无效操作');
-  const known = ['profile:add','profile:edit','profile:activate','profile:remove','profile:clear','profile:move','tab:new','tab:activate','tab:close','tab:pin','tab:menu','tab:reorder','tab:restore','back','forward','reload','home','fullscreen','maximize','external','overlay'];
+  const known = ['profile:add','profile:edit','profile:activate','profile:remove','profile:clear','profile:move','tab:new','tab:activate','tab:close','tab:pin','tab:menu','tab:reorder','tab:restore','back','forward','reload','home','fullscreen','maximize','external','overlay','panel'];
   if (!known.includes(c.type)) throw new Error('未知操作');
   if (['profile:edit','profile:activate','profile:remove','profile:clear','profile:move','tab:activate','tab:close','tab:pin','tab:menu'].includes(c.type) && (typeof c.id !== 'string' || !/^[a-f0-9-]{36}$/.test(c.id))) throw new Error('无效标识');
   if (['profile:add','profile:edit'].includes(c.type) && (!validLabel(c.name,40,true) || !validLabel(c.email,120) || !(COLORS as readonly unknown[]).includes(c.color))) throw new Error('请填写 1–40 字账号名称、有效备注与颜色。');
@@ -191,6 +220,7 @@ function validateCommand(value: unknown): asserts value is Command {
   if (c.type === 'tab:new' && c.url !== undefined && !isAllowedURL(c.url,fixtureOrigin)) throw new Error('网址不在支持范围');
   if (c.type === 'tab:reorder' && (!Array.isArray(c.ids) || c.ids.length > MAX_TABS || !c.ids.every(v => typeof v === 'string'))) throw new Error('无效排序');
   if (c.type === 'overlay' && typeof c.open !== 'boolean') throw new Error('无效窗口状态');
+  if (c.type === 'panel' && (process.platform!=='darwin'||(c.panel!==undefined&&!['assets','skills','agents'].includes(c.panel as string)))) throw new Error('工作台入口无效');
 }
 async function dispatch(c: Command): Promise<void> {
   switch (c.type) {
@@ -200,11 +230,11 @@ async function dispatch(c: Command): Promise<void> {
       store.commit(s => { s.profiles.push({ id, name: c.name.trim(), email: c.email.trim(), color: c.color, activeTabId: tab.id, createdAt: Date.now() }); s.tabs.push(tab); s.activeProfileId = id; }); showActive(false); break;
     }
     case 'profile:edit': profileById(c.id); store.commit(s => { Object.assign(s.profiles.find(p => p.id === c.id)!, { name: c.name.trim(), email: c.email.trim(), color: c.color }); }); layout(); break;
-    case 'profile:activate': profileById(c.id); store.commit(s => { s.activeProfileId = c.id; }); showActive(); break;
+    case 'profile:activate': profileById(c.id);assetRuntime?.revoke(); store.commit(s => { s.activeProfileId = c.id; }); showActive(); break;
     case 'profile:remove': await clearProfile(c.id, true); break;
     case 'profile:clear': await clearProfile(c.id, false); break;
     case 'profile:move': profileById(c.id); store.commit(s => { const index = s.profiles.findIndex(p => p.id === c.id), next = index + c.direction; if (next >= 0 && next < s.profiles.length) [s.profiles[index], s.profiles[next]] = [s.profiles[next], s.profiles[index]]; }); break;
-    case 'tab:new': createTab(activeProfile().id, c.url); break;
+    case 'tab:new': panel=undefined;createTab(activeProfile().id, c.url); break;
     case 'tab:menu': {
       const tab=store.read().tabs.find(t=>t.id===c.id&&t.profileId===store.read().activeProfileId);
       if(!tab)throw new Error('标签不属于当前账号');
@@ -213,7 +243,7 @@ async function dispatch(c: Command): Promise<void> {
     }
     case 'tab:activate': {
       const t = store.read().tabs.find(t => t.id === c.id); if (!t || t.profileId !== activeProfile().id) throw new Error('标签不属于当前账号');
-      store.commit(s => { s.profiles.find(p => p.id === t.profileId)!.activeTabId = t.id; }); showActive(); break;
+      panel=undefined;store.commit(s => { s.profiles.find(p => p.id === t.profileId)!.activeTabId = t.id; }); showActive(); break;
     }
     case 'tab:close': {
       const s = store.read(), index = s.tabs.findIndex(t => t.id === c.id), tab = s.tabs[index];
@@ -240,6 +270,7 @@ async function dispatch(c: Command): Promise<void> {
     case 'fullscreen': win?.setFullScreen(!win.isFullScreen()); break;
     case 'maximize': if (win?.isMaximized()) win.unmaximize(); else win?.maximize(); break;
     case 'external': { const url = activeContents()?.getURL(); if (url && isWebURL(url)) await shell.openExternal(url); else notice('当前页面不能在系统浏览器打开'); break; }
+    case 'panel': panel=c.panel;overlayOpen=false;overlayImage=undefined;layout();if(panel)win?.webContents.focus();else activeContents()?.focus();break;
     case 'overlay': {
       if(c.open&&!overlayOpen){
         // Keep the page visible behind local menus. This image stays in memory
@@ -269,13 +300,23 @@ function installIPC(): void {
     const run = async (): Promise<Reply> => { try { validateCommand(value); await dispatch(value); return { ok: true }; } catch (error) { return { ok: false, error: error instanceof Error ? error.message : '操作失败' }; } };
     const result = commandQueue.then(run, run); commandQueue = result.then(() => undefined); return result;
   });
+  if(process.platform==='darwin')installWorkbenchIPC({
+    dataDirectory:app.getPath('userData'),window:()=>win,trusted,currentProfile:activeProfile,state:()=>store.read(),
+    store:()=>{if(!assetStore)throw new Error(assetError||'资产库暂不可用');return assetStore;},
+    runtime:()=>{if(!assetRuntime)throw new Error(assetError||'资产预览暂不可用');return assetRuntime;},
+    catalog:()=>{if(!capabilityCatalog)throw new Error(capabilityError||'能力库暂不可用');return capabilityCatalog;},
+    downloads:id=>assetDownloads.get(id),changed:assetsChanged,
+    openChat:(id,url)=>{panel=undefined;createTab(id,url);},
+    favoriteCapability:(id,favorite)=>{if(!capabilityCatalog)throw new Error(capabilityError||'能力库暂不可用');if(id.startsWith('skill-'))capabilityCatalog.skill(id);else capabilityCatalog.agent(id);store.commit(s=>{const ids=new Set(s.capabilityFavorites||[]);favorite?ids.add(id):ids.delete(id);s.capabilityFavorites=[...ids];});}
+    ,conversions:()=>{if(!assetConversions)throw new Error(assetError||'本地转换暂不可用');return assetConversions;}
+  });
 }
 function installMenu(): void {
   const action = (command: Command) => () => queueCommandInternal(() => dispatch(command));
   const tabStep = (delta: number) => () => { const p = activeProfile(), tabs = store.read().tabs.filter(t => t.profileId === p.id), i = tabs.findIndex(t => t.id === p.activeTabId); action({ type: 'tab:activate', id: tabs[(i+delta+tabs.length)%tabs.length].id })(); };
   const template: Electron.MenuItemConstructorOptions[] = [
     { label: 'ChatGPT Profiles', submenu: [{ role: 'about', label: '关于 ChatGPT Profiles' }, ...(process.platform === 'darwin' ? [{ type: 'separator' as const }, { role: 'services' as const, label: '服务' }, { role: 'hide' as const, label: '隐藏' }, { role: 'hideOthers' as const, label: '隐藏其他' }, { role: 'unhide' as const, label: '显示全部' }] : []), { type: 'separator' }, { role: 'quit', label: '退出' }] },
-    { label: '文件', submenu: [{ label: '新建标签页', accelerator: 'CmdOrCtrl+T', click: action({type:'tab:new'}) }, { label: '恢复关闭的标签页', accelerator: 'CmdOrCtrl+Shift+T', click: action({type:'tab:restore'}) }, { label: '添加账号', accelerator: 'CmdOrCtrl+Shift+N', click: () => win?.webContents.send('profiles:shortcut','add-profile') }, { type:'separator' }, { label:'关闭标签页', accelerator:'CmdOrCtrl+W', click: () => { const focused=BrowserWindow.getFocusedWindow(); if(focused&&focused!==win) focused.close(); else action({type:'tab:close',id:activeProfile().activeTabId})(); } }, { role:'close', label:'关闭窗口', accelerator:'CmdOrCtrl+Shift+W' }] },
+    { label: '文件', submenu: [{ label: '新建标签页', accelerator: 'CmdOrCtrl+T', click: action({type:'tab:new'}) }, { label: '恢复关闭的标签页', accelerator: 'CmdOrCtrl+Shift+T', click: action({type:'tab:restore'}) }, { label: '添加账号', accelerator: 'CmdOrCtrl+Shift+N', click: () => win?.webContents.send('profiles:shortcut','add-profile') }, { type:'separator' }, { label:'关闭标签页', accelerator:'CmdOrCtrl+W', click: () => { const focused=BrowserWindow.getFocusedWindow(); if(focused&&focused!==win) focused.close(); else if(panel)win?.webContents.send('profiles:shortcut','close-workbench');else action({type:'tab:close',id:activeProfile().activeTabId})(); } }, { role:'close', label:'关闭窗口', accelerator:'CmdOrCtrl+Shift+W' }] },
     { label: '编辑', submenu: [{role:'undo',label:'撤销'},{role:'redo',label:'重做'},{type:'separator'},{role:'cut',label:'剪切'},{role:'copy',label:'复制'},{role:'paste',label:'粘贴'},{role:'selectAll',label:'全选'}] },
     { label: '显示', submenu: [
       {id:'reload-page',label:'重新加载网页',accelerator:'CmdOrCtrl+R',click:action({type:'reload'})},
@@ -294,15 +335,7 @@ function installMenu(): void {
 }
 function registerProtocol(): void {
   const root = path.join(__dirname,'../renderer');
-  protocol.handle('app', request => {
-    try {
-      const url = new URL(request.url); if (url.host !== 'shell') return new Response('Forbidden',{status:403});
-      const file = path.resolve(root, `.${decodeURIComponent(url.pathname)}`);
-      if (!file.startsWith(root+path.sep) || !existsSync(file)) return new Response('Not found',{status:404});
-      const mime: Record<string,string> = {'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.svg':'image/svg+xml','.png':'image/png'};
-      return new Response(readFileSync(file), {headers:{'Content-Type':mime[path.extname(file)]??'application/octet-stream','Content-Security-Policy':"default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'",'X-Content-Type-Options':'nosniff'}});
-    } catch { return new Response('Not found',{status:404}); }
-  });
+  protocol.handle('app',request=>localRendererResponse(root,request));
 }
 function createWindow(): void {
   const b = store.read().bounds;
@@ -318,16 +351,22 @@ function createWindow(): void {
   win.on('move',()=>{clearTimeout(boundsTimer);boundsTimer=setTimeout(()=>{try{saveBounds();}catch(error){report(error);}},250);});
   win.on('enter-full-screen',()=>{layout();publish();});win.on('leave-full-screen',()=>{layout();publish();});
   win.on('close',()=>{clearTimeout(boundsTimer);try{saveBounds();}catch(error){report(error);} for(const id of [...views.keys()])destroyView(id);for(const popup of popups.keys())if(!popup.isDestroyed())popup.destroy();});
-  win.on('closed',()=>{win=undefined;overlayOpen=false;overlayImage=undefined;});
+  win.on('closed',()=>{win=undefined;overlayOpen=false;overlayImage=undefined;panel=undefined;assetRuntime?.revoke();});
   win.once('ready-to-show',()=>{win?.show();showActive();});
   void win.loadURL('app://shell/index.html').catch(error=>dialog.showErrorBox('界面加载失败',error.message));
 }
 if (single) {
   app.on('second-instance',()=>{if(win){if(win.isMinimized())win.restore();win.show();win.focus();}});
   app.whenReady().then(()=>{
-    store = new StateStore(dataDir, fixtureOrigin); registerProtocol();installIPC();installMenu();createWindow();
+    store = new StateStore(dataDir, fixtureOrigin);
+    if(process.platform==='darwin'){
+      try{assetStore=new AssetStore(dataDir);assetRuntime=new AssetRuntime(assetStore,()=>activeProfile().id);assetRuntime.register();}catch(error){assetError=error instanceof Error?error.message:'资产库无法读取';}
+      if(assetStore)assetConversions=new AssetConversions(assetStore,{rendererRoot:path.join(__dirname,'../renderer'),profileAvailable:id=>!quitting&&!pendingProfiles.has(id)&&store.read().profiles.some(p=>p.id===id),changed:assetsChanged});
+      try{capabilityCatalog=new CapabilityCatalog(path.join(__dirname,'../capabilities'));}catch(error){capabilityError=error instanceof Error?error.message:'能力资源无法读取';}
+    }
+    registerProtocol();installIPC();installMenu();createWindow();
     app.on('activate',()=>{if(!win&&!quitting)createWindow();});
   }).catch(error=>{dialog.showErrorBox('无法安全恢复账号',error instanceof Error?error.message:String(error));app.quit();});
-  app.on('before-quit',()=>{quitting=true;});
+  app.on('before-quit',()=>{quitting=true;assetConversions?.dispose();for(const tracker of assetDownloads.values())tracker.dispose();});
   app.on('window-all-closed',()=>{if(process.platform!=='darwin'||testMode)app.quit();});
 }

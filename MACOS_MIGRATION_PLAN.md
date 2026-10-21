@@ -153,3 +153,13 @@
 - `365e9ffbaf06d039d1e35bbe238c69f3274304ba` 已提交并推送预览。上一目标轮为有效进展：交付可操作界面并取得真实浏览器证据。UI 意见仍待反馈；继续推进不依赖布局的原生资产与能力资源，避免把等待界面意见当成全部工作受阻。
 - 原生资产基础已新增 `shared/assets.ts`、`main/asset-store.ts`、`main/asset-downloads.ts`：账号/资产 UUID 固定路径、受控文件名、临时文件转正式文件、SHA-256、导入副本、同名不覆盖、来源对话去除查询参数、备份/损坏保留、重启中断、可逆回收站、派生关系、文件变更/缺失检查及下载暂停/恢复/取消。原始导入文件不修改，账号切换不改变正在进行的归属。
 - 当前检查通过：`npm test` 22/22（原状态 5、资产文件 I/O 11、下载事件模拟 6），`npm run typecheck` 通过。覆盖跨账号拒绝、平行同名、原件保留、派生链、损坏恢复/缺索引、路径及符号链接边界、外部改写/丢失、取消/迟到事件与失败传播。模拟 DownloadItem 不作为真实 Electron/ChatGPT 下载验收；当前模块尚未接入 `main.ts` 与实际 UI，旧客户端行为保持。
+- 用户已明确回复“按这版 UI 接入真实功能”，界面布局确认已解除。后续直接沿已批准范围迁入实际 Mac App，无需再次确认同一布局。
+- 能力资源新增 `desktop/resources/capabilities/`：120 个 Skill 独立目标、步骤、输出结构、质量检查、参数和示例；完整保存上游 328 份角色原文及 MIT 许可。全部角色字节与固定提交的 Git blob SHA-1 一致，另外建立 SHA-256 打包索引。原型中的摘要目录不再作为实际执行内容。
+- 能力校验与构建通过：26/26 单元测试，完整检查 `npm run check` 通过。打包步骤仅复制已校验的 331 个资源文件（含 manifest），校验 328 个原始 Git blob，禁止链接、路径逃逸、缺失/改写。实际任务指令由一个选定 Skill、可选完整角色、文件元数据及用户要求组成，并说明网页实际工具能力、原件保留和未验证边界。
+- 实际 Mac App 已接入资产/能力入口、原生下载归档、文件选择/拖入、受控预览 URL、文件整理和账号范围、角色全文、持久收藏。HTML 通过独立 origin 的沙箱 iframe 查看，禁止 Node/管理桥接与外网访问。资源或索引故障显示明确错误，不用空库冒充成功。转换与网页发送继续接入中，当前未提供新安装包。
+- 新增真实 Electron 验收 `tests/assets.e2e.ts` 已通过：本地 HTTP 真下载、归档字节与摘要、普通 DOM 文件对象经 preload 导入、HTML 实际脚本/鼠标交互、不能访问父管理桥接与 Node、外部 HTTP 目标请求为 0、重命名/回收恢复、两个真实 session 对应的资产列表范围、120/328 与 232 优先、完整角色、收藏及资产重启保持、关闭面板恢复网页视图。素材为本地验收资料，不是 ChatGPT 真实账号业务验证。
+- HTML 自动点击曾未产生预期结果；诊断确认脚本执行正常。测试加入对原生窗口和 iframe 实际焦点的等待后，保留原鼠标交互断言通过，未增加脚本/来源权限。实际渲染见 `docs/images/macos-assets-native.png`、`macos-agents-native.png`。
+- PDF 本地预览、Markdown 与 CSV 转换所需固定依赖：`pdfjs-dist@6.4.299`、`marked@18.1.1`、`papaparse@5.7.0`。新增依赖后生产审计为 0 个已报告漏洞；既有开发依赖的 8 个 moderate 告警未通过强制升级处理。PDF API 使用安装包实际类型（v6 无旧版 isEvalSupported 参数，加载任务负责销毁），实际 PDF/转换验收仍需补齐。
+- 本地转换引擎及实际界面已接入：图像 PNG/JPEG/WebP（尺寸/质量）、SVG 解码、HTML→PDF/PNG、Markdown→HTML/PDF、CSV↔JSON、PDF 选页→PNG/JPEG。图形/文档在独立临时 session 的隐藏沙箱窗口处理，禁止外网、权限和下载，不使用 ChatGPT 登录空间。新副本先登记 processing，写入并校验后 ready，保留原件与派生链；重启中断不伪装成功。
+- `npm run check` 目前为 30/30 单元测试及构建通过（新增批量资产编辑原子性、CSV/JSON/Markdown）。CSV 库的 UndetectableDelimiter 是默认逗号回退诊断，合法单列 CSV 仍需支持；保留本地列数/表头校验与非法数据断言，未隐藏结构错误。JSON→CSV 转义公式前缀并保留原 JSON，CSV→JSON 不猜测日期/数值类型。
+- `tests/conversions.e2e.ts` 已在真实 Electron 通过：SVG→PNG/JPEG/WebP、HTML→PDF/PNG、Markdown→HTML/PDF、CSV→JSON、JSON→CSV、PDF 第 1 页→PNG，共 10 份真实副本；核对签名、Chromium 实际解码尺寸 300×200、原件字节不变、同账号归属和派生关系，以及真实 PDF 画布加载。WebP 不再用仅适合部分格式的 nativeImage 作为预览判据，仍独立检查 WebP 签名与实际浏览器解码。当前网页自动上传/发送尚未接入。

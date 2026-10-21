@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { COLORS, SHELL_HEIGHT, type Bridge, type Command, type Snapshot } from '../shared/model';
 import { Icon, Mark, type IconName } from './icons';
 import './style.css';
+import { Workbench } from './Workbench';
 declare global { interface Window { profiles: Bridge } }
 type Editor = { kind:'add' } | { kind:'edit'; id:string };
 function Tool({icon,label,disabled=false,active=false,onClick}:{icon:IconName;label:string;disabled?:boolean;active?:boolean;onClick:()=>void}) { return <button type="button" className={`tool ${active?'is-active':''}`} title={label} aria-label={label} disabled={disabled} onClick={onClick}><Icon name={icon}/></button>; }
@@ -48,7 +49,7 @@ function App() {
     const apply=(s:Snapshot)=>{if(mounted){current.current=s;setState(s);}};
     const unsubscribe=window.profiles.subscribe(apply);
     window.profiles.snapshot().then(s=>{apply(s);if(s.notice)showToast(s.notice);}).catch(()=>setFatal('账号空间加载失败，请重新打开客户端。'));
-    const unshortcut=window.profiles.onShortcut(key=>{if(key==='add-profile')void openEditor({kind:'add'});else if(key==='toggle-accounts')void toggleAccounts();else if(key.startsWith('notice:'))showToast(key.slice(7));});
+    const unshortcut=window.profiles.onShortcut(key=>{if(key==='add-profile')void openEditor({kind:'add'});else if(key==='toggle-accounts')void toggleAccounts();else if(key==='close-workbench')window.dispatchEvent(new Event('workbench-close'));else if(key.startsWith('notice:'))showToast(key.slice(7));});
     return ()=>{mounted=false;unsubscribe();unshortcut();clearTimeout(toastTimer.current);};
   },[openEditor,showToast,toggleAccounts]);
   useEffect(()=>{
@@ -97,12 +98,14 @@ function App() {
       </div>
       <Tool icon="plus" label="新建标签页" onClick={()=>void send({type:'tab:new'})}/>
       <div className="drag-space" aria-label="窗口拖动区域"/>
+      {state.platform==='darwin'&&<><button className={'workspace-action '+(state.panel==='assets'?'active':'')} aria-label="资产中心" aria-pressed={state.panel==='assets'} onClick={()=>void send({type:'panel',panel:state.panel==='assets'?undefined:'assets'})}><Icon name="folder" size={14}/>资产</button><button className={'workspace-action '+(state.panel==='skills'||state.panel==='agents'?'active':'')} aria-label="能力库" aria-pressed={state.panel==='skills'||state.panel==='agents'} onClick={()=>void send({type:'panel',panel:state.panel==='skills'||state.panel==='agents'?undefined:'skills'})}><Icon name="sparkles" size={14}/>能力库</button></>}
       <button ref={accountButton} className="current-account" aria-label="切换账号" aria-haspopup="menu" aria-expanded={menuOpen} disabled={busy} onClick={()=>void toggleAccounts()} title={profile.name+(profile.email?' · '+profile.email:'')}><span className="dot" style={{background:profile.color}}/><span>{profile.name}</span><Icon name="chevron" size={12}/></button>
     </header>
     <section className="web-stage" aria-label="网页区域">
       {status?.error?<div className="page-state" role="alert"><span className="page-state-icon"><Icon name="alert" size={28}/></span><h1>网页暂时无法打开</h1><p>{profile.name} 的账号空间已保留，可以重新加载。</p><code>{status.error}</code><button className="primary" onClick={()=>void send({type:'reload'})}><Icon name="refresh" size={16}/>重新加载</button></div>:<div className="page-state loading-state"><Mark size={38}/><h1>正在打开 ChatGPT</h1><p>{profile.name} · 独立账号空间</p><span className="spinner"/></div>}
       {(editor||menuOpen)&&state.overlayImage&&<img className="page-preview" src={state.overlayImage} alt="" aria-hidden="true"/>}
     </section>
+    {state.platform==='darwin'&&state.panel&&<Workbench state={state} close={()=>void send({type:'panel'})} panel={panel=>void send({type:'panel',panel})} notice={showToast}/>}
     {toast&&<div className="toast" role="status"><Icon name="check" size={15}/>{toast}<button aria-label="关闭提示" onClick={()=>setToast('')}><Icon name="close" size={13}/></button></div>}
     {menuOpen&&<div className="menu-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)void closeAccounts();}}>
       <div className="account-menu" role="menu" aria-label="账号空间" ref={accountMenu}>

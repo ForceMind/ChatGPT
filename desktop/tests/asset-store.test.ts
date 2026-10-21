@@ -142,3 +142,10 @@ test('filenames are bounded and persisted traversal metadata is rejected', t => 
   const broken = store.read(); (broken.assets[0].source as unknown as Record<string, unknown>).profileName = { unexpected: true };
   assert.throws(() => validateAssetLibrary(broken), /索引/);
 });
+test('batch metadata changes are atomic when an ID belongs to another account',async t=>{
+  const {store,profile,other,input}=fixture(t);const a=await store.importFile(profile,input());const b=await store.importFile(other,input('other.txt'));
+  assert.throws(()=>store.editMany(profile,[a.id,b.id],{favorite:true}),/不存在/);
+  assert.equal(store.get(profile,a.id).favorite,false);assert.equal(store.get(other,b.id).favorite,false);
+  store.editMany(profile,[a.id],{favorite:true,trashed:true});assert.equal(store.get(profile,a.id).favorite,true);assert.ok(store.get(profile,a.id).trashedAt);
+  assert.throws(()=>store.editMany(profile,[a.id],{}),/未指定/);
+});
