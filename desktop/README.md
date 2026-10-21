@@ -1,8 +1,8 @@
 # ChatGPT Profiles Desktop
 
-macOS 工作台开发版本：`3.0.0-alpha.5`，已完成本地验证并生成体验安装包；公开 Mac 安装包仍为 `3.0.0-alpha.1`，Windows 公开版为 `3.0.0-alpha.2`。本次工作台功能只接入 macOS，其他平台后续。Electron `44.9.1`、React `19.3.1`、TypeScript。各设备独立使用，本版不需要自建服务。
+macOS 公开预发布版：`3.0.0-alpha.5`；Windows 公开版为 `3.0.0-alpha.2`。本次工作台功能只接入 macOS，其他平台后续。Electron `44.9.1`、React `19.3.1`、TypeScript。各设备独立使用，本版不需要自建服务。
 
-工作台源码位于 `codex/macos-assets-workbench` 功能分支；默认 `main` 保留公开版本的应用源码。以下工作台说明不代表早期公开安装包已包含全部新功能。
+工作台源码位于 `codex/macos-assets-workbench` 功能分支；对应发布标签为 `v3.0.0-alpha.5`；默认 `main` 暂时保留早期应用源码。
 
 ## 使用
 
@@ -42,7 +42,7 @@ npm start
 - ChatGPT 网页图片可右键复制原始像素、保存到当前账号资产库、重试当前图片并查看加载信息。跨域计时可能不公开，无法承诺缩短网站后端出图时间。
 
 
-启动仍直接打开 ChatGPT，使用已确认的白灰黑界面、无地址栏。点击顶部「资产」管理当前账号的文件；新功能尚未公开发布，网页集成仍需真实 ChatGPT 账号验收。
+启动仍直接打开 ChatGPT，使用已确认的白灰黑界面、无地址栏。点击顶部「资产」管理当前账号的文件；alpha.5 已提供公开预发布安装包，网页集成仍需真实 ChatGPT 账号验收。
 
 - 下载归档：当前账号的网页下载直接进入资产库，保存来源标签/对话、大小和 SHA-256。通过「导入」或拖入本机文件添加已有素材，导入保留原文件。
 - 整理与预览：按类别/名称查找，网格或列表查看；支持重命名、标签、收藏、可恢复回收站、Finder 定位、另存为。图片、HTML、PDF、Markdown、文本、CSV 可在 App 内预览。HTML 脚本在独立沙箱运行，不能访问账号存储、管理接口或外部网络；依赖在线 CDN 的网页可能缺少资源。
@@ -105,7 +105,7 @@ npm run dist:mac
 
 ## 开发资料
 
-应用图标由本项目 SVG 绘制。
+应用图标由本项目 SVG 绘制。macOS 通过系统 iconutil 编码完整的标准与 Retina 图标资源；不手工拼接 ICNS。
 
 - Electron 会话分区：https://www.electronjs.org/docs/latest/api/session
 - Electron 安全建议：https://www.electronjs.org/docs/latest/tutorial/security

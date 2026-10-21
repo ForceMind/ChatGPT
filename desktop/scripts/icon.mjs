@@ -1,12 +1,31 @@
 import { Resvg } from '@resvg/resvg-js';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdtempSync, mkdirSync, rmSync, copyFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 const svg = readFileSync('assets/icon.svg');
-const blocks = [['icp4',16],['icp5',32],['icp6',64],['ic07',128],['ic08',256],['ic09',512],['ic10',1024]].map(([kind,size])=>{
-  const png=new Resvg(svg,{fitTo:{mode:'width',value:size}}).render().asPng();
-  const header=Buffer.alloc(8);header.write(kind,0,'ascii');header.writeUInt32BE(png.length+8,4);return Buffer.concat([header,png]);
-});
-const header=Buffer.alloc(8);header.write('icns',0,'ascii');header.writeUInt32BE(8+blocks.reduce((n,b)=>n+b.length,0),4);
-writeFileSync('assets/icon.icns',Buffer.concat([header,...blocks]));
+// Let macOS encode both legacy small icons and Retina representations. Hand-built
+// PNG chunks can decode correctly at 512px but render corrupt system thumbnails.
+// Stage on APFS so AppleDouble sidecars on external drives cannot enter iconutil.
+if (process.platform === 'darwin') {
+  const staging = mkdtempSync(path.join(tmpdir(), 'chatgpt-profiles-icons-'));
+  try {
+    const iconset = path.join(staging, 'icon.iconset');
+    mkdirSync(iconset);
+    for (const points of [16, 32, 128, 256, 512]) {
+      for (const scale of [1, 2]) {
+        const png = new Resvg(svg, { fitTo: { mode: 'width', value: points * scale } }).render().asPng();
+        writeFileSync(path.join(iconset, `icon_${points}x${points}${scale === 2 ? '@2x' : ''}.png`), png);
+      }
+    }
+    const icns = path.join(staging, 'icon.icns');
+    execFileSync('/usr/bin/iconutil', ['-c', 'icns', iconset, '-o', icns]);
+    execFileSync('/usr/bin/iconutil', ['-c', 'iconset', icns, '-o', path.join(staging, 'verified.iconset')]);
+    copyFileSync(icns, 'assets/icon.icns');
+  } finally {
+    rmSync(staging, { recursive: true, force: true });
+  }
+}
 writeFileSync('assets/icon.png', new Resvg(svg, { fitTo: { mode: 'width', value: 512 } }).render().asPng());
 const frames=[16,24,32,48,64,128,256].map(size=>({size,png:new Resvg(svg,{fitTo:{mode:'width',value:size}}).render().asPng()}));
 const icoHeader=Buffer.alloc(6);icoHeader.writeUInt16LE(1,2);icoHeader.writeUInt16LE(frames.length,4);

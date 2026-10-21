@@ -246,3 +246,19 @@
 - ChatGPT Profiles-3.0.0-alpha.5-arm64.dmg：152790432 字节；SHA-256 `62e96345622df6fc7d756c2ed1b44a85bf89379ca936eb92db7183ae3f5bf4aa`。
 - ChatGPT Profiles-3.0.0-alpha.5-arm64.zip：152880976 字节；SHA-256 `afff61a5c62dc71258d5564df6b0fd52a479680d05948340750ca442ccae297e`。
 - 同步范围为 ForceMind/ChatGPT 的 codex/macos-assets-workbench：本次恢复/搜索代码、相关检查、版本和说明。安装前需保存旧版未发送草稿并真正退出旧版；新版本真实账号的搜索兼容和顶部拖动由用户安装后复核，不将本地素材当作真实服务验收。
+
+
+### 2026-10-21 · alpha.5 公开发布与图标修正
+
+- 用户授权：将 macOS alpha.5 DMG / ZIP 发布到 GitHub Release，并更新官网 Mac 下载链接和里程碑；同时排查缩略图与系统提示图标异常。
+- 已 fetch origin：功能分支 HEAD / origin 均为 `8e31569a775c01d5b931f7d198b3f401354af7f4`，origin/main 为 `de65d5c78e04852a0fb31990c27efaa8701abbf2`，工作区起始干净。发布及本次源码沿用 `codex/macos-assets-workbench`，不合并其他平台代码到 main。
+- 图标源 SVG / PNG 正常，现有手工 ICNS 缺少 ic11/ic12 等 Retina 小图表示。改用 macOS iconutil 从 10 份标准 1x/2x PNG 生成并反向验证，临时目录放在 APFS，Windows 构建继续使用现有 ICO，不改黑白图标设计。
+- 本次公开 alpha.5 将替代此前本地体验包；未公开的旧文件摘要保留为历史记录，新 Release / 官网使用本次重新打包的文件摘要。已完成 42/42 单元检查、类型检查及构建，原生 iconutil 需在允许系统服务访问的环境运行；受限沙箱的 Invalid Iconset 不作为有效产物。
+
+- 原生证据：通过 NSWorkspace / IconServices 直接读取旧 alpha.5 App，32px 渲染出与用户截图一致的彩色乱码；新打包 App 的 32px / 128px 渲染为正常黑白聊天气泡。直接 NSImage 解码旧 ICNS 曾显示正常，因此此前只验证 PNG 或大图不能覆盖此问题。未触碰个人安装目录或账号数据；没有清空系统全局图标缓存，也没有触发真实聊天通知。
+- 发布标签将指向本次功能分支源代码；main 仅同步官网与 README 下载说明，不合并其余应用改动。官网仍保持白灰黑风格，Windows alpha.2 / Android alpha.1 下载保持不变。
+
+- 公开包核验通过：220 个 dist 文件逐字节匹配；120 Skill / 0 预置角色；包内系统 ICNS 与修正后的资源一致；codesign deep/strict、hdiutil verify、unzip -tq 及 SHA-256 通过。
+- 公开文件 `ChatGPT-Profiles-3.0.0-alpha.5-mac-arm64.dmg`：152841781 字节；SHA-256 `2368704e3932b4f0117bc3071610de3484c8e3214e9291a5d25393c6fffdac7a`。
+- 公开文件 `ChatGPT-Profiles-3.0.0-alpha.5-mac-arm64.zip`：152905343 字节；SHA-256 `6d9b69be35476b911987300040a25fbdcdd6310e13ffdf9b0d3ced8a993f3ef6`。
+- 官网本地浏览器 1440px / 390px 验证通过：Mac 下载指向 alpha.5，展示及复制摘要与最终包一致，里程碑标注公开预发布；Windows / Android 版本保持不变，无脚本或资源错误，无横向溢出。

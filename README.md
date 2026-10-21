@@ -21,11 +21,11 @@ ChatGPT Profiles 是一个非官方 ChatGPT 网页客户端。启动直接进入
 
 | 平台 | 公开版本 | 下载 | 系统要求 |
 | --- | --- | --- | --- |
-| macOS · Apple Silicon | `3.0.0-alpha.1` | [DMG](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.1/ChatGPT-Profiles-3.0.0-alpha.1-mac-arm64.dmg) · [ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.1/ChatGPT-Profiles-3.0.0-alpha.1-mac-arm64.zip) | macOS 13+ |
+| macOS · Apple Silicon | `3.0.0-alpha.5` | [DMG](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.5/ChatGPT-Profiles-3.0.0-alpha.5-mac-arm64.dmg) · [ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.5/ChatGPT-Profiles-3.0.0-alpha.5-mac-arm64.zip) | macOS 13+ |
 | Windows · x64 | `3.0.0-alpha.2` | [EXE 安装包](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.2/ChatGPT-Profiles-3.0.0-alpha.2-windows-x64-setup.exe) · [免安装 ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.2/ChatGPT-Profiles-3.0.0-alpha.2-windows-x64.zip) | Windows 10 / 11 · 64 位 |
 | Android · 手机 / 平板 | `3.0.0-alpha.1` | [APK](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.1/ChatGPT-Profiles-3.0.0-alpha.1-android.apk) | Android 9+，系统 WebView 支持多档案 |
 
-当前使用预发布渠道。Intel Mac、Linux、iPhone 和 iPad 暂无安装包。macOS 后续工作台功能在功能分支迭代，公开下载与开发进度分别管理。
+当前使用预发布渠道。Intel Mac、Linux、iPhone 和 iPad 暂无安装包。macOS alpha.5 已包含资产工作台与界面恢复；Windows 和 Android 继续使用各自标注的版本。
 
 **macOS**：打开 DMG，将应用拖入“应用程序”。当前构建使用 ad-hoc 签名，尚未经过 Developer ID 签名和 Apple 公证。若首次启动被系统阻止，核对来源和摘要后，按 [Apple 的操作说明](https://support.apple.com/zh-cn/102445)处理。
 
@@ -47,21 +47,21 @@ Mac 可右键标签，Android 可长按标签，管理固定、顺序和关闭�
 
 ## macOS 工作台迭代
 
-工作台先在 macOS 交付；Windows、Android 后续跟进。以下能力不包含在上表的早期公开安装包中。
+工作台先在 macOS 交付；Windows、Android 后续跟进。以下能力已包含在 macOS alpha.5 公开预发布版中，真实账号验收边界见表格和兼容性说明。
 
 | 能力 | 使用方式 | 当前状态 |
 | --- | --- | --- |
-| 资产库 | 按账号归档下载与导入文件；分类、搜索、收藏、标签、回收站和 Finder 定位 | `alpha.3` 本地体验 |
-| 文件预览 | 图片、HTML、PDF、Markdown、文本与 CSV；HTML 在独立沙箱预览 | `alpha.3` 本地体验 |
-| 格式转换 | 图片格式、HTML / Markdown 转 PDF、PDF 选页转图片、CSV 与 JSON 互转；保留原文件 | `alpha.3` 本地体验 |
-| 交给 GPT | 选择目标账号、文件和任务，创建对话并提交；不自动重发结果未知的任务 | `alpha.3` 本地体验，真实网页附件发送待验收 |
-| Skill | 120 个项目内置任务，附处理步骤、输出结构和质量检查 | `alpha.3` 本地体验 |
+| 资产库 | 按账号归档下载与导入文件；分类、搜索、收藏、标签、回收站和 Finder 定位 | `alpha.5` 公开预发布 |
+| 文件预览 | 图片、HTML、PDF、Markdown、文本与 CSV；HTML 在独立沙箱预览 | `alpha.5` 公开预发布 |
+| 格式转换 | 图片格式、HTML / Markdown 转 PDF、PDF 选页转图片、CSV 与 JSON 互转；保留原文件 | `alpha.5` 公开预发布 |
+| 交给 GPT | 选择目标账号、文件和任务，创建对话并提交；不自动重发结果未知的任务 | `alpha.5` 公开预发布，真实网页附件发送待验收 |
+| Skill | 120 个项目内置任务，附处理步骤、输出结构和质量检查 | `alpha.5` 公开预发布 |
 | 智能体库 | 保留分类与任务入口，当前没有预置智能体 | 界面已实现 |
-| 登录与链接记录 | 查看被拦截链接的站点和原因；记录仅保存在本机，过滤敏感参数 | `alpha.3` 本地体验 |
-| 标签保活与资源优化 | 已打开标签切换时保留页面；减少重复界面更新，工作台按需加载 | `alpha.4` 本地体验 |
-| 窗口与界面恢复 | 关窗后台保留、短期撤销关闭、每账号工作台状态；真正退出后加载并恢复加密草稿与阅读位置 | `alpha.5` 本地体验 |
-| 账号语言与时区 | 创建或编辑空间时选择；编辑从新标签起生效 | `alpha.4` 本地体验 |
-| 网页图片操作 | 右键复制图片、保存到资产库、重试当前图片、查看加载信息 | `alpha.4` 本地体验 |
+| 登录与链接记录 | 查看被拦截链接的站点和原因；记录仅保存在本机，过滤敏感参数 | `alpha.5` 公开预发布 |
+| 标签保活与资源优化 | 已打开标签切换时保留页面；减少重复界面更新，工作台按需加载 | `alpha.5` 公开预发布 |
+| 窗口与界面恢复 | 关窗后台保留、短期撤销关闭、每账号工作台状态；真正退出后加载并恢复加密草稿与阅读位置 | `alpha.5` 公开预发布 |
+| 账号语言与时区 | 创建或编辑空间时选择；编辑从新标签起生效 | `alpha.5` 公开预发布 |
+| 网页图片操作 | 右键复制图片、保存到资产库、重试当前图片、查看加载信息 | `alpha.5` 公开预发布 |
 
 工作台的配置、支持格式和验证边界见[功能分支的桌面说明](https://github.com/ForceMind/ChatGPT/blob/codex/macos-assets-workbench/desktop/README.md)。
 

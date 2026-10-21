@@ -59,6 +59,7 @@
     "npmRebuild": false,
     "mac": {
       "category": "public.app-category.productivity",
+      "artifactName": "ChatGPT-Profiles-${version}-mac-${arch}.${ext}",
       "icon": "assets/icon.icns",
       "identity": "-",
       "hardenedRuntime": false,

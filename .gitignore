@@ -16,3 +16,4 @@ android/.signing/
 android/release/
 *.jks
 *.keystore
+.wrangler/
