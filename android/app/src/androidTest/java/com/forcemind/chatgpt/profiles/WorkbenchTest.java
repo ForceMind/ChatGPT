@@ -342,6 +342,20 @@ public class WorkbenchTest {
         if(root.getContentDescription()!=null&&root.getContentDescription().toString().startsWith(prefix))return root;
         if(root instanceof ViewGroup)for(int i=0;i<((ViewGroup)root).getChildCount();i++){View found=description(((ViewGroup)root).getChildAt(i),prefix);if(found!=null)return found;}return null;
     }
+    @Test public void publicProfileLanguageCapabilitiesAreMeasuredAcrossFramesAndWorkers()throws Exception{
+        try(ActivityScenario<EnvironmentProbeActivity> scene=ActivityScenario.launch(new Intent(context,EnvironmentProbeActivity.class))){
+            JSONObject evidence=new JSONObject().put("scope","Offline public API probe; no account data or real ChatGPT").put("androidApi",android.os.Build.VERSION.SDK_INT);
+            android.content.pm.PackageInfo engine=androidx.webkit.WebViewCompat.getCurrentWebViewPackage(context);evidence.put("webViewPackage",engine==null?"unknown":engine.packageName).put("webViewVersion",engine==null?"unknown":engine.versionName);
+            JSONArray profiles=new JSONArray();
+            for(int i=0;i<2;i++){
+                final int slot=i;AtomicReference<JSONObject> result=new AtomicReference<>();
+                until(25000,()->{scene.onActivity(a->a.pages[slot].evaluateJavascript("JSON.stringify(window.result||{})",raw->{try{result.set(new JSONObject(String.valueOf(new JSONTokener(raw).nextValue())));}catch(Exception ignored){}}));JSONObject r=result.get();return r!=null&&r.has("main")&&r.has("frame")&&(r.has("worker")||r.has("workerError"));});
+                JSONObject profile=result.get();scene.onActivity(a->{try{profile.put("requestedContextLanguage",a.languages[slot]).put("requestedTimeZoneNotApplied",a.zones[slot]).put("customHeaderFeature",a.customHeaders).put("headerError",a.errors.getOrDefault(a.languages[slot],""));JSONObject requests=new JSONObject();for(Map.Entry<String,String> e:a.headers.entrySet())if(e.getKey().startsWith(a.languages[slot]+" "))requests.put(e.getKey().substring(a.languages[slot].length()+1),e.getValue());profile.put("acceptLanguageByRequest",requests);}catch(JSONException e){throw new RuntimeException(e);}});profiles.put(profile);
+            }
+            evidence.put("profiles",profiles);encodedEvidence("android-language-capabilities.json","application/json",new ByteArrayInputStream(evidence.toString(2).getBytes(StandardCharsets.UTF_8)));screenshot("android-language-api-probe.png");
+            for(int i=0;i<profiles.length();i++){JSONObject p=profiles.getJSONObject(i);assertTrue(p.toString(),p.getString("headerError").isEmpty());if(p.getBoolean("customHeaderFeature")){String desired=p.getString("requestedContextLanguage"),actual=p.getJSONObject("acceptLanguageByRequest").getString("https://language-probe.example.test/main");assertTrue("Custom header did not lead with requested language: "+p,actual.startsWith(desired));}}
+        }
+    }
     private void nativeMenu(ActivityScenario<MainActivity> scene){scene.onActivity(a->{View menu=description(a.getWindow().getDecorView(),"账号与操作菜单");assertNotNull(menu);assertTrue(menu.performClick());});}
     private void tapContaining(String text)throws Exception{until(()->{android.view.accessibility.AccessibilityNodeInfo root=InstrumentationRegistry.getInstrumentation().getUiAutomation().getRootInActiveWindow();if(root==null)return false;for(android.view.accessibility.AccessibilityNodeInfo node:root.findAccessibilityNodeInfosByText(text)){if(node.getText()!=null&&node.getText().toString().contains(text)){tapNode(node);return true;}}return false;});}
     private String pageValue(ActivityScenario<MainActivity> scene,String script)throws Exception{
