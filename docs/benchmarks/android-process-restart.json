@@ -1,0 +1,29 @@
+{
+  "passed": true,
+  "scope": "Android CI emulator; actual force-stop and new process; offline fixture, not real ChatGPT",
+  "source": "072e22027700ff9a56c918aeaebeabeb1ba8d4d8",
+  "pidBefore": "3836",
+  "pidAfter": "4165",
+  "checks": [
+    "saved encrypted checkpoint",
+    "checkpoint contains no plaintext marker",
+    "marker removed from next-launch fixture config",
+    "old process absent",
+    "new application PID",
+    "unchanged account/storage/tab identity",
+    "draft restored into initially empty page",
+    "reading position 1400 restored"
+  ],
+  "checkpointSha256BeforeStop": "d30ccc56d1798c4dfa774ccfc751272c35a44441c792b2ec286f59a37172d086",
+  "limitations": [
+    "not real ChatGPT",
+    "not physical device",
+    "not personal data upgrade",
+    "does not cover unsaved edits after the checkpoint"
+  ],
+  "deviceRun": "https://github.com/ForceMind/ChatGPT/actions/runs/39810750548",
+  "buildRun": "https://github.com/ForceMind/ChatGPT/actions/runs/39810391380",
+  "productionCodeBaselineCommit": "60576b6479c69f0277e879addac7e7956282398d",
+  "productionCodeUnchanged": true,
+  "visualInspected": "Restarted empty verify-phase page shows recovered unique draft and reading position 1400"
+}
