@@ -52,6 +52,9 @@ public class WorkbenchTest {
         return null;
     }
     private void screenshot(String name)throws Exception{
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync();SystemClock.sleep(500);
+        android.view.accessibility.AccessibilityNodeInfo window=InstrumentationRegistry.getInstrumentation().getUiAutomation().getRootInActiveWindow();
+        assertNotNull(window);assertEquals(context.getPackageName(),String.valueOf(window.getPackageName()));
         Bitmap image=InstrumentationRegistry.getInstrumentation().getUiAutomation().takeScreenshot();assertNotNull(image);
         ContentValues values=new ContentValues();
         String filename=name.replace(".png","-"+image.getWidth()+"x"+image.getHeight()+".png");
@@ -82,6 +85,7 @@ public class WorkbenchTest {
             try(ActivityScenario<AssetPreviewActivity> scene=ActivityScenario.launch(preview)){
                 if(asset.getString("mime").equals("text/html")){
                     AtomicBoolean ready=new AtomicBoolean();until(()->{scene.onActivity(a->{WebView web=a.getWindow().getDecorView().findViewWithTag("asset-html-preview");ready.set(web!=null&&web.getProgress()==100&&!web.getSettings().getJavaScriptEnabled()&&!web.getSettings().getAllowFileAccess()&&!web.getSettings().getAllowContentAccess());});return ready.get();});
+                    until(()->{android.view.accessibility.AccessibilityNodeInfo window=InstrumentationRegistry.getInstrumentation().getUiAutomation().getRootInActiveWindow();return window!=null&&!window.findAccessibilityNodeInfosByText("本地 HTML 预览").isEmpty();});
                     screenshot("android-html-preview.png");
                 }else{
                     AtomicBoolean ready=new AtomicBoolean();until(()->{scene.onActivity(a->{ImageView image=find(a.getWindow().getDecorView(),ImageView.class);ready.set(image!=null&&image.getDrawable() instanceof BitmapDrawable);});return ready.get();});
