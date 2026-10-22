@@ -18,6 +18,10 @@ on:
         description: Capture native UI only; reuse previously passed isolation results
         type: boolean
         default: false
+      workbench_only:
+        description: Verify native workbench fixtures only; skip external ChatGPT screenshot
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
@@ -106,6 +110,11 @@ jobs:
             adb pull /sdcard/Download/ProfilesFixtureEvidence app/build/device-evidence/workbench-tablet
             adb shell wm size reset
             adb shell wm density reset
+          fi
+          if [ "${{ inputs.workbench_only }}" = true ]; then
+            test "${{ inputs.ui_only }}" != true
+            echo 'Native workbench fixture tests only. Real ChatGPT UI and accounts were not verified.' > app/build/device-evidence/scope.txt
+            exit 0
           fi
           ./gradlew --no-daemon installDebug
           adb shell am start -n com.forcemind.chatgpt.profiles.debug/com.forcemind.chatgpt.profiles.MainActivity

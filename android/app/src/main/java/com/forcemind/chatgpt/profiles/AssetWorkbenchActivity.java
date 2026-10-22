@@ -152,7 +152,8 @@ public final class AssetWorkbenchActivity extends ComponentActivity {
     }
     private void convert(JSONObject asset){
         if(busy)return;
-        if(!asset.optString("mime").startsWith("image/")||asset.optString("mime").equals("image/svg+xml")){notice("本阶段支持 PNG / JPEG / WebP 位图转换，其他格式请使用桌面版");return;}
+        if(!DocumentConversions.formats(asset).isEmpty()){convertDocument(asset);return;}
+        if(!asset.optString("mime").startsWith("image/")||asset.optString("mime").equals("image/svg+xml")){notice("此文件暂不支持本机转换，可导出后处理");return;}
         LinearLayout fields=new LinearLayout(this);fields.setOrientation(LinearLayout.VERTICAL);fields.setPadding(dp(24),dp(12),dp(24),0);
         fields.addView(text("新建副本，保留原件。动图仅转换第一帧；JPEG 的透明区域使用白底。",13));
         Spinner format=new Spinner(this),size=new Spinner(this);
@@ -164,6 +165,20 @@ public final class AssetWorkbenchActivity extends ComponentActivity {
         new AlertDialog.Builder(this).setTitle("转换图片副本").setView(fields).setNegativeButton("取消",null).setPositiveButton("开始转换",(d,w)->{
             String output=new String[]{"png","jpeg","webp"}[format.getSelectedItemPosition()];int maximum=new int[]{0,640,1280,2048,4096}[size.getSelectedItemPosition()];int q=quality.getProgress()+1;
             task(()->{account();ImageConversions.convert(this,ledger,asset.optString("id"),output,maximum,q,this::available);records=ledger.list();},()->{render();notice("转换副本已归档，原文件未修改");});
+        }).show();
+    }
+    private void convertDocument(JSONObject asset){
+        String format=DocumentConversions.formats(asset).get(0);
+        LinearLayout fields=new LinearLayout(this);fields.setOrientation(LinearLayout.VERTICAL);fields.setPadding(dp(24),dp(12),dp(24),0);
+        String detail=format.equals("JSON")?"保留每一列的文本值。表头不能为空或重复，各行列数必须一致。":format.equals("CSV")?"需要字段一致的非空对象数组，不接受嵌套对象或数组。保留数值文本，公式前缀加单引号；null 输出为空单元格。":"转换标题、列表、代码块、表格和任务列表。原始 HTML 标签作为文本显示，脚本和外部资源不加载。";
+        fields.addView(text("生成 "+format+" 新副本并归档，原文件不变。\n\n"+detail+"\n\n"+(format.equals("HTML")?"Markdown 上限 2 MiB。":"原文件上限 8 MiB、5 万行、20 万单元格。")+"转换结果上限 16 MiB。",13));
+        Spinner delimiter=new Spinner(this);
+        if(format.equals("JSON")){
+            fields.addView(text("CSV 分隔符",12));delimiter.setAdapter(new ArrayAdapter<String>(this,android.R.layout.simple_spinner_dropdown_item,new String[]{"自动识别","逗号 ,","制表符 Tab","分号 ;","竖线 |"}));fields.addView(delimiter);
+        }
+        new AlertDialog.Builder(this).setTitle("转换为 "+format).setView(fields).setNegativeButton("取消",null).setPositiveButton("开始转换",(d,w)->{
+            Character separator=delimiter.getSelectedItemPosition()<=0?null:new char[]{',','\t',';','|'}[delimiter.getSelectedItemPosition()-1];
+            task(()->{account();DocumentConversions.convert(getCacheDir(),ledger,asset.optString("id"),format,separator,this::available);records=ledger.list();},()->{render();notice("转换副本已归档，原文件未修改");});
         }).show();
     }
     private void showSkill(JSONObject skill){

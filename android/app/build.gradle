@@ -11,8 +11,8 @@ android {
         applicationId 'com.forcemind.chatgpt.profiles'
         minSdk 28
         targetSdk 36
-        versionCode 3000006
-        versionName '3.0.0-alpha.6'
+        versionCode 3000007
+        versionName '3.0.0-alpha.7'
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
     signingConfigs {
@@ -43,12 +43,22 @@ tasks.matching { it.name == 'preReleaseBuild' }.configureEach { dependsOn 'requi
 dependencies {
     implementation 'androidx.activity:activity:1.13.0'
     implementation 'androidx.webkit:webkit:1.17.1'
+    implementation 'com.google.code.gson:gson:2.13.2'
+    implementation 'org.apache.commons:commons-csv:1.14.1'
+    implementation 'org.commonmark:commonmark:0.30.0'
+    implementation 'org.commonmark:commonmark-ext-gfm-tables:0.30.0'
+    implementation 'org.commonmark:commonmark-ext-gfm-strikethrough:0.30.0'
+    implementation 'org.commonmark:commonmark-ext-task-list-items:0.30.0'
+    implementation 'org.commonmark:commonmark-ext-autolink:0.30.0'
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'org.json:json:20240303'
     androidTestImplementation 'androidx.test:runner:1.6.2'
     androidTestImplementation 'androidx.test:rules:1.6.1'
     androidTestImplementation 'androidx.test.ext:junit:1.2.1'
 }
+
+// Retain combined dependency notices when conversion libraries share paths.
+android.packaging.resources.merges += ['META-INF/LICENSE', 'META-INF/LICENSE.txt', 'META-INF/NOTICE', 'META-INF/NOTICE.txt']
 
 // Only these verified project resources enter the mobile package.
 def capabilityAssets = layout.buildDirectory.dir("generated/project-capabilities")

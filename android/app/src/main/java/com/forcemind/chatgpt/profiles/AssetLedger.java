@@ -159,12 +159,16 @@ final class AssetLedger {
         try (InputStream owned = input) { return importOwned(owned,name,mime,source,parentId,available); }
     }
     private JSONObject importOwned(InputStream input, String name, String mime, String source, String parentId, BooleanSupplier available) throws Exception {
-        String id = WorkspaceState.id();
+        String id = WorkspaceState.id();String parentDigest=null;
         synchronized (LOCK) {
             if (!available.getAsBoolean()) throw new IOException("账号或任务已改变，已停止导入");
             JSONObject ledger = read(); JSONArray records = ledger.getJSONArray("records");
             if (records.length() >= MAX_RECORDS) throw new IOException("资产库已满，请先整理回收站");
-            if (parentId != null && !record(ledger,parentId).getString("status").equals("ready")) throw new IOException("原文件尚未就绪");
+            if (parentId != null) {
+                JSONObject parent=record(ledger,parentId);
+                if(!parent.getString("status").equals("ready")||parent.getBoolean("trashed"))throw new IOException("原文件尚未就绪或已在回收站");
+                parentDigest=parent.getString("sha256");
+            }
             String type = mime == null ? "application/octet-stream" : mime.split(";",2)[0].trim().toLowerCase(Locale.ROOT);
             if (!type.matches("[a-z0-9!#$&^_.+-]+/[a-z0-9!#$&^_.+-]+") || type.length() > 150) type = "application/octet-stream";
             if(type.equals("application/octet-stream"))type=inferredMime(filename(name));
@@ -188,6 +192,7 @@ final class AssetLedger {
             synchronized (LOCK) {
                 JSONObject ledger = read(), a = record(ledger,id);
                 if (!available.getAsBoolean() || !a.getString("status").equals("processing") || a.getBoolean("trashed")) throw new IOException("资产任务已取消");
+                if(parentId!=null){JSONObject parent=record(ledger,parentId);if(!parent.getString("status").equals("ready")||parent.getBoolean("trashed")||!parent.getString("sha256").equals(parentDigest))throw new IOException("转换原文件已改变或移除");}
                 regular(partial,MAX_FILE);
                 Files.move(partial.toPath(),file(id,false).toPath(),StandardCopyOption.ATOMIC_MOVE);
                 a.put("status","ready").put("size",size).put("sha256",digest.toString()); write(ledger); return new JSONObject(a.toString());
