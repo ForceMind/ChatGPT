@@ -267,11 +267,16 @@ export class AssetStore {
   async importFile(profileId: string, sourceFile: string, source: AssetSource = { kind: 'import' }, name?: string, mime = 'application/octet-stream'): Promise<AssetRecord> {
     if (!path.isAbsolute(sourceFile)) throw new Error('导入文件必须来自原生文件选择结果');
     if (source.kind === 'download') throw new Error('下载文件应从下载事件归档');
+    // O_NOFOLLOW is unavailable on Windows. Check both the selected path and
+    // the opened file identity so a symlink or replacement cannot supply bytes.
+    const selected = lstatSync(sourceFile);
+    if (selected.isSymbolicLink()) throw Object.assign(new Error('ELOOP: 不支持导入符号链接，请选择原始文件'), { code: 'ELOOP' });
     const handle = await open(sourceFile, constants.O_RDONLY | (constants.O_NOFOLLOW || 0));
     let asset: AssetRecord | undefined;
     try {
-      const before = await handle.stat();
-      if (!before.isFile()) throw new Error('不支持导入目录或设备文件');
+      const before = await handle.stat(), current = lstatSync(sourceFile);
+      if (!before.isFile() || !selected.isFile()) throw new Error('不支持导入目录或设备文件');
+      if (current.isSymbolicLink() || selected.dev !== before.dev || selected.ino !== before.ino || current.dev !== before.dev || current.ino !== before.ino) throw new Error('导入来源发生变化，已停止读取');
       asset = this.reserve(profileId, name || path.basename(sourceFile), mime, source, before.size);
       const destination = this.pendingPath(profileId, asset.id);
       let copied = 0;
