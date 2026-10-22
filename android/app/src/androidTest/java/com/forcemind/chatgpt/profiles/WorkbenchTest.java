@@ -121,6 +121,14 @@ public class WorkbenchTest {
     private void rendererExits()throws Exception{
         until(()->{try(android.os.ParcelFileDescriptor descriptor=InstrumentationRegistry.getInstrumentation().getUiAutomation().executeShellCommand("pidof "+context.getPackageName()+":asset_renderer");InputStream input=new android.os.ParcelFileDescriptor.AutoCloseInputStream(descriptor)){return input.read()==-1;}});
     }
+    private void encodedEvidence(String name,String mime,InputStream input)throws Exception{
+        android.util.DisplayMetrics metrics=context.getResources().getDisplayMetrics();int dot=name.lastIndexOf('.');String filename=name.substring(0,dot)+"-"+metrics.widthPixels+"x"+metrics.heightPixels+name.substring(dot);
+        ContentValues values=new ContentValues();values.put(android.provider.MediaStore.Downloads.DISPLAY_NAME,filename);values.put(android.provider.MediaStore.Downloads.MIME_TYPE,mime);values.put(android.provider.MediaStore.Downloads.RELATIVE_PATH,android.os.Environment.DIRECTORY_DOWNLOADS+"/ProfilesFixtureEvidence");values.put(android.provider.MediaStore.Downloads.IS_PENDING,1);
+        Uri uri=context.getContentResolver().insert(android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI,values);assertNotNull(uri);
+        try(OutputStream out=context.getContentResolver().openOutputStream(uri)){assertNotNull(out);byte[] buffer=new byte[32768];int n;while((n=input.read(buffer))!=-1)out.write(buffer,0,n);}
+        values.clear();values.put(android.provider.MediaStore.Downloads.IS_PENDING,0);context.getContentResolver().update(uri,values,null,null);
+    }
+    private void assetEvidence(AssetLedger ledger,JSONObject asset,String name)throws Exception{try(InputStream input=Files.newInputStream(ledger.verifiedFile(asset.getString("id")).toPath())){encodedEvidence(name,asset.getString("mime"),input);}}
     @Test public void realDocumentUrisImportToTheInitiatingAccountAndPreviewAllThreeKinds()throws Exception{
         try(ActivityScenario<AssetWorkbenchActivity> scene=ActivityScenario.launch(screen(AssetWorkbenchActivity.class))){
             // Deliver the real provider result immediately, also testing the initial-load queue.
@@ -211,24 +219,25 @@ public class WorkbenchTest {
         AssetLedger ledger=new AssetLedger(context.getFilesDir(),account);String html="<!doctype html><html><head><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><style>html,body{margin:0;padding:0}div{height:1200px}</style></head><body><div style=\"background:#ff0000\"></div><div style=\"background:#0000ff\"></div></body></html>";
         JSONObject source=ledger.importCopy(new ByteArrayInputStream(html.getBytes(java.nio.charset.StandardCharsets.UTF_8)),"long.html","text/html","import",null),png,pdf;
         try(ActivityScenario<AssetWorkbenchActivity> scene=ActivityScenario.launch(screen(AssetWorkbenchActivity.class))){png=throughRenderMenu(scene,ledger,source,"PNG");pdf=throughRenderMenu(scene,ledger,source,"PDF");}
+        assetEvidence(ledger,png,"android-html-long.png");assetEvidence(ledger,pdf,"android-html-pages.pdf");
         Bitmap image=BitmapFactory.decodeFile(ledger.verifiedFile(png.getString("id")).getPath());assertNotNull(image);assertEquals(1280,image.getWidth());assertTrue("Long document was truncated",image.getHeight()>2000);assertRed(image.getPixel(image.getWidth()/2,image.getHeight()/10));assertBlue(image.getPixel(image.getWidth()/2,image.getHeight()*9/10));image.recycle();
         try(android.os.ParcelFileDescriptor descriptor=android.os.ParcelFileDescriptor.open(ledger.verifiedFile(pdf.getString("id")),android.os.ParcelFileDescriptor.MODE_READ_ONLY);android.graphics.pdf.PdfRenderer document=new android.graphics.pdf.PdfRenderer(descriptor)){
-            assertTrue(document.getPageCount()>1);assertTrue(pdfHasColor(document,0,true));assertTrue(pdfHasColor(document,document.getPageCount()-1,false));
+            assertTrue("HTML PDF should span multiple pages: "+document.getPageCount(),document.getPageCount()>1);boolean first=pdfHasColor(document,0,true),last=pdfHasColor(document,document.getPageCount()-1,false);assertTrue("First PDF page has no red content",first);assertTrue("Last PDF page has no blue content",last);
         }
         assertEquals(source.getString("sha256"),ledger.get(source.getString("id")).getString("sha256"));assertEquals(account,png.getString("accountId"));assertEquals(account,pdf.getString("accountId"));assertEquals(0,new AssetLedger(context.getFilesDir(),other).list().size());
         try(ActivityScenario<AssetPreviewActivity> scene=ActivityScenario.launch(screen(AssetPreviewActivity.class).putExtra("asset",png.getString("id")))){AtomicBoolean visible=new AtomicBoolean();until(()->{scene.onActivity(a->visible.set(find(a.getWindow().getDecorView(),ImageView.class)!=null));return visible.get();});screenshot("android-html-long-image.png");}rendererExits();
     }
     private void assertRed(int pixel){assertTrue("Expected red",Color.red(pixel)>220&&Color.green(pixel)<35&&Color.blue(pixel)<35);}
     private void assertBlue(int pixel){assertTrue("Expected blue",Color.blue(pixel)>220&&Color.green(pixel)<35&&Color.red(pixel)<35);}
-    private boolean pdfHasColor(android.graphics.pdf.PdfRenderer pdf,int number,boolean red){
-        try(android.graphics.pdf.PdfRenderer.Page page=pdf.openPage(number)){Bitmap bitmap=Bitmap.createBitmap(page.getWidth(),page.getHeight(),Bitmap.Config.ARGB_8888);bitmap.eraseColor(Color.WHITE);page.render(bitmap,null,null,android.graphics.pdf.PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);boolean found=false;for(int y=0;y<bitmap.getHeight();y+=8)for(int x=0;x<bitmap.getWidth();x+=8){int p=bitmap.getPixel(x,y);if(red?Color.red(p)>220&&Color.green(p)<35&&Color.blue(p)<35:Color.blue(p)>220&&Color.green(p)<35&&Color.red(p)<35)found=true;}bitmap.recycle();return found;}
+    private boolean pdfHasColor(android.graphics.pdf.PdfRenderer pdf,int number,boolean red)throws Exception{
+        try(android.graphics.pdf.PdfRenderer.Page page=pdf.openPage(number)){Bitmap bitmap=Bitmap.createBitmap(page.getWidth(),page.getHeight(),Bitmap.Config.ARGB_8888);bitmap.eraseColor(Color.WHITE);page.render(bitmap,null,null,android.graphics.pdf.PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);boolean found=false;for(int y=0;y<bitmap.getHeight();y+=8)for(int x=0;x<bitmap.getWidth();x+=8){int p=bitmap.getPixel(x,y);if(red?Color.red(p)>220&&Color.green(p)<35&&Color.blue(p)<35:Color.blue(p)>220&&Color.green(p)<35&&Color.red(p)<35)found=true;}ByteArrayOutputStream bytes=new ByteArrayOutputStream();bitmap.compress(Bitmap.CompressFormat.PNG,100,bytes);bitmap.recycle();encodedEvidence("android-pdf-page-"+number+".png","image/png",new ByteArrayInputStream(bytes.toByteArray()));return found;}
     }
     @Test public void svgFormatsPreserveShapeAlphaAndJpegWhiteBackground()throws Exception{
-        AssetLedger ledger=new AssetLedger(context.getFilesDir(),account);String svg="<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"40\" height=\"20\" viewBox=\"0 0 40 20\"><rect x=\"10\" y=\"0\" width=\"20\" height=\"20\" fill=\"#00ff00\"/></svg>";
+        AssetLedger ledger=new AssetLedger(context.getFilesDir(),account);String svg="<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"40\" height=\"20\" viewBox=\"0 0 40 20\"><rect x=\"10\" y=\"0\" width=\"20\" height=\"20\" fill=\"#00ff00\"/><script>document.querySelector('rect').setAttribute('fill','#ff0000')</script></svg>";
         JSONObject source=ledger.importCopy(new ByteArrayInputStream(svg.getBytes(java.nio.charset.StandardCharsets.UTF_8)),"shape.svg","image/svg+xml","import",null);
         try(ActivityScenario<AssetWorkbenchActivity> scene=ActivityScenario.launch(screen(AssetWorkbenchActivity.class))){
             for(String format:new String[]{"PNG","JPEG","WEBP"}){
-                JSONObject result=throughRenderMenu(scene,ledger,source,format);Bitmap image=BitmapFactory.decodeFile(ledger.verifiedFile(result.getString("id")).getPath());assertNotNull(image);assertEquals(1280,image.getWidth());assertEquals(640,image.getHeight());
+                JSONObject result=throughRenderMenu(scene,ledger,source,format);assetEvidence(ledger,result,"android-svg-"+format.toLowerCase(Locale.ROOT)+"."+(format.equals("JPEG")?"jpg":format.toLowerCase(Locale.ROOT)));Bitmap image=BitmapFactory.decodeFile(ledger.verifiedFile(result.getString("id")).getPath());assertNotNull(image);assertEquals(1280,image.getWidth());assertEquals(640,image.getHeight());
                 int center=image.getPixel(640,320),corner=image.getPixel(5,5);assertTrue(Color.green(center)>220&&Color.red(center)<35&&Color.blue(center)<35);
                 if(format.equals("JPEG")){assertTrue(Color.red(corner)>240&&Color.green(corner)>240&&Color.blue(corner)>240);}else assertEquals(0,Color.alpha(corner));image.recycle();
             }

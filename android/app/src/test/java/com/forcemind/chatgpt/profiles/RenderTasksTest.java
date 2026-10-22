@@ -33,6 +33,10 @@ public class RenderTasksTest {
     @Test public void mutatedCopySourceOrPendingMetadataCannotBePublished()throws Exception{
         AssetLedger ledger=ledger();JSONObject source=put(ledger),pending=prepare(ledger,source);String token=pending.getString("task");opaqueResult(pending);
         JSONObject altered=new JSONObject(pending.toString()).put("format","PNG");assertThrows(Exception.class,()->RenderTasks.archive(temporary.getRoot(),ledger,altered,()->true));
+        File requestFile=new File(RenderTasks.directory(temporary.getRoot(),token,false),"request.json");String originalRequest=new String(Files.readAllBytes(requestFile.toPath()),StandardCharsets.UTF_8);
+        Files.write(requestFile.toPath(),new JSONObject(originalRequest).put("width",640).toString().getBytes(StandardCharsets.UTF_8));assertThrows(Exception.class,()->RenderTasks.archive(temporary.getRoot(),ledger,pending,()->true));
+        Files.write(requestFile.toPath(),new JSONObject(originalRequest).put("width",1280.5).toString().getBytes(StandardCharsets.UTF_8));assertThrows(Exception.class,()->RenderTasks.request(temporary.getRoot(),token));
+        Files.write(requestFile.toPath(),originalRequest.getBytes(StandardCharsets.UTF_8));
         Files.write(new File(RenderTasks.directory(temporary.getRoot(),token,false),"source.utf8").toPath(),"changed".getBytes(StandardCharsets.UTF_8));
         assertThrows(Exception.class,()->RenderTasks.source(temporary.getRoot(),token,RenderTasks.request(temporary.getRoot(),token)));
         Files.write(ledger.verifiedFile(source.getString("id")).toPath(),"changed original".getBytes(StandardCharsets.UTF_8));assertThrows(Exception.class,()->RenderTasks.archive(temporary.getRoot(),ledger,pending,()->true));assertEquals(1,ledger.list().size());

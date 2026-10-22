@@ -16,7 +16,7 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.concurrent.*;
-import org.json.JSONObject;
+import org.json.*;
 
 /** Private temporary process; only the parent may publish to an account ledger. */
 public final class AssetRenderActivity extends ComponentActivity {
@@ -26,6 +26,7 @@ public final class AssetRenderActivity extends ComponentActivity {
     private final ExecutorService executor=Executors.newSingleThreadExecutor();
     private volatile boolean dead,done;
     private boolean registered;
+    private boolean svgMeasured;
     private String token,format,kind;
     private int width,quality,documentHeight,pagePixels,pageCount,pageIndex;
     private WebView web;
@@ -55,6 +56,7 @@ public final class AssetRenderActivity extends ComponentActivity {
                 String content=html,owner=request.optString("owner");runOnUiThread(()->{
                     if(dead||done)return;status.setText(owner+"\n正在生成 "+format+" 副本，外部资源不可用…");
                     web=new WebView(this);web.setTag("asset-render-web");web.setBackgroundColor(kind.equals("svg")?Color.TRANSPARENT:Color.WHITE);
+                    web.setOnTouchListener((v,event)->true);web.setLongClickable(false);web.setFocusable(false);
                     frame.addView(web,new FrameLayout.LayoutParams(width,900));
                     OfflineHtml.load(web,content,()->{if(web!=null&&!dead&&!done)web.postVisualStateCallback(1,new WebView.VisualStateCallback(){@Override public void onComplete(long id){if(!dead&&!done)begin();}});},this::fail);
                 });
@@ -66,7 +68,8 @@ public final class AssetRenderActivity extends ComponentActivity {
     private void begin(){
         if(dead||done)return;
         try{
-            documentHeight=contentHeight();if(documentHeight<1){handler.postDelayed(this::begin,100);return;}
+            if(kind.equals("svg")&&!svgMeasured){measureSvg();return;}
+            if(!kind.equals("svg"))documentHeight=contentHeight();if(documentHeight<1){handler.postDelayed(this::begin,100);return;}
             if(format.equals("PDF")){beginPdf();return;}
             if(documentHeight>RenderTasks.MAX_HEIGHT||(long)width*documentHeight>RenderTasks.MAX_PIXELS)throw new IOException("页面过长，请选择 PDF 或较小宽度（图片上限 1600 万像素）");
             Bitmap image=Bitmap.createBitmap(width,documentHeight,Bitmap.Config.ARGB_8888);
@@ -81,26 +84,42 @@ public final class AssetRenderActivity extends ComponentActivity {
             });
         }catch(Exception|OutOfMemoryError e){fail("页面转换未完成，原件保留。"+message(e));}
     }
+    @android.annotation.SuppressLint("SetJavaScriptEnabled")
+    private void measureSvg(){
+        if(dead||done||web==null)return;
+        // Only our fixed wrapper is evaluated. The untrusted SVG is an inert
+        // image resource; CSP forbids author scripts and all external requests.
+        web.getSettings().setJavaScriptEnabled(true);
+        web.evaluateJavascript("JSON.stringify((function(){var i=document.images[0],r=i?i.getBoundingClientRect():null;return {loaded:!!i&&i.complete,valid:!!i&&i.naturalWidth>0,width:r?r.width:0,height:r?r.height:0}})())",value->{
+            if(dead||done||web==null)return;web.getSettings().setJavaScriptEnabled(false);
+            try{
+                JSONObject result=new JSONObject(String.valueOf(new JSONTokener(value).nextValue()));
+                if(!result.getBoolean("loaded")){handler.postDelayed(this::measureSvg,100);return;}
+                if(!result.getBoolean("valid"))throw new IOException("SVG 图像无法解析");
+                double w=result.getDouble("width"),h=result.getDouble("height"),target=width*h/w;
+                if(!Double.isFinite(target)||w<=0||h<=0||target>RenderTasks.MAX_HEIGHT||width*target>RenderTasks.MAX_PIXELS)throw new IOException("SVG 目标尺寸过大或无效，请选择较小宽度");
+                documentHeight=Math.max(1,(int)Math.round(target));svgMeasured=true;
+                web.postVisualStateCallback(3,new WebView.VisualStateCallback(){@Override public void onComplete(long id){if(!dead&&!done)begin();}});
+            }catch(Exception e){fail("SVG 尺寸读取失败，原件保留。"+message(e));}
+        });
+    }
     private void beginPdf(){
         // Public PdfDocument API; no hidden print callbacks or system print job.
         double scale=515d/width;pagePixels=(int)Math.floor(762d/scale);
-        web.setLayoutParams(new FrameLayout.LayoutParams(width,pagePixels));web.measure(View.MeasureSpec.makeMeasureSpec(width,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(pagePixels,View.MeasureSpec.EXACTLY));web.layout(0,0,width,pagePixels);
-        web.postVisualStateCallback(2,new WebView.VisualStateCallback(){@Override public void onComplete(long id){
-            if(dead||done)return;documentHeight=contentHeight();pageCount=(int)Math.ceil(documentHeight/(double)pagePixels);
-            if(documentHeight<1||pageCount<1||pageCount>100){fail("PDF 页数超过本机转换范围（最多 100 页），请拆分文件");return;}
-            pdf=new PdfDocument();pageIndex=0;pdfPage();
-        }});
+        pageCount=(int)Math.ceil(documentHeight/(double)pagePixels);
+        if(documentHeight<1||pageCount<1||pageCount>100){fail("PDF 页数超过本机转换范围（最多 100 页），请拆分文件");return;}
+        web.scrollTo(0,0);pdf=new PdfDocument();pageIndex=0;pdfPage();
     }
     private void pdfPage(){
         if(dead||done||pdf==null)return;
-        int offset=pageIndex*pagePixels,expected=Math.min(offset,Math.max(0,documentHeight-pagePixels));web.scrollTo(0,expected);
+        int offset=pageIndex*pagePixels;
         web.postVisualStateCallback(10+pageIndex,new WebView.VisualStateCallback(){@Override public void onComplete(long id){
             if(dead||done||pdf==null)return;
             try{
-                if(Math.abs(web.getScrollY()-expected)>2||Math.abs(contentHeight()-documentHeight)>2)throw new IOException("页面布局不稳定，请简化布局后转换");
+                if(web.getScrollY()!=0||Math.abs(contentHeight()-documentHeight)>2)throw new IOException("页面布局不稳定，请简化布局后转换");
                 status.setText("正在生成 PDF · "+(pageIndex+1)+" / "+pageCount);
                 PdfDocument.Page page=pdf.startPage(new PdfDocument.PageInfo.Builder(595,842,pageIndex+1).create());
-                try{Canvas canvas=page.getCanvas();canvas.drawColor(Color.WHITE);canvas.save();canvas.clipRect(40,40,555,802);canvas.translate(40,40);canvas.scale(515f/width,515f/width);canvas.translate(0,-(offset-web.getScrollY()));web.draw(canvas);canvas.restore();}finally{pdf.finishPage(page);}
+                try{Canvas canvas=page.getCanvas();canvas.drawColor(Color.WHITE);canvas.save();canvas.clipRect(40,40,555,802);canvas.translate(40,40);canvas.scale(515f/width,515f/width);canvas.translate(0,-offset);web.draw(canvas);canvas.restore();}finally{pdf.finishPage(page);}
                 if(++pageIndex<pageCount){handler.post(AssetRenderActivity.this::pdfPage);return;}
                 PdfDocument document=pdf;pdf=null;
                 executor.execute(()->{try{

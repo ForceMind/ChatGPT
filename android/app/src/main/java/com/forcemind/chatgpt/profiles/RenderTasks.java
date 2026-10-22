@@ -49,7 +49,7 @@ final class RenderTasks {
             String sha=hex(hash.digest());if(!sha.equals(source.getString("sha256")))throw new IOException("原文件已改变，请重新选择");ledger.verifiedFile(id);active(available);
             JSONObject request=new JSONObject().put("schema",1).put("kind",kind).put("format",format).put("width",width).put("quality",quality).put("inputSha256",sha).put("owner",owner==null?"":owner.substring(0,Math.min(owner.length(),600))).put("createdAt",System.currentTimeMillis());
             try(FileChannel out=FileChannel.open(new File(task,"request.json").toPath(),StandardOpenOption.CREATE_NEW,StandardOpenOption.WRITE,LinkOption.NOFOLLOW_LINKS)){ByteBuffer bytes=ByteBuffer.wrap(request.toString().getBytes(StandardCharsets.UTF_8));while(bytes.hasRemaining())out.write(bytes);out.force(true);}
-            complete=true;return new JSONObject().put("task",token).put("sourceId",id).put("accountId",ledger.accountId).put("sourceSha256",sha).put("format",format);
+            complete=true;return new JSONObject().put("task",token).put("sourceId",id).put("accountId",ledger.accountId).put("sourceSha256",sha).put("kind",kind).put("format",format).put("width",width).put("quality",quality);
         }finally{if(!complete)cleanup(cache,token);}
     }
     static void validate(String kind,String format,int width,int quality)throws IOException{
@@ -59,6 +59,7 @@ final class RenderTasks {
     }
     static JSONObject request(File cache,String token)throws Exception{
         File task=directory(cache,token,false);JSONObject request=new JSONObject(new String(Files.readAllBytes(regular(task,"request.json",8192).toPath()),StandardCharsets.UTF_8));
+        for(String key:new String[]{"schema","width","quality"})if(!(request.get(key) instanceof Number)||request.getDouble(key)!=request.getInt(key))throw new IOException("转换参数必须是整数");
         if(request.getInt("schema")!=1||!request.getString("inputSha256").matches("[a-f0-9]{64}"))throw new IOException("转换任务无效");
         validate(request.getString("kind"),request.getString("format"),request.getInt("width"),request.getInt("quality"));return request;
     }
@@ -71,7 +72,7 @@ final class RenderTasks {
     static File result(File cache,String token)throws Exception{return regular(directory(cache,token,false),"result.bin",MAX_RESULT);}
     static JSONObject archive(File cache,AssetLedger ledger,JSONObject pending,BooleanSupplier available)throws Exception{
         active(available);String token=pending.getString("task"),id=pending.getString("sourceId");JSONObject request=request(cache,token),source=ledger.get(id);
-        if(!ledger.accountId.equals(pending.getString("accountId"))||!request.getString("format").equals(pending.getString("format"))||!request.getString("inputSha256").equals(pending.getString("sourceSha256"))||!source.getString("sha256").equals(pending.getString("sourceSha256")))throw new IOException("转换结果与原账号或原文件不一致");
+        if(!ledger.accountId.equals(pending.getString("accountId"))||!request.getString("format").equals(pending.getString("format"))||!request.getString("kind").equals(pending.getString("kind"))||!request.getString("kind").equals(kind(source))||request.getInt("width")!=pending.getInt("width")||request.getInt("quality")!=pending.getInt("quality")||!request.getString("inputSha256").equals(pending.getString("sourceSha256"))||!source.getString("sha256").equals(pending.getString("sourceSha256")))throw new IOException("转换结果与原账号、原文件或原始参数不一致");
         ledger.verifiedFile(id);File result=result(cache,token);if(result.length()==0)throw new IOException("转换结果为空");
         String format=request.getString("format"),extension=format.equals("JPEG")?"jpg":format.toLowerCase(Locale.ROOT);
         String mime=format.equals("PDF")?"application/pdf":"image/"+(format.equals("JPEG")?"jpeg":format.toLowerCase(Locale.ROOT));
