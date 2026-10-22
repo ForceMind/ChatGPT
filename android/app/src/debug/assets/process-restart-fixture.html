@@ -1,0 +1,20 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>离线进程重启验收</title>
+<style>body{font:14px sans-serif;color:#171717;background:white;margin:12px}#reading{height:48vh;overflow:auto;border:1px solid #ddd}section{height:160px;border-bottom:1px solid #ddd}textarea{width:95%;height:80px}p{margin:8px 0;overflow-wrap:anywhere}</style>
+<p>离线进程重启测试，不调用 ChatGPT 服务</p>
+<p id="phase"></p><p id="reading-status" role="status"></p>
+<div id="reading"></div>
+<textarea id="prompt-textarea"></textarea>
+<p id="draft-echo" role="status"></p>
+<script>
+(function(config){
+  var reading=document.querySelector('#reading'),editor=document.querySelector('#prompt-textarea');
+  for(var i=0;i<24;i++){var section=document.createElement('section');section.setAttribute('data-message-id','restart-message-'+i);section.textContent='离线阅读素材 '+i;reading.appendChild(section);}
+  document.querySelector('#phase').textContent='验证阶段：'+config.phase+(config.phase==='verify'?'（无预置草稿）':'');
+  function update(){document.querySelector('#reading-status').textContent='阅读位置：'+Math.round(reading.scrollTop);document.querySelector('#draft-echo').textContent='网页草稿：'+(editor.value||'（空）');}
+  reading.addEventListener('scroll',update);editor.addEventListener('input',update);update();
+  if(config.phase==='seed'){editor.value=config.draft;editor.dispatchEvent(new Event('input',{bubbles:true}));requestAnimationFrame(function(){reading.scrollTop=1400;update();});}
+})(__FIXTURE_CONFIG__);
+</script>

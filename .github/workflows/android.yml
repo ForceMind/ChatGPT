@@ -34,6 +34,10 @@ on:
         description: Measure public per-profile locale APIs offline on one emulator engine
         type: boolean
         default: false
+      process_restart_only:
+        description: Verify saved draft and reading recovery through a real process force-stop
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
@@ -112,6 +116,12 @@ jobs:
           # The CI image's Pixel Launcher can ANR during headless startup. It is
           # not needed for explicit Activity launches; App ANR reporting stays on.
           adb shell pm disable-user --user 0 com.google.android.apps.nexuslauncher
+          if [ "${{ inputs.process_restart_only }}" = true ]; then
+            ./gradlew --no-daemon installDebug
+            timeout 180 python3 -u scripts/verify-process-restart.py app/build/device-evidence
+            echo 'Actual process restart with offline fixtures only; no real ChatGPT acceptance.' > app/build/device-evidence/scope.txt
+            exit 0
+          fi
           if [ "${{ inputs.ui_only }}" != true ]; then
             phone_filter=()
             tablet_filter='com.forcemind.chatgpt.profiles.WorkbenchTest'
