@@ -53,8 +53,9 @@ public class WorkbenchTest {
     }
     private void screenshot(String name)throws Exception{
         InstrumentationRegistry.getInstrumentation().waitForIdleSync();SystemClock.sleep(500);
-        android.view.accessibility.AccessibilityNodeInfo window=InstrumentationRegistry.getInstrumentation().getUiAutomation().getRootInActiveWindow();
-        assertNotNull(window);assertEquals(context.getPackageName(),String.valueOf(window.getPackageName()));
+        AtomicReference<android.view.accessibility.AccessibilityNodeInfo> active=new AtomicReference<>();
+        until(()->{active.set(InstrumentationRegistry.getInstrumentation().getUiAutomation().getRootInActiveWindow());return active.get()!=null;});
+        assertEquals(context.getPackageName(),String.valueOf(active.get().getPackageName()));
         Bitmap image=InstrumentationRegistry.getInstrumentation().getUiAutomation().takeScreenshot();assertNotNull(image);
         ContentValues values=new ContentValues();
         String filename=name.replace(".png","-"+image.getWidth()+"x"+image.getHeight()+".png");
@@ -85,10 +86,15 @@ public class WorkbenchTest {
             try(ActivityScenario<AssetPreviewActivity> scene=ActivityScenario.launch(preview)){
                 if(asset.getString("mime").equals("text/html")){
                     AtomicBoolean ready=new AtomicBoolean();until(()->{scene.onActivity(a->{WebView web=a.getWindow().getDecorView().findViewWithTag("asset-html-preview");ready.set(web!=null&&web.getProgress()==100&&!web.getSettings().getJavaScriptEnabled()&&!web.getSettings().getAllowFileAccess()&&!web.getSettings().getAllowContentAccess());});return ready.get();});
-                    AtomicReference<String> body=new AtomicReference<>();
-                    scene.onActivity(a->{WebView web=a.getWindow().getDecorView().findViewWithTag("asset-html-preview");web.evaluateJavascript("document.body ? document.body.innerText : ''",value->{try{body.set(String.valueOf(new JSONTokener(value).nextValue()));}catch(Exception e){body.set("Invalid DOM result: "+value);}});});
-                    until(()->body.get()!=null);
                     screenshot("android-html-preview.png");
+                    // Only this isolated test enables evaluation after the static page
+                    // has loaded. The production settings above remain asserted off;
+                    // CSP still forbids author scripts, including the fixture script.
+                    AtomicReference<String> body=new AtomicReference<>();
+                    AtomicBoolean authorScriptRan=new AtomicBoolean(true);
+                    scene.onActivity(a->{WebView web=a.getWindow().getDecorView().findViewWithTag("asset-html-preview");web.getSettings().setJavaScriptEnabled(true);web.evaluateJavascript("JSON.stringify({body:document.body ? document.body.innerText : '',ran:window.shouldNotExecute===true})",value->{web.getSettings().setJavaScriptEnabled(false);try{JSONObject result=new JSONObject(String.valueOf(new JSONTokener(value).nextValue()));authorScriptRan.set(result.getBoolean("ran"));body.set(result.getString("body"));}catch(JSONException e){body.set("Invalid DOM result: "+value);}});});
+                    until(()->body.get()!=null);
+                    assertFalse("HTML author script executed",authorScriptRan.get());
                     assertTrue("Actual HTML body: "+body.get(),body.get().contains("本地 HTML 预览"));
                 }else{
                     AtomicBoolean ready=new AtomicBoolean();until(()->{scene.onActivity(a->{ImageView image=find(a.getWindow().getDecorView(),ImageView.class);ready.set(image!=null&&image.getDrawable() instanceof BitmapDrawable);});return ready.get();});
