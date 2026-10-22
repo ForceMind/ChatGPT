@@ -216,18 +216,22 @@ public final class MainActivity extends ComponentActivity {
             @Override public void onPermissionRequestCanceled(PermissionRequest request) { if (mediaRequest == request) { mediaRequest = null; mediaOwner = null; } }
             @Override public void onGeolocationPermissionsShowPrompt(String origin, GeolocationPermissions.Callback callback) { callback.invoke(origin, false, false); }
         });
-        web.setDownloadListener((url, userAgent, disposition, type, size) -> {
-            if (active(tabId)) new AlertDialog.Builder(this).setTitle("下载文件")
-                .setMessage("将通过系统文件选择器保存此文件。")
-                .setNegativeButton("取消", null).setPositiveButton("保存", (d, w) -> downloads().choose(web, url, userAgent, disposition, type)).show();
+        web.setDownloadListener((url,userAgent,disposition,type,size)->{
+            if(active(tabId))new AlertDialog.Builder(this).setTitle("下载文件")
+                .setMessage(state.find(accountId).name+" · 请选择保存方式。资产库中的副本按账号归档。")
+                .setNegativeButton("取消",null).setNeutralButton("另存为…",(d,w)->downloads().choose(web,url,userAgent,disposition,type))
+                .setPositiveButton("保存到资产库",(d,w)->{if(exists(accountId,tabId))assetDownloads().start(web,accountId,state.find(accountId).name,url,userAgent,disposition,type);}).show();
         });
+
         return web;
     }
 
     private DownloadHelper downloadHelper;
+    private AssetDownloads assetDownloads;
+    private AssetDownloads assetDownloads(){if(assetDownloads==null)assetDownloads=new AssetDownloads(this);return assetDownloads;}
     private DownloadHelper downloads() { if (downloadHelper == null) downloadHelper = new DownloadHelper(this); return downloadHelper; }
     private void showAccountMenu() {
-        String[] actions = {"切换账号", "添加账号", "管理当前账号", "重新加载", "后退", "前进", "ChatGPT 首页", "恢复关闭的标签页"};
+        String[] actions = {"切换账号", "添加账号", "管理当前账号", "重新加载", "后退", "前进", "ChatGPT 首页", "恢复关闭的标签页", "资产与下载文件", "Skill 能力库"};
         new AlertDialog.Builder(this).setTitle(state.current().name).setItems(actions, (d, index) -> {
             WebView web = currentWeb();
             switch (index) {
@@ -240,6 +244,9 @@ public final class MainActivity extends ComponentActivity {
                     if (state.current().closedTabs.isEmpty()) { toast("没有可恢复的标签页"); return; }
                     if (change(s -> { WorkspaceState.Account a = s.current(); if (a.tabs.size() >= WorkspaceState.MAX_TABS) throw new IllegalStateException("标签页已达上限"); WorkspaceState.Tab t = a.closedTabs.remove(a.closedTabs.size() - 1); a.tabs.add(t); a.activeTab = t.id; })) showCurrent();
                 }
+                case 8 -> startActivity(new Intent(this,AssetWorkbenchActivity.class).putExtra(AssetWorkbenchActivity.ACCOUNT,state.activeAccount));
+                case 9 -> startActivity(new Intent(this,AssetWorkbenchActivity.class).putExtra(AssetWorkbenchActivity.ACCOUNT,state.activeAccount).putExtra("skills",true));
+
             }
         }).show();
     }
@@ -279,13 +286,21 @@ public final class MainActivity extends ComponentActivity {
                 .setMessage("此账号的本机标签和登录将关闭，云端对话不受影响。旧浏览器档案在下次启动时清理，其他账号保持独立。")
                 .setNegativeButton("取消", null).setPositiveButton("确认", (x, y) -> {
                     if (i == 4 && state.accounts.size() == 1) { toast("请至少保留一个账号空间"); return; }
-                    List<String> ids = new ArrayList<>(); for (WorkspaceState.Tab t : state.find(id).tabs) ids.add(t.id);
-                    try { store.revoke(state.find(id).storageId); } catch (Exception e) { fail("无法保护账号清除记录", e); return; }
-                    cancelRequests(); for (String tabId : ids) destroyView(tabId);
-                    if (change(s -> { if (i == 3) s.clearAccount(s.find(id)); else s.removeAccount(s.find(id)); })) showCurrent();
-                    else fail("账号记录无法保存", new IllegalStateException("已停止使用旧空间，请重新打开应用"));
+                    try {
+                        if(i==4)AssetLedger.withEmptyAccount(getFilesDir(),id,()->finishAccountChange(id,true));
+                        else finishAccountChange(id,false);
+                    }catch(Exception e){toast(e.getMessage()==null?"账号操作未完成":e.getMessage());}
+
                 }).show();
         }).show();
+    }
+    private void finishAccountChange(String id,boolean remove) {
+        List<String> ids=new ArrayList<>();for(WorkspaceState.Tab t:state.find(id).tabs)ids.add(t.id);
+        if(assetDownloads!=null)assetDownloads.cancel(id);
+        try{store.revoke(state.find(id).storageId);}catch(Exception e){fail("无法保护账号清除记录",e);return;}
+        cancelRequests();for(String tabId:ids)destroyView(tabId);
+        if(change(s->{if(remove)s.removeAccount(s.find(id));else s.clearAccount(s.find(id));}))showCurrent();
+        else fail("账号记录无法保存",new IllegalStateException("已停止使用旧空间，请重新打开应用"));
     }
     private void showTabMenu(String accountId, String tabId) {
         WorkspaceState.Tab tab = state.find(accountId).tabs.stream().filter(t -> t.id.equals(tabId)).findFirst().orElseThrow(() -> new IllegalStateException("Missing account or tab"));
@@ -364,7 +379,7 @@ public final class MainActivity extends ComponentActivity {
         super.onStop();
     }
     @Override protected void onDestroy() {
-        cancelRequests(); if (downloadHelper != null) downloadHelper.close();
+        cancelRequests(); if (downloadHelper != null) downloadHelper.close();if(assetDownloads!=null)assetDownloads.close();
         for (String id : new ArrayList<>(views.keySet())) destroyView(id); super.onDestroy();
     }
     private void fail(String title, Exception error) {

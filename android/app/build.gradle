@@ -11,8 +11,8 @@ android {
         applicationId 'com.forcemind.chatgpt.profiles'
         minSdk 28
         targetSdk 36
-        versionCode 3000001
-        versionName '3.0.0-alpha.1'
+        versionCode 3000006
+        versionName '3.0.0-alpha.6'
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
     signingConfigs {
@@ -48,4 +48,18 @@ dependencies {
     androidTestImplementation 'androidx.test:runner:1.6.2'
     androidTestImplementation 'androidx.test:rules:1.6.1'
     androidTestImplementation 'androidx.test.ext:junit:1.2.1'
+}
+
+// Only these verified project resources enter the mobile package.
+def capabilityAssets = layout.buildDirectory.dir("generated/project-capabilities")
+tasks.register('copyProjectCapabilities', Sync) {
+    from rootProject.file('../desktop/resources/capabilities')
+    include 'manifest.json', 'skills.json'
+    into capabilityAssets.map { it.dir('capabilities') }
+}
+android.sourceSets.main.assets.srcDir(capabilityAssets)
+tasks.named('preBuild').configure { dependsOn 'copyProjectCapabilities' }
+
+android.testOptions.unitTests.all {
+    systemProperty 'capabilityRoot', rootProject.file('../desktop/resources/capabilities').absolutePath
 }
