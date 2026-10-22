@@ -27,7 +27,7 @@ ChatGPT Profiles 是一个非官方 ChatGPT 网页客户端。启动直接进入
 
 当前使用预发布渠道。Intel Mac、Linux、iPhone 和 iPad 暂无安装包。macOS alpha.5 已包含资产工作台与界面恢复；Windows 和 Android 继续使用各自标注的版本。
 
-`codex/macos-assets-workbench` 功能分支的本地试用版本为 macOS Apple Silicon / Windows x64 alpha.6、Android alpha.8。Windows 工作台、恢复、安装和卸载保留数据已通过 CI；Android 已包含账号资产库、预览、图片 / 文档转换及 120 个 Skill，47 项单元和手机 11 项 / 平板 9 项模拟器离线检查通过。真实账号业务、Android 实际网页截图和个人数据升级仍待实机验证。以上开发进展未替换表中的公开安装包，详细证据见 [迭代记录](MACOS_MIGRATION_PLAN.md)，移动功能和限制见 [Android 说明](android/README.md)。
+`codex/macos-assets-workbench` 功能分支的本地试用版本为 macOS Apple Silicon / Windows x64 alpha.6、Android alpha.9。Windows 工作台、恢复、安装和卸载保留数据已通过 CI；Android 已包含账号资产库、预览、图片 / 文档转换、120 个 Skill 及“交给 GPT”任务。alpha.9 通过 57 项单元与手机 / 平板各 1 项完整附件流程定向检查；此前资产、转换和隔离回归证据保留，未将本轮定向检查记作全量重跑。真实账号业务、Android 实际网页截图和个人数据升级仍待实机验证。以上开发进展未替换表中的公开安装包，详细证据见 [迭代记录](MACOS_MIGRATION_PLAN.md)，移动功能和限制见 [Android 说明](android/README.md)。
 
 **macOS**：打开 DMG，将应用拖入“应用程序”。当前构建使用 ad-hoc 签名，尚未经过 Developer ID 签名和 Apple 公证。若首次启动被系统阻止，核对来源和摘要后，按 [Apple 的操作说明](https://support.apple.com/zh-cn/102445)处理。
 
