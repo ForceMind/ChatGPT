@@ -85,8 +85,11 @@ public class WorkbenchTest {
             try(ActivityScenario<AssetPreviewActivity> scene=ActivityScenario.launch(preview)){
                 if(asset.getString("mime").equals("text/html")){
                     AtomicBoolean ready=new AtomicBoolean();until(()->{scene.onActivity(a->{WebView web=a.getWindow().getDecorView().findViewWithTag("asset-html-preview");ready.set(web!=null&&web.getProgress()==100&&!web.getSettings().getJavaScriptEnabled()&&!web.getSettings().getAllowFileAccess()&&!web.getSettings().getAllowContentAccess());});return ready.get();});
-                    until(()->{android.view.accessibility.AccessibilityNodeInfo window=InstrumentationRegistry.getInstrumentation().getUiAutomation().getRootInActiveWindow();return window!=null&&!window.findAccessibilityNodeInfosByText("本地 HTML 预览").isEmpty();});
+                    AtomicReference<String> body=new AtomicReference<>();
+                    scene.onActivity(a->{WebView web=a.getWindow().getDecorView().findViewWithTag("asset-html-preview");web.evaluateJavascript("document.body ? document.body.innerText : ''",value->{try{body.set(String.valueOf(new JSONTokener(value).nextValue()));}catch(Exception e){body.set("Invalid DOM result: "+value);}});});
+                    until(()->body.get()!=null);
                     screenshot("android-html-preview.png");
+                    assertTrue("Actual HTML body: "+body.get(),body.get().contains("本地 HTML 预览"));
                 }else{
                     AtomicBoolean ready=new AtomicBoolean();until(()->{scene.onActivity(a->{ImageView image=find(a.getWindow().getDecorView(),ImageView.class);ready.set(image!=null&&image.getDrawable() instanceof BitmapDrawable);});return ready.get();});
                     if(asset.getString("mime").equals("image/png"))scene.onActivity(a->{Bitmap image=((BitmapDrawable)find(a.getWindow().getDecorView(),ImageView.class).getDrawable()).getBitmap();assertEquals(8,image.getWidth());assertEquals(6,image.getHeight());});
