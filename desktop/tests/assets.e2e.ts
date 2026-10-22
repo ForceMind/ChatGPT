@@ -8,8 +8,8 @@ import { fileURLToPath } from 'node:url';
 import { AssetStore } from '../src/main/asset-store';
 
 const desktop=fileURLToPath(new URL('..',import.meta.url));
-test('macOS real download, account-scoped assets, safe HTML and full capability resources',async({},info)=>{
-  test.skip(process.platform!=='darwin','当前迭代仅对 macOS 接入工作台');
+test('desktop real download, account-scoped assets, safe HTML and full capability resources',async({},info)=>{
+  test.skip(!['darwin','win32'].includes(process.platform),'工作台支持 macOS 与 Windows');
   const root=mkdtempSync(path.join(os.tmpdir(),'profiles-assets-e2e-')),data=path.join(root,'data');
   let app:ElectronApplication|undefined,server:Server|undefined;let leaks=0;
   try{
@@ -33,6 +33,10 @@ test('macOS real download, account-scoped assets, safe HTML and full capability 
     await shell.getByRole('button',{name:'资产中心',exact:true}).click();
     await expect(shell.locator('#wb-asset-grid [data-asset]')).toHaveCount(1);
     await expect(shell.locator('#wb-asset-grid [data-status="ready"]')).toHaveCount(1);
+    await shell.locator('#wb-workbench [data-action="import"]').first().focus();
+    await app!.evaluate(({Menu})=>{Menu.getApplicationMenu()!.getMenuItemById('chat-search')!.click();});
+    await expect(shell.locator('#wb-asset-search')).toBeFocused();
+    await expect(shell.locator('#wb-workbench kbd').first()).toHaveText(process.platform==='win32'?'Ctrl K':'⌘ K');
     const ledger=new AssetStore(data);const downloaded=ledger.list(profile)[0];expect(downloaded.status).toBe('ready');expect(readFileSync(ledger.resolveFile(profile,downloaded.id),'utf8')).toContain('Native download fixture');
     await shell.locator('#wb-asset-detail [data-action="preview"]').first().click();
     const frame=shell.frameLocator('#wb-viewer iframe');await expect(frame.locator('h1')).toHaveText('Native download fixture 中文');
@@ -52,16 +56,16 @@ test('macOS real download, account-scoped assets, safe HTML and full capability 
     await shell.locator('[data-filter="all"]').click();await shell.locator('#wb-asset-search').fill('notes');await expect(shell.locator('#wb-asset-grid [data-asset]')).toHaveCount(1);await shell.locator('#wb-asset-grid [data-asset]').click();
     await shell.locator('#wb-asset-detail [data-action="rename"]').click();await shell.locator('#wb-edit-value').fill('renamed-notes.md');await shell.locator('[data-action="save-edit"]').click();await expect(shell.locator('#wb-asset-detail .aw-detail-name')).toHaveText('renamed-notes.md');
     await shell.locator('#wb-asset-search').fill('');await shell.locator('#wb-asset-detail [data-action="trash-current"]').click();await shell.locator('[data-filter="trash"]').click();await expect(shell.locator('#wb-asset-grid [data-asset]')).toHaveCount(1);await shell.locator('[data-action="restore-current"]').click();await shell.locator('[data-filter="all"]').click();await expect(shell.locator('#wb-asset-grid [data-asset]')).toHaveCount(3);
-    await shell.screenshot({path:info.outputPath('macos-native-assets.png')});
+    await shell.screenshot({path:info.outputPath(process.platform+'-native-assets.png')});
     await shell.evaluate(()=>window.profiles.command({type:'profile:add',name:'Second profile',email:'',color:'#5275a0'}));await shell.getByRole('button',{name:'资产中心',exact:true}).click();await expect(shell.locator('#wb-asset-grid .aw-empty-state')).toBeVisible();await expect(shell.locator('#wb-asset-grid [data-asset]')).toHaveCount(0);
     await shell.evaluate(id=>window.profiles.command({type:'profile:activate',id}),profile);await expect(shell.locator('#wb-asset-grid [data-asset]')).toHaveCount(3);
     await shell.getByRole('button',{name:'能力库',exact:true}).click();await expect(shell.locator('#wb-capability-grid [data-capability]')).toHaveCount(120);
     const favorite=shell.locator('[data-capability-favorite]').first();const favoriteId=await favorite.getAttribute('data-capability-favorite');await favorite.click();
     await expect(shell.locator('#wb-capability-detail')).toContainText('质量检查');
-    await shell.screenshot({path:info.outputPath('macos-native-skills.png')});
+    await shell.screenshot({path:info.outputPath(process.platform+'-native-skills.png')});
     await shell.locator('#wb-agents-nav').click();await expect(shell.locator('#wb-capability-grid [data-capability]')).toHaveCount(0);
     await expect(shell.getByRole('heading',{name:'暂无预置智能体',exact:true})).toHaveText('暂无预置智能体');
-    await shell.screenshot({path:info.outputPath('macos-native-library-empty.png')});
+    await shell.screenshot({path:info.outputPath(process.platform+'-native-library-empty.png')});
     await app!.close();app=undefined;shell=await launch();await shell.getByRole('button',{name:'资产中心',exact:true}).click();await expect(shell.locator('#wb-asset-grid [data-asset]')).toHaveCount(3);
     const after=await shell.evaluate(()=>window.profiles.workbench.capabilities());expect(after.favorites).toContain(favoriteId);
     await shell.locator('#wb-workbench [data-action="chat"]').click();expect((await state(shell)).panel).toBeUndefined();

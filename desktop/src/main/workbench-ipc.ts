@@ -5,7 +5,7 @@ import { randomUUID, createHash } from 'node:crypto';
 import { Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import path from 'node:path';
-import type { Profile, SavedState } from '../shared/model';
+import { desktopWorkspaceEnabled, type Profile, type SavedState } from '../shared/model';
 import type { AssetAction } from '../shared/workbench';
 import { AssetStore } from './asset-store';
 import { AssetRuntime, assetMime } from './asset-runtime';
@@ -32,7 +32,7 @@ const record = (v: unknown): v is Record<string,unknown> => !!v && typeof v === 
 
 export function installWorkbenchIPC(host: WorkbenchHost): void {
   const access = (event: IpcMainInvokeEvent, profileId?: unknown) => {
-    if (process.platform !== 'darwin' || !host.trusted(event)) throw new Error('拒绝非本地工作台请求');
+    if (!desktopWorkspaceEnabled(process.platform) || !host.trusted(event)) throw new Error('拒绝非本地工作台请求');
     if (profileId !== undefined && profileId !== host.currentProfile().id) throw new Error('账号已切换，请在当前账号重新选择资产');
   };
   const notify = (profileId: string) => host.changed(profileId);

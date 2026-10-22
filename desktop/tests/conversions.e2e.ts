@@ -7,8 +7,8 @@ import {AssetStore} from '../src/main/asset-store';
 import type {ConversionOptions} from '../src/shared/workbench';
 
 const desktop=fileURLToPath(new URL('..',import.meta.url));
-test('macOS conversion produces real image/PDF/HTML/data assets with original lineage',async({},info)=>{
-  test.skip(process.platform!=='darwin','本轮仅验证 Mac 转换引擎');test.setTimeout(180_000);
+test('desktop conversion produces real image/PDF/HTML/data assets with original lineage',async({},info)=>{
+  test.skip(!['darwin','win32'].includes(process.platform),'转换引擎支持 macOS 与 Windows');test.setTimeout(180_000);
   const root=mkdtempSync(path.join(os.tmpdir(),'profiles-conversions-')),data=path.join(root,'data');let app:ElectronApplication|undefined,server:Server|undefined;
   try{
     server=createServer((_request,response)=>{response.writeHead(200,{'Content-Type':'text/html'});response.end('<!doctype html><h1>Local conversion acceptance fixture</h1>');});await new Promise<void>(resolve=>server!.listen(0,'127.0.0.1',resolve));const address=server.address();if(!address||typeof address==='string')throw new Error('no fixture port');
@@ -36,7 +36,7 @@ test('macOS conversion produces real image/PDF/HTML/data assets with original li
     const [csv]=await convert('data.json',{format:'CSV'});ledger=new AssetStore(data);expect(readFileSync(ledger.resolveFile(profile,csv.id),'utf8')).toContain("'=1+1");results.push('JSON → CSV');
     const pdfResult=await shell.evaluate(({profile,id})=>window.profiles.workbench.convert(profile,[id],{format:'PNG',pages:[1],width:500}),{profile,id:pdf.id});expect(pdfResult.failures).toHaveLength(0);expect(pdfResult.assets).toHaveLength(1);results.push('PDF page → PNG');
     for(const [name,body]of Object.entries(fixtures))expect(readFileSync(path.join(root,name),'utf8')).toBe(body);
-    await shell.getByRole('button',{name:'资产中心',exact:true}).click();await shell.locator('[data-filter="converted"]').click();await expect(shell.locator('#wb-asset-grid [data-status="ready"]')).toHaveCount(10);await shell.screenshot({path:info.outputPath('macos-real-conversions.png')});
+    await shell.getByRole('button',{name:'资产中心',exact:true}).click();await shell.locator('[data-filter="converted"]').click();await expect(shell.locator('#wb-asset-grid [data-status="ready"]')).toHaveCount(10);await shell.screenshot({path:info.outputPath(process.platform+'-real-conversions.png')});
     const preview=await shell.evaluate(({profile,id})=>window.profiles.workbench.preview(profile,id),{profile,id:pdf.id});expect(preview.mode).toBe('pdf');
     await shell.locator('[data-filter="all"]').click();await shell.locator('#wb-asset-search').fill(pdf.name);await shell.locator(`[data-asset="${pdf.id}"]`).click();await shell.locator('#wb-asset-detail [data-action="preview"]').first().click();await expect(shell.locator('#wb-viewer canvas')).toBeVisible();await expect(shell.locator('#wb-viewer [data-pages]')).toContainText('第 1 页');await shell.locator('#wb-modal-root [data-action="close-modal"]').click();results.push('real PDF canvas preview');
     await info.attach('conversion-results',{body:JSON.stringify({profile,checks:results,realAssets:10,originalsPreserved:true}),contentType:'application/json'});

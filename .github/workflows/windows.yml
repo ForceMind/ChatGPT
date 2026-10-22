@@ -20,6 +20,8 @@ jobs:
         run: npm run check
       - name: Windows isolation and interface acceptance
         run: npx playwright test
+      - name: Native first-script language and login popup acceptance
+        run: node scripts/check-native-preferences.mjs
       - name: Package Windows x64
         run: |
           node scripts/icon.mjs

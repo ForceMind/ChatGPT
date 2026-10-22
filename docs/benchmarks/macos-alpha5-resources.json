@@ -1,0 +1,603 @@
+{
+  "schema": 1,
+  "measuredOn": "2026-10-22",
+  "platform": "macOS arm64",
+  "sourceCommit": "94d37134620bfb4a9e9f771d6126d66276deadd2",
+  "appVersion": "3.0.0-alpha.5",
+  "appAsarSHA256": "7a7d961ca1123c2d64819f20d8f5fa28829694e4ac696c201ea7e013bb21b43e",
+  "host": {
+    "processor": "Apple M4",
+    "logicalCores": 10,
+    "memoryGiB": 16,
+    "kernel": "25.2.0"
+  },
+  "electron": "44.9.1",
+  "chromium": "152.0.7977.167",
+  "method": {
+    "nativeElectronLaunch": true,
+    "playwrightLaunch": false,
+    "isolatedProfiles": true,
+    "mockKeychain": true,
+    "source": "published ASAR with the matching Electron runtime",
+    "samplesPerPhase": 12,
+    "intervalMs": 1000,
+    "localConversation": {
+      "messagesPerPage": 240,
+      "imagesPerPage": 6,
+      "imageDimensions": [
+        1024,
+        768
+      ]
+    },
+    "limitations": [
+      "Synthetic local pages; no real ChatGPT account or model sends",
+      "Working-set sum includes shared pages; not unique physical memory",
+      "Idle CPU sum across Electron processes; not generation or streaming peak",
+      "No claim of an application memory limit or direct historical comparison"
+    ]
+  },
+  "workloads": {
+    "light": [
+      {
+        "tabs": 1,
+        "cpuPercent": 0.8317155761038338,
+        "workingSetMiB": 450.2825520833333,
+        "peakWorkingSetMiB": 476.84375,
+        "processes": 5,
+        "samples": [
+          {
+            "cpu": 0.8614691484690461,
+            "workingSetKB": 488288,
+            "processes": 5
+          },
+          {
+            "cpu": 0.8847675277696458,
+            "workingSetKB": 477776,
+            "processes": 5
+          },
+          {
+            "cpu": 0.8652570582775325,
+            "workingSetKB": 476192,
+            "processes": 5
+          },
+          {
+            "cpu": 0.8260293563235656,
+            "workingSetKB": 469920,
+            "processes": 5
+          },
+          {
+            "cpu": 0.8501821381450799,
+            "workingSetKB": 457568,
+            "processes": 5
+          },
+          {
+            "cpu": 0.7716395542654205,
+            "workingSetKB": 457440,
+            "processes": 5
+          },
+          {
+            "cpu": 0.8396772529519343,
+            "workingSetKB": 457488,
+            "processes": 5
+          },
+          {
+            "cpu": 0.7671464757599372,
+            "workingSetKB": 458160,
+            "processes": 5
+          },
+          {
+            "cpu": 0.8183373767075277,
+            "workingSetKB": 458176,
+            "processes": 5
+          },
+          {
+            "cpu": 0.8117001971732724,
+            "workingSetKB": 444000,
+            "processes": 5
+          },
+          {
+            "cpu": 0.8358918198610761,
+            "workingSetKB": 444016,
+            "processes": 5
+          },
+          {
+            "cpu": 0.8484890075419693,
+            "workingSetKB": 444048,
+            "processes": 5
+          }
+        ],
+        "checks": {
+          "pages": 1,
+          "backgroundThrottlingDisabled": true,
+          "notDiscarded": true,
+          "noFixtureSends": true
+        }
+      },
+      {
+        "tabs": 4,
+        "cpuPercent": 0.8298889231517931,
+        "workingSetMiB": 689.546875,
+        "peakWorkingSetMiB": 708.390625,
+        "processes": 8,
+        "samples": [
+          {
+            "cpu": 0.817361518531871,
+            "workingSetKB": 725392,
+            "processes": 8
+          },
+          {
+            "cpu": 0.886900464203735,
+            "workingSetKB": 724032,
+            "processes": 8
+          },
+          {
+            "cpu": 0.9253371115918315,
+            "workingSetKB": 724144,
+            "processes": 8
+          },
+          {
+            "cpu": 0.8503743865950326,
+            "workingSetKB": 724160,
+            "processes": 8
+          },
+          {
+            "cpu": 0.8840196736897009,
+            "workingSetKB": 720912,
+            "processes": 8
+          },
+          {
+            "cpu": 0.8779449407580963,
+            "workingSetKB": 720144,
+            "processes": 8
+          },
+          {
+            "cpu": 0.8515677791742806,
+            "workingSetKB": 719744,
+            "processes": 8
+          },
+          {
+            "cpu": 0.9611755896495853,
+            "workingSetKB": 720816,
+            "processes": 8
+          },
+          {
+            "cpu": 0.9255345623016507,
+            "workingSetKB": 702096,
+            "processes": 8
+          },
+          {
+            "cpu": 0.6437736587219306,
+            "workingSetKB": 667024,
+            "processes": 8
+          },
+          {
+            "cpu": 0.5841764412410239,
+            "workingSetKB": 664496,
+            "processes": 8
+          },
+          {
+            "cpu": 0.7505009513627792,
+            "workingSetKB": 660192,
+            "processes": 8
+          }
+        ],
+        "checks": {
+          "pages": 4,
+          "backgroundThrottlingDisabled": true,
+          "notDiscarded": true,
+          "noFixtureSends": true
+        }
+      },
+      {
+        "tabs": 8,
+        "cpuPercent": 0.9131809851970326,
+        "workingSetMiB": 1039.1888020833333,
+        "peakWorkingSetMiB": 1060.8125,
+        "processes": 12,
+        "samples": [
+          {
+            "cpu": 0.8622872944856564,
+            "workingSetKB": 1086208,
+            "processes": 12
+          },
+          {
+            "cpu": 0.8656760831971096,
+            "workingSetKB": 1086272,
+            "processes": 12
+          },
+          {
+            "cpu": 0.9278981363899161,
+            "workingSetKB": 1086016,
+            "processes": 12
+          },
+          {
+            "cpu": 0.8927776922035027,
+            "workingSetKB": 1080576,
+            "processes": 12
+          },
+          {
+            "cpu": 0.8784938561649002,
+            "workingSetKB": 1069456,
+            "processes": 12
+          },
+          {
+            "cpu": 0.8222047275537249,
+            "workingSetKB": 1069040,
+            "processes": 12
+          },
+          {
+            "cpu": 1.2527537348060238,
+            "workingSetKB": 1070896,
+            "processes": 12
+          },
+          {
+            "cpu": 0.9484808094114915,
+            "workingSetKB": 1074368,
+            "processes": 12
+          },
+          {
+            "cpu": 0.7148369381507499,
+            "workingSetKB": 1045712,
+            "processes": 12
+          },
+          {
+            "cpu": 0.9006722924075842,
+            "workingSetKB": 1034048,
+            "processes": 12
+          },
+          {
+            "cpu": 0.9774921854335736,
+            "workingSetKB": 1033824,
+            "processes": 12
+          },
+          {
+            "cpu": 0.9145980721601579,
+            "workingSetKB": 1033136,
+            "processes": 12
+          }
+        ],
+        "checks": {
+          "pages": 8,
+          "backgroundThrottlingDisabled": true,
+          "notDiscarded": true,
+          "noFixtureSends": true
+        }
+      }
+    ],
+    "conversation": [
+      {
+        "tabs": 1,
+        "cpuPercent": 0.7489753933365434,
+        "workingSetMiB": 450.8489583333333,
+        "peakWorkingSetMiB": 506.75,
+        "processes": 5,
+        "samples": [
+          {
+            "cpu": 0.7338174682140869,
+            "workingSetKB": 518912,
+            "processes": 5
+          },
+          {
+            "cpu": 0.812562770085583,
+            "workingSetKB": 500352,
+            "processes": 5
+          },
+          {
+            "cpu": 0.8579438436845759,
+            "workingSetKB": 496944,
+            "processes": 5
+          },
+          {
+            "cpu": 0.760748849551649,
+            "workingSetKB": 476896,
+            "processes": 5
+          },
+          {
+            "cpu": 0.6516745780469784,
+            "workingSetKB": 476768,
+            "processes": 5
+          },
+          {
+            "cpu": 0.6964582725759453,
+            "workingSetKB": 468016,
+            "processes": 5
+          },
+          {
+            "cpu": 0.8270840981413453,
+            "workingSetKB": 429424,
+            "processes": 5
+          },
+          {
+            "cpu": 0.7511250954442567,
+            "workingSetKB": 435440,
+            "processes": 5
+          },
+          {
+            "cpu": 0.6909602178970714,
+            "workingSetKB": 434064,
+            "processes": 5
+          },
+          {
+            "cpu": 0.7016678611981422,
+            "workingSetKB": 434208,
+            "processes": 5
+          },
+          {
+            "cpu": 0.7249415283095882,
+            "workingSetKB": 434288,
+            "processes": 5
+          },
+          {
+            "cpu": 0.7787201368892976,
+            "workingSetKB": 434720,
+            "processes": 5
+          }
+        ],
+        "checks": {
+          "pages": 1,
+          "backgroundThrottlingDisabled": true,
+          "notDiscarded": true,
+          "noFixtureSends": true
+        }
+      },
+      {
+        "tabs": 4,
+        "cpuPercent": 0.9042345237332019,
+        "workingSetMiB": 764.4401041666666,
+        "peakWorkingSetMiB": 871.71875,
+        "processes": 8,
+        "samples": [
+          {
+            "cpu": 0.8766750239227274,
+            "workingSetKB": 892640,
+            "processes": 8
+          },
+          {
+            "cpu": 0.8495730536663986,
+            "workingSetKB": 887152,
+            "processes": 8
+          },
+          {
+            "cpu": 0.7830559720740821,
+            "workingSetKB": 879744,
+            "processes": 8
+          },
+          {
+            "cpu": 0.9011666802121326,
+            "workingSetKB": 871888,
+            "processes": 8
+          },
+          {
+            "cpu": 0.6638325550831307,
+            "workingSetKB": 850864,
+            "processes": 8
+          },
+          {
+            "cpu": 0.856527136047736,
+            "workingSetKB": 792336,
+            "processes": 8
+          },
+          {
+            "cpu": 0.8861532346285049,
+            "workingSetKB": 747664,
+            "processes": 8
+          },
+          {
+            "cpu": 0.8205197438663385,
+            "workingSetKB": 690720,
+            "processes": 8
+          },
+          {
+            "cpu": 0.7976552234949649,
+            "workingSetKB": 689120,
+            "processes": 8
+          },
+          {
+            "cpu": 0.7816600886760753,
+            "workingSetKB": 689392,
+            "processes": 8
+          },
+          {
+            "cpu": 0.92577130406144,
+            "workingSetKB": 690672,
+            "processes": 8
+          },
+          {
+            "cpu": 1.7082242690648903,
+            "workingSetKB": 711248,
+            "processes": 8
+          }
+        ],
+        "checks": {
+          "pages": 4,
+          "backgroundThrottlingDisabled": true,
+          "notDiscarded": true,
+          "noFixtureSends": true
+        }
+      },
+      {
+        "tabs": 8,
+        "cpuPercent": 0.9779244419690339,
+        "workingSetMiB": 1237.9583333333333,
+        "peakWorkingSetMiB": 1289.5625,
+        "processes": 12,
+        "samples": [
+          {
+            "cpu": 0.9123979769418984,
+            "workingSetKB": 1320512,
+            "processes": 12
+          },
+          {
+            "cpu": 1.0079608210036954,
+            "workingSetKB": 1319152,
+            "processes": 12
+          },
+          {
+            "cpu": 0.9414406928478118,
+            "workingSetKB": 1317552,
+            "processes": 12
+          },
+          {
+            "cpu": 0.7326467812929462,
+            "workingSetKB": 1307184,
+            "processes": 12
+          },
+          {
+            "cpu": 0.7631714307399815,
+            "workingSetKB": 1301952,
+            "processes": 12
+          },
+          {
+            "cpu": 0.9013799366323405,
+            "workingSetKB": 1299632,
+            "processes": 12
+          },
+          {
+            "cpu": 0.9094021556761833,
+            "workingSetKB": 1295520,
+            "processes": 12
+          },
+          {
+            "cpu": 0.9724612721445445,
+            "workingSetKB": 1295856,
+            "processes": 12
+          },
+          {
+            "cpu": 0.896238701592011,
+            "workingSetKB": 1282480,
+            "processes": 12
+          },
+          {
+            "cpu": 0.8254508859626052,
+            "workingSetKB": 1244080,
+            "processes": 12
+          },
+          {
+            "cpu": 1.3661965686185178,
+            "workingSetKB": 1148000,
+            "processes": 12
+          },
+          {
+            "cpu": 1.5063460801758728,
+            "workingSetKB": 1080112,
+            "processes": 12
+          }
+        ],
+        "checks": {
+          "pages": 8,
+          "backgroundThrottlingDisabled": true,
+          "notDiscarded": true,
+          "noFixtureSends": true
+        }
+      }
+    ],
+    "keepalive": [
+      {
+        "tabs": 8,
+        "cpuPercent": 0.8972545108070656,
+        "workingSetMiB": 1061.99609375,
+        "peakWorkingSetMiB": 1155.921875,
+        "processes": 12,
+        "samples": [
+          {
+            "cpu": 0.9786347299994386,
+            "workingSetKB": 1183664,
+            "processes": 12
+          },
+          {
+            "cpu": 1.106355918629768,
+            "workingSetKB": 1178688,
+            "processes": 12
+          },
+          {
+            "cpu": 0.7478038864429536,
+            "workingSetKB": 1133328,
+            "processes": 12
+          },
+          {
+            "cpu": 0.765973000044513,
+            "workingSetKB": 1072176,
+            "processes": 12
+          },
+          {
+            "cpu": 0.8437330962516588,
+            "workingSetKB": 1067328,
+            "processes": 12
+          },
+          {
+            "cpu": 0.908238712236611,
+            "workingSetKB": 1064640,
+            "processes": 12
+          },
+          {
+            "cpu": 0.9137654925030165,
+            "workingSetKB": 1061024,
+            "processes": 12
+          },
+          {
+            "cpu": 0.7355110720052983,
+            "workingSetKB": 1060592,
+            "processes": 12
+          },
+          {
+            "cpu": 0.9088853315463488,
+            "workingSetKB": 1060112,
+            "processes": 12
+          },
+          {
+            "cpu": 0.9517055020283757,
+            "workingSetKB": 1060768,
+            "processes": 12
+          },
+          {
+            "cpu": 0.9467497735019971,
+            "workingSetKB": 1054880,
+            "processes": 12
+          },
+          {
+            "cpu": 0.9596976144948093,
+            "workingSetKB": 1052608,
+            "processes": 12
+          }
+        ],
+        "checks": {
+          "pages": 8,
+          "backgroundThrottlingDisabled": true,
+          "notDiscarded": true,
+          "noFixtureSends": true
+        }
+      }
+    ]
+  },
+  "retention": {
+    "profiles": 3,
+    "tabs": 8,
+    "windowHidden": true,
+    "durationMs": 330502,
+    "sameInstancesAndDrafts": true,
+    "timersAndSSEActive": true,
+    "passed": true,
+    "final30Seconds": {
+      "timerIncrements": [
+        120,
+        120,
+        120,
+        120,
+        120,
+        120,
+        120,
+        121
+      ],
+      "eventIncrements": [
+        60,
+        60,
+        60,
+        60,
+        60,
+        60,
+        60,
+        60
+      ]
+    }
+  }
+}

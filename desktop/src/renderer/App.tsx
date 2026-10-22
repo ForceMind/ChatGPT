@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, lazy, Suspense, type FormEvent, type CSSProperties } from 'react';
 import { createRoot } from 'react-dom/client';
-import { COLORS, SHELL_HEIGHT, type Bridge, type Command, type Snapshot } from '../shared/model';
+import { COLORS, SHELL_HEIGHT, desktopWorkspaceEnabled, type Bridge, type Command, type Snapshot } from '../shared/model';
 import { Icon, Mark, type IconName } from './icons';
 import './style.css';
 const Workbench=lazy(()=>import('./Workbench').then(module=>({default:module.Workbench})));
@@ -57,7 +57,7 @@ function App() {
     const apply=(s:Snapshot)=>{if(mounted){current.current=s;setState(s);}};
     const unsubscribe=window.profiles.subscribe(apply);
     window.profiles.snapshot().then(s=>{apply(s);if(s.notice)showToast(s.notice);}).catch(()=>setFatal('账号空间加载失败，请重新打开客户端。'));
-    const unshortcut=window.profiles.onShortcut(key=>{if(key==='add-profile')void openEditor({kind:'add'});else if(key==='toggle-accounts')void toggleAccounts();else if(key==='close-workbench')window.dispatchEvent(new Event('workbench-close'));else if(key.startsWith('notice:'))showToast(key.slice(7));});
+    const unshortcut=window.profiles.onShortcut(key=>{if(key==='add-profile')void openEditor({kind:'add'});else if(key==='toggle-accounts')void toggleAccounts();else if(key==='close-workbench')window.dispatchEvent(new Event('workbench-close'));else if(key==='workbench-search')window.dispatchEvent(new Event('workbench-search'));else if(key.startsWith('notice:'))showToast(key.slice(7));});
     return ()=>{mounted=false;unsubscribe();unshortcut();clearTimeout(toastTimer.current);};
   },[openEditor,showToast,toggleAccounts]);
   useEffect(()=>{
@@ -87,7 +87,7 @@ function App() {
   const submit=async(event:FormEvent<HTMLFormElement>)=>{
     event.preventDefault();if(busy)return;setBusy(true);setFormError('');
     const form=new FormData(event.currentTarget);
-    const fields={name:String(form.get('name')||'').trim(),email:String(form.get('email')||'').trim(),color:String(form.get('color')||COLORS[0]),...(current.current?.platform==='darwin'?{language:String(form.get('language')||'system'),timeZone:String(form.get('timeZone')||'system')}:{})};
+    const fields={name:String(form.get('name')||'').trim(),email:String(form.get('email')||'').trim(),color:String(form.get('color')||COLORS[0]),...(desktopWorkspaceEnabled(current.current?.platform)?{language:String(form.get('language')||'system'),timeZone:String(form.get('timeZone')||'system')}:{})};
     try{
       const result=await window.profiles.command(editing?{type:'profile:edit',id:editing.id,...fields}:{type:'profile:add',...fields});
       if(result.ok){await closeEditor();showToast(editing?'账号备注已保存':'账号空间已创建，请在网页内登录。');}else setFormError(result.error);
@@ -106,14 +106,14 @@ function App() {
       </div>
       <Tool icon="plus" label="新建标签页" onClick={()=>void send({type:'tab:new'})}/>
       <div className="drag-space" aria-label="窗口拖动区域"/>
-      {state.platform==='darwin'&&<><button className={'workspace-action '+(state.panel==='assets'?'active':'')} aria-label="资产中心" aria-pressed={state.panel==='assets'} onClick={()=>void send({type:'panel',panel:state.panel==='assets'?undefined:'assets'})}><Icon name="folder" size={14}/>资产</button><button className={'workspace-action '+(state.panel==='skills'||state.panel==='agents'?'active':'')} aria-label="能力库" aria-pressed={state.panel==='skills'||state.panel==='agents'} onClick={()=>void send({type:'panel',panel:state.panel==='skills'||state.panel==='agents'?undefined:'skills'})}><Icon name="sparkles" size={14}/>能力库</button></>}
+      {desktopWorkspaceEnabled(state.platform)&&<><button className={'workspace-action '+(state.panel==='assets'?'active':'')} aria-label="资产中心" aria-pressed={state.panel==='assets'} onClick={()=>void send({type:'panel',panel:state.panel==='assets'?undefined:'assets'})}><Icon name="folder" size={14}/>资产</button><button className={'workspace-action '+(state.panel==='skills'||state.panel==='agents'?'active':'')} aria-label="能力库" aria-pressed={state.panel==='skills'||state.panel==='agents'} onClick={()=>void send({type:'panel',panel:state.panel==='skills'||state.panel==='agents'?undefined:'skills'})}><Icon name="sparkles" size={14}/>能力库</button></>}
       <button ref={accountButton} className="current-account" aria-label="切换账号" aria-haspopup="menu" aria-expanded={menuOpen} disabled={busy} onClick={()=>void toggleAccounts()} title={profile.name+(profile.email?' · '+profile.email:'')}><span className="dot" style={{background:profile.color}}/><span>{profile.name}</span><Icon name="chevron" size={12}/></button>
     </header>
     <section className="web-stage" aria-label="网页区域">
       {status?.error?<div className="page-state" role="alert"><span className="page-state-icon"><Icon name="alert" size={28}/></span><h1>网页暂时无法打开</h1><p>{profile.name} 的账号空间已保留，可以重新加载。</p><code>{status.error}</code><button className="primary" onClick={()=>void send({type:'reload'})}><Icon name="refresh" size={16}/>重新加载</button></div>:<div className="page-state loading-state"><Mark size={38}/><h1>正在打开 ChatGPT</h1><p>{profile.name} · 独立账号空间</p><span className="spinner"/></div>}
       {(editor||menuOpen||diagnosticsOpen)&&state.overlayImage&&<img className="page-preview" src={state.overlayImage} alt="" aria-hidden="true"/>}
     </section>
-    {state.platform==='darwin'&&state.panel&&<Suspense fallback={<div className="workbench-loading" role="status">正在打开工作台…</div>}><Workbench state={state} close={()=>void send({type:'panel'})} panel={panel=>void send({type:'panel',panel})} notice={showToast}/></Suspense>}
+    {desktopWorkspaceEnabled(state.platform)&&state.panel&&<Suspense fallback={<div className="workbench-loading" role="status">正在打开工作台…</div>}><Workbench state={state} close={()=>void send({type:'panel'})} panel={panel=>void send({type:'panel',panel})} notice={showToast}/></Suspense>}
     {toast&&<div className="toast" role="status"><Icon name="check" size={15}/>{toast}<button aria-label="关闭提示" onClick={()=>setToast('')}><Icon name="close" size={13}/></button></div>}
     {menuOpen&&<div className="menu-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)void closeAccounts();}}>
       <div className="account-menu" role="menu" aria-label="账号空间" ref={accountMenu}>
@@ -133,7 +133,7 @@ function App() {
           <button className="menu-action" role="menuitem" onClick={async()=>{await closeAccounts();await send({type:'tab:restore'});}}>恢复关闭的标签页<span>Ctrl+Shift+T</span></button>
           <button className="menu-action" role="menuitem" onClick={async()=>{await closeAccounts();await send({type:'fullscreen'});}}>进入/退出全屏<span>F11</span></button>
         </>}
-        {state.platform==='darwin'&&<button className="menu-action" role="menuitem" onClick={()=>void openDiagnostics()}><Icon name="shield" size={15}/>登录与链接记录</button>}
+        {desktopWorkspaceEnabled(state.platform)&&<button className="menu-action" role="menuitem" onClick={()=>void openDiagnostics()}><Icon name="shield" size={15}/>登录与链接记录</button>}
         <div className="menu-foot">账号名称与邮箱为手动备注。<br/>每个账号拥有自己的登录状态和标签页。</div>
       </div>
     </div>}
@@ -145,7 +145,7 @@ function App() {
         <form key={editing?.id||'new'} onSubmit={event=>void submit(event)}>
           <label>账号名称<input name="name" placeholder="例如：个人账号、工作账号" maxLength={40} required defaultValue={editing?.name||''} disabled={busy}/></label>
           <label>邮箱备注 <span>选填</span><input name="email" placeholder="name@example.com" maxLength={120} defaultValue={editing?.email||''} disabled={busy}/></label>
-          {state.platform==='darwin'&&<div className="profile-preferences"><label>浏览器语言<select aria-label="浏览器语言" name="language" defaultValue={editing?.language||(editing?'system':DEFAULT_LANGUAGE)} disabled={busy}>{BROWSER_LANGUAGES.map(l=><option key={l.id} value={l.id}>{l.name}</option>)}</select></label><label>时区<select aria-label="时区" name="timeZone" defaultValue={editing?.timeZone||'system'} disabled={busy}><option value="system">跟随系统（{systemZone}）</option>{zoneOptions.map(zone=><option key={zone} value={zone}>{commonZones[zone]?commonZones[zone]+' · ':''}{zone}</option>)}</select></label><p>{editing?'修改后从新建标签页起生效，现有网页和它的登录窗口沿用原设置。':'只应用于这个账号的网页，不改变电脑的语言和时间。'}网页自行保存的语言偏好可能优先。</p></div>}
+          {desktopWorkspaceEnabled(state.platform)&&<div className="profile-preferences"><label>浏览器语言<select aria-label="浏览器语言" name="language" defaultValue={editing?.language||(editing?'system':DEFAULT_LANGUAGE)} disabled={busy}>{BROWSER_LANGUAGES.map(l=><option key={l.id} value={l.id}>{l.name}</option>)}</select></label><label>时区<select aria-label="时区" name="timeZone" defaultValue={editing?.timeZone||'system'} disabled={busy}><option value="system">跟随系统（{systemZone}）</option>{zoneOptions.map(zone=><option key={zone} value={zone}>{commonZones[zone]?commonZones[zone]+' · ':''}{zone}</option>)}</select></label><p>{editing?'修改后从新建标签页起生效，现有网页和它的登录窗口沿用原设置。':'只应用于这个账号的网页，不改变电脑的语言和时间。'}网页自行保存的语言偏好可能优先。</p></div>}
           <fieldset disabled={busy}><legend>标识颜色</legend><div className="color-options">{COLORS.map((color,i)=><label key={color} className="color-option" title={`颜色 ${i+1}`} style={{'--swatch':color} as CSSProperties}><input type="radio" name="color" value={color} defaultChecked={(editing?.color||COLORS[0])===color} aria-label={`颜色 ${i+1}`}/><span/></label>)}</div></fieldset>
           <div className="identity-note"><Icon name="shield" size={17}/><p>名称与邮箱是手动备注，实际登录身份以网页内显示为准。密码由登录网页处理。</p></div>
           {formError&&<p className="form-error" role="alert">{formError}</p>}

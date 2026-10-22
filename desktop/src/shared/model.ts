@@ -1,7 +1,8 @@
 import type {WorkspaceState,WorkbenchViewState} from './recovery';
 import type { LoginDiagnosticsAPI } from './diagnostics';
 import type { WorkbenchAPI, WorkbenchPanel } from './workbench';
-export const APP_VERSION = '3.0.0-alpha.5';
+export const APP_VERSION = '3.0.0-alpha.6';
+export const desktopWorkspaceEnabled = (platform?:string):boolean => platform === 'darwin' || platform === 'win32';
 export const SHELL_HEIGHT = 46;
 export const HOME = 'https://chatgpt.com/';
 export const COLORS = ['#32745d', '#5275a0', '#9b6eab', '#bb8050', '#b05f73', '#667485'] as const;

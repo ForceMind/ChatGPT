@@ -1,6 +1,6 @@
 {
   "name": "chatgpt-profiles",
-  "version": "3.0.0-alpha.5",
+  "version": "3.0.0-alpha.6",
   "private": true,
   "description": "Independent ChatGPT account workspaces for macOS and Windows",
   "author": "ForceMind",
