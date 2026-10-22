@@ -3,7 +3,6 @@ package com.forcemind.chatgpt.profiles;
 import android.app.Application;
 import android.content.Intent;
 import android.graphics.*;
-import android.graphics.pdf.PdfDocument;
 import android.os.*;
 import android.util.Base64;
 import android.view.*;
@@ -29,9 +28,13 @@ public final class AssetRenderActivity extends ComponentActivity {
     private boolean svgMeasured;
     private String token,format,kind;
     private int width,quality,documentHeight,pagePixels,pageCount,pageIndex;
+    private int stripOffset;
+    private String ownerLabel;
     private WebView web;
     private TextView status;
-    private PdfDocument pdf;
+    private RasterPdfWriter pdf;
+    private volatile FileOutputStream pdfOutput;
+    private OutputStream pdfStream;
     private final Runnable timeout=()->fail("转换超时，原文件已保留。请缩小页面后重试。");
     @Override public void onCreate(Bundle state){
         super.onCreate(state);
@@ -53,10 +56,11 @@ public final class AssetRenderActivity extends ComponentActivity {
                 String html=input;
                 if(kind.equals("markdown")){StringWriter out=new StringWriter();DocumentFormats.markdownHtml(input,out);html=out.toString();}
                 if(kind.equals("svg"))html="<!doctype html><html><head><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><style>html,body{margin:0;padding:0;background:transparent}img{display:block;width:100%;height:auto}</style></head><body><img alt=\"\" src=\"data:image/svg+xml;base64,"+Base64.encodeToString(input.getBytes(StandardCharsets.UTF_8),Base64.NO_WRAP)+"\"></body></html>";
-                String content=html,owner=request.optString("owner");runOnUiThread(()->{
-                    if(dead||done)return;status.setText(owner+"\n正在生成 "+format+" 副本，外部资源不可用…");
+                String content=html;ownerLabel=request.optString("owner");runOnUiThread(()->{
+                    if(dead||done)return;status.setText(ownerLabel+"\n正在生成 "+format+" 副本，外部资源不可用…");
                     web=new WebView(this);web.setTag("asset-render-web");web.setBackgroundColor(kind.equals("svg")?Color.TRANSPARENT:Color.WHITE);
                     web.setOnTouchListener((v,event)->true);web.setLongClickable(false);web.setFocusable(false);
+                    web.setVerticalScrollBarEnabled(false);web.setHorizontalScrollBarEnabled(false);web.setOverScrollMode(View.OVER_SCROLL_NEVER);
                     frame.addView(web,new FrameLayout.LayoutParams(width,900));
                     OfflineHtml.load(web,content,()->{if(web!=null&&!dead&&!done)web.postVisualStateCallback(1,new WebView.VisualStateCallback(){@Override public void onComplete(long id){if(!dead&&!done)begin();}});},this::fail);
                 });
@@ -104,28 +108,32 @@ public final class AssetRenderActivity extends ComponentActivity {
         });
     }
     private void beginPdf(){
-        // Public PdfDocument API; no hidden print callbacks or system print job.
+        // Stream raster strips. Drawing WebView directly to PdfDocument's
+        // recording canvas clips content to its viewport on some providers.
         double scale=515d/width;pagePixels=(int)Math.floor(762d/scale);
         pageCount=(int)Math.ceil(documentHeight/(double)pagePixels);
         if(documentHeight<1||pageCount<1||pageCount>100){fail("PDF 页数超过本机转换范围（最多 100 页），请拆分文件");return;}
-        web.scrollTo(0,0);pdf=new PdfDocument();pageIndex=0;pdfPage();
+        web.scrollTo(0,0);pageIndex=0;stripOffset=0;
+        executor.execute(()->{try{pdfOutput=output();pdfStream=bounded(pdfOutput);pdf=new RasterPdfWriter(pdfStream,width,pageCount);runOnUiThread(this::pdfPage);}catch(Exception e){fail("PDF 准备失败，原件保留。"+message(e));}});
     }
     private void pdfPage(){
         if(dead||done||pdf==null)return;
-        int offset=pageIndex*pagePixels;
+        int height=Math.min(pagePixels,documentHeight-pageIndex*pagePixels),chunk=Math.min(512,height-stripOffset),offset=pageIndex*pagePixels+stripOffset;
+        boolean first=stripOffset==0,last=stripOffset+chunk==height,lastPage=pageIndex+1==pageCount;
         web.postVisualStateCallback(10+pageIndex,new WebView.VisualStateCallback(){@Override public void onComplete(long id){
             if(dead||done||pdf==null)return;
             try{
                 if(web.getScrollY()!=0||Math.abs(contentHeight()-documentHeight)>2)throw new IOException("页面布局不稳定，请简化布局后转换");
-                status.setText("正在生成 PDF · "+(pageIndex+1)+" / "+pageCount);
-                PdfDocument.Page page=pdf.startPage(new PdfDocument.PageInfo.Builder(595,842,pageIndex+1).create());
-                try{Canvas canvas=page.getCanvas();canvas.drawColor(Color.WHITE);canvas.save();canvas.clipRect(40,40,555,802);canvas.translate(40,40);canvas.scale(515f/width,515f/width);canvas.translate(0,-offset);web.draw(canvas);canvas.restore();}finally{pdf.finishPage(page);}
-                if(++pageIndex<pageCount){handler.post(AssetRenderActivity.this::pdfPage);return;}
-                PdfDocument document=pdf;pdf=null;
+                status.setText(ownerLabel+"\n正在生成 PDF · "+(pageIndex+1)+" / "+pageCount);
+                Bitmap image=Bitmap.createBitmap(width,chunk,Bitmap.Config.ARGB_8888);
+                try{Canvas canvas=new Canvas(image);canvas.drawColor(Color.WHITE);canvas.translate(0,-offset);web.draw(canvas);}catch(Throwable e){image.recycle();throw e;}
                 executor.execute(()->{try{
-                    try(FileOutputStream out=output();OutputStream stream=bounded(out)){document.writeTo(stream);stream.flush();out.getFD().sync();}
-                    document.close();complete();
-                }catch(Exception|OutOfMemoryError e){try{document.close();}catch(Exception ignored){}fail("PDF 生成未完成，原件保留。"+message(e));}});
+                    if(first)pdf.beginPage(height);int[] pixels=new int[width];
+                    pdf.strip(chunk,(row,rgb)->{image.getPixels(pixels,0,width,0,row,width,1);for(int x=0;x<width;x++){int pixel=pixels[x],alpha=Color.alpha(pixel);rgb[x*3]=(byte)((Color.red(pixel)*alpha+255*(255-alpha))/255);rgb[x*3+1]=(byte)((Color.green(pixel)*alpha+255*(255-alpha))/255);rgb[x*3+2]=(byte)((Color.blue(pixel)*alpha+255*(255-alpha))/255);}});
+                    image.recycle();if(last)pdf.endPage();
+                    if(last&&lastPage){pdf.finish();pdfStream.flush();pdfOutput.getFD().sync();pdfStream.close();pdfOutput=null;complete();}
+                    else runOnUiThread(()->{if(last){pageIndex++;stripOffset=0;}else stripOffset+=chunk;pdfPage();});
+                }catch(Exception|OutOfMemoryError e){if(!image.isRecycled())image.recycle();fail("PDF 生成未完成，原件保留。"+message(e));}});
             }catch(Exception|OutOfMemoryError e){fail("PDF 排版未完成，原件保留。"+message(e));}
         }});
     }
@@ -148,7 +156,7 @@ public final class AssetRenderActivity extends ComponentActivity {
     private void fail(String error){runOnUiThread(()->{if(dead||done)return;done=true;handler.removeCallbacks(timeout);setResult(RESULT_CANCELED,new Intent().putExtra("task",token).putExtra("error",error));finish();});}
     private int dp(int value){return Math.round(value*getResources().getDisplayMetrics().density);}
     @Override public void onDestroy(){
-        dead=true;handler.removeCallbacksAndMessages(null);executor.shutdownNow();if(pdf!=null){try{pdf.close();}catch(Exception ignored){}pdf=null;}
+        dead=true;handler.removeCallbacksAndMessages(null);executor.shutdownNow();if(pdfOutput!=null){try{pdfOutput.close();}catch(Exception ignored){}pdfOutput=null;}
         if(web!=null){if(web.getParent() instanceof ViewGroup)((ViewGroup)web.getParent()).removeView(web);web.stopLoading();web.destroy();web=null;}
         if(registered)activeJobs--;super.onDestroy();
         if(Application.getProcessName().endsWith(":asset_renderer"))new Handler(Looper.getMainLooper()).postDelayed(()->{if(activeJobs==0)android.os.Process.killProcess(android.os.Process.myPid());},1000);

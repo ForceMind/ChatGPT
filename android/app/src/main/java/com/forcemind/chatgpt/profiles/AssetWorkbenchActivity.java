@@ -185,7 +185,7 @@ public final class AssetWorkbenchActivity extends ComponentActivity {
     private void convertRender(JSONObject asset){
         if(pendingRender!=null){notice("请等待当前页面转换完成");return;}
         LinearLayout fields=new LinearLayout(this);fields.setOrientation(LinearLayout.VERTICAL);fields.setPadding(dp(24),dp(12),dp(24),0);
-        fields.addView(text("生成当前账号的新副本，保留原件。仅使用静态页面内容，脚本和外部资源不加载。\nPDF 按屏幕样式分页为 A4；不应用打印专用 CSS。图片最多 1600 万像素，输入上限 2 MiB。",13));
+        fields.addView(text("生成当前账号的新副本，保留原件。仅使用静态页面内容，脚本和外部资源不加载。\nPDF 按屏幕图像分页为 A4，文字不可选择，打印专用 CSS 不生效。图片最多 1600 万像素，输入上限 2 MiB。",13));
         String kind=RenderTasks.kind(asset);Spinner format=choices(fields,"目标格式",RenderTasks.formats(kind).toArray(new String[0]),0);
         Spinner width=choices(fields,"排版 / 图片宽度（像素）",new String[]{"640","1280","2048","4096"},1);
         ScrollView scroll=new ScrollView(this);scroll.addView(fields);
