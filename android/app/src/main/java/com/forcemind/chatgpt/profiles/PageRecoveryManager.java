@@ -81,7 +81,7 @@ final class PageRecoveryManager {
     void clear(String account,String storage)throws Exception{store.clear(account,storage);for(Session s:sessions.values())if(s.account.equals(account)&&s.storage.equals(storage)){s.serial++;s.blocked=true;}}
     void forget(String account,String storage,String tab){IO.execute(()->{try{store.forget(account,storage,tab);}catch(Exception e){handler.post(()->notice("旧标签恢复记录未能清理，文件已保留。"));}});}
     void localDraft(Consumer<JSONObject> done){
-        Session s=sessions.get(activity.recoveryCurrentWeb());if(s==null){done.accept(null);return;}String url=PageRecoveryRecord.url(s.web.getUrl());IO.execute(()->{try{JSONObject record=store.load(s.account,s.storage,s.tab,url);handler.post(()->{if(valid(s))done.accept(record);});}catch(Exception e){handler.post(()->notice("本地恢复记录暂不可读，请保留应用数据并反馈。"));}});
+        Session s=sessions.get(activity.recoveryCurrentWeb());if(s==null){done.accept(null);return;}String url=PageRecoveryRecord.url(s.web.getUrl());IO.execute(()->{try{JSONObject record=store.load(s.account,s.storage,s.tab,url);handler.post(()->{if(valid(s)&&visible(s)&&Objects.equals(s.url,PageRecoveryRecord.url(s.web.getUrl())))done.accept(record);});}catch(Exception e){handler.post(()->notice("本地恢复记录暂不可读，请保留应用数据并反馈。"));}});
     }
     void close(){closed=true;foreground=false;handler.removeCallbacksAndMessages(null);sessions.clear();}
     private void notice(String message){if(!closed&&notices.add(message))activity.recoveryNotice(message);}
