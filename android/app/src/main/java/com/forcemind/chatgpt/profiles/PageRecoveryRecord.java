@@ -19,7 +19,7 @@ final class PageRecoveryRecord {
         }catch(Exception e){return null;}
     }
     static JSONObject normalize(JSONObject raw)throws Exception{
-        if(raw.has("schema")&&(!(raw.get("schema") instanceof Number)||raw.getInt("schema")!=1))throw new IOException("恢复记录版本无效");
+        if(raw.has("schema")&&(!(raw.get("schema") instanceof Number)||((Number)raw.get("schema")).doubleValue()!=1))throw new IOException("恢复记录版本无效");
         JSONObject out=new JSONObject().put("schema",1);
         for(String key:new String[]{"accountId","storageId","tabId"}){String id=HandoffRequest.string(raw,key,36,true);WorkspaceState.profile(id);out.put(key,id);}
         String address=HandoffRequest.string(raw,"url",8192,true);if(!address.equals(url(address)))throw new IOException("此页面不能保存恢复记录");out.put("url",address);

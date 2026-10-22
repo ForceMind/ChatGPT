@@ -329,4 +329,47 @@ public class WorkbenchTest {
         if("android.widget.EditText".equals(String.valueOf(node.getClassName()))&&String.valueOf(node.getHintText()).contains("说明希望")){android.os.Bundle value=new android.os.Bundle();value.putCharSequence(android.view.accessibility.AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE,"请检查这些离线附件。不要访问外部服务。");return node.performAction(android.view.accessibility.AccessibilityNodeInfo.ACTION_SET_TEXT,value);}
         for(int i=0;i<node.getChildCount();i++){android.view.accessibility.AccessibilityNodeInfo child=node.getChild(i);if(child!=null&&setInstruction(child))return true;}return false;
     }
+    private View description(View root,String prefix){
+        if(root.getContentDescription()!=null&&root.getContentDescription().toString().startsWith(prefix))return root;
+        if(root instanceof ViewGroup)for(int i=0;i<((ViewGroup)root).getChildCount();i++){View found=description(((ViewGroup)root).getChildAt(i),prefix);if(found!=null)return found;}return null;
+    }
+    private void nativeMenu(ActivityScenario<MainActivity> scene){scene.onActivity(a->{View menu=description(a.getWindow().getDecorView(),"账号与操作菜单");assertNotNull(menu);assertTrue(menu.performClick());});}
+    private void tapContaining(String text)throws Exception{until(()->{android.view.accessibility.AccessibilityNodeInfo root=InstrumentationRegistry.getInstrumentation().getUiAutomation().getRootInActiveWindow();if(root==null)return false;for(android.view.accessibility.AccessibilityNodeInfo node:root.findAccessibilityNodeInfosByText(text)){if(node.getText()!=null&&node.getText().toString().contains(text)){tapNode(node);return true;}}return false;});}
+    private String pageValue(ActivityScenario<MainActivity> scene,String script)throws Exception{
+        AtomicReference<String> value=new AtomicReference<>();scene.onActivity(a->{WebView web=a.recoveryCurrentWeb();assertNotNull(web);web.evaluateJavascript(script,value::set);});until(()->value.get()!=null);return String.valueOf(new JSONTokener(value.get()).nextValue());
+    }
+    private JSONObject recoveryPage(ActivityScenario<MainActivity> scene)throws Exception{return new JSONObject(pageValue(scene,"JSON.stringify((function(){var e=document.querySelector('#prompt-textarea'),s=document.querySelector('#reading');return {ready:!!e,draft:e?(e.tagName==='TEXTAREA'?e.value:e.innerText):'',scroll:s?s.scrollTop:0,owner:window.fixtureOwner,mark:window.fixtureMark||'',sent:window.sentCount||0};})())"));}
+    private void recoveryWorkspace()throws Exception{WorkspaceState state=WorkspaceFiles.read(context.getFilesDir());state.activeAccount=account;state.find(account).current().url="https://chatgpt.com/c/recovery-fixture";new StateStore(context.getFilesDir()).save(state);}
+    private void recoveryFixture(AtomicReference<String> prefill,AtomicBoolean editable,AtomicBoolean sent,AtomicInteger loads){
+        MainActivity.handoffFixture=(owner,request)->{
+            if(request.isForMainFrame())loads.incrementAndGet();StringBuilder body=new StringBuilder();for(int i=0;i<24;i++)body.append("<section data-message-id='fixture-message-").append(i).append("' style='height:160px;border-bottom:1px solid #ddd'>离线阅读素材 ").append(i).append("</section>");
+            if(sent.get())body.append("<p data-message-author-role='user' id='already-sent'></p>");
+            String html="<!doctype html><html><head><title>离线页面恢复验收</title><meta name='viewport' content='width=device-width,initial-scale=1'><style>body{margin:12px;font:16px sans-serif;color:#171717;background:white}#reading{height:56vh;overflow:auto;border:1px solid #ddd}#prompt-textarea{display:block;box-sizing:border-box;width:100%;height:90px;border:1px solid #aaa}p{margin:10px 0}</style></head><body><p>离线恢复测试，不调用 ChatGPT 服务</p><div id='reading'>"+body+"</div>"+(editable.get()?"<div id='prompt-textarea' contenteditable='true'></div>":"<textarea id='prompt-textarea'></textarea>")+"<button type='button' id='send'>离线发送计数</button><script>window.fixtureOwner="+JSONObject.quote(owner)+";window.sentCount=0;window.fixtureMark='';var e=document.querySelector('#prompt-textarea'),prefill="+JSONObject.quote(prefill.get())+";if(e.tagName==='TEXTAREA')e.value=prefill;else e.textContent=prefill;var previous=document.querySelector('#already-sent');if(previous)previous.textContent="+JSONObject.quote("网页已有不同草稿")+";document.querySelector('#send').onclick=function(){window.sentCount++;};</script></body></html>";
+            return new android.webkit.WebResourceResponse("text/html","UTF-8",new ByteArrayInputStream(html.getBytes(StandardCharsets.UTF_8)));
+        };
+    }
+    @Test public void draftsAndReadingRestoreAcrossRecreationAndPreserveConflicts()throws Exception{
+        recoveryWorkspace();WorkspaceState.Account owner=WorkspaceFiles.read(context.getFilesDir()).find(account);String tab=owner.activeTab,url=owner.current().url;
+        PageRecoveryStore records=new PageRecoveryStore(context.getFilesDir(),DevicePayloadKeys.recoveryCipher(context));AtomicReference<String> prefill=new AtomicReference<>("");AtomicBoolean editable=new AtomicBoolean(),sent=new AtomicBoolean();AtomicInteger loads=new AtomicInteger();recoveryFixture(prefill,editable,sent,loads);
+        try(ActivityScenario<MainActivity> scene=ActivityScenario.launch(new Intent(context,MainActivity.class))){
+            until(()->recoveryPage(scene).optBoolean("ready"));pageValue(scene,"(function(){var e=document.querySelector('#prompt-textarea');e.value='恢复前的草稿';e.dispatchEvent(new Event('input',{bubbles:true}));document.querySelector('#reading').scrollTop=1400;return 'set';})()");
+            until(()->{JSONObject r=records.load(account,owner.storageId,tab,url);return r!=null&&r.optString("draft").equals("恢复前的草稿")&&Math.abs(r.optDouble("scroll")-1400)<8;});
+            scene.recreate();until(()->{JSONObject p=recoveryPage(scene);return p.optString("draft").equals("恢复前的草稿")&&Math.abs(p.optDouble("scroll")-1400)<8;});assertEquals(0,recoveryPage(scene).getInt("sent"));screenshot("android-recovery-restored.png");
+            prefill.set("网页已有不同草稿");scene.recreate();until(()->recoveryPage(scene).optString("draft").equals("网页已有不同草稿"));
+            until(()->{JSONObject r=records.load(account,owner.storageId,tab,url);return r!=null&&r.optString("draft").equals("网页已有不同草稿")&&r.optString("alternativeDraft").equals("恢复前的草稿");});
+            screenshot("android-recovery-conflict.png");nativeMenu(scene);tapNative("本地恢复草稿");tapNative("关闭");
+            editable.set(true);prefill.set("");scene.recreate();until(()->recoveryPage(scene).optString("draft").equals("网页已有不同草稿"));assertEquals(0,recoveryPage(scene).getInt("sent"));screenshot("android-recovery-editable.png");
+            sent.set(true);scene.recreate();until(()->recoveryPage(scene).optBoolean("ready"));until(()->{JSONObject r=records.load(account,owner.storageId,tab,url);return r!=null&&r.optString("draft").isEmpty();});assertEquals("",recoveryPage(scene).getString("draft"));assertEquals(0,recoveryPage(scene).getInt("sent"));
+        }finally{MainActivity.handoffFixture=null;}
+    }
+    @Test public void switchingAccountsAndUndoCloseReuseTheLivePage()throws Exception{
+        recoveryWorkspace();AtomicReference<String> prefill=new AtomicReference<>("");AtomicInteger loads=new AtomicInteger();recoveryFixture(prefill,new AtomicBoolean(),new AtomicBoolean(),loads);
+        try(ActivityScenario<MainActivity> scene=ActivityScenario.launch(new Intent(context,MainActivity.class))){
+            until(()->recoveryPage(scene).optBoolean("ready"));AtomicReference<WebView> originalWeb=new AtomicReference<>();scene.onActivity(a->originalWeb.set(a.recoveryCurrentWeb()));String marker=WorkspaceState.id();pageValue(scene,"(function(){window.fixtureMark="+JSONObject.quote(marker)+";var e=document.querySelector('#prompt-textarea');e.value='保留活页面的草稿';e.dispatchEvent(new Event('input',{bubbles:true}));document.querySelector('#reading').scrollTop=1200;return 'set';})()");
+            nativeMenu(scene);tapNative("切换账号");tapContaining("另一个测试账号");until(()->recoveryPage(scene).optString("owner").equals(other));
+            nativeMenu(scene);tapNative("切换账号");tapContaining("本地验收账号");until(()->recoveryPage(scene).optString("owner").equals(account));scene.onActivity(a->assertSame(originalWeb.get(),a.recoveryCurrentWeb()));assertEquals(marker,recoveryPage(scene).getString("mark"));assertEquals("保留活页面的草稿",recoveryPage(scene).getString("draft"));assertEquals(2,loads.get());
+            scene.onActivity(a->{View tabView=description(a.getWindow().getDecorView(),"标签页：");assertNotNull(tabView);assertTrue(tabView.performLongClick());});tapNative("关闭标签页");until(()->loads.get()==3&&recoveryPage(scene).optBoolean("ready"));
+            nativeMenu(scene);tapNative("恢复关闭的标签页");until(()->recoveryPage(scene).optString("mark").equals(marker));scene.onActivity(a->assertSame(originalWeb.get(),a.recoveryCurrentWeb()));assertEquals(3,loads.get());assertEquals("保留活页面的草稿",recoveryPage(scene).getString("draft"));assertTrue(Math.abs(recoveryPage(scene).getDouble("scroll")-1200)<8);screenshot("android-recovery-undo-live-tab.png");
+        }finally{MainActivity.handoffFixture=null;}
+    }
 }

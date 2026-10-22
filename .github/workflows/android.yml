@@ -26,6 +26,10 @@ on:
         description: Run the native attachment handoff flow on phone and tablet only
         type: boolean
         default: false
+      recovery_only:
+        description: Verify page recovery, live account/tab reuse and handoff on phone and tablet
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
@@ -109,6 +113,10 @@ jobs:
             tablet_filter='com.forcemind.chatgpt.profiles.WorkbenchTest'
             if [ "${{ inputs.handoff_only }}" = true ]; then
               tablet_filter='com.forcemind.chatgpt.profiles.WorkbenchTest#assetDialogHandsActualFilesToTargetWebpageAndSendsOnce'
+              phone_filter=("-Pandroid.testInstrumentationRunnerArguments.class=$tablet_filter")
+            fi
+            if [ "${{ inputs.recovery_only }}" = true ]; then
+              tablet_filter='com.forcemind.chatgpt.profiles.WorkbenchTest#draftsAndReadingRestoreAcrossRecreationAndPreserveConflicts,com.forcemind.chatgpt.profiles.WorkbenchTest#switchingAccountsAndUndoCloseReuseTheLivePage,com.forcemind.chatgpt.profiles.WorkbenchTest#assetDialogHandsActualFilesToTargetWebpageAndSendsOnce'
               phone_filter=("-Pandroid.testInstrumentationRunnerArguments.class=$tablet_filter")
             fi
             ./gradlew --no-daemon -Pandroid.testInstrumentationRunnerArguments.fixtureMode=true "${phone_filter[@]}" connectedDebugAndroidTest
