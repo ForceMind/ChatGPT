@@ -83,11 +83,11 @@ jobs:
           collect_failure() {
             result=$?
             if [ "$result" -ne 0 ]; then
-              adb pull /sdcard/Download/ProfilesFixtureEvidence app/build/device-evidence/failed-workbench || true
-              adb exec-out screencap -p > app/build/device-evidence/failure-screen.png || true
-              adb shell uiautomator dump --compressed /sdcard/profiles-failure.xml || true
-              adb pull /sdcard/profiles-failure.xml app/build/device-evidence/failure-ui.xml || true
-              adb logcat -d -s AndroidRuntime:E > app/build/device-evidence/failure-runtime.log || true
+              timeout 20 adb pull /sdcard/Download/ProfilesFixtureEvidence app/build/device-evidence/failed-workbench || true
+              timeout 20 adb exec-out screencap -p > app/build/device-evidence/failure-screen.png || true
+              timeout 20 adb shell uiautomator dump --compressed /sdcard/profiles-failure.xml || true
+              timeout 20 adb pull /sdcard/profiles-failure.xml app/build/device-evidence/failure-ui.xml || true
+              timeout 20 adb logcat -d -s AndroidRuntime:E > app/build/device-evidence/failure-runtime.log || true
             fi
             return "$result"
           }
@@ -110,16 +110,16 @@ jobs:
           ./gradlew --no-daemon installDebug
           adb shell am start -n com.forcemind.chatgpt.profiles.debug/com.forcemind.chatgpt.profiles.MainActivity
           sleep 15
-          adb exec-out screencap -p > app/build/device-evidence/main-start.png
-          adb shell uiautomator dump --compressed /sdcard/profiles-start.xml
-          adb exec-out cat /sdcard/profiles-start.xml > app/build/device-evidence/main-start.xml
-          adb logcat -d -s AndroidRuntime:E > app/build/device-evidence/main-runtime.log
-          python3 scripts/capture-ui.py app/build/device-evidence
-          adb shell dumpsys webviewupdate > app/build/device-evidence/webview.txt
-          adb shell wm size 1600x2560
-          adb shell wm density 240
+          timeout 20 adb exec-out screencap -p > app/build/device-evidence/main-start.png
+          timeout 20 adb shell uiautomator dump --compressed /sdcard/profiles-start.xml
+          timeout 20 adb exec-out cat /sdcard/profiles-start.xml > app/build/device-evidence/main-start.xml
+          timeout 20 adb logcat -d -s AndroidRuntime:E > app/build/device-evidence/main-runtime.log
+          timeout 240 python3 -u scripts/capture-ui.py app/build/device-evidence
+          timeout 20 adb shell dumpsys webviewupdate > app/build/device-evidence/webview.txt
+          timeout 20 adb shell wm size 1600x2560
+          timeout 20 adb shell wm density 240
           sleep 5
-          adb exec-out screencap -p > app/build/device-evidence/android-tablet.png
+          timeout 20 adb exec-out screencap -p > app/build/device-evidence/android-tablet.png
       - uses: actions/upload-artifact@v4
         if: always()
         with:

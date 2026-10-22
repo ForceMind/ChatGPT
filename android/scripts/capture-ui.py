@@ -50,6 +50,7 @@ def screenshot(name):
     (out / name).write_bytes(adb('exec-out', 'screencap', '-p'))
 
 # All text input is into native account metadata fields, never the ChatGPT webpage.
+print('Checking initial native account menu.', flush=True)
 initial_badge = badge()
 initial_name = initial_badge.get('content-desc').split('当前：', 1)[1]
 tap(initial_badge); text('添加账号')
@@ -62,13 +63,16 @@ tap(field(0)); adb('shell', 'input', 'text', 'Work')
 # The IME changes dialog bounds. Read the current tree before the second tap.
 tap(field(1)); adb('shell', 'input', 'text', 'work@example.test')
 text('保存'); badge('Work')
+print('Native account creation passed.', flush=True)
 tap(badge('Work')); text('切换账号')
 find(lambda a: 'Work' in a.get('text', '') and 'work@example.test' in a.get('text', ''))
 personal = find(lambda a: initial_name in a.get('text', ''))
 screenshot('android-accounts.png'); tap(personal); badge(initial_name)
+print('Native account switch passed; checking restart.', flush=True)
 adb('shell', 'am', 'force-stop', package)
 adb('shell', 'am', 'start', '-n', package + '/com.forcemind.chatgpt.profiles.MainActivity')
 badge(initial_name); time.sleep(5)
+print('Native account restart restoration passed.', flush=True)
 screenshot('android-phone.png')
 (out / 'android-phone.xml').write_bytes(ET.tostring(tree(), encoding='utf-8'))
 # Homepage evidence must show the loaded webpage, with native menus closed.
@@ -77,6 +81,7 @@ screenshot('android-phone.png')
 tap(badge(initial_name)); text('切换账号')
 tap(find(lambda a: 'Work' in a.get('text', '') and 'work@example.test' in a.get('text', '')))
 badge('Work')
+print('Checking actual anonymous webpage for homepage evidence.', flush=True)
 for attempt in range(30):
     current = tree()
     labels = ' '.join(n.get('text', '') + ' ' + n.get('content-desc', '') for n in current.iter('node'))
