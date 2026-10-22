@@ -24,6 +24,8 @@ public class DocumentConversionsTest {
         assertEquals(0,Objects.requireNonNull(new File(temporary.getRoot(),"asset-conversions").list()).length);
     }
     @Test public void malformedEncodingUnsupportedTypesAndCancellationNeverPublishReadyCopies()throws Exception{
+        assertEquals(Collections.singletonList("CSV"),DocumentConversions.formats(new JSONObject().put("name","data.json").put("mime","text/csv")));
+        assertEquals(Collections.singletonList("HTML"),DocumentConversions.formats(new JSONObject().put("name","report.markdown").put("mime","application/json")));
         AssetLedger ledger=ledger();JSONObject source=put(ledger,"bad.csv",new byte[]{(byte)0xff});
         assertThrows(Exception.class,()->DocumentConversions.convert(temporary.getRoot(),ledger,source.getString("id"),"JSON",null,()->true));
         JSONObject text=put(ledger,"note.txt","text".getBytes(StandardCharsets.UTF_8));
@@ -31,6 +33,18 @@ public class DocumentConversionsTest {
         JSONObject valid=put(ledger,"good.csv","a\nb\n".getBytes(StandardCharsets.UTF_8));
         assertThrows(Exception.class,()->DocumentConversions.convert(temporary.getRoot(),ledger,valid.getString("id"),"JSON",null,()->false));
         assertEquals(3,ledger.list().size());assertTrue(ledger.list().stream().noneMatch(a->a.has("parentId")));
+    }
+    @Test public void byteLimitsRejectLargeInputsAndExpandedOutputsWithoutPublishingOrLeavingTemps()throws Exception{
+        AssetLedger ledger=ledger();byte[] markdown=new byte[DocumentConversions.MAX_MARKDOWN+1];Arrays.fill(markdown,(byte)'a');
+        JSONObject source=put(ledger,"large.md",markdown);
+        assertThrows(IOException.class,()->DocumentConversions.convert(temporary.getRoot(),ledger,source.getString("id"),"HTML",null,()->true));
+        // JSON escaping doubles each backslash; source fits, output exceeds its cap.
+        byte[] expanded=new byte[DocumentConversions.MAX_INPUT];Arrays.fill(expanded,(byte)'\\');expanded[0]='a';expanded[1]='\n';
+        JSONObject csv=put(ledger,"expanded.csv",expanded);
+        assertThrows(IOException.class,()->DocumentConversions.convert(temporary.getRoot(),ledger,csv.getString("id"),"JSON",',',()->true));
+        assertEquals(2,ledger.list().size());assertFalse(ledger.list().stream().anyMatch(a->a.has("parentId")));
+        assertEquals(0,Objects.requireNonNull(new File(temporary.getRoot(),"asset-conversions").list()).length);
+        assertArrayEquals(expanded,Files.readAllBytes(ledger.verifiedFile(csv.getString("id")).toPath()));
     }
     @Test public void failedDocumentConversionCleansTemporaryOutputAndKeepsOriginal()throws Exception{
         AssetLedger ledger=ledger();JSONObject source=put(ledger,"bad.json","[{\"a\":1},{\"b\":2}]".getBytes(StandardCharsets.UTF_8));String id=source.getString("id");

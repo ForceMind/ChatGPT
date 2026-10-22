@@ -12,9 +12,12 @@ final class DocumentConversions {
     static final int MAX_INPUT=8*1024*1024,MAX_MARKDOWN=2*1024*1024,MAX_OUTPUT=16*1024*1024;
     static List<String> formats(JSONObject source){
         String name=source.optString("name").toLowerCase(Locale.ROOT),mime=source.optString("mime");
-        if(name.endsWith(".csv")||mime.equals("text/csv"))return Collections.singletonList("JSON");
-        if(name.endsWith(".json")||mime.equals("application/json"))return Collections.singletonList("CSV");
-        if(name.endsWith(".md")||name.endsWith(".markdown")||mime.equals("text/markdown"))return Collections.singletonList("HTML");
+        if(name.endsWith(".csv"))return Collections.singletonList("JSON");
+        if(name.endsWith(".json"))return Collections.singletonList("CSV");
+        if(name.endsWith(".md")||name.endsWith(".markdown"))return Collections.singletonList("HTML");
+        if(mime.equals("text/csv"))return Collections.singletonList("JSON");
+        if(mime.equals("application/json"))return Collections.singletonList("CSV");
+        if(mime.equals("text/markdown"))return Collections.singletonList("HTML");
         return Collections.emptyList();
     }
     private static void active(BooleanSupplier available)throws IOException{
@@ -46,7 +49,9 @@ final class DocumentConversions {
         if(!formats(source).contains(format))throw new IOException("原文件不支持所选转换格式");
         File original=ledger.verifiedFile(id);int maximum=format.equals("HTML")?MAX_MARKDOWN:MAX_INPUT;
         Checkpoint checkpoint=new Checkpoint(available);String input;
-        try{input=text(original,maximum,checkpoint);}catch(OutOfMemoryError error){throw new IOException("文件内容过大，请拆分后再转换",error);}
+        try{input=text(original,maximum,checkpoint);}
+        catch(CharacterCodingException error){throw new IOException("原文件不是有效的 UTF-8 文本，请先转换编码",error);}
+        catch(OutOfMemoryError error){throw new IOException("文件内容过大，请拆分后再转换",error);}
         File cache=new File(cacheRoot.getCanonicalFile(),"asset-conversions");
         if(Files.isSymbolicLink(cache.toPath())||!cache.getCanonicalFile().equals(cache.getAbsoluteFile()))throw new IOException("转换临时目录无效");
         if(!cache.exists()&&!cache.mkdir())throw new IOException("无法创建转换临时目录");
