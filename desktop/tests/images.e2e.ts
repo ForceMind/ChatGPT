@@ -1,6 +1,6 @@
 import{shellWindow}from'./helpers/shell';
 import{test,expect,_electron as electron,type ElectronApplication}from'@playwright/test';import{createServer,type Server}from'node:http';import{mkdtempSync,readFileSync,rmSync}from'node:fs';import os from'node:os';import path from'node:path';import{fileURLToPath}from'node:url';import{Resvg}from'@resvg/resvg-js';import{AssetStore}from'../src/main/asset-store';
-const desktop=fileURLToPath(new URL('..',import.meta.url));
+const desktop=path.resolve(fileURLToPath(new URL('..',import.meta.url)));
 test('web image context menu copies natural pixels, saves account-authenticated PNG/blob and reports safe timing',async()=>{
  test.skip(!['darwin','win32'].includes(process.platform));const root=mkdtempSync(path.join(os.tmpdir(),'profiles-images-')),data=path.join(root,'data');let app:ElectronApplication|undefined,server:Server|undefined;
  const bytes=Buffer.from(new Resvg('<svg xmlns="http://www.w3.org/2000/svg" width="4" height="2"><rect width="4" height="2" fill="#e44"/></svg>').render().asPng());

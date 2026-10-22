@@ -7,7 +7,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { AssetStore } from '../src/main/asset-store';
 
-const desktop=fileURLToPath(new URL('..',import.meta.url));
+const desktop=path.resolve(fileURLToPath(new URL('..',import.meta.url)));
 test('desktop real download, account-scoped assets, safe HTML and full capability resources',async({},info)=>{
   test.skip(!['darwin','win32'].includes(process.platform),'工作台支持 macOS 与 Windows');
   const root=mkdtempSync(path.join(os.tmpdir(),'profiles-assets-e2e-')),data=path.join(root,'data');

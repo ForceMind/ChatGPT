@@ -21,8 +21,12 @@ const fail = (): never => { throw new Error('资产索引格式无效，已停�
 function requireId(value: string): void { if (!isId(value)) throw new Error('无效的资产或账号标识'); }
 function mimeType(value: string): string { const clean = value.split(';', 1)[0].trim().toLowerCase(); return clean.length <= 150 && /^[a-z0-9!#$&^_.+-]+\/[a-z0-9!#$&^_.+-]+$/.test(clean) ? clean : 'application/octet-stream'; }
 
-export function safeAssetFilename(value: string): string {
+export function safeAssetFilename(value: string, platform: string = process.platform): string {
   let result = path.posix.basename(value.replace(/\\/g, '/')).normalize('NFC').replace(/[\u0000-\u001f\u007f\u202a-\u202e\u2066-\u2069]/g, '_').trim().replace(/[. ]+$/g, '');
+  if (platform === 'win32') {
+    result = result.replace(/[<>:"|?*]/g, '_');
+    if (/^(con|prn|aux|nul|conin\$|conout\$|com[1-9¹²³]|lpt[1-9¹²³])(?:\.|$)/i.test(result)) result = '_' + result;
+  }
   if (!result || result === '.' || result === '..') result = '未命名文件';
   const extension = path.extname(result);
   const suffix = Buffer.byteLength(extension) <= 24 ? extension : '';

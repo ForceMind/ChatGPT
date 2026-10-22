@@ -6,7 +6,7 @@ import os from 'node:os';import path from 'node:path';import {fileURLToPath} fro
 import {AssetStore} from '../src/main/asset-store';
 import type {ConversionOptions} from '../src/shared/workbench';
 
-const desktop=fileURLToPath(new URL('..',import.meta.url));
+const desktop=path.resolve(fileURLToPath(new URL('..',import.meta.url)));
 test('desktop conversion produces real image/PDF/HTML/data assets with original lineage',async({},info)=>{
   test.skip(!['darwin','win32'].includes(process.platform),'转换引擎支持 macOS 与 Windows');test.setTimeout(180_000);
   const root=mkdtempSync(path.join(os.tmpdir(),'profiles-conversions-')),data=path.join(root,'data');let app:ElectronApplication|undefined,server:Server|undefined;

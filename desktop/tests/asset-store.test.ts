@@ -149,3 +149,15 @@ test('batch metadata changes are atomic when an ID belongs to another account',a
   store.editMany(profile,[a.id],{favorite:true,trashed:true});assert.equal(store.get(profile,a.id).favorite,true);assert.ok(store.get(profile,a.id).trashedAt);
   assert.throws(()=>store.editMany(profile,[a.id],{}),/未指定/);
 });
+
+
+test('Windows download and upload filenames cannot become device paths or alternate streams', () => {
+  assert.equal(safeAssetFilename('report.txt:stream', 'win32'), 'report.txt_stream');
+  assert.equal(safeAssetFilename('a<b>c:d"e|f?g*.png', 'win32'), 'a_b_c_d_e_f_g_.png');
+  for (const name of ['CON', 'con.txt', 'NUL.json', 'COM1.csv', 'LPT9.png', 'COM¹.md', 'CONIN$.txt']) {
+    assert.equal(safeAssetFilename(name, 'win32'), '_' + name);
+  }
+  assert.equal(safeAssetFilename('正常文件.pdf', 'win32'), '正常文件.pdf');
+  assert.equal(safeAssetFilename('notes: draft.txt', 'darwin'), 'notes: draft.txt');
+  assert.ok(Buffer.byteLength(safeAssetFilename('CON.' + '图'.repeat(200), 'win32')) <= 180);
+});

@@ -6,7 +6,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {shellWindow} from './helpers/shell';
 
-const desktop=fileURLToPath(new URL('..',import.meta.url));
+const desktop=path.resolve(fileURLToPath(new URL('..',import.meta.url)));
 test('Windows native close checkpoints the draft before quitting and restores on restart',async()=>{
  test.skip(process.platform!=='win32');
  const root=mkdtempSync(path.join(tmpdir(),'profiles-windows-close-'));

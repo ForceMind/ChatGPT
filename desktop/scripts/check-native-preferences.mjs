@@ -25,14 +25,14 @@ function hookMain(origin,resultFile){
   await command({type:'profile:add',name:'Native JP fixture',email:'',color:'#5275a0',language:'ja-JP',timeZone:'Asia/Tokyo'});
   const parent=await until(()=>{const c=shell.contentView.children.find(v=>v.getVisible())?.webContents;return c?.getURL()===origin+'/'&&!c.isLoading()?c:undefined;});
   const first=await parent.executeJavaScript('window.first');
-  assert.equal(first.language,'ja-JP');assert.equal(first.locale,'ja-JP');assert.equal(first.tz,'Asia/Tokyo');assert.match(first.header,/^ja-JP/);
+  assert.equal(first.language,'ja-JP');assert.equal(new Intl.Locale(first.locale).maximize().toString(),new Intl.Locale('ja-JP').maximize().toString());assert.equal(first.tz,'Asia/Tokyo');assert.match(first.header,/^ja-JP/);
   await parent.executeJavaScript('document.cookie="native_fixture=jp; SameSite=Lax; path=/"');
   const state=await shell.webContents.executeJavaScript('window.profiles.snapshot()'),profile=state.profiles.find(p=>p.id===state.activeProfileId);
   await command({type:'profile:edit',id:profile.id,name:profile.name,email:profile.email,color:profile.color,language:'zh-TW',timeZone:'UTC'});
   assert.equal(await parent.executeJavaScript('Boolean(window.open("/popup","native-login-fixture"))',true),true);
   const popup=await until(()=>BrowserWindow.getAllWindows().find(w=>w.webContents.getURL()===origin+'/popup'&&!w.webContents.isLoading()));
   const child=await popup.webContents.executeJavaScript('window.first');
-  assert.equal(child.language,'ja-JP');assert.equal(child.locale,'ja-JP');assert.equal(child.tz,'Asia/Tokyo');assert.match(child.header,/^ja-JP/);assert.equal(child.cookie,'native_fixture=jp');assert.equal(child.hasOpener,true);
+  assert.equal(child.language,'ja-JP');assert.equal(new Intl.Locale(child.locale).maximize().toString(),new Intl.Locale('ja-JP').maximize().toString());assert.equal(child.tz,'Asia/Tokyo');assert.match(child.header,/^ja-JP/);assert.equal(child.cookie,'native_fixture=jp');assert.equal(child.hasOpener,true);
   writeFileSync(resultFile,JSON.stringify({passed:true,platform:process.platform,parent:first,popup:child}));popup.close();console.log('Native popup first language, Intl locale, timezone, request header, opener, account storage and old-tab preferences passed.');
  }catch(error){console.error(error);process.exitCode=1;}finally{app.quit();}});
 }

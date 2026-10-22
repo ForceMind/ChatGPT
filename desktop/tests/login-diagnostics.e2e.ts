@@ -1,7 +1,7 @@
 import{shellWindow}from'./helpers/shell';
 import {test,expect,_electron as electron,type ElectronApplication} from '@playwright/test';
 import {createServer,type Server} from 'node:http';import{mkdtempSync,readFileSync,rmSync}from'node:fs';import os from'node:os';import path from'node:path';import{fileURLToPath}from'node:url';
-const desktop=fileURLToPath(new URL('..',import.meta.url));
+const desktop=path.resolve(fileURLToPath(new URL('..',import.meta.url)));
 test('Desktop login link diagnostics record blocked navigations with no secrets and keep normal account sessions',async({},info)=>{
  test.skip(!['darwin','win32'].includes(process.platform));const root=mkdtempSync(path.join(os.tmpdir(),'profiles-login-e2e-'));let app:ElectronApplication|undefined,server:Server|undefined;
  try{server=createServer((q,r)=>{if(q.url==='/redirect'){r.writeHead(302,{Location:'http://not-in-client.invalid/private-token?code=oauth-secret#secret'});r.end();return;}r.writeHead(200,{'Content-Type':'text/html'});r.end('<title>Local login diagnostics fixture</title><h1>本地登录记录验收</h1>');});await new Promise<void>(r=>server!.listen(0,'127.0.0.1',r));const a=server.address();if(!a||typeof a==='string')throw Error();const origin=`http://127.0.0.1:${a.port}`,data=path.join(root,'data');

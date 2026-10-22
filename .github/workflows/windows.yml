@@ -19,7 +19,9 @@ jobs:
       - name: Typecheck, state tests and build
         run: npm run check
       - name: Windows isolation and interface acceptance
-        run: npx playwright test
+        run: npx playwright test --max-failures=1
+        env:
+          DEBUG: pw:browser
       - name: Native first-script language and login popup acceptance
         run: node scripts/check-native-preferences.mjs
       - name: Native background retention without automation flags

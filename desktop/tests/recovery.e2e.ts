@@ -1,5 +1,5 @@
 import{test,expect,_electron as electron,type ElectronApplication}from'@playwright/test';import{createServer,type Server}from'node:http';import{mkdtempSync,rmSync,readFileSync,readdirSync,writeFileSync,existsSync}from'node:fs';import path from'node:path';import os from'node:os';import{fileURLToPath}from'node:url';import{shellWindow}from'./helpers/shell';
-const desktop=fileURLToPath(new URL('..',import.meta.url));
+const desktop=path.resolve(fileURLToPath(new URL('..',import.meta.url)));
 test('Desktop keeps native pages through close/reopen, account/tab switches and undo; cold restart restores encrypted draft, reading anchor and workspace without sending',async({},info)=>{
  test.skip(!['darwin','win32'].includes(process.platform));test.setTimeout(90000);const root=mkdtempSync(path.join(os.tmpdir(),'profiles-recovery-'));let app:ElectronApplication|undefined,server:Server|undefined,serverDraft='',delayMessages=false;
  try{

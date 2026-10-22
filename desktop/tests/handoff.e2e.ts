@@ -1,7 +1,7 @@
 import{shellWindow}from'./helpers/shell';
 import {test,expect,_electron as electron,type ElectronApplication}from'@playwright/test';import {createServer,type Server}from'node:http';import{mkdtempSync,writeFileSync,readFileSync,rmSync}from'node:fs';import os from'node:os';import path from'node:path';import{fileURLToPath}from'node:url';
 import{StateStore}from'../src/main/state';import{AssetStore}from'../src/main/asset-store';import type{HandoffJob}from'../src/shared/handoff';
-const desktop=fileURLToPath(new URL('..',import.meta.url));
+const desktop=path.resolve(fileURLToPath(new URL('..',import.meta.url)));
 test('Desktop handoff really uploads bytes to the selected session, sends once, persists acknowledgement and surfaces uncertainty',async({},info)=>{
  test.skip(!['darwin','win32'].includes(process.platform));const root=mkdtempSync(path.join(os.tmpdir(),'profiles-handoff-e2e-')),data=path.join(root,'data');let app:ElectronApplication|undefined,server:Server|undefined;const uploads:{cookie:string;body:string}[]=[],messages:{cookie:string;prompt:string}[]=[];let acknowledge=true,holdComposer=false;
  try{
