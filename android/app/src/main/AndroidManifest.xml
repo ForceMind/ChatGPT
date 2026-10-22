@@ -8,6 +8,7 @@
         android:theme="@style/AppTheme" android:allowBackup="false" android:fullBackupContent="false" android:dataExtractionRules="@xml/data_extraction_rules"
         android:usesCleartextTraffic="false" android:supportsRtl="true">
         <activity android:name=".AssetWorkbenchActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
+        <provider android:name=".HandoffFileProvider" android:authorities="${applicationId}.handoff" android:exported="false" android:grantUriPermissions="false" />
         <activity android:name=".AssetPreviewActivity" android:exported="false" />
         <activity android:name=".AssetRenderActivity" android:exported="false" android:process=":asset_renderer" android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden" />
         <activity android:name=".MainActivity" android:exported="true" android:windowSoftInputMode="adjustResize">
