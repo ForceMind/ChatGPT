@@ -1,0 +1,7 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application android:allowBackup="false">
+        <provider android:name="com.forcemind.chatgpt.profiles.FixtureFilesProvider"
+            android:authorities="com.forcemind.chatgpt.profiles.testfiles"
+            android:exported="true" android:grantUriPermissions="true" />
+    </application>
+</manifest>

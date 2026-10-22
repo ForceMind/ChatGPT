@@ -27,7 +27,7 @@ public final class AssetWorkbenchActivity extends ComponentActivity {
     private TextView subtitle;
     private AssetLedger ledger;
     private String accountId,accountName,mode="assets",filter="all",exportId;
-    private List<JSONObject> records=new ArrayList<>(),skills=new ArrayList<>(),shown=new ArrayList<>();
+    private volatile List<JSONObject> records=new ArrayList<>(),skills=new ArrayList<>(),shown=new ArrayList<>();
     private boolean busy;
     private int pendingTasks;
     private volatile boolean dead;
@@ -36,7 +36,7 @@ public final class AssetWorkbenchActivity extends ComponentActivity {
     @Override public void onCreate(Bundle state){
         super.onCreate(state);if(state!=null)exportId=state.getString("exportId");accountId=getIntent().getStringExtra(ACCOUNT);mode=getIntent().getBooleanExtra("skills",false)?"skills":"assets";
         try{WorkspaceState.profile(accountId);WorkspaceState.Account owner=account();accountName=owner.name+(owner.email.isEmpty()?"":" · "+owner.email);}catch(Exception e){finish();return;}
-        root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setBackgroundColor(Color.WHITE);
+        root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setBackgroundColor(Color.WHITE);root.setFocusableInTouchMode(true);root.requestFocus();
         root.setPadding(dp(16),0,dp(16),0);setContentView(root);
         androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(root,(v,insets)->{
             androidx.core.graphics.Insets bars=insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars());
@@ -70,7 +70,7 @@ public final class AssetWorkbenchActivity extends ComponentActivity {
             account();
             if(mode.equals("assets")){ledger=new AssetLedger(getFilesDir(),accountId);records=ledger.list();}
             else{SkillCatalog catalog=new SkillCatalog(getAssets().open("capabilities/manifest.json"),getAssets().open("capabilities/skills.json"));skills=catalog.list();}
-        },this::render);
+        },()->{render();if(ledger!=null&&ledger.recoveryNotice!=null)notice(ledger.recoveryNotice);});
     }
     private void render(){
         if(list==null)return;String query=search.getText().toString().trim().toLowerCase(Locale.ROOT);shown=new ArrayList<>();
@@ -97,7 +97,7 @@ public final class AssetWorkbenchActivity extends ComponentActivity {
                 row.setMinimumHeight(dp(76));return row;
             }
         });
-        TextView empty=text(mode.equals("assets")?"这里还没有文件\n从 ChatGPT 下载或导入本机文件后，会按账号保存在这里。":"没有匹配的 Skill",14);
+        TextView empty=text(mode.equals("assets")?(ledger!=null&&ledger.recoveryNotice!=null?ledger.recoveryNotice:"这里还没有文件\n从 ChatGPT 下载或导入本机文件后，会按账号保存在这里。"):"没有匹配的 Skill",14);
         empty.setGravity(Gravity.CENTER);empty.setPadding(dp(20),dp(40),dp(20),dp(40));
         View old=root.findViewWithTag("empty-assets");if(old!=null)root.removeView(old);
         empty.setTag("empty-assets");root.addView(empty);list.setEmptyView(empty);

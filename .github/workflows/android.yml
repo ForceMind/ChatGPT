@@ -81,7 +81,17 @@ jobs:
           timeout 180 adb wait-for-device
           timeout 240 bash -c 'until adb shell getprop sys.boot_completed | tr -d "\r" | grep -q 1; do sleep 2; done'
           adb shell input keyevent 82
-          if [ "${{ inputs.ui_only }}" != true ]; then ./gradlew --no-daemon connectedDebugAndroidTest; fi
+          if [ "${{ inputs.ui_only }}" != true ]; then
+            ./gradlew --no-daemon -Pandroid.testInstrumentationRunnerArguments.fixtureMode=true connectedDebugAndroidTest
+            cp -R app/build/outputs/androidTest-results app/build/device-evidence/phone-test-results
+            adb pull /sdcard/Download/ProfilesFixtureEvidence app/build/device-evidence/workbench-phone
+            adb shell wm size 1600x2560
+            adb shell wm density 240
+            ./gradlew --no-daemon --rerun-tasks -Pandroid.testInstrumentationRunnerArguments.fixtureMode=true -Pandroid.testInstrumentationRunnerArguments.class=com.forcemind.chatgpt.profiles.WorkbenchTest connectedDebugAndroidTest
+            adb pull /sdcard/Download/ProfilesFixtureEvidence app/build/device-evidence/workbench-tablet
+            adb shell wm size reset
+            adb shell wm density reset
+          fi
           ./gradlew --no-daemon installDebug
           adb shell am start -n com.forcemind.chatgpt.profiles.debug/com.forcemind.chatgpt.profiles.MainActivity
           sleep 15

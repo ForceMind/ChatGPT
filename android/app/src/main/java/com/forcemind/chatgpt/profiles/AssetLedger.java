@@ -21,6 +21,7 @@ final class AssetLedger {
     private static final Set<String> ACTIVE_IMPORTS = new HashSet<>();
     private final File root, directory, index, backup;
     final String accountId;
+    volatile String recoveryNotice;
 
     AssetLedger(File filesDir, String accountId) throws Exception {
         WorkspaceState.profile(accountId); this.accountId = accountId;
@@ -38,6 +39,12 @@ final class AssetLedger {
                     if (a.getString("status").equals("processing") && !ACTIVE_IMPORTS.contains(directory.getPath()+":"+a.getString("id"))) { a.put("status", "interrupted"); changed = true; }
                 }
                 if (changed) write(value);
+            }
+            Set<String> known=new HashSet<>();JSONArray records=value.getJSONArray("records");
+            for(int i=0;i<records.length();i++)known.add(records.getJSONObject(i).getString("id"));
+            String[] retained=directory.list((dir,name)->name.endsWith(".bin")||name.endsWith(".part"));
+            if(retained!=null)for(String name:retained)if(!known.contains(name.substring(0,name.lastIndexOf('.')))){
+                recoveryNotice="部分文件未编入恢复索引，已保留原件。请保留应用数据并反馈，勿清除应用存储。";break;
             }
         }
     }
@@ -99,7 +106,7 @@ final class AssetLedger {
     private JSONObject read() throws Exception {
         directories();
         if (!index.exists()) {
-            if (backup.exists()) { JSONObject restored = validate(bytes(backup)); atomic(index, restored.toString().getBytes(StandardCharsets.UTF_8)); return restored; }
+            if (backup.exists()) { JSONObject restored = validate(bytes(backup)); atomic(index, restored.toString().getBytes(StandardCharsets.UTF_8)); recoveryNotice="资产索引已从有效备份恢复，请核对最近的文件。";return restored; }
             String[] files = directory.list((dir, name) -> name.endsWith(".bin") || name.endsWith(".part"));
             if (files == null || files.length > 0) throw new IOException("资产索引缺失，已保留文件并停止创建空库");
             JSONObject fresh = new JSONObject().put("schema", 1).put("accountId", accountId).put("records", new JSONArray());
@@ -109,6 +116,7 @@ final class AssetLedger {
         catch (Exception invalid) {
             if (!backup.exists()) throw new IOException("资产索引损坏，请保留应用数据", invalid);
             JSONObject restored = validate(bytes(backup));
+            recoveryNotice="资产索引已从有效备份恢复，损坏原件已保留，请核对最近的文件。";
             if (Files.isSymbolicLink(index.toPath())) throw invalid;
             Files.move(index.toPath(), new File(directory, "index.corrupt-" + UUID.randomUUID() + ".json").toPath(), StandardCopyOption.ATOMIC_MOVE);
             atomic(index, restored.toString().getBytes(StandardCharsets.UTF_8)); return restored;

@@ -283,7 +283,7 @@ public final class MainActivity extends ComponentActivity {
             if (i == 0) editAccount(id);
             else if (i == 1 || i == 2) { if (change(s -> { int index = s.accounts.indexOf(s.find(id)), target = index + (i == 1 ? -1 : 1); if (target >= 0 && target < s.accounts.size()) java.util.Collections.swap(s.accounts, index, target); })) renderHeader(); }
             else new AlertDialog.Builder(this).setTitle(i == 3 ? "清除本机登录数据？" : "移除此账号？")
-                .setMessage("此账号的本机标签和登录将关闭，云端对话不受影响。旧浏览器档案在下次启动时清理，其他账号保持独立。")
+                .setMessage("此账号的本机标签和登录将关闭，云端对话不受影响。旧浏览器档案在下次启动时清理，其他账号保持独立。"+(i==3?"资产库文件保留。":"移除前需先导出并清空此账号资产。"))
                 .setNegativeButton("取消", null).setPositiveButton("确认", (x, y) -> {
                     if (i == 4 && state.accounts.size() == 1) { toast("请至少保留一个账号空间"); return; }
                     try {
