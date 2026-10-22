@@ -299,3 +299,5 @@
 
 - Windows 第三轮 CI `39718004454` 为 42/42 单元通过；3 个原有隔离/窗口流程通过，新测试有 8 项卡在 Playwright 的 Launch electron，尚未进入任何应用断言。已取回 HTML 报告并逐项检查：新测试的 fileURLToPath 目录末尾带反斜杠，而已通过的旧测试用 path.resolve 无尾斜杠；当前 Playwright Windows 启动器会 shell=true 并手动给路径加引号，尾反斜杠影响命令行解析。统一用 path.resolve 消除该差异，并增加 CI 启动日志和首个失败即停，成功时仍运行全部检查，不延长超时。
 - 第三轮独立原生启动已能打开应用，日语 navigator.language 与请求语言通过，但 Windows ICU 的 Intl locale 为 ja（Mac 为 ja-JP）。不伪造 Intl，改为检查 Locale.maximize 后的语言、文字系统和地区语义完全一致；其余首次脚本语言、请求头、时区、opener、Cookie 仍保持严格断言。台繁体与美式英语也继续检查对应地区语义。
+
+- Windows 第四轮 CI `39719939681` 的原生启动已修正，资产/安全 HTML/能力、真实格式转换、带文件任务三项均通过；首错停于图片测试的剪贴板备份，Windows 空剪贴板返回含零 MIME 类型的空项目，ClipboardItem 构造器拒绝空对象。备份时忽略没有可读 MIME 数据的空项目，保留全部可读类型；原有自然像素、认证图片/Blob 下载与条件恢复剪贴板的断言保持。剩余流程因首错停未运行，不记为通过。
