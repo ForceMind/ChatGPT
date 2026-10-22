@@ -93,7 +93,7 @@ public final class AssetPreviewActivity extends ComponentActivity {
         web=new WebView(this);web.setTag("asset-html-preview");
         web.getSettings().setBuiltInZoomControls(true);web.getSettings().setDisplayZoomControls(false);
         root.addView(web,new LinearLayout.LayoutParams(-1,0,1));
-        OfflineHtml.load(web,html,()->{},message->{if(web!=null){root.removeView(web);web.destroy();web=null;}status.setText(message);});
+        OfflineHtml.load(web,html,()->{},message->{if(dead)return;if(web!=null){root.removeView(web);web.destroy();web=null;}status.setText(message);});
     }
     private boolean textFormat(String mime,String name){if(mime.startsWith("text/")||mime.equals("application/json")||mime.equals("image/svg+xml"))return true;for(String ext:new String[]{".md",".txt",".csv",".json",".log",".js",".css",".xml",".html",".htm",".svg"})if(name.endsWith(ext))return true;return false;}
     private void error(Exception e){runOnUiThread(()->{if(dead)return;status.setText(e.getMessage()==null?"暂时无法预览，请导出后查看":e.getMessage());});}

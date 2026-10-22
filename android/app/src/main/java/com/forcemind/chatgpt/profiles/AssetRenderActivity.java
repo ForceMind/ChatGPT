@@ -56,7 +56,7 @@ public final class AssetRenderActivity extends ComponentActivity {
                     if(dead||done)return;status.setText(owner+"\n正在生成 "+format+" 副本，外部资源不可用…");
                     web=new WebView(this);web.setTag("asset-render-web");web.setBackgroundColor(kind.equals("svg")?Color.TRANSPARENT:Color.WHITE);
                     frame.addView(web,new FrameLayout.LayoutParams(width,900));
-                    OfflineHtml.load(web,content,()->web.postVisualStateCallback(1,new WebView.VisualStateCallback(){@Override public void onComplete(long id){if(!dead&&!done)begin();}}),this::fail);
+                    OfflineHtml.load(web,content,()->{if(web!=null&&!dead&&!done)web.postVisualStateCallback(1,new WebView.VisualStateCallback(){@Override public void onComplete(long id){if(!dead&&!done)begin();}});},this::fail);
                 });
             }catch(Exception|OutOfMemoryError|StackOverflowError e){fail("无法准备页面转换，原文件保留。"+(e.getMessage()==null?"":e.getMessage()));}
         });

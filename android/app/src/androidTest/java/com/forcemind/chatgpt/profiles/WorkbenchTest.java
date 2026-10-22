@@ -250,4 +250,16 @@ public class WorkbenchTest {
         try(ActivityScenario<AssetWorkbenchActivity> scene=ActivityScenario.launch(screen(AssetWorkbenchActivity.class))){JSONObject ui=throughRenderMenu(scene,ledger,source,"PNG");assertTrue(ui.getString("name").endsWith("-p1.png"));screenshot("android-pdf-page-assets.png");}
         assertEquals(0,new AssetLedger(context.getFilesDir(),other).list().size());assertArrayEquals(bytes.toByteArray(),Files.readAllBytes(ledger.verifiedFile(source.getString("id")).toPath()));rendererExits();
     }
+    @Test public void rendererFailureKeepsOriginalCleansTaskAndAllowsRetry()throws Exception{
+        AssetLedger ledger=new AssetLedger(context.getFilesDir(),account);JSONObject source=ledger.importCopy(new ByteArrayInputStream(new byte[]{(byte)0xff}),"invalid.html","text/html","import",null);
+        try(ActivityScenario<AssetWorkbenchActivity> scene=ActivityScenario.launch(screen(AssetWorkbenchActivity.class))){
+            AtomicBoolean ready=new AtomicBoolean();until(()->{scene.onActivity(a->{ListView list=find(a.getWindow().getDecorView(),ListView.class);ready.set(list.getAdapter()!=null&&list.getAdapter().getCount()==1);});return ready.get();});
+            for(int attempt=0;attempt<2;attempt++){
+                scene.onActivity(a->{ListView list=find(a.getWindow().getDecorView(),ListView.class);assertTrue(list.performItemClick(list.getChildAt(0),0,list.getAdapter().getItemId(0)));});tapNative("转换格式");tapNative("开始转换");
+                AtomicBoolean error=new AtomicBoolean();until(90000,()->{scene.onActivity(a->error.set(containsText(a.getWindow().getDecorView(),"不是有效的 UTF-8")));return error.get();});assertEquals(1,ledger.list().size());
+            }
+            screenshot("android-render-error-retry.png");
+        }
+        File tasks=new File(context.getCacheDir(),"asset-render-tasks");assertNotNull(tasks.list());assertEquals(0,tasks.list().length);ledger.verifiedFile(source.getString("id"));rendererExits();
+    }
 }

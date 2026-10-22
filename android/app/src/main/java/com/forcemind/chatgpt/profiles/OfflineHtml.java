@@ -28,8 +28,8 @@ final class OfflineHtml {
                 return new WebResourceResponse("text/plain","UTF-8",403,"Blocked",Collections.emptyMap(),new ByteArrayInputStream(new byte[0]));
             }
             @Override public void onPageFinished(WebView view,String current){if(!done&&url.equals(current)){done=true;ready.run();}}
-            @Override public void onReceivedError(WebView view,WebResourceRequest request,WebResourceError error){if(request.isForMainFrame())failed.accept("本地页面未能加载，原文件已保留");}
-            @Override public boolean onRenderProcessGone(WebView view,RenderProcessGoneDetail detail){failed.accept("预览进程已退出。原文件已保留，可以返回重试或导出。");return true;}
+            @Override public void onReceivedError(WebView view,WebResourceRequest request,WebResourceError error){if(request.isForMainFrame()){done=true;failed.accept("本地页面未能加载，原文件已保留");}}
+            @Override public boolean onRenderProcessGone(WebView view,RenderProcessGoneDetail detail){done=true;failed.accept("预览进程已退出。原文件已保留，可以返回重试或导出。");return true;}
         });
         web.loadUrl(url);
     }

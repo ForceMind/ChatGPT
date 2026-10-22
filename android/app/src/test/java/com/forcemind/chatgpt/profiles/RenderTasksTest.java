@@ -59,4 +59,8 @@ public class RenderTasksTest {
         File oldDirectory=RenderTasks.directory(temporary.getRoot(),old.getString("task"),false);assertTrue(oldDirectory.setLastModified(System.currentTimeMillis()-25L*60*60*1000));
         prepare(ledger,source);assertFalse(oldDirectory.exists());assertTrue(RenderTasks.directory(temporary.getRoot(),recent.getString("task"),false).isDirectory());ledger.verifiedFile(source.getString("id"));
     }
+    @Test public void invalidUtf8CannotReachTheRendererDespiteAMatchingByteDigest()throws Exception{
+        AssetLedger ledger=ledger();JSONObject source=ledger.importCopy(new ByteArrayInputStream(new byte[]{(byte)0xff}),"broken.html","text/html","import",null),pending=prepare(ledger,source);String token=pending.getString("task");
+        assertThrows(IOException.class,()->RenderTasks.source(temporary.getRoot(),token,RenderTasks.request(temporary.getRoot(),token)));RenderTasks.cleanup(temporary.getRoot(),token);assertEquals(1,ledger.list().size());
+    }
 }
