@@ -318,3 +318,9 @@
 - Android 首轮构建 `39725366736`（源码 `8e9b1b428e80c9c7db5e6dff2598c96bc601e398`）通过：原生编译、单元检查、Lint、debug 与 unsigned release APK 已生成。真实界面仍待下一轮设备检查。
 - 下一轮 Android 设备验证增加测试 APK 专用只读文件 Provider，提供三个固定的无敏感 HTML / PNG / PDF 素材，覆盖真实 content URI 导入、初始加载排队、文件账号归属、图片/PDF/静态 HTML 预览、120 Skill 检索。显式 fixtureMode 仅在隔离模拟器启用，测试前后保留原账号状态文件，不发 GPT 消息。
 - 手机和平板两轮各自保留截图和报告；截图写到隔离模拟器的公共测试素材目录，避免 Gradle 卸载调试 App 时丢失证据。该 Provider 不进入 release APK，不授予主 App 全盘访问权限。
+
+- Android 设备首轮 `39727950414` 在测试夹具编译停止，尚未运行界面断言：Intent.setClipData 返回 void，不能链式赋给 Intent。已拆为两步；主 APK 的编译与 Lint 不受该测试代码错误影响。
+- Android 签名脚本原来写死 alpha.1，已改为用 aapt2 读取 APK 的真实包名/版本/debug 标记，必须与当前 Gradle 版本一致。按实际版本命名，拒绝覆盖已有文件，支持独立输出目录；避免新包误覆盖原 alpha.1。
+- 本机已复用此前下载的 JDK 17 与 Android build-tools 临时缓存，没有重新安装全局运行时或下载大包。签名密码仍只经标准输入传递，不打印或上传签名材料。
+
+- Android 接入原生 PNG/JPEG/WebP 位图转换，可选尺寸/质量、不放大、透明转 JPEG 白底，输出带 parentId 的新资产，使用临时文件控制内存并保留原始文件。补充设备实测三格式签名、真实解码尺寸、源摘要不变和其他账号空库断言，尚未声明通过。

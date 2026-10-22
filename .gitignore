@@ -17,3 +17,4 @@ android/release/
 *.jks
 *.keystore
 .wrangler/
+__pycache__/

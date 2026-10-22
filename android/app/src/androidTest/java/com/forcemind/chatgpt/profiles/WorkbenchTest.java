@@ -67,7 +67,7 @@ public class WorkbenchTest {
     @Test public void realDocumentUrisImportToTheInitiatingAccountAndPreviewAllThreeKinds()throws Exception{
         try(ActivityScenario<AssetWorkbenchActivity> scene=ActivityScenario.launch(screen(AssetWorkbenchActivity.class))){
             // Deliver the real provider result immediately, also testing the initial-load queue.
-            Intent documents=new Intent().setClipData(ClipData.newUri(context.getContentResolver(),"fixture",Uri.parse("content://"+FixtureFilesProvider.AUTHORITY+"/html")));
+            Intent documents=new Intent();documents.setClipData(ClipData.newUri(context.getContentResolver(),"fixture",Uri.parse("content://"+FixtureFilesProvider.AUTHORITY+"/html")));
             documents.getClipData().addItem(new ClipData.Item(Uri.parse("content://"+FixtureFilesProvider.AUTHORITY+"/image")));
             documents.getClipData().addItem(new ClipData.Item(Uri.parse("content://"+FixtureFilesProvider.AUTHORITY+"/pdf")));
             scene.onActivity(a->a.onActivityResult(10,Activity.RESULT_OK,documents));
@@ -98,5 +98,22 @@ public class WorkbenchTest {
             screenshot("android-skills-native.png");scene.onActivity(a->find(a.getWindow().getDecorView(),EditText.class).setText("HTML"));
             until(()->{scene.onActivity(a->{ListView list=find(a.getWindow().getDecorView(),ListView.class);count.set(list.getAdapter().getCount());});return count.get()>0&&count.get()<120;});
         }
+    }
+
+    @Test public void nativeImageConversionsProduceRealCopiesAndKeepSourceBytes()throws Exception{
+        AssetLedger ledger=new AssetLedger(context.getFilesDir(),account);
+        JSONObject source;
+        try(InputStream input=context.getContentResolver().openInputStream(Uri.parse("content://"+FixtureFilesProvider.AUTHORITY+"/image"))){source=ledger.importCopy(input,"source.png","image/png","import",null);}
+        String id=source.getString("id"),hash=source.getString("sha256");
+        for(String format:new String[]{"png","jpeg","webp"}){
+            JSONObject output=ImageConversions.convert(context,ledger,id,format,0,90,()->WorkspaceFiles.contains(context.getFilesDir(),account));
+            assertEquals(id,output.getString("parentId"));assertEquals(account,output.getString("accountId"));assertEquals("conversion",output.getString("source"));
+            File file=ledger.verifiedFile(output.getString("id"));Bitmap bitmap=BitmapFactory.decodeFile(file.getPath());assertNotNull(bitmap);assertEquals(8,bitmap.getWidth());assertEquals(6,bitmap.getHeight());bitmap.recycle();
+            byte[] bytes=Files.readAllBytes(file.toPath());
+            if(format.equals("png")){assertEquals(0x89,bytes[0]&255);assertEquals('P',bytes[1]);}
+            if(format.equals("jpeg")){assertEquals(0xff,bytes[0]&255);assertEquals(0xd8,bytes[1]&255);}
+            if(format.equals("webp")){assertEquals("RIFF",new String(bytes,0,4,java.nio.charset.StandardCharsets.US_ASCII));assertEquals("WEBP",new String(bytes,8,4,java.nio.charset.StandardCharsets.US_ASCII));}
+        }
+        assertEquals(hash,ledger.get(id).getString("sha256"));ledger.verifiedFile(id);assertEquals(0,new AssetLedger(context.getFilesDir(),other).list().size());
     }
 }

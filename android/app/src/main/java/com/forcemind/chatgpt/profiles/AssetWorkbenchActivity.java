@@ -141,12 +141,29 @@ public final class AssetWorkbenchActivity extends ComponentActivity {
                 if(i==0)mutate(()->ledger.trash(id,false));else new AlertDialog.Builder(this).setTitle("彻底删除此文件？").setMessage("仅删除应用中的副本，此操作无法恢复。").setNegativeButton("取消",null).setPositiveButton("删除",(x,w)->mutate(()->ledger.remove(id))).show();
             }).show();return;
         }
-        new AlertDialog.Builder(this).setTitle(a.optString("name")).setItems(new String[]{"预览查看","导出副本",a.optBoolean("favorite")?"取消收藏":"收藏","重命名","移至回收站"},(d,i)->{
+        new AlertDialog.Builder(this).setTitle(a.optString("name")).setItems(new String[]{"预览查看","导出副本","转换格式",a.optBoolean("favorite")?"取消收藏":"收藏","重命名","移至回收站"},(d,i)->{
             if(i==0)startActivity(new Intent(this,AssetPreviewActivity.class).putExtra(ACCOUNT,accountId).putExtra("asset",id));
             if(i==1){exportId=id;try{startActivityForResult(new Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType(a.optString("mime","application/octet-stream")).putExtra(Intent.EXTRA_TITLE,a.optString("name")),11);}catch(RuntimeException e){exportId=null;notice("无法打开保存位置选择器");}}
-            if(i==2)mutate(()->ledger.favorite(id,!a.optBoolean("favorite")));
-            if(i==3){EditText name=new EditText(this);name.setText(a.optString("name"));new AlertDialog.Builder(this).setTitle("重命名应用中的副本").setView(name).setNegativeButton("取消",null).setPositiveButton("保存",(x,w)->mutate(()->ledger.rename(id,name.getText().toString()))).show();}
-            if(i==4)mutate(()->ledger.trash(id,true));
+            if(i==2)convert(a);
+            if(i==3)mutate(()->ledger.favorite(id,!a.optBoolean("favorite")));
+            if(i==4){EditText name=new EditText(this);name.setText(a.optString("name"));new AlertDialog.Builder(this).setTitle("重命名应用中的副本").setView(name).setNegativeButton("取消",null).setPositiveButton("保存",(x,w)->mutate(()->ledger.rename(id,name.getText().toString()))).show();}
+            if(i==5)mutate(()->ledger.trash(id,true));
+        }).show();
+    }
+    private void convert(JSONObject asset){
+        if(busy)return;
+        if(!asset.optString("mime").startsWith("image/")||asset.optString("mime").equals("image/svg+xml")){notice("本阶段支持 PNG / JPEG / WebP 位图转换，其他格式请使用桌面版");return;}
+        LinearLayout fields=new LinearLayout(this);fields.setOrientation(LinearLayout.VERTICAL);fields.setPadding(dp(24),dp(12),dp(24),0);
+        fields.addView(text("新建副本，保留原件。动图仅转换第一帧；JPEG 的透明区域使用白底。",13));
+        Spinner format=new Spinner(this),size=new Spinner(this);
+        format.setAdapter(new ArrayAdapter<String>(this,android.R.layout.simple_spinner_dropdown_item,new String[]{"PNG","JPEG","WebP"}));
+        size.setAdapter(new ArrayAdapter<String>(this,android.R.layout.simple_spinner_dropdown_item,new String[]{"原尺寸（最多 1600 万像素）","长边 640","长边 1280","长边 2048","长边 4096"}));size.setSelection(2);
+        fields.addView(text("目标格式",12));fields.addView(format);fields.addView(text("目标尺寸，不放大原图",12));fields.addView(size);
+        TextView value=text("JPEG / WebP 质量：90",12);fields.addView(value);SeekBar quality=new SeekBar(this);quality.setMax(99);quality.setProgress(89);fields.addView(quality);
+        quality.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){public void onProgressChanged(SeekBar b,int p,boolean user){value.setText("JPEG / WebP 质量："+(p+1));}public void onStartTrackingTouch(SeekBar b){}public void onStopTrackingTouch(SeekBar b){}});
+        new AlertDialog.Builder(this).setTitle("转换图片副本").setView(fields).setNegativeButton("取消",null).setPositiveButton("开始转换",(d,w)->{
+            String output=new String[]{"png","jpeg","webp"}[format.getSelectedItemPosition()];int maximum=new int[]{0,640,1280,2048,4096}[size.getSelectedItemPosition()];int q=quality.getProgress()+1;
+            task(()->{account();ImageConversions.convert(this,ledger,asset.optString("id"),output,maximum,q,this::available);records=ledger.list();},()->{render();notice("转换副本已归档，原文件未修改");});
         }).show();
     }
     private void showSkill(JSONObject skill){
