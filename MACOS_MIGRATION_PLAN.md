@@ -391,3 +391,24 @@
 - 探针源码 `d5e983379f13dd13f6b613dda678001ab7acd6d7`，构建 `39803274160` / 设备 `39803365564` 成功。Android 15 模拟器实际使用 `com.google.android.webview` `124.0.6367.219`，1 项诊断流程无失败或跳过；这不代表环境偏好功能通过。两个 Context 分别请求 zh-CN / ja-JP，主页面、独立来源 iframe 与 Worker 均实报 en-US / UTC；该引擎 `CUSTOM_REQUEST_HEADERS=false`，不具备对应原生请求头 API。时区目标值仅记录为未应用，没有虚构时区设置调用或成功。
 - 已只读核对官方 Maven 最新 1.18.0（项目仍固定 1.17.1），两版 SDK 源码均未找到专门的按 Profile 时区 / locale 设置接口。旧引擎不支持自定义请求头，不能据此推断新版引擎也不支持；官方 Profile.addCustomHeader 是能力检查后可用的网络 API，不等同于 navigator、Intl 和 Date 的完整独立环境。正式版继续关闭远程调试，未以调试连接或局部 JS 改写冒充完整实现。
 - 原始数据和 SDK 源码摘要已归档 `docs/benchmarks/android-environment-capabilities.json`。后续涉及交付标准选择：保持完整环境一致性并提出独立内核方案、明确接受网页层兼容实现的限制，或由用户明确延期 Android 这两项。未擅自减少原目标、升级依赖、替换内核或迁移登录数据；alpha.10 及公开发布保持。
+
+### Android 完整环境路线：方案对比与下一步边界（待用户选择，未实施）
+
+目标继续保留：账号语言 / 时区在请求与实际运行环境中保持一致，账号之间独立，沿用沉浸界面和现有资产能力。尚未证实任何替代内核已经满足全部条件；本方案不是迁移完成或可立即替换的结论。
+
+| 路线 | 已知证据 | 对当前项目的判断 |
+| --- | --- | --- |
+| 系统 WebView + 公开接口 | 当前 124 实测不支持自定义请求头；新版接口可按能力检查配置网络请求头，但现有 SDK 未找到按 Profile 设置完整默认 locale / 时区的接口 | 保留为稳定业务内核；需在新引擎上另测网络语言，不能把网络头或页面 JS 偏好当完整环境控制 |
+| 系统 WebView + DevTools 控制 | 底层协议存在时区控制，桌面版已有应用；Android 官方要求调试开关仅用于开发且该开关影响 App 内全部 WebView | 只可作为隔离实验的能力基准，不把正式版全局远程调试作为默认交付方案；Worker、跨标签及多账号边界仍须实测 |
+| GeckoView | `contextId` 文档说明可隔离 Cookie / localStorage；locale 属于 GeckoRuntimeSettings，Runtime 源码限制同进程单实例；已查看的 Session API 未发现专门时区设置 | 不能推断“换 Gecko 即可解决”；若需要多进程或定制内核，必须另测包体、内存 / CPU、生命周期和登录兼容性 |
+
+依据：[Android 官方调试说明](https://developer.android.com/develop/ui/views/layout/webapps/debug-chrome-devtools?hl=en)、[Gecko 会话 contextId](https://mozilla.github.io/geckoview/javadoc/mozilla-central/org/mozilla/geckoview/GeckoSessionSettings.Builder.html)、[Runtime locale](https://mozilla.github.io/geckoview/javadoc/mozilla-central/org/mozilla/geckoview/GeckoRuntimeSettings.html)、[Runtime 单实例源码](https://raw.githubusercontent.com/mozilla/gecko-dev/master/mobile/android/geckoview/src/main/java/org/mozilla/geckoview/GeckoRuntime.java)。这些是接口 / 源码证据；未进行 Gecko 安装或性能 / ChatGPT 实测，没有据此估造包大小与资源数字。
+
+建议下一阶段只做一个与正式 App 分离的可行性 PoC，先筛选能提供按账号控制、且不依赖正式版全局调试开关的候选。找不到符合条件的接口时返回明确不可行结论，不直接扩大为维护完整浏览器内核。候选和依赖选定后才实施实验；当前只读比较不授权替换业务内核。
+
+- 实验范围：独立 debug 包名、全新测试空间和保留域名网页；不读取已有 Cookie、账号状态、登录密钥或资产。拟涉及 debug 探针 Activity、定向设备用例、单个实验脚本及可选 CI 入口；不先修改 MainActivity 的业务创建流程或 WorkspaceState / StateStore 的用户数据契约。
+- 正确性验收：两个账号同时使用不同语言 / IANA 时区；核对网络 Accept-Language、navigator、Intl 默认 locale / 时区、Date 冬夏偏移和本地时间构造，覆盖主页面、跨来源 iframe、Worker、新标签与受控弹窗。切换和重建后仍一致，Cookie / localStorage 保持隔离，修改系统全局设置或只有页面局部改写不算完整通过。
+- 资源验收：同一模拟器、相同离线素材下记录 1 / 4 / 8 标签的包体、可归属进程 PSS、CPU 均值 / 峰值、切换是否重载及后台保活；没有用户批准的硬阈值，不预设或伪造“低占用”结论。内核登录兼容性在之后真实服务验证，实验阶段不发送模型消息。
+- 正式迁移前置：只有实验满足完整能力与可接受资源代价，才给出确定依赖、受影响模块和迁移方案。预计涉及浏览器创建 / 弹窗、附件与下载、页面恢复、账号环境字段、存储空间映射及 Manifest / 构建；Cookie 可迁移性未知，默认不承诺自动迁移或旧 APK 直接降级。正式版仍需保持自己的受控访问边界，并保留现有空间和可恢复路径。
+
+当前已经完成能力测量与只读方案；路线问题仍待用户回答。未将未回答的默认选项当作授权，未开始 PoC、引入新内核依赖或更改现有登录空间。
