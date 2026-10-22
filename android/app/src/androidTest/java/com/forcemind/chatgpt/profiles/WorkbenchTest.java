@@ -44,7 +44,10 @@ public class WorkbenchTest {
     private Intent screen(Class<?> activity){return new Intent(context,activity).putExtra(AssetWorkbenchActivity.ACCOUNT,account);}
     private interface Condition{boolean value()throws Exception;}
     private void until(Condition condition)throws Exception{
-        long stop=SystemClock.elapsedRealtime()+20000;while(SystemClock.elapsedRealtime()<stop){if(condition.value())return;SystemClock.sleep(150);}fail("Native fixture did not become ready");
+        until(20000,condition);
+    }
+    private void until(long milliseconds,Condition condition)throws Exception{
+        long stop=SystemClock.elapsedRealtime()+milliseconds;while(SystemClock.elapsedRealtime()<stop){if(condition.value())return;SystemClock.sleep(150);}fail("Native fixture did not become ready");
     }
     private <T extends View>T find(View root,Class<T> type){
         if(type.isInstance(root))return type.cast(root);
@@ -82,15 +85,41 @@ public class WorkbenchTest {
             if(root==null)return false;assertEquals(context.getPackageName(),String.valueOf(root.getPackageName()));
             for(android.view.accessibility.AccessibilityNodeInfo node:root.findAccessibilityNodeInfosByText(label)){
                 if(!label.contentEquals(node.getText()==null?"":node.getText()))continue;
-                Rect bounds=new Rect();node.getBoundsInScreen(bounds);assertFalse(bounds.isEmpty());
-                long down=SystemClock.uptimeMillis();
-                MotionEvent press=MotionEvent.obtain(down,down,MotionEvent.ACTION_DOWN,bounds.exactCenterX(),bounds.exactCenterY(),0);press.setSource(android.view.InputDevice.SOURCE_TOUCHSCREEN);
-                try{assertTrue(InstrumentationRegistry.getInstrumentation().getUiAutomation().injectInputEvent(press,true));}finally{press.recycle();}
-                SystemClock.sleep(80);MotionEvent release=MotionEvent.obtain(down,SystemClock.uptimeMillis(),MotionEvent.ACTION_UP,bounds.exactCenterX(),bounds.exactCenterY(),0);release.setSource(android.view.InputDevice.SOURCE_TOUCHSCREEN);
-                try{assertTrue(InstrumentationRegistry.getInstrumentation().getUiAutomation().injectInputEvent(release,true));}finally{release.recycle();}return true;
+                tapNode(node);return true;
             }
             return false;
         });
+    }
+    private void tapNode(android.view.accessibility.AccessibilityNodeInfo node){
+        Rect bounds=new Rect();node.getBoundsInScreen(bounds);assertFalse(bounds.isEmpty());long down=SystemClock.uptimeMillis();
+        MotionEvent press=MotionEvent.obtain(down,down,MotionEvent.ACTION_DOWN,bounds.exactCenterX(),bounds.exactCenterY(),0);press.setSource(android.view.InputDevice.SOURCE_TOUCHSCREEN);
+        try{assertTrue(InstrumentationRegistry.getInstrumentation().getUiAutomation().injectInputEvent(press,true));}finally{press.recycle();}
+        SystemClock.sleep(80);MotionEvent release=MotionEvent.obtain(down,SystemClock.uptimeMillis(),MotionEvent.ACTION_UP,bounds.exactCenterX(),bounds.exactCenterY(),0);release.setSource(android.view.InputDevice.SOURCE_TOUCHSCREEN);
+        try{assertTrue(InstrumentationRegistry.getInstrumentation().getUiAutomation().injectInputEvent(release,true));}finally{release.recycle();}
+    }
+    private void spinnerNodes(android.view.accessibility.AccessibilityNodeInfo node,List<android.view.accessibility.AccessibilityNodeInfo> found){
+        if("android.widget.Spinner".equals(String.valueOf(node.getClassName())))found.add(node);
+        for(int i=0;i<node.getChildCount();i++){android.view.accessibility.AccessibilityNodeInfo child=node.getChild(i);if(child!=null)spinnerNodes(child,found);}
+    }
+    private void chooseFormat(String label)throws Exception{
+        until(()->{android.view.accessibility.AccessibilityNodeInfo root=InstrumentationRegistry.getInstrumentation().getUiAutomation().getRootInActiveWindow();if(root==null)return false;assertEquals(context.getPackageName(),String.valueOf(root.getPackageName()));List<android.view.accessibility.AccessibilityNodeInfo> found=new ArrayList<>();spinnerNodes(root,found);if(found.isEmpty())return false;tapNode(found.get(0));return true;});tapNative(label);
+    }
+    private JSONObject throughRenderMenu(ActivityScenario<AssetWorkbenchActivity> scene,AssetLedger ledger,JSONObject source,String format)throws Exception{
+        String id=source.getString("id");AtomicBoolean ready=new AtomicBoolean();
+        until(()->{scene.onActivity(a->{ListView list=find(a.getWindow().getDecorView(),ListView.class);ready.set(list.getAdapter()!=null&&list.getAdapter().getCount()==ledgerSize(ledger));});return ready.get();});
+        scene.onActivity(a->{ListView list=find(a.getWindow().getDecorView(),ListView.class);for(int i=0;i<list.getAdapter().getCount();i++)if(((JSONObject)list.getAdapter().getItem(i)).optString("id").equals(id)){assertTrue(list.performItemClick(list.getChildAt(i),i,list.getAdapter().getItemId(i)));return;}fail("Source asset not visible");});
+        tapNative("转换格式");if(ConversionType.of(source).equals("markdown"))tapNative("PDF");
+        String initial=ConversionType.of(source).equals("pdf")?"PNG":RenderTasks.formats(RenderTasks.kind(source)).get(0);if(!format.equals(initial))chooseFormat(format);
+        Set<String> before=new HashSet<>();for(JSONObject row:ledger.list())before.add(row.getString("id"));tapNative("开始转换");
+        String mime=format.equals("PDF")?"application/pdf":"image/"+(format.equals("JPEG")?"jpeg":format.toLowerCase(Locale.ROOT));
+        try{until(90000,()->ledger.list().stream().anyMatch(a->!before.contains(a.optString("id"))&&id.equals(a.optString("parentId"))&&a.optString("status").equals("ready")&&a.optString("mime").equals(mime)));}
+        catch(AssertionError error){AtomicReference<String> text=new AtomicReference<>();scene.onActivity(a->text.set(viewText(a.getWindow().getDecorView())));screenshot("android-render-failed-"+format+".png");throw new AssertionError("Render result missing: "+text.get(),error);}
+        return ledger.list().stream().filter(a->!before.contains(a.optString("id"))&&id.equals(a.optString("parentId"))&&a.optString("mime").equals(mime)).findFirst().get();
+    }
+    private String viewText(View root){StringBuilder result=new StringBuilder();if(root instanceof TextView)result.append(((TextView)root).getText()).append('\n');if(root instanceof ViewGroup)for(int i=0;i<((ViewGroup)root).getChildCount();i++)result.append(viewText(((ViewGroup)root).getChildAt(i)));return result.toString();}
+    private int ledgerSize(AssetLedger ledger){try{return ledger.list().size();}catch(Exception e){throw new RuntimeException(e);}}
+    private void rendererExits()throws Exception{
+        until(()->{try(android.os.ParcelFileDescriptor descriptor=InstrumentationRegistry.getInstrumentation().getUiAutomation().executeShellCommand("pidof "+context.getPackageName()+":asset_renderer");InputStream input=new android.os.ParcelFileDescriptor.AutoCloseInputStream(descriptor)){return input.read()==-1;}});
     }
     @Test public void realDocumentUrisImportToTheInitiatingAccountAndPreviewAllThreeKinds()throws Exception{
         try(ActivityScenario<AssetWorkbenchActivity> scene=ActivityScenario.launch(screen(AssetWorkbenchActivity.class))){
@@ -177,5 +206,48 @@ public class WorkbenchTest {
         try(ActivityScenario<AssetPreviewActivity> scene=ActivityScenario.launch(screen(AssetPreviewActivity.class).putExtra("asset",result.getString("id")))){
             String body=htmlBody(scene,"android-markdown-html-preview.png");assertTrue(body.contains("移动报告"));assertTrue(body.contains("文档转换"));assertTrue(body.contains("已完成"));
         }
+    }
+    @Test public void wholeHtmlPngAndMultipagePdfContainBothEndsAndKeepOwner()throws Exception{
+        AssetLedger ledger=new AssetLedger(context.getFilesDir(),account);String html="<!doctype html><html><head><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><style>html,body{margin:0;padding:0}div{height:1200px}</style></head><body><div style=\"background:#ff0000\"></div><div style=\"background:#0000ff\"></div></body></html>";
+        JSONObject source=ledger.importCopy(new ByteArrayInputStream(html.getBytes(java.nio.charset.StandardCharsets.UTF_8)),"long.html","text/html","import",null),png,pdf;
+        try(ActivityScenario<AssetWorkbenchActivity> scene=ActivityScenario.launch(screen(AssetWorkbenchActivity.class))){png=throughRenderMenu(scene,ledger,source,"PNG");pdf=throughRenderMenu(scene,ledger,source,"PDF");}
+        Bitmap image=BitmapFactory.decodeFile(ledger.verifiedFile(png.getString("id")).getPath());assertNotNull(image);assertEquals(1280,image.getWidth());assertTrue("Long document was truncated",image.getHeight()>2000);assertRed(image.getPixel(image.getWidth()/2,image.getHeight()/10));assertBlue(image.getPixel(image.getWidth()/2,image.getHeight()*9/10));image.recycle();
+        try(android.os.ParcelFileDescriptor descriptor=android.os.ParcelFileDescriptor.open(ledger.verifiedFile(pdf.getString("id")),android.os.ParcelFileDescriptor.MODE_READ_ONLY);android.graphics.pdf.PdfRenderer document=new android.graphics.pdf.PdfRenderer(descriptor)){
+            assertTrue(document.getPageCount()>1);assertTrue(pdfHasColor(document,0,true));assertTrue(pdfHasColor(document,document.getPageCount()-1,false));
+        }
+        assertEquals(source.getString("sha256"),ledger.get(source.getString("id")).getString("sha256"));assertEquals(account,png.getString("accountId"));assertEquals(account,pdf.getString("accountId"));assertEquals(0,new AssetLedger(context.getFilesDir(),other).list().size());
+        try(ActivityScenario<AssetPreviewActivity> scene=ActivityScenario.launch(screen(AssetPreviewActivity.class).putExtra("asset",png.getString("id")))){AtomicBoolean visible=new AtomicBoolean();until(()->{scene.onActivity(a->visible.set(find(a.getWindow().getDecorView(),ImageView.class)!=null));return visible.get();});screenshot("android-html-long-image.png");}rendererExits();
+    }
+    private void assertRed(int pixel){assertTrue("Expected red",Color.red(pixel)>220&&Color.green(pixel)<35&&Color.blue(pixel)<35);}
+    private void assertBlue(int pixel){assertTrue("Expected blue",Color.blue(pixel)>220&&Color.green(pixel)<35&&Color.red(pixel)<35);}
+    private boolean pdfHasColor(android.graphics.pdf.PdfRenderer pdf,int number,boolean red){
+        try(android.graphics.pdf.PdfRenderer.Page page=pdf.openPage(number)){Bitmap bitmap=Bitmap.createBitmap(page.getWidth(),page.getHeight(),Bitmap.Config.ARGB_8888);bitmap.eraseColor(Color.WHITE);page.render(bitmap,null,null,android.graphics.pdf.PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);boolean found=false;for(int y=0;y<bitmap.getHeight();y+=8)for(int x=0;x<bitmap.getWidth();x+=8){int p=bitmap.getPixel(x,y);if(red?Color.red(p)>220&&Color.green(p)<35&&Color.blue(p)<35:Color.blue(p)>220&&Color.green(p)<35&&Color.red(p)<35)found=true;}bitmap.recycle();return found;}
+    }
+    @Test public void svgFormatsPreserveShapeAlphaAndJpegWhiteBackground()throws Exception{
+        AssetLedger ledger=new AssetLedger(context.getFilesDir(),account);String svg="<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"40\" height=\"20\" viewBox=\"0 0 40 20\"><rect x=\"10\" y=\"0\" width=\"20\" height=\"20\" fill=\"#00ff00\"/></svg>";
+        JSONObject source=ledger.importCopy(new ByteArrayInputStream(svg.getBytes(java.nio.charset.StandardCharsets.UTF_8)),"shape.svg","image/svg+xml","import",null);
+        try(ActivityScenario<AssetWorkbenchActivity> scene=ActivityScenario.launch(screen(AssetWorkbenchActivity.class))){
+            for(String format:new String[]{"PNG","JPEG","WEBP"}){
+                JSONObject result=throughRenderMenu(scene,ledger,source,format);Bitmap image=BitmapFactory.decodeFile(ledger.verifiedFile(result.getString("id")).getPath());assertNotNull(image);assertEquals(1280,image.getWidth());assertEquals(640,image.getHeight());
+                int center=image.getPixel(640,320),corner=image.getPixel(5,5);assertTrue(Color.green(center)>220&&Color.red(center)<35&&Color.blue(center)<35);
+                if(format.equals("JPEG")){assertTrue(Color.red(corner)>240&&Color.green(corner)>240&&Color.blue(corner)>240);}else assertEquals(0,Color.alpha(corner));image.recycle();
+            }
+        }
+        assertEquals(0,new AssetLedger(context.getFilesDir(),other).list().size());ledger.verifiedFile(source.getString("id"));rendererExits();
+    }
+    @Test public void markdownPdfIsRealAndPdfSelectionsUseRequestedPagesWithoutChangingSource()throws Exception{
+        AssetLedger ledger=new AssetLedger(context.getFilesDir(),account);JSONObject markdown=ledger.importCopy(new ByteArrayInputStream("# 本地 PDF 报告\n\n|项目|状态|\n|---|---|\n|转换|完成|\n".getBytes(java.nio.charset.StandardCharsets.UTF_8)),"report.md","text/markdown","import",null),converted;
+        try(ActivityScenario<AssetWorkbenchActivity> scene=ActivityScenario.launch(screen(AssetWorkbenchActivity.class))){converted=throughRenderMenu(scene,ledger,markdown,"PDF");}
+        try(android.os.ParcelFileDescriptor descriptor=android.os.ParcelFileDescriptor.open(ledger.verifiedFile(converted.getString("id")),android.os.ParcelFileDescriptor.MODE_READ_ONLY);android.graphics.pdf.PdfRenderer document=new android.graphics.pdf.PdfRenderer(descriptor)){
+            assertTrue(document.getPageCount()>=1);try(android.graphics.pdf.PdfRenderer.Page page=document.openPage(0)){Bitmap rendered=Bitmap.createBitmap(595,842,Bitmap.Config.ARGB_8888);rendered.eraseColor(Color.WHITE);page.render(rendered,null,null,android.graphics.pdf.PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);int ink=0;for(int y=0;y<842;y+=4)for(int x=0;x<595;x+=4)if(Color.red(rendered.getPixel(x,y))<200)ink++;rendered.recycle();assertTrue("Markdown PDF is blank",ink>30);}
+        }
+        android.graphics.pdf.PdfDocument document=new android.graphics.pdf.PdfDocument();for(int i=0;i<2;i++){android.graphics.pdf.PdfDocument.Page page=document.startPage(new android.graphics.pdf.PdfDocument.PageInfo.Builder(100,100,i+1).create());page.getCanvas().drawColor(i==0?Color.RED:Color.BLUE);document.finishPage(page);}ByteArrayOutputStream bytes=new ByteArrayOutputStream();document.writeTo(bytes);document.close();
+        JSONObject source=ledger.importCopy(new ByteArrayInputStream(bytes.toByteArray()),"pages.pdf","application/pdf","import",null);
+        List<JSONObject> output=RenderedConversions.pdfPages(context,ledger,source.getString("id"),PageSelection.parse("2,1"),"PNG",640,90,()->WorkspaceFiles.contains(context.getFilesDir(),account));assertEquals(2,output.size());
+        for(int i=0;i<2;i++){Bitmap image=BitmapFactory.decodeFile(ledger.verifiedFile(output.get(i).getString("id")).getPath());assertEquals(640,image.getWidth());assertEquals(640,image.getHeight());if(i==0)assertBlue(image.getPixel(320,320));else assertRed(image.getPixel(320,320));image.recycle();assertEquals(source.getString("id"),output.get(i).getString("parentId"));}
+        int before=ledger.list().size();assertThrows(Exception.class,()->RenderedConversions.pdfPages(context,ledger,source.getString("id"),Arrays.asList(1,3),"PNG",640,90,()->true));assertEquals(before,ledger.list().size());
+        JSONObject jpeg=RenderedConversions.pdfPages(context,ledger,source.getString("id"),Collections.singletonList(1),"JPEG",640,90,()->true).get(0);Bitmap image=BitmapFactory.decodeFile(ledger.verifiedFile(jpeg.getString("id")).getPath());assertRed(image.getPixel(320,320));image.recycle();
+        try(ActivityScenario<AssetWorkbenchActivity> scene=ActivityScenario.launch(screen(AssetWorkbenchActivity.class))){JSONObject ui=throughRenderMenu(scene,ledger,source,"PNG");assertTrue(ui.getString("name").endsWith("-p1.png"));screenshot("android-pdf-page-assets.png");}
+        assertEquals(0,new AssetLedger(context.getFilesDir(),other).list().size());assertArrayEquals(bytes.toByteArray(),Files.readAllBytes(ledger.verifiedFile(source.getString("id")).toPath()));rendererExits();
     }
 }

@@ -29,12 +29,18 @@ public final class AssetWorkbenchActivity extends ComponentActivity {
     private String accountId,accountName,mode="assets",filter="all",exportId;
     private volatile List<JSONObject> records=new ArrayList<>(),skills=new ArrayList<>(),shown=new ArrayList<>();
     private boolean busy;
+    private volatile JSONObject pendingRender;
+    private boolean renderLaunched;
     private int pendingTasks;
     private volatile boolean dead;
     private static final int INK=Color.rgb(23,23,23),GRAY=Color.rgb(245,245,245);
 
     @Override public void onCreate(Bundle state){
         super.onCreate(state);if(state!=null)exportId=state.getString("exportId");accountId=getIntent().getStringExtra(ACCOUNT);mode=getIntent().getBooleanExtra("skills",false)?"skills":"assets";
+        if(state!=null&&state.containsKey("pendingRender"))try{
+            pendingRender=new JSONObject(state.getString("pendingRender"));renderLaunched=state.getBoolean("renderLaunched");
+            if(!renderLaunched){try{RenderTasks.cleanup(getCacheDir(),pendingRender.getString("task"));}catch(Exception ignored){}pendingRender=null;}
+        }catch(JSONException ignored){}
         try{WorkspaceState.profile(accountId);WorkspaceState.Account owner=account();accountName=owner.name+(owner.email.isEmpty()?"":" · "+owner.email);}catch(Exception e){finish();return;}
         root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setBackgroundColor(Color.WHITE);root.setFocusableInTouchMode(true);root.requestFocus();
         root.setPadding(dp(16),0,dp(16),0);setContentView(root);
@@ -108,7 +114,9 @@ public final class AssetWorkbenchActivity extends ComponentActivity {
         try{startActivityForResult(pick,10);}catch(RuntimeException e){notice("无法打开系统文件选择器");}
     }
     @Override protected void onActivityResult(int request,int result,Intent data){
-        super.onActivityResult(request,result,data);if(result!=RESULT_OK||data==null)return;
+        super.onActivityResult(request,result,data);
+        if(request==12){renderResult(result,data);return;}
+        if(result!=RESULT_OK||data==null)return;
         if(request==10){
             List<Uri> uris=new ArrayList<>();
             if(data.getClipData()!=null)for(int i=0;i<data.getClipData().getItemCount();i++)uris.add(data.getClipData().getItemAt(i).getUri());
@@ -152,8 +160,12 @@ public final class AssetWorkbenchActivity extends ComponentActivity {
     }
     private void convert(JSONObject asset){
         if(busy)return;
+        String kind=ConversionType.of(asset);
+        if(kind.equals("pdf")){convertPdf(asset);return;}
+        if(kind.equals("markdown")){new AlertDialog.Builder(this).setTitle("选择转换格式").setItems(new String[]{"HTML","PDF"},(d,i)->{if(i==0)convertDocument(asset);else convertRender(asset);}).show();return;}
+        if(!RenderTasks.kind(asset).isEmpty()){convertRender(asset);return;}
         if(!DocumentConversions.formats(asset).isEmpty()){convertDocument(asset);return;}
-        if(!asset.optString("mime").startsWith("image/")||asset.optString("mime").equals("image/svg+xml")){notice("此文件暂不支持本机转换，可导出后处理");return;}
+        if(!kind.equals("image")){notice("此文件暂不支持本机转换，可导出后处理");return;}
         LinearLayout fields=new LinearLayout(this);fields.setOrientation(LinearLayout.VERTICAL);fields.setPadding(dp(24),dp(12),dp(24),0);
         fields.addView(text("新建副本，保留原件。动图仅转换第一帧；JPEG 的透明区域使用白底。",13));
         Spinner format=new Spinner(this),size=new Spinner(this);
@@ -165,6 +177,46 @@ public final class AssetWorkbenchActivity extends ComponentActivity {
         new AlertDialog.Builder(this).setTitle("转换图片副本").setView(fields).setNegativeButton("取消",null).setPositiveButton("开始转换",(d,w)->{
             String output=new String[]{"png","jpeg","webp"}[format.getSelectedItemPosition()];int maximum=new int[]{0,640,1280,2048,4096}[size.getSelectedItemPosition()];int q=quality.getProgress()+1;
             task(()->{account();ImageConversions.convert(this,ledger,asset.optString("id"),output,maximum,q,this::available);records=ledger.list();},()->{render();notice("转换副本已归档，原文件未修改");});
+        }).show();
+    }
+    private Spinner choices(LinearLayout fields,String title,String[] values,int selection){
+        fields.addView(text(title,12));Spinner spinner=new Spinner(this);spinner.setAdapter(new ArrayAdapter<String>(this,android.R.layout.simple_spinner_dropdown_item,values));spinner.setSelection(selection);fields.addView(spinner);return spinner;
+    }
+    private void convertRender(JSONObject asset){
+        if(pendingRender!=null){notice("请等待当前页面转换完成");return;}
+        LinearLayout fields=new LinearLayout(this);fields.setOrientation(LinearLayout.VERTICAL);fields.setPadding(dp(24),dp(12),dp(24),0);
+        fields.addView(text("生成当前账号的新副本，保留原件。仅使用静态页面内容，脚本和外部资源不加载。\nPDF 按屏幕样式分页为 A4；不应用打印专用 CSS。图片最多 1600 万像素，输入上限 2 MiB。",13));
+        String kind=RenderTasks.kind(asset);Spinner format=choices(fields,"目标格式",RenderTasks.formats(kind).toArray(new String[0]),0);
+        Spinner width=choices(fields,"排版 / 图片宽度（像素）",new String[]{"640","1280","2048","4096"},1);
+        ScrollView scroll=new ScrollView(this);scroll.addView(fields);
+        new AlertDialog.Builder(this).setTitle("页面转换副本").setView(scroll).setNegativeButton("取消",null).setPositiveButton("开始转换",(d,w)->{
+            String output=String.valueOf(format.getSelectedItem());int pixels=new int[]{640,1280,2048,4096}[width.getSelectedItemPosition()];
+            task(()->{account();pendingRender=RenderTasks.prepare(getCacheDir(),ledger,asset.optString("id"),output,pixels,90,accountName,this::available);if(!available()){RenderTasks.cleanup(getCacheDir(),pendingRender.getString("task"));pendingRender=null;throw new IOException("转换已取消");}},()->{
+                try{renderLaunched=true;startActivityForResult(new Intent(this,AssetRenderActivity.class).putExtra("task",pendingRender.optString("task")),12);}
+                catch(RuntimeException e){renderLaunched=false;renderResult(RESULT_CANCELED,new Intent().putExtra("error","无法打开本机转换窗口"));}
+            });
+        }).show();
+    }
+    private void renderResult(int result,Intent data){
+        JSONObject pending=pendingRender;pendingRender=null;renderLaunched=false;
+        if(pending==null){notice("转换已中断，原文件保留，可以重新转换");return;}
+        enqueue(()->{
+            try{
+                account();if(ledger==null)ledger=new AssetLedger(getFilesDir(),accountId);
+                if(result!=RESULT_OK||data==null||!pending.getString("task").equals(data.getStringExtra("task")))throw new IOException(data==null?"转换已取消，原件保留":data.getStringExtra("error")==null?"转换未完成，原件保留":data.getStringExtra("error"));
+                RenderedConversions.accept(this,ledger,pending,this::available);
+            }finally{try{RenderTasks.cleanup(getCacheDir(),pending.getString("task"));}finally{if(ledger!=null)records=ledger.list();}}
+        },()->{render();notice("转换副本已归档，原文件未修改");});
+    }
+    private void convertPdf(JSONObject asset){
+        LinearLayout fields=new LinearLayout(this);fields.setOrientation(LinearLayout.VERTICAL);fields.setPadding(dp(24),dp(12),dp(24),0);
+        fields.addView(text("每个选中页生成一个副本，保留原件。支持 1,3-5，最多 20 个不同页码；已成功生成的页在中断后仍保留。",13));
+        EditText pages=new EditText(this);pages.setText("1");pages.setSingleLine(true);pages.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(256)});fields.addView(text("页码",12));fields.addView(pages);
+        Spinner format=choices(fields,"目标格式",new String[]{"PNG","JPEG"},0),width=choices(fields,"图片宽度（像素）",new String[]{"640","1280","2048","4096"},1);
+        ScrollView scroll=new ScrollView(this);scroll.addView(fields);
+        new AlertDialog.Builder(this).setTitle("PDF 页面转图片").setView(scroll).setNegativeButton("取消",null).setPositiveButton("开始转换",(d,w)->{
+            String selected=pages.getText().toString(),output=String.valueOf(format.getSelectedItem());int pixels=new int[]{640,1280,2048,4096}[width.getSelectedItemPosition()];
+            task(()->{account();try{RenderedConversions.pdfPages(this,ledger,asset.optString("id"),PageSelection.parse(selected),output,pixels,90,this::available);}finally{records=ledger.list();}},()->{render();notice("PDF 图片副本已归档，原文件未修改");});
         }).show();
     }
     private void convertDocument(JSONObject asset){
@@ -196,16 +248,16 @@ public final class AssetWorkbenchActivity extends ComponentActivity {
         if(executor.isShutdown())return;pendingTasks++;busy=true;subtitle.setText(accountName+" · 正在处理…");
         executor.execute(()->{String error=null;try{work.run();}catch(Exception e){error=e.getMessage()==null?"操作未完成":e.getMessage();}String message=error;
             runOnUiThread(()->{pendingTasks--;busy=pendingTasks>0;if(isFinishing()||isDestroyed())return;
-                if(message!=null){notice(message);subtitle.setText(accountName+" · 操作未完成");}else success.run();
+                if(message!=null){if(ledger!=null&&mode.equals("assets"))render();notice(message);subtitle.setText(accountName+" · "+message);}else success.run();
                 if(busy)subtitle.setText(accountName+" · 正在处理…");
             });
         });
     }
-    @Override protected void onSaveInstanceState(Bundle state){if(exportId!=null)state.putString("exportId",exportId);super.onSaveInstanceState(state);}
+    @Override protected void onSaveInstanceState(Bundle state){if(exportId!=null)state.putString("exportId",exportId);if(pendingRender!=null){state.putString("pendingRender",pendingRender.toString());state.putBoolean("renderLaunched",renderLaunched);}super.onSaveInstanceState(state);}
     private Button button(String label){Button v=new Button(this);v.setText(label);v.setTextSize(12);v.setTextColor(INK);v.setBackgroundTintList(android.content.res.ColorStateList.valueOf(GRAY));return v;}
     private TextView text(String value,int size){TextView v=new TextView(this);v.setText(value);v.setTextSize(size);v.setTextColor(INK);return v;}
     private int dp(int value){return Math.round(value*getResources().getDisplayMetrics().density);}
     private String stateName(String value){switch(value){case "ready":return "已归档";case "processing":return "处理中";case "interrupted":return "任务已中断";case "deleting":return "删除未完成";default:return "任务未完成";}}
     private void notice(String value){Toast.makeText(this,value,Toast.LENGTH_LONG).show();}
-    @Override protected void onDestroy(){dead=true;executor.shutdownNow();super.onDestroy();}
+    @Override protected void onDestroy(){dead=true;executor.shutdownNow();if(pendingRender!=null&&!renderLaunched&&!isChangingConfigurations())try{RenderTasks.cleanup(getCacheDir(),pendingRender.getString("task"));}catch(Exception ignored){}super.onDestroy();}
 }

@@ -351,3 +351,9 @@
 - 已实际查看手机转换确认弹窗、Markdown 报告与平板 JSON 内容截图，保持白灰黑，正文可见，没有系统覆盖层。设备结果覆盖未改变的正常 CSV/Markdown 流程；最终源码只增加扩展名优先、中文编码错误路径和对应单元边界，均由最终 33 项检查覆盖，不把早期设备源码写成最终打包源码。
 - alpha.7 同签名 APK：`android/release/ChatGPT-Profiles-3.0.0-alpha.7-android.apk`，7126180 字节，SHA-256 `7d981c02cf3a26998546880d36c1c37b0a31f054598818ef7ab53e660211e18d`。版本 3000007、正式包名/非 debug 标记、ZIP CRC、签名/对齐、120 自有 Skill / 0 预置角色、测试 Provider 不在包内、合并 Apache / BSD 许可证与 NOTICE 均核验。与 alpha.1 / alpha.6 相同固定证书，未实测个人登录数据升级。
 - 本批完成 Android CSV↔JSON、Markdown→HTML，本地 alpha.6 包保留；公开 Release / 官网、main、Mac / Windows 包不变。后续按原目标继续 HTML→PDF/PNG、Markdown→PDF、PDF 选页与 SVG 位图转换，再接移动端带附件任务、恢复、语言/时区。主 Goal 仍 active，不将本阶段包交付等同整个目标完成；真实账号人工项继续按用户意愿后验。
+
+- Android 下一批 alpha.8 / 3000008 开始接入 HTML→PDF/PNG、Markdown→PDF、SVG→PNG/JPEG/WebP、PDF 选页→PNG/JPEG。当前源码为 WIP，不覆盖 alpha.7 已交付包，不修改公开下载、main 或其他平台。
+- 页面渲染使用非导出的 :asset_renderer 临时进程，单任务、独立 WebView 数据目录，仅接收有界文件副本与随机任务号；不读写账号状态或资产索引。整页绘制开关只在该进程设置，完成后释放，主浏览标签设置保持。主进程在账号、原件摘要及输出格式/尺寸检查后归档；取消/失败清理临时副本，遗留超过 24 小时的已知临时文件在下次转换时清理，不递归删除未知文件。
+- PDF 通过公开 PdfDocument Canvas 按静态屏幕样式分为 A4 页面，不调用隐藏 PrintDocumentAdapter 回调构造器，不宣称支持打印专用 CSS。PNG 使用完整页面绘制，SVG 保留透明度（JPEG 白底），PDF 选页一次最多 20 页并保留顺序；部分成功时保留成功副本并显示实际错误。
+- 本批验收：纯文件协议/原件与账号绑定、路径与摘要、页码解析；实际设备从菜单生成长图并校验顶/底颜色，PDF 多页首尾内容，Markdown PDF 非空内容，SVG 三格式/透明度，PDF 选页解码与原件不变，以及临时渲染进程退出。编译、Lint、截图与真实业务分别记录，尚未记为通过。
+- 本地纯 Java 33 项已通过，包含原有文档/资产边界及新增页码、转换协议、账号/来源绑定、临时目录符号链接与过期清理；运行限制仍为 192 MiB JVM 堆。协议测试使用明确的非编解码标记内容，只证明归属与文件事务，不当作真实 PDF/图片证明；真实编解码与界面由设备检查承担。下一步运行准确源码的 Android 构建与离线手机/平板检查。

@@ -15,7 +15,7 @@ final class ImageConversions {
         if(maxSide!=0&&maxSide!=640&&maxSide!=1280&&maxSide!=2048&&maxSide!=4096)throw new IOException("目标尺寸无效");
         if(quality<1||quality>100)throw new IOException("图片质量无效");
         JSONObject source=ledger.get(id);File original=ledger.verifiedFile(id);
-        if(!source.getString("mime").startsWith("image/")||source.getString("mime").equals("image/svg+xml"))throw new IOException("本阶段支持位图转换，SVG 请使用桌面版处理");
+        if(!ConversionType.of(source).equals("image"))throw new IOException("请选择位图；SVG 使用页面渲染转换");
         File cache=new File(context.getCacheDir().getCanonicalFile(),"asset-conversions");
         if(Files.isSymbolicLink(cache.toPath())||!cache.getCanonicalFile().equals(cache.getAbsoluteFile()))throw new IOException("转换临时目录无效");
         if(!cache.exists()&&!cache.mkdir())throw new IOException("无法创建转换临时目录");

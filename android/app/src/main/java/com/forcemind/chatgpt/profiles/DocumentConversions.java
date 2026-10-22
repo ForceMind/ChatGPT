@@ -11,13 +11,10 @@ import org.json.JSONObject;
 final class DocumentConversions {
     static final int MAX_INPUT=8*1024*1024,MAX_MARKDOWN=2*1024*1024,MAX_OUTPUT=16*1024*1024;
     static List<String> formats(JSONObject source){
-        String name=source.optString("name").toLowerCase(Locale.ROOT),mime=source.optString("mime");
-        if(name.endsWith(".csv"))return Collections.singletonList("JSON");
-        if(name.endsWith(".json"))return Collections.singletonList("CSV");
-        if(name.endsWith(".md")||name.endsWith(".markdown"))return Collections.singletonList("HTML");
-        if(mime.equals("text/csv"))return Collections.singletonList("JSON");
-        if(mime.equals("application/json"))return Collections.singletonList("CSV");
-        if(mime.equals("text/markdown"))return Collections.singletonList("HTML");
+        String kind=ConversionType.of(source);
+        if(kind.equals("csv"))return Collections.singletonList("JSON");
+        if(kind.equals("json"))return Collections.singletonList("CSV");
+        if(kind.equals("markdown"))return Collections.singletonList("HTML");
         return Collections.emptyList();
     }
     private static void active(BooleanSupplier available)throws IOException{

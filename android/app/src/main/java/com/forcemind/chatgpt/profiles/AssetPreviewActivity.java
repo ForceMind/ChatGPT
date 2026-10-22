@@ -91,28 +91,9 @@ public final class AssetPreviewActivity extends ComponentActivity {
     private void showHtml(String html,String name){
         if(dead)return;status.setText(name+" · HTML 静态预览，外部资源不可用");
         web=new WebView(this);web.setTag("asset-html-preview");
-        WebSettings settings=web.getSettings();settings.setJavaScriptEnabled(false);settings.setDomStorageEnabled(false);
-        settings.setAllowFileAccess(false);settings.setAllowContentAccess(false);settings.setBlockNetworkLoads(true);
-        settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);settings.setGeolocationEnabled(false);settings.setSupportMultipleWindows(false);
-        settings.setUseWideViewPort(true);settings.setLoadWithOverviewMode(true);settings.setBuiltInZoomControls(true);settings.setDisplayZoomControls(false);
-        String policy="<meta charset=\"utf-8\"><meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; script-src 'none'; style-src 'unsafe-inline'; img-src data:; font-src data:; connect-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'\">";
-        java.util.regex.Matcher head=java.util.regex.Pattern.compile("(?i)<head\\b[^>]*>").matcher(html);
-        String safe=head.find()?html.substring(0,head.end())+policy+html.substring(head.end()):policy+html;
-        String previewUrl="https://preview-"+UUID.randomUUID()+".invalid/";
-        byte[] document=safe.getBytes(StandardCharsets.UTF_8);
-        web.setWebChromeClient(new WebChromeClient(){@Override public void onPermissionRequest(PermissionRequest request){request.deny();}});
-        web.setWebViewClient(new WebViewClient(){
-            @Override public boolean shouldOverrideUrlLoading(WebView view,WebResourceRequest request){return true;}
-            @Override public WebResourceResponse shouldInterceptRequest(WebView view,WebResourceRequest request){
-                // Serve only this generated main document from memory. Never
-                // fall through to network, even for same-origin subresources.
-                if(request.isForMainFrame()&&"GET".equals(request.getMethod())&&previewUrl.equals(request.getUrl().toString()))return new WebResourceResponse("text/html","UTF-8",200,"OK",Collections.singletonMap("Cache-Control","no-store"),new ByteArrayInputStream(document));
-                return new WebResourceResponse("text/plain","UTF-8",403,"Blocked",Collections.emptyMap(),new ByteArrayInputStream(new byte[0]));
-            }
-            @Override public boolean onRenderProcessGone(WebView view,RenderProcessGoneDetail detail){root.removeView(view);view.destroy();web=null;status.setText("预览进程已退出。原文件已保留，可以返回重试或导出。");return true;}
-        });
+        web.getSettings().setBuiltInZoomControls(true);web.getSettings().setDisplayZoomControls(false);
         root.addView(web,new LinearLayout.LayoutParams(-1,0,1));
-        web.loadUrl(previewUrl);
+        OfflineHtml.load(web,html,()->{},message->{if(web!=null){root.removeView(web);web.destroy();web=null;}status.setText(message);});
     }
     private boolean textFormat(String mime,String name){if(mime.startsWith("text/")||mime.equals("application/json")||mime.equals("image/svg+xml"))return true;for(String ext:new String[]{".md",".txt",".csv",".json",".log",".js",".css",".xml",".html",".htm",".svg"})if(name.endsWith(ext))return true;return false;}
     private void error(Exception e){runOnUiThread(()->{if(dead)return;status.setText(e.getMessage()==null?"暂时无法预览，请导出后查看":e.getMessage());});}
