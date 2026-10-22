@@ -41,7 +41,7 @@ jobs:
         run: sdkmanager 'platforms;android-36' 'build-tools;35.0.0'
       - name: Verify and build
         working-directory: android
-        run: ./gradlew --no-daemon -PunsignedRelease testDebugUnitTest lintDebug assembleDebug assembleRelease
+        run: ./gradlew --no-daemon -PunsignedRelease testDebugUnitTest lintDebug assembleDebug assembleRelease assembleDebugAndroidTest
       - uses: actions/upload-artifact@v4
         with:
           name: android-apks
