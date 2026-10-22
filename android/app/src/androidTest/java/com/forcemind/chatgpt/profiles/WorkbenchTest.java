@@ -91,6 +91,14 @@ public class WorkbenchTest {
             return false;
         });
     }
+    private void selectNativeFile(String label)throws Exception{
+        until(()->{android.view.accessibility.AccessibilityNodeInfo root=InstrumentationRegistry.getInstrumentation().getUiAutomation().getRootInActiveWindow();if(root==null)return false;
+            for(android.view.accessibility.AccessibilityNodeInfo node:root.findAccessibilityNodeInfosByText(label))if(label.contentEquals(node.getText()==null?"":node.getText())){
+                if(node.isChecked())return true;assertTrue("File checkbox action unavailable: "+label,node.performAction(android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK));return true;
+            }return false;
+        });
+        until(()->{android.view.accessibility.AccessibilityNodeInfo root=InstrumentationRegistry.getInstrumentation().getUiAutomation().getRootInActiveWindow();if(root==null)return false;for(android.view.accessibility.AccessibilityNodeInfo node:root.findAccessibilityNodeInfosByText(label))if(label.contentEquals(node.getText()==null?"":node.getText())&&node.isChecked())return true;return false;});
+    }
     private void tapNode(android.view.accessibility.AccessibilityNodeInfo node){
         Rect bounds=new Rect();node.getBoundsInScreen(bounds);assertFalse(bounds.isEmpty());long down=SystemClock.uptimeMillis();
         MotionEvent press=MotionEvent.obtain(down,down,MotionEvent.ACTION_DOWN,bounds.exactCenterX(),bounds.exactCenterY(),0);press.setSource(android.view.InputDevice.SOURCE_TOUCHSCREEN);
@@ -305,7 +313,8 @@ public class WorkbenchTest {
         Set<String> before=new HashSet<>();HandoffRuntime runtime=HandoffRuntime.get(context);for(JSONObject job:runtime.store.list(account))before.add(job.getString("id"));
         try(ActivityScenario<AssetWorkbenchActivity> scene=ActivityScenario.launch(screen(AssetWorkbenchActivity.class))){
             AtomicBoolean ready=new AtomicBoolean();until(()->{scene.onActivity(a->{ListView list=find(a.getWindow().getDecorView(),ListView.class);ready.set(list.getAdapter()!=null&&list.getAdapter().getCount()==2);});return ready.get();});
-            tapNative("交给 GPT");tapNative("选择附件（0）");tapNative("offline-report.html · "+android.text.format.Formatter.formatShortFileSize(context,originals.get(0).getLong("size")));tapNative("offline-image.png · "+android.text.format.Formatter.formatShortFileSize(context,originals.get(1).getLong("size")));tapNative("确定");
+            tapNative("交给 GPT");tapNative("选择附件（0）");selectNativeFile("offline-report.html · "+android.text.format.Formatter.formatShortFileSize(context,originals.get(0).getLong("size")));selectNativeFile("offline-image.png · "+android.text.format.Formatter.formatShortFileSize(context,originals.get(1).getLong("size")));tapNative("确定");
+            until(()->{android.view.accessibility.AccessibilityNodeInfo root=InstrumentationRegistry.getInstrumentation().getUiAutomation().getRootInActiveWindow();if(root==null)return false;for(android.view.accessibility.AccessibilityNodeInfo node:root.findAccessibilityNodeInfosByText("选择附件（2）"))if("选择附件（2）".contentEquals(node.getText()==null?"":node.getText()))return true;return false;});
             chooseFormat("另一个测试账号 · fixture@example.test");screenshot("android-handoff-review.png");
             // A different account requires an explicit native checkbox. First try must stay here.
             tapNative("新建对话并发送");SystemClock.sleep(300);assertNull(monitor.getLastActivity());
