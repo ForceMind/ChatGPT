@@ -22,6 +22,10 @@ on:
         description: Verify native workbench fixtures only; skip external ChatGPT screenshot
         type: boolean
         default: false
+      handoff_only:
+        description: Run the native attachment handoff flow on phone and tablet only
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
@@ -101,12 +105,18 @@ jobs:
           # not needed for explicit Activity launches; App ANR reporting stays on.
           adb shell pm disable-user --user 0 com.google.android.apps.nexuslauncher
           if [ "${{ inputs.ui_only }}" != true ]; then
-            ./gradlew --no-daemon -Pandroid.testInstrumentationRunnerArguments.fixtureMode=true connectedDebugAndroidTest
+            phone_filter=()
+            tablet_filter='com.forcemind.chatgpt.profiles.WorkbenchTest'
+            if [ "${{ inputs.handoff_only }}" = true ]; then
+              tablet_filter='com.forcemind.chatgpt.profiles.WorkbenchTest#assetDialogHandsActualFilesToTargetWebpageAndSendsOnce'
+              phone_filter=("-Pandroid.testInstrumentationRunnerArguments.class=$tablet_filter")
+            fi
+            ./gradlew --no-daemon -Pandroid.testInstrumentationRunnerArguments.fixtureMode=true "${phone_filter[@]}" connectedDebugAndroidTest
             cp -R app/build/outputs/androidTest-results app/build/device-evidence/phone-test-results
             adb pull /sdcard/Download/ProfilesFixtureEvidence app/build/device-evidence/workbench-phone
             adb shell wm size 1600x2560
             adb shell wm density 240
-            ./gradlew --no-daemon --rerun-tasks -Pandroid.testInstrumentationRunnerArguments.fixtureMode=true -Pandroid.testInstrumentationRunnerArguments.class=com.forcemind.chatgpt.profiles.WorkbenchTest connectedDebugAndroidTest
+            ./gradlew --no-daemon --rerun-tasks -Pandroid.testInstrumentationRunnerArguments.fixtureMode=true "-Pandroid.testInstrumentationRunnerArguments.class=$tablet_filter" connectedDebugAndroidTest
             adb pull /sdcard/Download/ProfilesFixtureEvidence app/build/device-evidence/workbench-tablet
             adb shell wm size reset
             adb shell wm density reset
