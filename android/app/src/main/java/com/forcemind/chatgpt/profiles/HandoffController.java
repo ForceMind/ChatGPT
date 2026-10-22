@@ -21,6 +21,7 @@ final class HandoffController {
         this.runtime=runtime;this.host=host;this.job=job;this.payload=payload;this.control=control;id=job.optString("id");token=payload.optString("marker");key="__profiles_"+token.replace("-","");mimeMarker="application/x-profiles-"+token.replace("-","");prompt=payload.optString("prompt");JSONArray files=job.optJSONArray("files");for(int i=0;i<files.length();i++)names.add(files.optJSONObject(i).optString("uploadName"));
     }
     String id(){return id;}
+    boolean ownedBy(Host candidate){return host==candidate;}
     boolean owns(WebView web){return !closed&&page!=null&&page.web==web;}
     void begin(){try{page=host.open(job);page.web.setOnTouchListener((v,event)->!inputDispatch);host.changed(job);runtime.io.execute(()->{try{runtime.store.bindTab(id,page.tab);runtime.handler.post(()->{if(!closed){deadline=SystemClock.elapsedRealtime()+45000;install();}});}catch(Exception e){fail("无法记录目标标签页，已停止发送");}});}catch(Exception e){fail("无法在目标账号新建对话，请检查标签页数量和登录空间");}}
     private boolean valid(){return !closed&&control.get()&&page!=null&&host.valid(job,page)&&(epoch<0||host.epoch(page)==epoch);}

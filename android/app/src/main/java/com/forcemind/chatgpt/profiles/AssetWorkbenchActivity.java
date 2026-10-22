@@ -29,6 +29,7 @@ public final class AssetWorkbenchActivity extends ComponentActivity {
     private String accountId,accountName,mode="assets",filter="all",exportId;
     private volatile List<JSONObject> records=new ArrayList<>(),skills=new ArrayList<>(),shown=new ArrayList<>();
     private boolean busy;
+    private HandoffDialog handoffDialog;
     private volatile JSONObject pendingRender;
     private boolean renderLaunched;
     private int pendingTasks;
@@ -57,6 +58,7 @@ public final class AssetWorkbenchActivity extends ComponentActivity {
         toolbar=new LinearLayout(this);root.addView(toolbar,new LinearLayout.LayoutParams(-1,dp(46)));
         if(mode.equals("assets")){
             Button add=button("导入文件");toolbar.addView(add);add.setOnClickListener(v->chooseImport());
+            Button send=button("交给 GPT");toolbar.addView(send);send.setOnClickListener(v->openHandoff(Collections.emptyList(),""));
             Button filters=button("全部文件 ▾");toolbar.addView(filters);filters.setOnClickListener(v->new AlertDialog.Builder(this).setTitle("查看文件")
                 .setItems(new String[]{"全部文件","图片","网页 / HTML","文档 / 数据","收藏","回收站"},(d,i)->{filter=new String[]{"all","image","web","document","favorite","trash"}[i];filters.setText(new String[]{"全部文件 ▾","图片 ▾","网页 / HTML ▾","文档 / 数据 ▾","收藏 ▾","回收站 ▾"}[i]);render();}).show());
         }else{
@@ -149,13 +151,14 @@ public final class AssetWorkbenchActivity extends ComponentActivity {
                 if(i==0)mutate(()->ledger.trash(id,false));else new AlertDialog.Builder(this).setTitle("彻底删除此文件？").setMessage("仅删除应用中的副本，此操作无法恢复。").setNegativeButton("取消",null).setPositiveButton("删除",(x,w)->mutate(()->ledger.remove(id))).show();
             }).show();return;
         }
-        new AlertDialog.Builder(this).setTitle(a.optString("name")).setItems(new String[]{"预览查看","导出副本","转换格式",a.optBoolean("favorite")?"取消收藏":"收藏","重命名","移至回收站"},(d,i)->{
+        new AlertDialog.Builder(this).setTitle(a.optString("name")).setItems(new String[]{"预览查看","导出副本","转换格式",a.optBoolean("favorite")?"取消收藏":"收藏","重命名","移至回收站","交给 GPT"},(d,i)->{
             if(i==0)startActivity(new Intent(this,AssetPreviewActivity.class).putExtra(ACCOUNT,accountId).putExtra("asset",id));
             if(i==1){exportId=id;try{startActivityForResult(new Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType(a.optString("mime","application/octet-stream")).putExtra(Intent.EXTRA_TITLE,a.optString("name")),11);}catch(RuntimeException e){exportId=null;notice("无法打开保存位置选择器");}}
             if(i==2)convert(a);
             if(i==3)mutate(()->ledger.favorite(id,!a.optBoolean("favorite")));
             if(i==4){EditText name=new EditText(this);name.setText(a.optString("name"));new AlertDialog.Builder(this).setTitle("重命名应用中的副本").setView(name).setNegativeButton("取消",null).setPositiveButton("保存",(x,w)->mutate(()->ledger.rename(id,name.getText().toString()))).show();}
             if(i==5)mutate(()->ledger.trash(id,true));
+            if(i==6)openHandoff(Collections.singletonList(id),"");
         }).show();
     }
     private void convert(JSONObject asset){
@@ -235,11 +238,18 @@ public final class AssetWorkbenchActivity extends ComponentActivity {
     }
     private void showSkill(JSONObject skill){
         try{String prompt=SkillCatalog.prompt(skill);
-            new AlertDialog.Builder(this).setTitle(skill.getString("name")).setMessage(prompt+"\n\n当前可复制指令，在网页手动添加文件并发送。")
+            new AlertDialog.Builder(this).setTitle(skill.getString("name")).setMessage(prompt)
+                .setNeutralButton("交给 GPT",(d,w)->openHandoff(Collections.emptyList(),skill.optString("id")))
                 .setNegativeButton("关闭",null).setPositiveButton("复制指令",(d,w)->{((android.content.ClipboardManager)getSystemService(CLIPBOARD_SERVICE)).setPrimaryClip(ClipData.newPlainText("Skill 任务",prompt));notice("指令已复制");}).show();
         }catch(Exception e){notice("无法读取 Skill");}
     }
     private interface Work {void run() throws Exception;}
+    private void openHandoff(List<String> initial,String skillId){
+        final WorkspaceState[] snapshot=new WorkspaceState[1];final SkillCatalog[] catalog=new SkillCatalog[1];final List<JSONObject> files=new ArrayList<>();
+        task(()->{snapshot[0]=WorkspaceFiles.read(getFilesDir());snapshot[0].find(accountId);catalog[0]=new SkillCatalog(getAssets().open("capabilities/manifest.json"),getAssets().open("capabilities/skills.json"));files.addAll(new AssetLedger(getFilesDir(),accountId).list());},()->{
+            try{if(handoffDialog!=null)handoffDialog.close();handoffDialog=new HandoffDialog(this,snapshot[0],accountId,catalog[0],files,initial,skillId);}catch(Exception e){notice("无法准备任务，请检查账号和资产库");}
+        });
+    }
     private void mutate(Work work){task(()->{account();work.run();records=ledger.list();},this::render);}
     private void task(Work work,Runnable success){
         if(busy){notice("请等待当前操作完成");return;}enqueue(work,success);
@@ -259,5 +269,5 @@ public final class AssetWorkbenchActivity extends ComponentActivity {
     private int dp(int value){return Math.round(value*getResources().getDisplayMetrics().density);}
     private String stateName(String value){switch(value){case "ready":return "已归档";case "processing":return "处理中";case "interrupted":return "任务已中断";case "deleting":return "删除未完成";default:return "任务未完成";}}
     private void notice(String value){Toast.makeText(this,value,Toast.LENGTH_LONG).show();}
-    @Override protected void onDestroy(){dead=true;executor.shutdownNow();if(pendingRender!=null&&!renderLaunched&&!isChangingConfigurations())try{RenderTasks.cleanup(getCacheDir(),pendingRender.getString("task"));}catch(Exception ignored){}super.onDestroy();}
+    @Override protected void onDestroy(){dead=true;if(handoffDialog!=null)handoffDialog.close();executor.shutdownNow();if(pendingRender!=null&&!renderLaunched&&!isChangingConfigurations())try{RenderTasks.cleanup(getCacheDir(),pendingRender.getString("task"));}catch(Exception ignored){}super.onDestroy();}
 }

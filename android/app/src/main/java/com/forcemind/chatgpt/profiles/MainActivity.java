@@ -29,6 +29,7 @@ import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -389,7 +390,7 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
         else moveTaskToBack(true);
     }
     @Override protected void onResume() { super.onResume();resumed=true; WebView web = currentWeb(); if (web != null) web.onResume();drainHandoff(); }
-    @Override protected void onPause() {resumed=false;if(handoffs!=null&&handoffs.controller()!=null)handoffs.controller().cancel("应用已离开前台，已停止自动发送；请检查目标对话"); WebView web = currentWeb(); if (web != null) web.onPause(); super.onPause(); }
+    @Override protected void onPause() {resumed=false;if(handoffs!=null&&handoffs.controller()!=null&&handoffs.controller().ownedBy(this))handoffs.controller().cancel("应用已离开前台，已停止自动发送；请检查目标对话"); WebView web = currentWeb(); if (web != null) web.onPause(); super.onPause(); }
     @Override protected void onStop() {
         if (WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE)) {
             for (WebView web : views.values()) WebViewCompat.getProfile(web).getCookieManager().flush();
@@ -397,7 +398,7 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
         super.onStop();
     }
     @Override protected void onDestroy() {
-        if(handoffs!=null&&handoffs.controller()!=null)handoffs.controller().cancel("窗口已关闭，未确认的发送不会自动重试");
+        if(handoffs!=null&&handoffs.controller()!=null&&handoffs.controller().ownedBy(this))handoffs.controller().cancel("窗口已关闭，未确认的发送不会自动重试");
         cancelRequests(); if (downloadHelper != null) downloadHelper.close();if(assetDownloads!=null)assetDownloads.close();
         for (String id : new ArrayList<>(views.keySet())) destroyView(id); super.onDestroy();
     }
@@ -422,7 +423,7 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
         String[] tab=new String[1];if(!change(s->{s.activeAccount=target;tab[0]=s.addTab(s.find(target)).id;}))throw new IllegalStateException("无法创建标签页");showCurrent();WebView web=views.get(tab[0]);if(web==null)throw new IllegalStateException("目标标签不可用");return new HandoffController.Page(tab[0],web);
     }
     @Override public boolean valid(JSONObject job,HandoffController.Page page){
-        try{return resumed&&ready&&!fatal&&state.activeAccount.equals(job.getString("targetAccountId"))&&state.current().activeTab.equals(page.tab)&&views.get(page.tab)==page.web&&state.find(job.getString("sourceAccountId")).storageId.equals(job.getString("sourceStorageId"))&&state.find(job.getString("targetAccountId")).storageId.equals(job.getString("targetStorageId"));}catch(Exception e){return false;}
+        try{return resumed&&ready&&!fatal&&state.activeAccount.equals(job.getString("targetAccountId"))&&state.current().activeTab.equals(page.tab)&&views.get(page.tab)==page.web&&page.web.getParent()==content&&page.web.isShown()&&state.find(job.getString("sourceAccountId")).storageId.equals(job.getString("sourceStorageId"))&&state.find(job.getString("targetAccountId")).storageId.equals(job.getString("targetStorageId"));}catch(Exception e){return false;}
     }
     @Override public long epoch(HandoffController.Page page){return pageEpochs.getOrDefault(page.tab,-1L);}
     @Override public void changed(JSONObject job){
