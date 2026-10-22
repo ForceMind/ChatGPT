@@ -1,0 +1,133 @@
+{
+  "schema": 1,
+  "sourceCommit": "d5e983379f13dd13f6b613dda678001ab7acd6d7",
+  "buildRun": "https://github.com/ForceMind/ChatGPT/actions/runs/39803274160",
+  "deviceRun": "https://github.com/ForceMind/ChatGPT/actions/runs/39803365564",
+  "testScope": "One Android 15 x86_64 emulator engine; fresh profiles; synthetic reserved HTTPS pages; not real ChatGPT or a user device",
+  "deviceTests": 1,
+  "failures": 0,
+  "skipped": 0,
+  "measurement": {
+    "scope": "Offline public API probe; no account data or real ChatGPT",
+    "androidApi": 35,
+    "webViewPackage": "com.google.android.webview",
+    "webViewVersion": "124.0.6367.219",
+    "profiles": [
+      {
+        "main": {
+          "language": "en-US",
+          "languages": [
+            "en-US"
+          ],
+          "locale": "en-US",
+          "timeZone": "UTC",
+          "winterOffset": 0,
+          "summerOffset": 0,
+          "localNoon": "2026-01-15T12:00:00.000Z"
+        },
+        "frame": {
+          "language": "en-US",
+          "languages": [
+            "en-US"
+          ],
+          "locale": "en-US",
+          "timeZone": "UTC",
+          "winterOffset": 0,
+          "summerOffset": 0,
+          "localNoon": "2026-01-15T12:00:00.000Z"
+        },
+        "worker": {
+          "language": "en-US",
+          "languages": [
+            "en-US"
+          ],
+          "locale": "en-US",
+          "timeZone": "UTC",
+          "winterOffset": 0,
+          "summerOffset": 0,
+          "localNoon": "2026-01-15T12:00:00.000Z"
+        },
+        "requestedContextLanguage": "zh-CN",
+        "requestedTimeZoneNotApplied": "Asia/Shanghai",
+        "customHeaderFeature": false,
+        "headerError": "",
+        "acceptLanguageByRequest": {
+          "https://language-probe.example.test/worker.js": "",
+          "https://frame-probe.example.test/frame": "",
+          "https://language-probe.example.test/favicon.ico": "",
+          "https://language-probe.example.test/main": ""
+        }
+      },
+      {
+        "main": {
+          "language": "en-US",
+          "languages": [
+            "en-US"
+          ],
+          "locale": "en-US",
+          "timeZone": "UTC",
+          "winterOffset": 0,
+          "summerOffset": 0,
+          "localNoon": "2026-01-15T12:00:00.000Z"
+        },
+        "frame": {
+          "language": "en-US",
+          "languages": [
+            "en-US"
+          ],
+          "locale": "en-US",
+          "timeZone": "UTC",
+          "winterOffset": 0,
+          "summerOffset": 0,
+          "localNoon": "2026-01-15T12:00:00.000Z"
+        },
+        "worker": {
+          "language": "en-US",
+          "languages": [
+            "en-US"
+          ],
+          "locale": "en-US",
+          "timeZone": "UTC",
+          "winterOffset": 0,
+          "summerOffset": 0,
+          "localNoon": "2026-01-15T12:00:00.000Z"
+        },
+        "requestedContextLanguage": "ja-JP",
+        "requestedTimeZoneNotApplied": "America/New_York",
+        "customHeaderFeature": false,
+        "headerError": "",
+        "acceptLanguageByRequest": {
+          "https://frame-probe.example.test/frame": "",
+          "https://language-probe.example.test/favicon.ico": "",
+          "https://language-probe.example.test/worker.js": "",
+          "https://language-probe.example.test/main": ""
+        }
+      }
+    ]
+  },
+  "sdkSourceAudits": [
+    {
+      "version": "1.17.1",
+      "officialSource": "https://dl.google.com/dl/android/maven2/androidx/webkit/webkit/1.17.1/webkit-1.17.1-sources.jar",
+      "sha256": "1fc3abdfcc179717f0a1b0b8634175afe4d84ba5938eba1df75128397663ebea",
+      "dedicatedTimezoneOrLocaleSetterMatches": []
+    },
+    {
+      "version": "1.18.0",
+      "officialSource": "https://dl.google.com/dl/android/maven2/androidx/webkit/webkit/1.18.0/webkit-1.18.0-sources.jar",
+      "sha256": "a40727d856919e4af057708a4f7871c996d9e643171a6d68472dcafbccecd294",
+      "dedicatedTimezoneOrLocaleSetterMatches": []
+    }
+  ],
+  "conclusions": {
+    "customHeaderFeatureAvailableInMeasuredEngine": false,
+    "independentAndroidConfigurationChangedWebNavigatorLocale": false,
+    "mainFrameIframeAndWorkerAllReported": "en-US / UTC",
+    "requestedTimezonesWereNotApplied": true,
+    "timezoneOverrideWasNotAttemptedWithoutAProvidedAPI": true,
+    "newerWebViewProviderWasNotTested": true,
+    "notEvidenceThatAllModernWebViewProvidersLackCustomHeaders": true
+  },
+  "productionImpact": "Debug-only probe; no release preference implementation, dependency upgrade, system change, account access or new installer. Existing alpha.10 remains unchanged.",
+  "remainingDecision": "Preserve full browser-environment consistency and evaluate a dedicated engine plan; accept a clearly limited page-layer compatibility implementation; or explicitly defer Android environment preferences."
+}
