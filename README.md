@@ -27,7 +27,7 @@ ChatGPT Profiles 是一个非官方 ChatGPT 网页客户端。启动直接进入
 
 当前使用预发布渠道。Intel Mac、Linux、iPhone 和 iPad 暂无安装包。macOS alpha.5 已包含资产工作台与界面恢复；Windows 和 Android 继续使用各自标注的版本。
 
-`codex/macos-assets-workbench` 功能分支正在验证 alpha.6：macOS Apple Silicon 与 Windows x64 已生成本地试用包，Windows 工作台、恢复、安装和卸载保留数据已通过 CI；Android 正在验证账号资产、预览、图片转换和 120 个 Skill。以上开发进展尚未替换表中的公开安装包，详细证据与边界见 [迭代记录](MACOS_MIGRATION_PLAN.md)。
+`codex/macos-assets-workbench` 功能分支已生成 alpha.6 本地试用包：macOS Apple Silicon、Windows x64 与 Android。Windows 工作台、恢复、安装和卸载保留数据已通过 CI；Android 账号资产、预览、图片转换和 120 个 Skill 已通过手机 / 平板检查，原生账号创建、切换与重启恢复也已补验。真实账号业务仍待验，Android 实际网页截图阶段出现模拟器渲染错误与 ADB 离线。以上开发进展尚未替换表中的公开安装包，详细证据与边界见 [迭代记录](MACOS_MIGRATION_PLAN.md)。
 
 **macOS**：打开 DMG，将应用拖入“应用程序”。当前构建使用 ad-hoc 签名，尚未经过 Developer ID 签名和 Apple 公证。若首次启动被系统阻止，核对来源和摘要后，按 [Apple 的操作说明](https://support.apple.com/zh-cn/102445)处理。
 

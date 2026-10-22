@@ -68,7 +68,9 @@ cd android
 
 GitHub Actions 默认运行检查、调试与未签名 release 构建。维护者手动运行 `Android` 工作流，可以另外启用模拟器验收；已完成构建时可选择仅运行设备检查。检查与设备测试结果分别保留，不把编译通过描述为真实登录验收。
 
-alpha.6 产品源码 `a1b8d1a` 的 [构建检查](https://github.com/ForceMind/ChatGPT/actions/runs/39735716189) 通过，Lint 无错误、17 条非阻断警告。[设备检查](https://github.com/ForceMind/ChatGPT/actions/runs/39735751949) 中手机 5 项、平板 3 项及静态 HTML 正文/脚本未执行断言通过，截图已实际查看；随后主界面流程遇到模拟器渲染缓冲错误与 ADB 离线，总作业超时，不能把总作业标为通过。启动、重启和真实网页截图另行补查，真实登录、语音和附件发送仍待实机验收。
+alpha.6 产品源码 `a1b8d1a` 的 [构建检查](https://github.com/ForceMind/ChatGPT/actions/runs/39735716189) 通过，Lint 无错误、17 条非阻断警告。[设备检查](https://github.com/ForceMind/ChatGPT/actions/runs/39735751949) 中手机 5 项、平板 3 项及静态 HTML 正文/脚本未执行断言通过，截图已实际查看；随后主界面流程遇到模拟器渲染缓冲错误与 ADB 离线，总作业超时，不能把总作业标为通过。[独立启动补查](https://github.com/ForceMind/ChatGPT/actions/runs/39760503818) 的原生账号创建、切换及进程重启后恢复当前账号通过；之后实际网页截图阶段再次渲染错误 / ADB closed，总作业失败。真实登录、语音、附件发送和可用于官网的网页截图仍待实机验收。
+
+本地试用安装包位于 `release/ChatGPT-Profiles-3.0.0-alpha.6-android.apk`，相邻的 `SHA256SUMS-android-alpha.6.txt` 与 `verification-android-alpha.6.json` 记录校验和证据边界。签名证书与公开 alpha.1 一致，版本号递增；实际用户登录与数据覆盖升级仍待实机验收。公开 Release 与官网暂未更新为 alpha.6。
 
 ## 签名构建
 
