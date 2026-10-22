@@ -31,16 +31,18 @@ final class PageRecoveryStore {
                 write(new File(dir,name),Files.readAllBytes(HandoffFiles.regular(dir,name+".bak",1024*1024+32).toPath()));
             }
             if(value==null&&original!=null)throw new IOException("本地恢复记录损坏，原文件已保留",original);
+            if(value!=null)fingerprints.put(key(account,storage)+"/"+tab,fingerprint(value));
             return value!=null&&value.getString("url").equals(url)?value:null;
         }
     }
     void save(JSONObject raw,long generation)throws Exception{
         JSONObject record=PageRecoveryRecord.normalize(raw);String account=record.getString("accountId"),storage=record.getString("storageId"),tab=record.getString("tabId");
-        synchronized(LOCK){if(generation(account,storage)!=generation)return;PageRecoveryRecord.available(files,account,storage,tab);String text=record.toString();JSONObject stable=new JSONObject(text).put("capturedAt",0);String fingerprint=HandoffRequest.hash(stable.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));String id=key(account,storage)+"/"+tab;if(fingerprint.equals(fingerprints.get(id)))return;
+        synchronized(LOCK){if(generation(account,storage)!=generation)return;PageRecoveryRecord.available(files,account,storage,tab);String text=record.toString(),fingerprint=fingerprint(record);String id=key(account,storage)+"/"+tab;if(fingerprint.equals(fingerprints.get(id)))return;
             byte[] encrypted=cipher.seal(tab,text);PageRecoveryRecord.available(files,account,storage,tab);if(generation(account,storage)!=generation)return;
             File dir=directory(account,storage,true),file=new File(dir,tab+".bin");if(file.exists()){decode(dir,file.getName(),account,storage,tab);write(new File(dir,file.getName()+".bak"),Files.readAllBytes(file.toPath()));}write(file,encrypted);fingerprints.put(id,fingerprint);
         }
     }
+    private String fingerprint(JSONObject record)throws Exception{return HandoffRequest.hash(new JSONObject(record.toString()).put("capturedAt",0).toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));}
     private void write(File target,byte[] bytes)throws Exception{
         File parent=target.getParentFile();HandoffFiles.directory(parent,false);File next=new File(parent,target.getName()+".new");
         if(target.exists())HandoffFiles.regular(parent,target.getName(),1024*1024+32);if(next.exists())HandoffFiles.regular(parent,next.getName(),1024*1024+32);

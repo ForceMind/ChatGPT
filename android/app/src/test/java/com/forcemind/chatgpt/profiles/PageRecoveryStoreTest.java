@@ -34,6 +34,7 @@ public class PageRecoveryStoreTest {
     }
     @Test public void backupRecoveryPreservesCorruptOriginalAndBothCorruptDoNotBecomeEmpty()throws Exception{
         PageRecoveryStore store=store();store.save(record("first"),0);store.save(record("second"),0);Files.write(file().toPath(),new byte[]{1,2,3});assertEquals("first",store.load(account.id,account.storageId,account.activeTab,"https://chatgpt.com/c/fixture").getString("draft"));File[] preserved=file().getParentFile().listFiles((d,n)->n.contains(".corrupt-"));assertEquals(1,preserved.length);assertArrayEquals(new byte[]{1,2,3},Files.readAllBytes(preserved[0].toPath()));
+        store.save(record("second"),0);assertEquals("second",store.load(account.id,account.storageId,account.activeTab,"https://chatgpt.com/c/fixture").getString("draft"));
         Files.write(file().toPath(),new byte[]{4});Files.write(new File(file()+".bak").toPath(),new byte[]{5});assertThrows(Exception.class,()->store.load(account.id,account.storageId,account.activeTab,"https://chatgpt.com/c/fixture"));assertArrayEquals(new byte[]{4},Files.readAllBytes(file().toPath()));
     }
     @Test public void clearFencesDelayedWritesAndRevocationSurvivesStaleWorkspace()throws Exception{

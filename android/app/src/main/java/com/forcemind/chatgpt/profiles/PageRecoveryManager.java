@@ -70,7 +70,7 @@ final class PageRecoveryManager {
         evaluate(s,"capture",String.valueOf(force),value->{if(s.captureTicket!=ticket)return;s.inflight=false;String status=value.optString("status");if(status.equals("oversize")){notice("草稿超过 10 万字符，本地未保存，请手动备份。");return;}if(!status.equals("captured"))return;
             try{if(!Objects.equals(s.url,PageRecoveryRecord.url(value.getString("url"))))return;JSONObject record=new JSONObject().put("schema",1).put("accountId",s.account).put("storageId",s.storage).put("tabId",s.tab).put("url",s.url).put("draft",value.getString("draft")).put("scroll",value.getDouble("scroll")).put("ratio",value.getDouble("ratio")).put("capturedAt",System.currentTimeMillis());
                 if(value.has("anchor"))record.put("anchor",value.getJSONObject("anchor"));if(!s.alternative.isEmpty()&&!s.alternative.equals(record.getString("draft")))record.put("alternativeDraft",s.alternative);PageRecoveryRecord.normalize(record);
-                IO.execute(()->{try{store.save(record,s.generation);}catch(Exception e){handler.post(()->notice("本地草稿保存未完成，请手动备份；不会写入未加密内容。"));}});
+                IO.execute(()->{try{store.save(record,s.generation);}catch(Exception e){handler.post(()->{if(valid(s))notice("本地草稿保存未完成，请手动备份；不会写入未加密内容。");});}});
             }catch(Exception e){notice("页面草稿或阅读位置无效，本次未保存。");}
         });
     }
