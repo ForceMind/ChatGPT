@@ -254,7 +254,8 @@ export class AssetStore {
       if (latest.status !== 'processing' || latest.trashedAt !== undefined) throw new Error('资产任务已取消');
       const destination = this.filePath(latest);
       if (existsSync(destination)) throw new Error('目标资产文件已存在，已停止覆盖');
-      const fd = openSync(pending, constants.O_RDONLY | (constants.O_NOFOLLOW || 0));
+      // Windows FlushFileBuffers requires a handle opened for writing.
+      const fd = openSync(pending, (process.platform === 'win32' ? constants.O_RDWR : constants.O_RDONLY) | (constants.O_NOFOLLOW || 0));
       try { fsyncSync(fd); } finally { closeSync(fd); }
       renameSync(pending, destination);
       return this.patch(profileId, assetId, a => { a.status = 'ready'; a.size = digest.size; a.receivedBytes = digest.size; a.totalBytes = digest.size; a.sha256 = digest.sha256; delete a.error; });

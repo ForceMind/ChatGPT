@@ -1,0 +1,2 @@
+# The manifest hashes exact bytes; checkout must not rewrite capability JSON.
+desktop/resources/capabilities/*.json text eol=lf
