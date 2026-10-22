@@ -368,3 +368,6 @@
 - 已下载并实际查看手机 PDF 首、末页、平板末页和实际 SVG PNG：末页包含底部蓝色内容，不再空白；SVG 尺寸与透明度正确。保留了实际 PDF / PNG / JPEG / WebP 和界面截图，均为明确的离线素材，不充当 ChatGPT 官网截图或真实账号验收。HTML 仍按静态内容处理，依赖脚本或外部 CDN 的资产未宣称兼容。
 - alpha.8 同签名本地包 `android/release/ChatGPT-Profiles-3.0.0-alpha.8-android.apk`：7167140 字节，SHA-256 `b76ce89481843814f1243f1340a44f8b99098d8f7ed99a4908dbefa240e2164b`。实际版本 3000008 / alpha.8、正式包名/非 debug、签名与对齐、ZIP、非导出的 :asset_renderer、120 自有 Skill / 0 预置角色、许可证与无测试 Provider 均核验。证书仍与 alpha.1/6/7 一致；未实测个人登录数据覆盖升级。
 - 本批视觉导出交付完成，alpha.6/7 旧包保留；Mac / Windows 包、main、公开 Release 与官网保持不变。后续继续移动端“交给 GPT”附件任务、草稿/阅读位置恢复与账号语言/时区；已只读核对 MainActivity 的文件选择入口，自动附件必须补齐目标账号/页签/主文档来源绑定，不将现有手动 chooser 直接视为已安全完成自动发送。主 Goal 保持 active。
+
+- 继续 Android “交给 GPT”迭代：交付目标为从资产库选择 1–20 个文件、目标账号与 Skill/要求，新建目标账号对话、确认附件后发送一次、保留任务记录；单文件 100 MiB / 合计 200 MiB，跨账号须明确确认，失败/中断不自动重发。提示词需本机加密保存，临时文件按任务撤销；不把复制指令当作附件已发送。
+- 必要 API 前置检查增加 debug 专用离线 UploadProbeActivity（release 不包含）：用固定测试文件验证任务 MIME 随机标识能穿过真实 WebView 文件选择回调、公开触摸/输入连接 API 能传递真实附件字节和文本，并拒绝无标识跨来源框架。仅 synthetic HTTPS / 测试 Provider，不访问真实 ChatGPT、不使用个人账号。此阶段源码 WIP，alpha.8 安装包保持，尚未宣称附件功能交付。

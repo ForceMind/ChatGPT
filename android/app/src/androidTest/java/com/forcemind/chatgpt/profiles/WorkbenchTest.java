@@ -276,4 +276,20 @@ public class WorkbenchTest {
         }
         File tasks=new File(context.getCacheDir(),"asset-render-tasks");assertNotNull(tasks.list());assertEquals(0,tasks.list().length);ledger.verifiedFile(source.getString("id"));rendererExits();
     }
+    @Test public void publicBrowserInputsCarryChooserMarkerActualFilesAndNativeText()throws Exception{
+        try(ActivityScenario<UploadProbeActivity> scene=ActivityScenario.launch(new Intent(context,UploadProbeActivity.class))){
+            AtomicBoolean loaded=new AtomicBoolean();until(()->{scene.onActivity(a->loaded.set(a.web.getProgress()==100));return loaded.get();});
+            AtomicReference<String> rectangle=new AtomicReference<>();scene.onActivity(a->a.web.evaluateJavascript("(function(){var i=document.querySelector('#upload');i.accept='application/octet-stream,"+a.marker+"';var r=i.getBoundingClientRect();return JSON.stringify({x:r.left+20,y:r.top+20})})()",rectangle::set));until(()->rectangle.get()!=null);
+            JSONObject r=new JSONObject(String.valueOf(new JSONTokener(rectangle.get()).nextValue()));scene.onActivity(a->{try{WebInputs.tap(a.web,r.optDouble("x"),r.optDouble("y"));}catch(Exception e){throw new RuntimeException(e);}});
+            AtomicInteger accepted=new AtomicInteger();until(()->{scene.onActivity(a->accepted.set(a.accepted));return accepted.get()==1;});
+            AtomicReference<String> files=new AtomicReference<>();until(()->{scene.onActivity(a->a.web.evaluateJavascript("window.uploaded",files::set));return files.get()!=null&&!files.get().equals("null");});
+            String uploaded=String.valueOf(new JSONTokener(files.get()).nextValue());assertTrue("Browser file read failed: "+uploaded,uploaded.startsWith("["));JSONArray actual=new JSONArray(uploaded);assertEquals(2,actual.length());
+            for(int i=0;i<2;i++){String type=i==0?"html":"image";byte[] bytes;try(InputStream input=context.getContentResolver().openInputStream(Uri.parse("content://"+FixtureFilesProvider.AUTHORITY+"/"+type))){ByteArrayOutputStream out=new ByteArrayOutputStream();byte[] buffer=new byte[4096];int n;while((n=input.read(buffer))!=-1)out.write(buffer,0,n);bytes=out.toByteArray();}StringBuilder hash=new StringBuilder();for(byte b:java.security.MessageDigest.getInstance("SHA-256").digest(bytes))hash.append(String.format(Locale.ROOT,"%02x",b&255));assertEquals(bytes.length,actual.getJSONObject(i).getInt("size"));assertEquals(hash.toString(),actual.getJSONObject(i).getString("sha"));}
+            AtomicBoolean focused=new AtomicBoolean();scene.onActivity(a->a.web.evaluateJavascript("document.querySelector('#prompt-textarea').focus();true",value->focused.set(true)));until(focused::get);
+            AtomicBoolean inserted=new AtomicBoolean();scene.onActivity(a->inserted.set(WebInputs.insert(a.web,"离线任务输入验证")));assertTrue("Native input connection unavailable",inserted.get());
+            AtomicReference<String> text=new AtomicReference<>();until(()->{scene.onActivity(a->a.web.evaluateJavascript("document.querySelector('#prompt-textarea').value",text::set));return text.get()!=null&&text.get().contains("离线任务输入验证");});
+            scene.onActivity(a->{try{WebInputs.tap(a.web,25,180);}catch(Exception e){throw new RuntimeException(e);}});AtomicInteger rejected=new AtomicInteger();until(()->{scene.onActivity(a->{rejected.set(a.rejected);accepted.set(a.accepted);});return rejected.get()==1;});assertEquals(1,accepted.get());
+            screenshot("android-offline-upload-probe.png");
+        }
+    }
 }
