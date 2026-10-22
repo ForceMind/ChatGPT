@@ -95,6 +95,10 @@ jobs:
           ./gradlew --no-daemon installDebug
           adb shell am start -n com.forcemind.chatgpt.profiles.debug/com.forcemind.chatgpt.profiles.MainActivity
           sleep 15
+          adb exec-out screencap -p > app/build/device-evidence/main-start.png
+          adb shell uiautomator dump --compressed /sdcard/profiles-start.xml
+          adb exec-out cat /sdcard/profiles-start.xml > app/build/device-evidence/main-start.xml
+          adb logcat -d -s AndroidRuntime:E > app/build/device-evidence/main-runtime.log
           python3 scripts/capture-ui.py app/build/device-evidence
           adb shell dumpsys webviewupdate > app/build/device-evidence/webview.txt
           adb shell wm size 1600x2560

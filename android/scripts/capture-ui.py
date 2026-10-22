@@ -31,6 +31,8 @@ def find(predicate):
         for node in tree().iter('node'):
             if predicate(node.attrib): return node
         time.sleep(1)
+    (out / 'failed-native-ui.xml').write_bytes(ET.tostring(tree(), encoding='utf-8'))
+    screenshot('failed-native-ui.png')
     raise RuntimeError('Expected native UI control was not present.')
 
 def tap(node):
@@ -48,7 +50,9 @@ def screenshot(name):
     (out / name).write_bytes(adb('exec-out', 'screencap', '-p'))
 
 # All text input is into native account metadata fields, never the ChatGPT webpage.
-tap(badge('个人账号')); text('添加账号')
+initial_badge = badge()
+initial_name = initial_badge.get('content-desc').split('当前：', 1)[1]
+tap(initial_badge); text('添加账号')
 def field(index):
     fields = [n for n in tree().iter('node') if n.get('class') == 'android.widget.EditText']
     assert len(fields) == 2, 'Expected native name/email fields'
@@ -60,17 +64,17 @@ tap(field(1)); adb('shell', 'input', 'text', 'work@example.test')
 text('保存'); badge('Work')
 tap(badge('Work')); text('切换账号')
 find(lambda a: 'Work' in a.get('text', '') and 'work@example.test' in a.get('text', ''))
-personal = find(lambda a: '个人账号' in a.get('text', ''))
-screenshot('android-accounts.png'); tap(personal); badge('个人账号')
+personal = find(lambda a: initial_name in a.get('text', ''))
+screenshot('android-accounts.png'); tap(personal); badge(initial_name)
 adb('shell', 'am', 'force-stop', package)
 adb('shell', 'am', 'start', '-n', package + '/com.forcemind.chatgpt.profiles.MainActivity')
-badge('个人账号'); time.sleep(5)
+badge(initial_name); time.sleep(5)
 screenshot('android-phone.png')
 (out / 'android-phone.xml').write_bytes(ET.tostring(tree(), encoding='utf-8'))
 # Homepage evidence must show the loaded webpage, with native menus closed.
 # The personal space may still be on Cloudflare's check; use the second,
 # isolated space only after its actual anonymous ChatGPT page is ready.
-tap(badge('个人账号')); text('切换账号')
+tap(badge(initial_name)); text('切换账号')
 tap(find(lambda a: 'Work' in a.get('text', '') and 'work@example.test' in a.get('text', '')))
 badge('Work')
 for attempt in range(30):
