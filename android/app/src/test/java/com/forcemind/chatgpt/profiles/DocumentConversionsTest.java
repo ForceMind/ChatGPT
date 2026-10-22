@@ -19,7 +19,7 @@ public class DocumentConversionsTest {
         JSONObject source=put(ledger,"source.csv",bytes);String id=source.getString("id");
         JSONObject output=DocumentConversions.convert(temporary.getRoot(),ledger,id,"JSON",null,()->true);
         assertEquals(ledger.accountId,output.getString("accountId"));assertEquals(id,output.getString("parentId"));assertEquals("conversion",output.getString("source"));assertEquals("source-converted.json",output.getString("name"));
-        JSONArray actual=new JSONArray(Files.readString(ledger.verifiedFile(output.getString("id")).toPath()));assertEquals("001",actual.getJSONObject(0).getString("id"));
+        JSONArray actual=new JSONArray(new String(Files.readAllBytes(ledger.verifiedFile(output.getString("id")).toPath()),StandardCharsets.UTF_8));assertEquals("001",actual.getJSONObject(0).getString("id"));
         assertArrayEquals(bytes,Files.readAllBytes(ledger.verifiedFile(id).toPath()));assertThrows(Exception.class,()->other.get(output.getString("id")));
         assertEquals(0,Objects.requireNonNull(new File(temporary.getRoot(),"asset-conversions").list()).length);
     }
