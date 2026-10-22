@@ -11,8 +11,8 @@ android {
         applicationId 'com.forcemind.chatgpt.profiles'
         minSdk 28
         targetSdk 36
-        versionCode 3000009
-        versionName '3.0.0-alpha.9'
+        versionCode 3000010
+        versionName '3.0.0-alpha.10'
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
     signingConfigs {

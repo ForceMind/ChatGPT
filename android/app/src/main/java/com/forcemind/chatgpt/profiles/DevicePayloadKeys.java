@@ -7,6 +7,7 @@ import javax.crypto.*;
 
 final class DevicePayloadKeys {
     static EncryptedPayloads cipher(Context context){String alias=context.getPackageName()+".handoff-payloads-v1";return new EncryptedPayloads(()->key(alias));}
+    static EncryptedPayloads recoveryCipher(Context context){return new EncryptedPayloads(()->key(context.getPackageName()+".page-recovery-v1"),"page-recovery-v1/");}
     private static synchronized SecretKey key(String alias)throws Exception{
         KeyStore store=KeyStore.getInstance("AndroidKeyStore");store.load(null);
         if(store.containsAlias(alias)){java.security.Key value=store.getKey(alias,null);if(!(value instanceof SecretKey))throw new java.security.GeneralSecurityException("本机加密密钥不可用");return (SecretKey)value;}
