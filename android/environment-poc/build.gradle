@@ -18,5 +18,7 @@ tasks.register('copyPocIcon', Copy) {
     from '../app/src/main/res/drawable/ic_launcher.xml'
     into layout.buildDirectory.dir('generated/poc-res/drawable')
 }
-android.sourceSets.main.res.srcDir(layout.buildDirectory.dir('generated/poc-res'))
+// The preBuild dependency above explicitly orders generation. AGP 9 requires
+// a concrete path here rather than an ambiguous directory Provider.
+android.sourceSets.main.res.srcDir(layout.buildDirectory.dir('generated/poc-res').get().asFile)
 tasks.named('preBuild').configure { dependsOn 'copyPocIcon' }
