@@ -1,0 +1,102 @@
+{
+  "version": "3.0.0-alpha.14",
+  "sourceCommit": "da4afdf4f381b6dd2d69f64c41bebbf3633ced7f",
+  "prerelease": true,
+  "platforms": [
+    "macOS arm64"
+  ],
+  "ciRun": "https://github.com/ForceMind/ChatGPT/actions/runs/39963836108",
+  "artifacts": [
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.14-mac-arm64.dmg",
+      "bytes": 154522273,
+      "sha256": "182286177d5e7b1f56ae8f30e6f11fd9ce774b5355b31fcd2d922632b8f9d31e"
+    },
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.14-mac-arm64.zip",
+      "bytes": 154465717,
+      "sha256": "2fb67e500010bad9aef8e3cf66fac743712120b2e36ced2394c82c936c531d69"
+    }
+  ],
+  "signing": "ad-hoc, not notarized",
+  "checks": {
+    "distFilesCompared": 228,
+    "uiAcceptance": {
+      "version": "3.0.0-alpha.14",
+      "commit": "da4afdf4f381b6dd2d69f64c41bebbf3633ced7f",
+      "scope": "isolated Electron with real ProseMirror and loopback fixtures; no live ChatGPT or personal accounts",
+      "stats": {
+        "startTime": "2026-10-23T13:46:37.024Z",
+        "duration": 113258.70300000001,
+        "expected": 8,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      }
+    },
+    "packagedUpdater": {
+      "version": "3.0.0-alpha.14",
+      "verifiedAt": "2026-10-23T13:50:07.060Z",
+      "scope": "real packaged ZIP, disposable old bundle, no personal account data; no live ChatGPT upgrade acceptance",
+      "zipSHA256": "2fb67e500010bad9aef8e3cf66fac743712120b2e36ced2394c82c936c531d69",
+      "asarSHA256": "2424942f92e9d741369d0ae6dd674e4d3771152e34d60e4c3599ccf6129c694c",
+      "helperSHA256": "06f93c1c549a18a28f65a9d96f361fb5491d3c37db620de89007bf19b47e62aa",
+      "elapsedMs": 13272,
+      "checks": [
+        "ZIP digest and identity",
+        "full bundle signature and architecture",
+        "Electron fs.copyFileSync from shipping ASAR",
+        "parent exit wait",
+        "atomic swap",
+        "installed payload byte identity",
+        "previous bundle preserved"
+      ]
+    },
+    "nativeRecovery": {
+      "version": "3.0.0-alpha.14",
+      "verifiedAt": "2026-10-23T13:50:11.538Z",
+      "scope": "isolated Electron, actual packaged ASAR/native module; no personal profiles or Keychain items; signed Touch ID key creation not verified",
+      "payloadFiles": 228,
+      "asarSHA256": "2424942f92e9d741369d0ae6dd674e4d3771152e34d60e4c3599ccf6129c694c",
+      "capabilities": {
+        "touchID": false,
+        "signed": false
+      },
+      "unsignedKeyRefused": true,
+      "checks": [
+        "all dist payload bytes match",
+        "deep strict code signature",
+        "packaged native module loads from ASAR",
+        "ad-hoc key creation refused before SecItem access"
+      ]
+    }
+  },
+  "distribution": "GitHub Actions artifacts only; public Release, website and update feed remain alpha.13",
+  "unitTests": {
+    "passed": 63,
+    "failed": 0
+  },
+  "installers": [
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.14-mac-arm64.dmg",
+      "bytes": 154522273,
+      "sha256": "182286177d5e7b1f56ae8f30e6f11fd9ce774b5355b31fcd2d922632b8f9d31e",
+      "artifactId": 12505478291,
+      "download": "https://github.com/ForceMind/ChatGPT/actions/runs/39963836108/artifacts/12505478291",
+      "expiresAt": "2026-11-22T13:50:19Z"
+    },
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.14-mac-arm64.zip",
+      "bytes": 154465717,
+      "sha256": "2fb67e500010bad9aef8e3cf66fac743712120b2e36ced2394c82c936c531d69",
+      "artifactId": 12505224955,
+      "download": "https://github.com/ForceMind/ChatGPT/actions/runs/39963836108/artifacts/12505224955",
+      "expiresAt": "2026-11-22T13:50:21Z"
+    }
+  ],
+  "manualAcceptancePending": [
+    "Actual ChatGPT account composer/attachment/send integration; CI uses real ProseMirror and loopback services only"
+  ],
+  "localBuild": false,
+  "localInstallersDownloaded": false
+}
