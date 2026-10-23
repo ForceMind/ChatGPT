@@ -1,19 +1,19 @@
 {
   "version": "3.0.0-alpha.12",
-  "sourceCommit": "18a5ebe4d9219178e92a1fc019ac081af0784650",
+  "sourceCommit": "f52fd7c09cf3d7d22723f0887f0aaefab8083dbe",
   "published": false,
   "status": "macOS local acceptance build; public website and update feed remain alpha.11",
   "signing": "ad-hoc, not notarized",
   "artifacts": [
     {
       "file": "ChatGPT-Profiles-3.0.0-alpha.12-mac-arm64.dmg",
-      "bytes": 153069556,
-      "sha256": "8327537f5461cef73b7564a3aa2f82e80ddc29024ff6ad80105c1c3bd9f8d5bf"
+      "bytes": 153069751,
+      "sha256": "bf7d17a64e55af7e5fcfe6791964630c9015348293a68784cebdc41a0287b985"
     },
     {
       "file": "ChatGPT-Profiles-3.0.0-alpha.12-mac-arm64.zip",
-      "bytes": 153045495,
-      "sha256": "a79068ae20cc25ed9648956f7b5756c265b758358c67103e8baf3322980a6f64"
+      "bytes": 153045390,
+      "sha256": "e7f6255c90a11de04269334486c134296e9cd8278ba480e293fa6d32288deb2e"
     }
   ],
   "checks": {
@@ -26,15 +26,15 @@
       "windowsOnlySkipped": 2
     },
     "packagedDistFilesCompared": 227,
-    "asarSHA256": "39f744711e1b638c84cee4c530f7a8362750c9b350cf1e7fe5b0124ca11a622e",
+    "asarSHA256": "192759277c452a9a5bd6ee3fd69677e23052ce6d3c0acb73108b0f5f6a822f76",
     "packagedInstallation": {
       "version": "3.0.0-alpha.12",
-      "verifiedAt": "2026-10-23T06:33:57.330Z",
+      "verifiedAt": "2026-10-23T06:41:23.588Z",
       "scope": "real packaged ZIP, disposable old bundle, no personal account data; no live ChatGPT upgrade acceptance",
-      "zipSHA256": "a79068ae20cc25ed9648956f7b5756c265b758358c67103e8baf3322980a6f64",
-      "asarSHA256": "39f744711e1b638c84cee4c530f7a8362750c9b350cf1e7fe5b0124ca11a622e",
+      "zipSHA256": "e7f6255c90a11de04269334486c134296e9cd8278ba480e293fa6d32288deb2e",
+      "asarSHA256": "192759277c452a9a5bd6ee3fd69677e23052ce6d3c0acb73108b0f5f6a822f76",
       "helperSHA256": "91a32f18ba6b653af03e5a36cd05c93b706e16f93b007082fab97c07540425e5",
-      "elapsedMs": 12395,
+      "elapsedMs": 10623,
       "checks": [
         "ZIP digest and identity",
         "full bundle signature and architecture",

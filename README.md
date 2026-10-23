@@ -41,7 +41,7 @@ Android 日常客户端继续使用 System WebView。独立 Gecko PoC 的语言 
 
 官网各平台下载卡片提供可选“国内用户加速下载”，通过第三方 gh-proxy.org 转发；原始 GitHub 下载始终保留，中文或中国时区仅用于突出入口。
 
-每个 Release 附带 `SHA256SUMS.txt`。公开 alpha.11 通过下载安装包升级；macOS alpha.12 正在本地验收启动 / 上海中午检查、确认后后台下载与退出安装，完整 App 更新需要重启，尚不支持增量。详见[桌面开发批次](desktop/README.md#macos-alpha12-本地验收版)。Android 升级需要保持相同应用签名。新版应用不自动导入其他客户端的登录数据。
+每个 Release 附带 `SHA256SUMS.txt`。公开 alpha.11 通过下载安装包升级；macOS alpha.12 已完成本地验收包，支持启动 / 上海中午检查、确认后后台下载与退出安装，完整 App 更新需要重启，尚不支持增量。详见[桌面开发批次](desktop/README.md#macos-alpha12-本地验收版)。Android 升级需要保持相同应用签名。新版应用不自动导入其他客户端的登录数据。
 
 ## 开始使用
 
