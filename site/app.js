@@ -15,14 +15,24 @@ const platforms = {
     height: 1800,
   },
   android: {
-    image: null,
-    caption: "Android · 主界面截图待更新 / APK 可下载",
+    image: "android-assets.png",
+    caption: "Android · 资产库实际界面 / 模拟器 · 示例文件",
+    alt: "Android 客户端资产库实际截图：独立账号下的 PDF、PNG 和 HTML 示例文件，带搜索、导入和交给 GPT 入口；采集于 Android 15 模拟器。",
+    width: 1080,
+    height: 2400,
+    kind: "ANDROID · ACTUAL APP / DEMO FILES",
   },
+};
+const androidSkills = {
+  ...platforms.android,
+  image: "android-skills.png",
+  caption: "Android · 120 个 Skill 实际界面 / 模拟器 · 本地示例账号",
+  alt: "Android 客户端能力库实际截图：120 个项目 Skill、原生搜索与任务说明；采集于 Android 15 模拟器，尚无预置智能体。",
 };
 const tabs = [...document.querySelectorAll("[data-platform]")];
 const image = document.querySelector("#product-image");
-function selectPlatform(name) {
-  const entry = platforms[name];
+function selectPlatform(name, view = "assets") {
+  const entry = name === "android" && view === "skills" ? androidSkills : platforms[name];
   if (!entry) return;
   tabs.forEach((tab) => {
     const selected = tab.dataset.platform === name;
@@ -34,8 +44,9 @@ function selectPlatform(name) {
     .setAttribute("aria-labelledby", `tab-${name}`);
   image.hidden = !entry.image;
   document.querySelector("#product-pending").hidden = !!entry.image;
-  document.querySelector("#product-capture-kind").textContent = entry.image
-    ? "ACTUAL APP CAPTURE" : "ANDROID · PREVIEW PENDING";
+  document.querySelector("#product-capture-kind").textContent = entry.kind || "ACTUAL APP CAPTURE";
+  document.querySelector("#android-capture-views").hidden = name !== "android";
+  document.querySelectorAll("[data-android-view]").forEach(button => button.setAttribute("aria-pressed", String(button.dataset.androidView === view)));
   if (entry.image) {
     image.src = `/assets/${entry.image}`;
     image.alt = entry.alt;
@@ -45,6 +56,7 @@ function selectPlatform(name) {
   image.classList.toggle("android", name === "android");
   document.querySelector("#product-caption").textContent = entry.caption;
 }
+document.querySelectorAll("[data-android-view]").forEach(button => button.addEventListener("click", () => selectPlatform("android", button.dataset.androidView)));
 tabs.forEach((tab, index) => {
   tab.addEventListener("click", () => selectPlatform(tab.dataset.platform));
   tab.addEventListener("keydown", (event) => {

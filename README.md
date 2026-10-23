@@ -1,5 +1,7 @@
 # ChatGPT Profiles
 
+开发预览：macOS alpha.13 正在完善本地恢复授权说明、取消 / 重试及后台重开行为；公开下载仍为下方已发布版本。Touch ID 受保护密钥需要稳定的 Developer ID 签名，当前临时签名包尚不可启用，详见 [桌面端说明](desktop/README.md#macos-alpha13-本地预览恢复授权)。
+
 为不同 ChatGPT 账号保留独立空间，让网页使用、标签切换和文件整理集中在一个应用里。
 
 [项目主页](https://chatgpt.xincreates.com/) · [下载安装](#下载与安装) · [使用指南](#开始使用) · [版本发布](https://github.com/ForceMind/ChatGPT/releases) · [问题反馈](https://github.com/ForceMind/ChatGPT/issues)

@@ -110,7 +110,7 @@ function App() {
       <button ref={accountButton} className="current-account" aria-label="切换账号" aria-haspopup="menu" aria-expanded={menuOpen} disabled={busy} onClick={()=>void toggleAccounts()} title={profile.name+(profile.email?' · '+profile.email:'')}><span className="dot" style={{background:profile.color}}/><span>{profile.name}</span><Icon name="chevron" size={12}/></button>
     </header>
     <section className="web-stage" aria-label="网页区域">
-      {state.offline?<div className="offline-page" aria-label="本地页面快照">
+      {state.recoveryAccess?.blocking?<div className="page-state recovery-consent" aria-label="本地恢复授权"><Mark size={38}/><h1>{state.recoveryAccess.phase==='working'?'正在解锁本地恢复':'恢复上次的工作区'}</h1><p>草稿、阅读位置与离线页面由这台 Mac 的钥匙串加密保护。继续后，系统可能请求授权或 Mac 登录密码。</p><p>不会读取 Chrome 密码。取消后仍可打开网页，已有登录和恢复原件都会保留。</p>{state.recoveryAccess.message&&<p role="alert">{state.recoveryAccess.message}</p>}<div className="recovery-actions"><button className="primary" disabled={state.recoveryAccess.phase==='working'} onClick={()=>void send({type:'recovery:authorize'})}>{state.recoveryAccess.protected?'解锁本地恢复':'继续恢复'}</button><button className="secondary" disabled={state.recoveryAccess.phase==='working'} onClick={()=>void send({type:'recovery:defer'})}>先打开网页</button></div></div>:state.offline?<div className="offline-page" aria-label="本地页面快照">
         <div className="offline-banner"><div><strong>上次的页面 · 只读快照</strong><span>{new Date(state.offline.capturedAt).toLocaleString('zh-CN')} · {status?.loading?'正在连接原网页…':status?.error?'暂时无法联网，内容已保留':'正在恢复网页…'}</span></div><button className="secondary" onClick={()=>void send({type:'offline:retry'})}>重新连接</button><button className="secondary" onClick={()=>void send({type:'offline:live'})}>打开当前网页</button></div>
         <div className="offline-reading"><h1>{state.offline.title||'上次的对话'}</h1>
           {state.offline.image&&<img className="offline-viewport" src={state.offline.image} alt="退出前最后可见的网页画面"/>}
@@ -120,7 +120,8 @@ function App() {
       </div>:status?.error?<div className="page-state" role="alert"><span className="page-state-icon"><Icon name="alert" size={28}/></span><h1>网页暂时无法打开</h1><p>{profile.name} 的账号空间已保留，可以重新加载。</p><code>{status.error}</code><button className="primary" onClick={()=>void send({type:'reload'})}><Icon name="refresh" size={16}/>重新加载</button></div>:<div className="page-state loading-state"><Mark size={38}/><h1>正在打开 ChatGPT</h1><p>{profile.name} · 独立账号空间</p><span className="spinner"/></div>}
       {(editor||menuOpen||diagnosticsOpen)&&state.overlayImage&&<img className="page-preview" src={state.overlayImage} alt="" aria-hidden="true"/>}
     </section>
-    {desktopWorkspaceEnabled(state.platform)&&state.panel&&<Suspense fallback={<div className="workbench-loading" role="status">正在打开工作台…</div>}><Workbench state={state} close={()=>void send({type:'panel'})} panel={panel=>void send({type:'panel',panel})} notice={showToast}/></Suspense>}
+    {desktopWorkspaceEnabled(state.platform)&&!state.recoveryAccess?.blocking&&state.panel&&<Suspense fallback={<div className="workbench-loading" role="status">正在打开工作台…</div>}><Workbench state={state} close={()=>void send({type:'panel'})} panel={panel=>void send({type:'panel',panel})} notice={showToast}/></Suspense>}
+    {!state.recoveryAccess?.blocking&&['deferred','error'].includes(state.recoveryAccess?.phase||'')&&<div className="recovery-banner" role="status">旧恢复原件保留，本次草稿暂未保存。<button onClick={()=>void send({type:'recovery:authorize'})}>重新授权</button></div>}
     {toast&&<div className="toast" role="status"><Icon name="check" size={15}/>{toast}<button aria-label="关闭提示" onClick={()=>setToast('')}><Icon name="close" size={13}/></button></div>}
     {menuOpen&&<div className="menu-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)void closeAccounts();}}>
       <div className="account-menu" role="menu" aria-label="账号空间" ref={accountMenu}>
@@ -129,6 +130,7 @@ function App() {
           <span className="dot" style={{background:p.color}}/><span className="account-copy"><strong>{p.name}</strong><small>{p.email||'未填写邮箱备注'}</small></span>{p.id===profile.id&&<Icon name="check" size={14}/>}
         </button>)}</div>
         <div className="menu-separator"/>
+        {state.platform==='darwin'&&<button className="menu-action" role="menuitem" onClick={async()=>{await closeAccounts();await send({type:'recovery:settings'});}}><Icon name="settings" size={15}/>隐私与本地恢复<span>{state.recoveryAccess?.protected?'Touch ID':'钥匙串'}</span></button>}
         <button className="menu-action" role="menuitem" onClick={()=>void openEditor({kind:'add'})}><Icon name="plus" size={15}/>添加账号<span>{state.platform==='darwin'?'⌘⇧N':'Ctrl+Shift+N'}</span></button>
         <button className="menu-action" role="menuitem" aria-label={'管理 '+profile.name} onClick={()=>void openEditor({kind:'edit',id:profile.id})}><Icon name="settings" size={15}/>管理当前账号</button>
         {state.platform==='win32'&&<>

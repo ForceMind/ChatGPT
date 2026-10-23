@@ -1,0 +1,25 @@
+{
+  "capturedAt": "2026-10-23T12:08:55Z",
+  "sourceCommit": "a20b6abf2197ac83ac485e9642e8c77959321bad",
+  "run": "https://github.com/ForceMind/ChatGPT/actions/runs/39950513011",
+  "tests": 1,
+  "failures": 0,
+  "skipped": 0,
+  "scope": "Actual Android 15 x86_64 emulator native assets and 120 Skills, demo files; no ChatGPT webpage or real login acceptance",
+  "screenshots": [
+    {
+      "file": "site/assets/android-assets.png",
+      "width": 1080,
+      "height": 2400,
+      "bytes": 73576,
+      "sha256": "6cc5ffd9f19d54ea76442c86f407c80b774bfb7968371aa7d2ab70cfd8270d1c"
+    },
+    {
+      "file": "site/assets/android-skills.png",
+      "width": 1080,
+      "height": 2400,
+      "bytes": 346496,
+      "sha256": "560dfeaa29569283c0c93d6b063ec1ad9cb265ad64f213080c73d7240bc12089"
+    }
+  ]
+}

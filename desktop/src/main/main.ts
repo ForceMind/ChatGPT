@@ -1,5 +1,6 @@
 import {protectRemoteInput} from './remote-input';
 import {RecoveryStore,RecentlyClosedPages,resumeURL} from './recovery-store';
+import {RecoveryAccess,type PresenceKey} from './recovery-access';
 import {captureResume,applyResume,finishResume} from './page-resume';
 import {captureSnapshot} from './page-snapshot';
 import {UpdateManager} from './update-manager';
@@ -75,6 +76,7 @@ const viewLayout=new Map<string,{width:number;height:number;visible:boolean}>();
 let lastWindowTitle='';let publishTimer:ReturnType<typeof setTimeout>|undefined;
 const views = new Map<string, WebContentsView>();
 let recovery:RecoveryStore|undefined,recoveryError:string|undefined;
+let recoveryAccess:RecoveryAccess|undefined,recoveryChanging=false,pagesStarted=false;
 const pageReady=new Map<string,Promise<unknown>>(),restoringPages=new Set<string>(),blockedRecovery=new Set<string>();
 const localDrafts=new Map<string,PageResume>(),closedReplacements=new Map<string,string>();
 const recentClosed=new RecentlyClosedPages(id=>destroyView(id));
@@ -90,10 +92,32 @@ const permissionGrants = new Map<string, Set<string>>();
 const pendingProfiles = new Set<string>();
 const homepage = () => homeURL(fixtureOrigin);
 const activeProfile = () => { const s = store.read(); return s.profiles.find(p => p.id === s.activeProfileId)!; };
-const snapshot = (): Snapshot => ({ ...store.read(), version: APP_VERSION, platform: process.platform, fullScreen: win?.isFullScreen() ?? false, tabStatus: Object.fromEntries(status), testMode, offline:offlinePages.get(activeProfile().activeTabId), update:updates?.status, notice: store.recoveryNotice || assetStore?.recoveryNotice || recoveryError, overlayImage, panel, assetError });
+const snapshot = (): Snapshot => ({ ...store.read(), version: APP_VERSION, platform: process.platform, fullScreen: win?.isFullScreen() ?? false, tabStatus: Object.fromEntries(status), testMode, recoveryAccess:recoveryAccess?{...recoveryAccess.status,blocking:!pagesStarted}:undefined, offline:offlinePages.get(activeProfile().activeTabId), update:updates?.status, notice: store.recoveryNotice || assetStore?.recoveryNotice || recoveryError, overlayImage, panel, assetError });
 function publish():void{if(publishTimer)return;publishTimer=setTimeout(()=>{publishTimer=undefined;if(win&&!win.isDestroyed())win.webContents.send('profiles:state',snapshot());},25);publishTimer.unref();}
 function notice(message: string): void { if (win && !win.isDestroyed()) win.webContents.send('profiles:shortcut', `notice:${message}`); }
 function report(error: unknown): void { notice(error instanceof Error ? error.message : '操作失败，请重试。'); }
+function startPages(focus=true):void {if(pagesStarted)return;pagesStarted=true;showActive(focus);void warmPreviousTabs();}
+async function authorizeRecovery(manual=false):Promise<void>{
+ if(!recoveryAccess||recoveryChanging||!win?.isVisible()||(!manual&&!win.isFocused()))return;
+ recoveryChanging=true;publish();
+ try{
+  const authorization=recoveryAccess.authorize();publish();await authorization;recoveryAccess.finishMigration();
+  recovery=new RecoveryStore(dataDir!,recoveryAccess.cipher,fixtureOrigin);
+  if(store.recoveryNotice)recovery.preserveOrphans();recovery.prune([...store.read().tabs,...store.read().closedTabs]);recoveryError=undefined;
+  if(pagesStarted){for(const tab of store.read().tabs){const c=views.get(tab.id)?.webContents;if(!c||c.isDestroyed()||restoringPages.has(tab.id))continue;blockedRecovery.delete(tab.id);restoringPages.add(tab.id);try{await restoreTab(tab,c);}finally{restoringPages.delete(tab.id);}}}
+ }catch(error){recovery=undefined;recoveryError=error instanceof Error?error.message:'本地恢复尚未授权';recoveryAccess.status={...recoveryAccess.status,phase:'error',message:recoveryError};}
+ finally{recoveryChanging=false;if(recovery)startPages();layout();publish();}
+}
+async function recoverySettings():Promise<void>{
+ if(!win||!recoveryAccess||recoveryChanging)return;
+ const s=recoveryAccess.status,canEnable=s.phase==='ready'&&s.signed&&s.touchID&&!s.protected;
+ const explanation=s.protected?'本地恢复密钥由系统身份验证保护，每次真正启动后在前台解锁。':!s.signed?'当前版本使用临时签名，Touch ID 密钥保护暂不可启用。需要带 Developer ID 签名的版本；现有系统钥匙串加密继续有效。':!s.touchID?'此 Mac 的 Touch ID 暂不可用，请在系统设置中配置指纹。':'可用 Touch ID 或系统允许的密码验证保护本地恢复密钥。';
+ updateDialog=true;
+ try{const choice=await dialog.showMessageBox(win,{type:'info',title:'隐私与本地恢复',message:s.protected?'Touch ID 恢复保护已开启':'本机加密与钥匙串授权',detail:explanation+'\n\n本地草稿、阅读位置及离线页面加密保存在这台电脑。不会读取 Chrome 密码。系统钥匙串授权与 Touch ID 是不同的验证，升级后的系统授权仍可能要求 Mac 登录密码。\n\n'+(s.message||'取消授权不会删除现有登录或恢复原件。'),buttons:canEnable?['关闭','重新授权恢复','启用 Touch ID 保护']:['关闭','重新授权恢复'],defaultId:0,cancelId:0});
+  if(choice.response===1)await authorizeRecovery(true);
+  if(choice.response===2&&canEnable){recoveryChanging=true;try{await recovery?.idle();await recoveryAccess.enablePresence();notice('本地恢复密钥的系统身份验证保护已开启。');}catch(error){report(error);}finally{recoveryChanging=false;publish();}}
+ }finally{updateDialog=false;recordAppActivity();}
+}
 function assetsChanged(profileId:string):void { if(win&&!win.isDestroyed())win.webContents.send('assets:changed',profileId); }
 function profileById(id: string): Profile { const p = store.read().profiles.find(p => p.id === id); if (!p) throw new Error('账号已不存在'); return p; }
 function activeContents(): WebContents | undefined { return views.get(activeProfile().activeTabId)?.webContents; }
@@ -116,7 +140,7 @@ function saveBounds(): void {
 function deadline<T>(work:Promise<T>,ms:number):Promise<T>{let timer:ReturnType<typeof setTimeout>;return Promise.race([work,new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(Error('界面恢复记录处理超时')),ms);timer.unref();})]).finally(()=>clearTimeout(timer));}
 function savePanel():void{if(!desktopWorkspace)return;store.commit(s=>{const p=s.profiles.find(p=>p.id===s.activeProfileId)!;p.workspace={...p.workspace,panel};});}
 async function checkpointTab(id:string,strict=false):Promise<void>{
- if(!recovery||restoringPages.has(id)||blockedRecovery.has(id))return;
+ if(!recovery||recoveryChanging||restoringPages.has(id)||blockedRecovery.has(id))return;
  const tab=[...store.read().tabs,...store.read().closedTabs].find(t=>t.id===id),contents=views.get(id)?.webContents;if(!tab||!contents||pendingProfiles.has(tab.profileId))return;
  try{const record=await deadline(captureResume(contents,tab.profileId,id,fixtureOrigin),1500);if(!record)return;
   if(!capturingSnapshots.has(id)&&(strict||Date.now()-(snapshotTimes.get(id)||0)>30000)){
@@ -125,12 +149,14 @@ async function checkpointTab(id:string,strict=false):Promise<void>{
   }
   const page=savedPages.get(id);if(page?.url===record.url)record.page=page;
   const alternative=localDrafts.get(id)?.draft;if(alternative&&alternative!==record.draft)record.alternativeDraft=alternative;
+  if(recoveryChanging)return;
   await recovery.save(record,()=>!pendingProfiles.has(tab.profileId)&&[...store.read().tabs,...store.read().closedTabs].some(t=>t.id===id&&t.profileId===tab.profileId)&&!contents.isDestroyed()&&resumeURL(contents.getURL(),fixtureOrigin)===record.url);
   checkpointErrors.delete(id);
  }catch(error){if(!checkpointErrors.has(id)){checkpointErrors.add(id);report(error);}if(strict)throw error;}
 }
 function pruneRecovery():void{const tabs=[...store.read().tabs,...store.read().closedTabs],ids=new Set(tabs.map(t=>t.id));recovery?.prune(tabs);for(const map of [localDrafts,closedReplacements,savedPages,offlinePages,snapshotTimes])for(const id of map.keys())if(!ids.has(id))map.delete(id);for(const set of [blockedRecovery,checkpointErrors])for(const id of set)if(!ids.has(id))set.delete(id);}
 async function checkpointWorkspace():Promise<void>{
+ if(recoveryAccess&&recoveryAccess.status.phase!=='ready'&&views.size)throw Error('本地恢复尚未授权，本次草稿和阅读位置还未保存；旧恢复原件仍保留');
  if(win&&!win.isDestroyed())await deadline(win.webContents.executeJavaScript(`(async()=>{const detail={pending:[]};window.dispatchEvent(new CustomEvent('profiles:checkpoint',{detail}));await Promise.all(detail.pending);})()`),2000);
  const ids=[...views.keys()];for(let i=0;i<ids.length;i+=2)await Promise.all(ids.slice(i,i+2).map(id=>checkpointTab(id,true)));await recovery?.idle();
 }
@@ -152,7 +178,7 @@ async function warmPreviousTabs():Promise<void>{
   if(quitting||quitPending||!win||win.isDestroyed())break;if(!store.read().tabs.some(t=>t.id===tab.id))continue;ensureView(tab);await Promise.race([pageReady.get(tab.id),new Promise(r=>{const t=setTimeout(r,15000);t.unref();})]);
  }}finally{warming=false;}
 }
-function reopenWindow():void{recordAppActivity();setTimeout(()=>void offerUpdate().catch(report),500).unref();if(quitting)return;if(!win){createWindow();return;}if(win.isMinimized())win.restore();win.show();win.focus();if(backgroundModePending){backgroundModePending=false;const mode=store.read().windowMode;if(mode?.maximized)win.maximize();if(mode?.fullscreen)win.setFullScreen(true);}if(desktopWorkspace&&!overlayOpen&&!panel)activeContents()?.focus();for(const popup of hiddenPopups)if(!popup.isDestroyed()&&popups.get(popup)===activeProfile().id){popup.show();hiddenPopups.delete(popup);}}
+function reopenWindow():void{recordAppActivity();setTimeout(()=>void offerUpdate().catch(report),500).unref();if(quitting)return;if(!win){createWindow();return;}if(win.isMinimized())win.restore();win.show();win.focus();if(backgroundModePending){backgroundModePending=false;const mode=store.read().windowMode;if(mode?.maximized)win.maximize();if(mode?.fullscreen)win.setFullScreen(true);}if(recoveryAccess&&!pagesStarted&&!recoveryAccess.needsConsent)void authorizeRecovery();if(desktopWorkspace&&!overlayOpen&&!panel)activeContents()?.focus();for(const popup of hiddenPopups)if(!popup.isDestroyed()&&popups.get(popup)===activeProfile().id){popup.show();hiddenPopups.delete(popup);}}
 async function openChatSearch():Promise<void>{recordAppActivity();
  if(!win?.isVisible()||win.isMinimized())reopenWindow();
  if(overlayOpen){notice('请先关闭当前菜单或弹窗，再打开搜索。');return;}if(panel){win?.webContents.send('profiles:shortcut','workbench-search');return;}const c=activeContents();if(!c||c.isDestroyed())return;c.focus();
@@ -363,6 +389,7 @@ function validateCommand(value: unknown): asserts value is Command {
   if (!value || typeof value !== 'object') throw new Error('无效操作');
   const c = value as Record<string, unknown>;
   if (typeof c.type !== 'string') throw new Error('无效操作');
+  if(['recovery:authorize','recovery:defer','recovery:settings'].includes(c.type)){if(process.platform!=='darwin')throw Error('此恢复授权入口仅用于 macOS');return;}
   const known = ['profile:add','profile:edit','profile:activate','profile:remove','profile:clear','profile:move','tab:new','tab:activate','tab:close','tab:pin','tab:menu','tab:reorder','tab:restore','back','forward','reload','home','fullscreen','maximize','external','overlay','panel','offline:live','offline:retry','update:check','update:idle'];
   if (!known.includes(c.type)) throw new Error('未知操作');
   if (['profile:edit','profile:activate','profile:remove','profile:clear','profile:move','tab:activate','tab:close','tab:pin','tab:menu'].includes(c.type) && (typeof c.id !== 'string' || !/^[a-f0-9-]{36}$/.test(c.id))) throw new Error('无效标识');
@@ -377,6 +404,10 @@ function validateCommand(value: unknown): asserts value is Command {
 }
 async function dispatch(c: Command): Promise<void> {
   recordAppActivity();
+  if(c.type==='recovery:authorize'){await authorizeRecovery(true);return;}
+  if(c.type==='recovery:defer'){if(recoveryChanging)throw Error('授权正在进行，请先完成或取消系统验证');recoveryAccess?.defer();startPages();publish();return;}
+  if(c.type==='recovery:settings'){await recoverySettings();return;}
+  if(recoveryAccess&&!pagesStarted)throw Error('请先选择恢复授权，或先打开网页');
   if(quitPending)throw Error('正在保存恢复记录，请稍候。');
   if(desktopWorkspace&&['profile:add','profile:activate','tab:activate','tab:close','tab:new','tab:restore','home','back','forward','reload'].includes(c.type))await checkpointTab(activeProfile().activeTabId);
   if(desktopWorkspace&&c.type==='tab:close'&&c.id!==activeProfile().activeTabId)await checkpointTab(c.id);
@@ -504,7 +535,7 @@ function syncIdleTimer():void{
  idleTimer=setTimeout(()=>{void idleUpdate!.tick().finally(syncIdleTimer);},delay);idleTimer.unref();
 }
 async function safeForIdleUpdate():Promise<boolean>{
- if(!recovery||recoveryError||assetError||handoffError||overlayOpen||panel||updateDialog||pendingProfiles.size||restoringPages.size||warming||assetConversions?.hasRunning())return false;
+ if(!recovery||recoveryChanging||recoveryError||assetError||handoffError||overlayOpen||panel||updateDialog||pendingProfiles.size||restoringPages.size||warming||assetConversions?.hasRunning())return false;
  if([...popups.keys()].some(p=>!p.isDestroyed())||[...assetDownloads.values()].some(d=>d.activeIds().length))return false;
  if(handoffRunner?.jobs.all().some(j=>['preparing','opening','uploading','drafting','sending'].includes(j.status)))return false;
  if(!views.size||store.read().tabs.some(t=>t.loaded&&!views.has(t.id)))return false;
@@ -559,7 +590,7 @@ function installMenu(): void {
   const tabStep = (delta: number) => () => { const p = activeProfile(), tabs = store.read().tabs.filter(t => t.profileId === p.id), i = tabs.findIndex(t => t.id === p.activeTabId); action({ type: 'tab:activate', id: tabs[(i+delta+tabs.length)%tabs.length].id })(); };
   const template: Electron.MenuItemConstructorOptions[] = [
     { label: 'ChatGPT Profiles', submenu: [{ role: 'about', label: '关于 ChatGPT Profiles' }, ...(process.platform==='darwin'?[{id:'check-updates',label:'检查更新…',click:()=>void checkUpdates(true).catch(report)}]:[]), ...(process.platform === 'darwin' ? [{ type: 'separator' as const }, { role: 'services' as const, label: '服务' }, { role: 'hide' as const, label: '隐藏' }, { role: 'hideOthers' as const, label: '隐藏其他' }, { role: 'unhide' as const, label: '显示全部' }] : []), { type: 'separator' }, { role: 'quit', label: '退出' }] },
-    { label: '文件', submenu: [...(desktopWorkspace?[{id:'chat-search',label:'搜索 ChatGPT',accelerator:'CmdOrCtrl+K',click:()=>void openChatSearch().catch(report)},{id:'recovery-draft',label:'查看本地恢复草稿',click:()=>void showLocalDraft().catch(report)},{type:'separator' as const}]:[]),{ label: '新建标签页', accelerator: 'CmdOrCtrl+T', click: action({type:'tab:new'}) }, { label: '恢复关闭的标签页', accelerator: 'CmdOrCtrl+Shift+T', click: action({type:'tab:restore'}) }, { label: '添加账号', accelerator: 'CmdOrCtrl+Shift+N', click: () => win?.webContents.send('profiles:shortcut','add-profile') }, { type:'separator' }, { label:'关闭标签页', accelerator:'CmdOrCtrl+W', click: () => { const focused=BrowserWindow.getFocusedWindow(); if(focused&&focused!==win) focused.close(); else if(panel)win?.webContents.send('profiles:shortcut','close-workbench');else action({type:'tab:close',id:activeProfile().activeTabId})(); } }, { role:'close', label:process.platform==='darwin'?'关闭窗口（后台保留）':'关闭窗口', accelerator:'CmdOrCtrl+Shift+W' }] },
+    { label: '文件', submenu: [...(desktopWorkspace?[{id:'chat-search',label:'搜索 ChatGPT',accelerator:'CmdOrCtrl+K',click:()=>void openChatSearch().catch(report)},...(process.platform==='darwin'?[{id:'recovery-privacy',label:'隐私与本地恢复…',click:()=>void recoverySettings().catch(report)}]:[]),{id:'recovery-draft',label:'查看本地恢复草稿',click:()=>void showLocalDraft().catch(report)},{type:'separator' as const}]:[]),{ label: '新建标签页', accelerator: 'CmdOrCtrl+T', click: action({type:'tab:new'}) }, { label: '恢复关闭的标签页', accelerator: 'CmdOrCtrl+Shift+T', click: action({type:'tab:restore'}) }, { label: '添加账号', accelerator: 'CmdOrCtrl+Shift+N', click: () => win?.webContents.send('profiles:shortcut','add-profile') }, { type:'separator' }, { label:'关闭标签页', accelerator:'CmdOrCtrl+W', click: () => { const focused=BrowserWindow.getFocusedWindow(); if(focused&&focused!==win) focused.close(); else if(panel)win?.webContents.send('profiles:shortcut','close-workbench');else action({type:'tab:close',id:activeProfile().activeTabId})(); } }, { role:'close', label:process.platform==='darwin'?'关闭窗口（后台保留）':'关闭窗口', accelerator:'CmdOrCtrl+Shift+W' }] },
     { label: '编辑', submenu: [{role:'undo',label:'撤销'},{role:'redo',label:'重做'},{type:'separator'},{role:'cut',label:'剪切'},{role:'copy',label:'复制'},{role:'paste',label:'粘贴'},{role:'selectAll',label:'全选'}] },
     { label: '显示', submenu: [
       {id:'reload-page',label:'重新加载网页',accelerator:'CmdOrCtrl+R',click:action({type:'reload'})},
@@ -590,12 +621,13 @@ function createWindow(): void {
   if (process.platform === 'win32') win.setMenuBarVisibility(false);
   win.webContents.setWindowOpenHandler(()=>({action:'deny'}));
   win.webContents.on('will-navigate',event=>event.preventDefault());
+  win.on('focus',()=>{if(!backgroundModePending&&!pagesStarted&&recoveryAccess?.status.phase==='pending'&&!recoveryAccess.needsConsent)void authorizeRecovery();});
   win.on('resize',()=>{recordAppActivity();layout();clearTimeout(boundsTimer);boundsTimer=setTimeout(()=>{try{saveBounds();}catch(error){report(error);}},250);});
   win.on('move',()=>{recordAppActivity();clearTimeout(boundsTimer);boundsTimer=setTimeout(()=>{try{saveBounds();}catch(error){report(error);}},250);});
   win.on('enter-full-screen',()=>{layout();publish();});win.on('leave-full-screen',()=>{layout();publish();});
   win.on('close',event=>{if(desktopWorkspace&&!quitting){recordAppActivity();event.preventDefault();if(process.platform==='win32'){app.quit();return;}try{saveBounds();}catch(error){report(error);}void checkpointWorkspace().catch(report);for(const popup of popups.keys())if(!popup.isDestroyed()&&popup.isVisible()){hiddenPopups.add(popup);popup.hide();}win?.hide();return;}clearTimeout(boundsTimer);try{saveBounds();}catch(error){report(error);} for(const id of [...views.keys()])destroyView(id);for(const popup of popups.keys())if(!popup.isDestroyed())popup.destroy();});
   win.on('closed',()=>{win=undefined;lastWindowTitle='';clearTimeout(publishTimer);publishTimer=undefined;overlayOpen=false;overlayImage=undefined;panel=undefined;assetRuntime?.revoke();});
-  win.once('ready-to-show',()=>{if(!backgroundModePending)win?.show();showActive(!backgroundModePending);const mode=desktopWorkspace&&!backgroundModePending?store.read().windowMode:undefined;if(mode?.maximized)win?.maximize();if(mode?.fullscreen)win?.setFullScreen(true);void warmPreviousTabs();});
+  win.once('ready-to-show',()=>{if(!backgroundModePending){win?.show();win?.focus();}if(!recoveryAccess)startPages(!backgroundModePending);else if(!backgroundModePending){if(recoveryAccess.status.phase==='ready')startPages();else if(!recoveryAccess.needsConsent)void authorizeRecovery();}const mode=desktopWorkspace&&!backgroundModePending?store.read().windowMode:undefined;if(mode?.maximized)win?.maximize();if(mode?.fullscreen)win?.setFullScreen(true);});
   void win.loadURL('app://shell/index.html').catch(error=>dialog.showErrorBox('界面加载失败',error.message));
 }
 if (single) {
@@ -603,7 +635,15 @@ if (single) {
   app.whenReady().then(async()=>{
     store = new StateStore(dataDir, fixtureOrigin);
     if(desktopWorkspace){
-      try{if(!await safeStorage.isAsyncEncryptionAvailable())throw Error('本机加密暂不可用，聊天草稿无法保存；不会写入明文。');recovery=new RecoveryStore(dataDir,{encrypt:value=>safeStorage.encryptStringAsync(value),decrypt:async value=>(await safeStorage.decryptStringAsync(value)).result},fixtureOrigin);if(store.recoveryNotice)recovery.preserveOrphans();recovery.prune([...store.read().tabs,...store.read().closedTabs]);}catch(error){recoveryError=error instanceof Error?error.message:'恢复记录暂不可用';}
+      try{
+       const legacy={encrypt:(value:string)=>safeStorage.encryptStringAsync(value),decrypt:async(value:Buffer)=>(await safeStorage.decryptStringAsync(value)).result};
+       if(process.platform==='darwin'){
+        let native:PresenceKey|undefined;try{native=require(path.join(__dirname,'recovery-protection.node')) as PresenceKey;}catch{/* Legacy recovery remains available; protected records cannot bypass the missing native key provider. */}
+        let attempts=0;recoveryAccess=new RecoveryAccess(dataDir,APP_VERSION,legacy,()=>testMode&&process.env.PROFILES_RECOVERY_DENY_ONCE==='1'&&attempts++===0?Promise.resolve(false):safeStorage.isAsyncEncryptionAvailable(),native);
+        if(testMode&&process.env.PROFILES_RECOVERY_CONSENT!=='1'){await recoveryAccess.authorize();recovery=new RecoveryStore(dataDir!,recoveryAccess.cipher,fixtureOrigin);}
+       }else{if(!await safeStorage.isAsyncEncryptionAvailable())throw Error('本机加密暂不可用；不会写入明文。');recovery=new RecoveryStore(dataDir,legacy,fixtureOrigin);}
+       if(recovery){if(store.recoveryNotice)recovery.preserveOrphans();recovery.prune([...store.read().tabs,...store.read().closedTabs]);}
+      }catch(error){recoveryError=error instanceof Error?error.message:'恢复记录暂不可用';}
       panel=activeProfile().workspace?.panel;
       checkpointTimer=setInterval(()=>{if(!quitPending)void checkpointTab(activeProfile().activeTabId);},2500);checkpointTimer.unref();
       try{loginDiagnostics=new LoginDiagnostics(dataDir,()=>win?.webContents.send('login-links:changed'));}catch(error){loginDiagnosticsError=error instanceof Error?error.message:'登录记录暂不可用';}
@@ -633,7 +673,7 @@ if (single) {
     event.preventDefault();if(quitPending)return;quitPending=true;clearTimeout(idleTimer);
     const epoch=idleInstallEpoch;if(epoch===undefined)recordAppActivity();
     const permitted=()=>epoch===undefined?Promise.resolve(true):idleUpdate?.permit(epoch)||Promise.resolve(false);
-    void deadline(commandQueue.then(async()=>{await updates?.stopForQuit();if(!await permitted())throw Error('应用状态已变化，空闲安装已延后');await checkpointWorkspace();if(!await permitted())throw Error('网页仍在处理，空闲安装已延后');}),8000)
+    void deadline(commandQueue.then(async()=>{await updates?.stopForQuit();if(recoveryChanging)throw Error('请先完成或取消系统恢复授权');if(!await permitted())throw Error('应用状态已变化，空闲安装已延后');await checkpointWorkspace();if(!await permitted())throw Error('网页仍在处理，空闲安装已延后');}),8000)
     .then(async()=>{if(!await permitted())throw Error('应用状态已变化');await updates?.installOnQuit(!testMode);quitting=true;quitPending=false;app.quit();})
     .catch(async error=>{
      quitPending=false;
@@ -641,7 +681,7 @@ if (single) {
      reopenWindow();const choice=await dialog.showMessageBox(win!,{type:'warning',title:'退出准备尚未完成',message:'恢复记录或更新暂时无法准备完成',detail:(error instanceof Error?error.message:'本机加密或网页繁忙')+'。可以返回应用继续保存；仍然退出可能无法恢复最后的修改。',buttons:['返回应用','仍然退出'],defaultId:0,cancelId:0});if(choice.response===1){quitting=true;app.quit();}
     });return;
    }
-   quitting=true;clearTimeout(idleTimer);idleUpdate?.cancel();idleNoticeWindow?.destroy();updates?.dispose();clearInterval(checkpointTimer);recentClosed.dispose();handoffRunner?.dispose();assetConversions?.dispose();for(const tracker of assetDownloads.values())tracker.dispose();
+   quitting=true;recoveryAccess?.dispose();clearTimeout(idleTimer);idleUpdate?.cancel();idleNoticeWindow?.destroy();updates?.dispose();clearInterval(checkpointTimer);recentClosed.dispose();handoffRunner?.dispose();assetConversions?.dispose();for(const tracker of assetDownloads.values())tracker.dispose();
   });
   app.on('window-all-closed',()=>{if(process.platform!=='darwin'||testMode)app.quit();});
 }
