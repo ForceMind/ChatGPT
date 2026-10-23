@@ -38,6 +38,7 @@ export class WorkbenchUI {
     const element=event.target instanceof Element?event.target:undefined,card=element?.closest<HTMLElement>('[data-asset]');if(!card)return;
     event.preventDefault();this.closeAssetMenu();const item=this.assets.find(a=>a.id===card.dataset.asset);if(!item)return;
     if(!this.checked.has(item.id))this.checked.clear();this.selected=item.id;this.explicitSelection=true;
+    this.$('#selection-bar').hidden=!this.checked.size;this.root.querySelectorAll<HTMLElement>('[data-check]').forEach(button=>{const checked=this.checked.has(button.dataset.check!);button.setAttribute('aria-pressed',String(checked));button.innerHTML=checked?icon('check'):'';});
     this.root.querySelectorAll<HTMLElement>('[data-asset]').forEach(node=>{node.classList.toggle('aw-selected',node.dataset.asset===item.id);node.classList.toggle('aw-checked',this.checked.has(node.dataset.asset!));});this.renderDetail();
     const ids=this.checked.size?[...this.checked]:[item.id],profile=this.profile.id,multiple=ids.length>1,ready=item.status==='ready'&&!item.trashedAt;
     const actions:{label:string;run:()=>Promise<unknown>|void;disabled?:boolean}[]=[
