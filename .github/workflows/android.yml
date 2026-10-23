@@ -22,6 +22,10 @@ on:
         description: Verify native workbench fixtures only; skip external ChatGPT screenshot
         type: boolean
         default: false
+      website_capture_only:
+        description: Capture real native asset and Skill screens with labelled demo files; no external webpage
+        type: boolean
+        default: false
       handoff_only:
         description: Run the native attachment handoff flow on phone and tablet only
         type: boolean
@@ -125,6 +129,12 @@ jobs:
           # The CI image's Pixel Launcher can ANR during headless startup. It is
           # not needed for explicit Activity launches; App ANR reporting stays on.
           adb shell pm disable-user --user 0 com.google.android.apps.nexuslauncher
+          if [ "${{ inputs.website_capture_only }}" = true ]; then
+            ./gradlew --no-daemon -Pandroid.testInstrumentationRunnerArguments.fixtureMode=true '-Pandroid.testInstrumentationRunnerArguments.class=com.forcemind.chatgpt.profiles.WorkbenchTest#websiteShowsActualNativeAssetsWithExplicitDemoFiles' connectedDebugAndroidTest
+            adb pull /sdcard/Download/ProfilesFixtureEvidence app/build/device-evidence/website
+            echo 'Actual Android native asset and Skill UI on an emulator, labelled demo files. No ChatGPT webpage or real account acceptance.' > app/build/device-evidence/scope.txt
+            exit 0
+          fi
           if [ "${{ inputs.process_restart_only }}" = true ]; then
             ./gradlew --no-daemon installDebug
             timeout 180 python3 -u scripts/verify-process-restart.py app/build/device-evidence

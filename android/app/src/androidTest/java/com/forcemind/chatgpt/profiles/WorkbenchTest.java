@@ -138,6 +138,23 @@ public class WorkbenchTest {
         values.clear();values.put(android.provider.MediaStore.Downloads.IS_PENDING,0);context.getContentResolver().update(uri,values,null,null);
     }
     private void assetEvidence(AssetLedger ledger,JSONObject asset,String name)throws Exception{try(InputStream input=Files.newInputStream(ledger.verifiedFile(asset.getString("id")).toPath())){encodedEvidence(name,asset.getString("mime"),input);}}
+    @Test public void websiteShowsActualNativeAssetsWithExplicitDemoFiles()throws Exception{
+        WorkspaceState state=new StateStore(context.getFilesDir()).load();state.current().name="演示账号";new StateStore(context.getFilesDir()).save(state);
+        try(ActivityScenario<AssetWorkbenchActivity> scene=ActivityScenario.launch(screen(AssetWorkbenchActivity.class))){
+            Intent documents=new Intent();documents.setClipData(ClipData.newUri(context.getContentResolver(),"demo",Uri.parse("content://"+FixtureFilesProvider.AUTHORITY+"/html")));
+            documents.getClipData().addItem(new ClipData.Item(Uri.parse("content://"+FixtureFilesProvider.AUTHORITY+"/image")));
+            documents.getClipData().addItem(new ClipData.Item(Uri.parse("content://"+FixtureFilesProvider.AUTHORITY+"/pdf")));
+            scene.onActivity(a->a.onActivityResult(10,Activity.RESULT_OK,documents));
+            until(()->new AssetLedger(context.getFilesDir(),account).list().size()==3);
+            AtomicInteger count=new AtomicInteger();until(()->{scene.onActivity(a->count.set(find(a.getWindow().getDecorView(),ListView.class).getAdapter().getCount()));return count.get()==3;});
+            SystemClock.sleep(4000); // Wait for the import toast to disappear.
+            screenshot("android-website-assets.png");
+        }
+        try(ActivityScenario<AssetWorkbenchActivity> scene=ActivityScenario.launch(screen(AssetWorkbenchActivity.class).putExtra("skills",true))){
+            AtomicInteger count=new AtomicInteger();until(()->{scene.onActivity(a->count.set(find(a.getWindow().getDecorView(),ListView.class).getAdapter()==null?0:find(a.getWindow().getDecorView(),ListView.class).getAdapter().getCount()));return count.get()==120;});
+            screenshot("android-website-skills.png");
+        }
+    }
     @Test public void realDocumentUrisImportToTheInitiatingAccountAndPreviewAllThreeKinds()throws Exception{
         try(ActivityScenario<AssetWorkbenchActivity> scene=ActivityScenario.launch(screen(AssetWorkbenchActivity.class))){
             // Deliver the real provider result immediately, also testing the initial-load queue.
