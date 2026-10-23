@@ -110,7 +110,14 @@ function App() {
       <button ref={accountButton} className="current-account" aria-label="切换账号" aria-haspopup="menu" aria-expanded={menuOpen} disabled={busy} onClick={()=>void toggleAccounts()} title={profile.name+(profile.email?' · '+profile.email:'')}><span className="dot" style={{background:profile.color}}/><span>{profile.name}</span><Icon name="chevron" size={12}/></button>
     </header>
     <section className="web-stage" aria-label="网页区域">
-      {status?.error?<div className="page-state" role="alert"><span className="page-state-icon"><Icon name="alert" size={28}/></span><h1>网页暂时无法打开</h1><p>{profile.name} 的账号空间已保留，可以重新加载。</p><code>{status.error}</code><button className="primary" onClick={()=>void send({type:'reload'})}><Icon name="refresh" size={16}/>重新加载</button></div>:<div className="page-state loading-state"><Mark size={38}/><h1>正在打开 ChatGPT</h1><p>{profile.name} · 独立账号空间</p><span className="spinner"/></div>}
+      {state.offline?<div className="offline-page" aria-label="本地页面快照">
+        <div className="offline-banner"><div><strong>上次的页面 · 只读快照</strong><span>{new Date(state.offline.capturedAt).toLocaleString('zh-CN')} · {status?.loading?'正在连接原网页…':status?.error?'暂时无法联网，内容已保留':'正在恢复网页…'}</span></div><button className="secondary" onClick={()=>void send({type:'offline:retry'})}>重新连接</button><button className="secondary" onClick={()=>void send({type:'offline:live'})}>打开当前网页</button></div>
+        <div className="offline-reading"><h1>{state.offline.title||'上次的对话'}</h1>
+          {state.offline.image&&<img className="offline-viewport" src={state.offline.image} alt="退出前最后可见的网页画面"/>}
+          <details open={!state.offline.image}><summary>阅读已保存的对话文字</summary>{state.offline.messages.map((message,index)=><article key={index} className={'offline-message '+message.role}><span>{message.role==='user'?'你':message.role==='assistant'?'ChatGPT':'对话'}</span><p>{message.text}</p></article>)}{state.offline.truncated&&<p className="offline-note">对话较长，仅保存了部分文字。联网后查看完整原文。</p>}</details>
+          <p className="offline-note">这是本机加密保存的副本。图片保留在最后可见画面中；链接、附件和消息操作需连接原网页后使用。不会自动发送消息。</p>
+        </div>
+      </div>:status?.error?<div className="page-state" role="alert"><span className="page-state-icon"><Icon name="alert" size={28}/></span><h1>网页暂时无法打开</h1><p>{profile.name} 的账号空间已保留，可以重新加载。</p><code>{status.error}</code><button className="primary" onClick={()=>void send({type:'reload'})}><Icon name="refresh" size={16}/>重新加载</button></div>:<div className="page-state loading-state"><Mark size={38}/><h1>正在打开 ChatGPT</h1><p>{profile.name} · 独立账号空间</p><span className="spinner"/></div>}
       {(editor||menuOpen||diagnosticsOpen)&&state.overlayImage&&<img className="page-preview" src={state.overlayImage} alt="" aria-hidden="true"/>}
     </section>
     {desktopWorkspaceEnabled(state.platform)&&state.panel&&<Suspense fallback={<div className="workbench-loading" role="status">正在打开工作台…</div>}><Workbench state={state} close={()=>void send({type:'panel'})} panel={panel=>void send({type:'panel',panel})} notice={showToast}/></Suspense>}
@@ -134,6 +141,7 @@ function App() {
           <button className="menu-action" role="menuitem" onClick={async()=>{await closeAccounts();await send({type:'fullscreen'});}}>进入/退出全屏<span>F11</span></button>
         </>}
         {desktopWorkspaceEnabled(state.platform)&&<button className="menu-action" role="menuitem" onClick={()=>void openDiagnostics()}><Icon name="shield" size={15}/>登录与链接记录</button>}
+        {state.platform==='darwin'&&<button className="menu-action" role="menuitem" onClick={async()=>{await closeAccounts();await send({type:'update:check'});}}><Icon name="refresh" size={15}/>{state.update?.phase==='downloading'?`后台更新 ${state.update.progress||0}%`:state.update?.phase==='ready'?`更新 ${state.update.version} 已准备`:'检查更新'}<span>{state.version}</span></button>}
         <div className="menu-foot">账号名称与邮箱为手动备注。<br/>每个账号拥有自己的登录状态和标签页。</div>
       </div>
     </div>}

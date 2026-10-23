@@ -1,7 +1,8 @@
 import type {WorkbenchPanel} from './workbench';
 export type WorkbenchViewState={filter:string;query:string;sort:'recent'|'name'|'size';layout:'grid'|'list';selected?:string;libraryKind:'skills'|'agents';libraryFilter:string;libraryQuery:string;librarySelected?:string;favoritesOnly:boolean;preview?:string;scroll:number;libraryScroll:number};
 export type WorkspaceState={panel?:WorkbenchPanel;workbench?:WorkbenchViewState};
-export type PageResume={schema:1;profileId:string;tabId:string;url:string;draft:string;alternativeDraft?:string;scroll:number;ratio:number;anchor?:{kind:'id'|'message';value:string;offset:number};capturedAt:number};
+export type PageSnapshot={url:string;title:string;messages:{role:'user'|'assistant'|'message';text:string}[];truncated:boolean;image?:string;capturedAt:number};
+export type PageResume={schema:1;profileId:string;tabId:string;url:string;draft:string;page?:PageSnapshot;alternativeDraft?:string;scroll:number;ratio:number;anchor?:{kind:'id'|'message';value:string;offset:number};capturedAt:number};
 const object=(v:unknown):v is Record<string,unknown>=>!!v&&typeof v==='object'&&!Array.isArray(v);
 const label=(v:unknown,n:number)=>typeof v==='string'&&v.length<=n&&!/[\u0000-\u001f\u007f]/.test(v);
 export const recoveryId=(v:unknown):v is string=>typeof v==='string'&&/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(v);
@@ -13,7 +14,14 @@ export function validWorkspace(v:unknown):v is WorkspaceState{
 }
 export function validResume(v:unknown):v is PageResume{
  if(!object(v)||v.schema!==1||!recoveryId(v.profileId)||!recoveryId(v.tabId)||typeof v.url!=='string'||v.url.length>8192||typeof v.draft!=='string'||v.draft.length>100_000||!position(v.scroll)||typeof v.ratio!=='number'||v.ratio<0||v.ratio>1||!Number.isFinite(v.ratio)||typeof v.capturedAt!=='number'||!Number.isSafeInteger(v.capturedAt)||v.capturedAt<0)return false;
+ if(v.page!==undefined&&(!validPageSnapshot(v.page)||v.page.url!==v.url))return false;
  if(v.alternativeDraft!==undefined&&(typeof v.alternativeDraft!=='string'||v.alternativeDraft.length>100000))return false;
  if(v.anchor!==undefined){const a=v.anchor;if(!object(a)||!['id','message'].includes(a.kind as string)||!label(a.value,160)||!a.value||typeof a.offset!=='number'||!Number.isFinite(a.offset)||Math.abs(a.offset)>100000)return false;}
  return true;
+}
+
+export function validPageSnapshot(v:unknown):v is PageSnapshot{
+ if(!object(v)||typeof v.url!=='string'||v.url.length>8192||!label(v.title,240)||typeof v.truncated!=='boolean'||!Number.isSafeInteger(v.capturedAt)||(v.capturedAt as number)<0||!Array.isArray(v.messages)||!v.messages.length||v.messages.length>300)return false;
+ let length=0;for(const m of v.messages){if(!object(m)||!['user','assistant','message'].includes(m.role as string)||typeof m.text!=='string')return false;length+=m.text.length;}
+ return length<=100000&&(v.image===undefined||typeof v.image==='string'&&v.image.length<=400024&&/^data:image\/jpeg;base64,[A-Za-z0-9+/]+={0,2}$/.test(v.image));
 }

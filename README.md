@@ -2,7 +2,7 @@
 
 为不同 ChatGPT 账号保留独立空间，让网页使用、标签切换和文件整理集中在一个应用里。
 
-[项目主页](https://chatgpt-profiles.pages.dev/) · [下载安装](#下载与安装) · [使用指南](#开始使用) · [版本发布](https://github.com/ForceMind/ChatGPT/releases) · [问题反馈](https://github.com/ForceMind/ChatGPT/issues)
+[项目主页](https://chatgpt.xincreates.com/) · [下载安装](#下载与安装) · [使用指南](#开始使用) · [版本发布](https://github.com/ForceMind/ChatGPT/releases) · [问题反馈](https://github.com/ForceMind/ChatGPT/issues)
 
 ![ChatGPT Profiles macOS 实际窗口](docs/images/macos-immersive.png)
 
@@ -39,7 +39,9 @@ Android 日常客户端继续使用 System WebView。独立 Gecko PoC 的语言 
 
 桌面端升级前请从应用菜单真正退出旧版，再覆盖安装；macOS 只点关闭窗口会保留后台进程。无需卸载或清理账号数据。
 
-每个 Release 附带 `SHA256SUMS.txt`。后续通过下载安装新包升级；当前没有自动更新服务。Android 升级需要保持相同应用签名。新版应用不自动导入其他客户端的登录数据。
+官网各平台下载卡片提供可选“国内用户加速下载”，通过第三方 gh-proxy.org 转发；原始 GitHub 下载始终保留，中文或中国时区仅用于突出入口。
+
+每个 Release 附带 `SHA256SUMS.txt`。公开 alpha.11 通过下载安装包升级；macOS alpha.12 正在本地验收启动 / 上海中午检查、确认后后台下载与退出安装，完整 App 更新需要重启，尚不支持增量。详见[桌面开发批次](desktop/README.md#macos-alpha12-本地验收版)。Android 升级需要保持相同应用签名。新版应用不自动导入其他客户端的登录数据。
 
 ## 开始使用
 

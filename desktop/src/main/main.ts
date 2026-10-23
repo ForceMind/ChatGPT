@@ -1,13 +1,18 @@
 import {protectRemoteInput} from './remote-input';
 import {RecoveryStore,RecentlyClosedPages,resumeURL} from './recovery-store';
 import {captureResume,applyResume,finishResume} from './page-resume';
-import {validWorkspace,type PageResume,type WorkbenchViewState} from '../shared/recovery';
-import { app, BrowserWindow, WebContentsView, ipcMain, protocol, dialog, Menu, shell, session, screen, systemPreferences, safeStorage, clipboard, type WebContents, type Session, type IpcMainInvokeEvent } from 'electron';
+import {captureSnapshot} from './page-snapshot';
+import {UpdateManager} from './update-manager';
+import {shanghaiDay} from '../shared/updates';
+import {installedBundle} from './update-install';
+import {UPDATE_FEED} from './update-download';
+import {validWorkspace,type PageResume,type PageSnapshot,type WorkbenchViewState} from '../shared/recovery';
+import { app, BrowserWindow, WebContentsView, ipcMain, protocol, dialog, Menu, shell, session, screen, systemPreferences, safeStorage, clipboard, powerMonitor, type WebContents, type Session, type IpcMainInvokeEvent } from 'electron';
 import {installImageContextMenu} from './image-context-menu';
 import { pageProtocol,type NativeAgentMetadata,type PageEnvironment } from './page-protocol';
 import { DEFAULT_LANGUAGE,preferredLanguages,validBrowserLanguage,validTimeZone } from '../shared/profile-preferences';
 import { randomUUID } from 'node:crypto';
-import { mkdirSync } from 'node:fs';
+import { mkdirSync,realpathSync } from 'node:fs';
 import path from 'node:path';
 import { APP_VERSION, COLORS, SHELL_HEIGHT, desktopWorkspaceEnabled, type Command, type Profile, type Snapshot, type Tab, type TabStatus, type Reply } from '../shared/model';
 import { StateStore, makeTab, validLabel, MAX_PROFILES, MAX_TABS } from './state';
@@ -41,6 +46,7 @@ protocol.registerSchemesAsPrivileged([{ scheme: 'app', privileges: { standard: t
 const single = app.requestSingleInstanceLock();
 if (!single) app.quit();
 let win: BrowserWindow | undefined;
+let updates:UpdateManager|undefined,updateDialog=false;const offeredUpdates=new Set<string>();
 let store: StateStore;
 let assetStore: AssetStore | undefined;
 let assetRuntime: AssetRuntime | undefined;
@@ -70,6 +76,7 @@ const localDrafts=new Map<string,PageResume>(),closedReplacements=new Map<string
 const recentClosed=new RecentlyClosedPages(id=>destroyView(id));
 let checkpointTimer:ReturnType<typeof setInterval>|undefined,quitPending=false,warming=false;
 const checkpointErrors=new Set<string>();
+const savedPages=new Map<string,PageSnapshot>(),offlinePages=new Map<string,PageSnapshot>(),snapshotTimes=new Map<string,number>(),capturingSnapshots=new Set<string>();
 
 const status = new Map<string, TabStatus>();
 const popups = new Map<BrowserWindow, string>();
@@ -79,7 +86,7 @@ const permissionGrants = new Map<string, Set<string>>();
 const pendingProfiles = new Set<string>();
 const homepage = () => homeURL(fixtureOrigin);
 const activeProfile = () => { const s = store.read(); return s.profiles.find(p => p.id === s.activeProfileId)!; };
-const snapshot = (): Snapshot => ({ ...store.read(), version: APP_VERSION, platform: process.platform, fullScreen: win?.isFullScreen() ?? false, tabStatus: Object.fromEntries(status), testMode, notice: store.recoveryNotice || assetStore?.recoveryNotice || recoveryError, overlayImage, panel, assetError });
+const snapshot = (): Snapshot => ({ ...store.read(), version: APP_VERSION, platform: process.platform, fullScreen: win?.isFullScreen() ?? false, tabStatus: Object.fromEntries(status), testMode, offline:offlinePages.get(activeProfile().activeTabId), update:updates?.status, notice: store.recoveryNotice || assetStore?.recoveryNotice || recoveryError, overlayImage, panel, assetError });
 function publish():void{if(publishTimer)return;publishTimer=setTimeout(()=>{publishTimer=undefined;if(win&&!win.isDestroyed())win.webContents.send('profiles:state',snapshot());},25);publishTimer.unref();}
 function notice(message: string): void { if (win && !win.isDestroyed()) win.webContents.send('profiles:shortcut', `notice:${message}`); }
 function report(error: unknown): void { notice(error instanceof Error ? error.message : '操作失败，请重试。'); }
@@ -89,7 +96,7 @@ function activeContents(): WebContents | undefined { return views.get(activeProf
 function layout():void {
  if(!win||win.isDestroyed())return;const[width,height]=win.getContentSize(),s=store.read(),p=s.profiles.find(p=>p.id===s.activeProfileId)!;
  const viewHeight=Math.max(1,height-SHELL_HEIGHT),viewWidth=Math.max(1,width);
- for(const[id,view]of views){const nextVisible=!overlayOpen&&!panel&&id===p.activeTabId&&!status.get(id)?.error,previous=viewLayout.get(id);
+ for(const[id,view]of views){const nextVisible=!overlayOpen&&!panel&&id===p.activeTabId&&!offlinePages.has(id)&&!status.get(id)?.error,previous=viewLayout.get(id);
   if(!previous||previous.width!==viewWidth||previous.height!==viewHeight)view.setBounds({x:0,y:SHELL_HEIGHT,width:viewWidth,height:viewHeight});
   if(!previous||previous.visible!==nextVisible)view.setVisible(nextVisible);
   viewLayout.set(id,{width:viewWidth,height:viewHeight,visible:nextVisible});
@@ -108,12 +115,17 @@ async function checkpointTab(id:string,strict=false):Promise<void>{
  if(!recovery||restoringPages.has(id)||blockedRecovery.has(id))return;
  const tab=[...store.read().tabs,...store.read().closedTabs].find(t=>t.id===id),contents=views.get(id)?.webContents;if(!tab||!contents||pendingProfiles.has(tab.profileId))return;
  try{const record=await deadline(captureResume(contents,tab.profileId,id,fixtureOrigin),1500);if(!record)return;
+  if(!capturingSnapshots.has(id)&&(strict||Date.now()-(snapshotTimes.get(id)||0)>30000)){
+   capturingSnapshots.add(id);snapshotTimes.set(id,Date.now());
+   try{const page=await deadline(captureSnapshot(contents,fixtureOrigin),1200);if(page&&page.url===record.url&&!pendingProfiles.has(tab.profileId)&&[...store.read().tabs,...store.read().closedTabs].some(t=>t.id===id&&t.profileId===tab.profileId))savedPages.set(id,page);}catch{/* A viewport capture must not prevent saving the draft. */}finally{capturingSnapshots.delete(id);}
+  }
+  const page=savedPages.get(id);if(page?.url===record.url)record.page=page;
   const alternative=localDrafts.get(id)?.draft;if(alternative&&alternative!==record.draft)record.alternativeDraft=alternative;
   await recovery.save(record,()=>!pendingProfiles.has(tab.profileId)&&[...store.read().tabs,...store.read().closedTabs].some(t=>t.id===id&&t.profileId===tab.profileId)&&!contents.isDestroyed()&&resumeURL(contents.getURL(),fixtureOrigin)===record.url);
   checkpointErrors.delete(id);
  }catch(error){if(!checkpointErrors.has(id)){checkpointErrors.add(id);report(error);}if(strict)throw error;}
 }
-function pruneRecovery():void{const tabs=[...store.read().tabs,...store.read().closedTabs],ids=new Set(tabs.map(t=>t.id));recovery?.prune(tabs);for(const map of [localDrafts,closedReplacements])for(const id of map.keys())if(!ids.has(id))map.delete(id);for(const set of [blockedRecovery,checkpointErrors])for(const id of set)if(!ids.has(id))set.delete(id);}
+function pruneRecovery():void{const tabs=[...store.read().tabs,...store.read().closedTabs],ids=new Set(tabs.map(t=>t.id));recovery?.prune(tabs);for(const map of [localDrafts,closedReplacements,savedPages,offlinePages,snapshotTimes])for(const id of map.keys())if(!ids.has(id))map.delete(id);for(const set of [blockedRecovery,checkpointErrors])for(const id of set)if(!ids.has(id))set.delete(id);}
 async function checkpointWorkspace():Promise<void>{
  if(win&&!win.isDestroyed())await deadline(win.webContents.executeJavaScript(`(async()=>{const detail={pending:[]};window.dispatchEvent(new CustomEvent('profiles:checkpoint',{detail}));await Promise.all(detail.pending);})()`),2000);
  const ids=[...views.keys()];for(let i=0;i<ids.length;i+=2)await Promise.all(ids.slice(i,i+2).map(id=>checkpointTab(id,true)));await recovery?.idle();
@@ -136,7 +148,7 @@ async function warmPreviousTabs():Promise<void>{
   if(quitting||quitPending||!win||win.isDestroyed())break;if(!store.read().tabs.some(t=>t.id===tab.id))continue;ensureView(tab);await Promise.race([pageReady.get(tab.id),new Promise(r=>{const t=setTimeout(r,15000);t.unref();})]);
  }}finally{warming=false;}
 }
-function reopenWindow():void{if(quitting)return;if(!win){createWindow();return;}if(win.isMinimized())win.restore();win.show();win.focus();if(desktopWorkspace&&!overlayOpen&&!panel)activeContents()?.focus();for(const popup of hiddenPopups)if(!popup.isDestroyed()&&popups.get(popup)===activeProfile().id){popup.show();hiddenPopups.delete(popup);}}
+function reopenWindow():void{setTimeout(()=>void offerUpdate().catch(report),500).unref();if(quitting)return;if(!win){createWindow();return;}if(win.isMinimized())win.restore();win.show();win.focus();if(desktopWorkspace&&!overlayOpen&&!panel)activeContents()?.focus();for(const popup of hiddenPopups)if(!popup.isDestroyed()&&popups.get(popup)===activeProfile().id){popup.show();hiddenPopups.delete(popup);}}
 async function openChatSearch():Promise<void>{
  if(!win?.isVisible()||win.isMinimized())reopenWindow();
  if(overlayOpen){notice('请先关闭当前菜单或弹窗，再打开搜索。');return;}if(panel){win?.webContents.send('profiles:shortcut','workbench-search');return;}const c=activeContents();if(!c||c.isDestroyed())return;c.focus();
@@ -282,7 +294,16 @@ function ensureView(tab: Tab): WebContentsView {
   };
   c.on('did-navigate', navigated); c.on('did-navigate-in-page', navigated);
   restoringPages.add(tab.id);
-  const ready=prepared.then(async()=>{if(!stillCurrent()||c.isDestroyed())return;await c.loadURL(tab.url);if(!stillCurrent()||c.isDestroyed())return;if(desktopWorkspace){store.commit(s=>{const t=s.tabs.find(t=>t.id===tab.id);if(t)t.loaded=true;});await restoreTab(tab,c);}}).catch(error=>update({loading:false,error:error.message})).finally(()=>restoringPages.delete(tab.id));pageReady.set(tab.id,ready);
+  const ready=prepared.then(async()=>{
+   if(!stillCurrent()||c.isDestroyed())return;
+   if(recovery){try{const record=await recovery.load(tab.profileId,tab.id,tab.url);if(stillCurrent()&&record?.page){savedPages.set(tab.id,record.page);offlinePages.set(tab.id,record.page);layout();publish();}}catch(error){report(error);}}
+   if(!stillCurrent()||c.isDestroyed())return;await c.loadURL(tab.url);if(!stillCurrent()||c.isDestroyed())return;
+   if(desktopWorkspace){store.commit(s=>{const t=s.tabs.find(t=>t.id===tab.id);if(t)t.loaded=true;});await restoreTab(tab,c);}
+   if(stillCurrent()&&!c.isDestroyed()){
+    const usable=await c.executeJavaScript(`!!document.querySelector('[data-message-id],[data-message-author-role],#prompt-textarea,input[type="password"]')`);
+    if(usable||resumeURL(c.getURL(),fixtureOrigin)!==resumeURL(tab.url,fixtureOrigin)){offlinePages.delete(tab.id);layout();publish();}
+   }
+  }).catch(error=>update({loading:false,error:error.message})).finally(()=>{if(views.get(tab.id)===view)restoringPages.delete(tab.id);});pageReady.set(tab.id,ready);
   layout();
   return view;
 }
@@ -291,7 +312,7 @@ function showActive(focus = true): void {
   const view = ensureView(t); layout(); if (focus && !overlayOpen && !panel) view.webContents.focus(); publish();
 }
 function destroyView(id: string): void {
-  const view = views.get(id);recentClosed.forget(id);views.delete(id);status.delete(id);viewLayout.delete(id);pageReady.delete(id);
+  const view = views.get(id);recentClosed.forget(id);views.delete(id);status.delete(id);viewLayout.delete(id);pageReady.delete(id);offlinePages.delete(id);restoringPages.delete(id);
   if (view) { if (win && !win.isDestroyed()) win.contentView.removeChildView(view); if (!view.webContents.isDestroyed()) view.webContents.close({ waitForBeforeUnload: false }); }
 }
 function createHandoffTab(profileId:string):{tabId:string;contents:WebContents}{
@@ -322,7 +343,7 @@ async function clearProfile(id: string, remove: boolean): Promise<void> {
     if(tracker){for(const assetId of tracker.activeIds())tracker.cancel(assetId);await tracker.whenIdle();if(remove){tracker.dispose();assetDownloads.delete(id);}}
     assetRuntime?.revoke(id);
     await recovery?.removeProfile(id);
-    for(const t of [...store.read().tabs,...store.read().closedTabs].filter(t=>t.profileId===id)){localDrafts.delete(t.id);blockedRecovery.delete(t.id);if(views.has(t.id))destroyView(t.id);}
+    for(const t of [...store.read().tabs,...store.read().closedTabs].filter(t=>t.profileId===id)){localDrafts.delete(t.id);savedPages.delete(t.id);offlinePages.delete(t.id);snapshotTimes.delete(t.id);blockedRecovery.delete(t.id);if(views.has(t.id))destroyView(t.id);}
     for (const [popup, pid] of popups) if (pid === id && !popup.isDestroyed()) popup.destroy();
     for (const t of store.read().tabs.filter(t => t.profileId === id)) destroyView(t.id);
     const ses = configureSession(id); await ses.clearStorageData(); await ses.clearCache(); await ses.clearAuthCache(); permissionGrants.set(id, new Set());
@@ -338,7 +359,7 @@ function validateCommand(value: unknown): asserts value is Command {
   if (!value || typeof value !== 'object') throw new Error('无效操作');
   const c = value as Record<string, unknown>;
   if (typeof c.type !== 'string') throw new Error('无效操作');
-  const known = ['profile:add','profile:edit','profile:activate','profile:remove','profile:clear','profile:move','tab:new','tab:activate','tab:close','tab:pin','tab:menu','tab:reorder','tab:restore','back','forward','reload','home','fullscreen','maximize','external','overlay','panel'];
+  const known = ['profile:add','profile:edit','profile:activate','profile:remove','profile:clear','profile:move','tab:new','tab:activate','tab:close','tab:pin','tab:menu','tab:reorder','tab:restore','back','forward','reload','home','fullscreen','maximize','external','overlay','panel','offline:live','offline:retry','update:check'];
   if (!known.includes(c.type)) throw new Error('未知操作');
   if (['profile:edit','profile:activate','profile:remove','profile:clear','profile:move','tab:activate','tab:close','tab:pin','tab:menu'].includes(c.type) && (typeof c.id !== 'string' || !/^[a-f0-9-]{36}$/.test(c.id))) throw new Error('无效标识');
   if (['profile:add','profile:edit'].includes(c.type) && (!validLabel(c.name,40,true) || !validLabel(c.email,120) || !(COLORS as readonly unknown[]).includes(c.color))) throw new Error('请填写 1–40 字账号名称、有效备注与颜色。');
@@ -401,6 +422,9 @@ async function dispatch(c: Command): Promise<void> {
       store.commit(next=>{if(dropReplacement)next.tabs=next.tabs.filter(t=>t.id!==replacement);const tab={...old,id};delete tab.closedPosition;next.closedTabs=next.closedTabs.filter(t=>t.id!==old.id);const siblings=next.tabs.filter(t=>t.profileId===tab.profileId);siblings.splice(Math.min(old.closedPosition??siblings.length,siblings.length),0,tab);siblings.sort((a,b)=>Number(b.pinned)-Number(a.pinned));next.tabs=[...next.tabs.filter(t=>t.profileId!==tab.profileId),...siblings];next.profiles.find(p=>p.id===tab.profileId)!.activeTabId=id;});
       if(dropReplacement&&replacement)destroyView(replacement);closedReplacements.delete(old.id);showActive();break;
     }
+    case 'update:check': void checkUpdates(true).catch(report);break;
+    case 'offline:live': offlinePages.delete(activeProfile().activeTabId);layout();break;
+    case 'offline:retry': {const id=activeProfile().activeTabId;destroyView(id);showActive();break;}
     case 'back': if (activeContents()?.navigationHistory.canGoBack()) activeContents()!.navigationHistory.goBack(); break;
     case 'forward': if (activeContents()?.navigationHistory.canGoForward()) activeContents()!.navigationHistory.goForward(); break;
     case 'reload': { const t = store.read().tabs.find(t => t.id === activeProfile().activeTabId)!; const c = views.get(t.id)?.webContents; if (!c || c.isDestroyed() || c.isCrashed()) { destroyView(t.id); ensureView(t); } else c.reload(); break; }
@@ -464,11 +488,29 @@ function installIPC(): void {
     ,conversions:()=>{if(!assetConversions)throw new Error(assetError||'本地转换暂不可用');return assetConversions;}
   });
 }
+async function offerUpdate(manual=false):Promise<void>{
+ if(!updates||updateDialog||!win?.isVisible()||win.isDestroyed())return;
+ const state=updates.status,manifest=updates.manifest;
+ if(state.phase==='ready'){
+  if(!manual)return;updateDialog=true;try{const choice=await dialog.showMessageBox(win,{type:'info',title:'更新已准备',message:`${state.version} 已下载并校验`,detail:'默认在你下次退出 App 时安装。关窗口仍在后台保留，不会安装；你也可以现在保存状态并重启。',buttons:['稍后（退出时安装）','保存并重启安装'],defaultId:0,cancelId:0});if(choice.response===1){updates.restartAfterInstall();app.quit();}}finally{updateDialog=false;}return;
+ }
+ if(state.phase!=='available'||!manifest||!manual&&offeredUpdates.has(manifest.version+':'+shanghaiDay(Date.now()).day))return;
+ offeredUpdates.add(manifest.version+':'+shanghaiDay(Date.now()).day);updateDialog=true;let source=0;
+ try{const choice=await dialog.showMessageBox(win,{type:'question',title:'发现新版本',message:`ChatGPT Profiles ${manifest.version}`,detail:manifest.notes+'\n\n确认后后台下载、校验并准备安装，你可以继续使用。下次真正退出 App 时安装，登录数据保留。国内加速使用第三方 gh-proxy.org。',buttons:['稍后','后台下载更新','国内加速下载'],defaultId:1,cancelId:0});source=choice.response;}finally{updateDialog=false;}
+ if(source===0)return;
+ void updates.download(source===2).then(()=>{notice('更新已准备，下次退出时安装；可在「检查更新」中立即重启。');}).catch(report);
+}
+async function checkUpdates(manual=false):Promise<void>{
+ if(!updates){if(manual)notice('自动更新将用于已安装的 macOS 客户端，开发模式和其他平台暂不替换应用。');return;}
+ if(manual&&updates.status.phase==='downloading'){notice(`更新正在后台下载 ${updates.status.progress||0}%`);return;}
+ await updates.check();await offerUpdate(manual);
+ if(manual&&['idle','error'].includes(updates.status.phase))notice(updates.status.message||'暂时无法检查更新');
+}
 function installMenu(): void {
   const action = (command: Command) => () => queueCommandInternal(() => dispatch(command));
   const tabStep = (delta: number) => () => { const p = activeProfile(), tabs = store.read().tabs.filter(t => t.profileId === p.id), i = tabs.findIndex(t => t.id === p.activeTabId); action({ type: 'tab:activate', id: tabs[(i+delta+tabs.length)%tabs.length].id })(); };
   const template: Electron.MenuItemConstructorOptions[] = [
-    { label: 'ChatGPT Profiles', submenu: [{ role: 'about', label: '关于 ChatGPT Profiles' }, ...(process.platform === 'darwin' ? [{ type: 'separator' as const }, { role: 'services' as const, label: '服务' }, { role: 'hide' as const, label: '隐藏' }, { role: 'hideOthers' as const, label: '隐藏其他' }, { role: 'unhide' as const, label: '显示全部' }] : []), { type: 'separator' }, { role: 'quit', label: '退出' }] },
+    { label: 'ChatGPT Profiles', submenu: [{ role: 'about', label: '关于 ChatGPT Profiles' }, ...(process.platform==='darwin'?[{id:'check-updates',label:'检查更新…',click:()=>void checkUpdates(true).catch(report)}]:[]), ...(process.platform === 'darwin' ? [{ type: 'separator' as const }, { role: 'services' as const, label: '服务' }, { role: 'hide' as const, label: '隐藏' }, { role: 'hideOthers' as const, label: '隐藏其他' }, { role: 'unhide' as const, label: '显示全部' }] : []), { type: 'separator' }, { role: 'quit', label: '退出' }] },
     { label: '文件', submenu: [...(desktopWorkspace?[{id:'chat-search',label:'搜索 ChatGPT',accelerator:'CmdOrCtrl+K',click:()=>void openChatSearch().catch(report)},{id:'recovery-draft',label:'查看本地恢复草稿',click:()=>void showLocalDraft().catch(report)},{type:'separator' as const}]:[]),{ label: '新建标签页', accelerator: 'CmdOrCtrl+T', click: action({type:'tab:new'}) }, { label: '恢复关闭的标签页', accelerator: 'CmdOrCtrl+Shift+T', click: action({type:'tab:restore'}) }, { label: '添加账号', accelerator: 'CmdOrCtrl+Shift+N', click: () => win?.webContents.send('profiles:shortcut','add-profile') }, { type:'separator' }, { label:'关闭标签页', accelerator:'CmdOrCtrl+W', click: () => { const focused=BrowserWindow.getFocusedWindow(); if(focused&&focused!==win) focused.close(); else if(panel)win?.webContents.send('profiles:shortcut','close-workbench');else action({type:'tab:close',id:activeProfile().activeTabId})(); } }, { role:'close', label:process.platform==='darwin'?'关闭窗口（后台保留）':'关闭窗口', accelerator:'CmdOrCtrl+Shift+W' }] },
     { label: '编辑', submenu: [{role:'undo',label:'撤销'},{role:'redo',label:'重做'},{type:'separator'},{role:'cut',label:'剪切'},{role:'copy',label:'复制'},{role:'paste',label:'粘贴'},{role:'selectAll',label:'全选'}] },
     { label: '显示', submenu: [
@@ -529,8 +571,15 @@ if (single) {
       });
     }catch(error){handoffError=error instanceof Error?error.message:'网页任务记录无法读取';}}
     registerProtocol();installIPC();installMenu();createWindow();
+    const updateFixture=testMode&&!!fixtureOrigin&&process.env.PROFILES_UPDATES_FIXTURE==='1';
+    if(process.platform==='darwin'&&(app.isPackaged||updateFixture)){
+     const updateSession=session.fromPartition('updates',{cache:false});let bundle:string|undefined;try{bundle=updateFixture?path.join(path.dirname(realpathSync(dataDir)),'Installed.app'):installedBundle(process.execPath);}catch{/* A DMG/translocated app can check versions, but automatic install requires a normal installed bundle. */}
+     updates=new UpdateManager(dataDir,APP_VERSION,process.arch,(url,options)=>updateSession.fetch(updateFixture?fixtureOrigin+(url===UPDATE_FEED?'/version.json':'/archive.zip'):url,options),publish,bundle);
+     updates.start(()=>void checkUpdates().catch(report));powerMonitor.on('resume',()=>updates?.resume(()=>void checkUpdates().catch(report)));
+     win?.once('show',()=>void offerUpdate().catch(report));publish();
+    }
     app.on('activate',reopenWindow);
   }).catch(error=>{dialog.showErrorBox('无法安全恢复账号',error instanceof Error?error.message:String(error));app.quit();});
-  app.on('before-quit',event=>{if(desktopWorkspace&&!quitting){event.preventDefault();if(quitPending)return;quitPending=true;void deadline(commandQueue.then(()=>checkpointWorkspace()),8000).then(()=>{quitting=true;quitPending=false;app.quit();}).catch(async error=>{quitPending=false;reopenWindow();const choice=await dialog.showMessageBox(win!,{type:'warning',title:'恢复记录尚未全部保存',message:'部分页面或草稿暂时无法保存',detail:(error instanceof Error?error.message:'本机加密或网页繁忙')+'。可以返回应用继续保存；仍然退出可能无法恢复最后的修改。',buttons:['返回应用','仍然退出'],defaultId:0,cancelId:0});if(choice.response===1){quitting=true;app.quit();}});return;}quitting=true;clearInterval(checkpointTimer);recentClosed.dispose();handoffRunner?.dispose();assetConversions?.dispose();for(const tracker of assetDownloads.values())tracker.dispose();});
+  app.on('before-quit',event=>{if(desktopWorkspace&&!quitting){event.preventDefault();if(quitPending)return;quitPending=true;void deadline(commandQueue.then(()=>checkpointWorkspace()),8000).then(async()=>{await updates?.installOnQuit();quitting=true;quitPending=false;app.quit();}).catch(async error=>{quitPending=false;reopenWindow();const choice=await dialog.showMessageBox(win!,{type:'warning',title:'退出准备尚未完成',message:'恢复记录或更新暂时无法准备完成',detail:(error instanceof Error?error.message:'本机加密或网页繁忙')+'。可以返回应用继续保存；仍然退出可能无法恢复最后的修改。',buttons:['返回应用','仍然退出'],defaultId:0,cancelId:0});if(choice.response===1){quitting=true;app.quit();}});return;}quitting=true;updates?.dispose();clearInterval(checkpointTimer);recentClosed.dispose();handoffRunner?.dispose();assetConversions?.dispose();for(const tracker of assetDownloads.values())tracker.dispose();});
   app.on('window-all-closed',()=>{if(process.platform!=='darwin'||testMode)app.quit();});
 }

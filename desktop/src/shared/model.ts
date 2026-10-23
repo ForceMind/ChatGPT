@@ -1,7 +1,9 @@
-import type {WorkspaceState,WorkbenchViewState} from './recovery';
+import type {PageSnapshot,WorkspaceState,WorkbenchViewState} from './recovery';
+import type {UpdateStatus} from './updates';
 import type { LoginDiagnosticsAPI } from './diagnostics';
 import type { WorkbenchAPI, WorkbenchPanel } from './workbench';
-export const APP_VERSION = '3.0.0-alpha.6';
+import packageInfo from '../../package.json' with {type:'json'};
+export const APP_VERSION = packageInfo.version;
 export const desktopWorkspaceEnabled = (platform?:string):boolean => platform === 'darwin' || platform === 'win32';
 export const SHELL_HEIGHT = 46;
 export const HOME = 'https://chatgpt.com/';
@@ -10,7 +12,7 @@ export type Profile = { id: string; name: string; email: string; color: string; 
 export type Tab = { id: string; profileId: string; url: string; title: string; pinned: boolean; loaded?:boolean; closedPosition?:number };
 export type SavedState = { schema: 1; profiles: Profile[]; tabs: Tab[]; activeProfileId: string; sidebarOpen: boolean; windowMode?:{maximized:boolean;fullscreen:boolean}; closedTabs: Tab[]; capabilityFavorites?: string[]; bounds: { width: number; height: number; x?: number; y?: number } };
 export type TabStatus = { loading: boolean; error?: string; canGoBack: boolean; canGoForward: boolean; crashed?: boolean; url?: string };
-export type Snapshot = SavedState & { version: string; platform: string; tabStatus: Record<string, TabStatus>; fullScreen: boolean; testMode: boolean; notice?: string; overlayImage?: string; panel?: WorkbenchPanel; assetError?: string };
+export type Snapshot = SavedState & { version: string; platform: string; tabStatus: Record<string, TabStatus>; fullScreen: boolean; testMode: boolean; notice?: string; offline?:PageSnapshot; update?:UpdateStatus; overlayImage?: string; panel?: WorkbenchPanel; assetError?: string };
 export type Command =
   | { type: 'profile:add'; name: string; email: string; color: string; language?:string; timeZone?:string }
   | { type: 'profile:edit'; id: string; name: string; email: string; color: string; language?:string; timeZone?:string }
@@ -19,7 +21,7 @@ export type Command =
   | { type: 'tab:new'; url?: string }
   | { type: 'tab:activate' | 'tab:close' | 'tab:pin' | 'tab:menu'; id: string }
   | { type: 'tab:reorder'; ids: string[] }
-  | { type: 'tab:restore' | 'back' | 'forward' | 'reload' | 'home' | 'fullscreen' | 'maximize' | 'external' }
+  | { type: 'update:check' | 'offline:live' | 'offline:retry' | 'tab:restore' | 'back' | 'forward' | 'reload' | 'home' | 'fullscreen' | 'maximize' | 'external' }
   | { type: 'overlay'; open: boolean }
   | { type: 'panel'; panel?: WorkbenchPanel };
 export type Reply = { ok: true } | { ok: false; error: string };

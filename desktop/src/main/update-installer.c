@@ -1,0 +1,59 @@
+// macOS-only helper. The running app checkpoints first; this process waits for
+// its exit, validates the staged bundle, then atomically exchanges directories.
+#include <CoreFoundation/CoreFoundation.h>
+#include <Security/Security.h>
+#include <sys/stat.h>
+#include <sys/stdio.h>
+#include <fcntl.h>
+#include <signal.h>
+#include <spawn.h>
+#include <unistd.h>
+#include <errno.h>
+#include <limits.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+extern char **environ;
+static int real_directory(const char *p) {
+ struct stat s; char real[PATH_MAX];
+ return lstat(p,&s)==0&&S_ISDIR(s.st_mode)&&!S_ISLNK(s.st_mode)&&realpath(p,real)&&strcmp(p,real)==0;
+}
+static int same_parent(const char *a,const char *b) {
+ const char *x=strrchr(a,'/'),*y=strrchr(b,'/');
+ return x&&y&&x-a==y-b&&strncmp(a,b,(size_t)(x-a))==0;
+}
+static int bundle_valid(const char *p,const char *version) {
+ int ok=0;CFURLRef url=CFURLCreateFromFileSystemRepresentation(NULL,(const UInt8*)p,(CFIndex)strlen(p),true);
+ if(!url)return 0;CFDictionaryRef info=CFBundleCopyInfoDictionaryForURL(url);
+ CFStringRef wanted=CFStringCreateWithCString(NULL,version,kCFStringEncodingUTF8);
+ if(info&&wanted){CFTypeRef id=CFDictionaryGetValue(info,CFSTR("CFBundleIdentifier")),v=CFDictionaryGetValue(info,CFSTR("CFBundleShortVersionString"));
+  if(id&&v&&CFEqual(id,CFSTR("com.forcemind.chatgpt.profiles"))&&CFEqual(v,wanted)){
+   SecStaticCodeRef code=NULL;
+   if(SecStaticCodeCreateWithPath(url,kSecCSDefaultFlags,&code)==errSecSuccess){ok=SecStaticCodeCheckValidity(code,kSecCSCheckAllArchitectures|kSecCSCheckNestedCode|kSecCSStrictValidate,NULL)==errSecSuccess;CFRelease(code);}
+  }
+ }
+ if(wanted)CFRelease(wanted);if(info)CFRelease(info);CFRelease(url);return ok;
+}
+static void result(const char *file,int ok) {
+ char temp[PATH_MAX];if(snprintf(temp,sizeof(temp),"%s.%d.tmp",file,getpid())>=(int)sizeof(temp))return;
+ int fd=open(temp,O_WRONLY|O_CREAT|O_EXCL|O_NOFOLLOW,0600);if(fd<0)return;
+ const char *body=ok?"{\"ok\":true}\n":"{\"ok\":false}\n";size_t n=strlen(body);
+ if(write(fd,body,n)==(ssize_t)n&&fsync(fd)==0){close(fd);rename(temp,file);}else{close(fd);unlink(temp);}
+}
+int main(int argc,char **argv) {
+ if(argc!=8)return 2;
+ char *end=NULL;long pid=strtol(argv[1],&end,10);if(!end||*end||pid<=1||pid>INT_MAX)return 2;
+ const char *target=argv[2],*candidate=argv[3],*output=argv[4],*version=argv[5];int restart=strcmp(argv[6],"yes")==0;
+ // Do not allow a symlink result destination or candidates on another volume.
+ struct stat old,next,out;int valid=lstat(output,&out)!=0&&errno==ENOENT;
+ if(!valid||!real_directory(target)||!real_directory(candidate)||!same_parent(target,candidate)||lstat(target,&old)||lstat(candidate,&next)||old.st_dev!=next.st_dev){result(output,0);return 3;}
+ int ended=0;for(int n=0;n<600;n++){if(kill((pid_t)pid,0)!=0&&errno==ESRCH){ended=1;break;}usleep(200000);}
+ if(!ended||!real_directory(target)||!real_directory(candidate)||!bundle_valid(candidate,version)||!bundle_valid(target,argv[7])){result(output,0);return 4;}
+ // RENAME_SWAP leaves either the whole old app or whole new app at target,
+ // even if this helper is killed. The previous app is retained at candidate.
+ if(renameatx_np(AT_FDCWD,target,AT_FDCWD,candidate,RENAME_SWAP)!=0){result(output,0);return 5;}
+ if(!bundle_valid(target,version)){renameatx_np(AT_FDCWD,target,AT_FDCWD,candidate,RENAME_SWAP);result(output,0);return 6;}
+ result(output,1);
+ if(restart){pid_t child;char *args[]={"/usr/bin/open",(char*)target,NULL};if(posix_spawn(&child,args[0],NULL,NULL,args,environ)!=0)return 7;}
+ return 0;
+}
