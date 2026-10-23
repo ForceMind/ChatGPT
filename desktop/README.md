@@ -1,8 +1,8 @@
 # ChatGPT Profiles Desktop
 
-开发版本：`3.0.0-alpha.6`，已生成 macOS Apple Silicon 与 Windows x64 本地试用包。macOS 公开版仍为 `3.0.0-alpha.5`，Windows 公开版仍为 `3.0.0-alpha.2`；alpha.6 尚未公开发布。Electron `44.9.1`、React `19.3.1`、TypeScript。各设备独立使用，本版不需要自建服务。
+当前公开预发布版：`3.0.0-alpha.11`。提供 macOS Apple Silicon 的 DMG / ZIP、Windows x64 的 EXE / ZIP，版本与源码已统一；历史安装包保留。Electron `44.9.1`、React `19.3.1`、TypeScript。各设备独立使用，本版不需要自建服务。
 
-工作台源码位于 `codex/macos-assets-workbench` 功能分支；公开 Mac 对应标签为 `v3.0.0-alpha.5`；默认 `main` 暂时保留早期应用源码。
+下载见[GitHub Release](https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.11)。当前 `main` 包含工作台、恢复、新图标与跨平台源码。真正退出后需要重新加载网页并恢复保存状态；完整网页快照与离线阅读尚未实现。
 
 ## 使用
 

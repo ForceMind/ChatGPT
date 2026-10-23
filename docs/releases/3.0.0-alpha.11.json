@@ -1,0 +1,53 @@
+{
+  "version": "3.0.0-alpha.11",
+  "sourceCommit": "d8089a22a49d4a54cb19efd0ebbc8e6d8ebfbb14",
+  "prerelease": true,
+  "platforms": [
+    "macOS arm64",
+    "Windows x64",
+    "Android System WebView"
+  ],
+  "runs": {
+    "macos": 39900989375,
+    "windows": 39900994221,
+    "android": 39900764010
+  },
+  "artifacts": [
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.11-mac-arm64.dmg",
+      "bytes": 154437135,
+      "sha256": "806d4a428e30b40c9119937c588d4654b201e71b71bbd46c587c0801d3bdcd88",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.11/ChatGPT-Profiles-3.0.0-alpha.11-mac-arm64.dmg"
+    },
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.11-mac-arm64.zip",
+      "bytes": 154395761,
+      "sha256": "e902b1ec7e55efb6068c315c00860da84d209be15ec2eed9f92362972e78ecc8",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.11/ChatGPT-Profiles-3.0.0-alpha.11-mac-arm64.zip"
+    },
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.11-windows-x64-setup.exe",
+      "bytes": 130918156,
+      "sha256": "ce4421ec85504f8345ef292928299b8e1ac7dbbc0491d9290fa3b3b08c6ec2da",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.11/ChatGPT-Profiles-3.0.0-alpha.11-windows-x64-setup.exe"
+    },
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.11-windows-x64.zip",
+      "bytes": 180670815,
+      "sha256": "25d0b161a4133ed0cd25e08592fe897aa01a3fd7f83d1b815a7e5eff85160870",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.11/ChatGPT-Profiles-3.0.0-alpha.11-windows-x64.zip"
+    },
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.11-android.apk",
+      "bytes": 7277869,
+      "sha256": "95f9a6f713d4791a4de1fc9b35729e73a60c055c0fad5f0b37e6aaed789f99c7",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.11/ChatGPT-Profiles-3.0.0-alpha.11-android.apk"
+    }
+  ],
+  "scope": "Existing workbench/recovery and new branding; independent Gecko PoC is not in shipping apps. Full offline page snapshots are next-version work.",
+  "manualAcceptancePending": [
+    "Real ChatGPT multi-account/OAuth/passkey flows",
+    "Real attachment submission",
+    "Android physical devices and existing personal-data upgrades"
+  ]
+}

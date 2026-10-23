@@ -21,13 +21,15 @@ ChatGPT Profiles 是一个非官方 ChatGPT 网页客户端。启动直接进入
 
 | 平台 | 公开版本 | 下载 | 系统要求 |
 | --- | --- | --- | --- |
-| macOS · Apple Silicon | `3.0.0-alpha.5` | [DMG](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.5/ChatGPT-Profiles-3.0.0-alpha.5-mac-arm64.dmg) · [ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.5/ChatGPT-Profiles-3.0.0-alpha.5-mac-arm64.zip) | macOS 13+ |
-| Windows · x64 | `3.0.0-alpha.2` | [EXE 安装包](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.2/ChatGPT-Profiles-3.0.0-alpha.2-windows-x64-setup.exe) · [免安装 ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.2/ChatGPT-Profiles-3.0.0-alpha.2-windows-x64.zip) | Windows 10 / 11 · 64 位 |
-| Android · 手机 / 平板 | `3.0.0-alpha.1` | [APK](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.1/ChatGPT-Profiles-3.0.0-alpha.1-android.apk) | Android 9+，系统 WebView 支持多档案 |
+| macOS · Apple Silicon | `3.0.0-alpha.11` | [DMG](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.11/ChatGPT-Profiles-3.0.0-alpha.11-mac-arm64.dmg) · [ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.11/ChatGPT-Profiles-3.0.0-alpha.11-mac-arm64.zip) | macOS 13+ |
+| Windows · x64 | `3.0.0-alpha.11` | [EXE 安装包](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.11/ChatGPT-Profiles-3.0.0-alpha.11-windows-x64-setup.exe) · [免安装 ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.11/ChatGPT-Profiles-3.0.0-alpha.11-windows-x64.zip) | Windows 10 / 11 · 64 位 |
+| Android · 手机 / 平板 | `3.0.0-alpha.11` | [APK](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.11/ChatGPT-Profiles-3.0.0-alpha.11-android.apk) | Android 9+，系统 WebView 支持多档案 |
 
-当前使用预发布渠道。Intel Mac、Linux、iPhone 和 iPad 暂无安装包。macOS alpha.5 已包含资产工作台与界面恢复；Windows 和 Android 继续使用各自标注的版本。
+当前统一公开预发布版为 `3.0.0-alpha.11`，包含 macOS / Windows 资产工作台、Android 文件处理与草稿恢复，以及新的黑底 ChatGPT 图标。Intel Mac、Linux、iPhone 和 iPad 暂无安装包。旧版安装包仍保留在历史 Release 中。
 
-`codex/macos-assets-workbench` 功能分支的本地试用版本为 macOS Apple Silicon / Windows x64 alpha.6、Android alpha.10。Windows 工作台、恢复、安装和卸载保留数据已通过 CI；Android 已包含账号资产库、预览、图片 / 文档转换、120 个 Skill、“交给 GPT”任务及加密草稿 / 阅读位置恢复。alpha.10 通过 63 项单元与手机 / 平板各 3 项恢复、活页复用和附件定向检查；此前资产、转换和隔离回归证据保留，未将本轮定向检查记作全量重跑。真实账号业务、Android 实际网页截图和个人数据升级仍待实机验证。以上开发进展未替换表中的公开安装包，详细证据见 [迭代记录](MACOS_MIGRATION_PLAN.md)，移动功能和限制见 [Android 说明](android/README.md)。
+桌面端支持资产归档、预览、格式转换、120 个 Skill 与“交给 GPT”；Android 已提供账号资产库、图片 / 文档转换、附件任务、加密草稿 / 阅读位置恢复和已打开标签复用。各平台的真实账号、第三方登录、通行密钥和真实网页文件发送仍需分别验收，详见[兼容性与反馈](#兼容性与反馈)。
+
+Android 日常客户端继续使用 System WebView。独立 Gecko PoC 的语言 / 时区与资源验证仅供研发评估，未替换普通 APK；源码、覆盖范围和数字见[实验说明](android/environment-poc/README.md)与[测量报告](docs/benchmarks/android-environment-poc.json)。完整页面快照与离线阅读属于下一版计划，本版不包含。
 
 **macOS**：打开 DMG，将应用拖入“应用程序”。当前构建使用 ad-hoc 签名，尚未经过 Developer ID 签名和 Apple 公证。若首次启动被系统阻止，核对来源和摘要后，按 [Apple 的操作说明](https://support.apple.com/zh-cn/102445)处理。
 
@@ -47,25 +49,25 @@ ChatGPT Profiles 是一个非官方 ChatGPT 网页客户端。启动直接进入
 
 Mac 可右键标签，Android 可长按标签，管理固定、顺序和关闭操作。Android 返回键优先返回上一网页。清除本机账号数据不会删除 ChatGPT 云端对话。
 
-## macOS 工作台迭代
+## 工作台与恢复
 
-工作台先在 macOS 交付；Windows、Android 后续跟进。以下能力已包含在 macOS alpha.5 公开预发布版中，真实账号验收边界见表格和兼容性说明。
+以下能力已在桌面端公开，Android 的支持范围与差异见下表及[移动端说明](android/README.md)。自动化证据与真实账号验收分别记录。
 
 | 能力 | 使用方式 | 当前状态 |
 | --- | --- | --- |
-| 资产库 | 按账号归档下载与导入文件；分类、搜索、收藏、标签、回收站和 Finder 定位 | `alpha.5` 公开预发布 |
-| 文件预览 | 图片、HTML、PDF、Markdown、文本与 CSV；HTML 在独立沙箱预览 | `alpha.5` 公开预发布 |
-| 格式转换 | 图片格式、HTML / Markdown 转 PDF、PDF 选页转图片、CSV 与 JSON 互转；保留原文件 | `alpha.5` 公开预发布 |
-| 交给 GPT | 选择目标账号、文件和任务，创建对话并提交；不自动重发结果未知的任务 | `alpha.5` 公开预发布，真实网页附件发送待验收 |
-| Skill | 120 个项目内置任务，附处理步骤、输出结构和质量检查 | `alpha.5` 公开预发布 |
+| 资产库 | 按账号归档下载与导入文件；分类、搜索、收藏、标签、回收站和 Finder 定位 | `alpha.11` 公开预发布 |
+| 文件预览 | 图片、HTML、PDF、Markdown、文本与 CSV；HTML 在独立沙箱预览 | `alpha.11` 公开预发布 |
+| 格式转换 | 图片格式、HTML / Markdown 转 PDF、PDF 选页转图片、CSV 与 JSON 互转；保留原文件 | `alpha.11` 公开预发布 |
+| 交给 GPT | 选择目标账号、文件和任务，创建对话并提交；不自动重发结果未知的任务 | 桌面 / Android 已提供，真实网页发送仍待验收 |
+| Skill | 120 个项目内置任务，附处理步骤、输出结构和质量检查 | `alpha.11` 公开预发布 |
 | 智能体库 | 保留分类与任务入口，当前没有预置智能体 | 界面已实现 |
-| 登录与链接记录 | 查看被拦截链接的站点和原因；记录仅保存在本机，过滤敏感参数 | `alpha.5` 公开预发布 |
-| 标签保活与资源优化 | 已打开标签切换时保留页面；减少重复界面更新，工作台按需加载 | `alpha.5` 公开预发布 |
-| 窗口与界面恢复 | 关窗后台保留、短期撤销关闭、每账号工作台状态；真正退出后加载并恢复加密草稿与阅读位置 | `alpha.5` 公开预发布 |
-| 账号语言与时区 | 创建或编辑空间时选择；编辑从新标签起生效 | `alpha.5` 公开预发布 |
-| 网页图片操作 | 右键复制图片、保存到资产库、重试当前图片、查看加载信息 | `alpha.5` 公开预发布 |
+| 登录与链接记录 | 查看被拦截链接的站点和原因；记录仅保存在本机，过滤敏感参数 | `alpha.11` 公开预发布 |
+| 标签保活与资源优化 | 已打开标签切换时保留页面；减少重复界面更新，工作台按需加载 | `alpha.11` 公开预发布 |
+| 窗口与界面恢复 | 关窗后台保留、短期撤销关闭、每账号工作台状态；真正退出后加载并恢复加密草稿与阅读位置 | `alpha.11` 公开预发布 |
+| 账号语言与时区 | 桌面端创建或编辑空间时选择；编辑从新标签起生效 | 桌面已提供，Android 尚未迁入 |
+| 网页图片操作 | 右键复制图片、保存到资产库、重试当前图片、查看加载信息 | `alpha.11` 公开预发布 |
 
-工作台的配置、支持格式和验证边界见[功能分支的桌面说明](https://github.com/ForceMind/ChatGPT/blob/codex/macos-assets-workbench/desktop/README.md)。
+工作台的配置、支持格式与验证边界见[桌面说明](desktop/README.md)和[Android 说明](android/README.md)。macOS 关窗保留后台网页；Windows 关窗保存后退出。进程真正结束后需要加载原网页，再恢复已保存的草稿与阅读位置；附件与模型生成不会跨进程继续。
 
 ## 隔离与数据
 
@@ -81,7 +83,7 @@ Mac 可右键标签，Android 可长按标签，管理固定、顺序和关闭�
 
 应用不收集账号密码，不将登录空间上传到自建服务。系统浏览器保存自己的登录状态，外部链接不会自动继承应用内账号。网页没有 Node 或本地管理接口权限；证书错误不会被忽略。账号隔离不改变 IP 或网络可用性。
 
-卸载、清理数据和迁移设备前，请保存重要文件。Android 卸载会删除对应安装的本机空间；公开 alpha.1 仅恢复标签记录，本地 alpha.10 可尝试恢复最近加密快照中的草稿与位置；网页附件及模型生成不会跨进程自动继续。
+卸载、清理数据和迁移设备前，请保存重要文件。Android 卸载会删除对应安装的本机空间；当前 alpha.11 可尝试恢复最近加密快照中的草稿与位置；历史 alpha.1 仅恢复标签记录；网页附件及模型生成不会跨进程自动继续。
 
 ## 快捷键
 
@@ -151,7 +153,7 @@ Cloudflare Pages 使用 Direct Upload，Git 推送不会自动更新线上网站
 
 - 两个真实账号的登录、切换和重启后登录保持仍待人工验收。
 - macOS 的真实网页附件与任务发送验收尚未完成。
-- Android 已完成模拟器验证，真机、真实登录、语音及上传下载仍需分别验证；首版暂不支持 `blob:` 下载。
+- Android 已完成模拟器验证，真机、真实登录、语音及上传下载仍需分别验证；当前暂不支持 `blob:` 下载。
 - 通行密钥由操作系统、浏览器内核和登录页面共同决定，当前不承诺直接调用 Chrome 保存的通行密钥。
 - iPhone / iPad、Intel Mac、公证及商店发行属于后续范围。
 
