@@ -33,7 +33,7 @@ jobs:
       - name: All isolated functional scenarios
         env:
           PLAYWRIGHT_JSON_OUTPUT_FILE: test-results/full-regression.json
-        run: npx playwright test --max-failures=1 --reporter=list,json
+        run: npx playwright test --reporter=list,json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
