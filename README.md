@@ -37,6 +37,8 @@ Android 日常客户端继续使用 System WebView。独立 Gecko PoC 的语言 
 
 **Android**：下载 APK，按系统提示允许当前来源安装。若提示 WebView 不支持多档案，请更新 Android System WebView / Chrome。应用不会在缺少隔离能力时退回共享账号空间。
 
+桌面端升级前请从应用菜单真正退出旧版，再覆盖安装；macOS 只点关闭窗口会保留后台进程。无需卸载或清理账号数据。
+
 每个 Release 附带 `SHA256SUMS.txt`。后续通过下载安装新包升级；当前没有自动更新服务。Android 升级需要保持相同应用签名。新版应用不自动导入其他客户端的登录数据。
 
 ## 开始使用
