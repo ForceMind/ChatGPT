@@ -192,7 +192,7 @@ export class WorkbenchUI {
   }
   private renderTaskSummary():void{
     const job=this.jobs.find(j=>['preparing','opening','uploading','drafting','sending'].includes(j.status))||this.jobs[0];
-    this.root.querySelectorAll<HTMLElement>('[data-task-summary]').forEach(node=>{node.innerHTML=job?`<button data-job="${job.id}"><strong>${esc(handoffStatusNames[job.status])}</strong><span>${job.progress?.length?`第 ${handoffStages.indexOf(job.progress.at(-1)!.stage)+1}/7 步 · `:''}${esc(job.label)}</span></button>`:'';});
+    this.root.querySelectorAll<HTMLElement>('[data-task-summary]').forEach(node=>{node.innerHTML=job?`<button data-summary-job="${job.id}"><strong>${esc(handoffStatusNames[job.status])}</strong><span>${job.progress?.length?`第 ${handoffStages.indexOf(job.progress.at(-1)!.stage)+1}/7 步 · `:''}${esc(job.label)}</span></button>`:'';});
   }
   private showJob(id:string):void{
     const j=this.jobs.find(j=>j.id===id);if(!j)return;this.jobView='detail';this.currentJob=id;
@@ -240,7 +240,7 @@ export class WorkbenchUI {
   private async handleClick(event:MouseEvent):Promise<void>{
     if(this.assetMenu&&!this.assetMenu.contains(event.target as Node))this.closeAssetMenu();
     const element=event.target instanceof Element?event.target:undefined;if(!element)return;
-    const job=element.closest<HTMLElement>('[data-job]');if(job){this.showJob(job.dataset.job!);return;}
+    const job=element.closest<HTMLElement>('[data-job],[data-summary-job]');if(job){this.showJob(job.dataset.job||job.dataset.summaryJob!);return;}
     if(element.classList.contains('aw-modal-backdrop')){this.closeModal();return;}
     const check=element.closest<HTMLElement>('[data-check]');if(check){const id=check.dataset.check!;this.checked.has(id)?this.checked.delete(id):this.checked.add(id);this.renderAssets();return;}
     const favorite=element.closest<HTMLElement>('[data-favorite]');if(favorite){const asset=this.assets.find(a=>a.id===favorite.dataset.favorite)!;await this.act({type:'favorite',ids:[asset.id],favorite:!asset.favorite});return;}

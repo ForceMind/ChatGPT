@@ -65,5 +65,5 @@ export class ChatPage {
     const ack=await this.wait(s=>s.messages>before.messages&&normalize(s.lastMessage).includes(needle)&&!s.text.trim(),25000,'网页未确认收到消息，请检查目标对话；应用不会自动重发。');
     const clean=new URL(ack.url);clean.search='';clean.hash='';return clean.href;
   }
-  dispose():void{if(this.contents.isDestroyed())return;void this.script(`(()=>{const s=window.__profilesHandoffInput;if(s?.token===${JSON.stringify(this.token)}){s.cleanup();delete window.__profilesHandoffInput;}})()`).catch(()=>{});if(this.usedChooser&&this.contents.debugger.isAttached())void pageProtocol(this.contents).send('Page.setInterceptFileChooserDialog',{enabled:false}).catch(()=>{});pageProtocol(this.contents).release();this.contents.setBackgroundThrottling(this.previousThrottling);}
+  dispose():void{if(this.contents.isDestroyed())return;void this.contents.executeJavaScript(`(()=>{const s=window.__profilesHandoffInput;if(s?.token===${JSON.stringify(this.token)}){s.cleanup();delete window.__profilesHandoffInput;}})()`,true).catch(()=>{});if(this.usedChooser&&this.contents.debugger.isAttached())void pageProtocol(this.contents).send('Page.setInterceptFileChooserDialog',{enabled:false}).catch(()=>{});pageProtocol(this.contents).release();this.contents.setBackgroundThrottling(this.previousThrottling);}
 }
