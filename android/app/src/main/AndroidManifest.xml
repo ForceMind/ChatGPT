@@ -4,7 +4,7 @@
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-feature android:name="android.hardware.microphone" android:required="false" />
-    <application android:label="ChatGPT Profiles" android:icon="@drawable/ic_launcher"
+    <application android:label="ChatGPT Profiles" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round"
         android:theme="@style/AppTheme" android:allowBackup="false" android:fullBackupContent="false" android:dataExtractionRules="@xml/data_extraction_rules"
         android:usesCleartextTraffic="false" android:supportsRtl="true">
         <activity android:name=".AssetWorkbenchActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
