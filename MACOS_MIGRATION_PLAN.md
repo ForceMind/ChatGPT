@@ -551,3 +551,6 @@
 - Android 当前没有可操作的真机。独立 CI 首页采集不更改正常源码 / APK 版本 / 登录数据；针对旧 ColorBuffer / GPU 崩溃，按 Android 官方排查建议使用 SwiftShader 并关闭 Vulkan。仅启动实际匿名首页、读取可访问性和像素，不输入账号、消息、不点击验证，不用夹具内容替代。完整加载并人工核对后才更新官网。
 - 证据入口：https://developer.android.com/studio/run/emulator-troubleshooting；本轮不在本机安装 SDK / 依赖或生成安装包，临时证据按明确路径清理。
 - 标准 /Applications 位置只读查到 alpha.12，用户 Applications 未发现同名包；不据此断言其他位置没有 alpha.14，也未启动或替换安装 App。用户未指定测试空间前不发送。另增加一个独立 Mac CI 只读实站探针，使用全新临时数据运行同一 alpha.14 composer adapter，只读取实际匿名 ChatGPT 输入框结构并截图，不输入、不上传、不登录、不点击验证；验证成功与受阻分别记录，不能替代登录账号流程。
+- 39985621253 的 Android 15 实站采集没有再发生 ColorBuffer / ADB 崩溃，23 次左右连续观察至 180 秒，实际像素与 XML 均停在 Cloudflare 人工验证页，没有首页。未点击验证，未发布该图。
+- Mac 只读实站 39986418939 成功：实际匿名页面完整加载，同一 alpha.14 adapter 识别 TEXTAREA（mobile-composer-prompt）、发送控件存在，未找到附件控件，页面显示登录；没有触发任何输入 / 上传 / 消息。已实际查看真实匿名页面图，仍不等同登录账号附件发送。
+- 下一项最小兼容性对照：仅给独立首页采集选择 Android 16 官方镜像，保持 APK / 正常内核不变，记录实际 WebView 版本；不再以同一验证页反复重跑，不采用代理、UA 伪装或自动验证。此为诊断测试环境变化，不是普通 Android 客户端迁移。

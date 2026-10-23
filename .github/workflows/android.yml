@@ -30,6 +30,10 @@ on:
         description: Capture only the actual anonymous ChatGPT homepage; no login or message actions
         type: boolean
         default: false
+      homepage_android16:
+        description: Use the Android 16 image for the isolated homepage compatibility probe
+        type: boolean
+        default: false
       handoff_only:
         description: Run the native attachment handoff flow on phone and tablet only
         type: boolean
@@ -85,6 +89,8 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && inputs.run_device_tests && !inputs.standalone_environment_poc
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    env:
+      PROFILES_IMAGE_API: ${{ inputs.homepage_android16 && inputs.homepage_capture_only && '36' || '35' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -97,7 +103,7 @@ jobs:
       - name: Enable emulator acceleration
         run: sudo chmod 666 /dev/kvm
       - name: Install emulator
-        run: sdkmanager 'platforms;android-36' 'build-tools;35.0.0' 'emulator' 'system-images;android-35;google_apis;x86_64'
+        run: sdkmanager 'platforms;android-36' 'build-tools;35.0.0' 'emulator' "system-images;android-${PROFILES_IMAGE_API};google_apis;x86_64"
       - name: Boot and verify
         working-directory: android
         run: |
@@ -111,7 +117,7 @@ jobs:
           # for authorization against a daemon from the runner's previous home.
           adb kill-server || true
           adb start-server
-          avdmanager create avd --force --name profiles-test --device pixel_6 --path "$ANDROID_AVD_HOME/profiles-test.avd" --package 'system-images;android-35;google_apis;x86_64'
+          avdmanager create avd --force --name profiles-test --device pixel_6 --path "$ANDROID_AVD_HOME/profiles-test.avd" --package "system-images;android-${PROFILES_IMAGE_API};google_apis;x86_64"
           test -f "$ANDROID_AVD_HOME/profiles-test.ini"
           "$ANDROID_HOME/emulator/emulator" -list-avds
           "$ANDROID_HOME/emulator/emulator" -avd profiles-test -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader -feature -Vulkan > app/build/device-evidence/emulator.log 2>&1 &
@@ -125,6 +131,7 @@ jobs:
               timeout 20 adb shell uiautomator dump --compressed /sdcard/profiles-failure.xml || true
               timeout 20 adb pull /sdcard/profiles-failure.xml app/build/device-evidence/failure-ui.xml || true
               timeout 20 adb logcat -d -s AndroidRuntime:E > app/build/device-evidence/failure-runtime.log || true
+              timeout 20 adb shell dumpsys webviewupdate > app/build/device-evidence/webview.txt || true
             fi
             return "$result"
           }
@@ -135,6 +142,7 @@ jobs:
           adb shell pm disable-user --user 0 com.google.android.apps.nexuslauncher
           if [ "${{ inputs.homepage_capture_only }}" = true ]; then
             ./gradlew --no-daemon installDebug
+            timeout 20 adb shell dumpsys webviewupdate > app/build/device-evidence/webview.txt
             timeout 240 python3 -u scripts/capture-homepage.py app/build/device-evidence
             timeout 20 adb shell dumpsys webviewupdate > app/build/device-evidence/webview.txt
             echo 'Actual anonymous ChatGPT homepage on a fresh emulator; no login, message, file upload or fixture webpage.' > app/build/device-evidence/scope.txt
