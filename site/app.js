@@ -102,3 +102,8 @@ document.querySelectorAll("[data-copy]").forEach((button) =>
     }
   }),
 );
+
+// Language/time zone only suggest the optional route; never infer location or redirect downloads.
+let chineseDownloadHint = (navigator.languages || [navigator.language]).some(language => /^zh(?:-|$)/i.test(language || ""));
+try { chineseDownloadHint ||= ["Asia/Shanghai", "Asia/Chongqing", "Asia/Harbin", "Asia/Urumqi"].includes(Intl.DateTimeFormat().resolvedOptions().timeZone); } catch { /* All acceleration links remain available. */ }
+if (chineseDownloadHint) document.querySelectorAll(".accelerated-download").forEach(entry => entry.classList.add("suggested"));
