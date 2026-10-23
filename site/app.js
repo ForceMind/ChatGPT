@@ -2,7 +2,7 @@
 const platforms = {
   windows: {
     image: "windows-installed.png",
-    caption: "Windows · 已安装客户端 / 未登录 ChatGPT",
+    caption: "Windows · alpha.11 已安装客户端 / 未登录 ChatGPT",
     alt: "Windows 已安装客户端实际截图：未登录 ChatGPT 页面、账号名称、标签页与原生窗口按钮，没有地址栏。",
     width: 1040,
     height: 728,
