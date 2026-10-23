@@ -518,3 +518,9 @@
 - 公开 Release、官网 Mac 下载和更新清单保持 alpha.12；本地预览尚未发布 GitHub Release。正式域名部署及远端 main 同步待回读后记录。
 - 正式部署完成：Pages dc7395f7，源提交 a57441e0bb6892c3c73176b50024f19b22665c17；正式域名与 Pages 主域的桌面 / 手机共 8 组截图视图检查通过、错误 0，原图匿名回读字节一致。实际查看生产桌面资产图与手机 Skill 图。公开版本与更新清单仍为 Mac alpha.12 / Win+Android alpha.11。
 - a57441e 已正常快进同步远端 main 与开发分支并独立回读一致。alpha.13 本地包及其准确摘要 / 原生包检查写入 docs/releases/3.0.0-alpha.13-local.json。当前可做部分交付；剩余是证书配置后的真实 Touch ID / 密码回退验收，以及 ChatGPT Android 主网页截图、个人数据升级和真实登录验收。
+
+## alpha.13 公开发布与本机构建清理
+
+- 用户批准 alpha.13 DMG / ZIP 发布、官网 Mac 下载 / 国内加速 / 里程碑 / 自动更新版本同步，并要求后续使用 GitHub Actions 打包、清理本机已用完产物。沿用 ForceMind/ChatGPT、main / codex/macos-assets-workbench 和 Pages chatgpt-profiles；其余平台维持 alpha.11。
+- 当前发布流水线在 CI 完成 62 项单元、构建、完整包 / 更新器安装验证与恢复原生组件验证。公开包以 CI 字节和摘要为准，不上传本地预览包；临时签名与 Touch ID 尚需证书的限制继续明确。
+- 清理仅针对可确认的本项目构建包 / 解压副本 / 临时测试与依赖目录；先记录验收摘要和候选路径，发布成功后删除。保护源码、Git、已提交验收 / 截图、个人账号和恢复数据、Android 签名材料，不清除其他项目或共享 SDK / 缓存。

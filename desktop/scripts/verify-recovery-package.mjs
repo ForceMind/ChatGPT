@@ -15,5 +15,5 @@ try{
  execFileSync(path.join(root,'node_modules/electron/dist/Electron.app/Contents/MacOS/Electron'),[script,path.join(archive,'dist/main/recovery-protection.node'),report,path.join(temp,'data')],{timeout:30000,stdio:'pipe'});
  const native=JSON.parse(readFileSync(report,'utf8'));
  const receipt={version:build.version,verifiedAt:new Date().toISOString(),scope:'isolated Electron, actual packaged ASAR/native module; no personal profiles or Keychain items; signed Touch ID key creation not verified',payloadFiles:count,asarSHA256:createHash('sha256').update(readFileSync(archive)).digest('hex'),...native,checks:['all dist payload bytes match','deep strict code signature','packaged native module loads from ASAR','ad-hoc key creation refused before SecItem access']};
- const out=path.join(root,'release/alpha13-verification');mkdirSync(out,{recursive:true});writeFileSync(path.join(out,'recovery-package.json'),JSON.stringify(receipt,null,2)+'\n');console.log(JSON.stringify(receipt,null,2));
+ const out=path.join(root,'release/verification');mkdirSync(out,{recursive:true});writeFileSync(path.join(out,'recovery-package.json'),JSON.stringify(receipt,null,2)+'\n');console.log(JSON.stringify(receipt,null,2));
 }finally{rmSync(temp,{recursive:true,force:true});}

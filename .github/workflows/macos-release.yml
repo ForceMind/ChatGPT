@@ -34,6 +34,7 @@ jobs:
           npm ci
           npm run dist:mac
           node --import tsx scripts/verify-mac-update.ts
+          node scripts/verify-recovery-package.mjs
       - name: Verify and index package
         working-directory: desktop
         run: |
@@ -46,7 +47,8 @@ jobs:
           const files=asar.listPackage(archive).filter(p=>p.startsWith('/dist/') && !fs.statSync(path.join('.',p.slice(1))).isDirectory());
           const payload={}; for(const file of files) { const packed=asar.extractFile(archive,file.slice(1)); if(!packed.equals(fs.readFileSync(file.slice(1))))throw Error('Bundle/source mismatch: '+file); payload[file.slice(1)]=crypto.createHash('sha256').update(packed).digest('hex'); }
           fs.mkdirSync('release/github-assets',{recursive:true});
-          fs.copyFileSync('release/alpha12-verification/packaged-update.json','release/github-assets/mac-update-verification.json');
+          fs.copyFileSync('release/verification/packaged-update.json','release/github-assets/mac-update-verification.json');
+          fs.copyFileSync('release/verification/recovery-package.json','release/github-assets/mac-recovery-verification.json');
           const artifacts=[];
           for(const ext of ['dmg','zip']) { const item=build.artifacts.find(a=>a.file.endsWith('.'+ext)); const file='ChatGPT-Profiles-'+build.version+'-mac-arm64.'+ext; fs.copyFileSync('release/'+item.file,'release/github-assets/'+file);artifacts.push({file,sha256:item.sha256}); }
           fs.writeFileSync('release/github-assets/mac-release-info.json',JSON.stringify({version:build.version,commit:process.env.GITHUB_SHA,signing:build.signing,payload,artifacts},null,2)+'\n');
@@ -60,4 +62,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: mac-release-info
-          path: desktop/release/github-assets/mac-release-info.json
+          path: |
+            desktop/release/github-assets/mac-release-info.json
+            desktop/release/github-assets/mac-update-verification.json
+            desktop/release/github-assets/mac-recovery-verification.json

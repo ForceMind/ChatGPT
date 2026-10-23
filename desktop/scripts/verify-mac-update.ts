@@ -21,5 +21,5 @@ try{
  if(!originalAsar.equals(installedAsar))throw Error('payload mismatch');
  if(!readFileSync(path.join(staged.candidate,'Contents/Info.plist'),'utf8').includes('3.0.0-alpha.11'))throw Error('old backup missing');
  const receipt={version:pkg.version,verifiedAt:new Date().toISOString(),scope:'real packaged ZIP, disposable old bundle, no personal account data; no live ChatGPT upgrade acceptance',zipSHA256:expected.sha256,asarSHA256:createHash('sha256').update(installedAsar).digest('hex'),helperSHA256:createHash('sha256').update(helperBytes).digest('hex'),elapsedMs:Date.now()-begin,checks:['ZIP digest and identity','full bundle signature and architecture','Electron fs.copyFileSync from shipping ASAR','parent exit wait','atomic swap','installed payload byte identity','previous bundle preserved']};
- const out=path.join(desktop,'release/alpha12-verification');mkdirSync(out,{recursive:true});writeFileSync(path.join(out,'packaged-update.json'),JSON.stringify(receipt,null,2)+'\n');console.log(JSON.stringify(receipt));
+ const out=path.join(desktop,'release/verification');mkdirSync(out,{recursive:true});writeFileSync(path.join(out,'packaged-update.json'),JSON.stringify(receipt,null,2)+'\n');console.log(JSON.stringify(receipt));
 }finally{rmSync(root,{recursive:true,force:true});}
