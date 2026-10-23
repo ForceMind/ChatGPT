@@ -567,3 +567,9 @@
 - 已确认当前 Manifest 只引用普通矢量 drawable，缺少自适应与单色图标。沿用用户已确认的白色 ChatGPT 图案和黑色 #171717 背景，分离全尺寸背景 / 安全区前景，补齐标准 / 圆形与 API 33+ 主题图标；普通模式保持黑白，主题模式颜色遵循系统设置。候选 Android alpha.15 / 3000015，其他平台与公开下载不变。
 - 本批只改 Android 图标资源 / Manifest / 可见候选版本及必要 CI 验证；不改账号、存储、网页登录或恢复。GitHub Actions 编译、单元、Lint、打包和实际系统资源渲染，另采集系统应用详情页。签名私钥继续只留本地，不上传 CI；候选 APK 签名 / 正式分发状态分别记录。
 - Android 首页仍需人工完成网页验证；Mac 登录账号附件发送仍需指定目标与许可，本轮新增图标工作不替代这两项验收。
+
+- 用户随后明确反馈「下载了最新的，现在是对的」，原安卓图标问题按手机实际反馈结案；未据此假定具体安装版本，公开 Android 当前仍为 alpha.11。自适应资源改进保留为 alpha.15 候选，不新增发布 / 签名 / 官网更新。
+- 最终普通构建 40011808661（e08bcde231fb56e230d20a732e0ac42286ed80ea）成功：63 项单元 0 失败 / 0 跳过，Lint 无错误，39 条警告（含本批 v26 目录对 minSdk 28 冗余提示），debug / unsigned release 打包成功。未上传签名密钥或下载 APK / 安装本机依赖，CI 包中的 debug 为独立测试空间，unsigned release 不能用于正常覆盖升级。
+- 安装包资源实测：40008979037 的 1 项 Android 15 / API35 原生测试通过，PackageManager 加载 AdaptiveIconDrawable，#171717 背景、白色图案、圆形与单色层 / 安全区均实际渲染并查看；后续三轮资源检查也通过。原生图保留 docs/images/android-*-alpha15.png。
+- 附加系统页面截图单独记录为未通过：首次为 Settings FallbackHome；第二轮由 UTP 日志确认测试工具卸载目标包；补装后第三轮实际 App info 页被 Pixel Launcher ANR 遮挡；第四轮 40011810866 因 UiTestAutomationBridge 空 root 没有 XML 而失败。已补 bounded transient retry 并做语法检查，未再跑设备；不隐藏失败、不将诊断图当成产品 / 首页截图，用户确认正常后停止可选截图重试。结构化完整索引 docs/releases/3.0.0-alpha.15-android-ci.json。
+- 本批核心图标问题已由用户真机反馈确认正常，源码资源适配与 CI 构建完成；公开 Android alpha.11、官网截图 / 下载、Mac/Windows、现有账号数据均保持。原有 Android 首页人工验证与 Mac 指定账号附件发送仍待外部条件，不被图标结案替代。

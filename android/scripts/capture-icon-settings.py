@@ -41,10 +41,16 @@ observations = []
 ready = False
 launcher_dialogs_closed = 0
 while time.monotonic() < deadline:
-    adb("shell", "uiautomator", "dump", "--compressed", "/sdcard/profiles-icon-settings.xml")
-    xml = adb("shell", "cat", "/sdcard/profiles-icon-settings.xml")
+    try:
+        adb("shell", "rm", "-f", "/sdcard/profiles-icon-settings.xml")
+        adb("shell", "uiautomator", "dump", "--compressed", "/sdcard/profiles-icon-settings.xml")
+        xml = adb("shell", "cat", "/sdcard/profiles-icon-settings.xml")
+        nodes = list(ET.fromstring(xml).iter("node"))
+    except (subprocess.SubprocessError, ET.ParseError) as error:
+        observations.append({"appDetailsReady": False, "captureError": type(error).__name__})
+        time.sleep(3)
+        continue
     (out / "android-app-icon-settings.xml").write_text(xml)
-    nodes = list(ET.fromstring(xml).iter("node"))
     labels = [node.get("text", "") for node in nodes]
     # The emulator's Pixel Launcher can ANR even while Settings is ready behind
     # it. Close only this exact unrelated launcher dialog, never an App ANR.

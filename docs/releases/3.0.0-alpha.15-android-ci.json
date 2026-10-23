@@ -1,0 +1,113 @@
+{
+  "version": "3.0.0-alpha.15",
+  "platform": "Android",
+  "status": "Source improvement and CI candidate; current public Android icon confirmed correct by user. No new public release or signed upgrade.",
+  "applicationSourceCommit": "ce40e780dae958a899f207f68fde03fe7d70aafd",
+  "buildRun": "https://github.com/ForceMind/ChatGPT/actions/runs/40008977172",
+  "unitTests": {
+    "tests": 63,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "lint": {
+    "errors": 0,
+    "warnings": 39,
+    "newWarning": "ObsoleteSdkInt: mipmap-anydpi-v26 qualifier is redundant for minSdk 28; no runtime failure"
+  },
+  "packageArtifact": {
+    "id": 12526049814,
+    "url": "https://github.com/ForceMind/ChatGPT/actions/runs/40011808661/artifacts/12526049814",
+    "expiresAt": "2027-01-21T19:29:27Z",
+    "contents": "Debug test APK (separate .debug package), test runner APK, unsigned release APK. No release identity in CI; unsigned APK cannot be installed as an upgrade."
+  },
+  "iconResourceVerification": {
+    "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40008979037",
+    "result": {
+      "package": "com.forcemind.chatgpt.profiles.debug",
+      "version": "3.0.0-alpha.15-dev",
+      "api": 35,
+      "drawableClass": "android.graphics.drawable.AdaptiveIconDrawable",
+      "background": "#171717",
+      "whitePixels": 14756,
+      "darkPixels": 34080,
+      "roundAdaptive": true,
+      "monochromeVerified": true,
+      "scope": "Actual installed debug-package resources rendered by Android; no website or personal account acceptance"
+    },
+    "screenshots": [
+      "docs/images/android-adaptive-icon-alpha15.png",
+      "docs/images/android-monochrome-layer-alpha15.png"
+    ],
+    "systemSettingsScreenshotAccepted": false,
+    "systemSettingsScreenshotIssue": "Pixel is starting / FallbackHome, excluded despite workflow green; readiness capture fixed in 3589ec7 and rerun separately"
+  },
+  "systemSettingsCapture": {
+    "status": "not verified; diagnostic run failed",
+    "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40011810866",
+    "probeCommit": "e08bcde231fb56e230d20a732e0ac42286ed80ea",
+    "failedCaptureRun": "https://github.com/ForceMind/ChatGPT/actions/runs/40010178983",
+    "failedCaptureReason": "Unexpected installed package version after connected-test cleanup. UTP log explicitly confirms target debug package uninstalled; 5ec8fab reinstalls the same built APK before Settings inspection.",
+    "additionalFailedRun": {
+      "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40010931699",
+      "reason": "Actual Settings app details displayed behind a Pixel Launcher ANR. New script handles only that exact unrelated launcher dialog once; App ANRs are not dismissed."
+    },
+    "lastResult": "UiTestAutomationBridge returned null root; XML file absent. Bounded transient capture retry added after the run; syntax checked, not rerun on device. User meanwhile confirmed the current public Android icon is correct; no further optional capture retries this batch.",
+    "lastRunConcluded": "failure",
+    "lastResourceVerification": {
+      "package": "com.forcemind.chatgpt.profiles.debug",
+      "version": "3.0.0-alpha.15-dev",
+      "api": 35,
+      "drawableClass": "android.graphics.drawable.AdaptiveIconDrawable",
+      "background": "#171717",
+      "whitePixels": 14756,
+      "darkPixels": 34080,
+      "roundAdaptive": true,
+      "monochromeVerified": true,
+      "scope": "Actual installed debug-package resources rendered by Android; no website or personal account acceptance"
+    },
+    "extraScreenshotPromotedToWebsite": false
+  },
+  "publishedAndroid": {
+    "version": "3.0.0-alpha.11",
+    "sourceCommit": "d8089a22a49d4a54cb19efd0ebbc8e6d8ebfbb14",
+    "logomarkAlreadyBlackAndWhite": true
+  },
+  "unchanged": [
+    "account/storage/recovery/webpage code",
+    "personal login data",
+    "macOS/Windows versions",
+    "public GitHub Release",
+    "website downloads"
+  ],
+  "pending": [
+    "Android physical-device homepage/manual verification",
+    "Authenticated macOS attachment/send acceptance in a user-designated account"
+  ],
+  "localBuildDependenciesInstalled": false,
+  "signingSecretsUploaded": false,
+  "additionalBuildVerification": {
+    "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40010177595",
+    "sourceCommit": "3589ec7bce3f7b4a329c8a41e5fef536e2d6bd68",
+    "status": "success",
+    "applicationSourceUnchanged": true
+  },
+  "userFeedback": {
+    "date": "2026-10-24",
+    "message": "User downloaded latest Android package and confirmed the icon is now correct.",
+    "installedVersionExplicitlyProvided": false,
+    "currentPublicAndroidVersion": "3.0.0-alpha.11",
+    "originalIconComplaintResolved": true
+  },
+  "finalBuild": {
+    "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40011808661",
+    "sourceCommit": "e08bcde231fb56e230d20a732e0ac42286ed80ea",
+    "status": "success",
+    "unitTests": {
+      "tests": 63,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  }
+}
