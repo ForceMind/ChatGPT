@@ -1,0 +1,69 @@
+{
+  "version": "3.0.0-alpha.12",
+  "sourceCommit": "18a5ebe4d9219178e92a1fc019ac081af0784650",
+  "published": false,
+  "status": "macOS local acceptance build; public website and update feed remain alpha.11",
+  "signing": "ad-hoc, not notarized",
+  "artifacts": [
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.12-mac-arm64.dmg",
+      "bytes": 153069556,
+      "sha256": "8327537f5461cef73b7564a3aa2f82e80ddc29024ff6ad80105c1c3bd9f8d5bf"
+    },
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.12-mac-arm64.zip",
+      "bytes": 153045495,
+      "sha256": "a79068ae20cc25ed9648956f7b5756c265b758358c67103e8baf3322980a6f64"
+    }
+  ],
+  "checks": {
+    "unit": {
+      "passed": 60,
+      "failed": 0
+    },
+    "macOSUI": {
+      "passed": 13,
+      "windowsOnlySkipped": 2
+    },
+    "packagedDistFilesCompared": 227,
+    "asarSHA256": "39f744711e1b638c84cee4c530f7a8362750c9b350cf1e7fe5b0124ca11a622e",
+    "packagedInstallation": {
+      "version": "3.0.0-alpha.12",
+      "verifiedAt": "2026-10-23T06:33:57.330Z",
+      "scope": "real packaged ZIP, disposable old bundle, no personal account data; no live ChatGPT upgrade acceptance",
+      "zipSHA256": "a79068ae20cc25ed9648956f7b5756c265b758358c67103e8baf3322980a6f64",
+      "asarSHA256": "39f744711e1b638c84cee4c530f7a8362750c9b350cf1e7fe5b0124ca11a622e",
+      "helperSHA256": "91a32f18ba6b653af03e5a36cd05c93b706e16f93b007082fab97c07540425e5",
+      "elapsedMs": 12395,
+      "checks": [
+        "ZIP digest and identity",
+        "full bundle signature and architecture",
+        "Electron fs.copyFileSync from shipping ASAR",
+        "parent exit wait",
+        "atomic swap",
+        "installed payload byte identity",
+        "previous bundle preserved"
+      ]
+    },
+    "productionSite": "https://chatgpt.xincreates.com/",
+    "siteSourceCommit": "84af96029667080514484e2cc61aca20e5467327",
+    "deployment": "https://66f06476.chatgpt-profiles.pages.dev"
+  },
+  "updatePolicy": {
+    "feed": "https://chatgpt.xincreates.com/updates/macos.json",
+    "check": "startup and 12:00 Asia/Shanghai while running; resume catch-up",
+    "consentBeforeDownload": true,
+    "idleScope": "this application only, background, no app activity and safe known tasks",
+    "idleMinutes": 30,
+    "countdownSeconds": 60,
+    "cancelOnAppActivity": true,
+    "backgroundRelaunch": true,
+    "differentialDownload": false,
+    "nativeRestartRequired": true
+  },
+  "manualAcceptancePending": [
+    "Existing personal workspace upgrade and Keychain interaction",
+    "Real ChatGPT/OAuth/passkey and changing website generation/upload markers",
+    "Physical devices and other platforms"
+  ]
+}
