@@ -26,6 +26,7 @@ version = re.search(r"versionName\s+['\"]([^'\"]+)", gradle).group(1) + "-dev"
 package = "com.forcemind.chatgpt.profiles.debug"
 metadata = adb("shell", "dumpsys", "package", package)
 if "versionName=" + version not in metadata:
+    (out / "icon-package-metadata.txt").write_text(metadata)
     raise SystemExit("Unexpected installed package version")
 # Fresh CI images can still be showing Settings' FallbackHome after boot.
 # These setup flags affect only the explicitly guarded disposable emulator.
