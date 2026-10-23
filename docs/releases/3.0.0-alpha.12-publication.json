@@ -1,0 +1,92 @@
+{
+  "version": "3.0.0-alpha.12",
+  "releaseURL": "https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.12",
+  "publishedAt": "2026-10-23T07:12:28Z",
+  "isDraft": false,
+  "isPrerelease": true,
+  "tagCommit": "764717f0912d877f2c4db9da0f0dc65189e4657b",
+  "ciRun": "https://github.com/ForceMind/ChatGPT/actions/runs/39915125569",
+  "ciUnitPassed": 60,
+  "applicationSourceUnchangedFrom": "f52fd7c09cf3d7d22723f0887f0aaefab8083dbe",
+  "artifacts": [
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.12-mac-arm64.dmg",
+      "bytes": 154462836,
+      "sha256": "973716ae308c54daf68a3cd70b5e7cbc88a31a82ae3bbe16b965ad95d7e67f40",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.12/ChatGPT-Profiles-3.0.0-alpha.12-mac-arm64.dmg"
+    },
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.12-mac-arm64.zip",
+      "bytes": 154441417,
+      "sha256": "a27db4654edb0f7081e9b277e13ca20b931e3d91ce492615ca40ecf9f6e22307",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.12/ChatGPT-Profiles-3.0.0-alpha.12-mac-arm64.zip"
+    }
+  ],
+  "assetCount": 6,
+  "site": {
+    "url": "https://chatgpt.xincreates.com/",
+    "deployment": "https://a38f2f25.chatgpt-profiles.pages.dev",
+    "sourceCommit": "48856ed8129be454004c8959c54eae11e03d4a96",
+    "browserCases": 4,
+    "sourceResourcesVerified": 8,
+    "updaterVersion": "3.0.0-alpha.12",
+    "updaterSHA256": "a27db4654edb0f7081e9b277e13ca20b931e3d91ce492615ca40ecf9f6e22307"
+  },
+  "anonymousDownloadChecks": [
+    {
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.12/ChatGPT-Profiles-3.0.0-alpha.12-mac-arm64.dmg",
+      "method": "HEAD",
+      "status": 200,
+      "bytes": 154462836,
+      "expectedBytes": 154462836,
+      "proxy": false
+    },
+    {
+      "url": "https://gh-proxy.org/https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.12/ChatGPT-Profiles-3.0.0-alpha.12-mac-arm64.dmg",
+      "method": "HEAD",
+      "status": 200,
+      "bytes": 154462836,
+      "expectedBytes": 154462836,
+      "proxy": true
+    },
+    {
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.12/ChatGPT-Profiles-3.0.0-alpha.12-mac-arm64.zip",
+      "method": "HEAD",
+      "status": 200,
+      "bytes": 154441417,
+      "expectedBytes": 154441417,
+      "proxy": false
+    },
+    {
+      "url": "https://gh-proxy.org/https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.12/ChatGPT-Profiles-3.0.0-alpha.12-mac-arm64.zip",
+      "method": "HEAD",
+      "status": 200,
+      "bytes": 154441417,
+      "expectedBytes": 154441417,
+      "proxy": true
+    },
+    {
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.12/SHA256SUMS.txt",
+      "method": "GET",
+      "status": 200,
+      "sha256": "162d52190dadc016905810f8a3e65592258e916946c64c71d3c3a87ab6714a53",
+      "bytes": 224
+    },
+    {
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.12/release-info.json",
+      "method": "GET",
+      "status": 200,
+      "sha256": "817d4b59d34f1dc47bada4852f030a37ca2d895944a50d8444c681902b856419",
+      "bytes": 2352
+    }
+  ],
+  "otherPublicVersions": {
+    "Windows": "3.0.0-alpha.11",
+    "Android": "3.0.0-alpha.11"
+  },
+  "manualAcceptancePending": [
+    "Existing personal workspace upgrade and Keychain interaction",
+    "Real ChatGPT/OAuth/passkey and changing website generation/upload markers",
+    "Physical devices and other platforms"
+  ]
+}

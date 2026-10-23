@@ -498,3 +498,7 @@
 - CI 39915125569、成功任务 120287889437：60 项单元、类型与构建、227 个包内文件比对、深度签名、ZIP 解包身份 / 架构校验、包内安装器提取、等待退出 / 原子替换 / 旧包保留全部通过。13 项本地 macOS 界面流程沿用同一应用源码的隔离验收，不称为 CI 或真实账号证明。
 - 公开预发布 v3.0.0-alpha.12 已发布，实际发布时间 2026-10-23T07:12:28Z（上海 15:12:28），标签构建提交 764717f0912d877f2c4db9da0f0dc65189e4657b。DMG=154462836 字节、SHA-256 973716ae308c54daf68a3cd70b5e7cbc88a31a82ae3bbe16b965ad95d7e67f40；ZIP=154441417 字节、SHA-256 a27db4654edb0f7081e9b277e13ca20b931e3d91ce492615ca40ecf9f6e22307。公开包为 CI 重建，与之前本地包摘要不同，以公开索引 docs/releases/3.0.0-alpha.12.json 为准。
 - Release 共六个附件：两个安装包、mac-release-info.json、mac-update-verification.json、release-info.json、SHA256SUMS.txt；服务端大小 / SHA-256 与 CI 验证和最终清单一致。未覆盖任何历史 Release 附件。main 已快进到 764717f，官网改动将在完成最终下载核对后继续同步与部署。
+- 官网发布源码 48856ed8129be454004c8959c54eae11e03d4a96 已同步 main 与开发分支，并部署到 a38f2f25.chatgpt-profiles.pages.dev 及正式域名 chatgpt.xincreates.com。Mac 下载、两个国内加速入口、大小 / 复制摘要、版本标识、里程碑与 FAQ 均为 alpha.12；Windows / Android 仍为 alpha.11。更新清单 publishedAt 使用实际 Release 时间，ZIP 大小和摘要与公开附件一致。
+- 公开 DMG / ZIP 的匿名直连和 gh-proxy.org 入口共四个 HEAD 均为 200，返回大小一致；两个小型公开清单实际匿名下载并逐字节匹配。HEAD 不宣称独立证明第三方代理的完整内容摘要，客户端仍会校验下载字节。
+- 生产独立 Chrome 四组桌面 / 手机、语言 / 时区场景通过，摘要复制、加速链接、版本和新里程碑正确，无横向溢出或页面脚本异常；已查看生产桌面与手机截图。独立 Electron 更新 session、credentials=omit 回读官网及 Pages 主域共八个资源，排除明确的 Cloudflare 统计注入及紧邻 body 的格式空白后匹配提交源；两个更新接口均为 application/json、alpha.12，SHA-256 a27db4654edb0f7081e9b277e13ca20b931e3d91ce492615ca40ecf9f6e22307。
+- 发布回读索引为 docs/releases/3.0.0-alpha.12-publication.json。本批 GitHub Release、官网、自动更新清单与 main 同步已完成；旧版本及用户本机登录资料未迁移。alpha.11 及更早版本需先手动安装一次 alpha.12，真实账号升级和真实网页兼容仍沿用人工验收边界。
