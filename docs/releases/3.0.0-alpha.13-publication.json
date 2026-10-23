@@ -1,0 +1,118 @@
+{
+  "version": "3.0.0-alpha.13",
+  "releaseURL": "https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.13",
+  "publishedAt": "2026-10-23T12:33:28Z",
+  "isDraft": false,
+  "isPrerelease": true,
+  "tagCommit": "16972fbaedbed6ec410cefca30c794d2fe86691b",
+  "ciRun": "https://github.com/ForceMind/ChatGPT/actions/runs/39953377387",
+  "ciUnitPassed": 62,
+  "assetCount": 7,
+  "artifacts": [
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.13-mac-arm64.dmg",
+      "bytes": 154480128,
+      "sha256": "de765ad753de60eb83123eb008ec7cea963ab8256b4c0cde7490895060dbf0b1",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.13/ChatGPT-Profiles-3.0.0-alpha.13-mac-arm64.dmg"
+    },
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.13-mac-arm64.zip",
+      "bytes": 154458159,
+      "sha256": "7270f2bd8305214ae953b1aec4794b13eb0dfa9eaf3c6f7f435881069227904e",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.13/ChatGPT-Profiles-3.0.0-alpha.13-mac-arm64.zip"
+    }
+  ],
+  "binaryVerification": "CI SHA-256 equals GitHub server asset digest; anonymous HEAD verifies both original/proxy status and size. No installer bodies downloaded locally.",
+  "anonymousDownloadChecks": [
+    {
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.13/ChatGPT-Profiles-3.0.0-alpha.13-mac-arm64.dmg",
+      "method": "HEAD",
+      "status": 200,
+      "bytes": 154480128,
+      "proxy": false
+    },
+    {
+      "url": "https://gh-proxy.org/https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.13/ChatGPT-Profiles-3.0.0-alpha.13-mac-arm64.dmg",
+      "method": "HEAD",
+      "status": 200,
+      "bytes": 154480128,
+      "proxy": true
+    },
+    {
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.13/ChatGPT-Profiles-3.0.0-alpha.13-mac-arm64.zip",
+      "method": "HEAD",
+      "status": 200,
+      "bytes": 154458159,
+      "proxy": false
+    },
+    {
+      "url": "https://gh-proxy.org/https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.13/ChatGPT-Profiles-3.0.0-alpha.13-mac-arm64.zip",
+      "method": "HEAD",
+      "status": 200,
+      "bytes": 154458159,
+      "proxy": true
+    },
+    {
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.13/release-info.json",
+      "method": "GET",
+      "status": 200,
+      "bytes": 2515,
+      "sha256": "f3131ab4a84d13a990e6778f153d6df3e946307b53f323d0392c2e48deac5d4b"
+    },
+    {
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.13/SHA256SUMS.txt",
+      "method": "GET",
+      "status": 200,
+      "bytes": 588,
+      "sha256": "1e036b06811cf3be0352d749ba4ec229234501a4335a177006533e19728ca680"
+    }
+  ],
+  "site": {
+    "url": "https://chatgpt.xincreates.com/",
+    "deployment": "https://c194a851.chatgpt-profiles.pages.dev",
+    "sourceCommit": "5a4b12ac19c2ab28a820775df9063c57fbf2896e",
+    "browserCases": 8,
+    "sourceResourcesVerified": 6,
+    "updaterVersion": "3.0.0-alpha.13",
+    "updaterSHA256": "7270f2bd8305214ae953b1aec4794b13eb0dfa9eaf3c6f7f435881069227904e"
+  },
+  "sourceResources": [
+    {
+      "url": "https://chatgpt.xincreates.com/app.js",
+      "status": 200,
+      "contentType": "application/javascript",
+      "sha256": "017c6854a1cde3b1458df407c7e30e81e93be0a1cdad0e62c1ce1b040b758e9e"
+    },
+    {
+      "url": "https://chatgpt.xincreates.com/styles.css",
+      "status": 200,
+      "contentType": "text/css; charset=utf-8",
+      "sha256": "6ecbb8857d52ef3a1a7a33619a4284d3104ac914da4bc918298203ae18904f97"
+    },
+    {
+      "url": "https://chatgpt.xincreates.com/updates/macos.json",
+      "status": 200,
+      "contentType": "application/json",
+      "sha256": "c43795a3d1b5e14e001046beae8fae7b1c23d73a2f3c93eb3af878145f910cdb"
+    },
+    {
+      "url": "https://chatgpt-profiles.pages.dev/app.js",
+      "status": 200,
+      "contentType": "application/javascript",
+      "sha256": "017c6854a1cde3b1458df407c7e30e81e93be0a1cdad0e62c1ce1b040b758e9e"
+    },
+    {
+      "url": "https://chatgpt-profiles.pages.dev/styles.css",
+      "status": 200,
+      "contentType": "text/css; charset=utf-8",
+      "sha256": "6ecbb8857d52ef3a1a7a33619a4284d3104ac914da4bc918298203ae18904f97"
+    },
+    {
+      "url": "https://chatgpt-profiles.pages.dev/updates/macos.json",
+      "status": 200,
+      "contentType": "application/json",
+      "sha256": "c43795a3d1b5e14e001046beae8fae7b1c23d73a2f3c93eb3af878145f910cdb"
+    }
+  ],
+  "cleanupRecord": "docs/releases/3.0.0-alpha.13-cleanup.json"
+}

@@ -1,0 +1,1680 @@
+{
+  "cleanedAt": "2026-10-23T12:45:36.270907+00:00",
+  "scope": "project-owned generated files and temporary build/test folders only",
+  "buildLocation": "GitHub Actions; DMG/ZIP not downloaded to host",
+  "pathsRemoved": 411,
+  "logicalBytesRemoved": 25673889835,
+  "measurementNote": "lower bound of removed logical file sizes; partial deletions before AppleDouble retry are not counted; not unique physical APFS blocks",
+  "removed": [
+    {
+      "path": "os-temp/chatgpt-profiles-package-jugRZF",
+      "logicalBytesRemoved": 1009427237
+    },
+    {
+      "path": "os-temp/chatgpt-profiles-package-HqZpOa",
+      "logicalBytesRemoved": 988464867
+    },
+    {
+      "path": "os-temp/chatgpt-profiles-package-e77Yc9",
+      "logicalBytesRemoved": 988595698
+    },
+    {
+      "path": "os-temp/chatgpt-profiles-package-5x13SZ",
+      "logicalBytesRemoved": 988595261
+    },
+    {
+      "path": "os-temp/chatgpt-profiles-package-CFi8Ts",
+      "logicalBytesRemoved": 996589713
+    },
+    {
+      "path": "os-temp/chatgpt-profiles-package-kRTD54",
+      "logicalBytesRemoved": 1009476873
+    },
+    {
+      "path": "os-temp/chatgpt-profiles-package-0PmHGG",
+      "logicalBytesRemoved": 1009422582
+    },
+    {
+      "path": "os-temp/chatgpt-profiles-package-q1hj4C",
+      "logicalBytesRemoved": 988723996
+    },
+    {
+      "path": "os-temp/chatgpt-profiles-package-9I1Eiu",
+      "logicalBytesRemoved": 996587838
+    },
+    {
+      "path": "os-temp/chatgpt-profiles-package-wc9aNf",
+      "logicalBytesRemoved": 1009618223
+    },
+    {
+      "path": "os-temp/chatgpt-profiles-package-PkarqJ",
+      "logicalBytesRemoved": 1009618793
+    },
+    {
+      "path": "os-temp/chatgpt-profiles-package-xpt6a7",
+      "logicalBytesRemoved": 1009619445
+    },
+    {
+      "path": "os-temp/chatgpt-profiles-package-Qs0QBU",
+      "logicalBytesRemoved": 988719811
+    },
+    {
+      "path": "os-temp/chatgpt-profiles-package-71lVmF",
+      "logicalBytesRemoved": 1009476137
+    },
+    {
+      "path": "os-temp/chatgpt-profiles-package-sQObkW",
+      "logicalBytesRemoved": 996589804
+    },
+    {
+      "path": "os-temp/chatgpt-profiles-package-dSl1xa",
+      "logicalBytesRemoved": 1009618796
+    },
+    {
+      "path": "os-temp/chatgpt-profiles-package-KD1JOl",
+      "logicalBytesRemoved": 868274674
+    },
+    {
+      "path": "os-temp/chatgpt-profiles-package-B6soz1",
+      "logicalBytesRemoved": 868181824
+    },
+    {
+      "path": "os-temp/chatgpt-profiles-package-f4xawV",
+      "logicalBytesRemoved": 988720750
+    },
+    {
+      "path": "os-temp/profiles-bench-sj2jHl",
+      "logicalBytesRemoved": 9518130
+    },
+    {
+      "path": "os-temp/chatgpt-site-clean-8f11ef5",
+      "logicalBytesRemoved": 343063
+    },
+    {
+      "path": "os-temp/profiles-alpha13-consent-final.log",
+      "logicalBytesRemoved": 384
+    },
+    {
+      "path": "os-temp/profiles-alpha13-cleanup-candidates.json",
+      "logicalBytesRemoved": 3043
+    },
+    {
+      "path": "os-temp/chatgpt-alpha11-pages-cl1or7f6",
+      "logicalBytesRemoved": 351811
+    },
+    {
+      "path": "os-temp/chatgpt-webkit-1.17.1-sources.jar",
+      "logicalBytesRemoved": 297508
+    },
+    {
+      "path": "os-temp/profiles-alpha13-e2e.log",
+      "logicalBytesRemoved": 8855
+    },
+    {
+      "path": "os-temp/profiles-alpha13-site-5ue8_ftc",
+      "logicalBytesRemoved": 778814
+    },
+    {
+      "path": "os-temp/profiles-site-clean-gso8ntjg",
+      "logicalBytesRemoved": 343893
+    },
+    {
+      "path": "os-temp/profiles-alpha13-recovery-final.log",
+      "logicalBytesRemoved": 3439
+    },
+    {
+      "path": "os-temp/profiles-alpha13-proof-push.log",
+      "logicalBytesRemoved": 23028
+    },
+    {
+      "path": "os-temp/chatgpt-system-packaged-old-64.png",
+      "logicalBytesRemoved": 3339
+    },
+    {
+      "path": "os-temp/profiles-native-alpha3",
+      "logicalBytesRemoved": 11194558
+    },
+    {
+      "path": "os-temp/profiles-recovery-protection.node",
+      "logicalBytesRemoved": 56416
+    },
+    {
+      "path": "os-temp/chatgpt-android-document-tests",
+      "logicalBytesRemoved": 2325277
+    },
+    {
+      "path": "os-temp/chatgpt-clean-mac-shot",
+      "logicalBytesRemoved": 1408712
+    },
+    {
+      "path": "os-temp/chatgpt-system-packaged-old-256.png",
+      "logicalBytesRemoved": 17655
+    },
+    {
+      "path": "os-temp/profiles-alpha13-package-verification.log",
+      "logicalBytesRemoved": 623
+    },
+    {
+      "path": "os-temp/chatgpt-webkit-1.18.0-sources.jar",
+      "logicalBytesRemoved": 300339
+    },
+    {
+      "path": "os-temp/chatgpt-android-tools",
+      "logicalBytesRemoved": 947214256
+    },
+    {
+      "path": "os-temp/profiles-clean-shot-data-ncrtJU",
+      "logicalBytesRemoved": 11149977
+    },
+    {
+      "path": "os-temp/profiles-clean-shot-data-RhDe6Z",
+      "logicalBytesRemoved": 10105723
+    },
+    {
+      "path": "os-temp/profiles-bench-pC4fUU",
+      "logicalBytesRemoved": 14002447
+    },
+    {
+      "path": "os-temp/chatgpt-download-site-_m037vhb",
+      "logicalBytesRemoved": 356256
+    },
+    {
+      "path": "os-temp/chatgpt-icon-swift-cache",
+      "logicalBytesRemoved": 176012721
+    },
+    {
+      "path": "os-temp/profiles-alpha13-final-package.log",
+      "logicalBytesRemoved": 2839
+    },
+    {
+      "path": "os-temp/profiles-alpha13-remote-source.txt",
+      "logicalBytesRemoved": 138
+    },
+    {
+      "path": "os-temp/chatgpt-system-packaged-old-16.png",
+      "logicalBytesRemoved": 914
+    },
+    {
+      "path": "os-temp/profiles-alpha13-site-deploy.log",
+      "logicalBytesRemoved": 470
+    },
+    {
+      "path": "os-temp/profiles-alpha13-check.log",
+      "logicalBytesRemoved": 9013
+    },
+    {
+      "path": "os-temp/profiles-alpha13-source-commit.log",
+      "logicalBytesRemoved": 33289
+    },
+    {
+      "path": "os-temp/profiles-alpha13-typecheck-final.log",
+      "logicalBytesRemoved": 61
+    },
+    {
+      "path": "os-temp/profiles-windows-evidence-d9e73ae",
+      "logicalBytesRemoved": 717181
+    },
+    {
+      "path": "os-temp/profiles-alpha13-build.log",
+      "logicalBytesRemoved": 2075
+    },
+    {
+      "path": "os-temp/chatgpt-site-qa",
+      "logicalBytesRemoved": 1634757
+    },
+    {
+      "path": "os-temp/profiles-clean-shot-data-NmWgA5",
+      "logicalBytesRemoved": 10673498
+    },
+    {
+      "path": "os-temp/chatgpt-system-packaged-new-32.png",
+      "logicalBytesRemoved": 1753
+    },
+    {
+      "path": "os-temp/profiles-alpha13-remote-final.txt",
+      "logicalBytesRemoved": 138
+    },
+    {
+      "path": "os-temp/chatgpt-system-packaged-new-256.png",
+      "logicalBytesRemoved": 17655
+    },
+    {
+      "path": "os-temp/chatgpt-icon-new.app",
+      "logicalBytesRemoved": 135354
+    },
+    {
+      "path": "os-temp/profiles-alpha13-source-push.log",
+      "logicalBytesRemoved": 61634
+    },
+    {
+      "path": "os-temp/chatgpt-system-packaged-new-16.png",
+      "logicalBytesRemoved": 824
+    },
+    {
+      "path": "os-temp/profiles-alpha13-final-check.log",
+      "logicalBytesRemoved": 9010
+    },
+    {
+      "path": "os-temp/chatgpt-webkit-metadata.xml",
+      "logicalBytesRemoved": 4026
+    },
+    {
+      "path": "os-temp/profiles-site-neutral-kju7ycdk",
+      "logicalBytesRemoved": 350103
+    },
+    {
+      "path": "os-temp/chatgpt-assets-preview-qa",
+      "logicalBytesRemoved": 1041549
+    },
+    {
+      "path": "os-temp/chatgpt-icon-old.app",
+      "logicalBytesRemoved": 85684
+    },
+    {
+      "path": "os-temp/profiles-alpha13-e2e2.log",
+      "logicalBytesRemoved": 2842
+    },
+    {
+      "path": "os-temp/chatgpt-system-packaged-old-32.png",
+      "logicalBytesRemoved": 2290
+    },
+    {
+      "path": "os-temp/chatgpt-alpha12-site-ej_x2y0y",
+      "logicalBytesRemoved": 356836
+    },
+    {
+      "path": "os-temp/chatgpt-system-packaged-new-128.png",
+      "logicalBytesRemoved": 7757
+    },
+    {
+      "path": "os-temp/profiles-alpha13-final-build.log",
+      "logicalBytesRemoved": 2075
+    },
+    {
+      "path": "os-temp/chatgpt-next-research",
+      "logicalBytesRemoved": 4837418
+    },
+    {
+      "path": "os-temp/profiles-alpha13-consent-cookie.log",
+      "logicalBytesRemoved": 383
+    },
+    {
+      "path": "os-temp/profiles-windows-evidence-44ff695",
+      "logicalBytesRemoved": 791348
+    },
+    {
+      "path": "os-temp/profiles-windows-evidence-bcb68ca",
+      "logicalBytesRemoved": 792341
+    },
+    {
+      "path": "os-temp/profiles-alpha13-ci-push.log",
+      "logicalBytesRemoved": 25516
+    },
+    {
+      "path": "os-temp/profiles-alpha13-final-status.txt",
+      "logicalBytesRemoved": 0
+    },
+    {
+      "path": "os-temp/profiles-alpha13-release-notes.md",
+      "logicalBytesRemoved": 1314
+    },
+    {
+      "path": "os-temp/profiles-alpha13-ci-index-commit.log",
+      "logicalBytesRemoved": 8104
+    },
+    {
+      "path": "os-temp/chatgpt-profiles-electron-parts",
+      "logicalBytesRemoved": 114744924
+    },
+    {
+      "path": "os-temp/profiles-alpha13-ci-commit.log",
+      "logicalBytesRemoved": 13730
+    },
+    {
+      "path": "os-temp/profiles-windows-final",
+      "logicalBytesRemoved": 797122
+    },
+    {
+      "path": "os-temp/profiles-alpha13-proof-commit.log",
+      "logicalBytesRemoved": 10298
+    },
+    {
+      "path": "os-temp/profiles-alpha13-final-e2e.log",
+      "logicalBytesRemoved": 3976
+    },
+    {
+      "path": "os-temp/chatgpt-profiles-npm-cache",
+      "logicalBytesRemoved": 280883105
+    },
+    {
+      "path": "os-temp/profiles-alpha13-fetch.log",
+      "logicalBytesRemoved": 4754
+    },
+    {
+      "path": "os-temp/profiles-alpha13-final-status-errors.log",
+      "logicalBytesRemoved": 776
+    },
+    {
+      "path": "os-temp/profiles-alpha13-ci-index-push.log",
+      "logicalBytesRemoved": 18144
+    },
+    {
+      "path": "os-temp/chatgpt-system-packaged-new-64.png",
+      "logicalBytesRemoved": 5514
+    },
+    {
+      "path": "os-temp/profiles-alpha13-final-diff.log",
+      "logicalBytesRemoved": 776
+    },
+    {
+      "path": "os-temp/chatgpt-system-packaged-old-128.png",
+      "logicalBytesRemoved": 7757
+    },
+    {
+      "path": "os-temp/profiles-alpha13-package.log",
+      "logicalBytesRemoved": 11967
+    },
+    {
+      "path": "os-temp/profiles-alpha13-site-state.json",
+      "logicalBytesRemoved": 60
+    },
+    {
+      "path": "os-temp/profiles-interactions-WOaH3J",
+      "logicalBytesRemoved": 11404012
+    },
+    {
+      "path": "os-temp/profiles-invariant-RGc63C",
+      "logicalBytesRemoved": 657
+    },
+    {
+      "path": "os-temp/profiles-language-HJeP7Q",
+      "logicalBytesRemoved": 1434
+    },
+    {
+      "path": "os-temp/profiles-native-bench-feGENh",
+      "logicalBytesRemoved": 9520704
+    },
+    {
+      "path": "os-temp/profiles-isolation-ZZfnUV",
+      "logicalBytesRemoved": 11448206
+    },
+    {
+      "path": "os-temp/profiles-fail-closed-a4HARG",
+      "logicalBytesRemoved": 21
+    },
+    {
+      "path": "os-temp/profiles-invariant-wUC1ib",
+      "logicalBytesRemoved": 712
+    },
+    {
+      "path": "os-temp/profiles-invariant-2rrrXY",
+      "logicalBytesRemoved": 712
+    },
+    {
+      "path": "os-temp/profiles-fail-closed-GQnAjl",
+      "logicalBytesRemoved": 21
+    },
+    {
+      "path": "os-temp/profiles-fail-closed-eEO2is",
+      "logicalBytesRemoved": 21
+    },
+    {
+      "path": "os-temp/profiles-recovery-U62KJQ",
+      "logicalBytesRemoved": 1321
+    },
+    {
+      "path": "os-temp/profiles-fail-closed-UDlT5h",
+      "logicalBytesRemoved": 21
+    },
+    {
+      "path": "os-temp/profiles-language-Jmw36I",
+      "logicalBytesRemoved": 1434
+    },
+    {
+      "path": "os-temp/profiles-language-WNUfGJ",
+      "logicalBytesRemoved": 1434
+    },
+    {
+      "path": "os-temp/profiles-fail-closed-gFS9lk",
+      "logicalBytesRemoved": 21
+    },
+    {
+      "path": "os-temp/profiles-invariant-4TWyxR",
+      "logicalBytesRemoved": 712
+    },
+    {
+      "path": "os-temp/profiles-language-XB1QBV",
+      "logicalBytesRemoved": 1434
+    },
+    {
+      "path": "os-temp/profiles-recovery-6hYhXf",
+      "logicalBytesRemoved": 1431
+    },
+    {
+      "path": "os-temp/profiles-recovery-0F5z5U",
+      "logicalBytesRemoved": 1431
+    },
+    {
+      "path": "os-temp/profiles-state-GphoIO",
+      "logicalBytesRemoved": 1917
+    },
+    {
+      "path": "os-temp/profiles-recovery-4sXwSE",
+      "logicalBytesRemoved": 1431
+    },
+    {
+      "path": "os-temp/profiles-fail-closed-o6HrEv",
+      "logicalBytesRemoved": 21
+    },
+    {
+      "path": "os-temp/profiles-fail-closed-UVydhy",
+      "logicalBytesRemoved": 21
+    },
+    {
+      "path": "os-temp/profiles-state-4jMfI7",
+      "logicalBytesRemoved": 1917
+    },
+    {
+      "path": "os-temp/profiles-language-157sPY",
+      "logicalBytesRemoved": 1434
+    },
+    {
+      "path": "os-temp/profiles-language-AE7XUm",
+      "logicalBytesRemoved": 1434
+    },
+    {
+      "path": "os-temp/profiles-fail-closed-WQw2K5",
+      "logicalBytesRemoved": 21
+    },
+    {
+      "path": "os-temp/profiles-state-vEjSBC",
+      "logicalBytesRemoved": 1917
+    },
+    {
+      "path": "os-temp/profiles-state-rLjThj",
+      "logicalBytesRemoved": 1917
+    },
+    {
+      "path": "os-temp/profiles-recovery-Xpa3QT",
+      "logicalBytesRemoved": 1321
+    },
+    {
+      "path": "os-temp/profiles-state-aXItSI",
+      "logicalBytesRemoved": 1807
+    },
+    {
+      "path": "os-temp/profiles-state-ctqnyl",
+      "logicalBytesRemoved": 1917
+    },
+    {
+      "path": "os-temp/profiles-recovery-NH5okP",
+      "logicalBytesRemoved": 1431
+    },
+    {
+      "path": "os-temp/profiles-isolation-mtoPBo",
+      "logicalBytesRemoved": 11440722
+    },
+    {
+      "path": "os-temp/profiles-native-bench-kjS3JY",
+      "logicalBytesRemoved": 13254828
+    },
+    {
+      "path": "os-temp/profiles-recovery-JI0Hck",
+      "logicalBytesRemoved": 1431
+    },
+    {
+      "path": "os-temp/profiles-fail-closed-YdL3iK",
+      "logicalBytesRemoved": 21
+    },
+    {
+      "path": "os-temp/profiles-language-GIX6k7",
+      "logicalBytesRemoved": 1434
+    },
+    {
+      "path": "os-temp/profiles-fail-closed-Xyi6C4",
+      "logicalBytesRemoved": 21
+    },
+    {
+      "path": "os-temp/profiles-updater-e2e-woauDu",
+      "logicalBytesRemoved": 77876
+    },
+    {
+      "path": "os-temp/profiles-recovery-AQurVq",
+      "logicalBytesRemoved": 1431
+    },
+    {
+      "path": "os-temp/profiles-recovery-ChbQUY",
+      "logicalBytesRemoved": 1431
+    },
+    {
+      "path": "os-temp/profiles-fail-closed-uHhgHQ",
+      "logicalBytesRemoved": 21
+    },
+    {
+      "path": "os-temp/profiles-language-AielLf",
+      "logicalBytesRemoved": 1434
+    },
+    {
+      "path": "os-temp/profiles-invariant-xK2gbU",
+      "logicalBytesRemoved": 712
+    },
+    {
+      "path": "os-temp/profiles-state-Jt6D5a",
+      "logicalBytesRemoved": 1917
+    },
+    {
+      "path": "os-temp/profiles-state-WOVzaA",
+      "logicalBytesRemoved": 1917
+    },
+    {
+      "path": "os-temp/profiles-state-NJDGkj",
+      "logicalBytesRemoved": 1917
+    },
+    {
+      "path": "os-temp/profiles-language-5TC05V",
+      "logicalBytesRemoved": 1434
+    },
+    {
+      "path": "os-temp/profiles-recovery-fQra4t",
+      "logicalBytesRemoved": 1431
+    },
+    {
+      "path": "os-temp/profiles-recovery-MVPwOC",
+      "logicalBytesRemoved": 1431
+    },
+    {
+      "path": "os-temp/profiles-invariant-GTNbPF",
+      "logicalBytesRemoved": 712
+    },
+    {
+      "path": "os-temp/profiles-language-F0oJy8",
+      "logicalBytesRemoved": 1434
+    },
+    {
+      "path": "os-temp/profiles-invariant-3eTLPh",
+      "logicalBytesRemoved": 712
+    },
+    {
+      "path": "os-temp/profiles-alpha12-site-FkcjfI",
+      "logicalBytesRemoved": 672965
+    },
+    {
+      "path": "os-temp/profiles-recovery-6udRvo",
+      "logicalBytesRemoved": 1321
+    },
+    {
+      "path": "os-temp/profiles-recovery-O4YFj0",
+      "logicalBytesRemoved": 1431
+    },
+    {
+      "path": "os-temp/profiles-recovery-ZyHZda",
+      "logicalBytesRemoved": 1431
+    },
+    {
+      "path": "os-temp/profiles-native-drag-Ie4i2h",
+      "logicalBytesRemoved": 9536849
+    },
+    {
+      "path": "os-temp/profiles-state-JzpAuB",
+      "logicalBytesRemoved": 1917
+    },
+    {
+      "path": "os-temp/profiles-fail-closed-9Y6QLk",
+      "logicalBytesRemoved": 21
+    },
+    {
+      "path": "os-temp/profiles-invariant-wPNhuO",
+      "logicalBytesRemoved": 712
+    },
+    {
+      "path": "os-temp/profiles-recovery-u4bRTS",
+      "logicalBytesRemoved": 1431
+    },
+    {
+      "path": "os-temp/profiles-fail-closed-zJLFPq",
+      "logicalBytesRemoved": 21
+    },
+    {
+      "path": "os-temp/profiles-interactions-94mllc",
+      "logicalBytesRemoved": 11382168
+    },
+    {
+      "path": "os-temp/profiles-isolation-eperRp",
+      "logicalBytesRemoved": 11447696
+    },
+    {
+      "path": "os-temp/profiles-consent-PjCK1z",
+      "logicalBytesRemoved": 0
+    },
+    {
+      "path": "os-temp/profiles-interactions-VusFdB",
+      "logicalBytesRemoved": 11382624
+    },
+    {
+      "path": "os-temp/profiles-state-Sl9URB",
+      "logicalBytesRemoved": 1917
+    },
+    {
+      "path": "os-temp/profiles-language-KJhHfV",
+      "logicalBytesRemoved": 1434
+    },
+    {
+      "path": "os-temp/profiles-language-SeBLjV",
+      "logicalBytesRemoved": 1434
+    },
+    {
+      "path": "os-temp/profiles-recovery-4U6Qei",
+      "logicalBytesRemoved": 1321
+    },
+    {
+      "path": "os-temp/profiles-recovery-S1zDO6",
+      "logicalBytesRemoved": 1431
+    },
+    {
+      "path": "os-temp/profiles-invariant-uqd0iT",
+      "logicalBytesRemoved": 712
+    },
+    {
+      "path": "os-temp/profiles-invariant-07bRfz",
+      "logicalBytesRemoved": 657
+    },
+    {
+      "path": "os-temp/profiles-recovery-5Ff8xl",
+      "logicalBytesRemoved": 1431
+    },
+    {
+      "path": "os-temp/profiles-isolation-DtGGnN",
+      "logicalBytesRemoved": 11448206
+    },
+    {
+      "path": "os-temp/chatgpt-alpha5-site-4aqgkb84",
+      "logicalBytesRemoved": 344150
+    },
+    {
+      "path": "os-temp/profiles-invariant-fvEorP",
+      "logicalBytesRemoved": 712
+    },
+    {
+      "path": "os-temp/profiles-invariant-gSLF9d",
+      "logicalBytesRemoved": 657
+    },
+    {
+      "path": "os-temp/profiles-recovery-akG4Jo",
+      "logicalBytesRemoved": 1431
+    },
+    {
+      "path": "os-temp/profiles-state-krJbpN",
+      "logicalBytesRemoved": 1917
+    },
+    {
+      "path": "os-temp/profiles-state-e4PSje",
+      "logicalBytesRemoved": 1917
+    },
+    {
+      "path": "os-temp/profiles-invariant-oiyeup",
+      "logicalBytesRemoved": 657
+    },
+    {
+      "path": "os-temp/profiles-state-OCrM1k",
+      "logicalBytesRemoved": 1807
+    },
+    {
+      "path": "os-temp/profiles-state-LLxPfL",
+      "logicalBytesRemoved": 1917
+    },
+    {
+      "path": "os-temp/profiles-fail-closed-K0vt76",
+      "logicalBytesRemoved": 21
+    },
+    {
+      "path": "os-temp/profiles-language-OF3lkN",
+      "logicalBytesRemoved": 1434
+    },
+    {
+      "path": "os-temp/profiles-invariant-BzDIni",
+      "logicalBytesRemoved": 712
+    },
+    {
+      "path": "os-temp/chatgpt-alpha5-site-index-8aoyyolu",
+      "logicalBytesRemoved": 9031
+    },
+    {
+      "path": "os-temp/profiles-state-fUVPBH",
+      "logicalBytesRemoved": 1807
+    },
+    {
+      "path": "os-temp/profiles-fail-closed-F0KcZ4",
+      "logicalBytesRemoved": 21
+    },
+    {
+      "path": "os-temp/profiles-invariant-kdjqAv",
+      "logicalBytesRemoved": 712
+    },
+    {
+      "path": "os-temp/profiles-fail-closed-n4ZnEy",
+      "logicalBytesRemoved": 21
+    },
+    {
+      "path": "os-temp/profiles-language-ufmZjJ",
+      "logicalBytesRemoved": 1434
+    },
+    {
+      "path": "os-temp/profiles-recovery-IHXOJE",
+      "logicalBytesRemoved": 1431
+    },
+    {
+      "path": "os-temp/profiles-fail-closed-qtwFBJ",
+      "logicalBytesRemoved": 21
+    },
+    {
+      "path": "os-temp/profiles-native-bench-cglszz",
+      "logicalBytesRemoved": 9524676
+    },
+    {
+      "path": "os-temp/profiles-invariant-CewgKS",
+      "logicalBytesRemoved": 712
+    },
+    {
+      "path": "os-temp/profiles-language-o6nISm",
+      "logicalBytesRemoved": 1434
+    },
+    {
+      "path": "os-temp/profiles-recovery-Mt5KlQ",
+      "logicalBytesRemoved": 1431
+    },
+    {
+      "path": "os-temp/profiles-isolation-Mg4mvv",
+      "logicalBytesRemoved": 11443885
+    },
+    {
+      "path": "os-temp/profiles-state-ueCYUZ",
+      "logicalBytesRemoved": 1807
+    },
+    {
+      "path": "os-temp/profiles-language-q3V0yq",
+      "logicalBytesRemoved": 1434
+    },
+    {
+      "path": "os-temp/profiles-recovery-SFpETY",
+      "logicalBytesRemoved": 1321
+    },
+    {
+      "path": "os-temp/profiles-invariant-U6JfDc",
+      "logicalBytesRemoved": 712
+    },
+    {
+      "path": "os-temp/profiles-fail-closed-p3oKob",
+      "logicalBytesRemoved": 21
+    },
+    {
+      "path": "os-temp/profiles-fail-closed-O2BnwV",
+      "logicalBytesRemoved": 21
+    },
+    {
+      "path": "os-temp/profiles-fail-closed-AcRstR",
+      "logicalBytesRemoved": 21
+    },
+    {
+      "path": "os-temp/profiles-fail-closed-AFw9qG",
+      "logicalBytesRemoved": 21
+    },
+    {
+      "path": "os-temp/profiles-interactions-ZAKh14",
+      "logicalBytesRemoved": 11381948
+    },
+    {
+      "path": "os-temp/profiles-fail-closed-Iqmizk",
+      "logicalBytesRemoved": 21
+    },
+    {
+      "path": "os-temp/profiles-fail-closed-by8bAA",
+      "logicalBytesRemoved": 21
+    },
+    {
+      "path": "os-temp/profiles-native-drag-I4ixhE",
+      "logicalBytesRemoved": 9512043
+    },
+    {
+      "path": "os-temp/profiles-language-BqUurb",
+      "logicalBytesRemoved": 1434
+    },
+    {
+      "path": "os-temp/profiles-language-P6jA85",
+      "logicalBytesRemoved": 1434
+    },
+    {
+      "path": "os-temp/profiles-isolation-ZaKotK",
+      "logicalBytesRemoved": 11447696
+    },
+    {
+      "path": "os-temp/profiles-language-dzJ7yG",
+      "logicalBytesRemoved": 1434
+    },
+    {
+      "path": "os-temp/profiles-invariant-r3p46D",
+      "logicalBytesRemoved": 712
+    },
+    {
+      "path": "os-temp/profiles-handoff-e2e-dSBZ6D",
+      "logicalBytesRemoved": 1837
+    },
+    {
+      "path": "os-temp/profiles-recovery-6Cn5Ln",
+      "logicalBytesRemoved": 1321
+    },
+    {
+      "path": "os-temp/profiles-fail-closed-z1vQvc",
+      "logicalBytesRemoved": 21
+    },
+    {
+      "path": "os-temp/profiles-language-1nXq59",
+      "logicalBytesRemoved": 1434
+    },
+    {
+      "path": "os-temp/profiles-fail-closed-9kbO28",
+      "logicalBytesRemoved": 21
+    },
+    {
+      "path": "os-temp/profiles-state-Ouqw08",
+      "logicalBytesRemoved": 1917
+    },
+    {
+      "path": "os-temp/profiles-fail-closed-fRGggl",
+      "logicalBytesRemoved": 21
+    },
+    {
+      "path": "os-temp/profiles-fail-closed-8nFt9k",
+      "logicalBytesRemoved": 21
+    },
+    {
+      "path": "os-temp/profiles-fail-closed-X5fZaL",
+      "logicalBytesRemoved": 21
+    },
+    {
+      "path": "os-temp/profiles-state-tjmzLu",
+      "logicalBytesRemoved": 1917
+    },
+    {
+      "path": "os-temp/profiles-recovery-3WkQcL",
+      "logicalBytesRemoved": 0
+    },
+    {
+      "path": "os-temp/profiles-fail-closed-mh7Utg",
+      "logicalBytesRemoved": 21
+    },
+    {
+      "path": "os-temp/profiles-isolation-dPaDai",
+      "logicalBytesRemoved": 11444372
+    },
+    {
+      "path": "os-temp/profiles-fail-closed-a2Vue5",
+      "logicalBytesRemoved": 21
+    },
+    {
+      "path": "os-temp/profiles-invariant-tAXudn",
+      "logicalBytesRemoved": 712
+    },
+    {
+      "path": "os-temp/profiles-recovery-sDn5sG",
+      "logicalBytesRemoved": 1431
+    },
+    {
+      "path": "os-temp/profiles-isolation-E2ccS5",
+      "logicalBytesRemoved": 11448206
+    },
+    {
+      "path": "os-temp/profiles-invariant-F0y3cO",
+      "logicalBytesRemoved": 712
+    },
+    {
+      "path": "os-temp/profiles-interactions-2TVPhh",
+      "logicalBytesRemoved": 11378908
+    },
+    {
+      "path": "os-temp/profiles-invariant-ettopi",
+      "logicalBytesRemoved": 657
+    },
+    {
+      "path": "os-temp/profiles-isolation-6PHUC2",
+      "logicalBytesRemoved": 11448206
+    },
+    {
+      "path": "os-temp/profiles-invariant-3LROra",
+      "logicalBytesRemoved": 712
+    },
+    {
+      "path": "os-temp/profiles-native-bench-Kh4YE2",
+      "logicalBytesRemoved": 9528249
+    },
+    {
+      "path": "os-temp/profiles-language-qIVhMD",
+      "logicalBytesRemoved": 1434
+    },
+    {
+      "path": "os-temp/profiles-state-DXizmv",
+      "logicalBytesRemoved": 1807
+    },
+    {
+      "path": "os-temp/profiles-state-YbCv5S",
+      "logicalBytesRemoved": 1917
+    },
+    {
+      "path": "os-temp/profiles-fail-closed-RCiBL7",
+      "logicalBytesRemoved": 21
+    },
+    {
+      "path": "os-temp/profiles-invariant-473Mhd",
+      "logicalBytesRemoved": 712
+    },
+    {
+      "path": "os-temp/profiles-invariant-7Q5oK7",
+      "logicalBytesRemoved": 712
+    },
+    {
+      "path": "os-temp/profiles-invariant-MikVhx",
+      "logicalBytesRemoved": 712
+    },
+    {
+      "path": "os-temp/profiles-state-JAYdaU",
+      "logicalBytesRemoved": 1917
+    },
+    {
+      "path": "os-temp/profiles-language-2mdJQa",
+      "logicalBytesRemoved": 1434
+    },
+    {
+      "path": "os-temp/profiles-recovery-olyeEW",
+      "logicalBytesRemoved": 1321
+    },
+    {
+      "path": "os-temp/profiles-invariant-n93xuK",
+      "logicalBytesRemoved": 657
+    },
+    {
+      "path": "os-temp/profiles-invariant-IpOTCB",
+      "logicalBytesRemoved": 712
+    },
+    {
+      "path": "os-temp/profiles-invariant-xJSZDw",
+      "logicalBytesRemoved": 712
+    },
+    {
+      "path": "os-temp/profiles-language-oQE6xA",
+      "logicalBytesRemoved": 1434
+    },
+    {
+      "path": "os-temp/profiles-native-bench-tAiuPY",
+      "logicalBytesRemoved": 13225973
+    },
+    {
+      "path": "os-temp/profiles-invariant-C1Xc9p",
+      "logicalBytesRemoved": 712
+    },
+    {
+      "path": "os-temp/profiles-interactions-zQoXUM",
+      "logicalBytesRemoved": 11378844
+    },
+    {
+      "path": "os-temp/profiles-recovery-7XXhfr",
+      "logicalBytesRemoved": 1431
+    },
+    {
+      "path": "os-temp/profiles-fail-closed-ghCx8l",
+      "logicalBytesRemoved": 21
+    },
+    {
+      "path": "os-temp/profiles-interactions-z48kIO",
+      "logicalBytesRemoved": 11391428
+    },
+    {
+      "path": "os-temp/profiles-language-UI7396",
+      "logicalBytesRemoved": 1434
+    },
+    {
+      "path": "os-temp/profiles-language-elwFsr",
+      "logicalBytesRemoved": 1434
+    },
+    {
+      "path": "os-temp/profiles-state-9oxNtU",
+      "logicalBytesRemoved": 1807
+    },
+    {
+      "path": "os-temp/profiles-fail-closed-BigUU6",
+      "logicalBytesRemoved": 21
+    },
+    {
+      "path": "os-temp/profiles-fail-closed-Qp1S5t",
+      "logicalBytesRemoved": 21
+    },
+    {
+      "path": "os-temp/profiles-fail-closed-W1ya6V",
+      "logicalBytesRemoved": 21
+    },
+    {
+      "path": "os-temp/profiles-state-jxazrj",
+      "logicalBytesRemoved": 1917
+    },
+    {
+      "path": "os-temp/profiles-assets-e2e-mobDho",
+      "logicalBytesRemoved": 195
+    },
+    {
+      "path": "os-temp/profiles-state-rP6gw6",
+      "logicalBytesRemoved": 1917
+    },
+    {
+      "path": "os-temp/profiles-interactions-4FwT6F",
+      "logicalBytesRemoved": 11382624
+    },
+    {
+      "path": "os-temp/profiles-state-NOU0Tw",
+      "logicalBytesRemoved": 1917
+    },
+    {
+      "path": "os-temp/profiles-language-ZuiTeo",
+      "logicalBytesRemoved": 1434
+    },
+    {
+      "path": "os-temp/profiles-state-87izMz",
+      "logicalBytesRemoved": 1807
+    },
+    {
+      "path": "os-temp/profiles-fail-closed-7XNMq9",
+      "logicalBytesRemoved": 21
+    },
+    {
+      "path": "os-temp/profiles-invariant-xIUOzc",
+      "logicalBytesRemoved": 712
+    },
+    {
+      "path": "os-temp/profiles-recovery-T3QPhS",
+      "logicalBytesRemoved": 1431
+    },
+    {
+      "path": "os-temp/profiles-recovery-dEYifJ",
+      "logicalBytesRemoved": 1321
+    },
+    {
+      "path": "os-temp/profiles-invariant-UWEn5M",
+      "logicalBytesRemoved": 712
+    },
+    {
+      "path": "os-temp/profiles-state-YoU2V0",
+      "logicalBytesRemoved": 1807
+    },
+    {
+      "path": "os-temp/profiles-native-bench-EaOCeV",
+      "logicalBytesRemoved": 9534808
+    },
+    {
+      "path": "os-temp/profiles-recovery-i86KAw",
+      "logicalBytesRemoved": 1431
+    },
+    {
+      "path": "os-temp/profiles-invariant-7EKiNV",
+      "logicalBytesRemoved": 712
+    },
+    {
+      "path": "os-temp/profiles-language-OViky0",
+      "logicalBytesRemoved": 1434
+    },
+    {
+      "path": "os-temp/profiles-native-bench-WvSNRO",
+      "logicalBytesRemoved": 9525493
+    },
+    {
+      "path": "os-temp/profiles-recovery-8LvIv5",
+      "logicalBytesRemoved": 1321
+    },
+    {
+      "path": "os-temp/profiles-state-sjSaFT",
+      "logicalBytesRemoved": 1917
+    },
+    {
+      "path": "os-temp/profiles-fail-closed-K2DBXU",
+      "logicalBytesRemoved": 21
+    },
+    {
+      "path": "os-temp/profiles-recovery-TBokZy",
+      "logicalBytesRemoved": 1431
+    },
+    {
+      "path": "os-temp/profiles-state-KmwbVp",
+      "logicalBytesRemoved": 1917
+    },
+    {
+      "path": "os-temp/profiles-recovery-ErhW2N",
+      "logicalBytesRemoved": 1431
+    },
+    {
+      "path": "os-temp/profiles-invariant-yr0IBW",
+      "logicalBytesRemoved": 712
+    },
+    {
+      "path": "os-temp/profiles-recovery-V7Gijc",
+      "logicalBytesRemoved": 1431
+    },
+    {
+      "path": "os-temp/profiles-updater-e2e-QYNsZD",
+      "logicalBytesRemoved": 77876
+    },
+    {
+      "path": "os-temp/profiles-isolation-tNW5A8",
+      "logicalBytesRemoved": 11448206
+    },
+    {
+      "path": "os-temp/profiles-language-mN5uwy",
+      "logicalBytesRemoved": 1434
+    },
+    {
+      "path": "os-temp/profiles-language-sss6hU",
+      "logicalBytesRemoved": 1434
+    },
+    {
+      "path": "os-temp/profiles-images-UxY7OT",
+      "logicalBytesRemoved": 2263982
+    },
+    {
+      "path": "os-temp/profiles-invariant-fsUS90",
+      "logicalBytesRemoved": 657
+    },
+    {
+      "path": "os-temp/profiles-interactions-Fm8Dqk",
+      "logicalBytesRemoved": 11382624
+    },
+    {
+      "path": "os-temp/profiles-state-FCw7Ks",
+      "logicalBytesRemoved": 1807
+    },
+    {
+      "path": "os-temp/profiles-language-pa3bM0",
+      "logicalBytesRemoved": 1434
+    },
+    {
+      "path": "os-temp/profiles-fail-closed-PjmvIs",
+      "logicalBytesRemoved": 21
+    },
+    {
+      "path": "os-temp/profiles-state-cDQ2He",
+      "logicalBytesRemoved": 1917
+    },
+    {
+      "path": "os-temp/profiles-invariant-ZVtWAl",
+      "logicalBytesRemoved": 712
+    },
+    {
+      "path": "os-temp/profiles-invariant-ooK1GZ",
+      "logicalBytesRemoved": 712
+    },
+    {
+      "path": "os-temp/profiles-language-r03CS3",
+      "logicalBytesRemoved": 1434
+    },
+    {
+      "path": "os-temp/profiles-native-bench-5IH4ru",
+      "logicalBytesRemoved": 9524242
+    },
+    {
+      "path": "os-temp/profiles-state-pRBjKS",
+      "logicalBytesRemoved": 1917
+    },
+    {
+      "path": "os-temp/profiles-state-Fol7Ba",
+      "logicalBytesRemoved": 1917
+    },
+    {
+      "path": "os-temp/profiles-state-9zPsB7",
+      "logicalBytesRemoved": 1917
+    },
+    {
+      "path": "os-temp/profiles-state-pKqz6K",
+      "logicalBytesRemoved": 1917
+    },
+    {
+      "path": "os-temp/profiles-interactions-dMc3l7",
+      "logicalBytesRemoved": 11382624
+    },
+    {
+      "path": "os-temp/profiles-interactions-qqjK2h",
+      "logicalBytesRemoved": 11378844
+    },
+    {
+      "path": "os-temp/profiles-recovery-1jMp8h",
+      "logicalBytesRemoved": 1321
+    },
+    {
+      "path": "os-temp/profiles-state-0JTr65",
+      "logicalBytesRemoved": 1807
+    },
+    {
+      "path": "os-temp/profiles-fail-closed-bPO1Ai",
+      "logicalBytesRemoved": 21
+    },
+    {
+      "path": "os-temp/profiles-native-bench-8Qj5lr",
+      "logicalBytesRemoved": 9524205
+    },
+    {
+      "path": "os-temp/profiles-state-4IDYLW",
+      "logicalBytesRemoved": 1917
+    },
+    {
+      "path": "os-temp/profiles-fail-closed-gJzPyC",
+      "logicalBytesRemoved": 21
+    },
+    {
+      "path": "os-temp/profiles-offline-f4Jjio",
+      "logicalBytesRemoved": 0
+    },
+    {
+      "path": "os-temp/profiles-recovery-C3UHpq",
+      "logicalBytesRemoved": 1431
+    },
+    {
+      "path": "os-temp/profiles-state-6Sjjla",
+      "logicalBytesRemoved": 1807
+    },
+    {
+      "path": "os-temp/profiles-native-bench-g1ZLMm",
+      "logicalBytesRemoved": 13221785
+    },
+    {
+      "path": "os-temp/profiles-invariant-zEytum",
+      "logicalBytesRemoved": 712
+    },
+    {
+      "path": "os-temp/profiles-state-MYsNAD",
+      "logicalBytesRemoved": 1917
+    },
+    {
+      "path": "os-temp/profiles-fail-closed-Y7mFts",
+      "logicalBytesRemoved": 21
+    },
+    {
+      "path": "os-temp/profiles-interactions-COB5ra",
+      "logicalBytesRemoved": 11378844
+    },
+    {
+      "path": "os-temp/profiles-language-ezypD3",
+      "logicalBytesRemoved": 1434
+    },
+    {
+      "path": "os-temp/profiles-invariant-GPfVwb",
+      "logicalBytesRemoved": 657
+    },
+    {
+      "path": "os-temp/profiles-interactions-z2WTc6",
+      "logicalBytesRemoved": 11382168
+    },
+    {
+      "path": "os-temp/profiles-interactions-eybQBo",
+      "logicalBytesRemoved": 11382624
+    },
+    {
+      "path": "os-temp/profiles-invariant-AfnTAY",
+      "logicalBytesRemoved": 712
+    },
+    {
+      "path": "os-temp/profiles-recovery-i7wg8N",
+      "logicalBytesRemoved": 1431
+    },
+    {
+      "path": "os-temp/profiles-invariant-WX4ZgB",
+      "logicalBytesRemoved": 657
+    },
+    {
+      "path": "os-temp/profiles-isolation-NAH67y",
+      "logicalBytesRemoved": 11444140
+    },
+    {
+      "path": "os-temp/profiles-recovery-06bv2o",
+      "logicalBytesRemoved": 1431
+    },
+    {
+      "path": "os-temp/profiles-recovery-UtIA3i",
+      "logicalBytesRemoved": 1431
+    },
+    {
+      "path": "os-temp/profiles-fail-closed-feQdsV",
+      "logicalBytesRemoved": 21
+    },
+    {
+      "path": "os-temp/profiles-state-KSwQjd",
+      "logicalBytesRemoved": 1917
+    },
+    {
+      "path": "os-temp/profiles-state-x0x3w9",
+      "logicalBytesRemoved": 1807
+    },
+    {
+      "path": "os-temp/profiles-invariant-XbdHTy",
+      "logicalBytesRemoved": 657
+    },
+    {
+      "path": "os-temp/profiles-language-qLTBzD",
+      "logicalBytesRemoved": 1434
+    },
+    {
+      "path": "os-temp/profiles-state-7sYAfj",
+      "logicalBytesRemoved": 1917
+    },
+    {
+      "path": "os-temp/profiles-isolation-zTpzeM",
+      "logicalBytesRemoved": 11474064
+    },
+    {
+      "path": "os-temp/profiles-invariant-2fxPTU",
+      "logicalBytesRemoved": 657
+    },
+    {
+      "path": "os-temp/profiles-fail-closed-5CYvyP",
+      "logicalBytesRemoved": 21
+    },
+    {
+      "path": "os-temp/chatgpt-profiles-builder-cache",
+      "logicalBytesRemoved": 121607893
+    },
+    {
+      "path": "os-temp/profiles-interactions-Uw6hQ5",
+      "logicalBytesRemoved": 11382624
+    },
+    {
+      "path": "os-temp/profiles-isolation-W2QUZU",
+      "logicalBytesRemoved": 11447476
+    },
+    {
+      "path": "os-temp/profiles-state-raaH4c",
+      "logicalBytesRemoved": 1917
+    },
+    {
+      "path": "os-temp/profiles-recovery-V77Yi4",
+      "logicalBytesRemoved": 1321
+    },
+    {
+      "path": "os-temp/profiles-fail-closed-5uDa1L",
+      "logicalBytesRemoved": 21
+    },
+    {
+      "path": "os-temp/profiles-isolation-OTDDCA",
+      "logicalBytesRemoved": 11448206
+    },
+    {
+      "path": "os-temp/profiles-recovery-O9Wcwo",
+      "logicalBytesRemoved": 1431
+    },
+    {
+      "path": "os-temp/profiles-language-wZHDtF",
+      "logicalBytesRemoved": 1434
+    },
+    {
+      "path": "os-temp/profiles-state-M6xlUo",
+      "logicalBytesRemoved": 1917
+    },
+    {
+      "path": "os-temp/profiles-recovery-KdXXnw",
+      "logicalBytesRemoved": 1431
+    },
+    {
+      "path": "os-temp/profiles-invariant-QWAQby",
+      "logicalBytesRemoved": 657
+    },
+    {
+      "path": "os-temp/profiles-recovery-SxUBIg",
+      "logicalBytesRemoved": 1431
+    },
+    {
+      "path": "os-temp/profiles-recovery-ZJJ1ok",
+      "logicalBytesRemoved": 1321
+    },
+    {
+      "path": "os-temp/profiles-recovery-gYZNs8",
+      "logicalBytesRemoved": 1431
+    },
+    {
+      "path": "os-temp/profiles-invariant-1kHuZa",
+      "logicalBytesRemoved": 712
+    },
+    {
+      "path": "os-temp/profiles-state-6n1XzH",
+      "logicalBytesRemoved": 1917
+    },
+    {
+      "path": "os-temp/profiles-invariant-CR2LPs",
+      "logicalBytesRemoved": 712
+    },
+    {
+      "path": "os-temp/profiles-fail-closed-Ff0eAa",
+      "logicalBytesRemoved": 21
+    },
+    {
+      "path": "os-temp/profiles-fail-closed-jdHzNv",
+      "logicalBytesRemoved": 21
+    },
+    {
+      "path": "os-temp/profiles-recovery-z4G9GM",
+      "logicalBytesRemoved": 1431
+    },
+    {
+      "path": "os-temp/profiles-invariant-6KEyl8",
+      "logicalBytesRemoved": 712
+    },
+    {
+      "path": "os-temp/profiles-recovery-ceIdH9",
+      "logicalBytesRemoved": 1431
+    },
+    {
+      "path": "os-temp/chatgpt-profiles-pages-v795fug2",
+      "logicalBytesRemoved": 417284
+    },
+    {
+      "path": "desktop/release",
+      "logicalBytesRemoved": 3570154971
+    },
+    {
+      "path": "android/release",
+      "logicalBytesRemoved": 537153246
+    },
+    {
+      "path": "desktop/dist",
+      "logicalBytesRemoved": 7338087
+    },
+    {
+      "path": "desktop/node_modules",
+      "logicalBytesRemoved": 613463085
+    },
+    {
+      "path": "desktop/test-results",
+      "logicalBytesRemoved": 91523
+    },
+    {
+      "path": "desktop/playwright-report",
+      "logicalBytesRemoved": 0
+    },
+    {
+      "path": "desktop/assets/icon.iconset",
+      "logicalBytesRemoved": 234696
+    },
+    {
+      "path": "os-temp/profiles-window-order-vFieBY",
+      "logicalBytesRemoved": 9514344
+    },
+    {
+      "path": "os-temp/profiles-live-site-McNj8h",
+      "logicalBytesRemoved": 672959
+    },
+    {
+      "path": "os-temp/profiles-live-site-0rS6Vb",
+      "logicalBytesRemoved": 672959
+    },
+    {
+      "path": "os-temp/profiles-live-site-Fv6O3N",
+      "logicalBytesRemoved": 672959
+    },
+    {
+      "path": "os-temp/profiles-live-site-ixaRMo",
+      "logicalBytesRemoved": 672959
+    },
+    {
+      "path": "os-temp/profiles-live-feed-9Suonk",
+      "logicalBytesRemoved": 672959
+    },
+    {
+      "path": "os-temp/profiles-native-control-54XBHQ",
+      "logicalBytesRemoved": 0
+    },
+    {
+      "path": "os-temp/profiles-native-control-BDmzpE",
+      "logicalBytesRemoved": 7662287
+    },
+    {
+      "path": "os-temp/profiles-alpha4-keepalive.json",
+      "logicalBytesRemoved": 12117
+    },
+    {
+      "path": "os-temp/chatgpt-profiles-native-control.cjs",
+      "logicalBytesRemoved": 1258
+    },
+    {
+      "path": "os-temp/check-profiles-android-gallery.mjs",
+      "logicalBytesRemoved": 3237
+    },
+    {
+      "path": "os-temp/readback-alpha5-site.mjs",
+      "logicalBytesRemoved": 1057
+    },
+    {
+      "path": "os-temp/profiles-locale-probe.cjs",
+      "logicalBytesRemoved": 104
+    },
+    {
+      "path": "os-temp/profiles-resource-bench.mjs",
+      "logicalBytesRemoved": 3194
+    },
+    {
+      "path": "os-temp/chatgpt-alpha11-published.json",
+      "logicalBytesRemoved": 5428
+    },
+    {
+      "path": "os-temp/profiles-website-capture-push.log",
+      "logicalBytesRemoved": 36380
+    },
+    {
+      "path": "os-temp/check-chatgpt-electron-feed.cjs",
+      "logicalBytesRemoved": 1304
+    },
+    {
+      "path": "os-temp/profiles-alpha3-native.json",
+      "logicalBytesRemoved": 11330
+    },
+    {
+      "path": "os-temp/profiles-public-bench.mjs",
+      "logicalBytesRemoved": 3348
+    },
+    {
+      "path": "os-temp/chatgpt-alpha5-public-release.json",
+      "logicalBytesRemoved": 1091
+    },
+    {
+      "path": "os-temp/chatgpt-alpha12-hook.py",
+      "logicalBytesRemoved": 6817
+    },
+    {
+      "path": "os-temp/chatgpt-alpha11-draft.json",
+      "logicalBytesRemoved": 4459
+    },
+    {
+      "path": "os-temp/check-chatgpt-alpha11-site.mjs",
+      "logicalBytesRemoved": 3057
+    },
+    {
+      "path": "os-temp/profiles-window-order.mjs",
+      "logicalBytesRemoved": 1241
+    },
+    {
+      "path": "os-temp/chatgpt-windows-alpha2-notes.md",
+      "logicalBytesRemoved": 1832
+    },
+    {
+      "path": "os-temp/profiles-android-capture-39948345950.log",
+      "logicalBytesRemoved": 44979
+    },
+    {
+      "path": "os-temp/chatgpt-site-check.mjs",
+      "logicalBytesRemoved": 4861
+    },
+    {
+      "path": "os-temp/profiles-probe.mjs",
+      "logicalBytesRemoved": 2824
+    },
+    {
+      "path": "os-temp/check-chatgpt-alpha12-publication.mjs",
+      "logicalBytesRemoved": 4511
+    },
+    {
+      "path": "os-temp/check-chatgpt-download-routes.mjs",
+      "logicalBytesRemoved": 2563
+    },
+    {
+      "path": "os-temp/profiles-android-capture-39949377787.log",
+      "logicalBytesRemoved": 294667
+    },
+    {
+      "path": "os-temp/publish-alpha12-site.py",
+      "logicalBytesRemoved": 6523
+    },
+    {
+      "path": "os-temp/profiles-alpha4-native.json",
+      "logicalBytesRemoved": 11362
+    },
+    {
+      "path": "os-temp/chatgpt-alpha11-windows.log",
+      "logicalBytesRemoved": 174091
+    },
+    {
+      "path": "os-temp/profiles-android-working-old.log",
+      "logicalBytesRemoved": 214665
+    },
+    {
+      "path": "os-temp/check-chatgpt-electron-site.cjs",
+      "logicalBytesRemoved": 2090
+    },
+    {
+      "path": "os-temp/chatgpt-alpha11-mac.log",
+      "logicalBytesRemoved": 45128
+    },
+    {
+      "path": "os-temp/chatgpt-alpha11-android-signing.log",
+      "logicalBytesRemoved": 1162
+    },
+    {
+      "path": "os-temp/profiles-publish-alpha13",
+      "logicalBytesRemoved": 3578119
+    }
+  ],
+  "failures": [],
+  "preserved": [
+    "tracked sources, screenshots and verification records",
+    "Git repository and historical recovery backup",
+    "installed apps and personal login/recovery data",
+    "Android keystore and signing configuration",
+    "other projects and shared SDK/global caches"
+  ],
+  "resolvedErrors": {
+    "reason": "exFAT automatically removed paired AppleDouble files during deletion; missing files ignored only on explicit retry",
+    "paths": [
+      "desktop/release",
+      "android/release",
+      "desktop/dist",
+      "desktop/node_modules",
+      "desktop/test-results",
+      "desktop/playwright-report",
+      "desktop/assets/icon.iconset"
+    ]
+  },
+  "finalTemporaryWorkspaceRemoved": true,
+  "additionalOwnershipChecks": {
+    "projectLinkedTemporaryScriptsAndRecords": 30,
+    "exactDirectoriesLinkedToInspectedScripts": 8,
+    "unknownTemporaryFilesAndHistoricalBackupPreserved": true
+  }
+}
