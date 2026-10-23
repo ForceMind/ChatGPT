@@ -38,11 +38,15 @@ on:
         description: Verify saved draft and reading recovery through a real process force-stop
         type: boolean
         default: false
+      standalone_environment_poc:
+        description: Build and measure only the independent Gecko environment PoC
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
   build:
-    if: github.event_name != 'workflow_dispatch' || !inputs.device_only
+    if: github.event_name != 'workflow_dispatch' || (!inputs.device_only && !inputs.standalone_environment_poc)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -70,7 +74,7 @@ jobs:
             android/app/build/reports/
             android/app/build/test-results/
   device:
-    if: github.event_name == 'workflow_dispatch' && inputs.run_device_tests
+    if: github.event_name == 'workflow_dispatch' && inputs.run_device_tests && !inputs.standalone_environment_poc
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -176,3 +180,6 @@ jobs:
             android/app/build/reports/androidTests/
             android/app/build/outputs/androidTest-results/
             android/app/build/device-evidence/
+  environment-poc:
+    if: github.event_name == 'workflow_dispatch' && inputs.standalone_environment_poc
+    uses: ./.github/workflows/android-environment-poc.yml
