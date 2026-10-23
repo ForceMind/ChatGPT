@@ -9,6 +9,8 @@ desktop/test-results/
 desktop/playwright-report/
 *.log
 android/.gradle/
+android/environment-poc/.gradle/
+android/environment-poc/local.properties
 android/**/build/
 android/local.properties
 android/keystore.properties

@@ -392,20 +392,36 @@
 - 已只读核对官方 Maven 最新 1.18.0（项目仍固定 1.17.1），两版 SDK 源码均未找到专门的按 Profile 时区 / locale 设置接口。旧引擎不支持自定义请求头，不能据此推断新版引擎也不支持；官方 Profile.addCustomHeader 是能力检查后可用的网络 API，不等同于 navigator、Intl 和 Date 的完整独立环境。正式版继续关闭远程调试，未以调试连接或局部 JS 改写冒充完整实现。
 - 原始数据和 SDK 源码摘要已归档 `docs/benchmarks/android-environment-capabilities.json`。后续涉及交付标准选择：保持完整环境一致性并提出独立内核方案、明确接受网页层兼容实现的限制，或由用户明确延期 Android 这两项。未擅自减少原目标、升级依赖、替换内核或迁移登录数据；alpha.10 及公开发布保持。
 
-### Android 完整环境路线：方案对比与下一步边界（待用户选择，未实施）
+### Android 完整环境路线与独立 PoC（正式迁移尚未开始）
 
-目标继续保留：账号语言 / 时区在请求与实际运行环境中保持一致，账号之间独立，沿用沉浸界面和现有资产能力。尚未证实任何替代内核已经满足全部条件；本方案不是迁移完成或可立即替换的结论。
+目标继续保留：账号语言 / 时区在请求与实际运行环境中保持一致，账号之间独立，沿用沉浸界面和现有资产能力。本轮独立 PoC 已证明下面限定覆盖范围内的环境控制；正式版本继续使用原内核，不把实验结果等同于登录兼容性或完整业务迁移。
 
 #### 2026-10-23 用户批准：独立 PoC 进入实施
 
 - 用户明确选择方案 1，授权独立验证完整语言 / 时区与内存、CPU，同时要求保留现有版本和登录数据。以上“待选择 / 未实施”是前一阶段记录，现已进入实验；不把授权扩大到正式内核替换或公开发布。
-- 新模块 `android/environment-poc` 只在显式 `-PenvironmentPoc` 时参与构建；包名 `com.forcemind.chatgpt.environmentpoc`、新私有目录，不引用正式 App 的业务代码、账号或登录空间。固定 GeckoView `158.0.20261021001945`，两个账号 Runtime 分属独立 App 进程与 profile，使用 Runtime locale 与进程 `TZ`，关闭远程调试，不改写 JS 内置对象。底层是否能同时运行仍以实测为准。
+- 独立工程 `android/environment-poc` 使用自己的 Gradle 根目录 / Wrapper，正式 `android/settings.gradle` 不包含它；包名 `com.forcemind.chatgpt.environmentpoc`、新私有目录，不引用正式 App 的业务代码、账号或登录空间。固定 GeckoView `158.0.20261021001945`，两个账号 Runtime 分属独立 App 进程与 profile，使用 Runtime locale 与进程 `TZ`，关闭远程调试，不改写 JS 内置对象。两个账号同时运行已在本轮模拟器中实测。
 - 新增手动工作流 `android-environment-poc.yml`：新 Android 15 x86_64 模拟器、loopback 对话 / 跨来源 iframe / Worker / 用户手势弹窗；检查冬夏偏移、Date 本地构造、网络语言、Cookie 和 localStorage、Activity 重建与标签切换。相同 240 条模拟消息、6 张 1024×768 图片下测 1 / 4 / 8 标签 PSS、单核口径 CPU 与 330 秒持续上下文。正式 APK、Mac 安装包和现有登录数据不写入。
-- 用户指定的图标换为白色 ChatGPT 图形，保留现有黑色背景；矢量取自 OpenAI 自有公开仓库 `openai/openai-realtime-agents/public/openai-logomark.svg`，图形权属 OpenAI。更新源码图标及 PNG / ICO / ICNS，不替换已安装 App 或旧版本安装包，不声称官方出品。桌面图标已通过 `iconutil` 编码 / 解码并实际查看渲染；Android 打包及运行效果待本次 PoC 证据。
-- 当前只有实验实现与本地语法 / XML 检查；构建、完整隔离及资源数字仍待 CI，不能提前声明通过。若原生多 Runtime 服务或环境边界不成立，保留失败证据与资源结果，不直接维护定制内核。
+- 用户指定的图标换为白色 ChatGPT 图形，保留现有黑色背景；矢量取自 OpenAI 自有公开仓库 `openai/openai-realtime-agents/public/openai-logomark.svg`，图形权属 OpenAI。更新源码图标及 PNG / ICO / ICNS，不替换已安装 App 或旧版本安装包，不声称官方出品。桌面图标已通过 `iconutil` 编码 / 解码并实际查看渲染；Android 矢量随本轮独立 PoC 编译打包，已回读独立包名和标签并通过签名检查。
+- 初始实现阶段只有本地语法 / XML 检查；随后的失败和修正保留在下面，最终通过批次另列，不将初始探针结果改写成通过，也没有维护定制内核。
 - 首轮 `39892499563` 在构建元数据检查处停止：当前 Gecko 要求 SDK 37、AndroidX Core 1.19 要求 AGP ≥9.1。PoC 改为独立 Gradle 根工程，固定 AGP 9.1.1 / Gradle 9.3.1 / compileSdk 37；正式 Android 根配置恢复原样，不升级正式工程或降低引擎 / 校验要求。资源验收另补显式完整性门槛，避免只凭部分环境结果通过。
 - 官方平台安装名实际为 `platforms;android-37.0`，已按小版本 DSL 配置。`39894393463` 的构建 / Lint 通过，首个设备结果已归档且保留失败：8 页 24 个上下文在 330 秒后全部继续、切回无新文档；1 页 PSS 496.88 MiB，8 页 1129.26 MiB。此轮“4 页”因原生控制入口遗漏 count=2，实际只有 A1+B1，878.15 MiB 不作为有效四页结果。CPU 原始 `top` 全部采到，但表头 `PID %CPU[ARGS]` 与解析规则不符，不能用空值冒充低 CPU。
 - 首轮 locale 为 `zh-Hans-CN`，与请求 `zh-CN` 的文字 / 地区相同；原探针字符串断言误报，现补测 `Intl.Locale.maximize()` 后的语言、文字、地区，仍拒绝其他地区或语言。跨站 iframe 的 Lax Cookie 被正常拒绝，原始 runtime.log 有明确原因；修正为第一方必须有自己的 Cookie，跨站页可以受限但绝不能出现另一账号的 Cookie / localStorage，网络头 / 时区 / Date 断言保留。参见 ECMA-402 Locale maximize 与 HTTP SameSite 创建规则，链接保存在 PoC README。已用实采 `top` 重放解析，并检查错误地区、错误时区、第一方空 Cookie、跨账号 Cookie / 存储等负例；修复两个标签控制后，仍需新的完整设备批次，未将首轮失败改写成通过。
+
+#### 最终 PoC 交付与结论
+
+- 源码 `4febb00f316548463800e9a3a54a91dcaa1d1ebb`，任务 [39896542731](https://github.com/ForceMind/ChatGPT/actions/runs/39896542731) 的构建、Lint 与完整设备步骤成功。A=`zh-CN / Asia/Shanghai`、B=`en-US / America/New_York`：24 个主文档 / iframe / Dedicated Worker / 弹窗上下文检查无错误；首个文档和资源请求的语言头、第一方 Cookie、localStorage、冬夏偏移、日期构造通过，Activity 重建无新增文档，系统语言 / 时区未改。实际查看 A、B 原生界面截图；两种语言 / 时区标签与网页观测值对应。
+
+| 总标签数 | 分配 | 总 PSS（MiB） | 空闲 CPU 均值 / 采样峰值（单核 %） |
+| --- | --- | --- | --- |
+| 1 | A1 | 488.85 | 3.00 / 4.00 |
+| 4 | A2+B2 | 929.41 | 5.38 / 6.00 |
+| 8 | A4+B4 | 1120.39 | 7.25 / 8.00 |
+
+- 同一 Android 15 x86_64、4 GiB 模拟器和固定素材；每页 240 条消息及 6 张实际解码的 1024×768 图片。PSS 包括父进程、账号进程、渲染 / GPU / 崩溃辅助进程；CPU 为加载后四个两秒增量样本，包含诊断心跳与日志，并非真实 ChatGPT 生成时峰值或宿主模拟器的总 CPU。8 页的 24 个上下文在 330 秒后全部继续，切回未新建文档。
+- 报告：`docs/benchmarks/android-environment-poc.json`；完整原始材料：`android/release/environment-poc-4febb00/evidence/`。首轮失败材料独立保留于 `android/release/environment-poc-initial-9ae655c/evidence/`，无覆盖。
+- arm64 实验包：`android/release/environment-poc-4febb00/environment-poc-arm64-v8a-debug.apk`，`0.1-poc / versionCode 1`，208667282 字节（约 199 MiB），SHA-256 `78a7f1f742eb07928827fabf8cc8af9dbf6dd5e3470c6e36b80687ea5f8806e5`。包名与标签回读符合独立 PoC，v2 调试签名校验通过；需要 loopback 夹具服务，不是正式客户端更新。源码中的 ChatGPT 黑底图标随 PoC 打入；桌面 PNG / ICO / ICNS 素材同步生成，已安装 App / 旧安装包未替换。
+- 结论：该路线能实现当前两种账号环境在指定上下文中的隔离和持续运行，但 8 页约 1.09 GiB PSS、实验包约 199 MiB，资源代价明显，不能直接宣称低占用或替换正式内核。本轮独立 PoC 目标已完成；真实 ChatGPT / OAuth / 通行密钥、Shared / Service Worker、其他系统 / 真机、更多账号与更长后台运行、业务资产 / 附件 / 恢复接入仍不属于已验收结果。正式迁移、性能优化和旧登录空间处理需另行给出具体方案，本轮不实施。
+- 已回读现有 Android alpha.10 的 SHA-256，仍为 `dc7cc2d552a48dc8a15f202482424ddccf43e57eaa7f0cb793d1c5f1e2f7fea9`。Mac / Android 正式版本、登录数据和官网 / Release 未迁移或发布；正式 Android 业务创建、状态 / 恢复与 Gradle 配置未更改，主源码中仅包含用户单独要求的图标更新。
 
 | 路线 | 已知证据 | 对当前项目的判断 |
 | --- | --- | --- |
@@ -413,17 +429,17 @@
 | 系统 WebView + DevTools 控制 | 底层协议存在时区控制，桌面版已有应用；Android 官方要求调试开关仅用于开发且该开关影响 App 内全部 WebView | 只可作为隔离实验的能力基准，不把正式版全局远程调试作为默认交付方案；Worker、跨标签及多账号边界仍须实测 |
 | GeckoView | `contextId` 文档说明可隔离 Cookie / localStorage；locale 属于 GeckoRuntimeSettings，Runtime 源码限制同进程单实例；已查看的 Session API 未发现专门时区设置 | 不能推断“换 Gecko 即可解决”；若需要多进程或定制内核，必须另测包体、内存 / CPU、生命周期和登录兼容性 |
 
-依据：[Android 官方调试说明](https://developer.android.com/develop/ui/views/layout/webapps/debug-chrome-devtools?hl=en)、[Gecko 会话 contextId](https://mozilla.github.io/geckoview/javadoc/mozilla-central/org/mozilla/geckoview/GeckoSessionSettings.Builder.html)、[Runtime locale](https://mozilla.github.io/geckoview/javadoc/mozilla-central/org/mozilla/geckoview/GeckoRuntimeSettings.html)、[Runtime 单实例源码](https://raw.githubusercontent.com/mozilla/gecko-dev/master/mobile/android/geckoview/src/main/java/org/mozilla/geckoview/GeckoRuntime.java)。这些是接口 / 源码证据；未进行 Gecko 安装或性能 / ChatGPT 实测，没有据此估造包大小与资源数字。
+依据：[Android 官方调试说明](https://developer.android.com/develop/ui/views/layout/webapps/debug-chrome-devtools?hl=en)、[Gecko 会话 contextId](https://mozilla.github.io/geckoview/javadoc/mozilla-central/org/mozilla/geckoview/GeckoSessionSettings.Builder.html)、[Runtime locale](https://mozilla.github.io/geckoview/javadoc/mozilla-central/org/mozilla/geckoview/GeckoRuntimeSettings.html)、[Runtime 单实例源码](https://raw.githubusercontent.com/mozilla/gecko-dev/master/mobile/android/geckoview/src/main/java/org/mozilla/geckoview/GeckoRuntime.java)。此表保留方案比较阶段的接口 / 源码依据；当时没有 Gecko 安装或性能证据，后续实际数据见上面的独立 PoC，真实 ChatGPT 验收仍未进行。
 
-建议下一阶段只做一个与正式 App 分离的可行性 PoC，先筛选能提供按账号控制、且不依赖正式版全局调试开关的候选。找不到符合条件的接口时返回明确不可行结论，不直接扩大为维护完整浏览器内核。候选和依赖选定后才实施实验；当前只读比较不授权替换业务内核。
+本次批准范围为与正式 App 分离的可行性 PoC，先筛选能提供按账号控制、且不依赖正式版全局调试开关的候选。找不到符合条件的接口时返回明确不可行结论，不直接扩大为维护完整浏览器内核。当前实验不授权替换正式业务内核。
 
 - 实验范围：独立 debug 包名、全新测试空间和保留域名网页；不读取已有 Cookie、账号状态、登录密钥或资产。拟涉及 debug 探针 Activity、定向设备用例、单个实验脚本及可选 CI 入口；不先修改 MainActivity 的业务创建流程或 WorkspaceState / StateStore 的用户数据契约。
 - 正确性验收：两个账号同时使用不同语言 / IANA 时区；核对网络 Accept-Language、navigator、Intl 默认 locale / 时区、Date 冬夏偏移和本地时间构造，覆盖主页面、跨来源 iframe、Worker、新标签与受控弹窗。切换和重建后仍一致，Cookie / localStorage 保持隔离，修改系统全局设置或只有页面局部改写不算完整通过。
 - 资源验收：同一模拟器、相同离线素材下记录 1 / 4 / 8 标签的包体、可归属进程 PSS、CPU 均值 / 峰值、切换是否重载及后台保活；没有用户批准的硬阈值，不预设或伪造“低占用”结论。内核登录兼容性在之后真实服务验证，实验阶段不发送模型消息。
 - 正式迁移前置：只有实验满足完整能力与可接受资源代价，才给出确定依赖、受影响模块和迁移方案。预计涉及浏览器创建 / 弹窗、附件与下载、页面恢复、账号环境字段、存储空间映射及 Manifest / 构建；Cookie 可迁移性未知，默认不承诺自动迁移或旧 APK 直接降级。正式版仍需保持自己的受控访问边界，并保留现有空间和可恢复路径。
 
-当前已经完成能力测量与只读方案；路线问题仍待用户回答。未将未回答的默认选项当作授权，未开始 PoC、引入新内核依赖或更改现有登录空间。
+批准前只进行能力测量与只读方案，没有把未回复的默认选项当作授权。本轮用户已明确选择独立 PoC，按上面的实施与验收继续；新内核只存在于独立实验工程，现有登录空间没有更改。
 
 - 剩余范围核对发现 Android 进程强制结束后的恢复尚缺直接证据（此前只验证 Activity 重建），先补这一项独立检查，不等待环境路线选择。新增仅 debug 存在的私有启动夹具和 CI 专用进程测试脚本：在全新模拟器保存独特草稿 / 阅读位置，确认加密记录存在后移除下次启动夹具中的原文，真正 force-stop 并确认旧 PID 消失，再启动全新进程检查同一账号 / 空间 / 标签、从空网页恢复的原文与阅读位置。拒绝物理设备和已有调试工作区，不访问真实 ChatGPT；正式版代码 / 版本和 alpha.10 安装包不变。当前仍待构建与真实进程结果，不能提前当作补验通过。
 - 该项补验已通过：源码 `072e22027700ff9a56c918aeaebeabeb1ba8d4d8` 的构建 `39810391380` 成功，63 项单元无失败 / 跳过；进程任务 `39810750548` 成功。原 PID 3836 退出，新 PID 4165 启动；加密记录不包含明文标记，移除后续夹具原文后，新空页仍恢复原文本和阅读位置 1400，账号 / 存储空间 / 标签标识不变。已实际查看 verify 阶段截图；证据归档 `docs/benchmarks/android-process-restart.json`。这是隔离模拟器已保存快照的真实进程恢复证明，不是实际 ChatGPT、真机或个人数据升级证明。
-- `60576b6..072e220` 的正式 Android 源码 / release 源集 / Gradle 应用配置无差异，现有 alpha.10 APK SHA-256 回读仍为 `dc7cc2d552a48dc8a15f202482424ddccf43e57eaa7f0cb793d1c5f1e2f7fea9`，不另发同版本包。当前可独立补齐的已批准工作已完成；Android 完整语言 / 时区路线选择连续三轮未获回复，能力报告和具体方案均已保存，不能自行引入新内核或降低交付标准。其余真实业务反馈继续按用户意愿待验，不重复催促；恢复条件是用户选择完整方案、明确接受兼容范围或明确延期这两项。主目标仍未达到完成条件。
+- `60576b6..072e220` 的正式 Android 源码 / release 源集 / Gradle 应用配置无差异，现有 alpha.10 APK SHA-256 回读仍为 `dc7cc2d552a48dc8a15f202482424ddccf43e57eaa7f0cb793d1c5f1e2f7fea9`，不另发同版本包。此前等待路线选择的条件已由本轮用户明确选择方案 1 解除，独立 PoC 结果已保存；其余真实业务反馈继续按用户意愿待验，不重复催促。完整 Android 正式迁移仍未交付，不把 PoC 完成冒充正式版本完成。

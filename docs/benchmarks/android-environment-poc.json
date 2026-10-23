@@ -1,0 +1,1440 @@
+{
+  "schema": 1,
+  "engine": "GeckoView 158.0.20261021001945",
+  "package": "com.forcemind.chatgpt.environmentpoc",
+  "remoteDebugging": false,
+  "fixture": {
+    "messages": 240,
+    "images": 6,
+    "imageDimensions": [
+      1024,
+      768
+    ],
+    "imageBytes": 2360847,
+    "forcedImageDecode": true
+  },
+  "sourceSha": "4febb00f316548463800e9a3a54a91dcaa1d1ebb",
+  "runId": "39896542731",
+  "device": {
+    "model": "sdk_gphone64_x86_64",
+    "release": "15",
+    "sdk": "35",
+    "abi": "x86_64"
+  },
+  "scope": "Synthetic loopback sites only; Android 15 x86_64 emulator, not real ChatGPT or physical-phone resource acceptance",
+  "systemBefore": {
+    "locale": "",
+    "timeZone": "Etc/UTC"
+  },
+  "resources": [
+    {
+      "tabs": 1,
+      "allPagesReported": true,
+      "memory": {
+        "processes": [
+          {
+            "pid": 4416,
+            "name": "com.forcemind.chatgpt.environmentpoc",
+            "pssKiB": 171786
+          },
+          {
+            "pid": 4455,
+            "name": "com.forcemind.chatgpt.environmentpoc:crashhelper_disable_art_image_",
+            "pssKiB": 23692
+          },
+          {
+            "pid": 4523,
+            "name": "com.forcemind.chatgpt.environmentpoc:gpu_disable_art_image_",
+            "pssKiB": 51841
+          },
+          {
+            "pid": 4595,
+            "name": "com.forcemind.chatgpt.environmentpoc:tab_disable_art_image_13",
+            "pssKiB": 115497
+          },
+          {
+            "pid": 4681,
+            "name": "com.forcemind.chatgpt.environmentpoc:tab_disable_art_image_5",
+            "pssKiB": 75508
+          },
+          {
+            "pid": 4748,
+            "name": "com.forcemind.chatgpt.environmentpoc:tab_disable_art_image_20",
+            "pssKiB": 62262
+          }
+        ],
+        "totalPssMiB": 488.85,
+        "complete": true
+      },
+      "cpu": {
+        "expectedProcesses": {
+          "4416": "com.forcemind.chatgpt.environmentpoc",
+          "4455": "com.forcemind.chatgpt.environmentpoc:crashhelper_disable_art_image_",
+          "4523": "com.forcemind.chatgpt.environmentpoc:gpu_disable_art_image_",
+          "4595": "com.forcemind.chatgpt.environmentpoc:tab_disable_art_image_13",
+          "4681": "com.forcemind.chatgpt.environmentpoc:tab_disable_art_image_5",
+          "4748": "com.forcemind.chatgpt.environmentpoc:tab_disable_art_image_20"
+        },
+        "samplePids": [
+          [
+            4416,
+            4455,
+            4523,
+            4595,
+            4681,
+            4748
+          ],
+          [
+            4416,
+            4455,
+            4523,
+            4595,
+            4681,
+            4748
+          ],
+          [
+            4416,
+            4455,
+            4523,
+            4595,
+            4681,
+            4748
+          ],
+          [
+            4416,
+            4455,
+            4523,
+            4595,
+            4681,
+            4748
+          ]
+        ],
+        "allProcessesCovered": true,
+        "samplesOneCorePercent": [
+          2.5,
+          3.0,
+          4.0,
+          2.5
+        ],
+        "meanOneCorePercent": 3.0,
+        "peakOneCorePercent": 4.0
+      }
+    },
+    {
+      "tabs": 4,
+      "allPagesReported": true,
+      "memory": {
+        "processes": [
+          {
+            "pid": 5149,
+            "name": "com.forcemind.chatgpt.environmentpoc",
+            "pssKiB": 160350
+          },
+          {
+            "pid": 5176,
+            "name": "com.forcemind.chatgpt.environmentpoc:crashhelper_disable_art_image_",
+            "pssKiB": 22583
+          },
+          {
+            "pid": 5230,
+            "name": "com.forcemind.chatgpt.environmentpoc:account_b",
+            "pssKiB": 201066
+          },
+          {
+            "pid": 5260,
+            "name": "com.forcemind.chatgpt.environmentpoc:gpu_disable_art_image_",
+            "pssKiB": 38689
+          },
+          {
+            "pid": 5413,
+            "name": "com.forcemind.chatgpt.environmentpoc:tab_disable_art_image_27",
+            "pssKiB": 145381
+          },
+          {
+            "pid": 5537,
+            "name": "com.forcemind.chatgpt.environmentpoc:tab_disable_art_image_31",
+            "pssKiB": 66609
+          },
+          {
+            "pid": 5554,
+            "name": "com.forcemind.chatgpt.environmentpoc:tab_disable_art_image_38",
+            "pssKiB": 140040
+          },
+          {
+            "pid": 5614,
+            "name": "com.forcemind.chatgpt.environmentpoc:tab_disable_art_image_20",
+            "pssKiB": 54860
+          },
+          {
+            "pid": 5668,
+            "name": "com.forcemind.chatgpt.environmentpoc:tab_disable_art_image_34",
+            "pssKiB": 67502
+          },
+          {
+            "pid": 5720,
+            "name": "com.forcemind.chatgpt.environmentpoc:tab_disable_art_image_8",
+            "pssKiB": 54640
+          }
+        ],
+        "totalPssMiB": 929.41,
+        "complete": true
+      },
+      "cpu": {
+        "expectedProcesses": {
+          "5149": "com.forcemind.chatgpt.environmentpoc",
+          "5176": "com.forcemind.chatgpt.environmentpoc:crashhelper_disable_art_image_",
+          "5230": "com.forcemind.chatgpt.environmentpoc:account_b",
+          "5260": "com.forcemind.chatgpt.environmentpoc:gpu_disable_art_image_",
+          "5413": "com.forcemind.chatgpt.environmentpoc:tab_disable_art_image_27",
+          "5537": "com.forcemind.chatgpt.environmentpoc:tab_disable_art_image_31",
+          "5554": "com.forcemind.chatgpt.environmentpoc:tab_disable_art_image_38",
+          "5614": "com.forcemind.chatgpt.environmentpoc:tab_disable_art_image_20",
+          "5668": "com.forcemind.chatgpt.environmentpoc:tab_disable_art_image_34",
+          "5720": "com.forcemind.chatgpt.environmentpoc:tab_disable_art_image_8"
+        },
+        "samplePids": [
+          [
+            5149,
+            5176,
+            5230,
+            5260,
+            5413,
+            5537,
+            5554,
+            5614,
+            5668,
+            5720
+          ],
+          [
+            5149,
+            5176,
+            5230,
+            5260,
+            5413,
+            5537,
+            5554,
+            5614,
+            5668,
+            5720
+          ],
+          [
+            5149,
+            5176,
+            5230,
+            5260,
+            5413,
+            5537,
+            5554,
+            5614,
+            5668,
+            5720
+          ],
+          [
+            5149,
+            5176,
+            5230,
+            5260,
+            5413,
+            5537,
+            5554,
+            5614,
+            5668,
+            5720
+          ]
+        ],
+        "allProcessesCovered": true,
+        "samplesOneCorePercent": [
+          5.0,
+          6.0,
+          6.0,
+          4.5
+        ],
+        "meanOneCorePercent": 5.38,
+        "peakOneCorePercent": 6.0
+      }
+    },
+    {
+      "tabs": 8,
+      "allPagesReported": true,
+      "memory": {
+        "processes": [
+          {
+            "pid": 5918,
+            "name": "com.forcemind.chatgpt.environmentpoc",
+            "pssKiB": 202573
+          },
+          {
+            "pid": 5937,
+            "name": "com.forcemind.chatgpt.environmentpoc:crashhelper_disable_art_image_",
+            "pssKiB": 22481
+          },
+          {
+            "pid": 5991,
+            "name": "com.forcemind.chatgpt.environmentpoc:account_b",
+            "pssKiB": 186904
+          },
+          {
+            "pid": 6008,
+            "name": "com.forcemind.chatgpt.environmentpoc:gpu_disable_art_image_",
+            "pssKiB": 42377
+          },
+          {
+            "pid": 6192,
+            "name": "com.forcemind.chatgpt.environmentpoc:tab_disable_art_image_3",
+            "pssKiB": 221132
+          },
+          {
+            "pid": 6281,
+            "name": "com.forcemind.chatgpt.environmentpoc:tab_disable_art_image_21",
+            "pssKiB": 222841
+          },
+          {
+            "pid": 6341,
+            "name": "com.forcemind.chatgpt.environmentpoc:tab_disable_art_image_7",
+            "pssKiB": 68973
+          },
+          {
+            "pid": 6396,
+            "name": "com.forcemind.chatgpt.environmentpoc:tab_disable_art_image_32",
+            "pssKiB": 70429
+          },
+          {
+            "pid": 6458,
+            "name": "com.forcemind.chatgpt.environmentpoc:tab_disable_art_image_11",
+            "pssKiB": 54661
+          },
+          {
+            "pid": 6492,
+            "name": "com.forcemind.chatgpt.environmentpoc:tab_disable_art_image_1",
+            "pssKiB": 54905
+          }
+        ],
+        "totalPssMiB": 1120.39,
+        "complete": true
+      },
+      "cpu": {
+        "expectedProcesses": {
+          "5918": "com.forcemind.chatgpt.environmentpoc",
+          "5937": "com.forcemind.chatgpt.environmentpoc:crashhelper_disable_art_image_",
+          "5991": "com.forcemind.chatgpt.environmentpoc:account_b",
+          "6008": "com.forcemind.chatgpt.environmentpoc:gpu_disable_art_image_",
+          "6192": "com.forcemind.chatgpt.environmentpoc:tab_disable_art_image_3",
+          "6281": "com.forcemind.chatgpt.environmentpoc:tab_disable_art_image_21",
+          "6341": "com.forcemind.chatgpt.environmentpoc:tab_disable_art_image_7",
+          "6396": "com.forcemind.chatgpt.environmentpoc:tab_disable_art_image_32",
+          "6458": "com.forcemind.chatgpt.environmentpoc:tab_disable_art_image_11",
+          "6492": "com.forcemind.chatgpt.environmentpoc:tab_disable_art_image_1"
+        },
+        "samplePids": [
+          [
+            5918,
+            5937,
+            5991,
+            6008,
+            6192,
+            6281,
+            6341,
+            6396,
+            6458,
+            6492
+          ],
+          [
+            5918,
+            5937,
+            5991,
+            6008,
+            6192,
+            6281,
+            6341,
+            6396,
+            6458,
+            6492
+          ],
+          [
+            5918,
+            5937,
+            5991,
+            6008,
+            6192,
+            6281,
+            6341,
+            6396,
+            6458,
+            6492
+          ],
+          [
+            5918,
+            5937,
+            5991,
+            6008,
+            6192,
+            6281,
+            6341,
+            6396,
+            6458,
+            6492
+          ]
+        ],
+        "allProcessesCovered": true,
+        "samplesOneCorePercent": [
+          8.0,
+          6.0,
+          7.5,
+          7.5
+        ],
+        "meanOneCorePercent": 7.25,
+        "peakOneCorePercent": 8.0
+      },
+      "keepAlive": {
+        "durationSeconds": 330.0,
+        "originalContexts": 24,
+        "continuingContexts": 24,
+        "newDocuments": 0,
+        "newDocumentsAfterSwitch": 0
+      }
+    }
+  ],
+  "allExpandedContextsReported": true,
+  "activityRecreationNewDocuments": 0,
+  "isolation": {
+    "popupOpened": true,
+    "bothAccountsReported": true,
+    "checks": [
+      {
+        "account": "A",
+        "tab": "0",
+        "kind": "main",
+        "observed": {
+          "phase": "isolation",
+          "account": "A",
+          "tab": "0",
+          "kind": "main",
+          "instance": "85954c00-4d5f-4c4f-895a-bf713e14231b",
+          "language": "zh-CN",
+          "languages": [
+            "zh-CN",
+            "zh"
+          ],
+          "locale": "zh-Hans-CN",
+          "numberLocale": "zh-Hans-CN",
+          "localeMaximized": "zh-Hans-CN",
+          "numberLocaleMaximized": "zh-Hans-CN",
+          "timeZone": "Asia/Shanghai",
+          "winterOffset": -480,
+          "summerOffset": -480,
+          "localNoon": "2026-01-15T04:00:00.000Z",
+          "parsedNoon": "2026-01-15T04:00:00.000Z",
+          "dstGap": "2026-03-07T18:30:00.000Z",
+          "ticks": 13,
+          "decodedImages": 6,
+          "now": 1792727278783,
+          "previousCookie": "poc-owner=A",
+          "previousStorage": "A",
+          "cookie": "poc-owner=A",
+          "storage": "A",
+          "popupButton": {
+            "x": 68,
+            "y": 72.86666107177734,
+            "ratio": 2.608695652173913
+          },
+          "received": 312.295561683,
+          "acceptLanguage": "zh-CN,zh;q=0.9",
+          "requestCookie": "poc-owner=A"
+        },
+        "errors": []
+      },
+      {
+        "account": "A",
+        "tab": "0",
+        "kind": "worker",
+        "observed": {
+          "phase": "isolation",
+          "account": "A",
+          "tab": "0",
+          "kind": "worker",
+          "instance": "9485140a-e5ba-4080-89a1-86307b1ba0dc",
+          "language": "zh-CN",
+          "languages": [
+            "zh-CN",
+            "zh"
+          ],
+          "locale": "zh-Hans-CN",
+          "numberLocale": "zh-Hans-CN",
+          "localeMaximized": "zh-Hans-CN",
+          "numberLocaleMaximized": "zh-Hans-CN",
+          "timeZone": "Asia/Shanghai",
+          "winterOffset": -480,
+          "summerOffset": -480,
+          "localNoon": "2026-01-15T04:00:00.000Z",
+          "parsedNoon": "2026-01-15T04:00:00.000Z",
+          "dstGap": "2026-03-07T18:30:00.000Z",
+          "ticks": 14,
+          "decodedImages": 0,
+          "now": 1792727279942,
+          "received": 313.460622056,
+          "acceptLanguage": "zh-CN,zh;q=0.9",
+          "requestCookie": "poc-owner=A"
+        },
+        "errors": []
+      },
+      {
+        "account": "A",
+        "tab": "0",
+        "kind": "frame",
+        "observed": {
+          "phase": "isolation",
+          "account": "A",
+          "tab": "0",
+          "kind": "frame",
+          "instance": "b7a1b45d-9042-472b-8d7c-675ce6a09ada",
+          "language": "zh-CN",
+          "languages": [
+            "zh-CN",
+            "zh"
+          ],
+          "locale": "zh-Hans-CN",
+          "numberLocale": "zh-Hans-CN",
+          "localeMaximized": "zh-Hans-CN",
+          "numberLocaleMaximized": "zh-Hans-CN",
+          "timeZone": "Asia/Shanghai",
+          "winterOffset": -480,
+          "summerOffset": -480,
+          "localNoon": "2026-01-15T04:00:00.000Z",
+          "parsedNoon": "2026-01-15T04:00:00.000Z",
+          "dstGap": "2026-03-07T18:30:00.000Z",
+          "ticks": 12,
+          "decodedImages": 0,
+          "now": 1792727278827,
+          "previousCookie": "",
+          "previousStorage": "A",
+          "cookie": "",
+          "storage": "A",
+          "popupButton": {
+            "x": 68,
+            "y": 72.86666107177734,
+            "ratio": 2.608695652173913
+          },
+          "received": 312.380408228,
+          "acceptLanguage": "zh-CN,zh;q=0.9",
+          "requestCookie": ""
+        },
+        "errors": []
+      },
+      {
+        "account": "A",
+        "tab": "popup-9db6545e-4cda-46f4-af40-9fe27fcc8c4e",
+        "kind": "popup",
+        "observed": {
+          "phase": "isolation",
+          "account": "A",
+          "tab": "popup-9db6545e-4cda-46f4-af40-9fe27fcc8c4e",
+          "kind": "popup",
+          "instance": "9e22378a-655d-4b19-9f9f-1e79b08b329d",
+          "language": "zh-CN",
+          "languages": [
+            "zh-CN",
+            "zh"
+          ],
+          "locale": "zh-Hans-CN",
+          "numberLocale": "zh-Hans-CN",
+          "localeMaximized": "zh-Hans-CN",
+          "numberLocaleMaximized": "zh-Hans-CN",
+          "timeZone": "Asia/Shanghai",
+          "winterOffset": -480,
+          "summerOffset": -480,
+          "localNoon": "2026-01-15T04:00:00.000Z",
+          "parsedNoon": "2026-01-15T04:00:00.000Z",
+          "dstGap": "2026-03-07T18:30:00.000Z",
+          "ticks": 12,
+          "decodedImages": 6,
+          "now": 1792727280531,
+          "previousCookie": "poc-owner=A",
+          "previousStorage": "A",
+          "cookie": "poc-owner=A",
+          "storage": "A",
+          "popupButton": {
+            "x": 34.666664123535156,
+            "y": 198.8000030517578,
+            "ratio": 2.608695652173913
+          },
+          "received": 314.006911599,
+          "acceptLanguage": "zh-CN,zh;q=0.9",
+          "requestCookie": "poc-owner=A"
+        },
+        "errors": []
+      },
+      {
+        "account": "A",
+        "tab": "popup-9db6545e-4cda-46f4-af40-9fe27fcc8c4e",
+        "kind": "frame",
+        "observed": {
+          "phase": "isolation",
+          "account": "A",
+          "tab": "popup-9db6545e-4cda-46f4-af40-9fe27fcc8c4e",
+          "kind": "frame",
+          "instance": "93b63262-a5b4-4682-b913-90669832c6f3",
+          "language": "zh-CN",
+          "languages": [
+            "zh-CN",
+            "zh"
+          ],
+          "locale": "zh-Hans-CN",
+          "numberLocale": "zh-Hans-CN",
+          "localeMaximized": "zh-Hans-CN",
+          "numberLocaleMaximized": "zh-Hans-CN",
+          "timeZone": "Asia/Shanghai",
+          "winterOffset": -480,
+          "summerOffset": -480,
+          "localNoon": "2026-01-15T04:00:00.000Z",
+          "parsedNoon": "2026-01-15T04:00:00.000Z",
+          "dstGap": "2026-03-07T18:30:00.000Z",
+          "ticks": 11,
+          "decodedImages": 0,
+          "now": 1792727278668,
+          "previousCookie": "",
+          "previousStorage": "A",
+          "cookie": "",
+          "storage": "A",
+          "popupButton": {
+            "x": 34.666664123535156,
+            "y": 198.8000030517578,
+            "ratio": 2.608695652173913
+          },
+          "received": 312.377547321,
+          "acceptLanguage": "zh-CN,zh;q=0.9",
+          "requestCookie": ""
+        },
+        "errors": []
+      },
+      {
+        "account": "A",
+        "tab": "popup-9db6545e-4cda-46f4-af40-9fe27fcc8c4e",
+        "kind": "worker",
+        "observed": {
+          "phase": "isolation",
+          "account": "A",
+          "tab": "popup-9db6545e-4cda-46f4-af40-9fe27fcc8c4e",
+          "kind": "worker",
+          "instance": "f6246f55-9003-45e7-8501-fe97231c260f",
+          "language": "zh-CN",
+          "languages": [
+            "zh-CN",
+            "zh"
+          ],
+          "locale": "zh-Hans-CN",
+          "numberLocale": "zh-Hans-CN",
+          "localeMaximized": "zh-Hans-CN",
+          "numberLocaleMaximized": "zh-Hans-CN",
+          "timeZone": "Asia/Shanghai",
+          "winterOffset": -480,
+          "summerOffset": -480,
+          "localNoon": "2026-01-15T04:00:00.000Z",
+          "parsedNoon": "2026-01-15T04:00:00.000Z",
+          "dstGap": "2026-03-07T18:30:00.000Z",
+          "ticks": 12,
+          "decodedImages": 0,
+          "now": 1792727280523,
+          "received": 313.991387098,
+          "acceptLanguage": "zh-CN,zh;q=0.9",
+          "requestCookie": "poc-owner=A"
+        },
+        "errors": []
+      },
+      {
+        "account": "B",
+        "tab": "0",
+        "kind": "main",
+        "observed": {
+          "phase": "isolation",
+          "account": "B",
+          "tab": "0",
+          "kind": "main",
+          "instance": "6a64c4c6-475b-4578-bc4b-b2629bf0504b",
+          "language": "en-US",
+          "languages": [
+            "en-US",
+            "en"
+          ],
+          "locale": "en-US",
+          "numberLocale": "en-US",
+          "localeMaximized": "en-Latn-US",
+          "numberLocaleMaximized": "en-Latn-US",
+          "timeZone": "America/New_York",
+          "winterOffset": 300,
+          "summerOffset": 240,
+          "localNoon": "2026-01-15T17:00:00.000Z",
+          "parsedNoon": "2026-01-15T17:00:00.000Z",
+          "dstGap": "2026-03-08T07:30:00.000Z",
+          "ticks": 6,
+          "decodedImages": 6,
+          "now": 1792727279250,
+          "previousCookie": "poc-owner=B",
+          "previousStorage": "B",
+          "cookie": "poc-owner=B",
+          "storage": "B",
+          "popupButton": {
+            "x": 68,
+            "y": 72.86666107177734,
+            "ratio": 2.608695652173913
+          },
+          "received": 313.296240604,
+          "acceptLanguage": "en-US,en;q=0.9",
+          "requestCookie": "poc-owner=B"
+        },
+        "errors": []
+      },
+      {
+        "account": "B",
+        "tab": "0",
+        "kind": "worker",
+        "observed": {
+          "phase": "isolation",
+          "account": "B",
+          "tab": "0",
+          "kind": "worker",
+          "instance": "ec8621aa-1ed5-4ca1-99f9-c1a4eda225d9",
+          "language": "en-US",
+          "languages": [
+            "en-US",
+            "en"
+          ],
+          "locale": "en-US",
+          "numberLocale": "en-US",
+          "localeMaximized": "en-Latn-US",
+          "numberLocaleMaximized": "en-Latn-US",
+          "timeZone": "America/New_York",
+          "winterOffset": 300,
+          "summerOffset": 240,
+          "localNoon": "2026-01-15T17:00:00.000Z",
+          "parsedNoon": "2026-01-15T17:00:00.000Z",
+          "dstGap": "2026-03-08T07:30:00.000Z",
+          "ticks": 6,
+          "decodedImages": 0,
+          "now": 1792727279272,
+          "received": 313.298187956,
+          "acceptLanguage": "en-US,en;q=0.9",
+          "requestCookie": "poc-owner=B"
+        },
+        "errors": []
+      },
+      {
+        "account": "B",
+        "tab": "0",
+        "kind": "frame",
+        "observed": {
+          "phase": "isolation",
+          "account": "B",
+          "tab": "0",
+          "kind": "frame",
+          "instance": "31f2872a-cc78-4ab1-805d-a8fa847ea041",
+          "language": "en-US",
+          "languages": [
+            "en-US",
+            "en"
+          ],
+          "locale": "en-US",
+          "numberLocale": "en-US",
+          "localeMaximized": "en-Latn-US",
+          "numberLocaleMaximized": "en-Latn-US",
+          "timeZone": "America/New_York",
+          "winterOffset": 300,
+          "summerOffset": 240,
+          "localNoon": "2026-01-15T17:00:00.000Z",
+          "parsedNoon": "2026-01-15T17:00:00.000Z",
+          "dstGap": "2026-03-08T07:30:00.000Z",
+          "ticks": 5,
+          "decodedImages": 0,
+          "now": 1792727279271,
+          "previousCookie": "",
+          "previousStorage": "B",
+          "cookie": "",
+          "storage": "B",
+          "popupButton": {
+            "x": 68,
+            "y": 72.86666107177734,
+            "ratio": 2.608695652173913
+          },
+          "received": 313.312440744,
+          "acceptLanguage": "en-US,en;q=0.9",
+          "requestCookie": ""
+        },
+        "errors": []
+      },
+      {
+        "account": "A",
+        "tab": "2",
+        "kind": "frame",
+        "observed": {
+          "phase": "isolation",
+          "account": "A",
+          "tab": "2",
+          "kind": "frame",
+          "instance": "f77b5dfe-4913-441a-9d26-b4f569b4339a",
+          "language": "zh-CN",
+          "languages": [
+            "zh-CN",
+            "zh"
+          ],
+          "locale": "zh-Hans-CN",
+          "numberLocale": "zh-Hans-CN",
+          "localeMaximized": "zh-Hans-CN",
+          "numberLocaleMaximized": "zh-Hans-CN",
+          "timeZone": "Asia/Shanghai",
+          "winterOffset": -480,
+          "summerOffset": -480,
+          "localNoon": "2026-01-15T04:00:00.000Z",
+          "parsedNoon": "2026-01-15T04:00:00.000Z",
+          "dstGap": "2026-03-07T18:30:00.000Z",
+          "ticks": 3,
+          "decodedImages": 0,
+          "now": 1792727280162,
+          "previousCookie": "",
+          "previousStorage": "A",
+          "cookie": "",
+          "storage": "A",
+          "popupButton": {
+            "x": 34.666664123535156,
+            "y": 198.8000030517578,
+            "ratio": 2.608695652173913
+          },
+          "received": 313.677617912,
+          "acceptLanguage": "zh-CN,zh;q=0.9",
+          "requestCookie": ""
+        },
+        "errors": []
+      },
+      {
+        "account": "A",
+        "tab": "2",
+        "kind": "main",
+        "observed": {
+          "phase": "isolation",
+          "account": "A",
+          "tab": "2",
+          "kind": "main",
+          "instance": "7ecacad6-6171-461d-8a4c-f3153d51bf80",
+          "language": "zh-CN",
+          "languages": [
+            "zh-CN",
+            "zh"
+          ],
+          "locale": "zh-Hans-CN",
+          "numberLocale": "zh-Hans-CN",
+          "localeMaximized": "zh-Hans-CN",
+          "numberLocaleMaximized": "zh-Hans-CN",
+          "timeZone": "Asia/Shanghai",
+          "winterOffset": -480,
+          "summerOffset": -480,
+          "localNoon": "2026-01-15T04:00:00.000Z",
+          "parsedNoon": "2026-01-15T04:00:00.000Z",
+          "dstGap": "2026-03-07T18:30:00.000Z",
+          "ticks": 3,
+          "decodedImages": 6,
+          "now": 1792727279945,
+          "previousCookie": "poc-owner=A",
+          "previousStorage": "A",
+          "cookie": "poc-owner=A",
+          "storage": "A",
+          "popupButton": {
+            "x": 34.666664123535156,
+            "y": 198.8000030517578,
+            "ratio": 2.608695652173913
+          },
+          "received": 313.502246517,
+          "acceptLanguage": "zh-CN,zh;q=0.9",
+          "requestCookie": "poc-owner=A"
+        },
+        "errors": []
+      },
+      {
+        "account": "A",
+        "tab": "3",
+        "kind": "main",
+        "observed": {
+          "phase": "isolation",
+          "account": "A",
+          "tab": "3",
+          "kind": "main",
+          "instance": "12227b22-5bac-4a07-9cdf-6ba649ee4fb3",
+          "language": "zh-CN",
+          "languages": [
+            "zh-CN",
+            "zh"
+          ],
+          "locale": "zh-Hans-CN",
+          "numberLocale": "zh-Hans-CN",
+          "localeMaximized": "zh-Hans-CN",
+          "numberLocaleMaximized": "zh-Hans-CN",
+          "timeZone": "Asia/Shanghai",
+          "winterOffset": -480,
+          "summerOffset": -480,
+          "localNoon": "2026-01-15T04:00:00.000Z",
+          "parsedNoon": "2026-01-15T04:00:00.000Z",
+          "dstGap": "2026-03-07T18:30:00.000Z",
+          "ticks": 2,
+          "decodedImages": 6,
+          "now": 1792727278383,
+          "previousCookie": "poc-owner=A",
+          "previousStorage": "A",
+          "cookie": "poc-owner=A",
+          "storage": "A",
+          "popupButton": {
+            "x": 34.666664123535156,
+            "y": 198.8000030517578,
+            "ratio": 2.608695652173913
+          },
+          "received": 311.87749261,
+          "acceptLanguage": "zh-CN,zh;q=0.9",
+          "requestCookie": "poc-owner=A"
+        },
+        "errors": []
+      },
+      {
+        "account": "A",
+        "tab": "3",
+        "kind": "frame",
+        "observed": {
+          "phase": "isolation",
+          "account": "A",
+          "tab": "3",
+          "kind": "frame",
+          "instance": "1a16cb54-5abf-46b6-8b68-3383cde360d4",
+          "language": "zh-CN",
+          "languages": [
+            "zh-CN",
+            "zh"
+          ],
+          "locale": "zh-Hans-CN",
+          "numberLocale": "zh-Hans-CN",
+          "localeMaximized": "zh-Hans-CN",
+          "numberLocaleMaximized": "zh-Hans-CN",
+          "timeZone": "Asia/Shanghai",
+          "winterOffset": -480,
+          "summerOffset": -480,
+          "localNoon": "2026-01-15T04:00:00.000Z",
+          "parsedNoon": "2026-01-15T04:00:00.000Z",
+          "dstGap": "2026-03-07T18:30:00.000Z",
+          "ticks": 3,
+          "decodedImages": 0,
+          "now": 1792727280163,
+          "previousCookie": "",
+          "previousStorage": "A",
+          "cookie": "",
+          "storage": "A",
+          "popupButton": {
+            "x": 34.666664123535156,
+            "y": 198.8000030517578,
+            "ratio": 2.608695652173913
+          },
+          "received": 313.679550045,
+          "acceptLanguage": "zh-CN,zh;q=0.9",
+          "requestCookie": ""
+        },
+        "errors": []
+      },
+      {
+        "account": "B",
+        "tab": "1",
+        "kind": "frame",
+        "observed": {
+          "phase": "isolation",
+          "account": "B",
+          "tab": "1",
+          "kind": "frame",
+          "instance": "a615b4f6-a39d-4855-b878-c463af3d2b3f",
+          "language": "en-US",
+          "languages": [
+            "en-US",
+            "en"
+          ],
+          "locale": "en-US",
+          "numberLocale": "en-US",
+          "localeMaximized": "en-Latn-US",
+          "numberLocaleMaximized": "en-Latn-US",
+          "timeZone": "America/New_York",
+          "winterOffset": 300,
+          "summerOffset": 240,
+          "localNoon": "2026-01-15T17:00:00.000Z",
+          "parsedNoon": "2026-01-15T17:00:00.000Z",
+          "dstGap": "2026-03-08T07:30:00.000Z",
+          "ticks": 2,
+          "decodedImages": 0,
+          "now": 1792727278503,
+          "previousCookie": "",
+          "previousStorage": "B",
+          "cookie": "",
+          "storage": "B",
+          "popupButton": {
+            "x": 34.666664123535156,
+            "y": 198.8000030517578,
+            "ratio": 2.608695652173913
+          },
+          "received": 312.348465146,
+          "acceptLanguage": "en-US,en;q=0.9",
+          "requestCookie": ""
+        },
+        "errors": []
+      },
+      {
+        "account": "A",
+        "tab": "2",
+        "kind": "worker",
+        "observed": {
+          "phase": "isolation",
+          "account": "A",
+          "tab": "2",
+          "kind": "worker",
+          "instance": "52d0e044-747c-447b-884a-4f9193e5d169",
+          "language": "zh-CN",
+          "languages": [
+            "zh-CN",
+            "zh"
+          ],
+          "locale": "zh-Hans-CN",
+          "numberLocale": "zh-Hans-CN",
+          "localeMaximized": "zh-Hans-CN",
+          "numberLocaleMaximized": "zh-Hans-CN",
+          "timeZone": "Asia/Shanghai",
+          "winterOffset": -480,
+          "summerOffset": -480,
+          "localNoon": "2026-01-15T04:00:00.000Z",
+          "parsedNoon": "2026-01-15T04:00:00.000Z",
+          "dstGap": "2026-03-07T18:30:00.000Z",
+          "ticks": 3,
+          "decodedImages": 0,
+          "now": 1792727280353,
+          "received": 313.801406657,
+          "acceptLanguage": "zh-CN,zh;q=0.9",
+          "requestCookie": "poc-owner=A"
+        },
+        "errors": []
+      },
+      {
+        "account": "A",
+        "tab": "3",
+        "kind": "worker",
+        "observed": {
+          "phase": "isolation",
+          "account": "A",
+          "tab": "3",
+          "kind": "worker",
+          "instance": "36404f60-9bcb-45cc-bf41-d9d93d7f04e0",
+          "language": "zh-CN",
+          "languages": [
+            "zh-CN",
+            "zh"
+          ],
+          "locale": "zh-Hans-CN",
+          "numberLocale": "zh-Hans-CN",
+          "localeMaximized": "zh-Hans-CN",
+          "numberLocaleMaximized": "zh-Hans-CN",
+          "timeZone": "Asia/Shanghai",
+          "winterOffset": -480,
+          "summerOffset": -480,
+          "localNoon": "2026-01-15T04:00:00.000Z",
+          "parsedNoon": "2026-01-15T04:00:00.000Z",
+          "dstGap": "2026-03-07T18:30:00.000Z",
+          "ticks": 3,
+          "decodedImages": 0,
+          "now": 1792727280523,
+          "received": 314.006487437,
+          "acceptLanguage": "zh-CN,zh;q=0.9",
+          "requestCookie": "poc-owner=A"
+        },
+        "errors": []
+      },
+      {
+        "account": "B",
+        "tab": "2",
+        "kind": "frame",
+        "observed": {
+          "phase": "isolation",
+          "account": "B",
+          "tab": "2",
+          "kind": "frame",
+          "instance": "ae4e370d-ba5d-4c2b-b100-01db5852bfd6",
+          "language": "en-US",
+          "languages": [
+            "en-US",
+            "en"
+          ],
+          "locale": "en-US",
+          "numberLocale": "en-US",
+          "localeMaximized": "en-Latn-US",
+          "numberLocaleMaximized": "en-Latn-US",
+          "timeZone": "America/New_York",
+          "winterOffset": 300,
+          "summerOffset": 240,
+          "localNoon": "2026-01-15T17:00:00.000Z",
+          "parsedNoon": "2026-01-15T17:00:00.000Z",
+          "dstGap": "2026-03-08T07:30:00.000Z",
+          "ticks": 2,
+          "decodedImages": 0,
+          "now": 1792727278555,
+          "previousCookie": "",
+          "previousStorage": "B",
+          "cookie": "",
+          "storage": "B",
+          "popupButton": {
+            "x": 34.666664123535156,
+            "y": 198.8000030517578,
+            "ratio": 2.608695652173913
+          },
+          "received": 312.348783529,
+          "acceptLanguage": "en-US,en;q=0.9",
+          "requestCookie": ""
+        },
+        "errors": []
+      },
+      {
+        "account": "B",
+        "tab": "1",
+        "kind": "main",
+        "observed": {
+          "phase": "isolation",
+          "account": "B",
+          "tab": "1",
+          "kind": "main",
+          "instance": "47063ee2-85c1-40af-b00b-1c3c0f4d5cbf",
+          "language": "en-US",
+          "languages": [
+            "en-US",
+            "en"
+          ],
+          "locale": "en-US",
+          "numberLocale": "en-US",
+          "localeMaximized": "en-Latn-US",
+          "numberLocaleMaximized": "en-Latn-US",
+          "timeZone": "America/New_York",
+          "winterOffset": 300,
+          "summerOffset": 240,
+          "localNoon": "2026-01-15T17:00:00.000Z",
+          "parsedNoon": "2026-01-15T17:00:00.000Z",
+          "dstGap": "2026-03-08T07:30:00.000Z",
+          "ticks": 3,
+          "decodedImages": 6,
+          "now": 1792727280221,
+          "previousCookie": "poc-owner=B",
+          "previousStorage": "B",
+          "cookie": "poc-owner=B",
+          "storage": "B",
+          "popupButton": {
+            "x": 34.666664123535156,
+            "y": 198.8000030517578,
+            "ratio": 2.608695652173913
+          },
+          "received": 313.663084229,
+          "acceptLanguage": "en-US,en;q=0.9",
+          "requestCookie": "poc-owner=B"
+        },
+        "errors": []
+      },
+      {
+        "account": "B",
+        "tab": "2",
+        "kind": "main",
+        "observed": {
+          "phase": "isolation",
+          "account": "B",
+          "tab": "2",
+          "kind": "main",
+          "instance": "062383ad-2dd3-483c-a940-f521d82e575c",
+          "language": "en-US",
+          "languages": [
+            "en-US",
+            "en"
+          ],
+          "locale": "en-US",
+          "numberLocale": "en-US",
+          "localeMaximized": "en-Latn-US",
+          "numberLocaleMaximized": "en-Latn-US",
+          "timeZone": "America/New_York",
+          "winterOffset": 300,
+          "summerOffset": 240,
+          "localNoon": "2026-01-15T17:00:00.000Z",
+          "parsedNoon": "2026-01-15T17:00:00.000Z",
+          "dstGap": "2026-03-08T07:30:00.000Z",
+          "ticks": 2,
+          "decodedImages": 6,
+          "now": 1792727278796,
+          "previousCookie": "poc-owner=B",
+          "previousStorage": "B",
+          "cookie": "poc-owner=B",
+          "storage": "B",
+          "popupButton": {
+            "x": 34.666664123535156,
+            "y": 198.8000030517578,
+            "ratio": 2.608695652173913
+          },
+          "received": 312.475233079,
+          "acceptLanguage": "en-US,en;q=0.9",
+          "requestCookie": "poc-owner=B"
+        },
+        "errors": []
+      },
+      {
+        "account": "B",
+        "tab": "3",
+        "kind": "main",
+        "observed": {
+          "phase": "isolation",
+          "account": "B",
+          "tab": "3",
+          "kind": "main",
+          "instance": "9cd2cb00-e856-426a-b4fa-f224eab09bbd",
+          "language": "en-US",
+          "languages": [
+            "en-US",
+            "en"
+          ],
+          "locale": "en-US",
+          "numberLocale": "en-US",
+          "localeMaximized": "en-Latn-US",
+          "numberLocaleMaximized": "en-Latn-US",
+          "timeZone": "America/New_York",
+          "winterOffset": 300,
+          "summerOffset": 240,
+          "localNoon": "2026-01-15T17:00:00.000Z",
+          "parsedNoon": "2026-01-15T17:00:00.000Z",
+          "dstGap": "2026-03-08T07:30:00.000Z",
+          "ticks": 2,
+          "decodedImages": 6,
+          "now": 1792727278819,
+          "previousCookie": "poc-owner=B",
+          "previousStorage": "B",
+          "cookie": "poc-owner=B",
+          "storage": "B",
+          "popupButton": {
+            "x": 34.666664123535156,
+            "y": 198.8000030517578,
+            "ratio": 2.608695652173913
+          },
+          "received": 312.424996603,
+          "acceptLanguage": "en-US,en;q=0.9",
+          "requestCookie": "poc-owner=B"
+        },
+        "errors": []
+      },
+      {
+        "account": "B",
+        "tab": "3",
+        "kind": "frame",
+        "observed": {
+          "phase": "isolation",
+          "account": "B",
+          "tab": "3",
+          "kind": "frame",
+          "instance": "ad2ae484-16da-410c-a3f1-14d72202639b",
+          "language": "en-US",
+          "languages": [
+            "en-US",
+            "en"
+          ],
+          "locale": "en-US",
+          "numberLocale": "en-US",
+          "localeMaximized": "en-Latn-US",
+          "numberLocaleMaximized": "en-Latn-US",
+          "timeZone": "America/New_York",
+          "winterOffset": 300,
+          "summerOffset": 240,
+          "localNoon": "2026-01-15T17:00:00.000Z",
+          "parsedNoon": "2026-01-15T17:00:00.000Z",
+          "dstGap": "2026-03-08T07:30:00.000Z",
+          "ticks": 2,
+          "decodedImages": 0,
+          "now": 1792727278660,
+          "previousCookie": "",
+          "previousStorage": "B",
+          "cookie": "",
+          "storage": "B",
+          "popupButton": {
+            "x": 34.666664123535156,
+            "y": 198.8000030517578,
+            "ratio": 2.608695652173913
+          },
+          "received": 312.347731603,
+          "acceptLanguage": "en-US,en;q=0.9",
+          "requestCookie": ""
+        },
+        "errors": []
+      },
+      {
+        "account": "B",
+        "tab": "1",
+        "kind": "worker",
+        "observed": {
+          "phase": "isolation",
+          "account": "B",
+          "tab": "1",
+          "kind": "worker",
+          "instance": "05be1455-e74a-4873-91a1-73c591f96d8d",
+          "language": "en-US",
+          "languages": [
+            "en-US",
+            "en"
+          ],
+          "locale": "en-US",
+          "numberLocale": "en-US",
+          "localeMaximized": "en-Latn-US",
+          "numberLocaleMaximized": "en-Latn-US",
+          "timeZone": "America/New_York",
+          "winterOffset": 300,
+          "summerOffset": 240,
+          "localNoon": "2026-01-15T17:00:00.000Z",
+          "parsedNoon": "2026-01-15T17:00:00.000Z",
+          "dstGap": "2026-03-08T07:30:00.000Z",
+          "ticks": 2,
+          "decodedImages": 0,
+          "now": 1792727278835,
+          "received": 312.426386809,
+          "acceptLanguage": "en-US,en;q=0.9",
+          "requestCookie": "poc-owner=B"
+        },
+        "errors": []
+      },
+      {
+        "account": "B",
+        "tab": "3",
+        "kind": "worker",
+        "observed": {
+          "phase": "isolation",
+          "account": "B",
+          "tab": "3",
+          "kind": "worker",
+          "instance": "6ab4cfae-4d1b-4f17-b9ac-a2b8dc74dfa3",
+          "language": "en-US",
+          "languages": [
+            "en-US",
+            "en"
+          ],
+          "locale": "en-US",
+          "numberLocale": "en-US",
+          "localeMaximized": "en-Latn-US",
+          "numberLocaleMaximized": "en-Latn-US",
+          "timeZone": "America/New_York",
+          "winterOffset": 300,
+          "summerOffset": 240,
+          "localNoon": "2026-01-15T17:00:00.000Z",
+          "parsedNoon": "2026-01-15T17:00:00.000Z",
+          "dstGap": "2026-03-08T07:30:00.000Z",
+          "ticks": 2,
+          "decodedImages": 0,
+          "now": 1792727278835,
+          "received": 312.4713412,
+          "acceptLanguage": "en-US,en;q=0.9",
+          "requestCookie": "poc-owner=B"
+        },
+        "errors": []
+      },
+      {
+        "account": "B",
+        "tab": "2",
+        "kind": "worker",
+        "observed": {
+          "phase": "isolation",
+          "account": "B",
+          "tab": "2",
+          "kind": "worker",
+          "instance": "a1eae7c6-530a-45fd-88ca-d587b64b99a1",
+          "language": "en-US",
+          "languages": [
+            "en-US",
+            "en"
+          ],
+          "locale": "en-US",
+          "numberLocale": "en-US",
+          "localeMaximized": "en-Latn-US",
+          "numberLocaleMaximized": "en-Latn-US",
+          "timeZone": "America/New_York",
+          "winterOffset": 300,
+          "summerOffset": 240,
+          "localNoon": "2026-01-15T17:00:00.000Z",
+          "parsedNoon": "2026-01-15T17:00:00.000Z",
+          "dstGap": "2026-03-08T07:30:00.000Z",
+          "ticks": 2,
+          "decodedImages": 0,
+          "now": 1792727278805,
+          "received": 312.471716241,
+          "acceptLanguage": "en-US,en;q=0.9",
+          "requestCookie": "poc-owner=B"
+        },
+        "errors": []
+      }
+    ],
+    "passed": true
+  },
+  "nativeAccounts": {
+    "A": {
+      "account": "A",
+      "pid": 5918,
+      "language": "zh-CN",
+      "timeZone": "Asia/Shanghai",
+      "tabs": 4,
+      "event": "layout",
+      "detail": "",
+      "remoteDebugging": false,
+      "viewX": 0,
+      "viewY": 470,
+      "viewWidth": 1080,
+      "viewHeight": 1930
+    },
+    "B": {
+      "account": "B",
+      "pid": 5991,
+      "language": "en-US",
+      "timeZone": "America/New_York",
+      "tabs": 4,
+      "event": "layout",
+      "detail": "",
+      "remoteDebugging": false,
+      "viewX": 0,
+      "viewY": 470,
+      "viewWidth": 1080,
+      "viewHeight": 1930
+    }
+  },
+  "systemAfter": {
+    "locale": "",
+    "timeZone": "Etc/UTC"
+  },
+  "systemUnchanged": true,
+  "resourcesComplete": true,
+  "keepAlivePassed": true,
+  "resourcePhaseEnvironmentErrors": [],
+  "initialRequestErrors": [],
+  "delivery": {
+    "ciUrl": "https://github.com/ForceMind/ChatGPT/actions/runs/39896542731",
+    "ciJobId": 120228210703,
+    "ciConclusion": "success",
+    "artifactId": 12477487234,
+    "apk": {
+      "path": "android/release/environment-poc-4febb00/environment-poc-arm64-v8a-debug.apk",
+      "package": "com.forcemind.chatgpt.environmentpoc",
+      "version": "0.1-poc",
+      "versionCode": 1,
+      "abi": "arm64-v8a",
+      "bytes": 208667282,
+      "sha256": "78a7f1f742eb07928827fabf8cc8af9dbf6dd5e3470c6e36b80687ea5f8806e5",
+      "signatureVerified": true,
+      "signatureScheme": "v2",
+      "certificateSha256": "4a6c93cebcd85e27b26bc350a822cab284bf4c0b23a76d86a9fe5052dba82de5",
+      "signingIdentity": "Android Debug, independent from production"
+    },
+    "preservedAndroidAlpha10Sha256": "dc7cc2d552a48dc8a15f202482424ddccf43e57eaa7f0cb793d1c5f1e2f7fea9",
+    "rawReportSha256": "b47256b21eb79c329012825710f59864051955bf172c9e337f1145d7be5a0c03",
+    "screenshotsReviewed": [
+      "account-a.png",
+      "isolation-final.png"
+    ],
+    "businessEngineMigrated": false,
+    "publishedRelease": false
+  },
+  "limitations": [
+    "Android 15 x86_64 emulator and synthetic loopback fixtures only; no physical-device or real ChatGPT/OAuth/passkey acceptance.",
+    "Two fixed account environments; main documents, cross-origin frames, dedicated workers, new tabs and one user-gesture popup tested. Shared/service workers and other locale/time-zone combinations are not directly tested.",
+    "1 tab=A1; 4 tabs=A2+B2; 8 tabs=A4+B4. All six 1024x768 images per rich page explicitly decoded.",
+    "PSS sums attributable parent and child processes; CPU is four two-second idle delta samples, percent of one core. Diagnostic heartbeats and logging are included; these are not peak-generation or system-wide CPU figures.",
+    "330-second continuity passed; longer background use, low-memory eviction, OS termination and production restoration integration are not proved by this experiment.",
+    "Independent debug APK, not an app update. Requires the CI loopback fixture server. No automatic migration or production browser replacement."
+  ]
+}

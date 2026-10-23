@@ -2,6 +2,8 @@
 
 独立 Android 环境实验。包名为 `com.forcemind.chatgpt.environmentpoc`，使用自己的私有目录与调试签名，不导入正式 App 的代码、Cookie、账号、密钥或资产。安装它不会更新正式 App。它只打开 loopback 测量网页，不提供真实账号登录。
 
+源码 `4febb00` 的[完整任务](https://github.com/ForceMind/ChatGPT/actions/runs/39896542731) 已通过，测量与覆盖边界见[可复核报告](../../docs/benchmarks/android-environment-poc.json)。8 标签 24 个上下文通过 330 秒持续检查；资源代价仍需评估，正式 App 内核未替换。arm64 调试 APK 已归档至 `../release/environment-poc-4febb00/`，签名与校验和验证通过，真机和真实登录尚未验收。
+
 ## 实验边界
 
 - 固定 GeckoView `158.0.20261021001945`，账号 A / B 各有一个 App 进程、Runtime 和持久 profile。
