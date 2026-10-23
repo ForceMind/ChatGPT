@@ -62,7 +62,7 @@ def screenshot(name):
     (OUT/(name+".png")).write_bytes(result.stdout)
 
 def image():
-    # Six separately decoded 1024x768 image resources, deterministic compressed noise.
+    # Deterministic pixels; distinct resource URLs and explicit decode() in rich pages.
     import random
     rng=random.Random(142); raw=b"".join(b"\0"+rng.randbytes(1024*3) for _ in range(768))
     def chunk(kind,data): return struct.pack(">I",len(data))+kind+data+struct.pack(">I",zlib.crc32(kind+data)&0xffffffff)
@@ -87,14 +87,15 @@ class Handler(BaseHTTPRequestHandler):
         except (ValueError,TypeError):self.send_error(400)
     def do_GET(self):
         path=urlparse(self.path);query=parse_qs(path.query)
-        with lock:requests.append({"phase":phase,"path":self.path,"host":self.headers.get("Host"),"acceptLanguage":self.headers.get("Accept-Language",""),"cookie":self.headers.get("Cookie","")})
+        with lock:requests.append({"phase":phase,"path":self.path,"account":query.get("account",[None])[0],"host":self.headers.get("Host"),"acceptLanguage":self.headers.get("Accept-Language",""),"cookie":self.headers.get("Cookie","")})
         if path.path=="/image.png":self.reply(PNG,"image/png");return
         if path.path not in ("/page","/frame","/popup","/worker.js"):self.send_error(404);return
         kind={"/page":"main","/frame":"frame","/popup":"popup","/worker.js":"worker"}[path.path]
         account=query.get("account",["?"])[0];tab=query.get("tab",["?"])[0]
         base={"phase":phase,"account":account,"tab":tab,"kind":kind,"instance":str(uuid.uuid4())}
-        script=SNAPSHOT+"const base="+json.dumps(base)+";let ticks=0;"
-        script+="function report(){const payload={...base,...snapshot(),ticks,now:Date.now()};"
+        script=SNAPSHOT+"const base="+json.dumps(base)+";let ticks=0,decodedImages=0;"
+        if kind in ("main","popup"):script+="Promise.all(Array.from(document.images,i=>i.decode())).then(()=>{decodedImages=document.images.length;report()}).catch(e=>console.error('image decode failed',e));"
+        script+="function report(){const payload={...base,...snapshot(),ticks,decodedImages,now:Date.now()};"
         if kind!="worker":
             script+="payload.previousCookie=document.cookie;payload.previousStorage=localStorage.getItem('poc-owner');if(!payload.previousStorage)localStorage.setItem('poc-owner',base.account);if(!document.cookie)document.cookie='poc-owner='+base.account+'; SameSite=Lax; path=/';payload.cookie=document.cookie;payload.storage=localStorage.getItem('poc-owner');"
             script+="const b=document.querySelector('#popup');if(b){const r=b.getBoundingClientRect();payload.popupButton={x:r.x+r.width/2,y:r.y+r.height/2,ratio:devicePixelRatio};}"
@@ -110,7 +111,7 @@ class Handler(BaseHTTPRequestHandler):
         if kind in ("main","popup"):
             body+="<iframe src='http://localhost:8765/frame?"+args+"' style='width:100%;height:250px'></iframe>"
             body+="".join("<p>离线对话 "+str(i)+" — 保留草稿、阅读内容及数字资产，仅用于资源测量。</p>" for i in range(240))
-            body+="".join("<img loading=eager src='/image.png?asset="+str(i)+"'>" for i in range(6))
+            body+="".join("<img loading=eager src='/image.png?asset="+str(i)+"&account="+account+"&tab="+tab+"'>" for i in range(6))
         self.reply(body+"<script>"+script+"</script>","text/html; charset=utf-8")
 
 def validate(row):
@@ -150,21 +151,23 @@ def memory():
 
 def cpu():
     # Ignore top's first cumulative sample; following four samples use two-second deltas.
-    output=adb("shell","top","-b","-n","5","-d","2","-o","PID,%CPU,ARGS",timeout=35)
+    expected={pid:name for pid,name in process_list()}
+    if not expected:return {"samplesOneCorePercent":[],"failure":"No attributable processes"}
+    output=adb("shell","top","-b","-n","5","-d","2","-m","512","-p",",".join(map(str,expected)),"-o","PID,%CPU,ARGS",timeout=35)
     (OUT/(phase+"-top.txt")).write_text(output)
-    samples=[];sample=None
+    samples=[];coverage=[];sample=None;seen=set()
     for line in output.splitlines():
         if re.search(r"\bPID\s+%CPU\s+ARGS",line):
-            if sample is not None:samples.append(sample)
-            sample=0.0;continue
+            if sample is not None:samples.append(sample);coverage.append(sorted(seen))
+            sample=0.0;seen=set();continue
         if sample is not None:
             parts=line.strip().split(None,2)
-            if len(parts)==3 and parts[0].isdigit() and parts[2].startswith(PACKAGE):
-                try:sample+=float(parts[1].replace("%",""))
+            if len(parts)==3 and parts[0].isdigit() and int(parts[0]) in expected:
+                try:sample+=float(parts[1].replace("%",""));seen.add(int(parts[0]))
                 except ValueError:pass
-    if sample is not None:samples.append(sample)
-    samples=samples[1:]
-    return {"samplesOneCorePercent":samples,"meanOneCorePercent":round(statistics.mean(samples),2) if samples else None,"peakOneCorePercent":max(samples) if samples else None}
+    if sample is not None:samples.append(sample);coverage.append(sorted(seen))
+    samples=samples[1:];coverage=coverage[1:]
+    return {"expectedProcesses":expected,"samplePids":coverage,"allProcessesCovered":bool(coverage) and all(set(pids)==set(expected) for pids in coverage),"samplesOneCorePercent":samples,"meanOneCorePercent":round(statistics.mean(samples),2) if samples else None,"peakOneCorePercent":max(samples) if samples else None}
 
 devices=[x.split()[0] for x in adb("devices").splitlines()[1:] if x.endswith("\tdevice")]
 if os.environ.get("GITHUB_ACTIONS")!="true" or len(devices)!=1 or not devices[0].startswith("emulator-") or adb("shell","getprop","ro.kernel.qemu")!="1":
@@ -173,7 +176,9 @@ if adb("shell","pidof",PACKAGE,check=False) or adb("shell","run-as",PACKAGE,"sh"
     raise SystemExit("Existing PoC process/profile found; refusing to touch existing state")
 
 report={"schema":1,"engine":"GeckoView 158.0.20261021001945","package":PACKAGE,"remoteDebugging":False,
-        "fixture":{"messages":240,"images":6,"imageDimensions":[1024,768],"imageBytes":len(PNG)},
+        "fixture":{"messages":240,"images":6,"imageDimensions":[1024,768],"imageBytes":len(PNG),"forcedImageDecode":True},
+        "sourceSha":os.environ.get("GITHUB_SHA"),"runId":os.environ.get("GITHUB_RUN_ID"),
+        "device":{"model":adb("shell","getprop","ro.product.model"),"release":adb("shell","getprop","ro.build.version.release"),"sdk":adb("shell","getprop","ro.build.version.sdk"),"abi":adb("shell","getprop","ro.product.cpu.abi")},
         "scope":"Synthetic loopback sites only; Android 15 x86_64 emulator, not real ChatGPT or physical-phone resource acceptance",
         "systemBefore":{"locale":adb("shell","getprop","persist.sys.locale"),"timeZone":adb("shell","getprop","persist.sys.timezone")},"resources":[]}
 server=ThreadingHTTPServer(("127.0.0.1",8765),Handler);threading.Thread(target=server.serve_forever,daemon=True).start()
@@ -210,7 +215,7 @@ try:
         adb("shell","am","force-stop",PACKAGE);time.sleep(2);phase="tabs-"+str(count)
         launch("A",1 if count==1 else count//2)
         if count>1:launch("B",count//2)
-        ready=bool(wait(lambda:len({(r["account"],r["tab"]) for r in records(phase) if r["kind"]=="main"})==count,60))
+        ready=bool(wait(lambda:len({(r["account"],r["tab"]) for r in records(phase) if r["kind"]=="main" and r.get("decodedImages")==6})==count,60))
         time.sleep(12)
         measurement={"tabs":count,"allPagesReported":ready,"memory":memory(),"cpu":cpu()}
         if count==8 and ready:
@@ -226,13 +231,20 @@ try:
 except Exception as e:
     failure=str(e);report["failure"]=failure;print("PoC failure:",failure,flush=True)
 finally:
+    report["nativeAccounts"]={a:native(a) for a in ("A","B")}
     report["systemAfter"]={"locale":adb("shell","getprop","persist.sys.locale"),"timeZone":adb("shell","getprop","persist.sys.timezone")}
     report["systemUnchanged"]=report["systemBefore"]==report["systemAfter"]
     resource_rows=report["resources"]
     keep=resource_rows[-1].get("keepAlive",{}) if resource_rows else {}
-    report["resourcesComplete"]=len(resource_rows)==3 and all(r["allPagesReported"] and r["memory"]["complete"] and len(r["cpu"]["samplesOneCorePercent"])>=3 for r in resource_rows)
+    report["resourcesComplete"]=len(resource_rows)==3 and all(r["allPagesReported"] and r["memory"]["complete"] and r["cpu"].get("allProcessesCovered",False) and len(r["cpu"]["samplesOneCorePercent"])>=3 for r in resource_rows)
     report["keepAlivePassed"]=keep.get("originalContexts")==24 and keep.get("continuingContexts")==24 and keep.get("newDocuments")==0 and keep.get("newDocumentsAfterSwitch")==0
     report["resourcePhaseEnvironmentErrors"]=[{"phase":r["phase"],"account":r["account"],"tab":r["tab"],"kind":r["kind"],"errors":validate(r)} for r in records() if r["phase"]!="isolation" and validate(r)]
+    report["initialRequestErrors"]=[]
+    for request in requests:
+        a=request.get("account")
+        if a not in ("A","B"):continue
+        lang="zh-CN" if a=="A" else "en-US"
+        if not request["acceptLanguage"].lower().startswith(lang.lower()) or (request["cookie"] and "poc-owner="+a not in request["cookie"]):report["initialRequestErrors"].append(request)
     (OUT/"report.json").write_text(json.dumps(report,ensure_ascii=False,indent=2))
     (OUT/"events.json").write_text(json.dumps(records(),ensure_ascii=False,indent=2))
     (OUT/"requests.json").write_text(json.dumps(requests,ensure_ascii=False,indent=2))
@@ -241,5 +253,5 @@ finally:
     for apk in Path("environment-poc/build/outputs/apk/debug").glob("*.apk"):
         print(apk.name,apk.stat().st_size,hashlib.sha256(apk.read_bytes()).hexdigest(),flush=True)
     adb("shell","am","force-stop",PACKAGE,check=False);adb("reverse","--remove","tcp:8765",check=False);server.shutdown()
-if failure or not report.get("isolation",{}).get("passed") or not report["systemUnchanged"] or not report["resourcesComplete"] or not report["keepAlivePassed"] or report["resourcePhaseEnvironmentErrors"]:
+if failure or not report.get("isolation",{}).get("passed") or not report["systemUnchanged"] or not report["resourcesComplete"] or not report["keepAlivePassed"] or report["resourcePhaseEnvironmentErrors"] or report["initialRequestErrors"]:
     raise SystemExit(1)
