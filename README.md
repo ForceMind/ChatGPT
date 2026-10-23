@@ -1,6 +1,6 @@
 # ChatGPT Profiles
 
-开发预览：macOS alpha.13 正在完善本地恢复授权说明、取消 / 重试及后台重开行为；公开下载仍为下方已发布版本。Touch ID 受保护密钥需要稳定的 Developer ID 签名，当前临时签名包尚不可启用，详见 [桌面端说明](desktop/README.md#macos-alpha13-本地预览恢复授权)。
+macOS alpha.13 已公开预发布，完善本地恢复授权说明、取消 / 重试及后台重开行为；安装包由 GitHub Actions 构建并校验。Touch ID 受保护密钥需要稳定的 Developer ID 签名，当前临时签名包尚不可启用，详见 [桌面端说明](desktop/README.md#macos-alpha13-恢复授权)。
 
 为不同 ChatGPT 账号保留独立空间，让网页使用、标签切换和文件整理集中在一个应用里。
 
@@ -23,11 +23,11 @@ ChatGPT Profiles 是一个非官方 ChatGPT 网页客户端。启动直接进入
 
 | 平台 | 公开版本 | 下载 | 系统要求 |
 | --- | --- | --- | --- |
-| macOS · Apple Silicon | `3.0.0-alpha.12` | [DMG](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.12/ChatGPT-Profiles-3.0.0-alpha.12-mac-arm64.dmg) · [ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.12/ChatGPT-Profiles-3.0.0-alpha.12-mac-arm64.zip) | macOS 13+ |
+| macOS · Apple Silicon | `3.0.0-alpha.13` | [DMG](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.13/ChatGPT-Profiles-3.0.0-alpha.13-mac-arm64.dmg) · [ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.13/ChatGPT-Profiles-3.0.0-alpha.13-mac-arm64.zip) | macOS 13+ |
 | Windows · x64 | `3.0.0-alpha.11` | [EXE 安装包](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.11/ChatGPT-Profiles-3.0.0-alpha.11-windows-x64-setup.exe) · [免安装 ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.11/ChatGPT-Profiles-3.0.0-alpha.11-windows-x64.zip) | Windows 10 / 11 · 64 位 |
 | Android · 手机 / 平板 | `3.0.0-alpha.11` | [APK](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.11/ChatGPT-Profiles-3.0.0-alpha.11-android.apk) | Android 9+，系统 WebView 支持多档案 |
 
-当前 macOS 公开预发布版为 `3.0.0-alpha.12`，Windows / Android 继续使用 `3.0.0-alpha.11`。Mac 增加离线快照与确认更新，原有三端资产处理、草稿恢复和黑底 ChatGPT 图标保留。Intel Mac、Linux、iPhone 和 iPad 暂无安装包。旧版安装包仍保留在历史 Release 中。
+当前 macOS 公开预发布版为 `3.0.0-alpha.13`，Windows / Android 继续使用 `3.0.0-alpha.11`。Mac 改进钥匙串授权与恢复重试，保留离线快照、确认更新、三端资产处理和黑底 ChatGPT 图标。Intel Mac、Linux、iPhone 和 iPad 暂无安装包。旧版安装包仍保留在历史 Release 中。
 
 桌面端支持资产归档、预览、格式转换、120 个 Skill 与“交给 GPT”；Android 已提供账号资产库、图片 / 文档转换、附件任务、加密草稿 / 阅读位置恢复和已打开标签复用。各平台的真实账号、第三方登录、通行密钥和真实网页文件发送仍需分别验收，详见[兼容性与反馈](#兼容性与反馈)。
 

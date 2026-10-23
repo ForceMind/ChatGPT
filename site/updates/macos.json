@@ -1,13 +1,13 @@
 {
   "schema": 1,
-  "version": "3.0.0-alpha.12",
-  "publishedAt": "2026-10-23T07:12:28Z",
-  "notes": "macOS 加入加密离线快照、启动及上海中午检查更新，可选应用后台空闲 30 分钟后倒计时安装。完整 App 仍需重启，暂不支持增量。",
+  "version": "3.0.0-alpha.13",
+  "publishedAt": "2026-10-23T12:33:28Z",
+  "notes": "改进钥匙串授权说明、取消与失败重试；保留旧恢复数据，后台更新重开后回到 App 再恢复。Touch ID 密钥保护仍需稳定签名，当前包暂不能启用。完整更新需要重启。",
   "files": {
     "arm64": {
-      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.12/ChatGPT-Profiles-3.0.0-alpha.12-mac-arm64.zip",
-      "size": 154441417,
-      "sha256": "a27db4654edb0f7081e9b277e13ca20b931e3d91ce492615ca40ecf9f6e22307"
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.13/ChatGPT-Profiles-3.0.0-alpha.13-mac-arm64.zip",
+      "size": 154458159,
+      "sha256": "7270f2bd8305214ae953b1aec4794b13eb0dfa9eaf3c6f7f435881069227904e"
     }
   }
 }

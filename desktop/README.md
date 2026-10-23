@@ -1,16 +1,16 @@
 # ChatGPT Profiles Desktop
 
-当前公开预发布版：macOS `3.0.0-alpha.12`，Windows `3.0.0-alpha.11`。提供 macOS Apple Silicon 的 DMG / ZIP、Windows x64 的 EXE / ZIP；历史安装包保留。Electron `44.9.1`、React `19.3.1`、TypeScript。各设备独立使用，本版不需要自建服务。
+当前公开预发布版：macOS `3.0.0-alpha.13`，Windows `3.0.0-alpha.11`。提供 macOS Apple Silicon 的 DMG / ZIP、Windows x64 的 EXE / ZIP；历史安装包保留。Electron `44.9.1`、React `19.3.1`、TypeScript。各设备独立使用，本版不需要自建服务。
 
-下载见[GitHub Release](https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.12)。当前 `main` 包含工作台、恢复、新图标与跨平台源码。真正退出后需要重新加载网页并恢复保存状态；macOS alpha.12 先显示本地只读快照，具体范围见下文。
+下载见[GitHub Release](https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.13)。当前 `main` 包含工作台、恢复、新图标与跨平台源码。真正退出后需要重新加载网页并恢复保存状态；macOS alpha.12 先显示本地只读快照，具体范围见下文。
 
-## macOS alpha.13 本地预览：恢复授权
+## macOS alpha.13 恢复授权
 
 - 首次安装 / 升级后先在可见窗口说明钥匙串用途，由用户选择继续恢复或先打开网页；同版本已授权时正常恢复。取消和失败不会删除 Cookie、账号分区、旧密钥或恢复原件。
 - 账号菜单与文件菜单新增“隐私与本地恢复”，提供授权状态和重试。尚未授权时，本次草稿不写入磁盘；退出时会提醒。授权后仍保留网页已有草稿，本地版本按原有冲突规则保存。
 - 后台更新重新打开后保持隐藏，不读取恢复密钥、不弹恢复验证；回到 App 后才恢复。Chromium 登录 Cookie 自身的系统加密授权由 Electron / macOS 管理，不能承诺取消应用恢复授权就绝不会出现其他系统钥匙串提示。
 - Touch ID 路径使用原生 Security / LocalAuthentication 的 `kSecAccessControlUserPresence` 约束恢复密钥；旧系统密文仅加一层 AES-256-GCM 包装，不生成明文迁移副本。**当前没有 Developer ID 证书，临时签名包不允许启用该路径**，继续使用原系统加密。原生组件编译和受限路径、加密协议 / 中断恢复可隔离检查；真实签名密钥创建、Touch ID / 密码回退和跨签名升级尚未验收，不能宣称已交付可用指纹保护。
-- 未配置稳定签名时，升级后的 macOS 钥匙串仍可能要求一次登录密码；此预览不更换或绕过旧钥匙串权限。公开下载和自动更新清单继续指向 alpha.12。
+- 未配置稳定签名时，升级后的 macOS 钥匙串仍可能要求一次登录密码；本版不更换或绕过旧钥匙串权限。公开下载与自动更新清单已更新为 CI 构建的 alpha.13。
 
 ## macOS alpha.12
 
@@ -113,12 +113,11 @@ npm start
 ```sh
 npm run check
 npm run test:e2e
-npm run dist:mac
 ```
 
 - 单元测试覆盖状态持久化、损坏恢复、账号归属和导航策略。
 - Electron 验收仅使用本机回环网页、临时数据目录，页面明确标记“非 ChatGPT”。测试不会操作真实账号或发送模型消息。
-- `dist:mac` 在临时目录干净打包并作本机 ad-hoc 签名，将 ARM64 DMG、ZIP 及 `build-info.json` 放到 `release/`；其中记录 `.app` 的实际路径和安装包摘要。Developer ID 签名、公证和 Intel Mac 实机验收尚需对应外部条件。
+- 维护发布统一使用 `.github/workflows/macos-release.yml`：固定已推送源码与同版本 Release 草稿，在 GitHub Actions 构建、验证并直接上传 DMG / ZIP；仅将小型校验索引读回本机。后续发布不在本机打包或保留二进制缓存。Developer ID 签名、公证和 Intel Mac 实机验收仍需外部条件。
 - 渲染截图与测试报告保存于 `test-results/`、`playwright-report/`，不纳入 Git。
 - 原生拖动的开发诊断未取得自动化通过证据；用户已在最终 App 中用真实鼠标确认普通窗口顶部空白区可以正常拖动，此项人工验收通过。
 
@@ -152,4 +151,4 @@ npm run dist:win
 
 alpha.6 的 [Windows 构建与安装验收](https://github.com/ForceMind/ChatGPT/actions/runs/39720554528) 针对源码 `4107ce4`：43 项单元、12 项原生流程、首次脚本与登录弹窗偏好、3 账号 / 8 标签隐藏约 330 秒的同实例保活、EXE / ZIP、安装启动、正常退出及卸载保留数据均通过。截图使用本地素材或未登录网页，未验证真实账号登录、发送和语音。
 
-本地包位于 `release/ci-alpha6-4107ce4/`，该目录的 `SHA256SUMS-delivery.txt` 仅列实际交付的 EXE / ZIP。仍在公开提供的 [Windows alpha.2 Release](https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.2) 与官网入口不变。
+上述为历史验收记录；本地构建缓存已清理。当前 Windows 公开包及摘要见 [alpha.11 Release](https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.11)，历史附件保留。

@@ -1,0 +1,70 @@
+{
+  "version": "3.0.0-alpha.13",
+  "sourceCommit": "16972fbaedbed6ec410cefca30c794d2fe86691b",
+  "prerelease": true,
+  "platforms": [
+    "macOS arm64"
+  ],
+  "ciRun": "https://github.com/ForceMind/ChatGPT/actions/runs/39953377387",
+  "artifacts": [
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.13-mac-arm64.dmg",
+      "bytes": 154480128,
+      "sha256": "de765ad753de60eb83123eb008ec7cea963ab8256b4c0cde7490895060dbf0b1",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.13/ChatGPT-Profiles-3.0.0-alpha.13-mac-arm64.dmg"
+    },
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.13-mac-arm64.zip",
+      "bytes": 154458159,
+      "sha256": "7270f2bd8305214ae953b1aec4794b13eb0dfa9eaf3c6f7f435881069227904e",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.13/ChatGPT-Profiles-3.0.0-alpha.13-mac-arm64.zip"
+    }
+  ],
+  "signing": "ad-hoc, not notarized",
+  "checks": {
+    "distFilesCompared": 228,
+    "packagedUpdater": {
+      "version": "3.0.0-alpha.13",
+      "verifiedAt": "2026-10-23T12:29:37.928Z",
+      "scope": "real packaged ZIP, disposable old bundle, no personal account data; no live ChatGPT upgrade acceptance",
+      "zipSHA256": "7270f2bd8305214ae953b1aec4794b13eb0dfa9eaf3c6f7f435881069227904e",
+      "asarSHA256": "7941be8b983a15dbb8bb07a71fa157cb324f3ada560af4e29318be41599d5ff5",
+      "helperSHA256": "06f93c1c549a18a28f65a9d96f361fb5491d3c37db620de89007bf19b47e62aa",
+      "elapsedMs": 24247,
+      "checks": [
+        "ZIP digest and identity",
+        "full bundle signature and architecture",
+        "Electron fs.copyFileSync from shipping ASAR",
+        "parent exit wait",
+        "atomic swap",
+        "installed payload byte identity",
+        "previous bundle preserved"
+      ]
+    },
+    "nativeRecovery": {
+      "version": "3.0.0-alpha.13",
+      "verifiedAt": "2026-10-23T12:29:43.549Z",
+      "scope": "isolated Electron, actual packaged ASAR/native module; no personal profiles or Keychain items; signed Touch ID key creation not verified",
+      "payloadFiles": 228,
+      "asarSHA256": "7941be8b983a15dbb8bb07a71fa157cb324f3ada560af4e29318be41599d5ff5",
+      "capabilities": {
+        "touchID": false,
+        "signed": false
+      },
+      "unsignedKeyRefused": true,
+      "checks": [
+        "all dist payload bytes match",
+        "deep strict code signature",
+        "packaged native module loads from ASAR",
+        "ad-hoc key creation refused before SecItem access"
+      ]
+    },
+    "ciUnitPassed": 62,
+    "localMacOSScenariosPassed": 5
+  },
+  "applicationSourceCommit": "a57441e0bb6892c3c73176b50024f19b22665c17",
+  "manualAcceptancePending": [
+    "Developer ID signing, protected Keychain key creation, real Touch ID and password fallback",
+    "Personal workspace upgrade and real ChatGPT/OAuth/passkey flows"
+  ]
+}
