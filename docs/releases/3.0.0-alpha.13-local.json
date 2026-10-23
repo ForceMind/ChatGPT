@@ -1,0 +1,53 @@
+{
+  "version": "3.0.0-alpha.13",
+  "sourceCommit": "a57441e0bb6892c3c73176b50024f19b22665c17",
+  "distribution": "local preview only; not published to GitHub Release or update feed",
+  "platform": "macOS arm64",
+  "signing": "ad-hoc, not notarized",
+  "artifacts": [
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.13-mac-arm64.dmg",
+      "bytes": 153082077,
+      "sha256": "ef2bb2e0ee0798a28318be754b261a8a81ff50d547c0ba7805fd3a42ce2a5b3b"
+    },
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.13-mac-arm64.zip",
+      "bytes": 153061590,
+      "sha256": "39476bafbca61f4407ea28ac5a6d4acc8df9b433bdb49c49e180f1876439ee13"
+    }
+  ],
+  "packagedVerification": {
+    "version": "3.0.0-alpha.13",
+    "verifiedAt": "2026-10-23T12:14:41.594Z",
+    "scope": "isolated Electron, actual packaged ASAR/native module; no personal profiles or Keychain items; signed Touch ID key creation not verified",
+    "payloadFiles": 228,
+    "asarSHA256": "369454788ee66dad6cd0b37ac5d3752e91f5824ffc2c06f789d74f72bc1131eb",
+    "capabilities": {
+      "touchID": true,
+      "signed": false
+    },
+    "unsignedKeyRefused": true,
+    "checks": [
+      "all dist payload bytes match",
+      "deep strict code signature",
+      "packaged native module loads from ASAR",
+      "ad-hoc key creation refused before SecItem access"
+    ]
+  },
+  "unitTests": {
+    "tests": 62,
+    "failures": 0
+  },
+  "isolatedDesktopScenarios": [
+    "authorization defer/refuse/retry and persistent fixture cookie",
+    "true quit and workspace recovery",
+    "offline snapshot",
+    "update installation on quit",
+    "app idle update installation"
+  ],
+  "unverified": [
+    "Developer ID signing and notarization",
+    "actual protected Keychain key creation and Touch ID/password fallback",
+    "personal workspace upgrade and live ChatGPT accounts"
+  ]
+}

@@ -21,5 +21,26 @@
       "bytes": 346496,
       "sha256": "560dfeaa29569283c0c93d6b063ec1ad9cb265ad64f213080c73d7240bc12089"
     }
-  ]
+  ],
+  "deployment": {
+    "sourceCommit": "a57441e0bb6892c3c73176b50024f19b22665c17",
+    "url": "https://dc7395f7.chatgpt-profiles.pages.dev",
+    "production": [
+      "https://chatgpt.xincreates.com/",
+      "https://chatgpt-profiles.pages.dev/"
+    ],
+    "browserChecks": 8,
+    "viewportWidths": [
+      1440,
+      390
+    ],
+    "checks": [
+      "native screenshots byte-identical",
+      "assets/Skills selector",
+      "Mac gallery preserved",
+      "no horizontal overflow or page errors",
+      "public Mac alpha.12 and Windows/Android alpha.11 unchanged",
+      "Mac update feed alpha.12 and original ZIP digest unchanged"
+    ]
+  }
 }
