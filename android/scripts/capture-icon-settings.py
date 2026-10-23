@@ -39,12 +39,27 @@ adb("shell", "am", "start", "-W", "-a", "android.settings.APPLICATION_DETAILS_SE
 deadline = time.monotonic() + 75
 observations = []
 ready = False
+launcher_dialogs_closed = 0
 while time.monotonic() < deadline:
     adb("shell", "uiautomator", "dump", "--compressed", "/sdcard/profiles-icon-settings.xml")
     xml = adb("shell", "cat", "/sdcard/profiles-icon-settings.xml")
     (out / "android-app-icon-settings.xml").write_text(xml)
     nodes = list(ET.fromstring(xml).iter("node"))
     labels = [node.get("text", "") for node in nodes]
+    # The emulator's Pixel Launcher can ANR even while Settings is ready behind
+    # it. Close only this exact unrelated launcher dialog, never an App ANR.
+    launcher_anr = any(n.get("resource-id") == "android:id/alertTitle" and
+                       n.get("text") == "Pixel Launcher isn't responding" for n in nodes)
+    if launcher_anr and launcher_dialogs_closed < 1:
+        close = next((n for n in nodes if n.get("resource-id") == "android:id/aerr_close"), None)
+        bounds = re.findall(r"\d+", close.get("bounds", "")) if close is not None else []
+        if len(bounds) == 4:
+            x1, y1, x2, y2 = map(int, bounds)
+            adb("shell", "input", "tap", str((x1 + x2) // 2), str((y1 + y2) // 2))
+            launcher_dialogs_closed += 1
+            observations.append({"closedUnrelatedPixelLauncherAnr": True})
+            time.sleep(2)
+            continue
     ready = (any(node.get("package") == "com.android.settings" for node in nodes)
              and "ChatGPT Profiles" in labels
              and any(word in " ".join(labels).lower() for word in ["uninstall", "force stop", "卸载", "强行停止"]))
@@ -57,6 +72,7 @@ if not ready:
     (out / "icon-settings-unready.png").write_bytes(adb("exec-out", "screencap", "-p", binary=True))
 (out / "icon-settings-result.json").write_text(json.dumps({
     "ready": ready, "package": package, "installedVersion": version,
+    "unrelatedPixelLauncherDialogsClosed": launcher_dialogs_closed,
     "versionSource": "Android package metadata", "observations": observations,
     "scope": "Actual Settings app details; emulator only, no webpage/account interaction"
 }, indent=2) + "\n")
