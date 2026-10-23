@@ -1,7 +1,7 @@
-plugins { id 'com.android.application' }
+plugins { id 'com.android.application' version '9.1.1' }
 android {
     namespace 'com.forcemind.chatgpt.environmentpoc'
-    compileSdk 36
+    compileSdk 37
     defaultConfig {
         applicationId 'com.forcemind.chatgpt.environmentpoc'
         minSdk 29

@@ -403,6 +403,7 @@
 - 新增手动工作流 `android-environment-poc.yml`：新 Android 15 x86_64 模拟器、loopback 对话 / 跨来源 iframe / Worker / 用户手势弹窗；检查冬夏偏移、Date 本地构造、网络语言、Cookie 和 localStorage、Activity 重建与标签切换。相同 240 条模拟消息、6 张 1024×768 图片下测 1 / 4 / 8 标签 PSS、单核口径 CPU 与 330 秒持续上下文。正式 APK、Mac 安装包和现有登录数据不写入。
 - 用户指定的图标换为白色 ChatGPT 图形，保留现有黑色背景；矢量取自 OpenAI 自有公开仓库 `openai/openai-realtime-agents/public/openai-logomark.svg`，图形权属 OpenAI。更新源码图标及 PNG / ICO / ICNS，不替换已安装 App 或旧版本安装包，不声称官方出品。桌面图标已通过 `iconutil` 编码 / 解码并实际查看渲染；Android 打包及运行效果待本次 PoC 证据。
 - 当前只有实验实现与本地语法 / XML 检查；构建、完整隔离及资源数字仍待 CI，不能提前声明通过。若原生多 Runtime 服务或环境边界不成立，保留失败证据与资源结果，不直接维护定制内核。
+- 首轮 `39892499563` 在构建元数据检查处停止：当前 Gecko 要求 SDK 37、AndroidX Core 1.19 要求 AGP ≥9.1。PoC 改为独立 Gradle 根工程，固定 AGP 9.1.1 / Gradle 9.3.1 / compileSdk 37；正式 Android 根配置恢复原样，不升级正式工程或降低引擎 / 校验要求。资源验收另补显式完整性门槛，避免只凭部分环境结果通过。
 
 | 路线 | 已知证据 | 对当前项目的判断 |
 | --- | --- | --- |

@@ -18,8 +18,8 @@ jobs:
       - name: Build standalone experiment
         working-directory: android
         run: |
-          sdkmanager 'platforms;android-36' 'build-tools;35.0.0' 'emulator' 'system-images;android-35;google_apis;x86_64'
-          ./gradlew --no-daemon -PenvironmentPoc :environment-poc:assembleDebug :environment-poc:lintDebug
+          sdkmanager 'platforms;android-37' 'build-tools;36.0.0' 'emulator' 'system-images;android-35;google_apis;x86_64'
+          ./environment-poc/gradlew -p environment-poc --no-daemon assembleDebug lintDebug
       - name: Verify isolation and measure resources
         working-directory: android
         run: |

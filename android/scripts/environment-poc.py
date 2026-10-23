@@ -81,13 +81,13 @@ class Handler(BaseHTTPRequestHandler):
         size=int(self.headers.get("Content-Length","0"))
         if size>32768:self.send_error(413);return
         try:
-            value=json.loads(self.rfile.read(size));value["received"]=time.monotonic();value["acceptLanguage"]=self.headers.get("Accept-Language","")
+            value=json.loads(self.rfile.read(size));value["received"]=time.monotonic();value["acceptLanguage"]=self.headers.get("Accept-Language","");value["requestCookie"]=self.headers.get("Cookie","")
             with lock:events.append(value)
             self.reply("{}","application/json")
         except (ValueError,TypeError):self.send_error(400)
     def do_GET(self):
         path=urlparse(self.path);query=parse_qs(path.query)
-        with lock:requests.append({"phase":phase,"path":self.path,"host":self.headers.get("Host"),"acceptLanguage":self.headers.get("Accept-Language","")})
+        with lock:requests.append({"phase":phase,"path":self.path,"host":self.headers.get("Host"),"acceptLanguage":self.headers.get("Accept-Language",""),"cookie":self.headers.get("Cookie","")})
         if path.path=="/image.png":self.reply(PNG,"image/png");return
         if path.path not in ("/page","/frame","/popup","/worker.js"):self.send_error(404);return
         kind={"/page":"main","/frame":"frame","/popup":"popup","/worker.js":"worker"}[path.path]
@@ -122,6 +122,7 @@ def validate(row):
         if row.get(key)!=value:errors.append(key+": "+str(row.get(key))+" != "+str(value))
     if not row.get("languages") or row["languages"][0]!=lang:errors.append("navigator.languages")
     if not row.get("acceptLanguage","").lower().startswith(lang.lower()):errors.append("network Accept-Language: "+row.get("acceptLanguage",""))
+    if row.get("requestCookie") and "poc-owner="+row["account"] not in row["requestCookie"]:errors.append("network cookie leak")
     if row["kind"]!="worker":
         for key in ("storage","previousStorage"):
             if row.get(key) not in (None,"",row["account"]):errors.append("storage leak: "+key)
@@ -168,7 +169,7 @@ def cpu():
 devices=[x.split()[0] for x in adb("devices").splitlines()[1:] if x.endswith("\tdevice")]
 if os.environ.get("GITHUB_ACTIONS")!="true" or len(devices)!=1 or not devices[0].startswith("emulator-") or adb("shell","getprop","ro.kernel.qemu")!="1":
     raise SystemExit("Only one isolated GitHub Actions emulator is allowed; physical devices refused")
-if adb("shell","pidof",PACKAGE,check=False) or adb("shell","run-as",PACKAGE,"ls","files/poc-gecko-A",check=False):
+if adb("shell","pidof",PACKAGE,check=False) or adb("shell","run-as",PACKAGE,"sh","-c","'test -d files/poc-gecko-A && echo exists'",check=False):
     raise SystemExit("Existing PoC process/profile found; refusing to touch existing state")
 
 report={"schema":1,"engine":"GeckoView 158.0.20261021001945","package":PACKAGE,"remoteDebugging":False,
@@ -218,12 +219,20 @@ try:
             measurement["keepAlive"]={"durationSeconds":round(time.monotonic()-begin,1),"originalContexts":len(start),
                 "continuingContexts":sum(k in end and end[k]["ticks"]>v["ticks"] and end[k]["received"]>begin+320 for k,v in start.items()),
                 "newDocuments":len(set(end)-set(start))}
+            launch("A",next=True);launch("B",next=True);time.sleep(4)
+            switched={r["instance"] for r in records(phase)}
+            measurement["keepAlive"]["newDocumentsAfterSwitch"]=len(switched-set(end))
         report["resources"].append(measurement);print(json.dumps(measurement),flush=True)
 except Exception as e:
     failure=str(e);report["failure"]=failure;print("PoC failure:",failure,flush=True)
 finally:
     report["systemAfter"]={"locale":adb("shell","getprop","persist.sys.locale"),"timeZone":adb("shell","getprop","persist.sys.timezone")}
     report["systemUnchanged"]=report["systemBefore"]==report["systemAfter"]
+    resource_rows=report["resources"]
+    keep=resource_rows[-1].get("keepAlive",{}) if resource_rows else {}
+    report["resourcesComplete"]=len(resource_rows)==3 and all(r["allPagesReported"] and r["memory"]["complete"] and len(r["cpu"]["samplesOneCorePercent"])>=3 for r in resource_rows)
+    report["keepAlivePassed"]=keep.get("originalContexts")==24 and keep.get("continuingContexts")==24 and keep.get("newDocuments")==0 and keep.get("newDocumentsAfterSwitch")==0
+    report["resourcePhaseEnvironmentErrors"]=[{"phase":r["phase"],"account":r["account"],"tab":r["tab"],"kind":r["kind"],"errors":validate(r)} for r in records() if r["phase"]!="isolation" and validate(r)]
     (OUT/"report.json").write_text(json.dumps(report,ensure_ascii=False,indent=2))
     (OUT/"events.json").write_text(json.dumps(records(),ensure_ascii=False,indent=2))
     (OUT/"requests.json").write_text(json.dumps(requests,ensure_ascii=False,indent=2))
@@ -232,5 +241,5 @@ finally:
     for apk in Path("environment-poc/build/outputs/apk/debug").glob("*.apk"):
         print(apk.name,apk.stat().st_size,hashlib.sha256(apk.read_bytes()).hexdigest(),flush=True)
     adb("shell","am","force-stop",PACKAGE,check=False);adb("reverse","--remove","tcp:8765",check=False);server.shutdown()
-if failure or not report.get("isolation",{}).get("passed") or not report["systemUnchanged"]:
+if failure or not report.get("isolation",{}).get("passed") or not report["systemUnchanged"] or not report["resourcesComplete"] or not report["keepAlivePassed"] or report["resourcePhaseEnvironmentErrors"]:
     raise SystemExit(1)
