@@ -1,0 +1,50 @@
+{
+  "version": "3.0.0-alpha.11",
+  "releaseUrl": "https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.11",
+  "publishedAt": "2026-10-23T05:03:16Z",
+  "prerelease": true,
+  "releaseSource": "d8089a22a49d4a54cb19efd0ebbc8e6d8ebfbb14",
+  "website": {
+    "url": "https://chatgpt-profiles.pages.dev/",
+    "customDomain": "https://chatgpt.xincreates.com/",
+    "deploymentId": "7604b729-6636-41b3-a188-4d81c5e50d2b",
+    "environment": "Production",
+    "branch": "main",
+    "sourceCommit": "2e48be5ea1dcea3ffd443c2b4a7ffe2bcde1320d",
+    "matchingPublicFiles": 18,
+    "browserWidths": [
+      1440,
+      390
+    ],
+    "headersVerified": true,
+    "custom404Verified": true
+  },
+  "anonymousDownloads": [
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.11-mac-arm64.dmg",
+      "status": "200",
+      "bytes": 154437135
+    },
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.11-mac-arm64.zip",
+      "status": "200",
+      "bytes": 154395761
+    },
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.11-windows-x64-setup.exe",
+      "status": "200",
+      "bytes": 130918156
+    },
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.11-windows-x64.zip",
+      "status": "200",
+      "bytes": 180670815
+    },
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.11-android.apk",
+      "status": "200",
+      "bytes": 7277869
+    }
+  ],
+  "nextVersionStarted": false
+}

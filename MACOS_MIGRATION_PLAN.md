@@ -455,3 +455,9 @@
 - Android 构建 `39900764010` 通过 63 单元（无失败 / 跳过），Lint 0 错误 / 38 警告；沿用已验证业务源码，仅版本 / 图标变化，设备流程复用原 alpha.10 的明确证据，不宣称本批重跑手机 / 平板真实业务。正式包无 debug 探针注册、无 Gecko 原生库，120 Skill 资源与项目源文件逐字节匹配；版本 3000011 / 正式包名 / 非 debug、ZIP CRC、对齐和签名已核对。证书仍为 `8b6eef928fded91f291ad954e20976b2cc6011b55e8cbec0152695fe1f05cf19`，私钥与密码未上传到 GitHub。
 - 五个安装文件均已上传固定源码的发布草稿，GitHub 服务端 SHA-256 与各平台构建索引匹配。统一清单、完整版本索引位于 Release 草稿，仓库索引为 `docs/releases/3.0.0-alpha.11.json`。桌面包内 icon.png 的实际摘要与新的源图标一致。尚未覆盖任何旧版附件。
 - 官网已更新三端下载、大小与真实摘要、统一图标、alpha.11 / Gecko 独立实验 / 下一版离线快照三个里程碑；保留历史版本记录。1440×1000 与 390×844 的本地独立 Chrome 渲染、无横向溢出、五个下载入口、摘要复制与新里程碑检查通过，页面和资源错误为 0；实际查看桌面与手机截图后修正旧导航标志和顶部 alpha.2 公告。最终生产部署与匿名下载仍待后续回读。
+
+- 公开发布已完成：[v3.0.0-alpha.11](https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.11)，发布时刻 `2026-10-23T05:03:16Z`（北京时间 13:03），`isDraft=false / isPrerelease=true`，标签构建来源 `d8089a22a49d4a54cb19efd0ebbc8e6d8ebfbb14`。五个安装包、三个构建索引、总校验清单和版本索引共十个附件；服务端摘要与本地 / CI 记录一致，五个匿名下载均为 200，返回字节数一致。
+- 主分支存在三个并行的官网 / 文档提交，已通过正常合并保留双方历史；原子快进同步 main 与功能分支，没有强制推送。冲突处保留已包含原修正的新版文档、当前下载 / 图标及动态账号名的截图逻辑；与发布构建比较，desktop/src、desktop/assets、桌面 package/lock、android/app 和 Android 根构建配置无差异。历史参考源码路径未重新引入。
+- Cloudflare Pages 生产部署 `7604b729-6636-41b3-a188-4d81c5e50d2b`，分支 `main`，网站源提交 `2e48be5ea1dcea3ffd443c2b4a7ffe2bcde1320d`；[正式站](https://chatgpt-profiles.pages.dev/) 与[既有自定义域名](https://chatgpt.xincreates.com/) 均可访问。由 Git 导出 10 个干净文件，9 个公开资源加 _headers；两域共 18/18 个公开文件逐字节匹配，CSP / nosniff 与真实自定义 404 通过。
+- 生产 Chrome 1440×1000 / 390×844 的新版本、品牌、下载、复制摘要、里程碑和无横向溢出检查通过，页面 / 资源错误为 0。已实际查看生产截图；Windows 图片来自本次已安装 alpha.11 的匿名 ChatGPT 原生窗口，未把 Android 夹具或挑战页当作产品截图。库内发布回读索引：`docs/releases/3.0.0-alpha.11-publication.json`。
+- 本轮“先更新仓库并部署上一批”的交付完成。旧版附件保留，未读取 / 迁移个人登录空间；Mac/Windows/Android 正常内核沿用，Gecko 独立 PoC 保留为研发成果。下一版页面快照、离线阅读与更完整退出恢复尚未开始。
