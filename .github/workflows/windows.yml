@@ -1,7 +1,14 @@
 name: Windows build
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Optional existing draft release matching the package version
+        required: false
+        default: ''
+        type: string
 permissions:
-  contents: read
+  contents: write
 jobs:
   windows:
     runs-on: windows-2025
@@ -11,6 +18,18 @@ jobs:
         working-directory: desktop
     steps:
       - uses: actions/checkout@v4
+      - name: Verify optional draft target
+        if: inputs.release_tag != ''
+        shell: pwsh
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          $version = (Get-Content desktop/package.json | ConvertFrom-Json).version
+          if ($env:RELEASE_TAG -ne "v$version") { throw 'Release tag/version mismatch' }
+          $release = gh release view $env:RELEASE_TAG --json isDraft,targetCommitish | ConvertFrom-Json
+          if (!$release.isDraft -or $release.targetCommitish -ne $env:GITHUB_SHA) { throw 'Draft/source mismatch' }
       - uses: actions/setup-node@v4
         with:
           node-version: '26.7.0'
@@ -25,7 +44,7 @@ jobs:
       - name: Native first-script language and login popup acceptance
         run: node scripts/check-native-preferences.mjs
       - name: Native background retention without automation flags
-        run: node scripts/measure-resources.mjs --label windows-alpha6 --keepalive-ms 330000 --output test-results/windows-native-retention.json
+        run: node scripts/measure-resources.mjs --label windows-public-release --keepalive-ms 330000 --output test-results/windows-native-retention.json
       - name: Package Windows x64
         run: |
           node scripts/icon.mjs
@@ -33,6 +52,19 @@ jobs:
       - name: Install, launch and uninstall acceptance
         shell: pwsh
         run: ./scripts/check-windows-install.ps1
+      - name: Upload verified packages to draft
+        if: inputs.release_tag != ''
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          $info = Get-Content release/windows/windows-build-info.json | ConvertFrom-Json
+          if ($info.sourceCommit -ne $env:GITHUB_SHA) { throw 'Package/source mismatch' }
+          if ((gh release view $env:RELEASE_TAG --json isDraft --jq .isDraft) -ne 'true') { throw 'Release must remain a draft' }
+          $files = @($info.artifacts | Where-Object { $_.file -match '(\.exe|\.zip)$' } | ForEach-Object { "release/windows/$($_.file)" })
+          gh release upload $env:RELEASE_TAG @files release/windows/windows-build-info.json
+          if ($LASTEXITCODE -ne 0) { throw 'Release upload failed' }
       - uses: actions/upload-artifact@v4
         with:
           name: windows-x64-installer

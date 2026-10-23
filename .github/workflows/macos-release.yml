@@ -1,11 +1,19 @@
 name: macOS release build
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing draft release matching the package version
+        required: true
+        type: string
 permissions:
   contents: write
 jobs:
   package:
     runs-on: macos-15
     timeout-minutes: 25
+    env:
+      RELEASE_TAG: ${{ inputs.release_tag }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -13,6 +21,13 @@ jobs:
           node-version: '26.7.0'
       - name: Confirm architecture
         run: test "$(uname -m)" = arm64
+      - name: Verify draft target before building
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node --input-type=module -e "import fs from 'node:fs'; if(process.env.RELEASE_TAG!=='v'+JSON.parse(fs.readFileSync('desktop/package.json')).version)throw Error('Release tag/version mismatch')"
+          test "$(gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft)" = true
+          test "$(gh release view "$RELEASE_TAG" --json targetCommitish --jq .targetCommitish)" = "$GITHUB_SHA"
       - name: Install and build
         working-directory: desktop
         run: |
@@ -28,7 +43,7 @@ jobs:
           const asar=(await import('@electron/asar')).default;
           const archive=path.join(build.appPath,'Contents/Resources/app.asar');
           const files=asar.listPackage(archive).filter(p=>p.startsWith('/dist/') && !fs.statSync(path.join('.',p.slice(1))).isDirectory());
-          const payload={}; for(const file of files) payload[file.slice(1)]=crypto.createHash('sha256').update(asar.extractFile(archive,file.slice(1))).digest('hex');
+          const payload={}; for(const file of files) { const packed=asar.extractFile(archive,file.slice(1)); if(!packed.equals(fs.readFileSync(file.slice(1))))throw Error('Bundle/source mismatch: '+file); payload[file.slice(1)]=crypto.createHash('sha256').update(packed).digest('hex'); }
           fs.mkdirSync('release/github-assets',{recursive:true});
           const artifacts=[];
           for(const ext of ['dmg','zip']) { const item=build.artifacts.find(a=>a.file.endsWith('.'+ext)); const file='ChatGPT-Profiles-'+build.version+'-mac-arm64.'+ext; fs.copyFileSync('release/'+item.file,'release/github-assets/'+file);artifacts.push({file,sha256:item.sha256}); }
@@ -38,8 +53,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          test "$(gh release view v3.0.0-alpha.1 --json isDraft --jq '.isDraft')" = true
-          gh release upload v3.0.0-alpha.1 desktop/release/github-assets/* --clobber
+          test "$(gh release view "$RELEASE_TAG" --json isDraft --jq '.isDraft')" = true
+          gh release upload "$RELEASE_TAG" desktop/release/github-assets/*
       - uses: actions/upload-artifact@v4
         with:
           name: mac-release-info
