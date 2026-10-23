@@ -26,6 +26,10 @@ on:
         description: Capture real native asset and Skill screens with labelled demo files; no external webpage
         type: boolean
         default: false
+      homepage_capture_only:
+        description: Capture only the actual anonymous ChatGPT homepage; no login or message actions
+        type: boolean
+        default: false
       handoff_only:
         description: Run the native attachment handoff flow on phone and tablet only
         type: boolean
@@ -110,7 +114,7 @@ jobs:
           avdmanager create avd --force --name profiles-test --device pixel_6 --path "$ANDROID_AVD_HOME/profiles-test.avd" --package 'system-images;android-35;google_apis;x86_64'
           test -f "$ANDROID_AVD_HOME/profiles-test.ini"
           "$ANDROID_HOME/emulator/emulator" -list-avds
-          "$ANDROID_HOME/emulator/emulator" -avd profiles-test -no-window -no-audio -no-boot-anim -no-snapshot -gpu software > app/build/device-evidence/emulator.log 2>&1 &
+          "$ANDROID_HOME/emulator/emulator" -avd profiles-test -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader -feature -Vulkan > app/build/device-evidence/emulator.log 2>&1 &
           timeout 180 adb wait-for-device
           timeout 240 bash -c 'until adb shell getprop sys.boot_completed | tr -d "\r" | grep -q 1; do sleep 2; done'
           collect_failure() {
@@ -129,6 +133,13 @@ jobs:
           # The CI image's Pixel Launcher can ANR during headless startup. It is
           # not needed for explicit Activity launches; App ANR reporting stays on.
           adb shell pm disable-user --user 0 com.google.android.apps.nexuslauncher
+          if [ "${{ inputs.homepage_capture_only }}" = true ]; then
+            ./gradlew --no-daemon installDebug
+            timeout 240 python3 -u scripts/capture-homepage.py app/build/device-evidence
+            timeout 20 adb shell dumpsys webviewupdate > app/build/device-evidence/webview.txt
+            echo 'Actual anonymous ChatGPT homepage on a fresh emulator; no login, message, file upload or fixture webpage.' > app/build/device-evidence/scope.txt
+            exit 0
+          fi
           if [ "${{ inputs.website_capture_only }}" = true ]; then
             ./gradlew --no-daemon -Pandroid.testInstrumentationRunnerArguments.fixtureMode=true '-Pandroid.testInstrumentationRunnerArguments.class=com.forcemind.chatgpt.profiles.WorkbenchTest#websiteShowsActualNativeAssetsWithExplicitDemoFiles' connectedDebugAndroidTest
             adb pull /sdcard/Download/ProfilesFixtureEvidence app/build/device-evidence/website

@@ -544,3 +544,9 @@
 - 最终源码 da4afdf4f381b6dd2d69f64c41bebbf3633ced7f 的 CI 39963836108 成功：63 项单元无失败，8 项 Electron 真实界面流程通过，0 跳过 / 0 flaky；228 个实际包内文件匹配，完整 ZIP 更新原子替换与恢复原生组件检查通过。安装包与 UI 校验索引匹配；未在本机安装依赖或下载二进制。
 - 两轮中间打包 39962619836 / 39963215356 已在界面检查通过后取消，只交付最终 39963836108 的 DMG / ZIP。实际查看最终七阶段完成界面与资产右键菜单：七点在矮窗口可见，侧栏任务入口横向显示；新增 Escape、清除旧批量选择、批量回收站断言均通过。验收图保留于 docs/images/*alpha14-fixture.png，明确是 CI 夹具。
 - 交付索引 docs/releases/3.0.0-alpha.14-ci.json：Actions DMG 附件 12505478291，ZIP 附件 12505224955；附件需登录 GitHub 并解压得到安装文件。未公开新 Release、未改变官网和自动更新版本；用户真实 ChatGPT 账号继续实际复验，不将真实 ProseMirror 等同于真实服务。
+
+## Android 首页与 macOS alpha.14 实站收尾
+
+- 用户回复“继续”，批准上一轮建议的两项收尾：Android 首页采集 / 真机业务核实与 Mac alpha.14 真实发送。先核对 fd2a8ee 工作区干净；未读取个人账号。Mac 实站需要用户指定已安装版本、允许测试的账号及是否允许发送明确标记的无敏感消息和小文件，已异步询问；未回复前不进行真实发送。
+- Android 当前没有可操作的真机。独立 CI 首页采集不更改正常源码 / APK 版本 / 登录数据；针对旧 ColorBuffer / GPU 崩溃，按 Android 官方排查建议使用 SwiftShader 并关闭 Vulkan。仅启动实际匿名首页、读取可访问性和像素，不输入账号、消息、不点击验证，不用夹具内容替代。完整加载并人工核对后才更新官网。
+- 证据入口：https://developer.android.com/studio/run/emulator-troubleshooting；本轮不在本机安装 SDK / 依赖或生成安装包，临时证据按明确路径清理。
