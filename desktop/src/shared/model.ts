@@ -22,6 +22,7 @@ export type Command =
   | { type: 'tab:activate' | 'tab:close' | 'tab:pin' | 'tab:menu'; id: string }
   | { type: 'tab:reorder'; ids: string[] }
   | { type: 'update:check' | 'offline:live' | 'offline:retry' | 'tab:restore' | 'back' | 'forward' | 'reload' | 'home' | 'fullscreen' | 'maximize' | 'external' }
+  | { type:'update:idle';enabled:boolean }
   | { type: 'overlay'; open: boolean }
   | { type: 'panel'; panel?: WorkbenchPanel };
 export type Reply = { ok: true } | { ok: false; error: string };

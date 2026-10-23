@@ -31,8 +31,8 @@ export async function downloadUpdate(fetch:FetchUpdate,url:string,file:UpdateFil
   if(bytes!==file.size||hash.digest('hex')!==file.sha256)throw Error('更新包校验失败，已丢弃下载内容');await handle.sync();await handle.close();handle=undefined;safeDirectory(directory);renameSync(partial,target);return target;
  }catch(error){await handle?.close();if(existsSync(partial))unlinkSync(partial);throw error;}
 }
-export async function verifyUpdate(file:string,expected:UpdateFile):Promise<void>{
+export async function verifyUpdate(file:string,expected:UpdateFile,signal?:AbortSignal):Promise<void>{
  const stat=lstatSync(file);if(stat.isSymbolicLink()||!stat.isFile()||stat.size!==expected.size)throw Error('已下载更新包无效');
- const hash=createHash('sha256');for await(const chunk of createReadStream(file))hash.update(chunk);
+ const hash=createHash('sha256');for await(const chunk of createReadStream(file,{signal}))hash.update(chunk);
  if(hash.digest('hex')!==expected.sha256)throw Error('已下载更新包校验失败');
 }

@@ -3,6 +3,8 @@ import {RecoveryStore,RecentlyClosedPages,resumeURL} from './recovery-store';
 import {captureResume,applyResume,finishResume} from './page-resume';
 import {captureSnapshot} from './page-snapshot';
 import {UpdateManager} from './update-manager';
+import {IdleUpdate} from './idle-update';
+import {pageSafeForIdle} from './page-idle';
 import {shanghaiDay} from '../shared/updates';
 import {installedBundle} from './update-install';
 import {UPDATE_FEED} from './update-download';
@@ -46,7 +48,9 @@ protocol.registerSchemesAsPrivileged([{ scheme: 'app', privileges: { standard: t
 const single = app.requestSingleInstanceLock();
 if (!single) app.quit();
 let win: BrowserWindow | undefined;
-let updates:UpdateManager|undefined,updateDialog=false;const offeredUpdates=new Set<string>();
+let updates:UpdateManager|undefined,updateDialog=false;const offeredUpdates=new Set<string>(),readyUpdatePrompts=new Set<string>();
+let idleUpdate:IdleUpdate|undefined,idleTimer:ReturnType<typeof setTimeout>|undefined,idleNoticeWindow:BrowserWindow|undefined,idleInstallEpoch:number|undefined;
+let backgroundModePending=process.platform==='darwin'&&process.argv.includes('--profiles-background-update');
 let store: StateStore;
 let assetStore: AssetStore | undefined;
 let assetRuntime: AssetRuntime | undefined;
@@ -148,8 +152,8 @@ async function warmPreviousTabs():Promise<void>{
   if(quitting||quitPending||!win||win.isDestroyed())break;if(!store.read().tabs.some(t=>t.id===tab.id))continue;ensureView(tab);await Promise.race([pageReady.get(tab.id),new Promise(r=>{const t=setTimeout(r,15000);t.unref();})]);
  }}finally{warming=false;}
 }
-function reopenWindow():void{setTimeout(()=>void offerUpdate().catch(report),500).unref();if(quitting)return;if(!win){createWindow();return;}if(win.isMinimized())win.restore();win.show();win.focus();if(desktopWorkspace&&!overlayOpen&&!panel)activeContents()?.focus();for(const popup of hiddenPopups)if(!popup.isDestroyed()&&popups.get(popup)===activeProfile().id){popup.show();hiddenPopups.delete(popup);}}
-async function openChatSearch():Promise<void>{
+function reopenWindow():void{recordAppActivity();setTimeout(()=>void offerUpdate().catch(report),500).unref();if(quitting)return;if(!win){createWindow();return;}if(win.isMinimized())win.restore();win.show();win.focus();if(backgroundModePending){backgroundModePending=false;const mode=store.read().windowMode;if(mode?.maximized)win.maximize();if(mode?.fullscreen)win.setFullScreen(true);}if(desktopWorkspace&&!overlayOpen&&!panel)activeContents()?.focus();for(const popup of hiddenPopups)if(!popup.isDestroyed()&&popups.get(popup)===activeProfile().id){popup.show();hiddenPopups.delete(popup);}}
+async function openChatSearch():Promise<void>{recordAppActivity();
  if(!win?.isVisible()||win.isMinimized())reopenWindow();
  if(overlayOpen){notice('请先关闭当前菜单或弹窗，再打开搜索。');return;}if(panel){win?.webContents.send('profiles:shortcut','workbench-search');return;}const c=activeContents();if(!c||c.isDestroyed())return;c.focus();
  const opened=await c.executeJavaScript(`(()=>{const items=[...document.querySelectorAll('button,a,[role="button"]')];const target=items.find(e=>e.getClientRects().length&&/^(搜索|搜索聊天|搜索对话|Search|Search chats|Search conversations)$/i.test((e.getAttribute('aria-label')||e.getAttribute('title')||e.textContent||'').trim()));if(!target)return false;target.click();return true;})()`,true);
@@ -359,7 +363,7 @@ function validateCommand(value: unknown): asserts value is Command {
   if (!value || typeof value !== 'object') throw new Error('无效操作');
   const c = value as Record<string, unknown>;
   if (typeof c.type !== 'string') throw new Error('无效操作');
-  const known = ['profile:add','profile:edit','profile:activate','profile:remove','profile:clear','profile:move','tab:new','tab:activate','tab:close','tab:pin','tab:menu','tab:reorder','tab:restore','back','forward','reload','home','fullscreen','maximize','external','overlay','panel','offline:live','offline:retry','update:check'];
+  const known = ['profile:add','profile:edit','profile:activate','profile:remove','profile:clear','profile:move','tab:new','tab:activate','tab:close','tab:pin','tab:menu','tab:reorder','tab:restore','back','forward','reload','home','fullscreen','maximize','external','overlay','panel','offline:live','offline:retry','update:check','update:idle'];
   if (!known.includes(c.type)) throw new Error('未知操作');
   if (['profile:edit','profile:activate','profile:remove','profile:clear','profile:move','tab:activate','tab:close','tab:pin','tab:menu'].includes(c.type) && (typeof c.id !== 'string' || !/^[a-f0-9-]{36}$/.test(c.id))) throw new Error('无效标识');
   if (['profile:add','profile:edit'].includes(c.type) && (!validLabel(c.name,40,true) || !validLabel(c.email,120) || !(COLORS as readonly unknown[]).includes(c.color))) throw new Error('请填写 1–40 字账号名称、有效备注与颜色。');
@@ -367,10 +371,12 @@ function validateCommand(value: unknown): asserts value is Command {
   if (c.type === 'profile:move' && c.direction !== -1 && c.direction !== 1) throw new Error('无效排序');
   if (c.type === 'tab:new' && c.url !== undefined && !isAllowedURL(c.url,fixtureOrigin)) throw new Error('网址不在支持范围');
   if (c.type === 'tab:reorder' && (!Array.isArray(c.ids) || c.ids.length > MAX_TABS || !c.ids.every(v => typeof v === 'string'))) throw new Error('无效排序');
+  if(c.type==='update:idle'&&typeof c.enabled!=='boolean')throw Error('无效更新设置');
   if (c.type === 'overlay' && typeof c.open !== 'boolean') throw new Error('无效窗口状态');
   if (c.type === 'panel' && (!desktopWorkspace||(c.panel!==undefined&&!['assets','skills','agents'].includes(c.panel as string)))) throw new Error('工作台入口无效');
 }
 async function dispatch(c: Command): Promise<void> {
+  recordAppActivity();
   if(quitPending)throw Error('正在保存恢复记录，请稍候。');
   if(desktopWorkspace&&['profile:add','profile:activate','tab:activate','tab:close','tab:new','tab:restore','home','back','forward','reload'].includes(c.type))await checkpointTab(activeProfile().activeTabId);
   if(desktopWorkspace&&c.type==='tab:close'&&c.id!==activeProfile().activeTabId)await checkpointTab(c.id);
@@ -422,6 +428,7 @@ async function dispatch(c: Command): Promise<void> {
       store.commit(next=>{if(dropReplacement)next.tabs=next.tabs.filter(t=>t.id!==replacement);const tab={...old,id};delete tab.closedPosition;next.closedTabs=next.closedTabs.filter(t=>t.id!==old.id);const siblings=next.tabs.filter(t=>t.profileId===tab.profileId);siblings.splice(Math.min(old.closedPosition??siblings.length,siblings.length),0,tab);siblings.sort((a,b)=>Number(b.pinned)-Number(a.pinned));next.tabs=[...next.tabs.filter(t=>t.profileId!==tab.profileId),...siblings];next.profiles.find(p=>p.id===tab.profileId)!.activeTabId=id;});
       if(dropReplacement&&replacement)destroyView(replacement);closedReplacements.delete(old.id);showActive();break;
     }
+    case 'update:idle': updates?.setIdleAllowed(c.enabled);break;
     case 'update:check': void checkUpdates(true).catch(report);break;
     case 'offline:live': offlinePages.delete(activeProfile().activeTabId);layout();break;
     case 'offline:retry': {const id=activeProfile().activeTabId;destroyView(id);showActive();break;}
@@ -456,6 +463,7 @@ function trusted(event: IpcMainInvokeEvent): boolean {
   return event.senderFrame.url === 'app://shell/index.html';
 }
 function installIPC(): void {
+  ipcMain.on('updates:cancel-countdown',event=>{if(event.sender===idleNoticeWindow?.webContents&&event.senderFrame===event.sender.mainFrame&&event.senderFrame.url.startsWith('app://shell/update-notice.html'))recordAppActivity();});
   ipcMain.handle('login-links:list',event=>{if(!trusted(event)||!desktopWorkspace)throw new Error('拒绝非本地工具栏请求');if(!loginDiagnostics)throw new Error(loginDiagnosticsError||'登录记录暂不可用');return loginDiagnostics.list();});
   ipcMain.handle('login-links:clear',event=>{if(!trusted(event)||!desktopWorkspace)throw new Error('拒绝非本地工具栏请求');if(!loginDiagnostics)throw new Error(loginDiagnosticsError||'登录记录暂不可用');loginDiagnostics.clear();});
   if(desktopWorkspace)ipcMain.handle('profiles:workbench-view',(event,profileId:unknown,value:unknown,epoch:unknown)=>{
@@ -488,19 +496,59 @@ function installIPC(): void {
     ,conversions:()=>{if(!assetConversions)throw new Error(assetError||'本地转换暂不可用');return assetConversions;}
   });
 }
+function recordAppActivity():void{idleUpdate?.activity();}
+function syncIdleTimer():void{
+ clearTimeout(idleTimer);idleTimer=undefined;
+ if(!idleUpdate||updates?.status.phase!=='ready'||!updates.status.idleEnabled||quitting||quitPending){idleUpdate?.cancel();return;}
+ const delay=idleUpdate.deadline!==undefined?1000:testMode&&process.env.PROFILES_IDLE_FAST==='1'?200:30000;
+ idleTimer=setTimeout(()=>{void idleUpdate!.tick().finally(syncIdleTimer);},delay);idleTimer.unref();
+}
+async function safeForIdleUpdate():Promise<boolean>{
+ if(!recovery||recoveryError||assetError||handoffError||overlayOpen||panel||updateDialog||pendingProfiles.size||restoringPages.size||warming||assetConversions?.hasRunning())return false;
+ if([...popups.keys()].some(p=>!p.isDestroyed())||[...assetDownloads.values()].some(d=>d.activeIds().length))return false;
+ if(handoffRunner?.jobs.all().some(j=>['preparing','opening','uploading','drafting','sending'].includes(j.status)))return false;
+ if(!views.size||store.read().tabs.some(t=>t.loaded&&!views.has(t.id)))return false;
+ for(const view of views.values())if(!await pageSafeForIdle(view.webContents,fixtureOrigin))return false;
+ return true;
+}
+function showIdleNotice(deadline?:number):void{
+ idleNoticeWindow?.destroy();idleNoticeWindow=undefined;updates?.setIdleDeadline(deadline);
+ if(deadline===undefined||quitting)return;
+ const area=screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea,width=390,height=205;
+ const note=new BrowserWindow({width,height,x:area.x+area.width-width-20,y:area.y+area.height-height-20,show:false,frame:false,focusable:false,resizable:false,movable:false,minimizable:false,maximizable:false,skipTaskbar:true,alwaysOnTop:true,backgroundColor:'#fafafa',webPreferences:{preload:path.join(__dirname,'update-notice-preload.cjs'),sandbox:true,contextIsolation:true,nodeIntegration:false,webSecurity:true}});
+ idleNoticeWindow=note;note.setVisibleOnAllWorkspaces(true,{visibleOnFullScreen:true});note.webContents.setWindowOpenHandler(()=>({action:'deny'}));note.webContents.on('will-navigate',e=>e.preventDefault());
+ note.once('ready-to-show',()=>{if(idleNoticeWindow===note&&idleUpdate?.deadline===deadline)note.showInactive();});
+ note.once('closed',()=>{if(idleNoticeWindow===note)idleNoticeWindow=undefined;});
+ void note.loadURL('app://shell/update-notice.html?deadline='+deadline).catch(()=>{updates?.setIdleAllowed(false);recordAppActivity();notice('自动安装提示无法显示，已延后到下次退出时安装。');});
+}
+function initializeIdleUpdate():void{
+ const fast=testMode&&process.env.PROFILES_IDLE_FAST==='1';
+ idleUpdate=new IdleUpdate({idleMs:fast?1000:1800000,countdownMs:fast?7000:60000,
+  eligible:()=>updates?.status.phase==='ready'&&updates.status.idleEnabled===true&&!quitting,
+  focused:()=>BrowserWindow.getAllWindows().some(w=>w!==idleNoticeWindow&&w.isFocused()),safe:safeForIdleUpdate,
+  countdown:showIdleNotice,visible:()=>idleNoticeWindow?.isVisible()===true,
+  install:epoch=>{idleInstallEpoch=epoch;updates?.restartAfterInstall(true);app.quit();}
+ });syncIdleTimer();
+}
+app.on('web-contents-created',(_event,contents)=>{
+ contents.on('before-input-event',()=>{if(contents!==idleNoticeWindow?.webContents)recordAppActivity();});
+ contents.on('before-mouse-event',(_event,mouse)=>{if(contents!==idleNoticeWindow?.webContents&&!['mouseEnter','mouseLeave'].includes(mouse.type))recordAppActivity();});
+});
+app.on('browser-window-focus',(_event,window)=>{if(window!==idleNoticeWindow)recordAppActivity();});
 async function offerUpdate(manual=false):Promise<void>{
- if(!updates||updateDialog||!win?.isVisible()||win.isDestroyed())return;
+ if(!updates||updateDialog||quitPending||quitting||!win?.isVisible()||win.isDestroyed())return;
  const state=updates.status,manifest=updates.manifest;
  if(state.phase==='ready'){
-  if(!manual)return;updateDialog=true;try{const choice=await dialog.showMessageBox(win,{type:'info',title:'更新已准备',message:`${state.version} 已下载并校验`,detail:'默认在你下次退出 App 时安装。关窗口仍在后台保留，不会安装；你也可以现在保存状态并重启。',buttons:['稍后（退出时安装）','保存并重启安装'],defaultId:0,cancelId:0});if(choice.response===1){updates.restartAfterInstall();app.quit();}}finally{updateDialog=false;}return;
+  if(!manual&&readyUpdatePrompts.has(state.version||''))return;readyUpdatePrompts.add(state.version||'');updateDialog=true;try{const choice=await dialog.showMessageBox(win,{type:'info',title:'更新已准备',message:`${state.version} 已下载并校验`,detail:'可以立即保存并重启，或下次退出时安装。勾选空闲安装后，仅在本 App 处于后台且 30 分钟无操作、所有标签确认无生成和文件任务时，提前 60 秒提示；回到应用或取消会延后。其他软件的操作不影响计时。',checkboxLabel:'允许本 App 空闲 30 分钟后保存、安装并在后台重新打开',checkboxChecked:updates.idleChoiceMade()?state.idleEnabled===true:true,buttons:['下次退出时安装','保存并立即重启安装'],defaultId:0,cancelId:0});if(choice.response===1){updates.restartAfterInstall();app.quit();}else updates.setIdleAllowed(choice.checkboxChecked);}finally{updateDialog=false;recordAppActivity();syncIdleTimer();}return;
  }
  if(state.phase!=='available'||!manifest||!manual&&offeredUpdates.has(manifest.version+':'+shanghaiDay(Date.now()).day))return;
  offeredUpdates.add(manifest.version+':'+shanghaiDay(Date.now()).day);updateDialog=true;let source=0;
  try{const choice=await dialog.showMessageBox(win,{type:'question',title:'发现新版本',message:`ChatGPT Profiles ${manifest.version}`,detail:manifest.notes+'\n\n确认后后台下载、校验并准备安装，你可以继续使用。下次真正退出 App 时安装，登录数据保留。国内加速使用第三方 gh-proxy.org。',buttons:['稍后','后台下载更新','国内加速下载'],defaultId:1,cancelId:0});source=choice.response;}finally{updateDialog=false;}
  if(source===0)return;
- void updates.download(source===2).then(()=>{notice('更新已准备，下次退出时安装；可在「检查更新」中立即重启。');}).catch(report);
+ void updates.download(source===2).then(()=>{notice('更新已准备，下次退出时安装；可在「检查更新」中立即重启。');void offerUpdate().catch(report);}).catch(error=>{if(!quitPending&&!quitting)report(error);});
 }
 async function checkUpdates(manual=false):Promise<void>{
+ if(manual)recordAppActivity();
  if(!updates){if(manual)notice('自动更新将用于已安装的 macOS 客户端，开发模式和其他平台暂不替换应用。');return;}
  if(manual&&updates.status.phase==='downloading'){notice(`更新正在后台下载 ${updates.status.progress||0}%`);return;}
  await updates.check();await offerUpdate(manual);
@@ -542,12 +590,12 @@ function createWindow(): void {
   if (process.platform === 'win32') win.setMenuBarVisibility(false);
   win.webContents.setWindowOpenHandler(()=>({action:'deny'}));
   win.webContents.on('will-navigate',event=>event.preventDefault());
-  win.on('resize',()=>{layout();clearTimeout(boundsTimer);boundsTimer=setTimeout(()=>{try{saveBounds();}catch(error){report(error);}},250);});
-  win.on('move',()=>{clearTimeout(boundsTimer);boundsTimer=setTimeout(()=>{try{saveBounds();}catch(error){report(error);}},250);});
+  win.on('resize',()=>{recordAppActivity();layout();clearTimeout(boundsTimer);boundsTimer=setTimeout(()=>{try{saveBounds();}catch(error){report(error);}},250);});
+  win.on('move',()=>{recordAppActivity();clearTimeout(boundsTimer);boundsTimer=setTimeout(()=>{try{saveBounds();}catch(error){report(error);}},250);});
   win.on('enter-full-screen',()=>{layout();publish();});win.on('leave-full-screen',()=>{layout();publish();});
-  win.on('close',event=>{if(desktopWorkspace&&!quitting){event.preventDefault();if(process.platform==='win32'){app.quit();return;}try{saveBounds();}catch(error){report(error);}void checkpointWorkspace().catch(report);for(const popup of popups.keys())if(!popup.isDestroyed()&&popup.isVisible()){hiddenPopups.add(popup);popup.hide();}win?.hide();return;}clearTimeout(boundsTimer);try{saveBounds();}catch(error){report(error);} for(const id of [...views.keys()])destroyView(id);for(const popup of popups.keys())if(!popup.isDestroyed())popup.destroy();});
+  win.on('close',event=>{if(desktopWorkspace&&!quitting){recordAppActivity();event.preventDefault();if(process.platform==='win32'){app.quit();return;}try{saveBounds();}catch(error){report(error);}void checkpointWorkspace().catch(report);for(const popup of popups.keys())if(!popup.isDestroyed()&&popup.isVisible()){hiddenPopups.add(popup);popup.hide();}win?.hide();return;}clearTimeout(boundsTimer);try{saveBounds();}catch(error){report(error);} for(const id of [...views.keys()])destroyView(id);for(const popup of popups.keys())if(!popup.isDestroyed())popup.destroy();});
   win.on('closed',()=>{win=undefined;lastWindowTitle='';clearTimeout(publishTimer);publishTimer=undefined;overlayOpen=false;overlayImage=undefined;panel=undefined;assetRuntime?.revoke();});
-  win.once('ready-to-show',()=>{win?.show();showActive();const mode=desktopWorkspace?store.read().windowMode:undefined;if(mode?.maximized)win?.maximize();if(mode?.fullscreen)win?.setFullScreen(true);void warmPreviousTabs();});
+  win.once('ready-to-show',()=>{if(!backgroundModePending)win?.show();showActive(!backgroundModePending);const mode=desktopWorkspace&&!backgroundModePending?store.read().windowMode:undefined;if(mode?.maximized)win?.maximize();if(mode?.fullscreen)win?.setFullScreen(true);void warmPreviousTabs();});
   void win.loadURL('app://shell/index.html').catch(error=>dialog.showErrorBox('界面加载失败',error.message));
 }
 if (single) {
@@ -574,12 +622,26 @@ if (single) {
     const updateFixture=testMode&&!!fixtureOrigin&&process.env.PROFILES_UPDATES_FIXTURE==='1';
     if(process.platform==='darwin'&&(app.isPackaged||updateFixture)){
      const updateSession=session.fromPartition('updates',{cache:false});let bundle:string|undefined;try{bundle=updateFixture?path.join(path.dirname(realpathSync(dataDir)),'Installed.app'):installedBundle(process.execPath);}catch{/* A DMG/translocated app can check versions, but automatic install requires a normal installed bundle. */}
-     updates=new UpdateManager(dataDir,APP_VERSION,process.arch,(url,options)=>updateSession.fetch(updateFixture?fixtureOrigin+(url===UPDATE_FEED?'/version.json':'/archive.zip'):url,options),publish,bundle);
-     updates.start(()=>void checkUpdates().catch(report));powerMonitor.on('resume',()=>updates?.resume(()=>void checkUpdates().catch(report)));
+     updates=new UpdateManager(dataDir,APP_VERSION,process.arch,(url,options)=>updateSession.fetch(updateFixture?fixtureOrigin+(url===UPDATE_FEED?'/version.json':'/archive.zip'):url,options),()=>{publish();syncIdleTimer();},bundle);
+     initializeIdleUpdate();updates.start(()=>void checkUpdates().catch(report));powerMonitor.on('resume',()=>{recordAppActivity();updates?.resume(()=>void checkUpdates().catch(report));});
      win?.once('show',()=>void offerUpdate().catch(report));publish();
     }
     app.on('activate',reopenWindow);
   }).catch(error=>{dialog.showErrorBox('无法安全恢复账号',error instanceof Error?error.message:String(error));app.quit();});
-  app.on('before-quit',event=>{if(desktopWorkspace&&!quitting){event.preventDefault();if(quitPending)return;quitPending=true;void deadline(commandQueue.then(()=>checkpointWorkspace()),8000).then(async()=>{await updates?.installOnQuit();quitting=true;quitPending=false;app.quit();}).catch(async error=>{quitPending=false;reopenWindow();const choice=await dialog.showMessageBox(win!,{type:'warning',title:'退出准备尚未完成',message:'恢复记录或更新暂时无法准备完成',detail:(error instanceof Error?error.message:'本机加密或网页繁忙')+'。可以返回应用继续保存；仍然退出可能无法恢复最后的修改。',buttons:['返回应用','仍然退出'],defaultId:0,cancelId:0});if(choice.response===1){quitting=true;app.quit();}});return;}quitting=true;updates?.dispose();clearInterval(checkpointTimer);recentClosed.dispose();handoffRunner?.dispose();assetConversions?.dispose();for(const tracker of assetDownloads.values())tracker.dispose();});
+  app.on('before-quit',event=>{
+   if(desktopWorkspace&&!quitting){
+    event.preventDefault();if(quitPending)return;quitPending=true;clearTimeout(idleTimer);
+    const epoch=idleInstallEpoch;if(epoch===undefined)recordAppActivity();
+    const permitted=()=>epoch===undefined?Promise.resolve(true):idleUpdate?.permit(epoch)||Promise.resolve(false);
+    void deadline(commandQueue.then(async()=>{await updates?.stopForQuit();if(!await permitted())throw Error('应用状态已变化，空闲安装已延后');await checkpointWorkspace();if(!await permitted())throw Error('网页仍在处理，空闲安装已延后');}),8000)
+    .then(async()=>{if(!await permitted())throw Error('应用状态已变化');await updates?.installOnQuit();quitting=true;quitPending=false;app.quit();})
+    .catch(async error=>{
+     quitPending=false;
+     if(epoch!==undefined){idleInstallEpoch=undefined;updates?.cancelRestart();recordAppActivity();syncIdleTimer();notice('空闲安装已延后，当前页面与更新包保留。');return;}
+     reopenWindow();const choice=await dialog.showMessageBox(win!,{type:'warning',title:'退出准备尚未完成',message:'恢复记录或更新暂时无法准备完成',detail:(error instanceof Error?error.message:'本机加密或网页繁忙')+'。可以返回应用继续保存；仍然退出可能无法恢复最后的修改。',buttons:['返回应用','仍然退出'],defaultId:0,cancelId:0});if(choice.response===1){quitting=true;app.quit();}
+    });return;
+   }
+   quitting=true;clearTimeout(idleTimer);idleUpdate?.cancel();idleNoticeWindow?.destroy();updates?.dispose();clearInterval(checkpointTimer);recentClosed.dispose();handoffRunner?.dispose();assetConversions?.dispose();for(const tracker of assetDownloads.values())tracker.dispose();
+  });
   app.on('window-all-closed',()=>{if(process.platform!=='darwin'||testMode)app.quit();});
 }

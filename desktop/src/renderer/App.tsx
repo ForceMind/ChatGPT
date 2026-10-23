@@ -142,6 +142,7 @@ function App() {
         </>}
         {desktopWorkspaceEnabled(state.platform)&&<button className="menu-action" role="menuitem" onClick={()=>void openDiagnostics()}><Icon name="shield" size={15}/>登录与链接记录</button>}
         {state.platform==='darwin'&&<button className="menu-action" role="menuitem" onClick={async()=>{await closeAccounts();await send({type:'update:check'});}}><Icon name="refresh" size={15}/>{state.update?.phase==='downloading'?`后台更新 ${state.update.progress||0}%`:state.update?.phase==='ready'?`更新 ${state.update.version} 已准备`:'检查更新'}<span>{state.version}</span></button>}
+        {state.platform==='darwin'&&state.update?.phase==='ready'&&<button className="menu-action" role="menuitemcheckbox" aria-checked={state.update.idleEnabled===true} onClick={()=>void send({type:'update:idle',enabled:!state.update?.idleEnabled})}><Icon name="check" size={15}/>应用空闲 30 分钟后安装<span>{state.update.idleEnabled?'已开启':'已关闭'}</span></button>}
         <div className="menu-foot">账号名称与邮箱为手动备注。<br/>每个账号拥有自己的登录状态和标签页。</div>
       </div>
     </div>}

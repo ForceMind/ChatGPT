@@ -26,7 +26,7 @@ export async function captureSnapshot(contents:WebContents,fixtureOrigin?:string
  const text=await contents.executeJavaScript('('+readConversation.toString()+')()');
  if(!text||contents.isDestroyed()||contents.getURL()!==original)return;
  let image:string|undefined;
- try{const capture=await contents.capturePage();if(!capture.isEmpty()){const bytes=capture.resize({width:Math.min(1120,capture.getSize().width)}).toJPEG(55);if(bytes.length<=300000)image='data:image/jpeg;base64,'+bytes.toString('base64');}}catch{/* Transcript remains available if Chromium cannot capture the viewport. */}
+ try{const capture=await contents.capturePage(undefined,{stayHidden:true});if(!capture.isEmpty()){const bytes=capture.resize({width:Math.min(1120,capture.getSize().width)}).toJPEG(55);if(bytes.length<=300000)image='data:image/jpeg;base64,'+bytes.toString('base64');}}catch{/* Transcript remains available if Chromium cannot capture the viewport. */}
  if(contents.isDestroyed()||contents.getURL()!==original)return;
  return{...text,url,image,capturedAt:Date.now()};
 }

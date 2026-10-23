@@ -43,7 +43,7 @@ static void result(const char *file,int ok) {
 int main(int argc,char **argv) {
  if(argc!=8)return 2;
  char *end=NULL;long pid=strtol(argv[1],&end,10);if(!end||*end||pid<=1||pid>INT_MAX)return 2;
- const char *target=argv[2],*candidate=argv[3],*output=argv[4],*version=argv[5];int restart=strcmp(argv[6],"yes")==0;
+ const char *target=argv[2],*candidate=argv[3],*output=argv[4],*version=argv[5];int background=strcmp(argv[6],"background")==0;int restart=background||strcmp(argv[6],"yes")==0;
  // Do not allow a symlink result destination or candidates on another volume.
  struct stat old,next,out;int valid=lstat(output,&out)!=0&&errno==ENOENT;
  if(!valid||!real_directory(target)||!real_directory(candidate)||!same_parent(target,candidate)||lstat(target,&old)||lstat(candidate,&next)||old.st_dev!=next.st_dev){result(output,0);return 3;}
@@ -54,6 +54,6 @@ int main(int argc,char **argv) {
  if(renameatx_np(AT_FDCWD,target,AT_FDCWD,candidate,RENAME_SWAP)!=0){result(output,0);return 5;}
  if(!bundle_valid(target,version)){renameatx_np(AT_FDCWD,target,AT_FDCWD,candidate,RENAME_SWAP);result(output,0);return 6;}
  result(output,1);
- if(restart){pid_t child;char *args[]={"/usr/bin/open",(char*)target,NULL};if(posix_spawn(&child,args[0],NULL,NULL,args,environ)!=0)return 7;}
+ if(restart){pid_t child;char *normal[]={"/usr/bin/open",(char*)target,NULL};char *quiet[]={"/usr/bin/open","-g","-j",(char*)target,"--args","--profiles-background-update",NULL};char **args=background?quiet:normal;if(posix_spawn(&child,args[0],NULL,NULL,args,environ)!=0)return 7;}
  return 0;
 }

@@ -21,6 +21,7 @@ class ConversionFailure extends Error { constructor(message:string,readonly comp
 export class AssetConversions {
   private readonly running=new Set<Running>();
   constructor(private readonly store:AssetStore,private readonly options:Options){}
+  hasRunning():boolean{return this.running.size>0;}
   private active(job:Running):void { if(job.cancelled||!this.options.profileAvailable(job.profileId))throw new Error('转换已取消，原文件保留。'); }
   private async timed<T>(job:Running,promise:Promise<T>,ms=45_000):Promise<T>{
     let timer:ReturnType<typeof setTimeout>|undefined;

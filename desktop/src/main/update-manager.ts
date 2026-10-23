@@ -2,9 +2,9 @@ import{existsSync,lstatSync,readFileSync,realpathSync,writeFileSync,renameSync,u
 import{newerVersion,noonDue,shanghaiDay,validManifest,acceleratedURL,type UpdateManifest,type UpdateStatus}from'../shared/updates';
 import{readManifest,downloadUpdate,safeDirectory,type FetchUpdate}from'./update-download';
 import{stageUpdate,launchInstaller,readInstallResult,type StagedUpdate}from'./update-install';
-type Saved={schema:1;noonDay:string;backup?:string;ready?:{manifest:UpdateManifest;zip:string;staged:StagedUpdate}};
+type Saved={schema:1;noonDay:string;backup?:string;ready?:{idleAllowed?:boolean;manifest:UpdateManifest;zip:string;staged:StagedUpdate}};
 export class UpdateManager{
- readonly directory:string;status:UpdateStatus={phase:'idle'};manifest?:UpdateManifest;private saved:Saved={schema:1,noonDay:''};private checking?:Promise<UpdateManifest|undefined>;private controller?:AbortController;private timer?:ReturnType<typeof setInterval>;private restart=false;
+ readonly directory:string;status:UpdateStatus={phase:'idle'};manifest?:UpdateManifest;private saved:Saved={schema:1,noonDay:''};private checking?:Promise<UpdateManifest|undefined>;private controller?:AbortController;private timer?:ReturnType<typeof setInterval>;private restart:false|'foreground'|'background'=false;private preparing?:Promise<void>;
  constructor(dataDir:string,private current:string,private arch:string,private fetch:FetchUpdate,private changed:()=>void,private bundle?:string){
   this.directory=safeDirectory(path.join(realpathSync(dataDir),'updates'));const file=path.join(this.directory,'state.json');
   try{if(existsSync(file)){const stat=lstatSync(file);if(stat.isSymbolicLink()||!stat.isFile()||stat.size>65536)throw Error('更新记录无效');const s=JSON.parse(readFileSync(file,'utf8')) as Saved;if(s.schema!==1||typeof s.noonDay!=='string'||s.noonDay&&!/^\d{4}-\d{2}-\d{2}$/.test(s.noonDay))throw Error('更新记录无效');this.saved.noonDay=s.noonDay;
@@ -13,7 +13,7 @@ export class UpdateManager{
     const r=s.ready;
     if(r&&validManifest(r.manifest)&&r.staged?.bundle===bundle&&r.staged.version===r.manifest.version&&r.staged.directory===this.directory&&typeof r.zip==='string'&&path.dirname(r.zip)===this.directory&&/^[a-f0-9-]{36}\.zip$/.test(path.basename(r.zip))&&ownedCandidate(r.staged.candidate)&&existsSync(r.staged.candidate)){
      if(newerVersion(r.manifest.version,current)&&r.staged.fromVersion===current){
-      this.saved.ready=r;this.manifest=r.manifest;this.status={phase:'ready',version:r.manifest.version,message:'更新已下载，下次退出时安装'};
+      this.saved.ready=r;this.manifest=r.manifest;this.status={phase:'ready',version:r.manifest.version,idleEnabled:r.idleAllowed===true,message:'更新已下载，下次退出时安装'};
      }else if(r.manifest.version===current&&readInstallResult(this.directory)===true){
       // Keep one previous app, but remove its obsolete predecessor and the ZIP.
       const prior=this.saved.backup;if(prior&&prior!==r.staged.candidate&&existsSync(prior)){
@@ -46,14 +46,20 @@ export class UpdateManager{
  resume(check:()=>void):void{if(noonDue(Date.now(),this.saved.noonDay))check();}
  async download(accelerated=false):Promise<void>{
   if(this.status.phase==='downloading'||this.status.phase==='ready')return;const manifest=this.manifest,file=manifest?.files[this.arch as 'arm64'|'x64'];if(!manifest||!file||!newerVersion(manifest.version,this.current))throw Error('请先检查新版本');
-  this.controller=new AbortController();const timer=setTimeout(()=>this.controller?.abort(),30*60*1000);timer.unref();this.set({phase:'downloading',version:manifest.version,progress:0,message:'后台下载中，可继续使用'});
-  try{const zip=await downloadUpdate(this.fetch,accelerated?acceleratedURL(file.url):file.url,file,this.directory,p=>this.set({phase:'downloading',version:manifest.version,progress:p,message:p===100?'正在校验并准备更新':'后台下载中，可继续使用'}),this.controller.signal);
+  let finished!:()=>void;this.preparing=new Promise<void>(resolve=>{finished=resolve;});this.controller=new AbortController();const timer=setTimeout(()=>this.controller?.abort(),30*60*1000);timer.unref();this.set({phase:'downloading',version:manifest.version,progress:0,message:'后台下载中，可继续使用'});
+  let zip:string|undefined,staged:StagedUpdate|undefined;
+  try{zip=await downloadUpdate(this.fetch,accelerated?acceleratedURL(file.url):file.url,file,this.directory,p=>this.set({phase:'downloading',version:manifest.version,progress:p,message:p===100?'正在校验并准备更新':'后台下载中，可继续使用'}),this.controller.signal);
    if(!this.bundle)throw Error('更新包已校验。开发模式不替换 App；请在已安装客户端中使用自动更新');
-   const staged=await stageUpdate(zip,file,manifest.version,this.bundle,this.directory,this.current);this.saved.ready={manifest,zip,staged};this.persist();
-   this.set({phase:'ready',version:manifest.version,message:'更新已准备，下次退出时安装'});
-  }catch(error){this.set({phase:'error',version:manifest.version,message:error instanceof Error?error.message:'更新下载失败，当前版本仍可使用'});throw error;}finally{clearTimeout(timer);this.controller=undefined;}
+   staged=await stageUpdate(zip,file,manifest.version,this.bundle,this.directory,this.current,this.controller.signal);this.controller.signal.throwIfAborted();this.saved.ready={manifest,zip,staged};this.persist();
+   this.set({phase:'ready',version:manifest.version,idleEnabled:false,message:'更新已准备，下次退出时安装'});
+  }catch(error){if(staged)rmSync(staged.candidate,{recursive:true,force:true});if(zip&&existsSync(zip))unlinkSync(zip);if(this.saved.ready?.zip===zip)this.saved.ready=undefined;this.set(this.controller.signal.aborted?{phase:'available',version:manifest.version,message:'更新下载已中断，下次检查可重试'}:{phase:'error',version:manifest.version,message:error instanceof Error?error.message:'更新下载失败，当前版本仍可使用'});throw error;}finally{clearTimeout(timer);this.controller=undefined;finished();this.preparing=undefined;}
  }
+ async stopForQuit():Promise<void>{this.controller?.abort();await this.preparing;}
  async installOnQuit():Promise<void>{if(!this.saved.ready||this.status.phase!=='ready')return;await launchInstaller(this.saved.ready.staged,this.restart);}
- restartAfterInstall():void{if(this.status.phase!=='ready')throw Error('请等待更新下载完成');this.restart=true;}
+ restartAfterInstall(background=false):void{if(this.status.phase!=='ready')throw Error('请等待更新下载完成');this.restart=background?'background':'foreground';}
+ idleChoiceMade():boolean{return typeof this.saved.ready?.idleAllowed==='boolean';}
+ setIdleAllowed(allowed:boolean):void{if(!this.saved.ready||this.status.phase!=='ready')return;this.saved.ready.idleAllowed=allowed;this.persist();this.set({...this.status,idleEnabled:allowed});}
+ setIdleDeadline(deadline?:number):void{if(this.status.phase==='ready')this.set({...this.status,idleDeadline:deadline});}
+ cancelRestart():void{this.restart=false;}
  dispose():void{clearInterval(this.timer);this.controller?.abort();}
 }
