@@ -550,3 +550,4 @@
 - 用户回复“继续”，批准上一轮建议的两项收尾：Android 首页采集 / 真机业务核实与 Mac alpha.14 真实发送。先核对 fd2a8ee 工作区干净；未读取个人账号。Mac 实站需要用户指定已安装版本、允许测试的账号及是否允许发送明确标记的无敏感消息和小文件，已异步询问；未回复前不进行真实发送。
 - Android 当前没有可操作的真机。独立 CI 首页采集不更改正常源码 / APK 版本 / 登录数据；针对旧 ColorBuffer / GPU 崩溃，按 Android 官方排查建议使用 SwiftShader 并关闭 Vulkan。仅启动实际匿名首页、读取可访问性和像素，不输入账号、消息、不点击验证，不用夹具内容替代。完整加载并人工核对后才更新官网。
 - 证据入口：https://developer.android.com/studio/run/emulator-troubleshooting；本轮不在本机安装 SDK / 依赖或生成安装包，临时证据按明确路径清理。
+- 标准 /Applications 位置只读查到 alpha.12，用户 Applications 未发现同名包；不据此断言其他位置没有 alpha.14，也未启动或替换安装 App。用户未指定测试空间前不发送。另增加一个独立 Mac CI 只读实站探针，使用全新临时数据运行同一 alpha.14 composer adapter，只读取实际匿名 ChatGPT 输入框结构并截图，不输入、不上传、不登录、不点击验证；验证成功与受阻分别记录，不能替代登录账号流程。

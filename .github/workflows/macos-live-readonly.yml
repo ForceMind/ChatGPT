@@ -1,0 +1,28 @@
+name: macOS anonymous webpage read-only probe
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  observe:
+    runs-on: macos-15
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '26.7.0'
+      - name: Build current application without packaging
+        working-directory: desktop
+        run: |
+          npm ci
+          npm run build
+      - name: Observe actual anonymous ChatGPT composer without input or send
+        working-directory: desktop
+        run: node scripts/check-live-page.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: macos-live-readonly-evidence
+          retention-days: 14
+          path: desktop/release/live-readonly/
