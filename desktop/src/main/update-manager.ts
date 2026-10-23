@@ -55,7 +55,7 @@ export class UpdateManager{
   }catch(error){if(staged)rmSync(staged.candidate,{recursive:true,force:true});if(zip&&existsSync(zip))unlinkSync(zip);if(this.saved.ready?.zip===zip)this.saved.ready=undefined;this.set(this.controller.signal.aborted?{phase:'available',version:manifest.version,message:'更新下载已中断，下次检查可重试'}:{phase:'error',version:manifest.version,message:error instanceof Error?error.message:'更新下载失败，当前版本仍可使用'});throw error;}finally{clearTimeout(timer);this.controller=undefined;finished();this.preparing=undefined;}
  }
  async stopForQuit():Promise<void>{this.controller?.abort();await this.preparing;}
- async installOnQuit():Promise<void>{if(!this.saved.ready||this.status.phase!=='ready')return;await launchInstaller(this.saved.ready.staged,this.restart);}
+ async installOnQuit(allowRelaunch=true):Promise<void>{if(!this.saved.ready||this.status.phase!=='ready')return;await launchInstaller(this.saved.ready.staged,allowRelaunch?this.restart:false);}
  restartAfterInstall(background=false):void{if(this.status.phase!=='ready')throw Error('请等待更新下载完成');this.restart=background?'background':'foreground';}
  idleChoiceMade():boolean{return typeof this.saved.ready?.idleAllowed==='boolean';}
  setIdleAllowed(allowed:boolean):void{if(!this.saved.ready||this.status.phase!=='ready')return;this.saved.ready.idleAllowed=allowed;this.persist();this.set({...this.status,idleEnabled:allowed});}

@@ -634,7 +634,7 @@ if (single) {
     const epoch=idleInstallEpoch;if(epoch===undefined)recordAppActivity();
     const permitted=()=>epoch===undefined?Promise.resolve(true):idleUpdate?.permit(epoch)||Promise.resolve(false);
     void deadline(commandQueue.then(async()=>{await updates?.stopForQuit();if(!await permitted())throw Error('应用状态已变化，空闲安装已延后');await checkpointWorkspace();if(!await permitted())throw Error('网页仍在处理，空闲安装已延后');}),8000)
-    .then(async()=>{if(!await permitted())throw Error('应用状态已变化');await updates?.installOnQuit();quitting=true;quitPending=false;app.quit();})
+    .then(async()=>{if(!await permitted())throw Error('应用状态已变化');await updates?.installOnQuit(!testMode);quitting=true;quitPending=false;app.quit();})
     .catch(async error=>{
      quitPending=false;
      if(epoch!==undefined){idleInstallEpoch=undefined;updates?.cancelRestart();recordAppActivity();syncIdleTimer();notice('空闲安装已延后，当前页面与更新包保留。');return;}
