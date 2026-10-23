@@ -7,7 +7,8 @@
 - 固定 GeckoView `158.0.20261021001945`，账号 A / B 各有一个 App 进程、Runtime 和持久 profile。
 - A 请求 `zh-CN / Asia/Shanghai`，B 请求 `en-US / America/New_York`。使用 Runtime locale、进程 `TZ` 与进程内 Java 默认值，不修改 Android 系统设置。
 - 远程调试关闭，不注入修改 `navigator`、`Intl` 或 `Date` 的补丁。测量主文档、跨来源 iframe、Dedicated Worker、新页及用户手势弹窗，检查网络语言、冬夏偏移、本地时间构造、Cookie / localStorage 和重建 / 切换。
-- 1 / 4 / 8 标签使用同样的 240 条模拟消息和 6 张 1024×768 图片。PSS 汇总 App 命名空间中的父进程与子进程；CPU 为 `top` 两秒增量样本的单核百分比，排除首个累计样本。8 标签另做 330 秒上下文持续检查。
+- 1 / 4 / 8 标签分别为 A1、A2+B2、A4+B4，使用同样的 240 条模拟消息和 6 张 1024×768 图片。PSS 汇总 App 命名空间中的父进程与子进程；CPU 为 `top` 两秒增量样本的单核百分比，排除首个累计样本。8 标签另做 330 秒上下文持续检查。
+- locale 按语言、文字和地区核对，`zh-CN` 与最大化后的 `zh-Hans-CN` 为同一预期环境；navigator 与网络头仍须请求 `zh-CN`。第一方页面必须保存自己的 Cookie；跨站 iframe 的 `SameSite=Lax` Cookie 按浏览器策略被阻止时单独记录，任何上下文出现另一账号的 Cookie / localStorage 都判失败。参见 [ECMA-402 Locale maximize](https://tc39.es/ecma402/#sec-intl.locale.prototype.maximize) 和 [HTTP SameSite 创建规则](https://httpwg.org/http-extensions/draft-ietf-httpbis-rfc6265bis.html#samesite-attribute)。
 - 模拟器、离线素材与探针本身均影响数字。这些数字不能直接代表真机、真实 ChatGPT 或系统内存不足时的保证；实验通过也不等于正式迁移完成。
 
 ## 构建与运行

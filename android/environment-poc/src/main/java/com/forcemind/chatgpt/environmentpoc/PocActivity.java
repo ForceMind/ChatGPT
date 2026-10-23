@@ -71,7 +71,7 @@ public abstract class PocActivity extends Activity {
             next.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);next.putExtra("tabs",count);
             next.putExtra("next",intent.getBooleanExtra("next",false));next.putExtra("recreate",intent.getBooleanExtra("recreate",false));startActivity(next);return;
         }
-        if(count==1||count==4||count==8)resize(count);
+        if(count==1||count==2||count==4||count==8)resize(count);
         if(intent.getBooleanExtra("recreate",false)){intent.removeExtra("recreate");recreate();}
         if(intent.getBooleanExtra("next",false)&&!tabs.isEmpty()){active=(active+1)%tabs.size();showTab();}
     }

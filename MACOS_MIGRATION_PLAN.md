@@ -404,6 +404,8 @@
 - 用户指定的图标换为白色 ChatGPT 图形，保留现有黑色背景；矢量取自 OpenAI 自有公开仓库 `openai/openai-realtime-agents/public/openai-logomark.svg`，图形权属 OpenAI。更新源码图标及 PNG / ICO / ICNS，不替换已安装 App 或旧版本安装包，不声称官方出品。桌面图标已通过 `iconutil` 编码 / 解码并实际查看渲染；Android 打包及运行效果待本次 PoC 证据。
 - 当前只有实验实现与本地语法 / XML 检查；构建、完整隔离及资源数字仍待 CI，不能提前声明通过。若原生多 Runtime 服务或环境边界不成立，保留失败证据与资源结果，不直接维护定制内核。
 - 首轮 `39892499563` 在构建元数据检查处停止：当前 Gecko 要求 SDK 37、AndroidX Core 1.19 要求 AGP ≥9.1。PoC 改为独立 Gradle 根工程，固定 AGP 9.1.1 / Gradle 9.3.1 / compileSdk 37；正式 Android 根配置恢复原样，不升级正式工程或降低引擎 / 校验要求。资源验收另补显式完整性门槛，避免只凭部分环境结果通过。
+- 官方平台安装名实际为 `platforms;android-37.0`，已按小版本 DSL 配置。`39894393463` 的构建 / Lint 通过，首个设备结果已归档且保留失败：8 页 24 个上下文在 330 秒后全部继续、切回无新文档；1 页 PSS 496.88 MiB，8 页 1129.26 MiB。此轮“4 页”因原生控制入口遗漏 count=2，实际只有 A1+B1，878.15 MiB 不作为有效四页结果。CPU 原始 `top` 全部采到，但表头 `PID %CPU[ARGS]` 与解析规则不符，不能用空值冒充低 CPU。
+- 首轮 locale 为 `zh-Hans-CN`，与请求 `zh-CN` 的文字 / 地区相同；原探针字符串断言误报，现补测 `Intl.Locale.maximize()` 后的语言、文字、地区，仍拒绝其他地区或语言。跨站 iframe 的 Lax Cookie 被正常拒绝，原始 runtime.log 有明确原因；修正为第一方必须有自己的 Cookie，跨站页可以受限但绝不能出现另一账号的 Cookie / localStorage，网络头 / 时区 / Date 断言保留。参见 ECMA-402 Locale maximize 与 HTTP SameSite 创建规则，链接保存在 PoC README。已用实采 `top` 重放解析，并检查错误地区、错误时区、第一方空 Cookie、跨账号 Cookie / 存储等负例；修复两个标签控制后，仍需新的完整设备批次，未将首轮失败改写成通过。
 
 | 路线 | 已知证据 | 对当前项目的判断 |
 | --- | --- | --- |

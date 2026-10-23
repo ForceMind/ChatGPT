@@ -27,7 +27,9 @@ events, requests, lock = [], [], threading.Lock()
 phase = "isolation"
 SNAPSHOT = """function snapshot(){const f=new Intl.DateTimeFormat().resolvedOptions();return {
  language:navigator.language,languages:Array.from(navigator.languages),locale:f.locale,
- numberLocale:new Intl.NumberFormat().resolvedOptions().locale,timeZone:f.timeZone,
+ numberLocale:new Intl.NumberFormat().resolvedOptions().locale,
+ localeMaximized:new Intl.Locale(f.locale).maximize().toString(),
+ numberLocaleMaximized:new Intl.Locale(new Intl.NumberFormat().resolvedOptions().locale).maximize().toString(),timeZone:f.timeZone,
  winterOffset:new Date('2026-01-15T12:00:00Z').getTimezoneOffset(),
  summerOffset:new Date('2026-07-15T12:00:00Z').getTimezoneOffset(),
  localNoon:new Date(2026,0,15,12).toISOString(),parsedNoon:new Date('2026-01-15T12:00:00').toISOString(),
@@ -119,8 +121,13 @@ def validate(row):
               "B":("en-US","America/New_York",300,240,"2026-01-15T17:00:00.000Z","2026-03-08T07:30:00.000Z")}
     lang,zone,winter,summer,noon,gap=expected[row["account"]]
     errors=[]
-    for key,value in {"language":lang,"locale":lang,"numberLocale":lang,"timeZone":zone,"winterOffset":winter,"summerOffset":summer,"localNoon":noon,"parsedNoon":noon,"dstGap":gap}.items():
+    for key,value in {"language":lang,"timeZone":zone,"winterOffset":winter,"summerOffset":summer,"localNoon":noon,"parsedNoon":noon,"dstGap":gap}.items():
         if row.get(key)!=value:errors.append(key+": "+str(row.get(key))+" != "+str(value))
+    # zh-CN maximizes to zh-Hans-CN. Verify semantic language/script/region;
+    # never accept a different Chinese region or another language as equivalent.
+    maximized="zh-Hans-CN" if row["account"]=="A" else "en-Latn-US"
+    for key in ("locale","numberLocale"):
+        if row.get(key) not in (("zh-CN","zh-Hans-CN") if row["account"]=="A" else ("en-US",)) or row.get(key+"Maximized")!=maximized:errors.append(key+": "+str(row.get(key))+" / "+str(row.get(key+"Maximized")))
     if not row.get("languages") or row["languages"][0]!=lang:errors.append("navigator.languages")
     if not row.get("acceptLanguage","").lower().startswith(lang.lower()):errors.append("network Accept-Language: "+row.get("acceptLanguage",""))
     if row.get("requestCookie") and "poc-owner="+row["account"] not in row["requestCookie"]:errors.append("network cookie leak")
@@ -128,7 +135,9 @@ def validate(row):
         for key in ("storage","previousStorage"):
             if row.get(key) not in (None,"",row["account"]):errors.append("storage leak: "+key)
         cookie=row.get("cookie","")
-        if "poc-owner="+row["account"] not in cookie:errors.append("cookie isolation")
+        # Lax cookies are rejected in this cross-site iframe. First-party pages
+        # must have their own cookie; an iframe may be blocked but never foreign.
+        if (cookie or row["kind"]!="frame") and "poc-owner="+row["account"] not in cookie:errors.append("cookie isolation")
         previous=row.get("previousCookie","")
         if previous and "poc-owner="+row["account"] not in previous:errors.append("previous cookie leak")
     return errors
@@ -157,7 +166,7 @@ def cpu():
     (OUT/(phase+"-top.txt")).write_text(output)
     samples=[];coverage=[];sample=None;seen=set()
     for line in output.splitlines():
-        if re.search(r"\bPID\s+%CPU\s+ARGS",line):
+        if re.search(r"\bPID\s+%CPU(?:\s+|\[)ARGS",line):
             if sample is not None:samples.append(sample);coverage.append(sorted(seen))
             sample=0.0;seen=set();continue
         if sample is not None:
