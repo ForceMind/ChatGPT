@@ -132,6 +132,7 @@ npm run test:e2e
 - Electron 验收仅使用本机回环网页、临时数据目录，页面明确标记“非 ChatGPT”。测试不会操作真实账号或发送模型消息。
 - 维护发布统一使用 `.github/workflows/macos-release.yml`：固定已推送源码与同版本 Release 草稿，在 GitHub Actions 构建、验证并直接上传 DMG / ZIP；仅将小型校验索引读回本机。后续发布不在本机打包或保留二进制缓存。Developer ID 签名、公证和 Intel Mac 实机验收仍需外部条件。
 - 渲染截图与测试报告保存于 `test-results/`、`playwright-report/`，不纳入 Git。
+- 独立完整验收使用 `.github/workflows/macos-validation.yml`，可分别运行所有 macOS 适用场景与同机版本资源对照 / 330 秒后台保活，不打包或发布、不使用个人账号。alpha.14 的[逐项回归结果](../docs/benchmarks/macos-alpha14-regression-20261024.json)与[资源报告](../docs/benchmarks/macos-alpha14-resources-20261024.json)已归档；资源数据来自本地模拟页面，不能作为实际 ChatGPT 占用上限。
 - 原生拖动的开发诊断未取得自动化通过证据；用户已在最终 App 中用真实鼠标确认普通窗口顶部空白区可以正常拖动，此项人工验收通过。
 
 完整验证记录和未验证项见仓库根目录 `MACOS_MIGRATION_PLAN.md`。实际 ChatGPT 登录、第三方登录提供商、语音及真实文件上传下载必须分别实测，不能从本地隔离测试推定通过。

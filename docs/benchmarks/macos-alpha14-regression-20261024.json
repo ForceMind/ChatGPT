@@ -1,0 +1,248 @@
+{
+  "date": "2026-10-24",
+  "version": "3.0.0-alpha.14",
+  "sourceCommit": "4888236f1f16086b6bfa45172a6d525580e6a367",
+  "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40015651516",
+  "scope": "All existing macOS-applicable isolated Electron tests. Local loopback pages and actual ProseMirror only; no personal accounts or authenticated ChatGPT acceptance.",
+  "typecheckAndBuild": "passed",
+  "unitTests": {
+    "tests": 63,
+    "passed": 63,
+    "failed": 0,
+    "skipped": 0
+  },
+  "uiStats": {
+    "startTime": "2026-10-23T19:59:45.423Z",
+    "duration": 212004.003,
+    "expected": 21,
+    "skipped": 2,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "cases": [
+    {
+      "file": "asset-interactions.e2e.ts",
+      "title": "asset double click survives selection; scoped context menu renames, copies, exports, reveals and reversibly trashes",
+      "status": "expected",
+      "results": [
+        "passed"
+      ]
+    },
+    {
+      "file": "assets.e2e.ts",
+      "title": "desktop real download, account-scoped assets, safe HTML and full capability resources",
+      "status": "expected",
+      "results": [
+        "passed"
+      ]
+    },
+    {
+      "file": "conversions.e2e.ts",
+      "title": "desktop conversion produces real image/PDF/HTML/data assets with original lineage",
+      "status": "expected",
+      "results": [
+        "passed"
+      ]
+    },
+    {
+      "file": "handoff-richtext.e2e.ts",
+      "title": "real ProseMirror handoff: normal",
+      "status": "expected",
+      "results": [
+        "passed"
+      ]
+    },
+    {
+      "file": "handoff-richtext.e2e.ts",
+      "title": "real ProseMirror handoff: remount",
+      "status": "expected",
+      "results": [
+        "passed"
+      ]
+    },
+    {
+      "file": "handoff-richtext.e2e.ts",
+      "title": "real ProseMirror handoff: partial",
+      "status": "expected",
+      "results": [
+        "passed"
+      ]
+    },
+    {
+      "file": "handoff-richtext.e2e.ts",
+      "title": "real ProseMirror handoff: blocked",
+      "status": "expected",
+      "results": [
+        "passed"
+      ]
+    },
+    {
+      "file": "handoff-richtext.e2e.ts",
+      "title": "real ProseMirror handoff: disabled",
+      "status": "expected",
+      "results": [
+        "passed"
+      ]
+    },
+    {
+      "file": "handoff-richtext.e2e.ts",
+      "title": "real ProseMirror handoff: manual",
+      "status": "expected",
+      "results": [
+        "passed"
+      ]
+    },
+    {
+      "file": "handoff.e2e.ts",
+      "title": "Desktop handoff really uploads bytes to the selected session, sends once, persists acknowledgement and surfaces uncertainty",
+      "status": "expected",
+      "results": [
+        "passed"
+      ]
+    },
+    {
+      "file": "images.e2e.ts",
+      "title": "web image context menu copies natural pixels, saves account-authenticated PNG/blob and reports safe timing",
+      "status": "expected",
+      "results": [
+        "passed"
+      ]
+    },
+    {
+      "file": "login-diagnostics.e2e.ts",
+      "title": "Desktop login link diagnostics record blocked navigations with no secrets and keep normal account sessions",
+      "status": "expected",
+      "results": [
+        "passed"
+      ]
+    },
+    {
+      "file": "offline.e2e.ts",
+      "title": "encrypted conversation snapshot survives true quit, stays readable offline, remains account-bound, and reconnects without sending",
+      "status": "expected",
+      "results": [
+        "passed"
+      ]
+    },
+    {
+      "file": "preferences.e2e.ts",
+      "title": "Desktop first-document languages/timezones are account-scoped, preserved across reload and settings edits never reload live tabs",
+      "status": "expected",
+      "results": [
+        "passed"
+      ]
+    },
+    {
+      "file": "preferences.e2e.ts",
+      "title": "Native login popup inherits first-script preferences and account session from its existing parent",
+      "status": "expected",
+      "results": [
+        "passed"
+      ]
+    },
+    {
+      "file": "recovery-access.e2e.ts",
+      "title": "visible recovery consent can defer, reject and retry without losing old drafts; hidden update relaunch stays silent",
+      "status": "expected",
+      "results": [
+        "passed"
+      ]
+    },
+    {
+      "file": "recovery.e2e.ts",
+      "title": "Desktop keeps native pages through close/reopen, account/tab switches and undo; cold restart restores encrypted draft, reading anchor and workspace without sending",
+      "status": "expected",
+      "results": [
+        "passed"
+      ]
+    },
+    {
+      "file": "updates.e2e.ts",
+      "title": "confirmed update installs safely via quit",
+      "status": "expected",
+      "results": [
+        "passed"
+      ]
+    },
+    {
+      "file": "updates.e2e.ts",
+      "title": "confirmed update installs safely via idle",
+      "status": "expected",
+      "results": [
+        "passed"
+      ]
+    },
+    {
+      "file": "windows-recovery.e2e.ts",
+      "title": "Windows native close checkpoints the draft before quitting and restores on restart",
+      "status": "skipped",
+      "results": [
+        "skipped"
+      ]
+    },
+    {
+      "file": "workspace.e2e.ts",
+      "title": "真实 Electron：同账号共享、跨账号隔离、登录弹窗、重启及单账号清理",
+      "status": "expected",
+      "results": [
+        "passed"
+      ]
+    },
+    {
+      "file": "workspace.e2e.ts",
+      "title": "账号与标签交互、沙箱边界、窗口状态和代表性尺寸",
+      "status": "expected",
+      "results": [
+        "passed"
+      ]
+    },
+    {
+      "file": "workspace.e2e.ts",
+      "title": "Windows 原生拖动、窗口按钮安全区和窗口状态",
+      "status": "skipped",
+      "results": [
+        "skipped"
+      ]
+    }
+  ],
+  "originalResultSha256": "6d83165b0544293c1bbae743bdbe60cf8d0ddd7273dc0dc526f5281b7b3dcd2f",
+  "applicationInputs": {
+    "unchangedFromPackagedAlpha14Commit": "da4afdf4f381b6dd2d69f64c41bebbf3633ced7f",
+    "paths": [
+      "desktop/src",
+      "desktop/assets",
+      "desktop/package.json",
+      "desktop/package-lock.json",
+      "desktop/resources"
+    ],
+    "gitDiffExitCode": 0,
+    "sourceTree": "50e9c415d64874ad9446b7721510788a3aa1d811"
+  },
+  "earlierRuns": [
+    {
+      "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40013817687",
+      "regressionStatus": "failure",
+      "expected": 17,
+      "unexpected": 1,
+      "skippedOrNotRun": 5,
+      "cause": "Update fixture wrote draft before textarea existed; readiness awaited in 5d9574e. Native resources job separately succeeded."
+    },
+    {
+      "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40014686246",
+      "regressionStatus": "failure",
+      "expected": 12,
+      "unexpected": 1,
+      "skippedOrNotRun": 10,
+      "cause": "Offline fixture originally waited only for page script execution, then quit; this run restored text but no viewport image. A native-frame timing gap was suspected. Visible/capturable precondition added in 4888236; screenshot restoration assertion retained and final run passed."
+    }
+  ],
+  "relatedResourceReport": "docs/benchmarks/macos-alpha14-resources-20261024.json",
+  "resourceJob": "https://github.com/ForceMind/ChatGPT/actions/runs/40013817687/job/120620648842",
+  "publicReleaseChanged": false,
+  "newApplicationPackageBuilt": false,
+  "localDependenciesInstalled": false,
+  "manualAcceptanceDeferred": [
+    "Android actual homepage/manual verification",
+    "macOS authenticated attachment upload and send in user-designated account"
+  ]
+}

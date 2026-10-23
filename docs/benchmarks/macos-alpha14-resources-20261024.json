@@ -1,0 +1,2545 @@
+{
+  "schema": 1,
+  "measuredAt": "2026-10-23T19:54:42.773Z",
+  "currentVersion": "3.0.0-alpha.14",
+  "currentCommit": "72f8eaf59f6a59f7e8f642262614277c2a7c015d",
+  "baselineVersion": "3.0.0-alpha.13",
+  "baselineCommit": "16972fbaedbed6ec410cefca30c794d2fe86691b",
+  "ciRun": "https://github.com/ForceMind/ChatGPT/actions/runs/40013817687",
+  "host": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "processor": "Apple M1 (Virtual)",
+    "logicalCores": 3,
+    "memoryGiB": 7,
+    "kernel": "24.6.0"
+  },
+  "comparison": [
+    {
+      "workload": "light",
+      "tabs": 1,
+      "baselineWorkingSetMiB": 453.7864583333333,
+      "currentWorkingSetMiB": 458.5416666666667,
+      "workingSetDeltaPercent": 1.0478956006748863,
+      "baselineCpuPercent": 2.702360331558641,
+      "currentCpuPercent": 2.1116880387471015,
+      "cpuDeltaPercentagePoints": -0.5906722928115395
+    },
+    {
+      "workload": "light",
+      "tabs": 4,
+      "baselineWorkingSetMiB": 731.46484375,
+      "currentWorkingSetMiB": 736.9075520833334,
+      "workingSetDeltaPercent": 0.7440833800610669,
+      "baselineCpuPercent": 2.722336244318012,
+      "currentCpuPercent": 2.3312280651428883,
+      "cpuDeltaPercentagePoints": -0.39110817917512364
+    },
+    {
+      "workload": "light",
+      "tabs": 8,
+      "baselineWorkingSetMiB": 1101.5572916666667,
+      "currentWorkingSetMiB": 1109.3346354166667,
+      "workingSetDeltaPercent": 0.7060317070057165,
+      "baselineCpuPercent": 2.4277205542032965,
+      "currentCpuPercent": 2.7010305225625246,
+      "cpuDeltaPercentagePoints": 0.27330996835922816
+    },
+    {
+      "workload": "conversation",
+      "tabs": 1,
+      "baselineWorkingSetMiB": 538.2135416666666,
+      "currentWorkingSetMiB": 537.9075520833334,
+      "workingSetDeltaPercent": -0.05685282135148295,
+      "baselineCpuPercent": 2.2838348853977144,
+      "currentCpuPercent": 2.3555581302495665,
+      "cpuDeltaPercentagePoints": 0.07172324485185211
+    },
+    {
+      "workload": "conversation",
+      "tabs": 4,
+      "baselineWorkingSetMiB": 1032.0572916666667,
+      "currentWorkingSetMiB": 1009.16015625,
+      "workingSetDeltaPercent": -2.218591506648848,
+      "baselineCpuPercent": 2.8673985872837924,
+      "currentCpuPercent": 1.910811298389252,
+      "cpuDeltaPercentagePoints": -0.9565872888945404
+    },
+    {
+      "workload": "conversation",
+      "tabs": 8,
+      "baselineWorkingSetMiB": 1566.5768229166667,
+      "currentWorkingSetMiB": 1500.3268229166667,
+      "workingSetDeltaPercent": -4.228965923079031,
+      "baselineCpuPercent": 3.325334398839306,
+      "currentCpuPercent": 1.715260576736432,
+      "cpuDeltaPercentagePoints": -1.6100738221028739
+    }
+  ],
+  "retentionVerified": true,
+  "limitations": [
+    "Local synthetic pages, no authenticated ChatGPT or model generation",
+    "Working-set sum includes shared pages; not unique physical RAM",
+    "CPU is the Electron process API sum during idle sampling, not generation peak",
+    "Sequential runs on one hosted CI machine; point comparisons are not statistical performance guarantees",
+    "No freezing or discarding opened tabs for memory savings"
+  ],
+  "runs": {
+    "baseline-light": {
+      "applicationVersion": "3.0.0-alpha.13",
+      "host": {
+        "platform": "darwin",
+        "arch": "arm64",
+        "processor": "Apple M1 (Virtual)",
+        "logicalCores": 3,
+        "memoryGiB": 7,
+        "kernel": "24.6.0"
+      },
+      "label": "baseline-light",
+      "site": "local",
+      "workload": "light",
+      "isolatedTestData": true,
+      "nativeLaunch": true,
+      "versions": {
+        "node": "24.22.0",
+        "acorn": "8.18.0",
+        "ada": "4.0.0",
+        "amaro": "1.1.11",
+        "ares": "1.34.8",
+        "brotli": "1.2.0",
+        "cldr": "48.0",
+        "icu": "78.2",
+        "llhttp": "9.4.3",
+        "merve": "1.2.2",
+        "modules": "149",
+        "napi": "10",
+        "nbytes": "0.1.4",
+        "ncrypto": "0.0.1",
+        "nghttp2": "1.70.0",
+        "nghttp3": "",
+        "ngtcp2": "",
+        "openssl": "0.0.0",
+        "simdjson": "4.6.11",
+        "simdutf": "7.7.0",
+        "sqlite": "3.53.4",
+        "tz": "2026d",
+        "undici": "7.29.1",
+        "unicode": "17.0",
+        "uv": "1.52.1",
+        "uvwasi": "0.0.23",
+        "v8": "15.2.124.43-electron.0",
+        "zlib": "1.3.2.1-motley",
+        "zstd": "1.6.0",
+        "electron": "44.9.1",
+        "chrome": "152.0.7977.167"
+      },
+      "note": "Process working-set sum includes shared pages. CPU is Electron API sum. Conversation workload is synthetic (240 messages and 6 local images per page), not a logged-in ChatGPT benchmark or a memory limit.",
+      "results": [
+        {
+          "tabs": 1,
+          "cpuPercent": 2.702360331558641,
+          "workingSetMiB": 453.7864583333333,
+          "peakWorkingSetMiB": 458.359375,
+          "processes": 5,
+          "samples": [
+            {
+              "cpu": 3.286098096239394,
+              "workingSetKB": 469360,
+              "processes": 5
+            },
+            {
+              "cpu": 3.0015034216774317,
+              "workingSetKB": 469216,
+              "processes": 5
+            },
+            {
+              "cpu": 3.2816326966676193,
+              "workingSetKB": 469296,
+              "processes": 5
+            },
+            {
+              "cpu": 2.419012140017315,
+              "workingSetKB": 469296,
+              "processes": 5
+            },
+            {
+              "cpu": 2.5554739195041662,
+              "workingSetKB": 462160,
+              "processes": 5
+            },
+            {
+              "cpu": 2.897255585309724,
+              "workingSetKB": 462224,
+              "processes": 5
+            },
+            {
+              "cpu": 3.4411901042454804,
+              "workingSetKB": 462304,
+              "processes": 5
+            },
+            {
+              "cpu": 2.4586340198499586,
+              "workingSetKB": 462384,
+              "processes": 5
+            },
+            {
+              "cpu": 2.4087905908664418,
+              "workingSetKB": 462480,
+              "processes": 5
+            },
+            {
+              "cpu": 2.0992562087058113,
+              "workingSetKB": 462464,
+              "processes": 5
+            },
+            {
+              "cpu": 1.8815673637921952,
+              "workingSetKB": 462496,
+              "processes": 5
+            },
+            {
+              "cpu": 2.6979098318281554,
+              "workingSetKB": 462448,
+              "processes": 5
+            }
+          ],
+          "views": [
+            {
+              "id": 2,
+              "pid": 2773,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "2b70805c-30ba-4a91-b93d-1e4f6cf0291e",
+                "beats": 59,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 0,
+                "images": 0,
+                "sent": 0
+              }
+            }
+          ]
+        },
+        {
+          "tabs": 4,
+          "cpuPercent": 2.722336244318012,
+          "workingSetMiB": 731.46484375,
+          "peakWorkingSetMiB": 732.484375,
+          "processes": 8,
+          "samples": [
+            {
+              "cpu": 2.3280454530151347,
+              "workingSetKB": 750032,
+              "processes": 8
+            },
+            {
+              "cpu": 2.7071357088440386,
+              "workingSetKB": 750064,
+              "processes": 8
+            },
+            {
+              "cpu": 3.3168223205168186,
+              "workingSetKB": 749904,
+              "processes": 8
+            },
+            {
+              "cpu": 2.6734223726404833,
+              "workingSetKB": 749920,
+              "processes": 8
+            },
+            {
+              "cpu": 2.893500937020816,
+              "workingSetKB": 749936,
+              "processes": 8
+            },
+            {
+              "cpu": 2.9633748952280072,
+              "workingSetKB": 749104,
+              "processes": 8
+            },
+            {
+              "cpu": 2.0278477408823377,
+              "workingSetKB": 749104,
+              "processes": 8
+            },
+            {
+              "cpu": 2.387926684497916,
+              "workingSetKB": 749152,
+              "processes": 8
+            },
+            {
+              "cpu": 2.5915652682507546,
+              "workingSetKB": 749168,
+              "processes": 8
+            },
+            {
+              "cpu": 3.6594830254420456,
+              "workingSetKB": 747216,
+              "processes": 8
+            },
+            {
+              "cpu": 3.002634524163481,
+              "workingSetKB": 747312,
+              "processes": 8
+            },
+            {
+              "cpu": 2.11627600131431,
+              "workingSetKB": 747328,
+              "processes": 8
+            }
+          ],
+          "views": [
+            {
+              "id": 2,
+              "pid": 2773,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "2b70805c-30ba-4a91-b93d-1e4f6cf0291e",
+                "beats": 121,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 0,
+                "images": 0,
+                "sent": 0
+              }
+            },
+            {
+              "id": 3,
+              "pid": 2944,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "4a74f3d1-074f-4b40-8283-04451118d298",
+                "beats": 60,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 0,
+                "images": 0,
+                "sent": 0
+              }
+            },
+            {
+              "id": 4,
+              "pid": 2986,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "328ae6a2-0ba4-44fb-90b4-09449475720c",
+                "beats": 59,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 0,
+                "images": 0,
+                "sent": 0
+              }
+            },
+            {
+              "id": 5,
+              "pid": 2989,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "a7186776-1fdd-479f-88ba-ca38ad41d130",
+                "beats": 57,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 0,
+                "images": 0,
+                "sent": 0
+              }
+            }
+          ]
+        },
+        {
+          "tabs": 8,
+          "cpuPercent": 2.4277205542032965,
+          "workingSetMiB": 1101.5572916666667,
+          "peakWorkingSetMiB": 1102.421875,
+          "processes": 12,
+          "samples": [
+            {
+              "cpu": 2.919414864055109,
+              "workingSetKB": 1128880,
+              "processes": 12
+            },
+            {
+              "cpu": 2.7545421271035337,
+              "workingSetKB": 1128880,
+              "processes": 12
+            },
+            {
+              "cpu": 2.298194238404462,
+              "workingSetKB": 1128688,
+              "processes": 12
+            },
+            {
+              "cpu": 2.4289160676440655,
+              "workingSetKB": 1128640,
+              "processes": 12
+            },
+            {
+              "cpu": 2.0521491012605275,
+              "workingSetKB": 1128672,
+              "processes": 12
+            },
+            {
+              "cpu": 2.508028578037047,
+              "workingSetKB": 1127856,
+              "processes": 12
+            },
+            {
+              "cpu": 2.4189334710206443,
+              "workingSetKB": 1127872,
+              "processes": 12
+            },
+            {
+              "cpu": 2.3102185161716875,
+              "workingSetKB": 1127872,
+              "processes": 12
+            },
+            {
+              "cpu": 2.328118764075748,
+              "workingSetKB": 1127888,
+              "processes": 12
+            },
+            {
+              "cpu": 2.5842253489328644,
+              "workingSetKB": 1126944,
+              "processes": 12
+            },
+            {
+              "cpu": 2.395051849659538,
+              "workingSetKB": 1126800,
+              "processes": 12
+            },
+            {
+              "cpu": 2.134853724074332,
+              "workingSetKB": 1126944,
+              "processes": 12
+            }
+          ],
+          "views": [
+            {
+              "id": 2,
+              "pid": 2773,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "2b70805c-30ba-4a91-b93d-1e4f6cf0291e",
+                "beats": 185,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 0,
+                "images": 0,
+                "sent": 0
+              }
+            },
+            {
+              "id": 3,
+              "pid": 2944,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "4a74f3d1-074f-4b40-8283-04451118d298",
+                "beats": 124,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 0,
+                "images": 0,
+                "sent": 0
+              }
+            },
+            {
+              "id": 4,
+              "pid": 2986,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "328ae6a2-0ba4-44fb-90b4-09449475720c",
+                "beats": 122,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 0,
+                "images": 0,
+                "sent": 0
+              }
+            },
+            {
+              "id": 5,
+              "pid": 2989,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "a7186776-1fdd-479f-88ba-ca38ad41d130",
+                "beats": 121,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 0,
+                "images": 0,
+                "sent": 0
+              }
+            },
+            {
+              "id": 6,
+              "pid": 3112,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "ba3c8fed-3415-45a5-ba28-19a285e1023f",
+                "beats": 61,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 0,
+                "images": 0,
+                "sent": 0
+              }
+            },
+            {
+              "id": 7,
+              "pid": 3114,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "a38f5cd6-7a5f-4cfd-8d48-a58aa1464491",
+                "beats": 60,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 0,
+                "images": 0,
+                "sent": 0
+              }
+            },
+            {
+              "id": 8,
+              "pid": 3116,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "0356eee2-9730-4dc5-be02-3515eb5ecce7",
+                "beats": 59,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 0,
+                "images": 0,
+                "sent": 0
+              }
+            },
+            {
+              "id": 9,
+              "pid": 3118,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "1bf7251f-8022-4734-b479-f9781ebb7577",
+                "beats": 57,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 0,
+                "images": 0,
+                "sent": 0
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "current-light": {
+      "applicationVersion": "3.0.0-alpha.14",
+      "host": {
+        "platform": "darwin",
+        "arch": "arm64",
+        "processor": "Apple M1 (Virtual)",
+        "logicalCores": 3,
+        "memoryGiB": 7,
+        "kernel": "24.6.0"
+      },
+      "label": "current-light",
+      "site": "local",
+      "workload": "light",
+      "isolatedTestData": true,
+      "nativeLaunch": true,
+      "versions": {
+        "node": "24.22.0",
+        "acorn": "8.18.0",
+        "ada": "4.0.0",
+        "amaro": "1.1.11",
+        "ares": "1.34.8",
+        "brotli": "1.2.0",
+        "cldr": "48.0",
+        "icu": "78.2",
+        "llhttp": "9.4.3",
+        "merve": "1.2.2",
+        "modules": "149",
+        "napi": "10",
+        "nbytes": "0.1.4",
+        "ncrypto": "0.0.1",
+        "nghttp2": "1.70.0",
+        "nghttp3": "",
+        "ngtcp2": "",
+        "openssl": "0.0.0",
+        "simdjson": "4.6.11",
+        "simdutf": "7.7.0",
+        "sqlite": "3.53.4",
+        "tz": "2026d",
+        "undici": "7.29.1",
+        "unicode": "17.0",
+        "uv": "1.52.1",
+        "uvwasi": "0.0.23",
+        "v8": "15.2.124.43-electron.0",
+        "zlib": "1.3.2.1-motley",
+        "zstd": "1.6.0",
+        "electron": "44.9.1",
+        "chrome": "152.0.7977.167"
+      },
+      "note": "Process working-set sum includes shared pages. CPU is Electron API sum. Conversation workload is synthetic (240 messages and 6 local images per page), not a logged-in ChatGPT benchmark or a memory limit.",
+      "results": [
+        {
+          "tabs": 1,
+          "cpuPercent": 2.1116880387471015,
+          "workingSetMiB": 458.5416666666667,
+          "peakWorkingSetMiB": 458.765625,
+          "processes": 5,
+          "samples": [
+            {
+              "cpu": 2.579319612056873,
+              "workingSetKB": 469376,
+              "processes": 5
+            },
+            {
+              "cpu": 2.1482513216714354,
+              "workingSetKB": 469472,
+              "processes": 5
+            },
+            {
+              "cpu": 2.5735230709625214,
+              "workingSetKB": 469424,
+              "processes": 5
+            },
+            {
+              "cpu": 1.8891276373401884,
+              "workingSetKB": 469408,
+              "processes": 5
+            },
+            {
+              "cpu": 1.9538664732827722,
+              "workingSetKB": 469472,
+              "processes": 5
+            },
+            {
+              "cpu": 1.958981374799508,
+              "workingSetKB": 469472,
+              "processes": 5
+            },
+            {
+              "cpu": 1.866554762477044,
+              "workingSetKB": 469488,
+              "processes": 5
+            },
+            {
+              "cpu": 1.6181937632426726,
+              "workingSetKB": 469600,
+              "processes": 5
+            },
+            {
+              "cpu": 2.022171551211499,
+              "workingSetKB": 469600,
+              "processes": 5
+            },
+            {
+              "cpu": 1.8324005250306872,
+              "workingSetKB": 469728,
+              "processes": 5
+            },
+            {
+              "cpu": 2.3251870749737216,
+              "workingSetKB": 469744,
+              "processes": 5
+            },
+            {
+              "cpu": 2.572679297916295,
+              "workingSetKB": 469776,
+              "processes": 5
+            }
+          ],
+          "views": [
+            {
+              "id": 2,
+              "pid": 3545,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "6cb3b373-48d5-493d-94c1-6885b6cf12b0",
+                "beats": 58,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 0,
+                "images": 0,
+                "sent": 0
+              }
+            }
+          ]
+        },
+        {
+          "tabs": 4,
+          "cpuPercent": 2.3312280651428883,
+          "workingSetMiB": 736.9075520833334,
+          "peakWorkingSetMiB": 738.8125,
+          "processes": 8,
+          "samples": [
+            {
+              "cpu": 2.2986823403217174,
+              "workingSetKB": 756512,
+              "processes": 8
+            },
+            {
+              "cpu": 2.9485321126848083,
+              "workingSetKB": 756544,
+              "processes": 8
+            },
+            {
+              "cpu": 2.3650899623967327,
+              "workingSetKB": 756416,
+              "processes": 8
+            },
+            {
+              "cpu": 2.4194209135661766,
+              "workingSetKB": 756384,
+              "processes": 8
+            },
+            {
+              "cpu": 2.1379672743492564,
+              "workingSetKB": 756416,
+              "processes": 8
+            },
+            {
+              "cpu": 1.8767590002974814,
+              "workingSetKB": 753136,
+              "processes": 8
+            },
+            {
+              "cpu": 1.9377728613381884,
+              "workingSetKB": 753152,
+              "processes": 8
+            },
+            {
+              "cpu": 2.337885486989645,
+              "workingSetKB": 753152,
+              "processes": 8
+            },
+            {
+              "cpu": 2.0309832016609946,
+              "workingSetKB": 753248,
+              "processes": 8
+            },
+            {
+              "cpu": 2.137870616762665,
+              "workingSetKB": 753248,
+              "processes": 8
+            },
+            {
+              "cpu": 2.149547729659484,
+              "workingSetKB": 753248,
+              "processes": 8
+            },
+            {
+              "cpu": 3.334225281687508,
+              "workingSetKB": 753664,
+              "processes": 8
+            }
+          ],
+          "views": [
+            {
+              "id": 2,
+              "pid": 3545,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "6cb3b373-48d5-493d-94c1-6885b6cf12b0",
+                "beats": 119,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 0,
+                "images": 0,
+                "sent": 0
+              }
+            },
+            {
+              "id": 3,
+              "pid": 3695,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "1a69da1e-010a-4781-a059-aae49a717bca",
+                "beats": 59,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 0,
+                "images": 0,
+                "sent": 0
+              }
+            },
+            {
+              "id": 4,
+              "pid": 3697,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "99d153b0-69c0-4299-94eb-727b41551294",
+                "beats": 58,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 0,
+                "images": 0,
+                "sent": 0
+              }
+            },
+            {
+              "id": 5,
+              "pid": 3699,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "63bc8524-c4f2-4e3b-8613-cd5d36cdab42",
+                "beats": 58,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 0,
+                "images": 0,
+                "sent": 0
+              }
+            }
+          ]
+        },
+        {
+          "tabs": 8,
+          "cpuPercent": 2.7010305225625246,
+          "workingSetMiB": 1109.3346354166667,
+          "peakWorkingSetMiB": 1109.484375,
+          "processes": 12,
+          "samples": [
+            {
+              "cpu": 1.7190704605587832,
+              "workingSetKB": 1136112,
+              "processes": 12
+            },
+            {
+              "cpu": 2.2071362124902936,
+              "workingSetKB": 1135904,
+              "processes": 12
+            },
+            {
+              "cpu": 2.533365238978181,
+              "workingSetKB": 1135888,
+              "processes": 12
+            },
+            {
+              "cpu": 1.9912611134132279,
+              "workingSetKB": 1135872,
+              "processes": 12
+            },
+            {
+              "cpu": 2.3927717142182274,
+              "workingSetKB": 1135920,
+              "processes": 12
+            },
+            {
+              "cpu": 3.2367335607397605,
+              "workingSetKB": 1135936,
+              "processes": 12
+            },
+            {
+              "cpu": 3.5215004263876124,
+              "workingSetKB": 1135936,
+              "processes": 12
+            },
+            {
+              "cpu": 3.025166854359642,
+              "workingSetKB": 1135936,
+              "processes": 12
+            },
+            {
+              "cpu": 3.627373504457276,
+              "workingSetKB": 1136000,
+              "processes": 12
+            },
+            {
+              "cpu": 2.563295341059412,
+              "workingSetKB": 1135968,
+              "processes": 12
+            },
+            {
+              "cpu": 3.0090004221038296,
+              "workingSetKB": 1135984,
+              "processes": 12
+            },
+            {
+              "cpu": 2.5856914219840554,
+              "workingSetKB": 1136048,
+              "processes": 12
+            }
+          ],
+          "views": [
+            {
+              "id": 2,
+              "pid": 3545,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "6cb3b373-48d5-493d-94c1-6885b6cf12b0",
+                "beats": 182,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 0,
+                "images": 0,
+                "sent": 0
+              }
+            },
+            {
+              "id": 3,
+              "pid": 3695,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "1a69da1e-010a-4781-a059-aae49a717bca",
+                "beats": 122,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 0,
+                "images": 0,
+                "sent": 0
+              }
+            },
+            {
+              "id": 4,
+              "pid": 3697,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "99d153b0-69c0-4299-94eb-727b41551294",
+                "beats": 121,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 0,
+                "images": 0,
+                "sent": 0
+              }
+            },
+            {
+              "id": 5,
+              "pid": 3699,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "63bc8524-c4f2-4e3b-8613-cd5d36cdab42",
+                "beats": 120,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 0,
+                "images": 0,
+                "sent": 0
+              }
+            },
+            {
+              "id": 6,
+              "pid": 3861,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "bcd0ef5e-0ebe-4f3c-9cb7-f26cafb36f9d",
+                "beats": 61,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 0,
+                "images": 0,
+                "sent": 0
+              }
+            },
+            {
+              "id": 7,
+              "pid": 3863,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "066305a8-4c71-4aed-b58d-c3c2d719b772",
+                "beats": 60,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 0,
+                "images": 0,
+                "sent": 0
+              }
+            },
+            {
+              "id": 8,
+              "pid": 3870,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "5c484d6e-76f9-44b7-8a23-48b57eb85d2d",
+                "beats": 58,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 0,
+                "images": 0,
+                "sent": 0
+              }
+            },
+            {
+              "id": 9,
+              "pid": 3903,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "1733bd4b-4755-43a6-81f1-55949c8c8594",
+                "beats": 58,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 0,
+                "images": 0,
+                "sent": 0
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "baseline-conversation": {
+      "applicationVersion": "3.0.0-alpha.13",
+      "host": {
+        "platform": "darwin",
+        "arch": "arm64",
+        "processor": "Apple M1 (Virtual)",
+        "logicalCores": 3,
+        "memoryGiB": 7,
+        "kernel": "24.6.0"
+      },
+      "label": "baseline-conversation",
+      "site": "local",
+      "workload": "conversation",
+      "isolatedTestData": true,
+      "nativeLaunch": true,
+      "versions": {
+        "node": "24.22.0",
+        "acorn": "8.18.0",
+        "ada": "4.0.0",
+        "amaro": "1.1.11",
+        "ares": "1.34.8",
+        "brotli": "1.2.0",
+        "cldr": "48.0",
+        "icu": "78.2",
+        "llhttp": "9.4.3",
+        "merve": "1.2.2",
+        "modules": "149",
+        "napi": "10",
+        "nbytes": "0.1.4",
+        "ncrypto": "0.0.1",
+        "nghttp2": "1.70.0",
+        "nghttp3": "",
+        "ngtcp2": "",
+        "openssl": "0.0.0",
+        "simdjson": "4.6.11",
+        "simdutf": "7.7.0",
+        "sqlite": "3.53.4",
+        "tz": "2026d",
+        "undici": "7.29.1",
+        "unicode": "17.0",
+        "uv": "1.52.1",
+        "uvwasi": "0.0.23",
+        "v8": "15.2.124.43-electron.0",
+        "zlib": "1.3.2.1-motley",
+        "zstd": "1.6.0",
+        "electron": "44.9.1",
+        "chrome": "152.0.7977.167"
+      },
+      "note": "Process working-set sum includes shared pages. CPU is Electron API sum. Conversation workload is synthetic (240 messages and 6 local images per page), not a logged-in ChatGPT benchmark or a memory limit.",
+      "results": [
+        {
+          "tabs": 1,
+          "cpuPercent": 2.2838348853977144,
+          "workingSetMiB": 538.2135416666666,
+          "peakWorkingSetMiB": 539.125,
+          "processes": 5,
+          "samples": [
+            {
+              "cpu": 2.9431794632444293,
+              "workingSetKB": 550384,
+              "processes": 5
+            },
+            {
+              "cpu": 2.517619366967416,
+              "workingSetKB": 550320,
+              "processes": 5
+            },
+            {
+              "cpu": 2.362078987597161,
+              "workingSetKB": 550336,
+              "processes": 5
+            },
+            {
+              "cpu": 3.077234060159544,
+              "workingSetKB": 550768,
+              "processes": 5
+            },
+            {
+              "cpu": 2.3154070657756916,
+              "workingSetKB": 550768,
+              "processes": 5
+            },
+            {
+              "cpu": 2.293345224155784,
+              "workingSetKB": 551120,
+              "processes": 5
+            },
+            {
+              "cpu": 2.448055788890663,
+              "workingSetKB": 551216,
+              "processes": 5
+            },
+            {
+              "cpu": 2.1497830468407613,
+              "workingSetKB": 551232,
+              "processes": 5
+            },
+            {
+              "cpu": 1.904894525054595,
+              "workingSetKB": 551648,
+              "processes": 5
+            },
+            {
+              "cpu": 1.399490210131682,
+              "workingSetKB": 551648,
+              "processes": 5
+            },
+            {
+              "cpu": 1.930935177694657,
+              "workingSetKB": 552064,
+              "processes": 5
+            },
+            {
+              "cpu": 2.063995708260196,
+              "workingSetKB": 552064,
+              "processes": 5
+            }
+          ],
+          "views": [
+            {
+              "id": 2,
+              "pid": 4232,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "4589761e-8a2d-458c-9bbc-0f95ff6663fb",
+                "beats": 58,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 240,
+                "images": 6,
+                "sent": 0
+              }
+            }
+          ]
+        },
+        {
+          "tabs": 4,
+          "cpuPercent": 2.8673985872837924,
+          "workingSetMiB": 1032.0572916666667,
+          "peakWorkingSetMiB": 1033.359375,
+          "processes": 8,
+          "samples": [
+            {
+              "cpu": 2.4784404449711475,
+              "workingSetKB": 1057760,
+              "processes": 8
+            },
+            {
+              "cpu": 2.9994978106358987,
+              "workingSetKB": 1058160,
+              "processes": 8
+            },
+            {
+              "cpu": 2.6859630891529704,
+              "workingSetKB": 1058080,
+              "processes": 8
+            },
+            {
+              "cpu": 2.601953632776721,
+              "workingSetKB": 1058112,
+              "processes": 8
+            },
+            {
+              "cpu": 3.123320824720196,
+              "workingSetKB": 1057600,
+              "processes": 8
+            },
+            {
+              "cpu": 3.1603149897516234,
+              "workingSetKB": 1057600,
+              "processes": 8
+            },
+            {
+              "cpu": 3.511227175044529,
+              "workingSetKB": 1058016,
+              "processes": 8
+            },
+            {
+              "cpu": 2.493046621632019,
+              "workingSetKB": 1054992,
+              "processes": 8
+            },
+            {
+              "cpu": 2.4022948980583174,
+              "workingSetKB": 1054992,
+              "processes": 8
+            },
+            {
+              "cpu": 2.5787388862482037,
+              "workingSetKB": 1056128,
+              "processes": 8
+            },
+            {
+              "cpu": 3.689128384054542,
+              "workingSetKB": 1055376,
+              "processes": 8
+            },
+            {
+              "cpu": 2.684856290359341,
+              "workingSetKB": 1055104,
+              "processes": 8
+            }
+          ],
+          "views": [
+            {
+              "id": 2,
+              "pid": 4232,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "4589761e-8a2d-458c-9bbc-0f95ff6663fb",
+                "beats": 124,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 240,
+                "images": 6,
+                "sent": 0
+              }
+            },
+            {
+              "id": 3,
+              "pid": 4514,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "0b62c633-653b-4c94-9cb6-fd01f9ae1ad0",
+                "beats": 64,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 240,
+                "images": 6,
+                "sent": 0
+              }
+            },
+            {
+              "id": 4,
+              "pid": 4623,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "d54bfc9d-1638-4e63-ac12-3a41f31d74fa",
+                "beats": 61,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 240,
+                "images": 6,
+                "sent": 0
+              }
+            },
+            {
+              "id": 5,
+              "pid": 4674,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "68e125bb-d9df-4edc-8b57-825f927e11e4",
+                "beats": 59,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 240,
+                "images": 6,
+                "sent": 0
+              }
+            }
+          ]
+        },
+        {
+          "tabs": 8,
+          "cpuPercent": 3.325334398839306,
+          "workingSetMiB": 1566.5768229166667,
+          "peakWorkingSetMiB": 1567.84375,
+          "processes": 12,
+          "samples": [
+            {
+              "cpu": 3.932798544432327,
+              "workingSetKB": 1604864,
+              "processes": 12
+            },
+            {
+              "cpu": 3.2868303206470726,
+              "workingSetKB": 1604816,
+              "processes": 12
+            },
+            {
+              "cpu": 2.6710674774134664,
+              "workingSetKB": 1605136,
+              "processes": 12
+            },
+            {
+              "cpu": 2.5178981208392375,
+              "workingSetKB": 1605168,
+              "processes": 12
+            },
+            {
+              "cpu": 2.482207767872624,
+              "workingSetKB": 1605168,
+              "processes": 12
+            },
+            {
+              "cpu": 3.1473117828922086,
+              "workingSetKB": 1605472,
+              "processes": 12
+            },
+            {
+              "cpu": 4.591576121031299,
+              "workingSetKB": 1605360,
+              "processes": 12
+            },
+            {
+              "cpu": 6.355692448690213,
+              "workingSetKB": 1603296,
+              "processes": 12
+            },
+            {
+              "cpu": 2.9747733093684974,
+              "workingSetKB": 1602480,
+              "processes": 12
+            },
+            {
+              "cpu": 2.4277207935588137,
+              "workingSetKB": 1602480,
+              "processes": 12
+            },
+            {
+              "cpu": 2.981674420468618,
+              "workingSetKB": 1602928,
+              "processes": 12
+            },
+            {
+              "cpu": 2.534461678857294,
+              "workingSetKB": 1602928,
+              "processes": 12
+            }
+          ],
+          "views": [
+            {
+              "id": 2,
+              "pid": 4232,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "4589761e-8a2d-458c-9bbc-0f95ff6663fb",
+                "beats": 202,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 240,
+                "images": 6,
+                "sent": 0
+              }
+            },
+            {
+              "id": 3,
+              "pid": 4514,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "0b62c633-653b-4c94-9cb6-fd01f9ae1ad0",
+                "beats": 142,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 240,
+                "images": 6,
+                "sent": 0
+              }
+            },
+            {
+              "id": 4,
+              "pid": 4623,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "d54bfc9d-1638-4e63-ac12-3a41f31d74fa",
+                "beats": 139,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 240,
+                "images": 6,
+                "sent": 0
+              }
+            },
+            {
+              "id": 5,
+              "pid": 4674,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "68e125bb-d9df-4edc-8b57-825f927e11e4",
+                "beats": 136,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 240,
+                "images": 6,
+                "sent": 0
+              }
+            },
+            {
+              "id": 6,
+              "pid": 4938,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "0fd71234-c355-425c-a0b1-009a26f68785",
+                "beats": 74,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 240,
+                "images": 6,
+                "sent": 0
+              }
+            },
+            {
+              "id": 7,
+              "pid": 4941,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "7b7974a9-7b27-4993-a40c-48bf5a84ecfc",
+                "beats": 69,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 240,
+                "images": 6,
+                "sent": 0
+              }
+            },
+            {
+              "id": 8,
+              "pid": 4946,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "c4bb268d-668a-4bdb-85ac-d242e972c510",
+                "beats": 64,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 240,
+                "images": 6,
+                "sent": 0
+              }
+            },
+            {
+              "id": 9,
+              "pid": 4953,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "22a1e30d-0cde-4486-8e1d-8d9d5e7b9201",
+                "beats": 59,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 240,
+                "images": 6,
+                "sent": 0
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "current-conversation": {
+      "applicationVersion": "3.0.0-alpha.14",
+      "host": {
+        "platform": "darwin",
+        "arch": "arm64",
+        "processor": "Apple M1 (Virtual)",
+        "logicalCores": 3,
+        "memoryGiB": 7,
+        "kernel": "24.6.0"
+      },
+      "label": "current-conversation",
+      "site": "local",
+      "workload": "conversation",
+      "isolatedTestData": true,
+      "nativeLaunch": true,
+      "versions": {
+        "node": "24.22.0",
+        "acorn": "8.18.0",
+        "ada": "4.0.0",
+        "amaro": "1.1.11",
+        "ares": "1.34.8",
+        "brotli": "1.2.0",
+        "cldr": "48.0",
+        "icu": "78.2",
+        "llhttp": "9.4.3",
+        "merve": "1.2.2",
+        "modules": "149",
+        "napi": "10",
+        "nbytes": "0.1.4",
+        "ncrypto": "0.0.1",
+        "nghttp2": "1.70.0",
+        "nghttp3": "",
+        "ngtcp2": "",
+        "openssl": "0.0.0",
+        "simdjson": "4.6.11",
+        "simdutf": "7.7.0",
+        "sqlite": "3.53.4",
+        "tz": "2026d",
+        "undici": "7.29.1",
+        "unicode": "17.0",
+        "uv": "1.52.1",
+        "uvwasi": "0.0.23",
+        "v8": "15.2.124.43-electron.0",
+        "zlib": "1.3.2.1-motley",
+        "zstd": "1.6.0",
+        "electron": "44.9.1",
+        "chrome": "152.0.7977.167"
+      },
+      "note": "Process working-set sum includes shared pages. CPU is Electron API sum. Conversation workload is synthetic (240 messages and 6 local images per page), not a logged-in ChatGPT benchmark or a memory limit.",
+      "results": [
+        {
+          "tabs": 1,
+          "cpuPercent": 2.3555581302495665,
+          "workingSetMiB": 537.9075520833334,
+          "peakWorkingSetMiB": 538.890625,
+          "processes": 5,
+          "samples": [
+            {
+              "cpu": 3.0788048340318594,
+              "workingSetKB": 550048,
+              "processes": 5
+            },
+            {
+              "cpu": 2.724934995937423,
+              "workingSetKB": 550176,
+              "processes": 5
+            },
+            {
+              "cpu": 2.5746239095925825,
+              "workingSetKB": 550096,
+              "processes": 5
+            },
+            {
+              "cpu": 2.9120827782416434,
+              "workingSetKB": 550512,
+              "processes": 5
+            },
+            {
+              "cpu": 2.0286529306251833,
+              "workingSetKB": 550512,
+              "processes": 5
+            },
+            {
+              "cpu": 1.812867719153736,
+              "workingSetKB": 550496,
+              "processes": 5
+            },
+            {
+              "cpu": 2.630078046295682,
+              "workingSetKB": 550944,
+              "processes": 5
+            },
+            {
+              "cpu": 2.358072025454002,
+              "workingSetKB": 550976,
+              "processes": 5
+            },
+            {
+              "cpu": 1.9572869465016798,
+              "workingSetKB": 551408,
+              "processes": 5
+            },
+            {
+              "cpu": 2.230580947909353,
+              "workingSetKB": 551408,
+              "processes": 5
+            },
+            {
+              "cpu": 1.949393677746695,
+              "workingSetKB": 551408,
+              "processes": 5
+            },
+            {
+              "cpu": 2.009318751504957,
+              "workingSetKB": 551824,
+              "processes": 5
+            }
+          ],
+          "views": [
+            {
+              "id": 2,
+              "pid": 5374,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "e3f83a07-60e6-4331-a2b3-6fe6ef103c0b",
+                "beats": 59,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 240,
+                "images": 6,
+                "sent": 0
+              }
+            }
+          ]
+        },
+        {
+          "tabs": 4,
+          "cpuPercent": 1.910811298389252,
+          "workingSetMiB": 1009.16015625,
+          "peakWorkingSetMiB": 1026.109375,
+          "processes": 8,
+          "samples": [
+            {
+              "cpu": 2.2867006788173017,
+              "workingSetKB": 1049952,
+              "processes": 8
+            },
+            {
+              "cpu": 1.9407770742043275,
+              "workingSetKB": 1049984,
+              "processes": 8
+            },
+            {
+              "cpu": 1.454403063512656,
+              "workingSetKB": 1050352,
+              "processes": 8
+            },
+            {
+              "cpu": 1.33983649487934,
+              "workingSetKB": 1050384,
+              "processes": 8
+            },
+            {
+              "cpu": 1.5830241570853611,
+              "workingSetKB": 1050736,
+              "processes": 8
+            },
+            {
+              "cpu": 1.819714631230478,
+              "workingSetKB": 1049920,
+              "processes": 8
+            },
+            {
+              "cpu": 1.5896611291944795,
+              "workingSetKB": 1039952,
+              "processes": 8
+            },
+            {
+              "cpu": 2.3761970169536055,
+              "workingSetKB": 1011488,
+              "processes": 8
+            },
+            {
+              "cpu": 1.8873067029616082,
+              "workingSetKB": 1011488,
+              "processes": 8
+            },
+            {
+              "cpu": 2.393298688594221,
+              "workingSetKB": 1012608,
+              "processes": 8
+            },
+            {
+              "cpu": 2.624868281736443,
+              "workingSetKB": 1012000,
+              "processes": 8
+            },
+            {
+              "cpu": 1.6339476615012025,
+              "workingSetKB": 1011696,
+              "processes": 8
+            }
+          ],
+          "views": [
+            {
+              "id": 2,
+              "pid": 5374,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "e3f83a07-60e6-4331-a2b3-6fe6ef103c0b",
+                "beats": 125,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 240,
+                "images": 6,
+                "sent": 0
+              }
+            },
+            {
+              "id": 3,
+              "pid": 5575,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "495912b6-4db2-4fa1-b9e9-49463e4b9fa4",
+                "beats": 64,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 240,
+                "images": 6,
+                "sent": 0
+              }
+            },
+            {
+              "id": 4,
+              "pid": 5578,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "aecaadf2-f7ed-44d4-b71c-8e2e2cd54106",
+                "beats": 61,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 240,
+                "images": 6,
+                "sent": 0
+              }
+            },
+            {
+              "id": 5,
+              "pid": 5580,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "938584e5-12f2-452a-94f4-2efb64a5a57a",
+                "beats": 59,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 240,
+                "images": 6,
+                "sent": 0
+              }
+            }
+          ]
+        },
+        {
+          "tabs": 8,
+          "cpuPercent": 1.715260576736432,
+          "workingSetMiB": 1500.3268229166667,
+          "peakWorkingSetMiB": 1506.359375,
+          "processes": 12,
+          "samples": [
+            {
+              "cpu": 2.0464940435510317,
+              "workingSetKB": 1534736,
+              "processes": 12
+            },
+            {
+              "cpu": 1.5528655392411266,
+              "workingSetKB": 1534736,
+              "processes": 12
+            },
+            {
+              "cpu": 1.5227804701511474,
+              "workingSetKB": 1535056,
+              "processes": 12
+            },
+            {
+              "cpu": 1.4041070602902308,
+              "workingSetKB": 1535056,
+              "processes": 12
+            },
+            {
+              "cpu": 1.4646392217924304,
+              "workingSetKB": 1534912,
+              "processes": 12
+            },
+            {
+              "cpu": 1.380667812091516,
+              "workingSetKB": 1534976,
+              "processes": 12
+            },
+            {
+              "cpu": 1.4731937985651082,
+              "workingSetKB": 1534960,
+              "processes": 12
+            },
+            {
+              "cpu": 1.5509090146636166,
+              "workingSetKB": 1535360,
+              "processes": 12
+            },
+            {
+              "cpu": 2.02391389508063,
+              "workingSetKB": 1535392,
+              "processes": 12
+            },
+            {
+              "cpu": 2.7507856801317816,
+              "workingSetKB": 1535824,
+              "processes": 12
+            },
+            {
+              "cpu": 2.0636983319625504,
+              "workingSetKB": 1542496,
+              "processes": 12
+            },
+            {
+              "cpu": 1.3490720533160185,
+              "workingSetKB": 1542512,
+              "processes": 12
+            }
+          ],
+          "views": [
+            {
+              "id": 2,
+              "pid": 5374,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "e3f83a07-60e6-4331-a2b3-6fe6ef103c0b",
+                "beats": 195,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 240,
+                "images": 6,
+                "sent": 0
+              }
+            },
+            {
+              "id": 3,
+              "pid": 5575,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "495912b6-4db2-4fa1-b9e9-49463e4b9fa4",
+                "beats": 133,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 240,
+                "images": 6,
+                "sent": 0
+              }
+            },
+            {
+              "id": 4,
+              "pid": 5578,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "aecaadf2-f7ed-44d4-b71c-8e2e2cd54106",
+                "beats": 131,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 240,
+                "images": 6,
+                "sent": 0
+              }
+            },
+            {
+              "id": 5,
+              "pid": 5580,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "938584e5-12f2-452a-94f4-2efb64a5a57a",
+                "beats": 128,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 240,
+                "images": 6,
+                "sent": 0
+              }
+            },
+            {
+              "id": 6,
+              "pid": 6172,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "0bea7507-2563-47e3-9252-2b20505a7dd6",
+                "beats": 67,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 240,
+                "images": 6,
+                "sent": 0
+              }
+            },
+            {
+              "id": 7,
+              "pid": 6175,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "c0f84875-b8c9-4757-9415-8ca649631629",
+                "beats": 65,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 240,
+                "images": 6,
+                "sent": 0
+              }
+            },
+            {
+              "id": 8,
+              "pid": 6179,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "c97783c9-a130-4fde-970f-f0ceb6a249b5",
+                "beats": 62,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 240,
+                "images": 6,
+                "sent": 0
+              }
+            },
+            {
+              "id": 9,
+              "pid": 6182,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "88968e9e-37b2-4653-a7f6-859c0c8654da",
+                "beats": 59,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 240,
+                "images": 6,
+                "sent": 0
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "current-retention": {
+      "applicationVersion": "3.0.0-alpha.14",
+      "host": {
+        "platform": "darwin",
+        "arch": "arm64",
+        "processor": "Apple M1 (Virtual)",
+        "logicalCores": 3,
+        "memoryGiB": 7,
+        "kernel": "24.6.0"
+      },
+      "retention": {
+        "durationMs": 330937,
+        "profiles": 3,
+        "before": [
+          {
+            "id": 2,
+            "state": {
+              "instance": "363e5570-2106-47a4-8f91-7a78e8359183",
+              "beats": 75,
+              "events": 37,
+              "draft": "未发送草稿",
+              "discarded": false
+            }
+          },
+          {
+            "id": 3,
+            "state": {
+              "instance": "9c7ebeda-0739-4bc4-ae53-d6d2a43bbdaf",
+              "beats": 72,
+              "events": 35,
+              "draft": "未发送草稿",
+              "discarded": false
+            }
+          },
+          {
+            "id": 4,
+            "state": {
+              "instance": "18557cc3-8e93-478f-bcf4-1fc83025ff68",
+              "beats": 70,
+              "events": 34,
+              "draft": "未发送草稿",
+              "discarded": false
+            }
+          },
+          {
+            "id": 5,
+            "state": {
+              "instance": "e293900e-c386-484e-b951-3c53bd5e9931",
+              "beats": 68,
+              "events": 33,
+              "draft": "未发送草稿",
+              "discarded": false
+            }
+          },
+          {
+            "id": 6,
+            "state": {
+              "instance": "c37f9dcb-027c-4b7f-99c2-3f19c552490e",
+              "beats": 66,
+              "events": 32,
+              "draft": "未发送草稿",
+              "discarded": false
+            }
+          },
+          {
+            "id": 7,
+            "state": {
+              "instance": "edf4b805-645c-43bf-a0a5-06b1b60d2203",
+              "beats": 64,
+              "events": 31,
+              "draft": "未发送草稿",
+              "discarded": false
+            }
+          },
+          {
+            "id": 8,
+            "state": {
+              "instance": "5717878e-1c4f-48da-8af7-4d759c182334",
+              "beats": 62,
+              "events": 30,
+              "draft": "未发送草稿",
+              "discarded": false
+            }
+          },
+          {
+            "id": 9,
+            "state": {
+              "instance": "23e97670-6342-4281-808a-0036304b6706",
+              "beats": 59,
+              "events": 29,
+              "draft": "未发送草稿",
+              "discarded": false
+            }
+          }
+        ],
+        "late": [
+          {
+            "id": 2,
+            "state": {
+              "instance": "363e5570-2106-47a4-8f91-7a78e8359183",
+              "beats": 1279,
+              "events": 636,
+              "draft": "未发送草稿",
+              "discarded": false
+            }
+          },
+          {
+            "id": 3,
+            "state": {
+              "instance": "9c7ebeda-0739-4bc4-ae53-d6d2a43bbdaf",
+              "beats": 1275,
+              "events": 634,
+              "draft": "未发送草稿",
+              "discarded": false
+            }
+          },
+          {
+            "id": 4,
+            "state": {
+              "instance": "18557cc3-8e93-478f-bcf4-1fc83025ff68",
+              "beats": 1273,
+              "events": 633,
+              "draft": "未发送草稿",
+              "discarded": false
+            }
+          },
+          {
+            "id": 5,
+            "state": {
+              "instance": "e293900e-c386-484e-b951-3c53bd5e9931",
+              "beats": 1271,
+              "events": 632,
+              "draft": "未发送草稿",
+              "discarded": false
+            }
+          },
+          {
+            "id": 6,
+            "state": {
+              "instance": "c37f9dcb-027c-4b7f-99c2-3f19c552490e",
+              "beats": 1269,
+              "events": 631,
+              "draft": "未发送草稿",
+              "discarded": false
+            }
+          },
+          {
+            "id": 7,
+            "state": {
+              "instance": "edf4b805-645c-43bf-a0a5-06b1b60d2203",
+              "beats": 1267,
+              "events": 630,
+              "draft": "未发送草稿",
+              "discarded": false
+            }
+          },
+          {
+            "id": 8,
+            "state": {
+              "instance": "5717878e-1c4f-48da-8af7-4d759c182334",
+              "beats": 1265,
+              "events": 629,
+              "draft": "未发送草稿",
+              "discarded": false
+            }
+          },
+          {
+            "id": 9,
+            "state": {
+              "instance": "23e97670-6342-4281-808a-0036304b6706",
+              "beats": 1262,
+              "events": 628,
+              "draft": "未发送草稿",
+              "discarded": false
+            }
+          }
+        ],
+        "after": [
+          {
+            "id": 2,
+            "state": {
+              "instance": "363e5570-2106-47a4-8f91-7a78e8359183",
+              "beats": 1399,
+              "events": 696,
+              "draft": "未发送草稿",
+              "discarded": false
+            }
+          },
+          {
+            "id": 3,
+            "state": {
+              "instance": "9c7ebeda-0739-4bc4-ae53-d6d2a43bbdaf",
+              "beats": 1396,
+              "events": 694,
+              "draft": "未发送草稿",
+              "discarded": false
+            }
+          },
+          {
+            "id": 4,
+            "state": {
+              "instance": "18557cc3-8e93-478f-bcf4-1fc83025ff68",
+              "beats": 1394,
+              "events": 693,
+              "draft": "未发送草稿",
+              "discarded": false
+            }
+          },
+          {
+            "id": 5,
+            "state": {
+              "instance": "e293900e-c386-484e-b951-3c53bd5e9931",
+              "beats": 1392,
+              "events": 692,
+              "draft": "未发送草稿",
+              "discarded": false
+            }
+          },
+          {
+            "id": 6,
+            "state": {
+              "instance": "c37f9dcb-027c-4b7f-99c2-3f19c552490e",
+              "beats": 1390,
+              "events": 691,
+              "draft": "未发送草稿",
+              "discarded": false
+            }
+          },
+          {
+            "id": 7,
+            "state": {
+              "instance": "edf4b805-645c-43bf-a0a5-06b1b60d2203",
+              "beats": 1388,
+              "events": 690,
+              "draft": "未发送草稿",
+              "discarded": false
+            }
+          },
+          {
+            "id": 8,
+            "state": {
+              "instance": "5717878e-1c4f-48da-8af7-4d759c182334",
+              "beats": 1385,
+              "events": 689,
+              "draft": "未发送草稿",
+              "discarded": false
+            }
+          },
+          {
+            "id": 9,
+            "state": {
+              "instance": "23e97670-6342-4281-808a-0036304b6706",
+              "beats": 1383,
+              "events": 688,
+              "draft": "未发送草稿",
+              "discarded": false
+            }
+          }
+        ],
+        "stable": true,
+        "active": true,
+        "passed": true
+      },
+      "label": "current-retention",
+      "site": "local",
+      "workload": "conversation",
+      "isolatedTestData": true,
+      "nativeLaunch": true,
+      "versions": {
+        "node": "24.22.0",
+        "acorn": "8.18.0",
+        "ada": "4.0.0",
+        "amaro": "1.1.11",
+        "ares": "1.34.8",
+        "brotli": "1.2.0",
+        "cldr": "48.0",
+        "icu": "78.2",
+        "llhttp": "9.4.3",
+        "merve": "1.2.2",
+        "modules": "149",
+        "napi": "10",
+        "nbytes": "0.1.4",
+        "ncrypto": "0.0.1",
+        "nghttp2": "1.70.0",
+        "nghttp3": "",
+        "ngtcp2": "",
+        "openssl": "0.0.0",
+        "simdjson": "4.6.11",
+        "simdutf": "7.7.0",
+        "sqlite": "3.53.4",
+        "tz": "2026d",
+        "undici": "7.29.1",
+        "unicode": "17.0",
+        "uv": "1.52.1",
+        "uvwasi": "0.0.23",
+        "v8": "15.2.124.43-electron.0",
+        "zlib": "1.3.2.1-motley",
+        "zstd": "1.6.0",
+        "electron": "44.9.1",
+        "chrome": "152.0.7977.167"
+      },
+      "note": "Process working-set sum includes shared pages. CPU is Electron API sum. Conversation workload is synthetic (240 messages and 6 local images per page), not a logged-in ChatGPT benchmark or a memory limit.",
+      "results": [
+        {
+          "tabs": 8,
+          "cpuPercent": 1.8951359992092012,
+          "workingSetMiB": 1679.2903645833333,
+          "peakWorkingSetMiB": 1680.0625,
+          "processes": 12,
+          "samples": [
+            {
+              "cpu": 2.491301830495173,
+              "workingSetKB": 1718672,
+              "processes": 12
+            },
+            {
+              "cpu": 2.3096145051694874,
+              "workingSetKB": 1718704,
+              "processes": 12
+            },
+            {
+              "cpu": 1.8783584856920712,
+              "workingSetKB": 1719184,
+              "processes": 12
+            },
+            {
+              "cpu": 1.8526274065998423,
+              "workingSetKB": 1719200,
+              "processes": 12
+            },
+            {
+              "cpu": 1.7913496886063376,
+              "workingSetKB": 1719216,
+              "processes": 12
+            },
+            {
+              "cpu": 1.8729244544245995,
+              "workingSetKB": 1719680,
+              "processes": 12
+            },
+            {
+              "cpu": 1.7460265817901022,
+              "workingSetKB": 1719648,
+              "processes": 12
+            },
+            {
+              "cpu": 1.7755973781527732,
+              "workingSetKB": 1720064,
+              "processes": 12
+            },
+            {
+              "cpu": 1.7092147264525264,
+              "workingSetKB": 1720016,
+              "processes": 12
+            },
+            {
+              "cpu": 1.7126863893813824,
+              "workingSetKB": 1719968,
+              "processes": 12
+            },
+            {
+              "cpu": 1.9363771317117289,
+              "workingSetKB": 1720384,
+              "processes": 12
+            },
+            {
+              "cpu": 1.6655534120343902,
+              "workingSetKB": 1720384,
+              "processes": 12
+            }
+          ],
+          "views": [
+            {
+              "id": 2,
+              "pid": 6535,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "363e5570-2106-47a4-8f91-7a78e8359183",
+                "beats": 75,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 240,
+                "images": 6,
+                "sent": 0
+              }
+            },
+            {
+              "id": 3,
+              "pid": 6682,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "9c7ebeda-0739-4bc4-ae53-d6d2a43bbdaf",
+                "beats": 72,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 240,
+                "images": 6,
+                "sent": 0
+              }
+            },
+            {
+              "id": 4,
+              "pid": 6718,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "18557cc3-8e93-478f-bcf4-1fc83025ff68",
+                "beats": 70,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 240,
+                "images": 6,
+                "sent": 0
+              }
+            },
+            {
+              "id": 5,
+              "pid": 6722,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "e293900e-c386-484e-b951-3c53bd5e9931",
+                "beats": 68,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 240,
+                "images": 6,
+                "sent": 0
+              }
+            },
+            {
+              "id": 6,
+              "pid": 6724,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "c37f9dcb-027c-4b7f-99c2-3f19c552490e",
+                "beats": 66,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 240,
+                "images": 6,
+                "sent": 0
+              }
+            },
+            {
+              "id": 7,
+              "pid": 6727,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "edf4b805-645c-43bf-a0a5-06b1b60d2203",
+                "beats": 64,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 240,
+                "images": 6,
+                "sent": 0
+              }
+            },
+            {
+              "id": 8,
+              "pid": 6729,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "5717878e-1c4f-48da-8af7-4d759c182334",
+                "beats": 62,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 240,
+                "images": 6,
+                "sent": 0
+              }
+            },
+            {
+              "id": 9,
+              "pid": 6733,
+              "throttled": false,
+              "state": {
+                "title": "Local native resource fixture",
+                "instance": "23e97670-6342-4281-808a-0036304b6706",
+                "beats": 59,
+                "language": "zh-CN",
+                "timeZone": "UTC",
+                "visibility": "visible",
+                "discarded": false,
+                "messages": 240,
+                "images": 6,
+                "sent": 0
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
