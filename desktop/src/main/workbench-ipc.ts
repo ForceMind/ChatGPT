@@ -1,4 +1,4 @@
-import { dialog, ipcMain, shell, type BrowserWindow, type IpcMainInvokeEvent } from 'electron';
+import { clipboard,dialog, ipcMain, shell, type BrowserWindow, type IpcMainInvokeEvent } from 'electron';
 import { open, rename, rm } from 'node:fs/promises';
 import { constants, createWriteStream, existsSync, lstatSync, realpathSync } from 'node:fs';
 import { randomUUID, createHash } from 'node:crypto';
@@ -80,6 +80,7 @@ export function installWorkbenchIPC(host: WorkbenchHost): void {
         store.get(profile.id,id);const tracker=host.downloads(profile.id);if(!tracker)throw new Error('下载任务已结束');tracker[action.type](id);break;
       }
       case 'conversion-cancel': host.conversions().cancel(profile.id,id);break;
+      case 'copy-name': clipboard.writeText(store.get(profile.id,id).name);break;
       case 'reveal': shell.showItemInFolder(store.resolveFile(profile.id,id));break;
       case 'export': {
         const win=host.window();if(!win)throw new Error('窗口已关闭');

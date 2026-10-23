@@ -515,6 +515,7 @@ function installIPC(): void {
     ipcMain.handle('handoff:list',(event,profileId:unknown)=>{access(event,profileId);return runner().jobs.list(profileId as string);});
     ipcMain.handle('handoff:cancel',(event,profileId:unknown,id:unknown)=>{access(event,profileId);if(typeof id!=='string')throw Error('无效任务');return runner().cancel(id,profileId as string);});
     ipcMain.handle('handoff:open',(event,profileId:unknown,id:unknown)=>{access(event,profileId);if(typeof id!=='string')throw Error('无效任务');runner().open(id,profileId as string);});
+    ipcMain.handle('handoff:copy',(event,profileId:unknown,id:unknown)=>{access(event,profileId);if(typeof id!=='string')throw Error('无效任务');clipboard.writeText(runner().prompt(id,profileId as string));});
   }
   if(desktopWorkspace)installWorkbenchIPC({
     dataDirectory:app.getPath('userData'),window:()=>win,trusted,currentProfile:activeProfile,state:()=>store.read(),

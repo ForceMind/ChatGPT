@@ -4,7 +4,8 @@ on:
     inputs:
       release_tag:
         description: Existing draft release matching the package version
-        required: true
+        required: false
+        default: ''
         type: string
 permissions:
   contents: write
@@ -22,6 +23,7 @@ jobs:
       - name: Confirm architecture
         run: test "$(uname -m)" = arm64
       - name: Verify draft target before building
+        if: inputs.release_tag != ''
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -32,7 +34,10 @@ jobs:
         working-directory: desktop
         run: |
           npm ci
-          npm run dist:mac
+          npm run check
+          npx playwright test tests/handoff.e2e.ts tests/handoff-richtext.e2e.ts tests/asset-interactions.e2e.ts --reporter=list
+          node scripts/icon.mjs
+          node scripts/package-mac.mjs
           node --import tsx scripts/verify-mac-update.ts
           node scripts/verify-recovery-package.mjs
       - name: Verify and index package
@@ -50,13 +55,14 @@ jobs:
           fs.copyFileSync('release/verification/packaged-update.json','release/github-assets/mac-update-verification.json');
           fs.copyFileSync('release/verification/recovery-package.json','release/github-assets/mac-recovery-verification.json');
           const artifacts=[];
-          for(const ext of ['dmg','zip']) { const item=build.artifacts.find(a=>a.file.endsWith('.'+ext)); const file='ChatGPT-Profiles-'+build.version+'-mac-arm64.'+ext; fs.copyFileSync('release/'+item.file,'release/github-assets/'+file);artifacts.push({file,bytes:fs.statSync('release/'+item.file).size,sha256:item.sha256,url:'https://github.com/'+process.env.GITHUB_REPOSITORY+'/releases/download/'+process.env.RELEASE_TAG+'/'+file}); }
+          for(const ext of ['dmg','zip']) { const item=build.artifacts.find(a=>a.file.endsWith('.'+ext)); const file='ChatGPT-Profiles-'+build.version+'-mac-arm64.'+ext; fs.copyFileSync('release/'+item.file,'release/github-assets/'+file);artifacts.push({file,bytes:fs.statSync('release/'+item.file).size,sha256:item.sha256,url:process.env.RELEASE_TAG?'https://github.com/'+process.env.GITHUB_REPOSITORY+'/releases/download/'+process.env.RELEASE_TAG+'/'+file:undefined}); }
           fs.writeFileSync('release/github-assets/mac-release-info.json',JSON.stringify({version:build.version,commit:process.env.GITHUB_SHA,signing:build.signing,payload,artifacts},null,2)+'\n');
           const verification=name=>JSON.parse(fs.readFileSync('release/github-assets/'+name,'utf8'));
           fs.writeFileSync('release/github-assets/release-info.json',JSON.stringify({version:build.version,sourceCommit:process.env.GITHUB_SHA,prerelease:true,platforms:['macOS arm64'],ciRun:'https://github.com/'+process.env.GITHUB_REPOSITORY+'/actions/runs/'+process.env.GITHUB_RUN_ID,artifacts,signing:build.signing,checks:{distFilesCompared:Object.keys(payload).length,packagedUpdater:verification('mac-update-verification.json'),nativeRecovery:verification('mac-recovery-verification.json')}},null,2)+'\n');
           fs.writeFileSync('release/github-assets/SHA256SUMS.txt',fs.readdirSync('release/github-assets').sort().map(file=>crypto.createHash('sha256').update(fs.readFileSync('release/github-assets/'+file)).digest('hex')+'  '+file).join('\n')+'\n');
           JS
       - name: Upload to draft
+        if: inputs.release_tag != ''
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -71,3 +77,21 @@ jobs:
             desktop/release/github-assets/mac-recovery-verification.json
             desktop/release/github-assets/release-info.json
             desktop/release/github-assets/SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mac-arm64-dmg
+          compression-level: 0
+          retention-days: 30
+          path: desktop/release/github-assets/*.dmg
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mac-arm64-zip
+          compression-level: 0
+          retention-days: 30
+          path: desktop/release/github-assets/*.zip
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mac-ui-evidence
+          retention-days: 14
+          path: desktop/test-results/

@@ -30,6 +30,7 @@ const bridge: Bridge = {
     handoffs:profileId=>ipcRenderer.invoke('handoff:list',profileId),
     cancelHandoff:(profileId,id)=>ipcRenderer.invoke('handoff:cancel',profileId,id),
     openHandoff:(profileId,id)=>ipcRenderer.invoke('handoff:open',profileId,id),
+    copyHandoff:(profileId,id)=>ipcRenderer.invoke('handoff:copy',profileId,id),
     subscribeHandoffs:handler=>{const listener=()=>handler();ipcRenderer.on('handoff:changed',listener);return()=>ipcRenderer.removeListener('handoff:changed',listener);},
     compose: options => ipcRenderer.invoke('capabilities:compose', options),
     subscribe: handler => { const listener = (_event: unknown, profileId: string) => handler(profileId); ipcRenderer.on('assets:changed', listener); return () => ipcRenderer.removeListener('assets:changed', listener); }

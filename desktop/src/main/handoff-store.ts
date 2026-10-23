@@ -5,6 +5,7 @@ import type {HandoffFile,HandoffJob,HandoffStatus} from '../shared/handoff';
 import type {HandoffRequest} from '../shared/workbench';
 import {isChatURL} from './policy';
 import {CAPABILITY_REVISION} from './capabilities';
+import {handoffStages,type HandoffStage} from '../shared/handoff';
 
 const uuid=(v:unknown):v is string=>typeof v==='string'&&/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(v);
 const object=(v:unknown):v is Record<string,unknown>=>!!v&&typeof v==='object'&&!Array.isArray(v);
@@ -41,6 +42,7 @@ export class HandoffStore {
       const fileIds=new Set<string>();for(const file of item.files){if(!object(file)||!uuid(file.assetId)||fileIds.has(file.assetId)||!request.assetIds.includes(file.assetId)||file.profileId!==request.sourceProfileId||!text(file.name,240)||!text(file.uploadName,240)||/[\\/]/.test(file.uploadName)||!text(file.mime,160)||!text(file.uploadMime,160)||!Number.isSafeInteger(file.size)||(file.size as number)<0||typeof file.sha256!=='string'||!/^[a-f0-9]{64}$/.test(file.sha256))return fail();fileIds.add(file.assetId);}
       if(item.tabId!==undefined&&!uuid(item.tabId))return fail();if(item.conversationURL!==undefined&&(typeof item.conversationURL!=='string'||!(isChatURL(item.conversationURL)||(this.fixtureOrigin&&item.conversationURL.startsWith(this.fixtureOrigin+'/')))||new URL(item.conversationURL).search||new URL(item.conversationURL).hash))return fail();
       ids.add(item.id);requests.add(request.requestId);
+      if(item.progress!==undefined){if(!Array.isArray(item.progress)||item.progress.length>7)return fail();let previous=-1;for(const point of item.progress){if(!object(point))return fail();const position=handoffStages.indexOf(point.stage as HandoffStage);if(position<=previous||!Number.isSafeInteger(point.startedAt)||point.completedAt!==undefined&&(!Number.isSafeInteger(point.completedAt)||(point.completedAt as number)<(point.startedAt as number))||point.note!==undefined&&!text(point.note,240))return fail();previous=position;}}
     }
     return structuredClone(raw) as Data;
   }
@@ -53,10 +55,14 @@ export class HandoffStore {
   create(request:HandoffRequest,files:HandoffFile[],sourceProfileName:string,targetProfileName:string,label:string):HandoffJob{
     const existing=this.find(request);if(existing)return existing;if(this.data.jobs.length>=1000)throw new Error('本机任务记录已达 1000 条，请先整理任务记录。');const now=Date.now();
     const job:HandoffJob={id:randomUUID(),request:structuredClone(request),fingerprint:fingerprint(request),sourceProfileName,targetProfileName,label,status:'preparing',message:'正在校验选中的文件与目标账号。',createdAt:now,updatedAt:now,files:structuredClone(files),catalogCommit:CAPABILITY_REVISION};
-    const next=structuredClone(this.data);next.jobs.push(job);this.save(next);return this.get(job.id);
+    job.progress=[{stage:'files',startedAt:now}];const next=structuredClone(this.data);next.jobs.push(job);this.save(next);return this.get(job.id);
   }
-  update(id:string,patch:Partial<Pick<HandoffJob,'status'|'message'|'tabId'|'conversationURL'>>):HandoffJob{
+  update(id:string,patch:Partial<Pick<HandoffJob,'status'|'message'|'tabId'|'conversationURL'>>&{stage?:HandoffStage;note?:string}):HandoffJob{
     const current=this.get(id);if(patch.status&&patch.status!==current.status&&!transitions[current.status].includes(patch.status))throw new Error('任务状态已结束，禁止重复提交或回退');
-    const next=structuredClone(this.data);Object.assign(next.jobs.find(j=>j.id===id)!,patch,{updatedAt:Date.now()});this.save(next);return this.get(id);
+    if(patch.stage&&!active.has(current.status))throw Error('任务已结束，进度不能更新或回退');
+    const next=structuredClone(this.data),job=next.jobs.find(j=>j.id===id)!,now=Date.now(),{stage,note,...fields}=patch;
+    if(stage){const points=job.progress||[],last=points.at(-1);if(last?.stage===stage){if(note)last.note=note;}else{if(last&&handoffStages.indexOf(stage)<=handoffStages.indexOf(last.stage))throw Error('任务进度不能回退');if(last)last.completedAt=now;points.push({stage,startedAt:now,...(note?{note}:{})});}job.progress=points;}
+    if(patch.status==='submitted'&&job.progress?.length)job.progress.at(-1)!.completedAt=now;
+    Object.assign(job,fields,{updatedAt:now});this.save(next);return this.get(id);
   }
 }

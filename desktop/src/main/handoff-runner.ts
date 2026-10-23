@@ -26,6 +26,8 @@ export class HandoffRunner {
  cancel(id:string,profileId:string):HandoffJob{const job=this.jobs.get(id);this.assertAccess(job,profileId);const c=this.running.get(id);if(c){c.cancelled=true;if(job.status!=='sending')return this.publish(id,{status:'cancelled',message:'已取消；原始文件保留，网页中已形成的草稿可手动检查。'});}return this.jobs.get(id);}
  private assertAccess(job:HandoffJob,profileId:string):void{if(job.request.sourceProfileId!==profileId&&job.request.targetProfileId!==profileId)throw Error('该任务不属于当前账号。');}
  open(id:string,profileId:string):void{const j=this.jobs.get(id);this.assertAccess(j,profileId);if(!j.tabId)throw Error('任务尚未创建目标标签页。');this.host.reveal(j);}
+ prompt(id:string,profileId:string):string{const job=this.jobs.get(id);this.assertAccess(job,profileId);return this.instructions(job,this.catalog.compose({...job.request,files:job.files.map(f=>({name:f.uploadName,mime:f.uploadMime,size:f.size}))}));}
+ private instructions(job:HandoffJob,base:string):string{const aliases=job.files.filter(f=>f.name!==f.uploadName).map(f=>`${f.name} → ${f.uploadName}`);return base+(aliases.length?'\n\n附件名称映射（保留原始内容；HTML、SVG、代码以文本附件提供）：\n'+aliases.join('\n'):'');}
  cancelProfile(profileId:string):void{for(const job of this.jobs.all())if(active.has(job.status)&&(job.request.sourceProfileId===profileId||job.request.targetProfileId===profileId))this.cancel(job.id,profileId);}
  dispose():void{for(const c of this.running.values())c.cancelled=true;}
  private async run(job:HandoffJob,control:{cancelled:boolean},basePrompt:string):Promise<void>{
@@ -37,11 +39,14 @@ export class HandoffRunner {
     try{await pipeline(input.createReadStream({autoClose:false}),new Transform({transform(chunk:Buffer,_e,cb){try{check();digest.update(chunk);count+=chunk.length;cb(null,chunk);}catch(e){cb(e as Error);}}}),createWriteStream(destination,{flags:'wx',mode:0o600}));}finally{await input.close();}
     const original=this.assets.get(f.profileId,f.assetId);if(count!==f.size||digest.digest('hex')!==f.sha256||original.trashedAt||original.status!=='ready')throw Error('源文件在准备时发生变化，已停止上传。');paths.push(destination);
    }
-   check();this.publish(job.id,{status:'opening',message:'正在所选账号的独立空间新建 ChatGPT 对话。'});const target=this.host.open(job.request.targetProfileId);this.publish(job.id,{tabId:target.tabId});page=new ChatPage(target.contents,this.host.fixtureOrigin,check);await page.ready();
+   check();this.publish(job.id,{status:'opening',stage:'conversation',message:'正在所选账号的独立空间新建 ChatGPT 对话。'});const target=this.host.open(job.request.targetProfileId);this.publish(job.id,{tabId:target.tabId});page=new ChatPage(target.contents,this.host.fixtureOrigin,check);await page.ready();
+   this.publish(job.id,{stage:'attachments',note:paths.length?`${paths.length} 个附件`:'本次不附文件',message:paths.length?'正在上传并等待网页确认附件。':'本次不附带文件。'});
    if(paths.length){this.publish(job.id,{status:'uploading',message:`正在上传 ${paths.length} 个附件，请等待网页确认。`});await page.upload(paths,job.files.map(f=>f.uploadName));}
-   this.publish(job.id,{status:'drafting',message:'附件已确认，正在填入任务与角色要求。'});
-   const aliases=job.files.filter(f=>f.name!==f.uploadName).map(f=>`${f.name} → ${f.uploadName}`);const prompt=basePrompt+(aliases.length?'\n\n附件名称映射（保留原始内容；HTML、SVG、代码以文本附件提供）：\n'+aliases.join('\n'):'');
-   await page.draft(prompt);check();const url=await page.sendOnce(prompt,job.files.map(f=>f.uploadName),()=>{check();this.publish(job.id,{status:'sending',message:'正在发送一次；若结果不确定，不会自动重发。'});});
+   this.publish(job.id,{status:'drafting',stage:'instructions',message:'正在写入完整处理指令。'});
+   const prompt=this.instructions(job,basePrompt);let written=-1;
+   await page.draft(prompt,(count,total)=>{if(count===written)return;written=count;this.publish(job.id,{stage:'instructions',note:`已写入 ${count}/${total} 字符`,message:`正在核对指令完整性：${count}/${total} 字符。`});});check();
+   this.publish(job.id,{stage:'ready',message:'指令完整，正在检查发送按钮和附件状态。'});
+   const url=await page.sendOnce(prompt,job.files.map(f=>f.uploadName),()=>{check();this.publish(job.id,{status:'sending',stage:'send',message:'正在发送一次；若结果不确定，不会自动重发。'});},()=>this.publish(job.id,{stage:'confirmation',message:'已点击发送，正在等待网页显示本次用户消息。'}));
    this.publish(job.id,{status:'submitted',conversationURL:url,message:'网页已显示本次用户消息；模型处理结果请在目标对话查看。'});
   }catch(error){const state=this.jobs.get(job.id);if(active.has(state.status)){const sending=state.status==='sending';this.publish(job.id,{status:sending?'uncertain':control.cancelled?'cancelled':'failed',message:sending?'发送结果未能确认。请打开目标对话检查，应用不会自动重发。':(error instanceof Error?error.message:'网页任务未能完成').slice(0,900)});}}
   finally{try{page?.dispose();}catch{/* the target may have closed during cleanup */}await rm(dir,{recursive:true,force:true}).catch(()=>{});this.running.delete(job.id);}
