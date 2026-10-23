@@ -1,0 +1,22 @@
+plugins { id 'com.android.application' }
+android {
+    namespace 'com.forcemind.chatgpt.environmentpoc'
+    compileSdk 36
+    defaultConfig {
+        applicationId 'com.forcemind.chatgpt.environmentpoc'
+        minSdk 29
+        targetSdk 36
+        versionCode 1
+        versionName '0.1-poc'
+    }
+    buildTypes { release { minifyEnabled false } }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+    splits { abi { enable true; reset(); include 'arm64-v8a', 'x86_64'; universalApk false } }
+}
+dependencies { implementation 'org.mozilla.geckoview:geckoview:158.0.20261021001945' }
+tasks.register('copyPocIcon', Copy) {
+    from '../app/src/main/res/drawable/ic_launcher.xml'
+    into layout.buildDirectory.dir('generated/poc-res/drawable')
+}
+android.sourceSets.main.res.srcDir(layout.buildDirectory.dir('generated/poc-res'))
+tasks.named('preBuild').configure { dependsOn 'copyPocIcon' }
