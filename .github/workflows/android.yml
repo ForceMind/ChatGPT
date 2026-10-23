@@ -143,15 +143,13 @@ jobs:
           adb shell input keyevent 82
           # The CI image's Pixel Launcher can ANR during headless startup. It is
           # not needed for explicit Activity launches; App ANR reporting stays on.
-          adb shell pm disable-user --user 0 com.google.android.apps.nexuslauncher
+          if [ "${{ inputs.icon_only }}" != true ]; then
+            adb shell pm disable-user --user 0 com.google.android.apps.nexuslauncher
+          fi
           if [ "${{ inputs.icon_only }}" = true ]; then
             ./gradlew --no-daemon '-Pandroid.testInstrumentationRunnerArguments.class=com.forcemind.chatgpt.profiles.LauncherIconTest' connectedDebugAndroidTest
             adb pull /sdcard/Download/ProfilesIconEvidence app/build/device-evidence/icons
-            adb shell am start -a android.settings.APPLICATION_DETAILS_SETTINGS -d package:com.forcemind.chatgpt.profiles.debug
-            sleep 3
-            timeout 20 adb exec-out screencap -p > app/build/device-evidence/android-app-icon-settings.png
-            timeout 20 adb shell uiautomator dump --compressed /sdcard/profiles-icon-settings.xml
-            timeout 20 adb pull /sdcard/profiles-icon-settings.xml app/build/device-evidence/android-app-icon-settings.xml
+            timeout 120 python3 -u scripts/capture-icon-settings.py app/build/device-evidence
             echo 'Packaged Android adaptive and monochrome icon rendering plus actual system app details; no webpage, login or personal account interaction.' > app/build/device-evidence/scope.txt
             exit 0
           fi
