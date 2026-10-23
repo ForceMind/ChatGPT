@@ -46,7 +46,7 @@ export class WorkbenchUI {
       {label:'重命名',run:()=>this.edit(),disabled:multiple},
       {label:'复制文件名',run:()=>this.act({type:'copy-name',id:item.id}),disabled:multiple},
       {label:'另存为…',run:()=>this.act({type:'export',id:item.id}),disabled:multiple||!ready},
-      {label:'在 Finder 中显示',run:()=>this.act({type:'reveal',id:item.id}),disabled:multiple||!ready},
+      {label:navigator.platform.startsWith('Win')?'在文件资源管理器中显示':'在 Finder 中显示',run:()=>this.act({type:'reveal',id:item.id}),disabled:multiple||!ready},
       {label:item.trashedAt?'恢复文件':`移到回收站${multiple?'（'+ids.length+' 项）':''}`,run:()=>this.act({type:'trash',ids,trashed:!item.trashedAt})}
     ];
     const menu=document.createElement('div');menu.className='aw-asset-menu';menu.setAttribute('role','menu');menu.setAttribute('aria-label','资产操作');menu.tabIndex=-1;
@@ -71,7 +71,7 @@ export class WorkbenchUI {
     this.$<HTMLSelectElement>('#asset-sort').addEventListener('change',e=>{this.sort=(e.target as HTMLSelectElement).value;this.renderAssets();});
     this.$<HTMLInputElement>('#capability-search').addEventListener('input',e=>{this.libraryQuery=(e.target as HTMLInputElement).value;this.renderLibrary();});
     this.$('#favorites-only').addEventListener('click',()=>{this.favoritesOnly=!this.favoritesOnly;this.renderLibrary();});
-    root.querySelectorAll('.aw-sidebar-bottom').forEach(e=>e.insertAdjacentHTML('afterbegin','<div class="aw-task-summary" data-task-summary></div><button class="aw-sidebar-action" data-action="handoff-history">'+icon('document')+'任务记录</button>'));
+    root.querySelectorAll('.aw-sidebar-bottom').forEach(e=>{const account=document.createElement('div');account.className='aw-sidebar-account';while(e.firstChild)account.append(e.firstChild);e.append(account);e.insertAdjacentHTML('afterbegin','<div class="aw-task-summary" data-task-summary></div><button class="aw-sidebar-action" data-action="handoff-history">'+icon('document')+'任务记录</button>');});
     this.unsubscribeJobs=api.subscribeHandoffs(()=>void this.refreshJobs());
     this.unsubscribe=api.subscribe(id=>{if(id===this.profile.id)void this.reload();});
     this.restoreView(profile);for(const event of ['input','change','click','scroll'])root.addEventListener(event,this.scheduleView,true);
@@ -198,7 +198,7 @@ export class WorkbenchUI {
     const j=this.jobs.find(j=>j.id===id);if(!j)return;this.jobView='detail';this.currentJob=id;
     const active=['preparing','opening','uploading','drafting','sending'].includes(j.status),last=j.progress?.at(-1);
     const stopped=['failed','cancelled','interrupted','uncertain'].includes(j.status);
-    const steps=handoffStages.map((stage,index)=>{const p=j.progress?.find(p=>p.stage===stage),state=p?.completedAt?'done':p?(stopped?'stopped':'current'):'waiting';return `<li data-stage="${stage}" data-state="${state}" ${state==='current'?'aria-current="step"':''}><span class="step-number">${state==='done'?'✓':index+1}</span><div><strong>${handoffStageNames[stage]}</strong><small>${p?new Date(p.startedAt).toLocaleTimeString(): '等待前序步骤'}${p?.note?' · '+esc(p.note):''}</small></div><span>${state==='done'?'已完成':state==='stopped'?handoffStatusNames[j.status]:state==='current'?'进行中':''}</span></li>`;}).join('');
+    const steps=handoffStages.map((stage,index)=>{const p=j.progress?.find(p=>p.stage===stage),state=p?.completedAt?'done':p?(stopped?'stopped':'current'):'waiting';return `<li data-stage="${stage}" data-state="${state}" ${state==='current'?'aria-current="step"':''}><span class="step-number">${state==='done'?'✓':index+1}</span><div><strong>${handoffStageNames[stage]}</strong><small>${p?new Date(p.startedAt).toLocaleTimeString('zh-CN',{hour12:false}): '等待前序步骤'}${p?.note?' · '+esc(p.note):''}</small></div><span>${state==='done'?'已完成':state==='stopped'?handoffStatusNames[j.status]:state==='current'?'进行中':''}</span></li>`;}).join('');
     this.modal(j.label,`${j.sourceProfileName} → ${j.targetProfileName} · ${handoffStatusNames[j.status]}`,`<p class="stage-notice" role="status">${stopped&&last?`停在第 ${handoffStages.indexOf(last.stage)+1}/7 步：${handoffStageNames[last.stage]}。<br>`:''}${esc(j.message)}</p><ol class="handoff-progress" aria-label="任务七阶段进度">${steps}</ol>${!j.progress?'<p class="task-source-hint">旧任务未记录详细阶段，保留原有结果。</p>':''}<div class="file-chips">${j.files.map(f=>`<div class="file-chip">${icon('document')}${esc(f.name)}<small>${esc(f.uploadName)} · ${size(f.size)}</small></div>`).join('')}</div>${j.status==='uncertain'?'<p class="cross-account-warning">请先检查目标对话是否已发送。不要直接新建同一任务，以免重复发送。</p>':''}<details><summary>查看任务要求</summary><pre class="source-text">${esc(j.request.instructions||'使用选定 Skill / 角色的任务定义。')}</pre></details>`,'<button class="secondary" data-action="handoff-history">全部记录</button><button class="secondary" data-action="copy-handoff">复制完整指令</button>'+(active&&j.status!=='sending'?'<button class="secondary" data-action="cancel-handoff">取消任务</button>':'')+(j.tabId?'<button class="primary" data-action="open-handoff">打开目标对话</button>':''));
   }
   private async startHandoff():Promise<void>{
