@@ -490,3 +490,11 @@
 - macOS alpha.12 本地交付完成，构建源码 `f52fd7c09cf3d7d22723f0887f0aaefab8083dbe`。DMG=153069751 字节、SHA-256 `bf7d17a64e55af7e5fcfe6791964630c9015348293a68784cebdc41a0287b985`；ZIP=153045390 字节、SHA-256 `e7f6255c90a11de04269334486c134296e9cd8278ba480e293fa6d32288deb2e`。均位于 desktop/release/；DMG 的 hdiutil 完整性校验通过。
 - 最终实际 ZIP 完成完整包签名 / 身份 / 架构校验、Electron 从 ASAR 复制包内安装器、退出等待、原子替换、安装后有效签名及旧包保留；227 个 dist 文件与包内逐字节一致。ASAR SHA-256 `192759277c452a9a5bd6ee3fd69677e23052ce6d3c0acb73108b0f5f6a822f76`。证据仍为临时安装目录，不读取个人空间；结构化索引 docs/releases/3.0.0-alpha.12-local.json。
 - 这批交付是本地 macOS 验收包，不新建 GitHub alpha.12 Release、不提前修改官网版本清单；公开下载与加速入口继续对应 alpha.11。增量 / 免重启未实现，真实 ChatGPT 与个人空间升级待人工验收；当前批准范围内的官网加速下载、离线快照与确认更新 / 应用空闲安装已完成。
+
+## macOS alpha.12 公开发布与官网同步（2026-10-23）
+
+- 用户明确批准发布 DMG / ZIP、更新官网 Mac 下载 / 国内加速 / 里程碑 / 自动更新版本，并同步 main。沿用 ForceMind/ChatGPT、现有开发分支与 Pages 项目 chatgpt-profiles；Windows / Android 保持公开 alpha.11。
+- 本机附件上传速度很慢，未完成的上传已停止，改用现有 macOS 发布工作流。仅增加完整 ZIP 安装验证与验证索引上传；应用代码、资源、依赖锁与打包脚本相对本地验收源码 f52fd7c 均无变化。首轮因草稿临时标签在构建前停止，显式修正后同一源码重跑成功。
+- CI 39915125569、成功任务 120287889437：60 项单元、类型与构建、227 个包内文件比对、深度签名、ZIP 解包身份 / 架构校验、包内安装器提取、等待退出 / 原子替换 / 旧包保留全部通过。13 项本地 macOS 界面流程沿用同一应用源码的隔离验收，不称为 CI 或真实账号证明。
+- 公开预发布 v3.0.0-alpha.12 已发布，实际发布时间 2026-10-23T07:12:28Z（上海 15:12:28），标签构建提交 764717f0912d877f2c4db9da0f0dc65189e4657b。DMG=154462836 字节、SHA-256 973716ae308c54daf68a3cd70b5e7cbc88a31a82ae3bbe16b965ad95d7e67f40；ZIP=154441417 字节、SHA-256 a27db4654edb0f7081e9b277e13ca20b931e3d91ce492615ca40ecf9f6e22307。公开包为 CI 重建，与之前本地包摘要不同，以公开索引 docs/releases/3.0.0-alpha.12.json 为准。
+- Release 共六个附件：两个安装包、mac-release-info.json、mac-update-verification.json、release-info.json、SHA256SUMS.txt；服务端大小 / SHA-256 与 CI 验证和最终清单一致。未覆盖任何历史 Release 附件。main 已快进到 764717f，官网改动将在完成最终下载核对后继续同步与部署。

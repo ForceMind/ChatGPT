@@ -21,15 +21,15 @@ ChatGPT Profiles 是一个非官方 ChatGPT 网页客户端。启动直接进入
 
 | 平台 | 公开版本 | 下载 | 系统要求 |
 | --- | --- | --- | --- |
-| macOS · Apple Silicon | `3.0.0-alpha.11` | [DMG](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.11/ChatGPT-Profiles-3.0.0-alpha.11-mac-arm64.dmg) · [ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.11/ChatGPT-Profiles-3.0.0-alpha.11-mac-arm64.zip) | macOS 13+ |
+| macOS · Apple Silicon | `3.0.0-alpha.12` | [DMG](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.12/ChatGPT-Profiles-3.0.0-alpha.12-mac-arm64.dmg) · [ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.12/ChatGPT-Profiles-3.0.0-alpha.12-mac-arm64.zip) | macOS 13+ |
 | Windows · x64 | `3.0.0-alpha.11` | [EXE 安装包](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.11/ChatGPT-Profiles-3.0.0-alpha.11-windows-x64-setup.exe) · [免安装 ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.11/ChatGPT-Profiles-3.0.0-alpha.11-windows-x64.zip) | Windows 10 / 11 · 64 位 |
 | Android · 手机 / 平板 | `3.0.0-alpha.11` | [APK](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.11/ChatGPT-Profiles-3.0.0-alpha.11-android.apk) | Android 9+，系统 WebView 支持多档案 |
 
-当前统一公开预发布版为 `3.0.0-alpha.11`，包含 macOS / Windows 资产工作台、Android 文件处理与草稿恢复，以及新的黑底 ChatGPT 图标。Intel Mac、Linux、iPhone 和 iPad 暂无安装包。旧版安装包仍保留在历史 Release 中。
+当前 macOS 公开预发布版为 `3.0.0-alpha.12`，Windows / Android 继续使用 `3.0.0-alpha.11`。Mac 增加离线快照与确认更新，原有三端资产处理、草稿恢复和黑底 ChatGPT 图标保留。Intel Mac、Linux、iPhone 和 iPad 暂无安装包。旧版安装包仍保留在历史 Release 中。
 
 桌面端支持资产归档、预览、格式转换、120 个 Skill 与“交给 GPT”；Android 已提供账号资产库、图片 / 文档转换、附件任务、加密草稿 / 阅读位置恢复和已打开标签复用。各平台的真实账号、第三方登录、通行密钥和真实网页文件发送仍需分别验收，详见[兼容性与反馈](#兼容性与反馈)。
 
-Android 日常客户端继续使用 System WebView。独立 Gecko PoC 的语言 / 时区与资源验证仅供研发评估，未替换普通 APK；源码、覆盖范围和数字见[实验说明](android/environment-poc/README.md)与[测量报告](docs/benchmarks/android-environment-poc.json)。完整页面快照与离线阅读属于下一版计划，本版不包含。
+Android 日常客户端继续使用 System WebView。独立 Gecko PoC 的语言 / 时区与资源验证仅供研发评估，未替换普通 APK；源码、覆盖范围和数字见[实验说明](android/environment-poc/README.md)与[测量报告](docs/benchmarks/android-environment-poc.json)。macOS alpha.12 已提供只读离线快照；Windows / Android 尚未迁入这批能力。
 
 **macOS**：打开 DMG，将应用拖入“应用程序”。当前构建使用 ad-hoc 签名，尚未经过 Developer ID 签名和 Apple 公证。若首次启动被系统阻止，核对来源和摘要后，按 [Apple 的操作说明](https://support.apple.com/zh-cn/102445)处理。
 
@@ -41,7 +41,7 @@ Android 日常客户端继续使用 System WebView。独立 Gecko PoC 的语言 
 
 官网各平台下载卡片提供可选“国内用户加速下载”，通过第三方 gh-proxy.org 转发；原始 GitHub 下载始终保留，中文或中国时区仅用于突出入口。
 
-每个 Release 附带 `SHA256SUMS.txt`。公开 alpha.11 通过下载安装包升级；macOS alpha.12 已完成本地验收包，支持启动 / 上海中午检查、确认后后台下载与退出安装，完整 App 更新需要重启，尚不支持增量。详见[桌面开发批次](desktop/README.md#macos-alpha12-本地验收版)。Android 升级需要保持相同应用签名。新版应用不自动导入其他客户端的登录数据。
+每个 Release 附带 `SHA256SUMS.txt`。macOS alpha.12 支持启动 / 上海中午检查、确认后后台下载，以及立即、退出或可选应用空闲安装；完整 App 更新需要重启，尚不支持增量。alpha.11 及更早版本需要先手动安装一次。详见[Mac 更新说明](desktop/README.md#macos-alpha12)。Windows / Android 继续手动升级，Android 需保持相同应用签名；新版不自动导入其他客户端的登录数据。
 
 ## 开始使用
 
@@ -68,10 +68,12 @@ Mac 可右键标签，Android 可长按标签，管理固定、顺序和关闭�
 | 登录与链接记录 | 查看被拦截链接的站点和原因；记录仅保存在本机，过滤敏感参数 | `alpha.11` 公开预发布 |
 | 标签保活与资源优化 | 已打开标签切换时保留页面；减少重复界面更新，工作台按需加载 | `alpha.11` 公开预发布 |
 | 窗口与界面恢复 | 关窗后台保留、短期撤销关闭、每账号工作台状态；真正退出后加载并恢复加密草稿与阅读位置 | `alpha.11` 公开预发布 |
+| 离线快照 | 加密保存对话文字与最后画面，离线只读，联网恢复原对话 | macOS `alpha.12` 公开预发布 |
+| 确认更新 | 启动 / 上海中午检查，确认后下载，可取消的应用空闲安装 | macOS `alpha.12` 公开预发布 |
 | 账号语言与时区 | 桌面端创建或编辑空间时选择；编辑从新标签起生效 | 桌面已提供，Android 尚未迁入 |
 | 网页图片操作 | 右键复制图片、保存到资产库、重试当前图片、查看加载信息 | `alpha.11` 公开预发布 |
 
-工作台的配置、支持格式与验证边界见[桌面说明](desktop/README.md)和[Android 说明](android/README.md)。macOS 关窗保留后台网页；Windows 关窗保存后退出。进程真正结束后需要加载原网页，再恢复已保存的草稿与阅读位置；附件与模型生成不会跨进程继续。
+工作台的配置、支持格式与验证边界见[桌面说明](desktop/README.md)和[Android 说明](android/README.md)。macOS 关窗保留后台网页；Windows 关窗保存后退出。macOS alpha.12 真正退出后先显示只读快照，再联网加载原网页并恢复草稿与阅读位置；Windows / Android 加载后恢复已保存状态。附件与模型生成不会跨进程继续。
 
 ## 隔离与数据
 

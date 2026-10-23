@@ -1,13 +1,13 @@
 {
   "schema": 1,
-  "version": "3.0.0-alpha.11",
-  "publishedAt": "2026-10-23T05:03:16Z",
-  "notes": "资产工作台、格式转换、草稿与阅读位置恢复，统一三端图标。此清单仅包含已公开发布的版本。",
+  "version": "3.0.0-alpha.12",
+  "publishedAt": "2026-10-23T07:12:28Z",
+  "notes": "macOS 加入加密离线快照、启动及上海中午检查更新，可选应用后台空闲 30 分钟后倒计时安装。完整 App 仍需重启，暂不支持增量。",
   "files": {
     "arm64": {
-      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.11/ChatGPT-Profiles-3.0.0-alpha.11-mac-arm64.zip",
-      "size": 154395761,
-      "sha256": "e902b1ec7e55efb6068c315c00860da84d209be15ec2eed9f92362972e78ecc8"
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.12/ChatGPT-Profiles-3.0.0-alpha.12-mac-arm64.zip",
+      "size": 154441417,
+      "sha256": "a27db4654edb0f7081e9b277e13ca20b931e3d91ce492615ca40ecf9f6e22307"
     }
   }
 }

@@ -1,12 +1,12 @@
 # ChatGPT Profiles Desktop
 
-当前公开预发布版：`3.0.0-alpha.11`。提供 macOS Apple Silicon 的 DMG / ZIP、Windows x64 的 EXE / ZIP，版本与源码已统一；历史安装包保留。Electron `44.9.1`、React `19.3.1`、TypeScript。各设备独立使用，本版不需要自建服务。
+当前公开预发布版：macOS `3.0.0-alpha.12`，Windows `3.0.0-alpha.11`。提供 macOS Apple Silicon 的 DMG / ZIP、Windows x64 的 EXE / ZIP；历史安装包保留。Electron `44.9.1`、React `19.3.1`、TypeScript。各设备独立使用，本版不需要自建服务。
 
-下载见[GitHub Release](https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.11)。当前 `main` 包含工作台、恢复、新图标与跨平台源码。真正退出后需要重新加载网页并恢复保存状态；公开版尚不含离线快照；本地 macOS alpha.12 的范围见下文。
+下载见[GitHub Release](https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.12)。当前 `main` 包含工作台、恢复、新图标与跨平台源码。真正退出后需要重新加载网页并恢复保存状态；macOS alpha.12 先显示本地只读快照，具体范围见下文。
 
-## macOS alpha.12 本地验收版
+## macOS alpha.12
 
-此开发批次为 macOS，公开下载仍是 alpha.11；Windows / Android 尚未交付本批更新。
+本批已公开发布 macOS DMG / ZIP；Windows / Android 公开版继续使用 alpha.11，尚未迁入本批更新。
 
 - 退出后重新打开，先显示本机加密保存的上次可见画面与对话文字，再连接原网页并恢复草稿 / 阅读位置。快照为只读，带保存时间；图片保留在可见画面中，附件与网页操作需联网。对话最多 100,000 字符、300 条，超出时明确提示；登录页、验证码和临时聊天不采集。
 - 启动时、每天上海时间中午 12:00 检查 `https://chatgpt.xincreates.com/updates/macos.json`。运行期间最多延迟 30 秒，休眠后补检；完全退出不会由系统自动启动。更新会话独立，不使用 ChatGPT 的 Cookie。

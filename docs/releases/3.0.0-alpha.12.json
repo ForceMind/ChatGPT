@@ -1,0 +1,56 @@
+{
+  "version": "3.0.0-alpha.12",
+  "sourceCommit": "764717f0912d877f2c4db9da0f0dc65189e4657b",
+  "applicationSourceCommit": "f52fd7c09cf3d7d22723f0887f0aaefab8083dbe",
+  "prerelease": true,
+  "platforms": [
+    "macOS arm64"
+  ],
+  "ciRun": "https://github.com/ForceMind/ChatGPT/actions/runs/39915125569",
+  "artifacts": [
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.12-mac-arm64.dmg",
+      "bytes": 154462836,
+      "sha256": "973716ae308c54daf68a3cd70b5e7cbc88a31a82ae3bbe16b965ad95d7e67f40",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.12/ChatGPT-Profiles-3.0.0-alpha.12-mac-arm64.dmg"
+    },
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.12-mac-arm64.zip",
+      "bytes": 154441417,
+      "sha256": "a27db4654edb0f7081e9b277e13ca20b931e3d91ce492615ca40ecf9f6e22307",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.12/ChatGPT-Profiles-3.0.0-alpha.12-mac-arm64.zip"
+    }
+  ],
+  "signing": "ad-hoc, not notarized",
+  "checks": {
+    "ciUnitPassed": 60,
+    "localMacOSUIPassed": 13,
+    "localWindowsOnlySkipped": 2,
+    "localAppSourceCommit": "f52fd7c09cf3d7d22723f0887f0aaefab8083dbe",
+    "distFilesCompared": 227,
+    "asarSHA256": "9239b5ab71d3c866377b693e13d9bdab6f9fd1b04f1fc48225b1c0e1481861b1",
+    "packagedInstallation": {
+      "version": "3.0.0-alpha.12",
+      "verifiedAt": "2026-10-23T07:07:17.976Z",
+      "scope": "real packaged ZIP, disposable old bundle, no personal account data; no live ChatGPT upgrade acceptance",
+      "zipSHA256": "a27db4654edb0f7081e9b277e13ca20b931e3d91ce492615ca40ecf9f6e22307",
+      "asarSHA256": "9239b5ab71d3c866377b693e13d9bdab6f9fd1b04f1fc48225b1c0e1481861b1",
+      "helperSHA256": "06f93c1c549a18a28f65a9d96f361fb5491d3c37db620de89007bf19b47e62aa",
+      "elapsedMs": 17724,
+      "checks": [
+        "ZIP digest and identity",
+        "full bundle signature and architecture",
+        "Electron fs.copyFileSync from shipping ASAR",
+        "parent exit wait",
+        "atomic swap",
+        "installed payload byte identity",
+        "previous bundle preserved"
+      ]
+    }
+  },
+  "manualAcceptancePending": [
+    "Existing personal workspace upgrade and Keychain interaction",
+    "Real ChatGPT/OAuth/passkey and changing website generation/upload markers",
+    "Physical devices and other platforms"
+  ]
+}
