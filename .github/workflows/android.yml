@@ -98,10 +98,15 @@ jobs:
           export ANDROID_USER_HOME="$RUNNER_TEMP/profiles-android"
           export ANDROID_AVD_HOME="$ANDROID_USER_HOME/avd"
           mkdir -p "$ANDROID_AVD_HOME"
+          # Both emulator and adb must inherit this fresh home. Start adb first
+          # so the emulator receives its public key instead of waiting forever
+          # for authorization against a daemon from the runner's previous home.
+          adb kill-server || true
+          adb start-server
           avdmanager create avd --force --name profiles-test --device pixel_6 --path "$ANDROID_AVD_HOME/profiles-test.avd" --package 'system-images;android-35;google_apis;x86_64'
           test -f "$ANDROID_AVD_HOME/profiles-test.ini"
           "$ANDROID_HOME/emulator/emulator" -list-avds
-          "$ANDROID_HOME/emulator/emulator" -avd profiles-test -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect > app/build/device-evidence/emulator.log 2>&1 &
+          "$ANDROID_HOME/emulator/emulator" -avd profiles-test -no-window -no-audio -no-boot-anim -no-snapshot -gpu software > app/build/device-evidence/emulator.log 2>&1 &
           timeout 180 adb wait-for-device
           timeout 240 bash -c 'until adb shell getprop sys.boot_completed | tr -d "\r" | grep -q 1; do sleep 2; done'
           collect_failure() {
