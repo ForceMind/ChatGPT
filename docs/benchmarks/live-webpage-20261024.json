@@ -1,0 +1,115 @@
+{
+  "date": "2026-10-24",
+  "applicationVersion": "3.0.0-alpha.14",
+  "macos": {
+    "run": "https://github.com/ForceMind/ChatGPT/actions/runs/39986418939",
+    "probeCommit": "1124257b52bc752d3507b8c6f50c74572c61ca23",
+    "result": {
+      "status": "anonymous-composer-observed",
+      "scope": "Actual anonymous ChatGPT webpage, fresh CI application data, same composer adapter as alpha.14. No input, upload, login, verification click or send. Not an authenticated end-to-end acceptance.",
+      "observations": [
+        {
+          "composer": true,
+          "tag": "TEXTAREA",
+          "editable": true,
+          "id": "mobile-composer-prompt",
+          "role": null,
+          "sendPresent": true,
+          "fileInputPresent": false,
+          "challenge": false,
+          "login": true,
+          "readyState": "complete",
+          "observedAt": "2026-10-23T16:24:41.328Z"
+        }
+      ]
+    },
+    "screenshot": "docs/images/macos-anonymous-live-20261024.png",
+    "authenticatedSendVerified": false,
+    "installedStandardLocationVersion": "3.0.0-alpha.12",
+    "nativeDraft": {
+      "run": "https://github.com/ForceMind/ChatGPT/actions/runs/39989201159",
+      "probeCommit": "703153d0108dcddc8ef5ddb6a0d8b57cda02665e",
+      "result": {
+        "status": "anonymous-native-draft-verified",
+        "scope": "Actual anonymous ChatGPT page, fresh CI data; native DOM.focus/Input.insertText while normal workspace hides the webpage. Fixed harmless draft only. No login, upload, verification click or send; not authenticated end-to-end acceptance.",
+        "sendAttempted": false,
+        "draftResult": {
+          "empty": false,
+          "matched": true,
+          "writtenCharacters": 62,
+          "expectedCharacters": 62,
+          "sendReady": true
+        },
+        "observations": [
+          {
+            "composer": true,
+            "tag": "TEXTAREA",
+            "editable": true,
+            "id": "mobile-composer-prompt",
+            "role": null,
+            "sendPresent": true,
+            "fileInputPresent": false,
+            "challenge": false,
+            "login": true,
+            "readyState": "complete",
+            "observedAt": "2026-10-23T16:44:30.495Z"
+          }
+        ]
+      },
+      "screenshot": "docs/images/macos-native-draft-live-20261024.png",
+      "usesProductInputPrimitives": true,
+      "fullHandoffRunnerInvoked": false
+    },
+    "failedProbe": {
+      "run": "https://github.com/ForceMind/ChatGPT/actions/runs/39988569364",
+      "reason": "Generated CI test script newline syntax error before webpage access; corrected in 703153d. No product code changed."
+    }
+  },
+  "android": {
+    "api35Run": "https://github.com/ForceMind/ChatGPT/actions/runs/39985621253",
+    "homepageReady": false,
+    "observationCount": 28,
+    "lastObservation": {
+      "elapsedSeconds": 180,
+      "nativeApp": true,
+      "chatgpt": false,
+      "login": false,
+      "composer": false,
+      "challenge": true,
+      "errorPage": false
+    },
+    "colorBufferOrSegfaultObserved": false,
+    "websiteImageChanged": false,
+    "android16Comparison": {
+      "run": "https://github.com/ForceMind/ChatGPT/actions/runs/39987518040",
+      "probeCommit": "a25fa5f62d9a5b1a04c55f7a29573cd73769bf5f",
+      "apiLevel": 36,
+      "webviewPackage": "com.google.android.webview",
+      "webviewVersion": "133.0.6943.137",
+      "homepageReady": false,
+      "observationCount": 27,
+      "lastObservation": {
+        "elapsedSeconds": 179.6,
+        "nativeApp": true,
+        "chatgpt": false,
+        "login": false,
+        "composer": false,
+        "challenge": true,
+        "errorPage": false
+      },
+      "outcome": "Manual Cloudflare verification required. No verification clicked; no homepage obtained; no website image changed."
+    }
+  },
+  "pending": [
+    "User-selected macOS alpha.14 test account and permission for a clearly labelled non-sensitive test message/file",
+    "Android physical-device availability and manual website verification"
+  ],
+  "delivery": {
+    "productCodeChanged": false,
+    "publicReleaseChanged": false,
+    "publicWebsiteChanged": false,
+    "autoUpdateFeedChanged": false,
+    "buildsRunIn": "GitHub Actions",
+    "localDependenciesInstalled": false
+  }
+}
