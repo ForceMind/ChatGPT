@@ -573,3 +573,10 @@
 - 安装包资源实测：40008979037 的 1 项 Android 15 / API35 原生测试通过，PackageManager 加载 AdaptiveIconDrawable，#171717 背景、白色图案、圆形与单色层 / 安全区均实际渲染并查看；后续三轮资源检查也通过。原生图保留 docs/images/android-*-alpha15.png。
 - 附加系统页面截图单独记录为未通过：首次为 Settings FallbackHome；第二轮由 UTP 日志确认测试工具卸载目标包；补装后第三轮实际 App info 页被 Pixel Launcher ANR 遮挡；第四轮 40011810866 因 UiTestAutomationBridge 空 root 没有 XML 而失败。已补 bounded transient retry 并做语法检查，未再跑设备；不隐藏失败、不将诊断图当成产品 / 首页截图，用户确认正常后停止可选截图重试。结构化完整索引 docs/releases/3.0.0-alpha.15-android-ci.json。
 - 本批核心图标问题已由用户真机反馈确认正常，源码资源适配与 CI 构建完成；公开 Android alpha.11、官网截图 / 下载、Mac/Windows、现有账号数据均保持。原有 Android 首页人工验证与 Mac 指定账号附件发送仍待外部条件，不被图标结案替代。
+
+## macOS alpha.14 独立收尾回归与资源复测（2026-10-24）
+
+- 用户要求先继续不需要配合的部分，明确将 Android 首页与 Mac 真实附件发送留待稍后验收。本轮不重复这些人工项，沿用已批准的 macOS 稳定性 / 资源与保活范围。
+- 当前交付：GitHub Actions 执行所有现有 macOS 适用 Electron 回归（恢复 / 离线 / 更新及空闲安装 / 图片 / 登录记录 / 资产和任务流）；同一 CI 主机顺序构建公开 alpha.13 固定源码 16972fbaedbed6ec410cefca30c794d2fe86691b 与当前 alpha.14，分别测轻量 / 长对话图片夹具的 1/4/8 标签，另验 3 账号 8 标签隐藏 330 秒。结果只证明隔离夹具和原生资源观测，不替代真实 ChatGPT 验收。
+- 本轮变更仅 CI 工作流、测量工具及必要报告；新工具补实际页面数 / 未节流断言、受限运行时间和测试临时目录清理。所有构建与测试在 CI，本机不安装依赖、不构建安装包、不读个人账号。若检查发现本批引起或直接阻塞验收的问题，再做范围内修复。仅验证不升级版本、不改官网 / Release。
+- 资源方法保持原生 Electron 启动、不使用 Playwright 启动器；每档暖机后 12 次 / 1 秒采样。工作集含共享页，CPU 为 Electron API 合计，CI 顺序对照不是严格统计性性能保证，也不与旧 Apple M4 本机数据直接比较。不以冻结 / 丢弃标签节省内存。

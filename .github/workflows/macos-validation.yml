@@ -1,0 +1,95 @@
+name: macOS isolated regression and resources
+on:
+  workflow_dispatch:
+    inputs:
+      regression:
+        description: Run all existing macOS-applicable isolated UI scenarios
+        type: boolean
+        default: true
+      resources:
+        description: Compare alpha.13 and current on one host, then verify 330-second background retention
+        type: boolean
+        default: true
+permissions:
+  contents: read
+jobs:
+  regression:
+    if: inputs.regression
+    runs-on: macos-15
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '26.7.0'
+      - name: Check platform and build existing application
+        run: |
+          test "$(uname -m)" = arm64
+          npm ci
+          npm run check
+      - name: All isolated functional scenarios
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_FILE: test-results/full-regression.json
+        run: npx playwright test --max-failures=1 --reporter=list,json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: macos-full-regression-results
+          retention-days: 14
+          path: desktop/test-results/full-regression.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: macos-full-regression-evidence
+          retention-days: 14
+          path: |
+            desktop/test-results/
+            desktop/playwright-report/
+  resources:
+    if: inputs.resources
+    runs-on: macos-15
+    timeout-minutes: 25
+    env:
+      BASELINE_COMMIT: 16972fbaedbed6ec410cefca30c794d2fe86691b
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: current
+      - uses: actions/checkout@v4
+        with:
+          ref: 16972fbaedbed6ec410cefca30c794d2fe86691b
+          path: baseline
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '26.7.0'
+      - name: Build published alpha.13 source on this host
+        working-directory: baseline/desktop
+        run: |
+          test "$(uname -m)" = arm64
+          node --input-type=module -e "import fs from 'node:fs';if(JSON.parse(fs.readFileSync('package.json')).version!=='3.0.0-alpha.13')throw Error('Wrong baseline')"
+          npm ci
+          npm run build
+      - name: Build current source on the same host
+        working-directory: current/desktop
+        run: |
+          npm ci
+          npm run build
+          mkdir -p test-results/resources
+      - name: Native local workload comparison without Playwright flags
+        working-directory: current/desktop
+        run: |
+          node scripts/measure-resources.mjs --app-root "$GITHUB_WORKSPACE/baseline/desktop" --label baseline-light --output test-results/resources/baseline-light.json
+          node scripts/measure-resources.mjs --label current-light --output test-results/resources/current-light.json
+          node scripts/measure-resources.mjs --app-root "$GITHUB_WORKSPACE/baseline/desktop" --label baseline-conversation --workload conversation --output test-results/resources/baseline-conversation.json
+          node scripts/measure-resources.mjs --label current-conversation --workload conversation --output test-results/resources/current-conversation.json
+          node scripts/measure-resources.mjs --label current-retention --workload conversation --keepalive-ms 330000 --output test-results/resources/current-retention.json
+          node scripts/summarize-resources.mjs test-results/resources
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: macos-native-resource-evidence
+          retention-days: 14
+          path: current/desktop/test-results/resources/
