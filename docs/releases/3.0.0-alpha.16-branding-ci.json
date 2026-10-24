@@ -1,7 +1,7 @@
 {
   "version": "3.0.0-alpha.16",
   "name": "ChatGPT Studio",
-  "status": "CI candidate only; not a public release or production website deployment",
+  "status": "Branding and compatibility CI passed; candidate only, not a public release or production website deployment",
   "applicationSourceCommit": "f9221591e4dfd6b28a5648fcc5c1488167c18d96",
   "macos": {
     "regressionRun": "https://github.com/ForceMind/ChatGPT/actions/runs/40087980933",
@@ -35,21 +35,86 @@
         "sha256": "d561df811361a20e4a2f1d64d121d029948c9355c7e4f743deb0831aa6a947ca"
       }
     ],
-    "keychainScope": "isolated Electron, actual packaged ASAR/native module; no personal profiles or Keychain items; signed Touch ID key creation not verified"
+    "keychainScope": "isolated Electron, actual packaged ASAR/native module; no personal profiles or Keychain items; signed Touch ID key creation not verified",
+    "unitTests": {
+      "tests": 63,
+      "passed": 63,
+      "failed": 0
+    },
+    "packagedUpdater": "passed"
   },
   "android": {
     "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40087956997",
     "result": "build and aapt2 checks passed",
     "label": "ChatGPT Studio",
     "applicationId": "com.forcemind.chatgpt.profiles",
-    "signatureInCi": "unsigned release; fixed signing identity remains local"
+    "signatureInCi": "unsigned release; fixed signing identity remains local",
+    "unitTests": {
+      "tests": 63,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
   },
   "windows": {
-    "status": "UI acceptance passed; native retention/package/install checks running",
+    "status": "passed",
     "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40089162364",
     "firstFailedRun": "https://github.com/ForceMind/ChatGPT/actions/runs/40087980439",
     "secondFailedRun": "https://github.com/ForceMind/ChatGPT/actions/runs/40088669431",
-    "testHarnessFix": "Resume a possible automation startup pause before reading native view storage; storage assertions unchanged."
+    "testHarnessFix": "Resume a possible automation startup pause before reading native view storage; storage assertions unchanged.",
+    "sourceCommit": "6f89c1b8d12764efda06bba735645c77432e501b",
+    "unitTests": {
+      "tests": 63,
+      "passed": 62,
+      "skipped": 1,
+      "skipReason": "macOS native atomic updater only",
+      "failed": 0
+    },
+    "uiTests": {
+      "passed": 13,
+      "skipped": 12,
+      "skipReason": "macOS-specific cases",
+      "failed": 0
+    },
+    "installedProductName": "ChatGPT Studio",
+    "installedPeProductVersion": "3.0.0.0",
+    "installation": {
+      "installed": true,
+      "launched": true,
+      "normalExit": true,
+      "uninstalled": true,
+      "accountDataRetained": true
+    },
+    "signature": "NotSigned",
+    "retention": {
+      "durationMs": 330872,
+      "profiles": 3,
+      "stable": true,
+      "active": true,
+      "passed": true
+    },
+    "payloadFiles": 226,
+    "artifacts": [
+      {
+        "file": "ChatGPT-Profiles-3.0.0-alpha.16-windows-x64-setup.exe",
+        "bytes": 130962817,
+        "sha256": "2b5b43874ca54d87cfc3b2cf547647b97ed8fb705b5a07bf1adc208ad161a05d"
+      },
+      {
+        "file": "ChatGPT-Profiles-3.0.0-alpha.16-windows-x64-setup.exe.blockmap",
+        "bytes": 137060,
+        "sha256": "ce754d4e4046c692723416d46ecb9b5db27fb320bc8e8786204cf4a55953299a"
+      },
+      {
+        "file": "ChatGPT-Profiles-3.0.0-alpha.16-windows-x64.zip",
+        "bytes": 180722408,
+        "sha256": "98104cb10919ece440c74d72ab8c098c532bc37367dd2a63129929271f09255c"
+      }
+    ],
+    "candidateAttachments": {
+      "installer": "https://github.com/ForceMind/ChatGPT/actions/runs/40089162364/artifacts/12558885457",
+      "zip": "https://github.com/ForceMind/ChatGPT/actions/runs/40089162364/artifacts/12559085033"
+    }
   },
   "websiteSource": {
     "renderedWidths": [

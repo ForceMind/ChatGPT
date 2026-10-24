@@ -597,3 +597,6 @@
 - Mac 更名候选 f922159 的 CI 40087980933 成功：23 项 macOS 适用流程，2 项 Windows 专属跳过，0 失败 / 0 flaky，包含窗口 / 菜单新名称与旧内部身份校验、官网 1440 / 390 宽度实际渲染；两张源码预览图已查看并保存 docs/images/studio-website-source-*.png，不称为已部署页面。
 - Mac 包检查 40087980342 成功：228 个 payload 文件一致，实际包 CFBundleDisplayName=ChatGPT Studio、CFBundleName=ChatGPT Profiles、应用 ID 和 ZIP 根旧名保留；完整包更新验证和未签名原生恢复拒绝路径通过。包只在 CI，不上传 Release。Android 40087956997 编译与实际 aapt2 标签 / 稳定包名检查通过。
 - Windows 首轮 40087980439 在新账号存储读取的 app-side evaluate 阶段超时；第二轮加 JS 有界阶段诊断仍未执行到 JS watchdog。测试端按既有原生弹窗模式为 Windows 新视图恢复可能的自动化启动暂停后，40089162364 全部适用界面用例已通过，正在补背景保活 / 打包 / 安装检查。产品存储逻辑与隔离断言未改，历史失败不隐藏。
+
+- 最终 Windows 40089162364（6f89c1b）成功：62 项适用单元通过 / 1 项 Mac 原生更新器跳过，13 项适用界面流程通过 / 12 项 Mac 专属跳过，原生首脚本与登录弹窗检查通过；3 账号 8 标签隐藏 330872ms 保活、PE/ASAR 源码一致、EXE/ZIP 打包以及实际安装启动 / 正常退出 / 卸载后账号数据保留全部通过。实际 PE 产品名 ChatGPT Studio，可执行文件仍 ChatGPT Profiles.exe，签名 NotSigned。新视图自动化暂停恢复只改测试，不更改产品存储逻辑或断言；先前失败一并保留。
+- alpha.16 品牌与兼容结果统一记录于 docs/releases/3.0.0-alpha.16-branding-ci.json。Mac / Windows 安装包只保留在 Actions，Android release 仍为 CI unsigned；未下载大包到本机，未上传 Android 签名材料。README 公共下载仍指向 Mac alpha.13、Win/Android alpha.11；线上网站与更新清单未变。当前更名 / 专业说明 / 未完成计划整理和仓库同步按用户范围交付，后续发布部署另行处理。
