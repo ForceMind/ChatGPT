@@ -1,0 +1,17 @@
+{
+  "version": "3.0.0-alpha.16",
+  "sourceCommit": "f9221591e4dfd6b28a5648fcc5c1488167c18d96",
+  "buildRun": 40087956997,
+  "package": "com.forcemind.chatgpt.profiles",
+  "versionCode": 3000016,
+  "label": "ChatGPT Studio",
+  "certificateSha256": "8b6eef928fded91f291ad954e20976b2cc6011b55e8cbec0152695fe1f05cf19",
+  "signing": "Existing local release identity; APK v3 verified; private key not exported",
+  "unsignedApkSha256": "d58dd8bafc1619632edf3a0f2d896e84e4276491adb91772b77553d89ad1d74f",
+  "artifact": {
+    "file": "ChatGPT-Profiles-3.0.0-alpha.16-android.apk",
+    "bytes": 7282077,
+    "sha256": "251ec793d8583a2c43133017b951e8522d61023829bedbecbf32f2a426dc8faf"
+  },
+  "scope": "CI-built release APK signed locally with fixed identity; physical-device login/data upgrade pending"
+}

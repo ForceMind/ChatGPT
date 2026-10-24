@@ -1,0 +1,71 @@
+{
+  "version": "3.0.0-alpha.16",
+  "name": "ChatGPT Studio",
+  "sourceCommit": "1b407f388f73e065b0e31215b9afedfc86ccd951",
+  "prerelease": true,
+  "platforms": [
+    "macOS arm64",
+    "Windows x64",
+    "Android System WebView"
+  ],
+  "artifacts": [
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.16-mac-arm64.dmg",
+      "bytes": 154522167,
+      "sha256": "d467b46f0af624b04519ef885fb63c196d2dbb5431b263be5bd0ae4d146e1c58",
+      "platform": "macos",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.16/ChatGPT-Profiles-3.0.0-alpha.16-mac-arm64.dmg"
+    },
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.16-mac-arm64.zip",
+      "bytes": 154466122,
+      "sha256": "d561df811361a20e4a2f1d64d121d029948c9355c7e4f743deb0831aa6a947ca",
+      "platform": "macos",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.16/ChatGPT-Profiles-3.0.0-alpha.16-mac-arm64.zip"
+    },
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.16-windows-x64-setup.exe",
+      "bytes": 130962817,
+      "sha256": "2b5b43874ca54d87cfc3b2cf547647b97ed8fb705b5a07bf1adc208ad161a05d",
+      "platform": "windows",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.16/ChatGPT-Profiles-3.0.0-alpha.16-windows-x64-setup.exe"
+    },
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.16-windows-x64.zip",
+      "bytes": 180722408,
+      "sha256": "98104cb10919ece440c74d72ab8c098c532bc37367dd2a63129929271f09255c",
+      "platform": "windows",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.16/ChatGPT-Profiles-3.0.0-alpha.16-windows-x64.zip"
+    },
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.16-android.apk",
+      "bytes": 7282077,
+      "sha256": "251ec793d8583a2c43133017b951e8522d61023829bedbecbf32f2a426dc8faf",
+      "platform": "android",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.16/ChatGPT-Profiles-3.0.0-alpha.16-android.apk"
+    }
+  ],
+  "runs": {
+    "macos": 40087980342,
+    "macosRegression": 40087980933,
+    "windows": 40089162364,
+    "android": 40087956997
+  },
+  "binarySourceCommits": {
+    "macos": "f9221591e4dfd6b28a5648fcc5c1488167c18d96",
+    "windows": "6f89c1b8d12764efda06bba735645c77432e501b",
+    "android": "f9221591e4dfd6b28a5648fcc5c1488167c18d96"
+  },
+  "validation": "Application/build inputs unchanged between platform binary commits and the release source commit. Detailed checks in 3.0.0-alpha.16-branding-ci.json.",
+  "signing": {
+    "macos": "ad-hoc; not notarized",
+    "windows": "NotSigned",
+    "androidCertificateSha256": "8b6eef928fded91f291ad954e20976b2cc6011b55e8cbec0152695fe1f05cf19"
+  },
+  "compatibility": "Internal app identity, original data folder, Keychain service, updater archive root and file prefix retained. No personal-data migration.",
+  "manualAcceptancePending": [
+    "Android real homepage/manual verification and physical-device account flows",
+    "macOS real authenticated attachment/send flow",
+    "Real personal-data upgrades and signed Touch ID/keychain flows"
+  ]
+}

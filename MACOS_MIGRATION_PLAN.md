@@ -600,3 +600,10 @@
 
 - 最终 Windows 40089162364（6f89c1b）成功：62 项适用单元通过 / 1 项 Mac 原生更新器跳过，13 项适用界面流程通过 / 12 项 Mac 专属跳过，原生首脚本与登录弹窗检查通过；3 账号 8 标签隐藏 330872ms 保活、PE/ASAR 源码一致、EXE/ZIP 打包以及实际安装启动 / 正常退出 / 卸载后账号数据保留全部通过。实际 PE 产品名 ChatGPT Studio，可执行文件仍 ChatGPT Profiles.exe，签名 NotSigned。新视图自动化暂停恢复只改测试，不更改产品存储逻辑或断言；先前失败一并保留。
 - alpha.16 品牌与兼容结果统一记录于 docs/releases/3.0.0-alpha.16-branding-ci.json。Mac / Windows 安装包只保留在 Actions，Android release 仍为 CI unsigned；未下载大包到本机，未上传 Android 签名材料。README 公共下载仍指向 Mac alpha.13、Win/Android alpha.11；线上网站与更新清单未变。当前更名 / 专业说明 / 未完成计划整理和仓库同步按用户范围交付，后续发布部署另行处理。
+
+## alpha.16 三端发布与官网上线（2026-10-24）
+
+- 用户回复继续，推进已列出的待发布项：公开已验证的 Studio alpha.16 三端包，更新官网品牌 / 下载 / 国内加速 / 里程碑 / Mac 清单，沿用 ForceMind/ChatGPT 和 Pages chatgpt-profiles。不将其他未来开发或人工项纳入本轮。
+- 复用 macOS 40087980342 与 Windows 40089162364 原二进制，由新增受限工作流下载 / 校验并上传发布草稿，大包不落本机。发布 tag 冻结原已验收源码 1b407f3；平台二进制源码 f922159 / 6f89c1b 与其产品输入一致，文档与测试修正分别记录，不伪造同一个构建提交。
+- Android 使用 40087956997 的 unsigned release APK，仅本地签名；临时官方 JRE / Google build-tools 经供应方摘要校验，只在任务临时目录使用，没有全局安装 SDK 或 JRE。APK v3 与正式包名 / alpha.16 / 3000016 / Studio 标签核对通过，证书与旧公开版本同为 8b6eef928fded91f291ad954e20976b2cc6011b55e8cbec0152695fe1f05cf19；私钥未导出，密码仅经标准输入。正式索引 docs/releases/3.0.0-alpha.16-android.json。
+- 发布前完整验证 GitHub 草稿与所有附件大小 / SHA-256，再公开并以实际 published_at 更新官网 JSON。官网只上传干净静态文件，保留历史 Release 与人工待验边界；结束后清理全部本轮临时下载、工具和签名产物。
