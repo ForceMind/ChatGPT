@@ -593,3 +593,7 @@
 - 当前候选统一 alpha.16：桌面窗口 / 应用菜单 / 关于页 / 更新文案 / 原生恢复说明、Android 应用标签及官网 HTML 源码采用 ChatGPT Studio。保留 npm 名、应用 ID、macOS 内部 app 名 / BundleName / 数据目录 / 加密服务、旧 ZIP 根 ChatGPT Profiles.app、Windows 可执行文件名和 Android 包名 / 签名身份。桌面 productName 为新品牌，Mac 打包显式保留兼容 bundleName，展示名使用 CFBundleDisplayName；历史附件名与下载链接不改。
 - README 重新组织产品能力、公开包与候选包、平台差异、数据 / 更新兼容、资源与验证、开发交付及优先级路线图。仅使用本项目资料，不写入已清除的参考项目。待验、待开发、受证书条件限制和待发布分别列明。
 - 最小必要验收：CI 编译 / 单元 / macOS 全部适用回归；新加品牌 / 旧身份检查和官网 1440 / 390 实际渲染；Mac 实际包显示名与旧 bundle / 更新布局校验；Windows PE 名称、安装退出卸载与数据保留；Android aapt2 验证实际标签与包名。本机不安装大型依赖、不生成或下载安装包、不触碰个人数据。
+
+- Mac 更名候选 f922159 的 CI 40087980933 成功：23 项 macOS 适用流程，2 项 Windows 专属跳过，0 失败 / 0 flaky，包含窗口 / 菜单新名称与旧内部身份校验、官网 1440 / 390 宽度实际渲染；两张源码预览图已查看并保存 docs/images/studio-website-source-*.png，不称为已部署页面。
+- Mac 包检查 40087980342 成功：228 个 payload 文件一致，实际包 CFBundleDisplayName=ChatGPT Studio、CFBundleName=ChatGPT Profiles、应用 ID 和 ZIP 根旧名保留；完整包更新验证和未签名原生恢复拒绝路径通过。包只在 CI，不上传 Release。Android 40087956997 编译与实际 aapt2 标签 / 稳定包名检查通过。
+- Windows 首轮 40087980439 在新账号存储读取的 app-side evaluate 阶段超时；第二轮加 JS 有界阶段诊断仍未执行到 JS watchdog。测试端按既有原生弹窗模式为 Windows 新视图恢复可能的自动化启动暂停后，40089162364 全部适用界面用例已通过，正在补背景保活 / 打包 / 安装检查。产品存储逻辑与隔离断言未改，历史失败不隐藏。

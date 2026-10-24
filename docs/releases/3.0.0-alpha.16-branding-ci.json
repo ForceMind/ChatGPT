@@ -1,0 +1,84 @@
+{
+  "version": "3.0.0-alpha.16",
+  "name": "ChatGPT Studio",
+  "status": "CI candidate only; not a public release or production website deployment",
+  "applicationSourceCommit": "f9221591e4dfd6b28a5648fcc5c1488167c18d96",
+  "macos": {
+    "regressionRun": "https://github.com/ForceMind/ChatGPT/actions/runs/40087980933",
+    "stats": {
+      "startTime": "2026-10-24T10:58:49.875Z",
+      "duration": 206078.592,
+      "expected": 23,
+      "skipped": 2,
+      "unexpected": 0,
+      "flaky": 0
+    },
+    "packageRun": "https://github.com/ForceMind/ChatGPT/actions/runs/40087980342",
+    "branding": {
+      "displayName": "ChatGPT Studio",
+      "internalName": "ChatGPT Profiles",
+      "bundleId": "com.forcemind.chatgpt.profiles",
+      "legacyUpdateRoot": "ChatGPT Profiles.app"
+    },
+    "payloadFiles": 228,
+    "asarSha256": "13291b5864f28cf5b2abd9742e58ba65222addb8cc77f970930dfcce305c62f3",
+    "signing": "ad-hoc, not notarized",
+    "artifacts": [
+      {
+        "file": "ChatGPT-Profiles-3.0.0-alpha.16-mac-arm64.dmg",
+        "bytes": 154522167,
+        "sha256": "d467b46f0af624b04519ef885fb63c196d2dbb5431b263be5bd0ae4d146e1c58"
+      },
+      {
+        "file": "ChatGPT-Profiles-3.0.0-alpha.16-mac-arm64.zip",
+        "bytes": 154466122,
+        "sha256": "d561df811361a20e4a2f1d64d121d029948c9355c7e4f743deb0831aa6a947ca"
+      }
+    ],
+    "keychainScope": "isolated Electron, actual packaged ASAR/native module; no personal profiles or Keychain items; signed Touch ID key creation not verified"
+  },
+  "android": {
+    "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40087956997",
+    "result": "build and aapt2 checks passed",
+    "label": "ChatGPT Studio",
+    "applicationId": "com.forcemind.chatgpt.profiles",
+    "signatureInCi": "unsigned release; fixed signing identity remains local"
+  },
+  "windows": {
+    "status": "UI acceptance passed; native retention/package/install checks running",
+    "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40089162364",
+    "firstFailedRun": "https://github.com/ForceMind/ChatGPT/actions/runs/40087980439",
+    "secondFailedRun": "https://github.com/ForceMind/ChatGPT/actions/runs/40088669431",
+    "testHarnessFix": "Resume a possible automation startup pause before reading native view storage; storage assertions unchanged."
+  },
+  "websiteSource": {
+    "renderedWidths": [
+      1440,
+      390
+    ],
+    "screenshots": [
+      "docs/images/studio-website-source-1440.png",
+      "docs/images/studio-website-source-390.png"
+    ],
+    "productionDeployed": false
+  },
+  "preserved": {
+    "bundleId": "com.forcemind.chatgpt.profiles",
+    "internalAppName": "ChatGPT Profiles",
+    "userDataFolder": "ChatGPT Profiles",
+    "macosZipRoot": "ChatGPT Profiles.app",
+    "windowsExecutable": "ChatGPT Profiles.exe",
+    "androidApplicationId": "com.forcemind.chatgpt.profiles",
+    "keychainService": "com.forcemind.chatgpt.profiles.recovery-presence.v1",
+    "releaseAndUpdateFilenamePrefix": "ChatGPT-Profiles-"
+  },
+  "publication": {
+    "repositoryRename": false,
+    "releaseCreated": false,
+    "websiteDeployed": false,
+    "updateFeedChanged": false,
+    "existingAssetNamesOrHashesModified": false
+  },
+  "personalDataAccessed": false,
+  "localBuildDependenciesInstalled": false
+}
