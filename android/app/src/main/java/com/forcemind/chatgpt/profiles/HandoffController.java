@@ -30,11 +30,21 @@ final class HandoffController {
     private JSONObject parsed(String raw)throws Exception{if(raw==null||raw.length()>600000)throw new IOException("网页返回无效");Object value=new JSONTokener(raw).nextValue();return value instanceof JSONObject?(JSONObject)value:new JSONObject(String.valueOf(value));}
     private void install(){
         if(!valid()){fail("目标账号、页签或应用状态已改变");return;}if(SystemClock.elapsedRealtime()>deadline){fail("未找到 ChatGPT 输入框，请先登录或检查网页兼容性");return;}
-        if(!origin()||page.web.getProgress()<100){later(this::install);return;}
+        // A new WebView may report the requested URL and 100% before the first
+        // onPageStarted callback. Bind only after an actual navigation began.
+        if(!origin()||page.web.getProgress()<100||host.epoch(page)<1){later(this::install);return;}
         try{
             String source;try(InputStream in=runtime.context.getAssets().open("handoff-page.js")){ByteArrayOutputStream out=new ByteArrayOutputStream();byte[] buffer=new byte[8192];int n;while((n=in.read(buffer))!=-1)out.write(buffer,0,n);source=new String(out.toByteArray(),StandardCharsets.UTF_8);}
             JSONObject config=new JSONObject().put("origin","https://chatgpt.com").put("token",token).put("key",key).put("mimeMarker",mimeMarker).put("names",new JSONArray(names));boolean images=!names.isEmpty();JSONArray files=job.getJSONArray("files");for(int i=0;i<files.length();i++)images&=files.getJSONObject(i).getString("uploadMime").startsWith("image/");config.put("allImages",images);long sentEpoch=host.epoch(page);
-            page.web.evaluateJavascript(source.replace("__CONFIG__",config.toString()),raw->{if(closed)return;try{if(!valid()||host.epoch(page)!=sentEpoch)throw new IOException();JSONObject result=parsed(raw);if(result.has("error"))throw new IOException();epoch=sentEpoch;ready();}catch(Exception e){fail("目标网页在准备时发生变化，未发送消息");}});
+            page.web.evaluateJavascript(source.replace("__CONFIG__",config.toString()),raw->{if(closed)return;try{
+                if(!valid()){fail("目标账号、页签或应用状态已改变，未发送消息");return;}
+                // No input, upload or send has happened yet. Wait for the new
+                // document to settle; the strict epoch fence starts below.
+                if(host.epoch(page)!=sentEpoch){later(this::install);return;}
+                JSONObject result=parsed(raw);if("origin".equals(result.optString("error"))){later(this::install);return;}
+                if(!result.optBoolean("ok")){fail("网页处理组件未能就绪，未发送消息");return;}
+                epoch=sentEpoch;ready();
+            }catch(Exception e){fail("网页处理组件返回无效状态，未发送消息");}});
         }catch(Exception e){fail("无法载入本机网页处理组件，未发送消息");}
     }
     private void evaluate(String command,Object argument,Consumer<JSONObject> next){

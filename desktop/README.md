@@ -6,6 +6,21 @@
 
 下载见[GitHub Release](https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.16)。当前 `main` 包含工作台、恢复、新图标与跨平台源码。真正退出后需要重新加载网页并恢复保存状态；macOS alpha.12 先显示本地只读快照，具体范围见下文。
 
+## alpha.17 开发候选：文件打开
+
+此批仍在开发分支和 Actions 验证，不属于上方 alpha.16 公开包。文件可从资产卡片双击或右键打开；预览底部提供系统应用打开与另存为。
+
+| 文件类型 | 内置查看 | 后备入口 |
+| --- | --- | --- |
+| HTML / HTM 单文件 | 脚本交互、临时网页存储、源码；默认离线，可为当前文件允许 HTTPS 资源 | 系统浏览器 |
+| PNG / JPEG / WebP / GIF / AVIF / SVG 等图片 | 浏览器支持的编码直接查看 | HEIC、TIFF 或解码失败时使用系统应用 |
+| PDF | 内置 PDF 阅读 | 系统 PDF 应用 |
+| Markdown、文本、JSON、CSV、代码 | Markdown 阅读、表格或转义后的原文；UTF-8 / UTF-16，文本上限 2 MiB | 编码不兼容或超限时使用系统应用 |
+| MP3 / WAV / OGG / FLAC / M4A、MP4 / WebM / MOV 等 | 音视频控件，具体编码由当前 Chromium 决定 | 编码不支持时使用系统播放器 |
+| Office、压缩包、EPUB、其他专用格式 | 文件详情和管理 | 系统已安装且关联的应用；无关联时显示错误并保留另存为入口 |
+
+HTML 的临时网页空间不共享工作台接口或账号 Cookie；关闭预览后不保证网页内部状态保留。允许联网后，HTML 可以向外部服务请求或发送数据；此选择不自动沿用到下一次打开。预览不是完整的网页工程导入器，未导入的本地关联文件不会自动获得访问权。脚本、程序和安装包不会通过系统打开入口直接执行，可查看文本或在文件管理器选择合适应用。
+
 ## macOS alpha.14 验证版：任务流与资产操作
 
 [Actions 测试与安装包](https://github.com/ForceMind/ChatGPT/actions/runs/39963836108) · [精确摘要与验证范围](../docs/releases/3.0.0-alpha.14-ci.json)
