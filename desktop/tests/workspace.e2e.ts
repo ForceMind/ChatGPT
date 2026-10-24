@@ -30,6 +30,9 @@ async function remote(app:ElectronApplication,code:string):Promise<any>{
     const w=BrowserWindow.getAllWindows().find(w=>w.webContents.getURL()==='app://shell/index.html')!;
     const view=(w.contentView.children as Electron.WebContentsView[]).find(v=>v.getVisible());
     if(!view||view.webContents.isDestroyed())return null;
+    // A newly attached Windows view can still be held by Playwright's startup
+    // debugger pause. Resume that automation pause before executing page JS.
+    if(process.platform==='win32'&&view.webContents.debugger.isAttached())await view.webContents.debugger.sendCommand('Runtime.runIfWaitingForDebugger');
     return view.webContents.executeJavaScript(source);
   },code);
 }
