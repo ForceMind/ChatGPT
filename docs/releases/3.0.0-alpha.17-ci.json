@@ -1,0 +1,353 @@
+{
+  "version": "3.0.0-alpha.17",
+  "status": "CI candidates only; not a public release",
+  "verifiedAt": "2026-10-24T17:04:03Z",
+  "implementationCommit": "06ab6131e3b019cd476a010239f4e92d303e202d",
+  "branch": "codex/macos-assets-workbench",
+  "macos": {
+    "runId": 40111820234,
+    "url": "https://github.com/ForceMind/ChatGPT/actions/runs/40111820234",
+    "sourceCommit": "de5d1461f8c4878c247173ebbfc5904c7790a8bb",
+    "status": "completed",
+    "conclusion": "success",
+    "unitTests": {
+      "tests": 63,
+      "passed": 63,
+      "failed": 0,
+      "skipped": 0
+    },
+    "uiTests": {
+      "startTime": "2026-10-24T16:30:41.013Z",
+      "duration": 219235.927,
+      "expected": 24,
+      "skipped": 2,
+      "unexpected": 0,
+      "flaky": 0
+    },
+    "package": {
+      "runId": 40112367543,
+      "url": "https://github.com/ForceMind/ChatGPT/actions/runs/40112367543",
+      "sourceCommit": "b631d2a0565c6857b515b3ff2c98bd1b85ab7985",
+      "status": "completed",
+      "conclusion": "success",
+      "artifacts": [
+        {
+          "file": "ChatGPT-Profiles-3.0.0-alpha.17-mac-arm64.dmg",
+          "bytes": 154517193,
+          "sha256": "07b227b1fe4cea59a8768c774676bbd372916a82de97ba067e83b63c5edba023"
+        },
+        {
+          "file": "ChatGPT-Profiles-3.0.0-alpha.17-mac-arm64.zip",
+          "bytes": 154471608,
+          "sha256": "06fdbfa404794aa287f1d3c60bf85b39134b28e2cbd059fe806cb569e4e4c383"
+        }
+      ],
+      "artifactLinks": {
+        "dmg": "https://github.com/ForceMind/ChatGPT/actions/runs/40112367543/artifacts/12567460538",
+        "zip": "https://github.com/ForceMind/ChatGPT/actions/runs/40112367543/artifacts/12566818059"
+      },
+      "signing": "ad-hoc, not notarized",
+      "checks": {
+        "distFilesCompared": 228,
+        "uiAcceptance": {
+          "version": "3.0.0-alpha.17",
+          "commit": "b631d2a0565c6857b515b3ff2c98bd1b85ab7985",
+          "scope": "isolated Electron with real ProseMirror and loopback fixtures; no live ChatGPT or personal accounts",
+          "stats": {
+            "startTime": "2026-10-24T16:37:29.963Z",
+            "duration": 119231.30500000001,
+            "expected": 10,
+            "skipped": 0,
+            "unexpected": 0,
+            "flaky": 0
+          }
+        },
+        "packagedUpdater": {
+          "version": "3.0.0-alpha.17",
+          "verifiedAt": "2026-10-24T16:41:26.957Z",
+          "scope": "real packaged ZIP, disposable old bundle, no personal account data; no live ChatGPT upgrade acceptance",
+          "zipSHA256": "06fdbfa404794aa287f1d3c60bf85b39134b28e2cbd059fe806cb569e4e4c383",
+          "asarSHA256": "9b8c6d795a26325407a12a8d98974b0b08bc106f0fda1755bec8efa5ce67bcda",
+          "helperSHA256": "06f93c1c549a18a28f65a9d96f361fb5491d3c37db620de89007bf19b47e62aa",
+          "elapsedMs": 23253,
+          "checks": [
+            "ZIP digest and identity",
+            "full bundle signature and architecture",
+            "Electron fs.copyFileSync from shipping ASAR",
+            "parent exit wait",
+            "atomic swap",
+            "installed payload byte identity",
+            "previous bundle preserved"
+          ]
+        },
+        "nativeRecovery": {
+          "version": "3.0.0-alpha.17",
+          "verifiedAt": "2026-10-24T16:41:33.346Z",
+          "scope": "isolated Electron, actual packaged ASAR/native module; no personal profiles or Keychain items; signed Touch ID key creation not verified",
+          "branding": {
+            "displayName": "ChatGPT Studio",
+            "internalName": "ChatGPT Profiles",
+            "bundleId": "com.forcemind.chatgpt.profiles",
+            "legacyUpdateRoot": "ChatGPT Profiles.app"
+          },
+          "payloadFiles": 228,
+          "asarSHA256": "9b8c6d795a26325407a12a8d98974b0b08bc106f0fda1755bec8efa5ce67bcda",
+          "capabilities": {
+            "touchID": false,
+            "signed": false
+          },
+          "unsignedKeyRefused": true,
+          "checks": [
+            "all dist payload bytes match",
+            "deep strict code signature",
+            "packaged native module loads from ASAR",
+            "ad-hoc key creation refused before SecItem access"
+          ]
+        }
+      }
+    }
+  },
+  "windows": {
+    "runId": 40111830238,
+    "url": "https://github.com/ForceMind/ChatGPT/actions/runs/40111830238",
+    "sourceCommit": "de5d1461f8c4878c247173ebbfc5904c7790a8bb",
+    "status": "completed",
+    "conclusion": "success",
+    "unitTests": {
+      "tests": 63,
+      "passed": 62,
+      "failed": 0,
+      "skipped": 1,
+      "skipReason": "macOS native updater"
+    },
+    "uiTests": {
+      "total": 26,
+      "expected": 14,
+      "unexpected": 0,
+      "flaky": 0,
+      "skipped": 12,
+      "ok": true
+    },
+    "retention": {
+      "durationMs": 330666,
+      "profiles": 3,
+      "stable": true,
+      "active": true,
+      "passed": true
+    },
+    "installation": {
+      "productName": "ChatGPT Studio",
+      "productVersion": "3.0.0.0",
+      "signature": "NotSigned",
+      "installed": true,
+      "launched": true,
+      "normalExit": true,
+      "uninstalled": true,
+      "accountDataRetained": true
+    },
+    "artifactArchives": [
+      {
+        "id": 12566728277,
+        "name": "windows-x64-installer",
+        "size_in_bytes": 130992905
+      },
+      {
+        "id": 12566289478,
+        "name": "windows-x64-zip",
+        "size_in_bytes": 180726408
+      },
+      {
+        "id": 12566144866,
+        "name": "windows-acceptance-evidence",
+        "size_in_bytes": 1246840
+      }
+    ],
+    "installerDigestNotReadLocally": "Build metadata is inside the installer artifact. No installer body downloaded; this record does not claim a locally verified Windows installer digest."
+  },
+  "android": {
+    "build": {
+      "runId": 40113159374,
+      "url": "https://github.com/ForceMind/ChatGPT/actions/runs/40113159374",
+      "sourceCommit": "06ab6131e3b019cd476a010239f4e92d303e202d",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    "deviceRun": {
+      "runId": 40113171306,
+      "url": "https://github.com/ForceMind/ChatGPT/actions/runs/40113171306",
+      "sourceCommit": "06ab6131e3b019cd476a010239f4e92d303e202d",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    "unitTests": {
+      "tests": 63,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "lint": {
+      "errors": 0,
+      "warnings": 39
+    },
+    "devices": [
+      {
+        "file": "android-device/device-evidence/phone-test-results/connected/debug/TEST-emulator-5554 - 15-_app-.xml",
+        "scope": "phone",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "cases": [
+          "assetDialogHandsActualFilesToTargetWebpageAndSendsOnce"
+        ]
+      },
+      {
+        "file": "android-device/outputs/androidTest-results/connected/debug/TEST-emulator-5554 - 15-_app-.xml",
+        "scope": "tablet",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "cases": [
+          "assetDialogHandsActualFilesToTargetWebpageAndSendsOnce"
+        ]
+      }
+    ],
+    "deviceScope": "Android 15 x86_64 emulator, phone and tablet sizes; not physical devices or all Android/WebView versions",
+    "webviewVersion": "not separately captured in this successful workflow",
+    "checks": [
+      "Native Skill selection: skill-001 / HTML 结构解读",
+      "Explicit cross-account consent before launch",
+      "Two actual files: size and SHA-256 equal originals",
+      "Actual webpage user message exactly equals stored complete prompt",
+      "One send only",
+      "No target-account asset copy",
+      "Staged URI revoked and completed task replay refused"
+    ],
+    "fix": "Wait for the first real navigation before adapter binding; bounded settling before binding, strict account/tab/foreground/epoch checks afterwards. Preparation component errors reported separately.",
+    "releaseSignature": "unsigned CI release, debug test identity; no private key exported",
+    "nativeTabUIChanged": false
+  },
+  "fileOpening": {
+    "scope": "isolated Electron and loopback fixtures, no personal files or real ChatGPT",
+    "legacyOpaqueSandboxReproduced": true,
+    "htmlLocalStorageAndClick": true,
+    "offlineNetworkRequests": 0,
+    "onlineCredentialIsolation": true,
+    "formatsChecked": [
+      "interactive.html",
+      "notes.md",
+      "records.csv",
+      "data.json",
+      "source.tsx",
+      "sound.wav",
+      "unsupported-codec.mp4",
+      "document.docx",
+      "unknown.custom",
+      "too-large.txt",
+      "run.command",
+      "picture.heic"
+    ],
+    "systemOpenDelegation": "OS handler stub; no third-party app launched",
+    "sourceUnchanged": true,
+    "crossAccountURLDenied": true
+  },
+  "skills": {
+    "definitions": 120,
+    "desktopPromptVariantsPerSkill": 2,
+    "variants": [
+      "with metadata for a file",
+      "without files"
+    ],
+    "allDefinitionsRetainInstructionsStepsOutputsChecks": true,
+    "desktopActualUI": "Skill chosen in native app workbench, real fixture upload and first message; seven completed stages, explicit consent and single-send/idempotency assertions",
+    "androidActualUI": "Native Skill spinner and file dialog through actual WebView fixture, full prompt and actual bytes verified",
+    "scope": "Workflow and message delivery acceptance only; no model output or real ChatGPT service acceptance",
+    "externalSkillRepositoriesResearched": 8,
+    "referenceSourceVendored": false
+  },
+  "androidDesignPreview": {
+    "path": "android/ui-preview",
+    "url": "http://127.0.0.1:4187/",
+    "status": "awaiting user approval for native implementation",
+    "widthsViewed": [
+      360,
+      390,
+      768
+    ],
+    "manualInteractionsVerified": [
+      "account filter",
+      "keyword search",
+      "close",
+      "undo within toast lifetime",
+      "restore from recent closed"
+    ],
+    "earlierUndoAttempt": "Toast expired before click; separately rechecked within its lifetime and restored the original 8 tabs.",
+    "content": "Explicit example accounts and conversations, not a production screenshot"
+  },
+  "firstFailedRuns": [
+    {
+      "run": 40111176908,
+      "platform": "macOS",
+      "reason": "WAV metadata blocked by shell media-src restriction; 23 UI passed, new file test failed"
+    },
+    {
+      "run": 40111185113,
+      "platform": "Windows",
+      "reason": "Same media-src failure, existing early-stop policy"
+    },
+    {
+      "run": 40112131430,
+      "platform": "Android",
+      "reason": "Skill preparation failed with generic page-change message before uploads/sending; initial-document preparation corrected and reverified"
+    }
+  ],
+  "screenshots": [
+    {
+      "file": "docs/images/macos-html-offline-alpha17-fixture.png",
+      "scope": "macOS isolated HTML offline preview",
+      "sha256": "ce22405bc6d336cec0ce17c4dcaed21c0e73a4ceba9074dd865542422b7c6b00"
+    },
+    {
+      "file": "docs/images/macos-html-online-alpha17-fixture.png",
+      "scope": "macOS isolated HTML online preview",
+      "sha256": "6a7f1786c999c5233ce7fcfa08476e00bc0a75854717f435f2a2dc6f251d1b07"
+    },
+    {
+      "file": "docs/images/android-skill-phone-alpha17-fixture.png",
+      "scope": "Android 15 phone, offline Skill fixture",
+      "sha256": "d2e02fe8c2b84ac35d37406f69ce403b9afe9cd380d33f698c12845a290f9b1c"
+    },
+    {
+      "file": "docs/images/android-skill-tablet-alpha17-fixture.png",
+      "scope": "Android 15 tablet, offline Skill fixture",
+      "sha256": "26569a728411202c76ecb5ee3564ef0f846674984b4fee0c394ae3d49ee1e90d"
+    }
+  ],
+  "boundaries": {
+    "localInstallerBodiesDownloaded": false,
+    "localBuildDependenciesInstalled": false,
+    "personalAccountDataAccessed": false,
+    "privateKeyExported": false,
+    "publicReleaseChanged": false,
+    "siteDeployed": false,
+    "publicVersion": "3.0.0-alpha.16",
+    "mainUpdated": false
+  },
+  "pending": [
+    "User approval of Android tab-management preview before native UI migration",
+    "Android sustained background retention and per-OS/WebView/vendor matrix (planned only)",
+    "Real Android homepage/accounts and macOS authenticated ChatGPT attachment/send acceptance",
+    "User original macOS HTML file has not been supplied or accessed; relative local resources require their source files",
+    "Full Developer ID signing and real signed Touch ID acceptance"
+  ],
+  "cleanup": {
+    "status": "complete",
+    "completedAt": "2026-10-24T17:06:30Z",
+    "temporaryFilesRemoved": 138,
+    "temporaryBytesRemoved": 7214894,
+    "noOpenFilesAtCleanup": true,
+    "localPreviewRetained": "127.0.0.1:4187, required for user design review",
+    "scope": "Only this task temporary CI reports/screenshots; small selected evidence retained in repository. No local dependencies, SDK, installer downloads, signing material or personal data cleanup."
+  }
+}

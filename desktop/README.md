@@ -21,6 +21,8 @@
 
 HTML 的临时网页空间不共享工作台接口或账号 Cookie；关闭预览后不保证网页内部状态保留。允许联网后，HTML 可以向外部服务请求或发送数据；此选择不自动沿用到下一次打开。预览不是完整的网页工程导入器，未导入的本地关联文件不会自动获得访问权。脚本、程序和安装包不会通过系统打开入口直接执行，可查看文本或在文件管理器选择合适应用。
 
+[候选验证记录](../docs/releases/3.0.0-alpha.17-ci.json)包含 Mac 24 项、Windows 14 项界面流程及各平台专属跳过项。HTML 交互、离线 / 联网隔离、实际 WAV 元数据、异常编码与文件损坏均使用隔离夹具测试；系统应用委派检查使用 OS handler stub，没有启动第三方办公软件，也未读取用户原 HTML。Mac DMG / ZIP 与 Windows EXE / ZIP 保留在对应 Actions 作业，尚未公开发布。
+
 ## macOS alpha.14 验证版：任务流与资产操作
 
 [Actions 测试与安装包](https://github.com/ForceMind/ChatGPT/actions/runs/39963836108) · [精确摘要与验证范围](../docs/releases/3.0.0-alpha.14-ci.json)
