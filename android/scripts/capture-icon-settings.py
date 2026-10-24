@@ -67,7 +67,7 @@ while time.monotonic() < deadline:
             time.sleep(2)
             continue
     ready = (any(node.get("package") == "com.android.settings" for node in nodes)
-             and "ChatGPT Profiles" in labels
+             and "ChatGPT Studio" in labels
              and any(word in " ".join(labels).lower() for word in ["uninstall", "force stop", "卸载", "强行停止"]))
     observations.append({"appDetailsReady": ready})
     if ready:

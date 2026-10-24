@@ -1,8 +1,8 @@
 {
   "name": "chatgpt-profiles",
-  "version": "3.0.0-alpha.14",
+  "version": "3.0.0-alpha.16",
   "private": true,
-  "description": "Independent ChatGPT account workspaces for macOS and Windows",
+  "description": "ChatGPT Studio — independent accounts, immersive browsing and local asset workflows",
   "author": "ForceMind",
   "main": "dist/main/main.cjs",
   "type": "module",
@@ -46,7 +46,7 @@
   },
   "build": {
     "appId": "com.forcemind.chatgpt.profiles",
-    "productName": "ChatGPT Profiles",
+    "productName": "ChatGPT Studio",
     "artifactName": "${productName}-${version}-${arch}.${ext}",
     "directories": {
       "output": "release",
@@ -69,11 +69,12 @@
       "hardenedRuntime": false,
       "extendInfo": {
         "NSMicrophoneUsageDescription": "允许 ChatGPT 网页使用麦克风进行语音对话。",
-        "NSCameraUsageDescription": "允许 ChatGPT 网页在你选择时使用摄像头。"
+        "NSCameraUsageDescription": "允许 ChatGPT 网页在你选择时使用摄像头。",
+        "CFBundleDisplayName": "ChatGPT Studio"
       }
     },
     "dmg": {
-      "title": "ChatGPT Profiles",
+      "title": "ChatGPT Studio",
       "window": {
         "width": 540,
         "height": 360
@@ -95,7 +96,8 @@
             "x64"
           ]
         }
-      ]
+      ],
+      "executableName": "ChatGPT Profiles"
     },
     "nsis": {
       "artifactName": "ChatGPT-Profiles-${version}-windows-${arch}-setup.${ext}",
@@ -106,7 +108,9 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "deleteAppDataOnUninstall": false,
-      "runAfterFinish": false
+      "runAfterFinish": false,
+      "shortcutName": "ChatGPT Studio",
+      "uninstallDisplayName": "ChatGPT Studio"
     }
   }
 }

@@ -43,6 +43,7 @@ const dataDir = testMode ? process.env.PROFILES_TEST_DATA : app.isPackaged ? pat
 if (!dataDir || !path.isAbsolute(dataDir)) throw new Error('无效的数据目录');
 mkdirSync(dataDir, { recursive: true, mode: 0o700 });
 app.setPath('userData', dataDir);
+// Keep the internal name stable for Chromium/Keychain identity across rebranding.
 app.setName('ChatGPT Profiles');
 if (process.platform === 'win32') app.setAppUserModelId('com.forcemind.chatgpt.profiles');
 protocol.registerSchemesAsPrivileged([{ scheme: 'app', privileges: { standard: true, secure: true, supportFetchAPI: true } }, ...(desktopWorkspace?[{scheme:'asset',privileges:{standard:true,secure:true,supportFetchAPI:true,corsEnabled:true,stream:true}}]:[])]);
@@ -129,7 +130,7 @@ function layout():void {
   if(!previous||previous.visible!==nextVisible)view.setVisible(nextVisible);
   viewLayout.set(id,{width:viewWidth,height:viewHeight,visible:nextVisible});
  }
- const title=p.name+' — ChatGPT Profiles';if(title!==lastWindowTitle){win.setTitle(title);lastWindowTitle=title;}
+ const title=p.name+' — ChatGPT Studio';if(title!==lastWindowTitle){win.setTitle(title);lastWindowTitle=title;}
 }
 function saveBounds(): void {
  if(!win||win.isDestroyed()||win.isMinimized())return;
@@ -575,7 +576,7 @@ async function offerUpdate(manual=false):Promise<void>{
  }
  if(state.phase!=='available'||!manifest||!manual&&offeredUpdates.has(manifest.version+':'+shanghaiDay(Date.now()).day))return;
  offeredUpdates.add(manifest.version+':'+shanghaiDay(Date.now()).day);updateDialog=true;let source=0;
- try{const choice=await dialog.showMessageBox(win,{type:'question',title:'发现新版本',message:`ChatGPT Profiles ${manifest.version}`,detail:manifest.notes+'\n\n确认后后台下载、校验并准备安装，你可以继续使用。下次真正退出 App 时安装，登录数据保留。国内加速使用第三方 gh-proxy.org。',buttons:['稍后','后台下载更新','国内加速下载'],defaultId:1,cancelId:0});source=choice.response;}finally{updateDialog=false;}
+ try{const choice=await dialog.showMessageBox(win,{type:'question',title:'发现新版本',message:`ChatGPT Studio ${manifest.version}`,detail:manifest.notes+'\n\n确认后后台下载、校验并准备安装，你可以继续使用。下次真正退出 App 时安装，登录数据保留。国内加速使用第三方 gh-proxy.org。',buttons:['稍后','后台下载更新','国内加速下载'],defaultId:1,cancelId:0});source=choice.response;}finally{updateDialog=false;}
  if(source===0)return;
  void updates.download(source===2).then(()=>{notice('更新已准备，下次退出时安装；可在「检查更新」中立即重启。');void offerUpdate().catch(report);}).catch(error=>{if(!quitPending&&!quitting)report(error);});
 }
@@ -590,7 +591,7 @@ function installMenu(): void {
   const action = (command: Command) => () => queueCommandInternal(() => dispatch(command));
   const tabStep = (delta: number) => () => { const p = activeProfile(), tabs = store.read().tabs.filter(t => t.profileId === p.id), i = tabs.findIndex(t => t.id === p.activeTabId); action({ type: 'tab:activate', id: tabs[(i+delta+tabs.length)%tabs.length].id })(); };
   const template: Electron.MenuItemConstructorOptions[] = [
-    { label: 'ChatGPT Profiles', submenu: [{ role: 'about', label: '关于 ChatGPT Profiles' }, ...(process.platform==='darwin'?[{id:'check-updates',label:'检查更新…',click:()=>void checkUpdates(true).catch(report)}]:[]), ...(process.platform === 'darwin' ? [{ type: 'separator' as const }, { role: 'services' as const, label: '服务' }, { role: 'hide' as const, label: '隐藏' }, { role: 'hideOthers' as const, label: '隐藏其他' }, { role: 'unhide' as const, label: '显示全部' }] : []), { type: 'separator' }, { role: 'quit', label: '退出' }] },
+    { label: 'ChatGPT Studio', submenu: [{ role: 'about', label: '关于 ChatGPT Studio' }, ...(process.platform==='darwin'?[{id:'check-updates',label:'检查更新…',click:()=>void checkUpdates(true).catch(report)}]:[]), ...(process.platform === 'darwin' ? [{ type: 'separator' as const }, { role: 'services' as const, label: '服务' }, { role: 'hide' as const, label: '隐藏' }, { role: 'hideOthers' as const, label: '隐藏其他' }, { role: 'unhide' as const, label: '显示全部' }] : []), { type: 'separator' }, { role: 'quit', label: '退出' }] },
     { label: '文件', submenu: [...(desktopWorkspace?[{id:'chat-search',label:'搜索 ChatGPT',accelerator:'CmdOrCtrl+K',click:()=>void openChatSearch().catch(report)},...(process.platform==='darwin'?[{id:'recovery-privacy',label:'隐私与本地恢复…',click:()=>void recoverySettings().catch(report)}]:[]),{id:'recovery-draft',label:'查看本地恢复草稿',click:()=>void showLocalDraft().catch(report)},{type:'separator' as const}]:[]),{ label: '新建标签页', accelerator: 'CmdOrCtrl+T', click: action({type:'tab:new'}) }, { label: '恢复关闭的标签页', accelerator: 'CmdOrCtrl+Shift+T', click: action({type:'tab:restore'}) }, { label: '添加账号', accelerator: 'CmdOrCtrl+Shift+N', click: () => win?.webContents.send('profiles:shortcut','add-profile') }, { type:'separator' }, { label:'关闭标签页', accelerator:'CmdOrCtrl+W', click: () => { const focused=BrowserWindow.getFocusedWindow(); if(focused&&focused!==win) focused.close(); else if(panel)win?.webContents.send('profiles:shortcut','close-workbench');else action({type:'tab:close',id:activeProfile().activeTabId})(); } }, { role:'close', label:process.platform==='darwin'?'关闭窗口（后台保留）':'关闭窗口', accelerator:'CmdOrCtrl+Shift+W' }] },
     { label: '编辑', submenu: [{role:'undo',label:'撤销'},{role:'redo',label:'重做'},{type:'separator'},{role:'cut',label:'剪切'},{role:'copy',label:'复制'},{role:'paste',label:'粘贴'},{role:'selectAll',label:'全选'}] },
     { label: '显示', submenu: [
@@ -618,7 +619,7 @@ function createWindow(): void {
   const chrome: Electron.BrowserWindowConstructorOptions = process.platform === 'win32'
     ? { titleBarStyle:'hidden', titleBarOverlay:{color:'#f8f8f8',symbolColor:'#171717',height:SHELL_HEIGHT},autoHideMenuBar:true,icon:path.join(__dirname,'icon.png') }
     : { titleBarStyle:'hiddenInset',trafficLightPosition:{x:18,y:17} };
-  win = new BrowserWindow({ ...b, ...(!onScreen ? {x:undefined,y:undefined} : {}), ...chrome, minWidth:800,minHeight:600,movable:true,title:'ChatGPT Profiles',backgroundColor:'#ffffff',show:false,webPreferences:{preload:path.join(__dirname,'preload.cjs'),sandbox:true,contextIsolation:true,nodeIntegration:false,webSecurity:true} });
+  win = new BrowserWindow({ ...b, ...(!onScreen ? {x:undefined,y:undefined} : {}), ...chrome, minWidth:800,minHeight:600,movable:true,title:'ChatGPT Studio',backgroundColor:'#ffffff',show:false,webPreferences:{preload:path.join(__dirname,'preload.cjs'),sandbox:true,contextIsolation:true,nodeIntegration:false,webSecurity:true} });
   if (process.platform === 'win32') win.setMenuBarVisibility(false);
   win.webContents.setWindowOpenHandler(()=>({action:'deny'}));
   win.webContents.on('will-navigate',event=>event.preventDefault());
@@ -634,6 +635,7 @@ function createWindow(): void {
 if (single) {
   app.on('second-instance',reopenWindow);
   app.whenReady().then(async()=>{
+    app.setAboutPanelOptions({applicationName:'ChatGPT Studio',applicationVersion:APP_VERSION});
     store = new StateStore(dataDir, fixtureOrigin);
     if(desktopWorkspace){
       try{

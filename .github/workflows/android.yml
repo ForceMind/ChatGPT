@@ -78,6 +78,17 @@ jobs:
       - name: Verify and build
         working-directory: android
         run: ./gradlew --no-daemon -PunsignedRelease testDebugUnitTest lintDebug assembleDebug assembleRelease assembleDebugAndroidTest
+      - name: Verify application label and stable package ID
+        working-directory: android
+        run: |
+          "$ANDROID_HOME/build-tools/35.0.0/aapt2" dump badging app/build/outputs/apk/debug/app-debug.apk > app/build/branding-badging.txt
+          python3 - <<'PYCODE'
+          from pathlib import Path
+          text=Path('app/build/branding-badging.txt').read_text()
+          assert "name='com.forcemind.chatgpt.profiles.debug'" in text
+          assert "application-label:'ChatGPT Studio'" in text
+          print('ChatGPT Studio label and stable Android application ID verified')
+          PYCODE
       - uses: actions/upload-artifact@v4
         with:
           name: android-apks

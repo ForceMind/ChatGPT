@@ -52,7 +52,7 @@ function App() {
     window.addEventListener('keydown',handle);return()=>window.removeEventListener('keydown',handle);
   },[menuOpen,closeAccounts]);
   useEffect(()=>{
-    if(!window.profiles){setFatal('请从 ChatGPT Profiles 客户端打开此界面。');return;}
+    if(!window.profiles){setFatal('请从 ChatGPT Studio 客户端打开此界面。');return;}
     let mounted=true;
     const apply=(s:Snapshot)=>{if(mounted){current.current=s;setState(s);}};
     const unsubscribe=window.profiles.subscribe(apply);

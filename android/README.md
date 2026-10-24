@@ -1,4 +1,6 @@
-# ChatGPT Profiles for Android
+# ChatGPT Studio for Android
+
+项目已更名为 **ChatGPT Studio**，当前源码为 alpha.16 候选；公开 APK 仍是下述历史版本，应用包名和签名身份保留。
 
 原生 Java + Android System WebView。当前公开预发布版为 `3.0.0-alpha.11`，在此前工作台、转换、附件任务和加密草稿 / 阅读位置恢复基础上统一新图标与发布版本；APK 沿用既有固定签名，历史安装包保留。打开即进入网页，没有地址栏，延续白色、浅灰和黑色控件。手机与平板使用同一 APK，各设备分别登录。
 

@@ -14,6 +14,9 @@ try {
     $exe = Join-Path $installDir 'ChatGPT Profiles.exe'
     if (-not (Test-Path $exe)) { throw 'Installed application is missing' }
     $result.installed = $true
+    $product = [Diagnostics.FileVersionInfo]::GetVersionInfo($exe)
+    if ($product.ProductName -ne 'ChatGPT Studio') { throw 'Installed product display name is incorrect' }
+    $result.productName = $product.ProductName
     $result.productVersion = [Diagnostics.FileVersionInfo]::GetVersionInfo($exe).ProductVersion
     $result.signature = (Get-AuthenticodeSignature $exe).Status.ToString()
     $process = Start-Process -FilePath $exe -PassThru

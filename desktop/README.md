@@ -1,4 +1,6 @@
-# ChatGPT Profiles Desktop
+# ChatGPT Studio Desktop
+
+项目已更名为 **ChatGPT Studio**；当前源码为 alpha.16 候选，公开包仍沿用历史名称与链接。内部包名、加密身份和数据目录保留以兼容升级。
 
 当前公开预发布版：macOS `3.0.0-alpha.13`，Windows `3.0.0-alpha.11`。提供 macOS Apple Silicon 的 DMG / ZIP、Windows x64 的 EXE / ZIP；历史安装包保留。Electron `44.9.1`、React `19.3.1`、TypeScript。各设备独立使用，本版不需要自建服务。
 

@@ -42,7 +42,7 @@ static void execute(napi_env, void *data) {
     if(!entitled()){request->status=errSecMissingEntitlement;return;}
     NSString *slot = [NSString stringWithUTF8String:request->slot.c_str()];
     LAContext *context = [[LAContext alloc] init];
-    context.localizedReason = @"解锁 ChatGPT Profiles 本机保存的草稿和离线页面";
+    context.localizedReason = @"解锁 ChatGPT Studio 本机保存的草稿和离线页面";
     NSMutableDictionary *lookup = query(slot);
     lookup[(__bridge id)kSecReturnData]=@YES;
     lookup[(__bridge id)kSecUseAuthenticationContext]=context;
@@ -57,7 +57,7 @@ static void execute(napi_env, void *data) {
       NSMutableDictionary *attributes=query(slot);
       attributes[(__bridge id)kSecAttrAccessControl]=(__bridge id)control;
       attributes[(__bridge id)kSecValueData]=[NSData dataWithBytes:generated length:sizeof(generated)];
-      attributes[(__bridge id)kSecAttrLabel]=@"ChatGPT Profiles · 本地恢复（Touch ID）";
+      attributes[(__bridge id)kSecAttrLabel]=@"ChatGPT Studio · 本地恢复（Touch ID）";
       request->status=SecItemAdd((__bridge CFDictionaryRef)attributes,nullptr);
       erase(generated,sizeof(generated)); CFRelease(control);
       if(request->status==errSecSuccess || request->status==errSecDuplicateItem)
