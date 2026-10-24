@@ -1,13 +1,13 @@
 {
   "schema": 1,
-  "version": "3.0.0-alpha.13",
-  "publishedAt": "2026-10-23T12:33:28Z",
-  "notes": "改进钥匙串授权说明、取消与失败重试；保留旧恢复数据，后台更新重开后回到 App 再恢复。Touch ID 密钥保护仍需稳定签名，当前包暂不能启用。完整更新需要重启。",
+  "version": "3.0.0-alpha.16",
+  "publishedAt": "2026-10-24T14:48:48Z",
+  "notes": "ChatGPT Studio 更名版：七阶段文件任务、指令完整性检查、资产双击与右键管理；保留原登录数据目录与加密身份。Touch ID 密钥保护仍需稳定签名；完整 ZIP 更新需要重启。",
   "files": {
     "arm64": {
-      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.13/ChatGPT-Profiles-3.0.0-alpha.13-mac-arm64.zip",
-      "size": 154458159,
-      "sha256": "7270f2bd8305214ae953b1aec4794b13eb0dfa9eaf3c6f7f435881069227904e"
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.16/ChatGPT-Profiles-3.0.0-alpha.16-mac-arm64.zip",
+      "size": 154466122,
+      "sha256": "d561df811361a20e4a2f1d64d121d029948c9355c7e4f743deb0831aa6a947ca"
     }
   }
 }

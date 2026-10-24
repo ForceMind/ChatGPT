@@ -1,0 +1,38 @@
+name: Website rendering and update-feed verification
+on:
+  workflow_dispatch:
+    inputs:
+      production:
+        description: Verify both production domains; false verifies local site source
+        type: boolean
+        default: false
+permissions:
+  contents: read
+jobs:
+  website:
+    runs-on: macos-15
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        origin: ${{ fromJSON(inputs.production && '["https://chatgpt.xincreates.com","https://chatgpt-profiles.pages.dev"]' || '["local"]') }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '26.7.0'
+      - name: Install isolated browser test runtime
+        working-directory: desktop
+        run: npm ci
+      - name: Verify rendered downloads, copied digest and credentialless feed
+        working-directory: desktop
+        env:
+          STUDIO_VERIFY_ORIGIN: ${{ matrix.origin != 'local' && matrix.origin || '' }}
+          PLAYWRIGHT_JSON_OUTPUT_FILE: test-results/site-results.json
+        run: npx playwright test tests/branding.e2e.ts --grep 'website renders' --reporter=list,json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: website-evidence-${{ strategy.job-index }}
+          retention-days: 14
+          path: desktop/test-results/

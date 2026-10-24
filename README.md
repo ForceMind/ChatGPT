@@ -6,7 +6,7 @@
 
 [项目主页](https://chatgpt.xincreates.com/) · [下载安装](#下载与安装) · [使用指南](#开始使用) · [路线图](#路线图与待完成事项) · [问题反馈](https://github.com/ForceMind/ChatGPT/issues)
 
-> 项目已从 ChatGPT Profiles 更名为 **ChatGPT Studio**。当前源码为 **3.0.0-alpha.16 候选版**，尚未公开发布；下表安装包及线上官网仍对应更名前的公开版本。历史文件名、应用标识和数据目录保留，用于兼容既有登录、加密记录与更新流程。
+> 项目已从 ChatGPT Profiles 更名为 **ChatGPT Studio**。当前三端公开预发布版为 **3.0.0-alpha.16**；下表提供对应的安装包。历史文件名、应用标识和数据目录保留，用于兼容既有登录、加密记录与更新流程。
 
 ![macOS 公开版实际窗口（更名前）](docs/images/macos-immersive.png)
 
@@ -28,21 +28,21 @@ ChatGPT Studio 是独立维护的非官方客户端，不附带 ChatGPT 订阅�
 
 | 平台 | 版本 | 下载 | 要求 |
 | --- | --- | --- | --- |
-| macOS · Apple Silicon | 3.0.0-alpha.13 | [DMG](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.13/ChatGPT-Profiles-3.0.0-alpha.13-mac-arm64.dmg) · [ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.13/ChatGPT-Profiles-3.0.0-alpha.13-mac-arm64.zip) | macOS 13+ |
-| Windows · x64 | 3.0.0-alpha.11 | [EXE](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.11/ChatGPT-Profiles-3.0.0-alpha.11-windows-x64-setup.exe) · [免安装 ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.11/ChatGPT-Profiles-3.0.0-alpha.11-windows-x64.zip) | Windows 10 / 11 · 64 位 |
-| Android · 手机 / 平板 | 3.0.0-alpha.11 | [APK](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.11/ChatGPT-Profiles-3.0.0-alpha.11-android.apk) | Android 9+，WebView 支持多档案 |
+| macOS · Apple Silicon | 3.0.0-alpha.16 | [DMG](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.16/ChatGPT-Profiles-3.0.0-alpha.16-mac-arm64.dmg) · [ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.16/ChatGPT-Profiles-3.0.0-alpha.16-mac-arm64.zip) | macOS 13+ |
+| Windows · x64 | 3.0.0-alpha.16 | [EXE](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.16/ChatGPT-Profiles-3.0.0-alpha.16-windows-x64-setup.exe) · [免安装 ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.16/ChatGPT-Profiles-3.0.0-alpha.16-windows-x64.zip) | Windows 10 / 11 · 64 位 |
+| Android · 手机 / 平板 | 3.0.0-alpha.16 | [APK](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.16/ChatGPT-Profiles-3.0.0-alpha.16-android.apk) | Android 9+，WebView 支持多档案 |
 
 **macOS**：打开 DMG，将应用拖入“应用程序”。当前为 ad-hoc 签名，尚未经过 Apple 公证；首次启动被系统阻止时，核对来源和摘要后参阅 [Apple 安装说明](https://support.apple.com/zh-cn/102445)。
 
-**Windows**：运行 EXE 安装，或解压 ZIP 后启动应用。历史公开包的程序名为 ChatGPT Profiles.exe；免安装版同样使用当前用户的数据目录。当前未配置 Authenticode 签名。
+**Windows**：运行 EXE 安装，或解压 ZIP 后启动应用。程序文件名保留为 ChatGPT Profiles.exe；免安装版同样使用当前用户的数据目录。当前未配置 Authenticode 签名。
 
 **Android**：按系统提示允许该下载来源安装；升级时沿用同一应用签名。WebView 不支持多档案时应先更新系统 WebView / Chrome，应用不会退回共享登录空间。
 
 [官网](https://chatgpt.xincreates.com/)提供原始 GitHub 下载和可选国内加速入口。第三方加速不可用时可改用原始链接；下载后可与对应 Release 的 SHA256SUMS.txt 核对。
 
-### 候选版与公开版的区别
+### 版本与升级
 
-macOS alpha.14 的七阶段任务流、富文本写入改进和资产双击 / 右键菜单已有 [CI 验证与安装包](https://github.com/ForceMind/ChatGPT/actions/runs/39963836108)，尚未进入公开 Release 或自动更新。Android alpha.15 图标适配也仅作为 CI 候选保留。本次更名进入 alpha.16 源码，不改变上方公开下载指向。
+macOS alpha.14 的七阶段任务流、富文本写入改进、资产双击 / 右键菜单及 Android alpha.15 图标适配，均已并入 alpha.16 公开包。[此前 CI 记录](https://github.com/ForceMind/ChatGPT/actions/runs/39963836108)作为历史验证资料保留。上方下载及 Mac 更新清单已同步到本版本。
 
 Mac 从 alpha.12 起支持启动与每天上海时间 12:00 检查更新，确认后后台下载、校验完整 ZIP，可选择立即、下次退出或应用空闲时安装。原生程序更新需要重启，暂不支持增量更新；Windows / Android 当前手动升级。
 
@@ -138,7 +138,7 @@ cd android
 | --- | --- | --- |
 | 待人工验收 | Mac 真实账号的附件上传、首条消息与一次发送 | 用户稍后验收；隔离回归已通过 |
 | 待人工验收 | Android 实际首页、真实账号 / 登录、语音与文件流程 | 首页采集受人工验证限制，官网已有原生资产 / Skill 图 |
-| 发布准备 | ChatGPT Studio 更名后的候选包、官网品牌与更新清单上线 | 候选源码与 CI 验证完成，公开发布与官网部署尚未进行 |
+| 已发布 | ChatGPT Studio alpha.16 三端包与官网品牌 | 安装包已公开；官网与 Mac 清单本批同步 |
 | 平台迭代 | Windows 跟进后续桌面能力、Android 离线快照与更完整恢复 | 后续批次 |
 | 环境隔离 | Android 每账号语言 / 时区从独立 PoC 迁入日常客户端 | 路线验证完成，尚未替换普通内核 |
 | 系统集成 | 系统 / Chrome 通行密钥、真实 Touch ID 恢复与稳定签名 | 通行密钥未接入；Touch ID 受证书与实机验收条件限制 |

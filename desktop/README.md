@@ -1,10 +1,10 @@
 # ChatGPT Studio Desktop
 
-项目已更名为 **ChatGPT Studio**；当前源码为 alpha.16 候选，公开包仍沿用历史名称与链接。内部包名、加密身份和数据目录保留以兼容升级。
+项目已更名为 **ChatGPT Studio**；当前公开版本为 alpha.16，安装文件中的旧名称为升级兼容保留。内部包名、加密身份和数据目录保留以兼容升级。
 
-当前公开预发布版：macOS `3.0.0-alpha.13`，Windows `3.0.0-alpha.11`。提供 macOS Apple Silicon 的 DMG / ZIP、Windows x64 的 EXE / ZIP；历史安装包保留。Electron `44.9.1`、React `19.3.1`、TypeScript。各设备独立使用，本版不需要自建服务。
+当前公开预发布版：macOS / Windows `3.0.0-alpha.16`。提供 macOS Apple Silicon 的 DMG / ZIP、Windows x64 的 EXE / ZIP；历史安装包保留。Electron `44.9.1`、React `19.3.1`、TypeScript。各设备独立使用，本版不需要自建服务。
 
-下载见[GitHub Release](https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.13)。当前 `main` 包含工作台、恢复、新图标与跨平台源码。真正退出后需要重新加载网页并恢复保存状态；macOS alpha.12 先显示本地只读快照，具体范围见下文。
+下载见[GitHub Release](https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.16)。当前 `main` 包含工作台、恢复、新图标与跨平台源码。真正退出后需要重新加载网页并恢复保存状态；macOS alpha.12 先显示本地只读快照，具体范围见下文。
 
 ## macOS alpha.14 验证版：任务流与资产操作
 
@@ -12,7 +12,7 @@
 
 ![七阶段任务流（CI 隔离夹具）](../docs/images/macos-handoff-progress-alpha14-fixture.png)
 
-本批安装包在 GitHub Actions 测试 / 构建，以 Actions 附件交付；公开 Release、官网和自动更新仍为 alpha.13。
+本批安装包在 GitHub Actions 测试 / 构建，以 Actions 附件交付；这些能力已并入 alpha.16 公开包，历史 CI 验证索引保留。
 
 - 「交给 GPT」显示七个实际进度点：校验文件、新建对话、确认附件、写入指令、检查发送条件、发送一次、网页确认。显示真实时间、失败位置与写入字符数；关闭面板后从侧栏任务入口返回。旧任务没有详细进度时明确标注，不补造历史时间。
 - 富文本输入解析实际可编辑节点，重新聚焦并确认完整文本；最多三次写入，只补已核对前缀的缺失部分，保留不一致或人工修改的草稿。指令写入和按钮就绪使用不同失败提示。检测到网页确认前不会标为已发送；发送不确定时不自动重发，可打开目标对话并复制完整指令手动处理。

@@ -2,14 +2,14 @@
 const platforms = {
   windows: {
     image: "windows-installed.png",
-    caption: "Windows · alpha.11 已安装客户端 / 未登录 ChatGPT",
+    caption: "Windows · 历史 alpha.11 实际窗口 / 未登录 ChatGPT",
     alt: "Windows 已安装客户端实际截图：未登录 ChatGPT 页面、账号名称、标签页与原生窗口按钮，没有地址栏。",
     width: 1040,
     height: 728,
   },
   macos: {
     image: "macos-window.png",
-    caption: "macOS · 普通窗口实际截图 / 未登录 ChatGPT",
+    caption: "macOS · 历史公开版普通窗口 / 未登录 ChatGPT",
     alt: "macOS 客户端普通窗口实际截图：原生窗口按钮、未登录 ChatGPT、顶部标签与账号菜单，没有地址栏或远程控制标记。",
     width: 2720,
     height: 1800,

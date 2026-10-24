@@ -5,6 +5,7 @@ import path from 'node:path';
 import os from 'node:os';
 import {fileURLToPath} from 'node:url';
 import {shellWindow} from './helpers/shell';
+import {validManifest} from '../src/shared/updates';
 const desktop=path.resolve(fileURLToPath(new URL('..',import.meta.url)));
 
 test('Studio display name preserves legacy internal identity and isolated storage',async({},info)=>{
@@ -29,21 +30,38 @@ test('Studio website renders its new brand on desktop and mobile with historical
   const name=new URL(q.url||'/','http://localhost').pathname;
   const file=path.resolve(site,'.'+(name==='/'?'/index.html':name));
   if(!file.startsWith(site+path.sep)){r.writeHead(403);r.end();return;}
-  try{r.setHeader('Content-Type',({'.html':'text/html;charset=utf-8','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.png':'image/png'}as Record<string,string>)[path.extname(file)]||'application/octet-stream');r.end(readFileSync(file));}catch{r.writeHead(404);r.end();}
+  try{r.setHeader('Content-Type',({'.html':'text/html;charset=utf-8','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.png':'image/png','.json':'application/json'}as Record<string,string>)[path.extname(file)]||'application/octet-stream');r.end(readFileSync(file));}catch{r.writeHead(404);r.end();}
  });
  await new Promise<void>(r=>server.listen(0,'127.0.0.1',r));const address=server.address();if(!address||typeof address==='string')throw Error('fixture');
- const origin='http://127.0.0.1:'+address.port,entry=path.join(root,'main.cjs');
+ const publicOrigin=process.env.STUDIO_VERIFY_ORIGIN;
+ if(publicOrigin&&!['https://chatgpt.xincreates.com','https://chatgpt-profiles.pages.dev'].includes(publicOrigin))throw Error('Unexpected website verification origin');
+ const origin=publicOrigin||'http://127.0.0.1:'+address.port,entry=path.join(root,'main.cjs');
+ const feed=JSON.parse(readFileSync(path.join(site,'updates/macos.json'),'utf8'));expect(validManifest(feed)).toBe(true);
+ const release=JSON.parse(readFileSync(path.join(desktop,'../docs/releases',feed.version+'.json'),'utf8'));
  writeFileSync(entry,"const {app,BrowserWindow}=require('electron');require('node:fs').mkdirSync(process.env.STUDIO_SITE_DATA,{recursive:true});app.setPath('userData',process.env.STUDIO_SITE_DATA);app.whenReady().then(()=>{const win=new BrowserWindow({width:1440,height:1000,webPreferences:{sandbox:true,contextIsolation:true,nodeIntegration:false}});win.loadURL(process.env.STUDIO_SITE_ORIGIN)});");
  try{
   app=await electron.launch({args:[entry],env:{...process.env,STUDIO_SITE_DATA:path.join(root,'data'),STUDIO_SITE_ORIGIN:origin}});const page=await app.firstWindow();const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
   await expect(page).toHaveTitle(/ChatGPT Studio/);await expect(page.getByRole('link',{name:'ChatGPT Studio 首页',exact:true})).toBeVisible();
-  expect(await page.locator('a[href*="releases/download/v3.0.0-alpha.13/"]').count()).toBeGreaterThanOrEqual(2);
+  for(const item of release.artifacts){
+   expect(await page.locator('a[href="'+item.url+'"]').count()).toBeGreaterThanOrEqual(1);
+   expect(await page.locator('a[href="https://gh-proxy.org/'+item.url+'"]').count()).toBeGreaterThanOrEqual(1);
+   expect(await page.locator('[data-copy="'+item.sha256+'"]').count()).toBe(1);
+  }
   for(const [width,height] of [[1440,1000],[390,844]]){
    await app.evaluate(({BrowserWindow},size)=>BrowserWindow.getAllWindows()[0].setContentSize(size[0],size[1]),[width,height]);
    await expect.poll(()=>page.evaluate(()=>innerWidth)).toBe(width);
    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
    await page.screenshot({path:info.outputPath('studio-website-'+width+'.png')});
   }
+  await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].setContentSize(1440,1000));
+  const zip=release.artifacts.find((a:{file:string})=>a.file.endsWith('-mac-arm64.zip'));
+  await page.locator('article[data-os="macos"] details.checksums > summary').click();
+  await page.locator('[data-copy="'+zip.sha256+'"]').click();
+  await expect.poll(()=>app!.evaluate(({clipboard})=>clipboard.readText())).toBe(zip.sha256);
+  await page.screenshot({path:info.outputPath('studio-downloads-1440.png')});
+  const remoteFeed=await app.evaluate(async({session},origin)=>{const response=await session.fromPartition('studio-feed-public-check').fetch(origin+'/updates/macos.json',{credentials:'omit',redirect:'error',headers:{Accept:'application/json'}});return{status:response.status,contentType:response.headers.get('content-type'),text:await response.text()};},origin);
+  expect(remoteFeed.status).toBe(200);expect(remoteFeed.contentType).toContain('application/json');expect(JSON.parse(remoteFeed.text)).toEqual(feed);
+  writeFileSync(info.outputPath('site-verification.json'),JSON.stringify({origin,version:feed.version,downloadFiles:release.artifacts.length,acceleratedFiles:release.artifacts.length,widths:[1440,390],checksumCopy:true,credentiallessElectronFeed:true,errors}));
   expect(errors).toEqual([]);
  }finally{await app?.close().catch(()=>{});server.closeAllConnections();await new Promise<void>(r=>server.close(()=>r()));rmSync(root,{recursive:true,force:true});}
 });
