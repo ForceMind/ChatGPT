@@ -1,0 +1,456 @@
+{
+  "version": "3.0.0-alpha.16",
+  "name": "ChatGPT Studio",
+  "verifiedAt": "2026-10-24T15:13:05Z",
+  "releaseURL": "https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.16",
+  "publishedAt": "2026-10-24T14:48:48Z",
+  "isDraft": false,
+  "isPrerelease": true,
+  "tagCommit": "1b407f388f73e065b0e31215b9afedfc86ccd951",
+  "manifest": "docs/releases/3.0.0-alpha.16.json",
+  "assetCount": 13,
+  "assetIntegrity": [
+    {
+      "file": "android-build-info.json",
+      "bytes": 795,
+      "sha256": "75846c463660f75406909432b1b8728eeec543ced3b1b36c7c4f12ec5f7d17e4"
+    },
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.16-android.apk",
+      "bytes": 7282077,
+      "sha256": "251ec793d8583a2c43133017b951e8522d61023829bedbecbf32f2a426dc8faf"
+    },
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.16-mac-arm64.dmg",
+      "bytes": 154522167,
+      "sha256": "d467b46f0af624b04519ef885fb63c196d2dbb5431b263be5bd0ae4d146e1c58"
+    },
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.16-mac-arm64.zip",
+      "bytes": 154466122,
+      "sha256": "d561df811361a20e4a2f1d64d121d029948c9355c7e4f743deb0831aa6a947ca"
+    },
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.16-windows-x64-setup.exe",
+      "bytes": 130962817,
+      "sha256": "2b5b43874ca54d87cfc3b2cf547647b97ed8fb705b5a07bf1adc208ad161a05d"
+    },
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.16-windows-x64.zip",
+      "bytes": 180722408,
+      "sha256": "98104cb10919ece440c74d72ab8c098c532bc37367dd2a63129929271f09255c"
+    },
+    {
+      "file": "mac-recovery-verification.json",
+      "bytes": 819,
+      "sha256": "d08f934101cd4aff51f27ef1787cc8f719998d6907387df6a0371061fcff6ebe"
+    },
+    {
+      "file": "mac-release-info.json",
+      "bytes": 27601,
+      "sha256": "0558720af4275af6c4bc5c4ed8df783d9309749928460ce0140e391a3e98f88d"
+    },
+    {
+      "file": "mac-ui-verification.json",
+      "bytes": 369,
+      "sha256": "0d0790165dd6a59248c653dc49c6e6fb87272393eb35711fdd9a3be9a97612df"
+    },
+    {
+      "file": "mac-update-verification.json",
+      "bytes": 731,
+      "sha256": "4623d8169de23aa17267f6cdc934ae6911d5be7ca2c5e08824467e4cf1a9cf8b"
+    },
+    {
+      "file": "release-info.json",
+      "bytes": 3096,
+      "sha256": "7b591d28a0f8bf87f5a1f68c196fb9921aa98174db52c0cdbf11bdf846814acb"
+    },
+    {
+      "file": "SHA256SUMS.txt",
+      "bytes": 1203,
+      "sha256": "45ca7f54a56b1d794cf93fe625e30701872efa351b3fd7484a882837cb9ed317"
+    },
+    {
+      "file": "windows-build-info.json",
+      "bytes": 27693,
+      "sha256": "ebec160d130bd8de9ef05714e052e167b84ffce4b827314eaff786b535ded646"
+    }
+  ],
+  "binaryVerification": "All 13 GitHub server asset digests and sizes equal the validated promotion manifest. Desktop binaries reused from existing successful Actions artifacts and uploaded in CI. No local desktop builds or installer downloads.",
+  "promotion": {
+    "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40103399433",
+    "conclusion": "success",
+    "sourceCommit": "1b407f388f73e065b0e31215b9afedfc86ccd951",
+    "publisherCommit": "e2f7d3a57d68384622e34056ba6faa5ba47b28e8",
+    "verifiedPlatformRuns": [
+      {
+        "id": 40087980342,
+        "conclusion": "success",
+        "sourceCommit": "f9221591e4dfd6b28a5648fcc5c1488167c18d96"
+      },
+      {
+        "id": 40087980933,
+        "conclusion": "success",
+        "sourceCommit": "f9221591e4dfd6b28a5648fcc5c1488167c18d96"
+      },
+      {
+        "id": 40089162364,
+        "conclusion": "success",
+        "sourceCommit": "6f89c1b8d12764efda06bba735645c77432e501b"
+      },
+      {
+        "id": 40087956997,
+        "conclusion": "success",
+        "sourceCommit": "f9221591e4dfd6b28a5648fcc5c1488167c18d96"
+      }
+    ]
+  },
+  "androidSigning": {
+    "record": "docs/releases/3.0.0-alpha.16-android.json",
+    "sameCertificateAsPreviousPublicAPK": true,
+    "privateKeyExported": false,
+    "performedLocally": true,
+    "temporaryToolsAndAPKsAlreadyRemoved": true
+  },
+  "anonymousDownloadChecks": [
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.16-mac-arm64.dmg",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.16/ChatGPT-Profiles-3.0.0-alpha.16-mac-arm64.dmg",
+      "proxy": false,
+      "method": "HEAD",
+      "status": 200,
+      "bytes": 154522167,
+      "sizeMatches": true,
+      "bodyDownloaded": false
+    },
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.16-mac-arm64.dmg",
+      "url": "https://gh-proxy.org/https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.16/ChatGPT-Profiles-3.0.0-alpha.16-mac-arm64.dmg",
+      "proxy": true,
+      "method": "HEAD",
+      "status": 200,
+      "bytes": 154522167,
+      "sizeMatches": true,
+      "bodyDownloaded": false
+    },
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.16-mac-arm64.zip",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.16/ChatGPT-Profiles-3.0.0-alpha.16-mac-arm64.zip",
+      "proxy": false,
+      "method": "HEAD",
+      "status": 200,
+      "bytes": 154466122,
+      "sizeMatches": true,
+      "bodyDownloaded": false
+    },
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.16-mac-arm64.zip",
+      "url": "https://gh-proxy.org/https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.16/ChatGPT-Profiles-3.0.0-alpha.16-mac-arm64.zip",
+      "proxy": true,
+      "method": "HEAD",
+      "status": 200,
+      "bytes": 154466122,
+      "sizeMatches": true,
+      "bodyDownloaded": false
+    },
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.16-windows-x64-setup.exe",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.16/ChatGPT-Profiles-3.0.0-alpha.16-windows-x64-setup.exe",
+      "proxy": false,
+      "method": "HEAD",
+      "status": 200,
+      "bytes": 130962817,
+      "sizeMatches": true,
+      "bodyDownloaded": false
+    },
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.16-windows-x64-setup.exe",
+      "url": "https://gh-proxy.org/https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.16/ChatGPT-Profiles-3.0.0-alpha.16-windows-x64-setup.exe",
+      "proxy": true,
+      "method": "HEAD",
+      "status": 200,
+      "bytes": 130962817,
+      "sizeMatches": true,
+      "bodyDownloaded": false
+    },
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.16-windows-x64.zip",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.16/ChatGPT-Profiles-3.0.0-alpha.16-windows-x64.zip",
+      "proxy": false,
+      "method": "HEAD",
+      "status": 200,
+      "bytes": 180722408,
+      "sizeMatches": true,
+      "bodyDownloaded": false
+    },
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.16-windows-x64.zip",
+      "url": "https://gh-proxy.org/https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.16/ChatGPT-Profiles-3.0.0-alpha.16-windows-x64.zip",
+      "proxy": true,
+      "method": "HEAD",
+      "status": 200,
+      "bytes": 180722408,
+      "sizeMatches": true,
+      "bodyDownloaded": false
+    },
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.16-android.apk",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.16/ChatGPT-Profiles-3.0.0-alpha.16-android.apk",
+      "proxy": false,
+      "method": "HEAD",
+      "status": 200,
+      "bytes": 7282077,
+      "sizeMatches": true,
+      "bodyDownloaded": false
+    },
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.16-android.apk",
+      "url": "https://gh-proxy.org/https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.16/ChatGPT-Profiles-3.0.0-alpha.16-android.apk",
+      "proxy": true,
+      "method": "HEAD",
+      "status": 200,
+      "bytes": 7282077,
+      "sizeMatches": true,
+      "bodyDownloaded": false
+    }
+  ],
+  "site": {
+    "url": "https://chatgpt.xincreates.com/",
+    "project": "chatgpt-profiles",
+    "deployment": "https://3feb274e.chatgpt-profiles.pages.dev",
+    "deploymentId": "3feb274e-06fd-43c5-ac39-e2c3444ecac6",
+    "environment": "production",
+    "branch": "main",
+    "sourceCommit": "8b5872826519c5604190b9477b6ccf915e089a51",
+    "status": "success",
+    "deploymentMetadataVerifiedByAPI": true,
+    "intermediateMetadataTypoCorrectedByRedeployment": true,
+    "localVerificationRun": "https://github.com/ForceMind/ChatGPT/actions/runs/40104522851",
+    "productionVerificationRun": "https://github.com/ForceMind/ChatGPT/actions/runs/40105076056",
+    "productionBrowserChecks": [
+      {
+        "origin": "https://chatgpt.xincreates.com",
+        "version": "3.0.0-alpha.16",
+        "downloadFiles": 5,
+        "acceleratedFiles": 5,
+        "widths": [
+          1440,
+          390
+        ],
+        "checksumCopy": true,
+        "credentiallessElectronFeed": true,
+        "errors": [],
+        "passed": 1,
+        "skipped": 0,
+        "failed": 0,
+        "flaky": 0
+      },
+      {
+        "origin": "https://chatgpt-profiles.pages.dev",
+        "version": "3.0.0-alpha.16",
+        "downloadFiles": 5,
+        "acceleratedFiles": 5,
+        "widths": [
+          1440,
+          390
+        ],
+        "checksumCopy": true,
+        "credentiallessElectronFeed": true,
+        "errors": [],
+        "passed": 1,
+        "skipped": 0,
+        "failed": 0,
+        "flaky": 0
+      }
+    ],
+    "screenshots": [
+      {
+        "file": "docs/images/studio-alpha16-production-1440.png",
+        "origin": "https://chatgpt.xincreates.com",
+        "width": 1440,
+        "sha256": "8bc18868da512b2eb7511b2af2ca678f3508ebe9a77728a9e81779bd44bf686b"
+      },
+      {
+        "file": "docs/images/studio-alpha16-production-390.png",
+        "origin": "https://chatgpt.xincreates.com",
+        "width": 390,
+        "sha256": "194ef4cafe5fd1f9e04a118bb9f4f6b6205e343014b9c6e7631202a6607376f2"
+      }
+    ],
+    "exactSourceResourceMatches": 22,
+    "updaterVersion": "3.0.0-alpha.16",
+    "updaterURL": "https://chatgpt.xincreates.com/updates/macos.json",
+    "updaterSHA256": "d561df811361a20e4a2f1d64d121d029948c9355c7e4f743deb0831aa6a947ca"
+  },
+  "sourceResources": [
+    {
+      "url": "https://chatgpt.xincreates.com/app.js",
+      "status": 200,
+      "sha256": "215a0abf71b40d5857fcc54aba2a593b4617c5e9d9e6ecf4f853e8951d499d11",
+      "exactMatch": true
+    },
+    {
+      "url": "https://chatgpt.xincreates.com/assets/android-assets.png",
+      "status": 200,
+      "sha256": "6cc5ffd9f19d54ea76442c86f407c80b774bfb7968371aa7d2ab70cfd8270d1c",
+      "exactMatch": true
+    },
+    {
+      "url": "https://chatgpt.xincreates.com/assets/android-skills.png",
+      "status": 200,
+      "sha256": "560dfeaa29569283c0c93d6b063ec1ad9cb265ad64f213080c73d7240bc12089",
+      "exactMatch": true
+    },
+    {
+      "url": "https://chatgpt.xincreates.com/assets/icon.svg",
+      "status": 200,
+      "sha256": "c40527d47803acd03080ba814abe214159f3117ff277c36a600ff0ccedac82b0",
+      "exactMatch": true
+    },
+    {
+      "url": "https://chatgpt.xincreates.com/assets/macos-window.png",
+      "status": 200,
+      "sha256": "b562a84cb733ff295a28a6f385ae3a9583dc0d6d5b95ce60cf3edead16ddcc38",
+      "exactMatch": true
+    },
+    {
+      "url": "https://chatgpt.xincreates.com/assets/windows-installed.png",
+      "status": 200,
+      "sha256": "cf9556ec248f33e2ad70231a04231416b3d30fc73008ec1e9e727b023d5d2718",
+      "exactMatch": true
+    },
+    {
+      "url": "https://chatgpt.xincreates.com/",
+      "status": 200,
+      "sha256": "157081b5fab121a36f052cfe914948be335bc9d3e8a2558a098676bb82a878e9",
+      "exactMatch": true
+    },
+    {
+      "url": "https://chatgpt.xincreates.com/robots.txt",
+      "status": 200,
+      "sha256": "880e12febc51df745348c5c55566dece566481aa52ceac5f8a73794998bf250a",
+      "exactMatch": true
+    },
+    {
+      "url": "https://chatgpt.xincreates.com/sitemap.xml",
+      "status": 200,
+      "sha256": "485a767df2aeb407a2befb55b0b3f2c59db3577beb96de3b6c90bf83d841948d",
+      "exactMatch": true
+    },
+    {
+      "url": "https://chatgpt.xincreates.com/styles.css",
+      "status": 200,
+      "sha256": "6ecbb8857d52ef3a1a7a33619a4284d3104ac914da4bc918298203ae18904f97",
+      "exactMatch": true
+    },
+    {
+      "url": "https://chatgpt.xincreates.com/updates/macos.json",
+      "status": 200,
+      "sha256": "222dbeb8bf2b814abe6c16ac7bbee3a668ffc0fd6c0e4ca00c35ed2a9845ec8a",
+      "exactMatch": true
+    },
+    {
+      "url": "https://chatgpt-profiles.pages.dev/app.js",
+      "status": 200,
+      "sha256": "215a0abf71b40d5857fcc54aba2a593b4617c5e9d9e6ecf4f853e8951d499d11",
+      "exactMatch": true
+    },
+    {
+      "url": "https://chatgpt-profiles.pages.dev/assets/android-assets.png",
+      "status": 200,
+      "sha256": "6cc5ffd9f19d54ea76442c86f407c80b774bfb7968371aa7d2ab70cfd8270d1c",
+      "exactMatch": true
+    },
+    {
+      "url": "https://chatgpt-profiles.pages.dev/assets/android-skills.png",
+      "status": 200,
+      "sha256": "560dfeaa29569283c0c93d6b063ec1ad9cb265ad64f213080c73d7240bc12089",
+      "exactMatch": true
+    },
+    {
+      "url": "https://chatgpt-profiles.pages.dev/assets/icon.svg",
+      "status": 200,
+      "sha256": "c40527d47803acd03080ba814abe214159f3117ff277c36a600ff0ccedac82b0",
+      "exactMatch": true
+    },
+    {
+      "url": "https://chatgpt-profiles.pages.dev/assets/macos-window.png",
+      "status": 200,
+      "sha256": "b562a84cb733ff295a28a6f385ae3a9583dc0d6d5b95ce60cf3edead16ddcc38",
+      "exactMatch": true
+    },
+    {
+      "url": "https://chatgpt-profiles.pages.dev/assets/windows-installed.png",
+      "status": 200,
+      "sha256": "cf9556ec248f33e2ad70231a04231416b3d30fc73008ec1e9e727b023d5d2718",
+      "exactMatch": true
+    },
+    {
+      "url": "https://chatgpt-profiles.pages.dev/",
+      "status": 200,
+      "sha256": "157081b5fab121a36f052cfe914948be335bc9d3e8a2558a098676bb82a878e9",
+      "exactMatch": true
+    },
+    {
+      "url": "https://chatgpt-profiles.pages.dev/robots.txt",
+      "status": 200,
+      "sha256": "880e12febc51df745348c5c55566dece566481aa52ceac5f8a73794998bf250a",
+      "exactMatch": true
+    },
+    {
+      "url": "https://chatgpt-profiles.pages.dev/sitemap.xml",
+      "status": 200,
+      "sha256": "485a767df2aeb407a2befb55b0b3f2c59db3577beb96de3b6c90bf83d841948d",
+      "exactMatch": true
+    },
+    {
+      "url": "https://chatgpt-profiles.pages.dev/styles.css",
+      "status": 200,
+      "sha256": "6ecbb8857d52ef3a1a7a33619a4284d3104ac914da4bc918298203ae18904f97",
+      "exactMatch": true
+    },
+    {
+      "url": "https://chatgpt-profiles.pages.dev/updates/macos.json",
+      "status": 200,
+      "sha256": "222dbeb8bf2b814abe6c16ac7bbee3a668ffc0fd6c0e4ca00c35ed2a9845ec8a",
+      "exactMatch": true
+    }
+  ],
+  "additionalRouteDiagnostics": {
+    "direct404Html": "Both origins redirect /404.html with HTTP 308 as a clean URL.",
+    "unknownPathChecks": [
+      {
+        "origin": "https://chatgpt.xincreates.com",
+        "path": "/__studio_alpha16_publication_check_not_found__",
+        "status": 404,
+        "contentType": "text/html; charset=utf-8",
+        "sha256": "b747b7dfdba6dd8155a0bbb1d4493ad3f99a27ebea96ef90911c77e09adbdf76",
+        "matchesCustom404": false
+      },
+      {
+        "origin": "https://chatgpt-profiles.pages.dev",
+        "path": "/__studio_alpha16_publication_check_not_found__",
+        "status": 404,
+        "contentType": "text/html; charset=utf-8",
+        "sha256": "7ab17d69c072d2113c836bcd612ef54bcda411b8500dfafe67e5417e3d70ccba",
+        "matchesCustom404": true
+      }
+    ],
+    "customDomainNote": "Optional unknown-route probe returned an edge response containing error code 1010, rather than the source custom 404. Main page, downloads and updater passed independent production browser checks. No Cloudflare security settings changed."
+  },
+  "manualAcceptancePending": [
+    "Android real homepage/manual verification and physical-device account flows",
+    "macOS real authenticated attachment/send flow",
+    "Real personal-data upgrades and signed Touch ID/keychain flows"
+  ],
+  "cleanup": {
+    "status": "complete",
+    "completedAt": "2026-10-24T15:13:50Z",
+    "taskTemporaryDirectoryRemoved": true,
+    "finalEvidenceTemporaryFilesRemoved": 58,
+    "finalEvidenceTemporaryBytesRemoved": 1821400,
+    "temporarySigningToolsAndAPKsRemovedEarlier": true,
+    "noOpenFilesAtFinalCleanup": true,
+    "scope": "Only this task temporary directory. Android signing materials, personal app data, shared runtimes/caches and other project directories preserved. Small publication records and two production screenshots retained in the repository."
+  }
+}
