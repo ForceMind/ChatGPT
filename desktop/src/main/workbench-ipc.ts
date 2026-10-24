@@ -8,7 +8,7 @@ import path from 'node:path';
 import { desktopWorkspaceEnabled, type Profile, type SavedState } from '../shared/model';
 import type { AssetAction } from '../shared/workbench';
 import { AssetStore } from './asset-store';
-import { AssetRuntime, assetMime } from './asset-runtime';
+import { AssetRuntime, assetMime, systemOpenAllowed } from './asset-runtime';
 import { AssetDownloads } from './asset-downloads';
 import { CapabilityCatalog } from './capabilities';
 import { AssetConversions } from './asset-conversions';
@@ -48,10 +48,11 @@ export function installWorkbenchIPC(host: WorkbenchHost): void {
     if (failures.length) throw new Error(`${failures.length} 个文件未能导入：${failures.slice(0,3).join('、')}。原文件未修改，请查看资产状态。`);
   };
   ipcMain.handle('assets:snapshot',(event,profileId:unknown) => { access(event,profileId); return host.runtime().items(profileId as string); });
-  ipcMain.handle('assets:preview',async(event,profileId:unknown,id:unknown) => {
+  ipcMain.handle('assets:preview',async(event,profileId:unknown,id:unknown,options:unknown) => {
     access(event,profileId); if(typeof id!=='string')throw new Error('无效资产');
+    if(options!==undefined&&(!record(options)||Object.keys(options).some(key=>key!=='online')||(options.online!==undefined&&typeof options.online!=='boolean')))throw new Error('无效预览选项');
     const before=host.store().get(profileId as string,id).status;
-    try{return await host.runtime().preview(profileId as string,id);}
+    try{return await host.runtime().preview(profileId as string,id,options as {online?:boolean}|undefined);}
     finally{if(host.store().get(profileId as string,id).status!==before)notify(profileId as string);}
   });
   ipcMain.handle('assets:read-text',async(event,profileId:unknown,id:unknown) => { access(event,profileId); if(typeof id!=='string')throw new Error('无效资产'); await host.store().verifyFile(profileId as string,id); return host.runtime().text(profileId as string,id); });
@@ -82,6 +83,12 @@ export function installWorkbenchIPC(host: WorkbenchHost): void {
       case 'conversion-cancel': host.conversions().cancel(profile.id,id);break;
       case 'copy-name': clipboard.writeText(store.get(profile.id,id).name);break;
       case 'reveal': shell.showItemInFolder(store.resolveFile(profile.id,id));break;
+      case 'open-external': {
+        const asset=store.get(profile.id,id);if(asset.trashedAt)throw new Error('请先恢复回收站中的文件');
+        if(!systemOpenAllowed(asset.fileName))throw new Error('程序、脚本或安装包不会直接运行。可查看源码，或在访达 / 文件资源管理器中选择合适的应用。');
+        const file=await store.verifyFile(profile.id,id);access(event,profile.id);
+        const error=await shell.openPath(file);if(error)throw new Error('系统应用未能打开此文件：'+error+'。可另存为后选择应用。');break;
+      }
       case 'export': {
         const win=host.window();if(!win)throw new Error('窗口已关闭');
         const asset=store.get(profile.id,id), source=await store.verifyFile(profile.id,id);

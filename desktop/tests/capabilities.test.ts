@@ -15,6 +15,11 @@ test('all built-in skills have distinct goals, inputs, workflows, output require
   assert.deepEqual(snapshot.skills.reduce<Record<string, number>>((all,s) => { all[s.category] = (all[s.category] || 0) + 1; return all; }, {}), { '网页与 HTML':20,'代码与开发':20,'产品与设计':15,'内容与增长':20,'数据与表格':15,'文档与写作':15,'图像与视觉':15 });
   for (const skill of snapshot.skills) {
     assert.ok(skill.steps.length >= 3); assert.ok(skill.inputs.length > 0); assert.ok(skill.outputSections.length >= 2); assert.ok(skill.checks.length >= 2); assert.ok(skill.parameters.length > 0); assert.ok(skill.examples.length > 0);
+    for(const files of [[],[{name:'原件 "保持不变".txt',mime:'text/plain',size:32}]]){
+      const prompt=catalog.compose({skillId:skill.id,language:'简体中文',instructions:'保留原件和换行。\n仅处理本次材料。',files});
+      for(const required of [skill.name,skill.instructions,...skill.steps,...skill.outputSections,...skill.checks,'保留原件和换行。\n仅处理本次材料。'])assert.ok(prompt.includes(required),skill.id+' missing '+required);
+      assert.ok(prompt.includes(files.length?JSON.stringify(files[0].name):'本次未附文件'));assert.ok(!prompt.includes(resourceRoot));
+    }
   }
   const cleaning = snapshot.skills.find(s => s.name === '数据清洗方案')!;
   assert.ok(cleaning.checks.some(s => s.includes('不静默删除原数据')));

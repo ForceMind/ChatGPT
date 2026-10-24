@@ -20,7 +20,7 @@ const bridge: Bridge = {
       if (paths.some(file => !file)) return Promise.reject(new Error('请拖入本机实际文件'));
       return ipcRenderer.invoke('assets:import-dropped', profileId, paths);
     },
-    preview: (profileId, id) => ipcRenderer.invoke('assets:preview', profileId, id),
+    preview: (profileId, id, options) => ipcRenderer.invoke('assets:preview', profileId, id, options),
     readText: (profileId, id) => ipcRenderer.invoke('assets:read-text', profileId, id),
     capabilities: () => ipcRenderer.invoke('capabilities:snapshot'),
     agent: id => ipcRenderer.invoke('capabilities:agent', id),

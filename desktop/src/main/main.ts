@@ -650,7 +650,7 @@ if (single) {
       panel=activeProfile().workspace?.panel;
       checkpointTimer=setInterval(()=>{if(!quitPending)void checkpointTab(activeProfile().activeTabId);},2500);checkpointTimer.unref();
       try{loginDiagnostics=new LoginDiagnostics(dataDir,()=>win?.webContents.send('login-links:changed'));}catch(error){loginDiagnosticsError=error instanceof Error?error.message:'登录记录暂不可用';}
-      try{assetStore=new AssetStore(dataDir);assetRuntime=new AssetRuntime(assetStore,()=>activeProfile().id);assetRuntime.register();}catch(error){assetError=error instanceof Error?error.message:'资产库无法读取';}
+      try{assetStore=new AssetStore(dataDir);assetRuntime=new AssetRuntime(assetStore,()=>activeProfile().id,fixtureOrigin);assetRuntime.register();}catch(error){assetError=error instanceof Error?error.message:'资产库无法读取';}
       if(assetStore)assetConversions=new AssetConversions(assetStore,{rendererRoot:path.join(__dirname,'../renderer'),profileAvailable:id=>!quitting&&!pendingProfiles.has(id)&&store.read().profiles.some(p=>p.id===id),changed:assetsChanged});
       try{capabilityCatalog=new CapabilityCatalog(path.join(__dirname,'../capabilities'));}catch(error){capabilityError=error instanceof Error?error.message:'能力资源无法读取';}
     }
