@@ -89,6 +89,12 @@ def metrics(label):
             s=text('shell','dumpsys','meminfo',str(pid),check=False);m=re.search(r'TOTAL PSS:\s*(\d+)',s) or re.search(r'^\s*TOTAL\s+(\d+)',s,re.M)
         if m:pss.append({'pid':pid,'name':name,'pssMiB':round(int(m.group(1))/1024,2)})
     return {'label':label,'processes':pss,'pssMiB':round(sum(p['pssMiB'] for p in pss),2),'cpuPercentOfOneCoreSamples':samples,'ownership':'Target package plus sandboxed WebView renderer processes in an isolated emulator; raw process list retained for coverage review. Any other provider client would overcount rather than silently omit renderer memory.','caveat':'Emulator PSS and short CPU samples with fixture beacon overhead, not physical-device or real ChatGPT measurements'}
+def retained_after_resume(label,baseline):
+    resumed=int(time.time()*1000)
+    def ready():
+        current=observations('seed')
+        return current if current and set(current['tabs'])==set(baseline['tabs']) and all(e['instance']==baseline['tabs'][i]['instance'] and e['documents']==1 and e['navigations']==1 and e['sent']==0 and e['lastSeen']>=resumed and e['events']>baseline['tabs'][i]['events'] for i,e in current['tabs'].items()) else None
+    result=wait(ready,45);report['phases'].append({'name':label,'sameDocuments':True,'networkFramesResumed':True,'autoSendCount':0});return result
 try:
     adb('shell','am','force-stop',PKG);configure('seed');launch();environment=wait(lambda:private('lifecycle-environment.json'));report['environment']=environment
     if not environment['multiProfile']:
@@ -116,6 +122,11 @@ try:
         final=observations('seed');cutoff=int(time.time()*1000)-35000
         assert all(e['instance']==before['tabs'][i]['instance'] and e['documents']==1 and e['navigations']==1 and e['sent']==0 and e['events']>before['tabs'][i]['events'] and sum(t>=cutoff for t in e['times'])>=2 for i,e in final['tabs'].items()),'Background continuity or page identity failed'
         report.update({'retentionPassed':True,'before':before,'afterBackground':final,'rotationRetained':True,'resources':resources})
+        resources.append(metrics('background final'))
+        adb('shell','input','keyevent','WAKEUP');adb('shell','input','keyevent','82');launch();final=retained_after_resume('return from background',final)
+        print(json.dumps({'phase':'screen-lock-and-resume'}),flush=True);adb('shell','input','keyevent','SLEEP');time.sleep(30);report['lockedObservations']=observations('seed');adb('shell','input','keyevent','WAKEUP');adb('shell','input','keyevent','82');launch();final=retained_after_resume('screen lock 30s then resume',final)
+        print(json.dumps({'phase':'battery-saver-doze-and-resume'}),flush=True);adb('shell','cmd','power','set-mode','1',check=False);adb('shell','dumpsys','battery','unplug');adb('shell','input','keyevent','SLEEP');idle=text('shell','dumpsys','deviceidle','force-idle',check=False);report['dozeCommand']=idle;time.sleep(30);(OUT/'device-idle.txt').write_text(text('shell','dumpsys','deviceidle'));report['idleObservations']=observations('seed');adb('shell','dumpsys','deviceidle','unforce',check=False);adb('shell','dumpsys','battery','reset');adb('shell','cmd','power','set-mode','0',check=False);adb('shell','input','keyevent','WAKEUP');adb('shell','input','keyevent','82');launch();final=retained_after_resume('battery saver and forced Doze then resume; continuous work during Doze not required',final)
+        print(json.dumps({'phase':'network-loss-and-resume'}),flush=True);network_start=int(time.time()*1000);adb('shell','svc','wifi','disable');adb('shell','svc','data','disable');time.sleep(8);lost=any(e.get('type')=='network-lost' and e.get('time',0)>=network_start for e in (private('browser-events.json') or []));(OUT/'network-disabled.txt').write_text(text('shell','dumpsys','connectivity'));adb('shell','svc','wifi','enable');adb('shell','svc','data','enable');wait(lambda:any(e.get('type')=='network-available' and e.get('time',0)>=network_start for e in (private('browser-events.json') or [])),45);final=retained_after_resume('system network disabled and restored',final);report['networkLossDiagnosticVerified']=lost;assert lost,'Network-loss diagnostic not observed';report['networkScope']='Real ConnectivityManager loss/reconnect callbacks; intercepted fixture transport does not measure real remote service reconnection.'
         (OUT/'native-processes.txt').write_text(text('shell','ps','-A','-o','PID,PPID,NAME'));(OUT/'native-services.txt').write_text(text('shell','dumpsys','activity','services',PKG));(OUT/'diagnostics.json').write_text(json.dumps(private('browser-events.json'),ensure_ascii=False,indent=2))
         old_pid=text('shell','pidof',PKG);adb('shell','am','force-stop',PKG);wait(lambda:not text('shell','pidof',PKG,check=False),15);configure('verify');launch();new_env=wait(lambda:private('lifecycle-environment.json') if (private('lifecycle-environment.json') or {}).get('phase')=='verify' else None);assert str(new_env['pid'])!=old_pid
         restored=[]
@@ -129,6 +140,7 @@ except Exception as error:
     except Exception:pass
     raise
 finally:
+    adb('shell','dumpsys','deviceidle','unforce',check=False);adb('shell','dumpsys','battery','reset',check=False);adb('shell','cmd','power','set-mode','0',check=False);adb('shell','svc','wifi','enable',check=False);adb('shell','svc','data','enable',check=False)
     report['observationsAtEnd']=observations()
     (OUT/'lifecycle-verification.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
     adb('shell','am','force-stop',PKG,check=False)
