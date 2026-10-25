@@ -1,10 +1,21 @@
-# ChatGPT Studio
+<div align="center">
+  <img src="site/assets/icon.svg" width="100" height="100" alt="ChatGPT Studio Logo" />
+  <h1>ChatGPT Studio</h1>
+  <p>独立账号空间 · 沉浸式网页 · 本地文件工作流</p>
+  <p><strong>简体中文</strong> · <a href="README.en.md">English</a></p>
+  <p>
+    <a href="https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.17"><img alt="Latest prerelease" src="https://img.shields.io/github/v/release/ForceMind/ChatGPT?include_prereleases&amp;sort=semver&amp;label=pre-release&amp;labelColor=171717&amp;color=555555" /></a>
+    <a href="https://github.com/ForceMind/ChatGPT/actions/workflows/android.yml"><img alt="Android CI" src="https://img.shields.io/github/actions/workflow/status/ForceMind/ChatGPT/android.yml?branch=main&amp;label=Android%20CI&amp;labelColor=171717&amp;color=555555" /></a>
+    <img alt="Electron 44.9" src="https://img.shields.io/badge/Electron-44.9-555555?logo=electron&amp;logoColor=white&amp;labelColor=171717" />
+    <img alt="Java 17" src="https://img.shields.io/badge/Java-17-555555?labelColor=171717" />
+    <img alt="macOS Windows Android" src="https://img.shields.io/badge/platforms-macOS%20%7C%20Windows%20%7C%20Android-555555?labelColor=171717" />
+  </p>
+  <p><a href="https://chatgpt-studio.pages.dev/">官网</a> · <a href="#下载与安装">下载</a> · <a href="#开始使用">使用指南</a> · <a href="#技术方向与架构">技术架构</a> · <a href="#路线图与待完成事项">路线图</a> · <a href="https://github.com/ForceMind/ChatGPT/issues">问题反馈</a></p>
+</div>
 
 **沉浸式多账号 ChatGPT 工作台。**
 
 在独立账号空间中使用 ChatGPT，管理标签与会话，把下载、预览、格式转换和文件处理集中在一个应用里。启动直接进入网页，采用白灰黑界面，没有地址栏；各设备独立登录，无需配置 OpenAI API Key。
-
-[项目主页](https://chatgpt.xincreates.com/) · [下载安装](#下载与安装) · [使用指南](#开始使用) · [路线图](#路线图与待完成事项) · [问题反馈](https://github.com/ForceMind/ChatGPT/issues)
 
 > 项目已从 ChatGPT Profiles 更名为 **ChatGPT Studio**。当前三端公开预发布版为 **3.0.0-alpha.17**；下表提供对应的安装包。历史文件名、应用标识和数据目录保留，用于兼容既有登录、加密记录与更新流程。
 
@@ -22,6 +33,31 @@
 
 ChatGPT Studio 是独立维护的非官方客户端，不附带 ChatGPT 订阅权益。模型和网页功能由当前登录账号及 ChatGPT 服务决定；浏览器空间隔离不等于网络代理或完整指纹隔离。
 
+## 技术方向与架构
+
+| 层次 | 当前方案 | 设计取舍 |
+| --- | --- | --- |
+| 桌面客户端 | Electron 44、React 19、TypeScript、esbuild | macOS / Windows 共用桌面实现，网页与本地管理界面隔离 |
+| Android 客户端 | Java 17、AndroidX WebKit、System WebView | 使用系统兼容内核，保留现有账号登录空间，按实际能力启用多档案 |
+| 文件工作流 | 本机文件、受限 HTML / 媒体预览、PDF 与数据转换 | 处理与派生副本留在本机；发给 GPT 前明确选择账号、附件和指令 |
+| 状态与恢复 | 平台加密、账号 / 存储空间 / 标签绑定的记录 | 不覆盖网页已有草稿，不重发结果不明的消息 |
+| 发布与站点 | GitHub Actions、GitHub Releases、Cloudflare Pages | 构建、校验与公开下载可追溯；站点以静态文件部署 |
+
+```mermaid
+flowchart LR
+  Desktop["桌面：Electron + React"] --> Spaces["独立账号空间与标签"]
+  Android["Android：Java + WebView"] --> Spaces
+  Spaces --> Web["ChatGPT 网页"]
+  Desktop --> Assets["本地资产库、预览与转换"]
+  Android --> Assets
+  Assets --> Tasks["Skill、附件确认与单次发送"]
+  Tasks --> Spaces
+  Desktop --> Recovery["本机加密恢复"]
+  Android --> Recovery
+```
+
+各设备独立使用，不同步登录凭据。Android 的其他浏览器内核仍属于独立实验；迁移方案验证前不替换日常客户端的现有空间。iPhone/iPad、代理与差量更新的状态见路线图。
+
 ## 下载与安装
 
 ### 公开预发布版
@@ -38,7 +74,9 @@ ChatGPT Studio 是独立维护的非官方客户端，不附带 ChatGPT 订阅�
 
 **Android**：按系统提示允许该下载来源安装；升级时沿用同一应用签名。WebView 不支持多档案时应先更新系统 WebView / Chrome，应用不会退回共享登录空间。
 
-[官网](https://chatgpt.xincreates.com/)提供原始 GitHub 下载和可选国内加速入口。第三方加速不可用时可改用原始链接；下载后可与对应 Release 的 SHA256SUMS.txt 核对。
+[官网](https://chatgpt-studio.pages.dev/)提供原始 GitHub 下载和可选国内加速入口。第三方加速不可用时可改用原始链接；下载后可与对应 Release 的 SHA256SUMS.txt 核对。
+
+当前版本标记为 **Pre-release**，公开发布包含安装包和校验清单。只查询稳定版的工具可能显示没有 Latest 版本；本页版本徽章包含预发布，下载表直接指向带附件的 Release。
 
 ### 版本与升级
 
@@ -121,11 +159,12 @@ Android 矩阵覆盖 API28–36 的实际预装 WebView 组合。Android 12L / 1
 ## 开发与交付
 
 ~~~text
-desktop/   Electron + React + TypeScript 桌面客户端
-android/   Java + AndroidX WebKit 移动客户端
-site/      静态下载主页与使用说明
-docs/      截图、验证与发布索引
-.github/   平台验证和打包工作流
+desktop/       Electron + React + TypeScript 桌面客户端
+android/       Java + AndroidX WebKit 移动客户端
+site/          静态下载主页与使用说明
+site-legacy/   旧站跳转规则；更新清单由 site/ 同源导出
+docs/          截图、验证与发布索引
+.github/       平台验证和打包工作流
 ~~~
 
 桌面端使用 Node.js 26.7.0；Android 使用 JDK 17、SDK Platform 36、Build Tools 35.0.0。开发测试使用回环网页和独立临时数据，不依赖个人账号。
@@ -141,12 +180,14 @@ npm run test:e2e
 ~~~sh
 cd android
 ./gradlew testDebugUnitTest lintDebug assembleDebug
-./gradlew connectedDebugAndroidTest
+./gradlew -Pandroid.testInstrumentationRunnerArguments.fixtureMode=true connectedDebugAndroidTest
 ~~~
 
 安装包由 **GitHub Actions** 构建。macos-validation.yml 执行独立回归与资源对照；macos-release.yml、windows.yml 和 android.yml 分别负责平台验证 / 打包。Android 发布签名材料保留在受保护的本地配置中，不提交仓库。
 
-网站是无构建依赖的静态页面，Cloudflare Pages 采用 Direct Upload；Git 推送不会自动部署官网。源码、CI 候选、公开 Release 和线上版本分别记录，不覆盖历史包与校验摘要。
+网站是无构建依赖的静态页面，Cloudflare Pages 采用 Direct Upload；Git 推送不会自动部署官网。`site/` 部署到 `chatgpt-studio` 项目。旧 `chatgpt-profiles` 项目使用 `site-legacy/_redirects`，部署时从同一提交复制主站的 `_headers`，并将 `site/updates/macos.json` 导出为旧站的 `compat/macos.json`，保持更新清单只有一个源码。
+
+旧站页面永久跳转到新官网；已安装 Mac App 使用的旧 `/updates/macos.json` 继续直接返回 JSON。部署后分别检查新站、旧站跳转与无 Cookie 的兼容更新接口。源码、CI 候选、公开 Release 和线上版本分别记录，不覆盖历史包与校验摘要。
 
 ## 路线图与待完成事项
 
@@ -165,10 +206,32 @@ cd android
 
 已完成的历史工作与每批验证边界保留在开发记录中；本表列的是当前缺口，不代表已开始全部后续开发。
 
+## 常见问题
+
+<details>
+<summary>为什么关闭后仍可能重新加载网页？</summary>
+
+窗口关闭、标签切换与进程退出是不同状态。保留的页面可继续使用；进程或渲染器被系统结束后，重新加载网页，再恢复已保存的草稿与阅读位置。附件上传和模型生成不会跨进程继续，恢复不会自动发送。
+</details>
+
+<details>
+<summary>Android 如何在后台继续任务？</summary>
+
+打开“更多 → 保活与诊断”，主动开启带常驻通知的后台模式。App 前台保持已打开页面执行；后台模式可随时停止，也会增加耗电。系统休眠、厂商限制和网络仍可能中断运行，可在同一入口查看原因。
+</details>
+
+<details>
+<summary>HTML 或专用文件为什么仍依赖外部资源或系统应用？</summary>
+
+HTML 默认离线，可为当前文件允许 HTTPS 资源；未导入的本地关联文件不会自动获得访问权。Office、压缩包和不支持的编码使用本机关联应用，应用未安装时可另存为；原文件保留。各平台支持范围见平台说明。
+</details>
+
 ## 反馈与贡献
 
 请通过 [GitHub Issues](https://github.com/ForceMind/ChatGPT/issues) 提供平台、应用 / WebView 版本、复现步骤、预期与实际结果。截图和日志请先遮盖个人信息，不要提交密码、验证码、Cookie、下载令牌或完整账号目录。
 
 修改前请阅读仓库内的工作约定，并在对应平台运行相关检查。功能与文档应明确区分真实集成、隔离夹具、模拟器和实机证据。
 
-ChatGPT 与 OpenAI 的名称及服务属于各自权利人。本项目与 OpenAI 无隶属关系。
+## 许可与商标
+
+仓库根目录尚未声明统一代码许可证；依赖与图标的权利声明单独保留。ChatGPT 与 OpenAI 的名称、图标及服务属于相应权利人。本项目与 OpenAI 无隶属关系。

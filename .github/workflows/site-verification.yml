@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       production:
-        description: Verify both production domains; false verifies local site source
+        description: Verify the canonical site and both legacy redirects/update feeds; false verifies local source
         type: boolean
         default: false
 permissions:
@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        origin: ${{ fromJSON(inputs.production && '["https://chatgpt.xincreates.com","https://chatgpt-profiles.pages.dev"]' || '["local"]') }}
+        origin: ${{ fromJSON(inputs.production && '["https://chatgpt-studio.pages.dev","https://chatgpt.xincreates.com","https://chatgpt-profiles.pages.dev"]' || '["local"]') }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

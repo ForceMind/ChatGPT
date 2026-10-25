@@ -23,7 +23,7 @@ test('Studio display name preserves legacy internal identity and isolated storag
  }finally{await app?.close().catch(()=>{});server.closeAllConnections();await new Promise<void>(r=>server.close(()=>r()));rmSync(root,{recursive:true,force:true});}
 });
 
-test('Studio website renders its new brand on desktop and mobile with historical downloads intact',async({},info)=>{
+test('Studio website renders canonical pages and preserves legacy update feeds',async({},info)=>{
  test.skip(process.platform!=='darwin');
  const root=mkdtempSync(path.join(os.tmpdir(),'studio-website-')),site=path.resolve(desktop,'../site');let app:ElectronApplication|undefined;
  const server=createServer((q,r)=>{
@@ -34,7 +34,7 @@ test('Studio website renders its new brand on desktop and mobile with historical
  });
  await new Promise<void>(r=>server.listen(0,'127.0.0.1',r));const address=server.address();if(!address||typeof address==='string')throw Error('fixture');
  const publicOrigin=process.env.STUDIO_VERIFY_ORIGIN;
- if(publicOrigin&&!['https://chatgpt.xincreates.com','https://chatgpt-profiles.pages.dev'].includes(publicOrigin))throw Error('Unexpected website verification origin');
+ if(publicOrigin&&!['https://chatgpt-studio.pages.dev','https://chatgpt.xincreates.com','https://chatgpt-profiles.pages.dev'].includes(publicOrigin))throw Error('Unexpected website verification origin');
  const origin=publicOrigin||'http://127.0.0.1:'+address.port,entry=path.join(root,'main.cjs');
  const feed=JSON.parse(readFileSync(path.join(site,'updates/macos.json'),'utf8'));expect(validManifest(feed)).toBe(true);
  const release=JSON.parse(readFileSync(path.join(desktop,'../docs/releases',feed.version+'.json'),'utf8'));
@@ -42,6 +42,12 @@ test('Studio website renders its new brand on desktop and mobile with historical
  try{
   app=await electron.launch({args:[entry],env:{...process.env,STUDIO_SITE_DATA:path.join(root,'data'),STUDIO_SITE_ORIGIN:origin}});const page=await app.firstWindow();const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
   await expect(page).toHaveTitle(/ChatGPT Studio/);await expect(page.getByRole('link',{name:'ChatGPT Studio 首页',exact:true})).toBeVisible();
+  const canonical='https://chatgpt-studio.pages.dev';
+  if(publicOrigin){
+   await expect.poll(()=>new URL(page.url()).origin).toBe(canonical);
+   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href',canonical+'/');
+   if(publicOrigin!==canonical){await page.goto(publicOrigin+'/?source=legacy-check#downloads');await expect.poll(()=>new URL(page.url()).origin).toBe(canonical);expect(new URL(page.url()).hash).toBe('#downloads');await page.goto(canonical+'/');}
+  }
   for(const item of release.artifacts){
    expect(await page.locator('a[href="'+item.url+'"]').count()).toBeGreaterThanOrEqual(1);
    expect(await page.locator('a[href="https://gh-proxy.org/'+item.url+'"]').count()).toBeGreaterThanOrEqual(1);
@@ -69,7 +75,7 @@ test('Studio website renders its new brand on desktop and mobile with historical
   await page.screenshot({path:info.outputPath('studio-downloads-1440.png')});
   const remoteFeed=await app.evaluate(async({session},origin)=>{const response=await session.fromPartition('studio-feed-public-check').fetch(origin+'/updates/macos.json',{credentials:'omit',redirect:'error',headers:{Accept:'application/json'}});return{status:response.status,contentType:response.headers.get('content-type'),text:await response.text()};},origin);
   expect(remoteFeed.status).toBe(200);expect(remoteFeed.contentType).toContain('application/json');expect(JSON.parse(remoteFeed.text)).toEqual(feed);
-  writeFileSync(info.outputPath('site-verification.json'),JSON.stringify({origin,version:feed.version,downloadFiles:release.artifacts.length,acceleratedFiles:release.artifacts.length,widths:[1440,390],checksumCopy:true,credentiallessElectronFeed:true,errors}));
+  writeFileSync(info.outputPath('site-verification.json'),JSON.stringify({origin,landedOrigin:new URL(page.url()).origin,version:feed.version,downloadFiles:release.artifacts.length,acceleratedFiles:release.artifacts.length,widths:[1440,390],checksumCopy:true,credentiallessElectronFeed:true,legacyPageRedirect:!!publicOrigin&&publicOrigin!==canonical,errors}));
   expect(errors).toEqual([]);
  }finally{await app?.close().catch(()=>{});server.closeAllConnections();await new Promise<void>(r=>server.close(()=>r()));rmSync(root,{recursive:true,force:true});}
 });

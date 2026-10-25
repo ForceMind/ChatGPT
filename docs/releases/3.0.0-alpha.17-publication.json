@@ -143,13 +143,38 @@
   },
   "scopeConfirmed": "User explicitly selected the most recent iteration only; older iPhone/iPad, proxy/VLESS, passkeys and delta-update roadmap remains outside this release.",
   "site": {
-    "status": "pending deployment",
-    "project": "chatgpt-profiles",
-    "expectedVersion": "3.0.0-alpha.17",
-    "domains": [
+    "status": "migration in progress",
+    "canonicalProject": "chatgpt-studio",
+    "canonicalDomain": "https://chatgpt-studio.pages.dev",
+    "legacyProject": "chatgpt-profiles",
+    "legacyDomains": [
       "https://chatgpt.xincreates.com",
       "https://chatgpt-profiles.pages.dev"
-    ]
+    ],
+    "legacyUpdateEndpoint": "/updates/macos.json",
+    "legacyFeedExport": "compat/macos.json",
+    "previousProductionDeployment": {
+      "deploymentId": "9a86a822-1aaa-4c76-8fd6-4f725cb282fb",
+      "environment": "production",
+      "url": "https://9a86a822.chatgpt-profiles.pages.dev",
+      "aliases": [
+        "https://chatgpt.xincreates.com"
+      ],
+      "createdAt": "2026-10-25T06:36:21.075051Z",
+      "commit": "6d960ca666470b9b317dc24da7c89e4019a662b9",
+      "branch": "main",
+      "stage": {
+        "name": "deploy",
+        "status": "success"
+      },
+      "project": "chatgpt-profiles"
+    },
+    "previousBrowserRun": 40169818326,
+    "previousBrowserConclusion": "success",
+    "previousResourceReadback": {
+      "sourceCommit": "6d960ca666470b9b317dc24da7c89e4019a662b9",
+      "matchedResources": 22
+    }
   },
   "manualAcceptancePending": [
     "Android real ChatGPT homepage/manual verification, vendor physical devices, login and personal-data upgrade",
@@ -158,5 +183,265 @@
   ],
   "cleanup": {
     "status": "pending final verification and cleanup"
+  },
+  "anonymousDownloadChecks": {
+    "heads": [
+      {
+        "file": "ChatGPT-Profiles-3.0.0-alpha.17-mac-arm64.dmg",
+        "route": "GitHub direct",
+        "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.17/ChatGPT-Profiles-3.0.0-alpha.17-mac-arm64.dmg",
+        "curlExit": 0,
+        "httpStatus": 200,
+        "contentLength": 154517193,
+        "expectedBytes": 154517193,
+        "contentLengthMatches": true,
+        "reachable": true,
+        "contentType": "application/octet-stream"
+      },
+      {
+        "file": "ChatGPT-Profiles-3.0.0-alpha.17-mac-arm64.dmg",
+        "route": "domestic proxy",
+        "url": "https://gh-proxy.org/https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.17/ChatGPT-Profiles-3.0.0-alpha.17-mac-arm64.dmg",
+        "curlExit": 0,
+        "httpStatus": 200,
+        "contentLength": 154517193,
+        "expectedBytes": 154517193,
+        "contentLengthMatches": true,
+        "reachable": true,
+        "contentType": "application/octet-stream"
+      },
+      {
+        "file": "ChatGPT-Profiles-3.0.0-alpha.17-mac-arm64.zip",
+        "route": "GitHub direct",
+        "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.17/ChatGPT-Profiles-3.0.0-alpha.17-mac-arm64.zip",
+        "curlExit": 0,
+        "httpStatus": 200,
+        "contentLength": 154471608,
+        "expectedBytes": 154471608,
+        "contentLengthMatches": true,
+        "reachable": true,
+        "contentType": "application/octet-stream"
+      },
+      {
+        "file": "ChatGPT-Profiles-3.0.0-alpha.17-mac-arm64.zip",
+        "route": "domestic proxy",
+        "url": "https://gh-proxy.org/https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.17/ChatGPT-Profiles-3.0.0-alpha.17-mac-arm64.zip",
+        "curlExit": 0,
+        "httpStatus": 200,
+        "contentLength": 154471608,
+        "expectedBytes": 154471608,
+        "contentLengthMatches": true,
+        "reachable": true,
+        "contentType": "application/octet-stream"
+      },
+      {
+        "file": "ChatGPT-Profiles-3.0.0-alpha.17-windows-x64-setup.exe",
+        "route": "GitHub direct",
+        "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.17/ChatGPT-Profiles-3.0.0-alpha.17-windows-x64-setup.exe",
+        "curlExit": 0,
+        "httpStatus": 200,
+        "contentLength": 130964371,
+        "expectedBytes": 130964371,
+        "contentLengthMatches": true,
+        "reachable": true,
+        "contentType": "application/octet-stream"
+      },
+      {
+        "file": "ChatGPT-Profiles-3.0.0-alpha.17-windows-x64-setup.exe",
+        "route": "domestic proxy",
+        "url": "https://gh-proxy.org/https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.17/ChatGPT-Profiles-3.0.0-alpha.17-windows-x64-setup.exe",
+        "curlExit": 0,
+        "httpStatus": 200,
+        "contentLength": 130964371,
+        "expectedBytes": 130964371,
+        "contentLengthMatches": true,
+        "reachable": true,
+        "contentType": "application/octet-stream"
+      },
+      {
+        "file": "ChatGPT-Profiles-3.0.0-alpha.17-windows-x64.zip",
+        "route": "GitHub direct",
+        "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.17/ChatGPT-Profiles-3.0.0-alpha.17-windows-x64.zip",
+        "curlExit": 0,
+        "httpStatus": 200,
+        "contentLength": 180726200,
+        "expectedBytes": 180726200,
+        "contentLengthMatches": true,
+        "reachable": true,
+        "contentType": "application/octet-stream"
+      },
+      {
+        "file": "ChatGPT-Profiles-3.0.0-alpha.17-windows-x64.zip",
+        "route": "domestic proxy",
+        "url": "https://gh-proxy.org/https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.17/ChatGPT-Profiles-3.0.0-alpha.17-windows-x64.zip",
+        "curlExit": 0,
+        "httpStatus": 200,
+        "contentLength": 180726200,
+        "expectedBytes": 180726200,
+        "contentLengthMatches": true,
+        "reachable": true,
+        "contentType": "application/octet-stream"
+      },
+      {
+        "file": "ChatGPT-Profiles-3.0.0-alpha.17-android.apk",
+        "route": "GitHub direct",
+        "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.17/ChatGPT-Profiles-3.0.0-alpha.17-android.apk",
+        "curlExit": 0,
+        "httpStatus": 200,
+        "contentLength": 7331287,
+        "expectedBytes": 7331287,
+        "contentLengthMatches": true,
+        "reachable": true,
+        "contentType": "application/vnd.android.package-archive"
+      },
+      {
+        "file": "ChatGPT-Profiles-3.0.0-alpha.17-android.apk",
+        "route": "domestic proxy",
+        "url": "https://gh-proxy.org/https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.17/ChatGPT-Profiles-3.0.0-alpha.17-android.apk",
+        "curlExit": 0,
+        "httpStatus": 200,
+        "contentLength": 7331287,
+        "expectedBytes": 7331287,
+        "contentLengthMatches": true,
+        "reachable": true,
+        "contentType": "application/vnd.android.package-archive"
+      }
+    ],
+    "smallPublicGETs": [
+      {
+        "file": "release-info.json",
+        "bytes": 4714,
+        "sha256": "d8a4d1a1cd0c048389337df44012e8904f8d6b7bc49630c0f56828ef3212b108",
+        "sourceOrManifestMatches": true,
+        "credentialsSent": false
+      },
+      {
+        "file": "android-build-info.json",
+        "bytes": 898,
+        "sha256": "92cdd3ae0be8fa917e84bffd2706f9e8163d3d67a6d3ea57947f54e01402fdf6",
+        "sourceOrManifestMatches": true,
+        "credentialsSent": false
+      },
+      {
+        "file": "SHA256SUMS.txt",
+        "bytes": 1203,
+        "sha256": "98572a89ed1f4a8d5f96326ecf924f1db96d6f88d2a02e05e0ae5aac3f3ec723",
+        "sourceOrManifestMatches": true,
+        "credentialsSent": false
+      }
+    ],
+    "scope": "Unauthenticated HEAD follows redirects without saving installer bodies. HEAD verifies reachability and available length, not the third-party proxy full-body digest. Signed redirect URLs are not retained."
+  },
+  "releaseVisibility": {
+    "anonymousReleaseVisible": true,
+    "name": "ChatGPT Studio 3.0.0-alpha.17",
+    "tag": "v3.0.0-alpha.17",
+    "isPrerelease": true,
+    "publishedAt": "2026-10-25T06:24:48Z",
+    "assets": [
+      {
+        "name": "android-build-info.json",
+        "size": 898,
+        "digest": "sha256:92cdd3ae0be8fa917e84bffd2706f9e8163d3d67a6d3ea57947f54e01402fdf6"
+      },
+      {
+        "name": "ChatGPT-Profiles-3.0.0-alpha.17-android.apk",
+        "size": 7331287,
+        "digest": "sha256:fe6f64eafdee554f297114a447af6ad4a60b6f1885bef8b4b764135665258ff3"
+      },
+      {
+        "name": "ChatGPT-Profiles-3.0.0-alpha.17-mac-arm64.dmg",
+        "size": 154517193,
+        "digest": "sha256:07b227b1fe4cea59a8768c774676bbd372916a82de97ba067e83b63c5edba023"
+      },
+      {
+        "name": "ChatGPT-Profiles-3.0.0-alpha.17-mac-arm64.zip",
+        "size": 154471608,
+        "digest": "sha256:06fdbfa404794aa287f1d3c60bf85b39134b28e2cbd059fe806cb569e4e4c383"
+      },
+      {
+        "name": "ChatGPT-Profiles-3.0.0-alpha.17-windows-x64-setup.exe",
+        "size": 130964371,
+        "digest": "sha256:6f6b5e5381d1f8b8ce6fc7865b6bce780314a734ba4ed37cd2b243eac9b0b54a"
+      },
+      {
+        "name": "ChatGPT-Profiles-3.0.0-alpha.17-windows-x64.zip",
+        "size": 180726200,
+        "digest": "sha256:e259d20f5626cfcc132dcc48a7228fa2e3a590dbf92945c2555ff70594f2cd35"
+      },
+      {
+        "name": "mac-recovery-verification.json",
+        "size": 819,
+        "digest": "sha256:7306e19a5d7eef0eb4a5ffa2808ea33e1459cc249ca2d6993dbb2b770799c072"
+      },
+      {
+        "name": "mac-release-info.json",
+        "size": 27601,
+        "digest": "sha256:536350a2d04b94042336f4cb001a830bcd9c413106d242b9ebbc9060305dafa6"
+      },
+      {
+        "name": "mac-ui-verification.json",
+        "size": 377,
+        "digest": "sha256:5c1ba379588d05b9332f70826ef2f509e610dc786499aa39786fa48dd628833a"
+      },
+      {
+        "name": "mac-update-verification.json",
+        "size": 731,
+        "digest": "sha256:d9d86c3b99394f797b4c378e50560803243959a01d85b6ebf0a12b2b124059a6"
+      },
+      {
+        "name": "release-info.json",
+        "size": 4714,
+        "digest": "sha256:d8a4d1a1cd0c048389337df44012e8904f8d6b7bc49630c0f56828ef3212b108"
+      },
+      {
+        "name": "SHA256SUMS.txt",
+        "size": 1203,
+        "digest": "sha256:98572a89ed1f4a8d5f96326ecf924f1db96d6f88d2a02e05e0ae5aac3f3ec723"
+      },
+      {
+        "name": "windows-build-info.json",
+        "size": 27693,
+        "digest": "sha256:cfd18d2ca64b9289488bc27397c005a32fd6782321a9eb1d47b3dee9ed14a317"
+      }
+    ],
+    "url": "https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.17",
+    "publicReleaseCountInPage": 8
+  },
+  "readme": {
+    "defaultLanguage": "zh-CN",
+    "files": [
+      "README.md",
+      "README.en.md"
+    ],
+    "logo": "site/assets/icon.svg",
+    "badges": [
+      {
+        "url": "https://img.shields.io/github/v/release/ForceMind/ChatGPT?include_prereleases&sort=semver&label=pre-release&labelColor=171717&color=555555",
+        "description": "pre-release: v3.0.0-alpha.17",
+        "bytes": 1364
+      },
+      {
+        "url": "https://img.shields.io/github/actions/workflow/status/ForceMind/ChatGPT/android.yml?branch=main&label=Android%20CI&labelColor=171717&color=555555",
+        "description": "Android CI: passing",
+        "bytes": 1316
+      },
+      {
+        "url": "https://img.shields.io/badge/Electron-44.9-555555?logo=electron&logoColor=white&labelColor=171717",
+        "description": "Electron: 44.9",
+        "bytes": 4740
+      },
+      {
+        "url": "https://img.shields.io/badge/Java-17-555555?labelColor=171717",
+        "description": "Java: 17",
+        "bytes": 1258
+      },
+      {
+        "url": "https://img.shields.io/badge/platforms-macOS%20%7C%20Windows%20%7C%20Android-555555?labelColor=171717",
+        "description": "platforms: macOS | Windows | Android",
+        "bytes": 1408
+      }
+    ],
+    "repositoryLicense": "not declared"
   }
 }

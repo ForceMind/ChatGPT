@@ -1,0 +1,3 @@
+# Existing desktop apps fetch this URL with redirects disabled.
+/updates/macos.json /compat/macos.json 200
+/* https://chatgpt-studio.pages.dev/:splat 308
