@@ -1,14 +1,28 @@
 <!doctype html>
 <html lang="zh-CN">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ChatGPT Studio · Android 标签管理预览</title><link rel="stylesheet" href="/styles.css"></head>
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self';script-src 'self';style-src 'self' 'unsafe-inline';img-src 'self' data:;connect-src 'none';form-action 'none';base-uri 'none';frame-src 'none'"/>
+<title>ChatGPT Studio · Android 沉浸设计预览</title>
+<link rel="stylesheet" href="/styles.css"/>
+<script src="/app.js" defer></script>
+</head>
 <body>
-<aside class="proposal"><div><strong>ChatGPT Studio</strong><span>Android 交互提案 · 示例内容</span></div><p>无地址栏 · 账号独立 · 标签卡片总览</p><nav aria-label="预览尺寸"><button data-width="360">小屏</button><button data-width="390" class="chosen">手机</button><button data-width="768">平板</button></nav></aside>
-<main class="device" id="device">
- <header class="app-top"><button id="account-button" class="account-button" aria-label="切换账号" aria-expanded="false"><span class="avatar" id="account-avatar">W</span><span class="account-copy"><strong id="account-name">工作账号</strong><small id="account-detail">独立浏览空间</small></span><span id="account-chevron" class="icon"></span></button><button id="assets-button" class="icon-button" aria-label="资产库"></button></header>
- <section class="reading" id="reading"><div class="chat-top"><span>ChatGPT</span><span class="preview-label">示例对话</span></div><div class="conversation"><h1 id="page-title">移动端工作台设计</h1><div class="user-message">把想法整理成一个清晰、可以继续工作的界面。</div><p>我们可以从三个最重要的动作开始：</p><h2>让每个账号拥有自己的空间</h2><p>切换账号时，标签、对话和文件始终有清楚的归属。顶部显示当前账号，完整名称可以在账号菜单中查看。</p><h2>把空间留给正在做的事</h2><p>浏览时直接进入网页；需要管理标签时，再打开卡片总览。可以搜索、固定、关闭和恢复标签。</p><div class="example-note">此处为交互预览示例，不连接 ChatGPT。</div></div><div class="composer"><span>询问任何问题</span><span class="send-circle">↑</span></div></section>
- <nav class="bottom-toolbar" aria-label="浏览工具"><button id="back-button" class="icon-button" aria-label="后退"></button><button id="new-tab" class="icon-button" aria-label="新建标签页"></button><button id="tab-switcher" class="tab-switcher" aria-label="查看所有标签页"><span id="tab-count">8</span></button><button id="more-button" class="icon-button" aria-label="更多操作"></button></nav>
- <section class="overview" id="overview" hidden aria-label="标签页总览"><header class="overview-top"><div><h1>标签页</h1><p id="overview-summary">8 个标签 · 3 个账号空间</p></div><button id="done" class="text-button">完成</button></header><label class="search"><span id="search-icon" class="icon"></span><input id="tab-search" placeholder="搜索标签或账号" aria-label="搜索标签或账号"></label><nav id="account-filters" class="account-filters" aria-label="按账号筛选"></nav><div class="tab-grid" id="tab-grid"></div><div class="overview-bottom"><button id="recent-button" class="icon-button" aria-label="最近关闭的标签"></button><button id="overview-new" class="new-button">＋ 新建标签页</button><span id="filter-count"></span></div></section>
- <div id="sheet-root"></div><div id="toast" class="toast" role="status" hidden></div>
+<header class="preview-heading"><div><strong>ChatGPT Studio</strong><span>Android 沉浸设计</span></div><p>交互原型 · 合成示例 · 不连接 ChatGPT，不上传、发送或修改真实文件</p></header>
+<nav class="preview-tools" aria-label="预览工具"><div><button data-device="phone" aria-pressed="true">手机</button><button data-device="small">小屏</button><button data-device="tablet">平板</button><button id="font-toggle" aria-pressed="false">系统大字号</button></div><div><button data-demo="home">网页首页</button><button data-demo="conversation">已有对话</button><button data-demo="tabs">对话管理</button><button data-demo="accounts">切换账号</button></div></nav>
+<main class="review-layout">
+<section class="device" data-device="phone" aria-label="Android App 交互预览">
+<div class="system-status" aria-hidden="true"><b>9:41</b><span>5G　▮▮▮　▰</span></div>
+<div class="app-ui">
+<header class="appbar"><button class="account-trigger" id="account-trigger" aria-label="切换账号"><span class="account-dot"></span><span class="account-name"></span><span class="chevron">⌄</span></button><div class="app-actions"><button class="tab-trigger" id="tab-trigger" aria-label="查看打开的对话"></button><button class="icon-button" id="more-trigger" aria-label="更多功能">⋯</button></div></header>
+<div class="webstack" id="webstack"></div>
+</div>
+<div class="overlay" id="overlay" hidden></div>
+<div class="app-toast" id="app-toast" role="status" hidden></div>
+<div class="system-gesture" aria-hidden="true"><i></i></div>
+</section>
+<aside class="design-notes"><p class="eyebrow">本次设计</p><h1>打开就是网页。</h1><p>首页只保留账号、打开的对话和更多功能，给 ChatGPT 留出完整空间。</p><ul><li>没有常驻底栏与首页后退按钮。</li><li>对话采用清单弹层，标题和所属账号清楚可见。</li><li>“最近关闭”使用文字入口。</li><li>资产库与能力库按需打开。</li></ul><div class="try-note"><strong>可以试一下</strong><p>在网页输入区写一段草稿，切换到另一个对话，再切回来；也可以关闭后撤销、重命名或切换账号。</p></div><p class="scope">网页区域是本地示意。这里的草稿保留只演示交互；真实 App 的前台切换与页面保留会单独做原生验收。</p><p id="preview-feedback" role="status"></p></aside>
 </main>
-<script src="/app.js"></script>
-</body></html>
+</body>
+</html>
