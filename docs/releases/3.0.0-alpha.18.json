@@ -1,0 +1,118 @@
+{
+  "version": "3.0.0-alpha.18",
+  "name": "ChatGPT Studio",
+  "sourceCommit": "09d9961ab066a1b02ee05073a74b8fe9ff4026bf",
+  "prerelease": true,
+  "platforms": [
+    "macOS arm64",
+    "Windows x64",
+    "Android System WebView"
+  ],
+  "artifacts": [
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.18-mac-arm64.dmg",
+      "bytes": 154514248,
+      "sha256": "3cd41e7ffe435ad43f52a2eb12fbef80679034a8e3f9e72582562c0f8a02f255",
+      "platform": "macos",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.18/ChatGPT-Profiles-3.0.0-alpha.18-mac-arm64.dmg"
+    },
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.18-mac-arm64.zip",
+      "bytes": 154478821,
+      "sha256": "b270a9ff763345205ade0b16a20599acf435e1dc2904273f7b95eadd1c89dccb",
+      "platform": "macos",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.18/ChatGPT-Profiles-3.0.0-alpha.18-mac-arm64.zip"
+    },
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.18-windows-x64-setup.exe",
+      "bytes": 130970936,
+      "sha256": "60d5ee520b2bc758f251eecd190c08385ab4a562f0c0a789a828fd8643768db6",
+      "platform": "windows",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.18/ChatGPT-Profiles-3.0.0-alpha.18-windows-x64-setup.exe"
+    },
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.18-windows-x64.zip",
+      "bytes": 180735659,
+      "sha256": "b1de0769ca43bb7318bc3f8d8da0e5541125dcc02db83800159d5a8e113bd614",
+      "platform": "windows",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.18/ChatGPT-Profiles-3.0.0-alpha.18-windows-x64.zip"
+    },
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.18-android.apk",
+      "bytes": 7335383,
+      "sha256": "3d3bda26cf4cd0b699a94a0c6ae17aa86a185cd15c342e8338fbffd32eaf460f",
+      "platform": "android",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.18/ChatGPT-Profiles-3.0.0-alpha.18-android.apk"
+    }
+  ],
+  "runs": {
+    "macos": 40200430620,
+    "macosRegression": 40199523300,
+    "windows": 40199526065,
+    "android": 40207052350,
+    "androidDevice": 40207569195,
+    "androidReadability": 40207851248,
+    "androidLifecycle": 40207854744
+  },
+  "binarySourceCommits": {
+    "macos": "afb897aa34a54b818b3aedd51b0df4024a132100",
+    "windows": "afb897aa34a54b818b3aedd51b0df4024a132100",
+    "android": "b3d129d757fd7db5ba33e20d80c47832407a5e7d"
+  },
+  "verificationRuns": [
+    {
+      "kind": "macos package",
+      "runId": 40200430620,
+      "sourceCommit": "afb897aa34a54b818b3aedd51b0df4024a132100"
+    },
+    {
+      "kind": "macos regression",
+      "runId": 40199523300,
+      "sourceCommit": "afb897aa34a54b818b3aedd51b0df4024a132100"
+    },
+    {
+      "kind": "windows package and acceptance",
+      "runId": 40199526065,
+      "sourceCommit": "afb897aa34a54b818b3aedd51b0df4024a132100"
+    },
+    {
+      "kind": "hosted desktop artifact inspection",
+      "runId": 40207565553,
+      "sourceCommit": "b3d129d757fd7db5ba33e20d80c47832407a5e7d"
+    },
+    {
+      "kind": "android binary and unit/lint checks",
+      "runId": 40207052350,
+      "sourceCommit": "b3d129d757fd7db5ba33e20d80c47832407a5e7d"
+    },
+    {
+      "kind": "android foreground reuse and handoff",
+      "runId": 40207569195,
+      "sourceCommit": "b3d129d757fd7db5ba33e20d80c47832407a5e7d"
+    },
+    {
+      "kind": "android native typography phone and tablet",
+      "runId": 40207851248,
+      "sourceCommit": "09d9961ab066a1b02ee05073a74b8fe9ff4026bf"
+    },
+    {
+      "kind": "android foreground lifecycle matrix",
+      "runId": 40207854744,
+      "sourceCommit": "09d9961ab066a1b02ee05073a74b8fe9ff4026bf"
+    }
+  ],
+  "validation": "Shipping application/build inputs are unchanged from each platform binary source to the release source; debug fixtures, tests and documentation are checked separately. Desktop installer bodies were hashed in hosted CI and not downloaded locally.",
+  "signing": {
+    "macos": "ad-hoc; not notarized",
+    "windows": "NotSigned",
+    "androidCertificateSha256": "8b6eef928fded91f291ad954e20976b2cc6011b55e8cbec0152695fe1f05cf19"
+  },
+  "compatibility": "Internal app identity, original data folder, Keychain service, updater archive root and file prefix retained. No personal-data migration.",
+  "manualAcceptancePending": [
+    "Android real ChatGPT homepage/manual verification, vendor physical devices, login and personal-data upgrade",
+    "macOS real authenticated attachment/send flow",
+    "Signed Touch ID/keychain flows require unavailable Developer ID certificate"
+  ],
+  "scope": "Unified readable desktop/native UI, restored macOS menu bar, immersive Android conversations, default service-off foreground retention and current release/deployment. Older platform/proxy/engine/delta roadmaps remain outside this iteration.",
+  "nativeAcceptance": "docs/releases/3.0.0-alpha.18-ci.json"
+}

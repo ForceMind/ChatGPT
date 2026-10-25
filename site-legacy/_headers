@@ -1,0 +1,9 @@
+/compat/macos.json
+  Content-Type: application/json
+  Cache-Control: public, max-age=0, must-revalidate
+  X-Content-Type-Options: nosniff
+
+/updates/macos.json
+  Content-Type: application/json
+  Cache-Control: public, max-age=0, must-revalidate
+  X-Content-Type-Options: nosniff

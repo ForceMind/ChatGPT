@@ -4,7 +4,7 @@
   <p>Independent accounts. Immersive browsing. Local asset workflows.</p>
   <p><a href="README.md">简体中文</a> · <strong>English</strong></p>
   <p>
-    <a href="https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.17"><img alt="Latest prerelease" src="https://img.shields.io/github/v/release/ForceMind/ChatGPT?include_prereleases&amp;sort=semver&amp;label=pre-release&amp;labelColor=171717&amp;color=555555" /></a>
+    <a href="https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.18"><img alt="Latest prerelease" src="https://img.shields.io/github/v/release/ForceMind/ChatGPT?include_prereleases&amp;sort=semver&amp;label=pre-release&amp;labelColor=171717&amp;color=555555" /></a>
     <a href="https://github.com/ForceMind/ChatGPT/actions/workflows/android.yml"><img alt="Android CI" src="https://img.shields.io/github/actions/workflow/status/ForceMind/ChatGPT/android.yml?branch=main&amp;label=Android%20CI&amp;labelColor=171717&amp;color=555555" /></a>
     <img alt="Electron 44.9" src="https://img.shields.io/badge/Electron-44.9-555555?logo=electron&amp;logoColor=white&amp;labelColor=171717" />
     <img alt="Java 17" src="https://img.shields.io/badge/Java-17-555555?labelColor=171717" />
@@ -15,7 +15,7 @@
 
 ChatGPT Studio brings independent ChatGPT account spaces, tabs, downloaded assets, previews, conversions and reviewed file tasks into one application. Launch directly into the website with a white, gray and black interface and no address bar. Each device signs in independently; no OpenAI API key is required.
 
-> Previously named **ChatGPT Profiles**. The current public prerelease is **3.0.0-alpha.17** on all three supported platforms. Legacy filenames, internal identifiers and data locations are retained for upgrade compatibility.
+> Previously named **ChatGPT Profiles**. The current public prerelease is **3.0.0-alpha.18** on all three supported platforms. Legacy filenames, internal identifiers and data locations are retained for upgrade compatibility.
 
 ![Actual historical macOS window, before the rename](docs/images/macos-immersive.png)
 
@@ -60,9 +60,9 @@ Devices do not synchronize sign-in credentials. Alternative Android engines rema
 
 | Platform | Version | Downloads | Requirements |
 | --- | --- | --- | --- |
-| macOS · Apple Silicon | 3.0.0-alpha.17 | [DMG](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.17/ChatGPT-Profiles-3.0.0-alpha.17-mac-arm64.dmg) · [ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.17/ChatGPT-Profiles-3.0.0-alpha.17-mac-arm64.zip) | macOS 13+ |
-| Windows · x64 | 3.0.0-alpha.17 | [EXE](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.17/ChatGPT-Profiles-3.0.0-alpha.17-windows-x64-setup.exe) · [Portable ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.17/ChatGPT-Profiles-3.0.0-alpha.17-windows-x64.zip) | Windows 10/11, 64-bit |
-| Android · Phone/tablet | 3.0.0-alpha.17 | [APK](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.17/ChatGPT-Profiles-3.0.0-alpha.17-android.apk) | Android 9+, WebView with multi-profile support |
+| macOS · Apple Silicon | 3.0.0-alpha.18 | [DMG](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.18/ChatGPT-Profiles-3.0.0-alpha.18-mac-arm64.dmg) · [ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.18/ChatGPT-Profiles-3.0.0-alpha.18-mac-arm64.zip) | macOS 13+ |
+| Windows · x64 | 3.0.0-alpha.18 | [EXE](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.18/ChatGPT-Profiles-3.0.0-alpha.18-windows-x64-setup.exe) · [Portable ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.18/ChatGPT-Profiles-3.0.0-alpha.18-windows-x64.zip) | Windows 10/11, 64-bit |
+| Android · Phone/tablet | 3.0.0-alpha.18 | [APK](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.18/ChatGPT-Profiles-3.0.0-alpha.18-android.apk) | Android 9+, WebView with multi-profile support |
 
 **macOS:** open the DMG and drag the app into Applications. Current packages are ad-hoc signed and not notarized. If macOS blocks the first launch, verify the source/checksum and consult [Apple's installation guidance](https://support.apple.com/en-us/102445).
 
@@ -72,11 +72,11 @@ Devices do not synchronize sign-in credentials. Alternative Android engines rema
 
 The [website](https://chatgpt-studio.pages.dev/) provides GitHub downloads and optional third-party acceleration links. Compare downloads with `SHA256SUMS.txt` in the Release. The current version is a **prerelease**; stable-only tools may report no Latest release. The version badge above includes prereleases, and the table links directly to the published assets.
 
-### What changed in alpha.17
+### What changed in alpha.18
 
-Desktop adds interactive HTML temporary storage, explicit per-file HTTPS resource permission, media controls, additional text/code formats and system-app opening. HTML is offline by default. Office files, archives and unsupported codecs depend on installed file associations; originals are preserved.
+App-owned desktop UI now uses clearer type and contrast, with 15px body text, 14px supporting text and a 13px label floor. Narrow windows use a details drawer. The macOS menu bar icon is restored for window, account, workbench and update actions.
 
-Android adds card-based tabs and fixes hidden-page execution throttling. Open pages keep running while the app is foreground. An explicit notification-backed mode can continue tasks in the background. Window recreation reuses pages; process termination requires reloading before restoring saved drafts and reading positions. See the [release manifest](docs/releases/3.0.0-alpha.17.json) for exact binaries, sources and signatures.
+Android opens directly into the webpage with account, conversations and more controls. A searchable conversation sheet supports pinning, renaming, sorting, closing and restoring recent tabs. Browser-style bottom controls and developer diagnostics are removed from normal menus. Foreground switches reuse the original webpage, draft, scroll and generation context without a background service. Window recreation reuses pages; process termination requires reloading before restoring saved drafts and positions. See the [release manifest](docs/releases/3.0.0-alpha.18.json) for exact binaries, sources and signatures.
 
 macOS checks for updates at launch and at noon in Shanghai time. After confirmation it downloads and verifies a complete ZIP. Installation can run immediately, on exit or after the app has been idle under the configured safeguards. Native application updates require a restart; delta updates are not implemented. Windows and Android currently update manually.
 
@@ -133,7 +133,7 @@ Web pages are sandboxed without Node or local administration interfaces. HTML pr
 | Windows | 62 applicable unit checks, 14 applicable interface flows, installation/normal exit/uninstall with account data retained |
 | Android | 66 unit checks, 4 phone and 4 tablet flows; three accounts/eight pages for 330 seconds, lock/Doze/network recovery and a real process restart |
 
-The Android matrix covers actual stock OS/WebView combinations from API28 through API36. Compatible providers on Android 12L, 15 and 16 passed the full lifecycle flow. Six older stock providers only passed the required update-message check; they are not retention successes. OS version alone does not determine support. See the [native CI record](docs/releases/3.0.0-alpha.17-native-ci.json).
+The Android matrix covers actual stock OS/WebView combinations from API28 through API36. Compatible providers on Android 12L, 15 and 16 passed the full lifecycle flow. Six older stock providers only passed the required update-message check; they are not retention successes. OS version alone does not determine support. See the [alpha.17 system compatibility record](docs/releases/3.0.0-alpha.17-native-ci.json). Current native UI and foreground checks are listed in the [alpha.18 CI index](docs/releases/3.0.0-alpha.18-ci.json).
 
 For the eight-page synthetic workload, final background PSS totals were about **234–284 MiB**. Three short CPU samples per group ranged from **1.9–5.8% of one core**. These include app processes, WebView sandboxes and debug transport overhead, and are not real ChatGPT or physical-device measurements.
 
@@ -178,7 +178,7 @@ Cloudflare Pages uses Direct Upload; a Git push does not deploy the site automat
 | --- | --- |
 | Real macOS account upload/first-message/single-send acceptance | Deferred manual acceptance; isolated flows pass |
 | Android real homepage, accounts, voice/files and vendor devices | Deferred manual acceptance; website images are labeled native fixtures |
-| Alpha.17 installers, native tabs/background mode and desktop file opening | Published; [publication/online record](docs/releases/3.0.0-alpha.17-publication.json) |
+| Alpha.18 installers, immersive Android, readable UI and macOS menu bar | Published; [publication/online record](docs/releases/3.0.0-alpha.18-publication.json) |
 | Windows offline snapshots/auto-updates; complete Android offline snapshots | Future batch |
 | Android per-account locale/timezone engine migration | Separate PoC; regular engine is unchanged |
 | System/Chrome passkeys, signed Touch ID and stable signing | Not integrated or dependent on unavailable certificates/device acceptance |

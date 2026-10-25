@@ -1,7 +1,7 @@
 {
   "version": "3.0.0-alpha.18",
-  "status": "macOS and Windows CI candidates verified; Android immersive UI awaits design approval; not a public release",
-  "verifiedAt": "2026-10-25T14:48:20.064510+00:00",
+  "status": "Native Android immersive implementation and fixed-identity APK ready; final UI/lifecycle checks in progress; not yet public",
+  "verifiedAt": "2026-10-25T15:40:31.459823+00:00",
   "branch": "codex/macos-assets-workbench",
   "macos": {
     "sourceCommit": "afb897aa34a54b818b3aedd51b0df4024a132100",
@@ -212,12 +212,10 @@
     "scope": "Shared desktop UI, isolated fixtures, native preferences, 330-second retention and installation/uninstallation; no personal accounts or live ChatGPT acceptance"
   },
   "android": {
-    "status": "design-review",
-    "preview": "http://127.0.0.1:4187/",
-    "previewScope": "Synthetic local interaction prototype; no real login, conversion, upload or send. Source UI not replaced before approval.",
+    "status": "native-validation",
     "lastBuild": {
-      "runId": 40197224922,
-      "sourceCommit": "487840474d4cf83464a770b549931d7b817d782c",
+      "runId": 40207052350,
+      "sourceCommit": "b3d129d757fd7db5ba33e20d80c47832407a5e7d",
       "conclusion": "success"
     },
     "fontProbe": {
@@ -237,7 +235,12 @@
       "skipped": 0,
       "evidence": "docs/benchmarks/android-alpha18-foreground-reuse.json",
       "contract": "20 foreground account switches per device retain the same WebView, draft, scroll and generation context; 2 initial main-frame loads and 0 extra switch loads; background service off."
-    }
+    },
+    "sourceCommit": "b3d129d757fd7db5ba33e20d80c47832407a5e7d",
+    "readabilityRun": 40207851248,
+    "recoveryRun": 40207569195,
+    "foregroundLifecycleRun": 40207854744,
+    "signingInfo": "docs/releases/3.0.0-alpha.18-android.json"
   },
   "delivery": {
     "publicReleaseChanged": false,
@@ -250,8 +253,56 @@
     "androidPreview4187KeptForApproval": true
   },
   "remaining": [
-    "Android immersive design approval",
-    "Native Android implementation and font/UI revalidation, then signed candidate",
-    "Real-account acceptance previously deferred by the user; signed Touch ID remains dependent on Developer ID"
-  ]
+    "Final native typography, foreground/lifecycle and attachment check results",
+    "Release asset promotion, main synchronization and existing website deployment",
+    "Manual real-account/physical-device acceptance remains deferred; signed Touch ID needs Developer ID"
+  ],
+  "desktopInspection": {
+    "runId": 40207565553,
+    "sourceCommit": "b3d129d757fd7db5ba33e20d80c47832407a5e7d",
+    "conclusion": "success",
+    "metadata": {
+      "version": "3.0.0-alpha.18",
+      "verifiedAt": "2026-10-25T15:34:43.261Z",
+      "artifacts": [
+        {
+          "file": "ChatGPT-Profiles-3.0.0-alpha.18-mac-arm64.dmg",
+          "bytes": 154514248,
+          "sha256": "3cd41e7ffe435ad43f52a2eb12fbef80679034a8e3f9e72582562c0f8a02f255",
+          "platform": "macos",
+          "binarySourceCommit": "afb897aa34a54b818b3aedd51b0df4024a132100",
+          "runId": 40200430620
+        },
+        {
+          "file": "ChatGPT-Profiles-3.0.0-alpha.18-mac-arm64.zip",
+          "bytes": 154478821,
+          "sha256": "b270a9ff763345205ade0b16a20599acf435e1dc2904273f7b95eadd1c89dccb",
+          "platform": "macos",
+          "binarySourceCommit": "afb897aa34a54b818b3aedd51b0df4024a132100",
+          "runId": 40200430620
+        },
+        {
+          "file": "ChatGPT-Profiles-3.0.0-alpha.18-windows-x64-setup.exe",
+          "bytes": 130970936,
+          "sha256": "60d5ee520b2bc758f251eecd190c08385ab4a562f0c0a789a828fd8643768db6",
+          "platform": "windows",
+          "binarySourceCommit": "afb897aa34a54b818b3aedd51b0df4024a132100",
+          "runId": 40199526065
+        },
+        {
+          "file": "ChatGPT-Profiles-3.0.0-alpha.18-windows-x64.zip",
+          "bytes": 180735659,
+          "sha256": "b1de0769ca43bb7318bc3f8d8da0e5541125dcc02db83800159d5a8e113bd614",
+          "platform": "windows",
+          "binarySourceCommit": "afb897aa34a54b818b3aedd51b0df4024a132100",
+          "runId": 40199526065
+        }
+      ],
+      "macSourceCommit": "afb897aa34a54b818b3aedd51b0df4024a132100",
+      "windowsSourceCommit": "afb897aa34a54b818b3aedd51b0df4024a132100",
+      "desktopProductInputsUnchanged": true,
+      "installerBodiesDownloadedLocally": false,
+      "scope": "Existing successful GitHub Actions binaries inspected and hashed inside hosted CI only; no Release writes."
+    }
+  }
 }
