@@ -1,6 +1,6 @@
 {
   "version": "3.0.0-alpha.18",
-  "status": "All required desktop, Android native typography/foreground/lifecycle and website-source checks passed; Release promotion pending",
+  "status": "Published alpha.18; main synchronized; canonical and legacy production sites verified",
   "verifiedAt": "2026-10-25T15:53:37.214881+00:00",
   "branch": "codex/macos-assets-workbench",
   "macos": {
@@ -925,8 +925,8 @@
   },
   "delivery": {
     "publicReleaseChanged": true,
-    "websiteChanged": false,
-    "mainUpdated": false,
+    "websiteChanged": true,
+    "mainUpdated": true,
     "localMacInstallersDownloaded": false,
     "localBuildDependenciesInstalled": false,
     "temporaryReportDirectoriesRemoved": true,
@@ -935,12 +935,12 @@
     "androidPreview4187Stopped": true,
     "localSigningToolsRemoved": true,
     "temporarySigningToolLogicalBytesRemoved": 147296902,
-    "releaseUrl": "https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.18"
+    "releaseUrl": "https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.18",
+    "productionBrowserVerificationRun": 40209543845
   },
   "remaining": [
-    "Promote and publish all five validated binaries, sync main, deploy canonical and legacy sites",
-    "Online digest/redirect/feed verification and production browser check",
-    "Manual real-account and physical-device acceptance remains deferred; Developer ID unavailable"
+    "User-deferred real ChatGPT accounts/attachment sending and vendor physical-device acceptance",
+    "Signed Touch ID remains dependent on unavailable Developer ID; older roadmap items remain outside this iteration"
   ],
   "desktopInspection": {
     "runId": 40207565553,
