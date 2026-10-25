@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "version": "3.0.0-alpha.18",
-  "publishedAt": "2026-10-25T15:41:45Z",
+  "publishedAt": "2026-10-25T15:57:04Z",
   "notes": "macOS alpha.18：统一清晰字号与对比度、窄窗详情抽屉，恢复顶部菜单栏图标；保留文件处理、独立账号、登录和加密恢复数据。完整 ZIP 更新仍需重启，Touch ID 密钥保护仍需稳定签名。",
   "files": {
     "arm64": {

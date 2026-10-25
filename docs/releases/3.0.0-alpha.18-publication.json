@@ -1,0 +1,95 @@
+{
+  "version": "3.0.0-alpha.18",
+  "verifiedAt": "2026-10-25T15:57:06.090667+00:00",
+  "release": {
+    "id": 423493514,
+    "url": "https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.18",
+    "tag": "v3.0.0-alpha.18",
+    "publishedAt": "2026-10-25T15:57:04Z",
+    "prerelease": true,
+    "sourceCommit": "09d9961ab066a1b02ee05073a74b8fe9ff4026bf",
+    "promotionRun": 40209120767,
+    "assets": [
+      {
+        "name": "android-build-info.json",
+        "bytes": 921,
+        "digest": "sha256:c27f760a14b3cf81b212f43b469b8881f5b72973d91d100d1d0e618b862f4b11",
+        "state": "uploaded"
+      },
+      {
+        "name": "ChatGPT-Profiles-3.0.0-alpha.18-android.apk",
+        "bytes": 7335383,
+        "digest": "sha256:3d3bda26cf4cd0b699a94a0c6ae17aa86a185cd15c342e8338fbffd32eaf460f",
+        "state": "uploaded"
+      },
+      {
+        "name": "ChatGPT-Profiles-3.0.0-alpha.18-mac-arm64.dmg",
+        "bytes": 154514248,
+        "digest": "sha256:3cd41e7ffe435ad43f52a2eb12fbef80679034a8e3f9e72582562c0f8a02f255",
+        "state": "uploaded"
+      },
+      {
+        "name": "ChatGPT-Profiles-3.0.0-alpha.18-mac-arm64.zip",
+        "bytes": 154478821,
+        "digest": "sha256:b270a9ff763345205ade0b16a20599acf435e1dc2904273f7b95eadd1c89dccb",
+        "state": "uploaded"
+      },
+      {
+        "name": "ChatGPT-Profiles-3.0.0-alpha.18-windows-x64-setup.exe",
+        "bytes": 130970936,
+        "digest": "sha256:60d5ee520b2bc758f251eecd190c08385ab4a562f0c0a789a828fd8643768db6",
+        "state": "uploaded"
+      },
+      {
+        "name": "ChatGPT-Profiles-3.0.0-alpha.18-windows-x64.zip",
+        "bytes": 180735659,
+        "digest": "sha256:b1de0769ca43bb7318bc3f8d8da0e5541125dcc02db83800159d5a8e113bd614",
+        "state": "uploaded"
+      },
+      {
+        "name": "mac-recovery-verification.json",
+        "bytes": 819,
+        "digest": "sha256:13c31f016a9c30eaa723db7bb3b8f6858628d650c5ac57d16adbbd2dd301c953",
+        "state": "uploaded"
+      },
+      {
+        "name": "mac-release-info.json",
+        "bytes": 27814,
+        "digest": "sha256:54d2341a81e199368b39ded5ff13965a12216d3ac94eaaaae08d034c6c76bc4b",
+        "state": "uploaded"
+      },
+      {
+        "name": "mac-ui-verification.json",
+        "bytes": 369,
+        "digest": "sha256:767cb3b2b81cda66a012582fccec53a7b75266cb6ad18e7966a8dd47d4542b53",
+        "state": "uploaded"
+      },
+      {
+        "name": "mac-update-verification.json",
+        "bytes": 731,
+        "digest": "sha256:3e37574c7a87f7ae2dd1aa75664975c82c37e93eb0735e42561bbe91cde0acf3",
+        "state": "uploaded"
+      },
+      {
+        "name": "release-info.json",
+        "bytes": 4925,
+        "digest": "sha256:cf712108e628fa432b26f65057b7c8c474b0e8889ec0565c34a624f37ac3a37a",
+        "state": "uploaded"
+      },
+      {
+        "name": "SHA256SUMS.txt",
+        "bytes": 1203,
+        "digest": "sha256:29f1e1f9460ef19c17c2a38e7fa0f5c96095c4c53264ca73a0d221716be6b54f",
+        "state": "uploaded"
+      },
+      {
+        "name": "windows-build-info.json",
+        "bytes": 27906,
+        "digest": "sha256:6ae248a0c5d048dc9d1768f92899fcae477432ecfb1a8f30a17c06f807ff04c1",
+        "state": "uploaded"
+      }
+    ]
+  },
+  "siteDeploymentStatus": "pending",
+  "scope": "Five binaries built/verified in hosted GitHub Actions; Android signed with the existing identity. No real account acceptance implied."
+}
