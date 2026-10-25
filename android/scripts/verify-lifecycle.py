@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Native debug-app lifecycle acceptance, without instrumentation or DevTools."""
+"""Foreground retention and resume acceptance, without instrumentation or DevTools."""
 import hashlib,json,os,re,shlex,subprocess,sys,time,uuid,xml.etree.ElementTree as ET
 from pathlib import Path
 
 PKG='com.forcemind.chatgpt.profiles.debug'
 OUT=Path(sys.argv[1] if len(sys.argv)>1 else 'app/build/lifecycle-evidence');OUT.mkdir(parents=True,exist_ok=True)
 HOLD=int(os.environ.get('STUDIO_HOLD_SECONDS','330'));assert 10<=HOLD<=900
-report={'scope':'Native debug app and synthetic HTTPS-intercept fixtures; no instrumentation/DevTools attached, no real ChatGPT or personal data','holdSeconds':HOLD,'phases':[],'transportScope':'Three account-specific real loopback TCP/chunked SSE fetch streams and five intercepted finite polling tabs; complete SSE data frames are parsed with a streaming reader, eight independent JS heartbeats and acknowledgements'}
+report={'scope':'Native debug app and synthetic HTTPS-intercept fixtures; no instrumentation/DevTools attached, no real ChatGPT or personal data','holdSeconds':HOLD,'suite':'alpha18-foreground-service-off','phases':[],'transportScope':'Three account-specific real loopback TCP/chunked SSE fetch streams and five intercepted finite polling tabs; complete SSE data frames are parsed with a streaming reader, eight independent JS heartbeats and acknowledgements'}
 def adb(*args,check=True,timeout=30,input=None):
     r=subprocess.run(['adb',*args],input=input,stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=timeout)
     if check and r.returncode:raise RuntimeError('adb '+str(args[:3])+': '+r.stderr.decode(errors='replace')[-800:])
@@ -44,7 +44,7 @@ def tap(predicate,seconds=20):
     return wait(action,seconds)
 def tap_text(label):tap(lambda n:n.get('text')==label)
 def visible_tabs():
-    tap(lambda n:'查看所有 ' in n.get('content-desc',''));wait(lambda:any(n.get('content-desc')=='标签页总览' for n in ui().iter('node')));time.sleep(.4)
+    tap(lambda n:'查看打开的对话' in n.get('content-desc',''));wait(lambda:any(n.get('content-desc')=='打开的对话面板' for n in ui().iter('node')));tap_text('全部账号');time.sleep(.4)
 def open_tab(title):
     visible_tabs()
     for _ in range(8):
@@ -120,19 +120,20 @@ try:
         wait(lambda:len((observations('seed') or {}).get('tabs',{}))==8)
         rotated=observations('seed');assert all(rotated['tabs'][i]['instance']==v['instance'] for i,v in before['tabs'].items())
         adb('shell','settings','put','system','user_rotation','0');time.sleep(2)
-        tap(lambda n:n.get('content-desc','').startswith('账号与操作菜单'));tap_text('保活与诊断');screenshot('browser-diagnostics');tap_text('开启后台任务');tap_text('开启')
-        service=wait(lambda:'isForeground=true' in text('shell','dumpsys','activity','services',PKG,check=False));report['foregroundServiceVerified']=bool(service)
-        background_start=int(time.time()*1000);adb('shell','input','keyevent','HOME');deadline=time.monotonic()+HOLD
+        # Default foreground tab retention must not depend on a service or a user setting.
+        assert 'isForeground=true' not in text('shell','dumpsys','activity','services',PKG,check=False)
+        report['backgroundServiceEnabled']=False
+        foreground_start=int(time.time()*1000);deadline=time.monotonic()+HOLD
         while time.monotonic()<deadline:
-            time.sleep(min(15,max(.1,deadline-time.monotonic())));print(json.dumps({'phase':'native-background','seconds':int((time.time()*1000-background_start)/1000),'tabs':len((observations('seed') or {}).get('tabs',{}))}),flush=True)
+            time.sleep(min(15,max(.1,deadline-time.monotonic())));print(json.dumps({'phase':'native-foreground','seconds':int((time.time()*1000-foreground_start)/1000),'tabs':len((observations('seed') or {}).get('tabs',{}))}),flush=True)
         final=observations('seed');cutoff=final['observedAt']-35000
         def continuously_active(i,e):
             late=[t for t in e['times'] if t>=cutoff]
             return e['instance']==before['tabs'][i]['instance'] and e['documents']==1 and e['navigations']==1 and e['sent']==0 and e['events']>before['tabs'][i]['events'] and final['observedAt']-e['lastSeen']<=10000 and len(late)>=2 and max(late)-min(late)>=8000
-        assert all(continuously_active(i,e) for i,e in final['tabs'].items()),'Background continuity or page identity failed'
-        report.update({'retentionPassed':True,'before':before,'afterBackground':final,'rotationRetained':True,'resources':resources})
-        resources.append(metrics('background final'))
-        adb('shell','input','keyevent','WAKEUP');adb('shell','input','keyevent','82');launch();final=retained_after_resume('return from background',final)
+        assert all(continuously_active(i,e) for i,e in final['tabs'].items()),'Foreground continuity or page identity failed'
+        report.update({'retentionPassed':True,'before':before,'afterForeground':final,'rotationRetained':True,'resources':resources})
+        resources.append(metrics('foreground final'))
+        adb('shell','input','keyevent','HOME');time.sleep(10);adb('shell','input','keyevent','WAKEUP');adb('shell','input','keyevent','82');launch();final=retained_after_resume('return from background without requiring background execution',final)
         print(json.dumps({'phase':'screen-lock-and-resume'}),flush=True);adb('shell','input','keyevent','SLEEP');time.sleep(30);report['lockedObservations']=observations('seed');adb('shell','input','keyevent','WAKEUP');adb('shell','input','keyevent','82');launch();final=retained_after_resume('screen lock 30s then resume',final)
         print(json.dumps({'phase':'battery-saver-doze-and-resume'}),flush=True);adb('shell','dumpsys','battery','unplug');adb('shell','cmd','power','set-mode','1',check=False);adb('shell','input','keyevent','SLEEP');idle=text('shell','dumpsys','deviceidle','force-idle',check=False);report['dozeCommand']=idle;time.sleep(30);(OUT/'device-idle.txt').write_text(text('shell','dumpsys','deviceidle'));(OUT/'device-power.txt').write_text(text('shell','dumpsys','power'));report['idleObservations']=observations('seed');adb('shell','dumpsys','deviceidle','unforce',check=False);adb('shell','dumpsys','battery','reset');adb('shell','cmd','power','set-mode','0',check=False);adb('shell','input','keyevent','WAKEUP');adb('shell','input','keyevent','82');launch();final=retained_after_resume('battery saver and forced Doze then resume; continuous work during Doze not required',final)
         print(json.dumps({'phase':'network-loss-and-resume'}),flush=True)
@@ -150,7 +151,7 @@ try:
         for tab in tabs:
             open_tab(tab['title']);expected=hashlib.sha256(('SAVED_DRAFT_'+tab['id']).encode()).hexdigest();entry=wait(lambda:tab_ready(tab['id'],'verify',expected));assert entry['sent']==0;restored.append(tab['id'])
         report.update({'outcome':'passed','coldRestoredTabs':restored,'pidChanged':True,'coldRestoreNoAutoSend':True});screenshot('cold-restored-page')
-        tap(lambda n:n.get('content-desc','').startswith('账号与操作菜单'));tap_text('保活与诊断');tap_text('关闭后台任务');wait(lambda:'isForeground=true' not in text('shell','dumpsys','activity','services',PKG,check=False),20);report['explicitStopVerified']=True
+        assert 'isForeground=true' not in text('shell','dumpsys','activity','services',PKG,check=False);report['serviceRemainedOff']=True
 except Exception as error:
     report.update({'outcome':'failed','error':str(error)});
     try:screenshot('failure')
