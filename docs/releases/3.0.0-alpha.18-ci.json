@@ -1,7 +1,7 @@
 {
   "version": "3.0.0-alpha.18",
-  "status": "Native Android immersive implementation and fixed-identity APK ready; final UI/lifecycle checks in progress; not yet public",
-  "verifiedAt": "2026-10-25T15:40:31.459823+00:00",
+  "status": "All required desktop, Android native typography/foreground/lifecycle and website-source checks passed; Release promotion pending",
+  "verifiedAt": "2026-10-25T15:53:37.214881+00:00",
   "branch": "codex/macos-assets-workbench",
   "macos": {
     "sourceCommit": "afb897aa34a54b818b3aedd51b0df4024a132100",
@@ -212,21 +212,15 @@
     "scope": "Shared desktop UI, isolated fixtures, native preferences, 330-second retention and installation/uninstallation; no personal accounts or live ChatGPT acceptance"
   },
   "android": {
-    "status": "native-validation",
+    "status": "native-verified-and-signed",
     "lastBuild": {
       "runId": 40207052350,
       "sourceCommit": "b3d129d757fd7db5ba33e20d80c47832407a5e7d",
       "conclusion": "success"
     },
-    "fontProbe": {
-      "runId": 40197229127,
-      "status": "incomplete",
-      "failure": "Search field clipped vertically: layout 69px versus content 66px; fix native padding/height when implementing the approved new design.",
-      "handoffAndRecreationPassed": true
-    },
     "foregroundReuse": {
-      "runId": 40203398117,
-      "sourceCommit": "d6b17689946ac26e42145b26d3bdc751d881b07e",
+      "runId": 40207569195,
+      "sourceCommit": "b3d129d757fd7db5ba33e20d80c47832407a5e7d",
       "status": "completed",
       "conclusion": "success",
       "phoneTests": 4,
@@ -240,7 +234,261 @@
     "readabilityRun": 40207851248,
     "recoveryRun": 40207569195,
     "foregroundLifecycleRun": 40207854744,
-    "signingInfo": "docs/releases/3.0.0-alpha.18-android.json"
+    "signingInfo": "docs/releases/3.0.0-alpha.18-android.json",
+    "priorFontProbe": {
+      "runId": 40197229127,
+      "status": "incomplete",
+      "failure": "Search field clipped vertically: layout 69px versus content 66px; fix native padding/height when implementing the approved new design.",
+      "handoffAndRecreationPassed": true,
+      "priorFailure": "Earlier source used an assumed EditText padding; native padding was fixed in the immersive implementation. Final typography check pending."
+    },
+    "typography": {
+      "runId": 40207851248,
+      "runAttempt": 2,
+      "sourceCommit": "09d9961ab066a1b02ee05073a74b8fe9ff4026bf",
+      "conclusion": "success",
+      "fontScales": [
+        1,
+        1.3,
+        2
+      ],
+      "textFloorSp": 13,
+      "contrastFloor": 4.5,
+      "verticalClippingChecked": true,
+      "sheetActionsReachable": true,
+      "developerDiagnosticsAbsentFromMore": true,
+      "suites": [
+        {
+          "device": "phone",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "device": "tablet",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ],
+      "measurements": [
+        {
+          "device": "phone",
+          "api": 35,
+          "scope": "Native debug UI with synthetic local files and offline WebView fixture; no personal account or real ChatGPT acceptance",
+          "scales": [
+            {
+              "requestedScale": 1,
+              "assets": [
+                9,
+                36.75,
+                34.125
+              ],
+              "skills": [
+                21,
+                36.75,
+                34.125
+              ],
+              "main": [
+                2,
+                36.75,
+                34.125
+              ],
+              "tabs": [
+                10,
+                34.125,
+                34.125
+              ],
+              "screenWidthDp": 411
+            },
+            {
+              "requestedScale": 1.2999999523162842,
+              "assets": [
+                9,
+                49.35,
+                45.15
+              ],
+              "skills": [
+                15,
+                49.35,
+                45.15
+              ],
+              "main": [
+                2,
+                49.35,
+                45.15
+              ],
+              "tabs": [
+                10,
+                45.15,
+                45.15
+              ],
+              "screenWidthDp": 411
+            },
+            {
+              "requestedScale": 2,
+              "assets": [
+                9,
+                68.25,
+                65.625
+              ],
+              "skills": [
+                13,
+                68.25,
+                65.625
+              ],
+              "main": [
+                2,
+                68.25,
+                65.625
+              ],
+              "tabs": [
+                10,
+                65.625,
+                65.625
+              ],
+              "screenWidthDp": 411
+            }
+          ],
+          "metricColumns": [
+            "visibleNativeTextCount",
+            "minimumTextPx",
+            "reference13spPx"
+          ],
+          "webView": "com.google.android.webview 124.0.6367.219"
+        },
+        {
+          "device": "tablet",
+          "api": 35,
+          "scope": "Native debug UI with synthetic local files and offline WebView fixture; no personal account or real ChatGPT acceptance",
+          "scales": [
+            {
+              "requestedScale": 1,
+              "assets": [
+                9,
+                21,
+                19.5
+              ],
+              "skills": [
+                43,
+                21,
+                19.5
+              ],
+              "main": [
+                2,
+                21,
+                19.5
+              ],
+              "tabs": [
+                10,
+                19.5,
+                19.5
+              ],
+              "screenWidthDp": 1067
+            },
+            {
+              "requestedScale": 1.2999999523162842,
+              "assets": [
+                9,
+                28.199999,
+                25.800001
+              ],
+              "skills": [
+                41,
+                28.199999,
+                25.800001
+              ],
+              "main": [
+                2,
+                28.199999,
+                25.800001
+              ],
+              "tabs": [
+                10,
+                25.800001,
+                25.800001
+              ],
+              "screenWidthDp": 1067
+            },
+            {
+              "requestedScale": 2,
+              "assets": [
+                9,
+                39,
+                37.5
+              ],
+              "skills": [
+                29,
+                39,
+                37.5
+              ],
+              "main": [
+                2,
+                39,
+                37.5
+              ],
+              "tabs": [
+                10,
+                37.5,
+                37.5
+              ],
+              "screenWidthDp": 1067
+            }
+          ],
+          "metricColumns": [
+            "visibleNativeTextCount",
+            "minimumTextPx",
+            "reference13spPx"
+          ],
+          "webView": "com.google.android.webview 124.0.6367.219"
+        }
+      ],
+      "artifactId": 12604298759,
+      "artifactSha256": "e23487848bd0ea9a604277b365d2cffa97dc9d82bbd084d4444e150c33a8e661",
+      "infrastructureRetry": "First attempt could not download the unchanged official Gradle distribution (HTTP 403); no assertion failure or source change in that attempt."
+    },
+    "websiteCaptures": [
+      {
+        "file": "site/assets/android-tabs.png",
+        "bytes": 128006,
+        "sha256": "1a916d9e5f31b89ad92f2ddd1adc64d0ed88326dd72d322ec8ec335cb15983ad",
+        "scope": "Actual native debug UI with isolated local fixtures, not a real authenticated ChatGPT homepage"
+      },
+      {
+        "file": "site/assets/android-tablet-tabs.png",
+        "bytes": 129990,
+        "sha256": "9ea82a0264f51b3c72258de764286abfc028a758bd8959bc038715210ccf69ac",
+        "scope": "Actual native debug UI with isolated local fixtures, not a real authenticated ChatGPT homepage"
+      },
+      {
+        "file": "site/assets/android-assets.png",
+        "bytes": 69481,
+        "sha256": "bc0d5050c474f70984ea6d84728776c7d9c9edac8b79e5da4fddec22a77c78ba",
+        "scope": "Actual native debug UI with isolated local fixtures, not a real authenticated ChatGPT homepage"
+      },
+      {
+        "file": "site/assets/android-skills.png",
+        "bytes": 346184,
+        "sha256": "aa2419f39e1f34ec9be49494eb74ad02f1cf345b7e1c114683ff24d1b99693b2",
+        "scope": "Actual native debug UI with isolated local fixtures, not a real authenticated ChatGPT homepage"
+      }
+    ],
+    "foregroundLifecycle": {
+      "runId": 40207854744,
+      "sourceCommit": "09d9961ab066a1b02ee05073a74b8fe9ff4026bf",
+      "conclusion": "success",
+      "apis": [
+        32,
+        35,
+        36
+      ],
+      "visitedPages": 8,
+      "holdSeconds": 330,
+      "backgroundServiceEnabled": false,
+      "scope": "Official emulator stock compatible WebViews; synthetic loopback SSE/polling and native UI, not physical devices or real ChatGPT"
+    }
   },
   "delivery": {
     "publicReleaseChanged": false,
@@ -250,12 +498,15 @@
     "localBuildDependenciesInstalled": false,
     "temporaryReportDirectoriesRemoved": true,
     "oldMacPreview4188Stopped": true,
-    "androidPreview4187KeptForApproval": true
+    "androidPreview4187KeptForApproval": false,
+    "androidPreview4187Stopped": true,
+    "localSigningToolsRemoved": true,
+    "temporarySigningToolLogicalBytesRemoved": 147296902
   },
   "remaining": [
-    "Final native typography, foreground/lifecycle and attachment check results",
-    "Release asset promotion, main synchronization and existing website deployment",
-    "Manual real-account/physical-device acceptance remains deferred; signed Touch ID needs Developer ID"
+    "Promote and publish all five validated binaries, sync main, deploy canonical and legacy sites",
+    "Online digest/redirect/feed verification and production browser check",
+    "Manual real-account and physical-device acceptance remains deferred; Developer ID unavailable"
   ],
   "desktopInspection": {
     "runId": 40207565553,
@@ -304,5 +555,17 @@
       "installerBodiesDownloadedLocally": false,
       "scope": "Existing successful GitHub Actions binaries inspected and hashed inside hosted CI only; no Release writes."
     }
+  },
+  "websiteSourceCheck": {
+    "runId": 40208278077,
+    "sourceCommit": "cb7b563417d6a07f00402ace62b7facb8b2e51bd",
+    "conclusion": "success",
+    "widths": [
+      1440,
+      390
+    ],
+    "downloadAndAcceleratedLinks": 5,
+    "clipboardSha256": true,
+    "credentiallessFeed": true
   }
 }

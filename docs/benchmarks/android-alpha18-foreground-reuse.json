@@ -1,8 +1,8 @@
 {
   "version": "3.0.0-alpha.18",
-  "sourceCommit": "d6b17689946ac26e42145b26d3bdc751d881b07e",
-  "ciRun": "https://github.com/ForceMind/ChatGPT/actions/runs/40203398117",
-  "verifiedAt": "2026-10-25T14:54:54.875974+00:00",
+  "sourceCommit": "b3d129d757fd7db5ba33e20d80c47832407a5e7d",
+  "ciRun": "https://github.com/ForceMind/ChatGPT/actions/runs/40207569195",
+  "verifiedAt": "2026-10-25T15:45:18.989655+00:00",
   "scope": "Android 15 (API 35) official emulator, phone and tablet; isolated debug data and offline HTML fixtures. Not real ChatGPT account or all-device acceptance.",
   "foregroundReuse": {
     "backgroundServiceEnabled": false,
@@ -17,11 +17,12 @@
   },
   "phoneAndTabletSuites": [
     {
-      "path": "outputs/androidTest-results/connected/debug/TEST-emulator-5554 - 15-_app-.xml",
-      "tests": "4",
-      "failures": "0",
-      "errors": "0",
-      "skipped": "0",
+      "device": "phone",
+      "path": "device-evidence/phone-test-results/connected/debug/TEST-emulator-5554 - 15-_app-.xml",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
       "cases": [
         {
           "name": "draftsAndReadingRestoreAcrossRecreationAndPreserveConflicts",
@@ -50,11 +51,12 @@
       ]
     },
     {
-      "path": "device-evidence/phone-test-results/connected/debug/TEST-emulator-5554 - 15-_app-.xml",
-      "tests": "4",
-      "failures": "0",
-      "errors": "0",
-      "skipped": "0",
+      "device": "tablet",
+      "path": "outputs/androidTest-results/connected/debug/TEST-emulator-5554 - 15-_app-.xml",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
       "cases": [
         {
           "name": "draftsAndReadingRestoreAcrossRecreationAndPreserveConflicts",
@@ -88,5 +90,14 @@
     "native attachment bytes/target/single send",
     "Activity recreation and same-account tab identity/custom titles"
   ],
-  "nativeUiStatus": "New immersive Android layout is a separate unapproved proposal; existing native layout not presented as the new UI."
+  "nativeUiStatus": "Immersive native Android UI implemented and approved for direct release; foreground reuse/handoff/recreation passed on both phone and tablet.",
+  "previousProof": {
+    "runId": 40203398117,
+    "sourceCommit": "d6b17689946ac26e42145b26d3bdc751d881b07e",
+    "scope": "Before immersive native UI; retained as earlier evidence"
+  },
+  "artifact": {
+    "id": 12604891831,
+    "archiveSha256": "62a019c0c51b8ac5e3945aa32968d7e6ef484129d75844e0d6bed7934b22e815"
+  }
 }
