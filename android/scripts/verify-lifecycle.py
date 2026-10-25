@@ -6,7 +6,7 @@ from pathlib import Path
 PKG='com.forcemind.chatgpt.profiles.debug'
 OUT=Path(sys.argv[1] if len(sys.argv)>1 else 'app/build/lifecycle-evidence');OUT.mkdir(parents=True,exist_ok=True)
 HOLD=int(os.environ.get('STUDIO_HOLD_SECONDS','330'));assert 10<=HOLD<=900
-report={'scope':'Native debug app and synthetic HTTPS-intercept fixtures; no instrumentation/DevTools attached, no real ChatGPT or personal data','holdSeconds':HOLD,'phases':[],'transportScope':'Three account-specific Java-intercepted SSE streams and five finite polling tabs, avoiding interception-reader pool exhaustion; eight independent JS heartbeat and network acknowledgements'}
+report={'scope':'Native debug app and synthetic HTTPS-intercept fixtures; no instrumentation/DevTools attached, no real ChatGPT or personal data','holdSeconds':HOLD,'phases':[],'transportScope':'Three account-specific Java-intercepted SSE fetch streams and five finite polling tabs; complete SSE data frames are parsed with a streaming reader, eight independent JS heartbeats and network acknowledgements'}
 def adb(*args,check=True,timeout=30,input=None):
     r=subprocess.run(['adb',*args],input=input,stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=timeout)
     if check and r.returncode:raise RuntimeError('adb '+str(args[:3])+': '+r.stderr.decode(errors='replace')[-800:])
@@ -65,7 +65,7 @@ def processes():
     rows=text('shell','ps','-A','-o','PID,NAME').splitlines();owned=[]
     for line in rows[1:]:
         parts=line.split(None,1)
-        if len(parts)==2 and parts[0].isdigit() and parts[1].startswith(PKG):owned.append((int(parts[0]),parts[1]))
+        if len(parts)==2 and parts[0].isdigit() and (parts[1].startswith(PKG) or ':sandboxed_process' in parts[1]):owned.append((int(parts[0]),parts[1]))
     return owned
 def metrics(label):
     owned=processes();samples=[]
@@ -88,7 +88,7 @@ def metrics(label):
         if not m:
             s=text('shell','dumpsys','meminfo',str(pid),check=False);m=re.search(r'TOTAL PSS:\s*(\d+)',s) or re.search(r'^\s*TOTAL\s+(\d+)',s,re.M)
         if m:pss.append({'pid':pid,'name':name,'pssMiB':round(int(m.group(1))/1024,2)})
-    return {'label':label,'processes':pss,'pssMiB':round(sum(p['pssMiB'] for p in pss),2),'cpuPercentOfOneCoreSamples':samples,'ownership':'Processes with target package prefix, including named sandboxed children; raw process list retained for coverage review','caveat':'Emulator PSS and short CPU samples with fixture beacon overhead, not physical-device or real ChatGPT measurements'}
+    return {'label':label,'processes':pss,'pssMiB':round(sum(p['pssMiB'] for p in pss),2),'cpuPercentOfOneCoreSamples':samples,'ownership':'Target package plus sandboxed WebView renderer processes in an isolated emulator; raw process list retained for coverage review. Any other provider client would overcount rather than silently omit renderer memory.','caveat':'Emulator PSS and short CPU samples with fixture beacon overhead, not physical-device or real ChatGPT measurements'}
 try:
     adb('shell','am','force-stop',PKG);configure('seed');launch();environment=wait(lambda:private('lifecycle-environment.json'));report['environment']=environment
     if not environment['multiProfile']:
@@ -100,7 +100,7 @@ try:
         resources=[];report['resources']=resources
         for n,tab in enumerate(tabs):
             if n:open_tab(tab['title'])
-            wait(lambda:tab_ready(tab['id'],'seed'));time.sleep(1)
+            wait(lambda:tab_ready(tab['id'],'seed') if (tab_ready(tab['id'],'seed') or {}).get('events',0)>0 else None);time.sleep(1)
             if n in [0,3,7]:resources.append(metrics(str(n+1)+' visited tabs'))
         visible_tabs();screenshot('native-tab-overview');tap_text('完成')
         before=observations('seed');assert len(before['tabs'])==8
