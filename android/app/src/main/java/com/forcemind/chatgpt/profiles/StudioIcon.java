@@ -12,6 +12,13 @@ final class StudioIcon extends Drawable {
         switch(name){
             case "chevron"->path(canvas,7,10,12,15,17,10);case "back"->path(canvas,14,5,7,12,14,19);
             case "plus"->{path(canvas,12,5,12,19);path(canvas,5,12,19,12);}
+            case "check"->path(canvas,5,12,9,16,19,6);
+            case "chat"->{path(canvas,3,4,21,4,21,17,9,17,4,21,4,17,3,17,3,4);path(canvas,7,9,17,9);}
+            case "folder"->path(canvas,3,5,10,5,12,8,21,8,21,20,3,20,3,5);
+            case "file"->{path(canvas,5,3,14,3,19,8,19,21,5,21,5,3);path(canvas,14,3,14,9,19,9);path(canvas,8,14,16,14);}
+            case "edit"->path(canvas,15,3,21,9,9,21,3,21,3,15,15,3);
+            case "spark"->path(canvas,12,3,15,9,21,12,15,15,12,21,9,15,3,12,9,9,12,3);
+            case "account"->{canvas.drawCircle(12,8,4,paint);canvas.drawArc(4,13,20,27,180,180,false,paint);}
             case "close"->{path(canvas,7,7,17,17);path(canvas,7,17,17,7);}
             case "search"->{canvas.drawCircle(10,10,6,paint);path(canvas,15,15,20,20);}
             case "history"->{canvas.drawArc(3,3,21,21,210,310,false,paint);path(canvas,3,4,3,11,10,11);path(canvas,12,7,12,12,15,14);}

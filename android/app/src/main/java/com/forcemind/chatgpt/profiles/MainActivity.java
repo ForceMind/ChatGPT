@@ -75,7 +75,7 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
     private ProgressBar progress;
     private BrowserMemory memory;
     private FrameLayout browserArea;
-    private LinearLayout bottomToolbar,undoBar;
+    private LinearLayout undoBar;
     private TextView tabCounter;
     private TabOverview overview;
     private boolean keyboardVisible;
@@ -126,8 +126,8 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
             }
             if (!cleared.isEmpty()) { WorkspaceState next = state.copy(); next.pendingDeletes.removeAll(cleared); store.save(next); state = next; }
             try{if(memory.recovery==null)memory.recovery=new PageRecoveryManager(this);recovery=memory.recovery;recovery.attach(this);}catch(Exception e){toast("本地页面恢复暂不可用，网页可继续使用。请手动备份草稿。");}
-            rebindLivePages();ready = true; showCurrent();acceptHandoffIntent(getIntent());
-            if(bundle!=null&&bundle.getBoolean("tabsOverview")){showTabOverview();overview.restoreUI(bundle.getString("tabFilter","all"),bundle.getString("tabQuery",""),bundle.getInt("tabPosition",0));}
+            boolean retainedPages=!views.isEmpty();rebindLivePages();ready = true; showCurrent();acceptHandoffIntent(getIntent());
+            if(retainedPages&&bundle!=null&&bundle.getBoolean("tabsOverview")){showTabOverview();overview.restoreUI(bundle.getString("tabFilter","all"),bundle.getString("tabQuery",""),bundle.getInt("tabPosition",0));}
         } catch (Exception e) { fail("无法读取账号记录", e); }
     }
 
@@ -136,27 +136,23 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
         root.setOnApplyWindowInsetsListener((v,insets)->{
             if(Build.VERSION.SDK_INT>=30){android.graphics.Insets bars=insets.getInsets(WindowInsets.Type.systemBars()|WindowInsets.Type.displayCutout()),ime=insets.getInsets(WindowInsets.Type.ime());v.setPadding(bars.left,bars.top,bars.right,Math.max(bars.bottom,ime.bottom));keyboardVisible=insets.isVisible(WindowInsets.Type.ime());}
             else{v.setPadding(insets.getSystemWindowInsetLeft(),insets.getSystemWindowInsetTop(),insets.getSystemWindowInsetRight(),insets.getSystemWindowInsetBottom());keyboardVisible=insets.getSystemWindowInsetBottom()>dp(150);}
-            if(bottomToolbar!=null)bottomToolbar.setVisibility(keyboardVisible||overview!=null?View.GONE:View.VISIBLE);return insets;
+            return insets;
         });
-        header=new LinearLayout(this);header.setGravity(Gravity.CENTER_VERTICAL);header.setPadding(dp(10),dp(6),dp(8),dp(6));header.setMinimumHeight(StudioTypography.lineBox(this,15,2,12,60));header.setBackgroundColor(Color.WHITE);root.addView(header,new LinearLayout.LayoutParams(-1,-2));
+        header=new LinearLayout(this);header.setGravity(Gravity.CENTER_VERTICAL);header.setPadding(dp(10),dp(6),dp(8),dp(6));header.setMinimumHeight(dp(56));header.setBackgroundColor(Color.WHITE);root.addView(header,new LinearLayout.LayoutParams(-1,-2));
         progress=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);progress.setProgressTintList(android.content.res.ColorStateList.valueOf(INK));progress.setVisibility(View.INVISIBLE);root.addView(progress,new LinearLayout.LayoutParams(-1,dp(2)));
         taskBanner=new LinearLayout(this);taskBanner.setGravity(Gravity.CENTER_VERTICAL);taskBanner.setBackgroundColor(GRAY);taskBanner.setVisibility(View.GONE);root.addView(taskBanner,new LinearLayout.LayoutParams(-1,-2));taskText=text("",12);taskText.setMaxLines(3);taskText.setPadding(dp(10),dp(6),dp(6),dp(6));taskBanner.addView(taskText,new LinearLayout.LayoutParams(0,-2,1));taskAction=button("停止","停止自动任务");taskBanner.addView(taskAction,new LinearLayout.LayoutParams(-2,StudioTypography.controlHeight(this)));TextView details=button("任务","查看网页任务");taskBanner.addView(details,new LinearLayout.LayoutParams(-2,StudioTypography.controlHeight(this)));details.setOnClickListener(v->showHandoffHistory());taskAction.setOnClickListener(v->{if(bannerJob==null)return;if(HandoffStore.active(bannerJob.optString("status")))try{handoffs.cancel(bannerJob.optString("id"),state.activeAccount);}catch(Exception e){toast("无法停止任务，请查看任务记录");}else taskBanner.setVisibility(View.GONE);});
         browserArea=new FrameLayout(this);root.addView(browserArea,new LinearLayout.LayoutParams(-1,0,1));content=new FrameLayout(this);browserArea.addView(content,new FrameLayout.LayoutParams(-1,-1));
-        bottomToolbar=new LinearLayout(this);bottomToolbar.setGravity(Gravity.CENTER);bottomToolbar.setPadding(dp(12),0,dp(12),0);bottomToolbar.setMinimumHeight(dp(56));root.addView(bottomToolbar,new LinearLayout.LayoutParams(-1,-2));
-        ImageButton back=iconButton("back","后退");back.setOnClickListener(v->{WebView web=currentWeb();if(web!=null&&web.canGoBack())web.goBack();});bottomToolbar.addView(back,new LinearLayout.LayoutParams(0,StudioTypography.controlHeight(this),1));
-        ImageButton add=iconButton("plus","新建标签页");add.setOnClickListener(v->{if(change(next->next.addTab(next.current())))showCurrent();});bottomToolbar.addView(add,new LinearLayout.LayoutParams(0,StudioTypography.controlHeight(this),1));
-        tabCounter=new TabCountButton(this);tabCounter.setText("1");tabCounter.setContentDescription("查看所有标签页");tabCounter.setTextSize(15);tabCounter.setTypeface(null,android.graphics.Typeface.BOLD);tabCounter.setOnClickListener(v->showTabOverview());tabCounter.setOnLongClickListener(v->{if(ready&&!fatal)showTabMenu(state.activeAccount,state.current().activeTab);return true;});bottomToolbar.addView(tabCounter,new LinearLayout.LayoutParams(0,StudioTypography.controlHeight(this),1));
-        ImageButton more=iconButton("more","账号与操作菜单");more.setOnClickListener(v->showAccountMenu());bottomToolbar.addView(more,new LinearLayout.LayoutParams(0,StudioTypography.controlHeight(this),1));setContentView(root);
+        setContentView(root);
     }
+
     private ImageButton iconButton(String name,String label){ImageButton b=new ImageButton(this);b.setImageDrawable(new StudioIcon(name));b.setScaleType(android.widget.ImageView.ScaleType.FIT_CENTER);b.setBackgroundColor(Color.TRANSPARENT);b.setPadding(dp(13),dp(13),dp(13),dp(13));b.setContentDescription(label);b.setMinimumHeight(dp(48));return b;}
     private void renderHeader(){
         if(!ready||fatal)return;WorkspaceState.Account account=state.current();header.removeAllViews();
-        LinearLayout select=new LinearLayout(this);select.setGravity(Gravity.CENTER_VERTICAL);select.setPadding(dp(6),0,dp(8),0);select.setMinimumHeight(dp(48));select.setClickable(true);select.setFocusable(true);select.setContentDescription("切换账号，当前："+account.name);select.setOnClickListener(v->chooseAccount());
-        TextView avatar=text(account.name.substring(0,account.name.offsetByCodePoints(0,1)),12);avatar.setGravity(Gravity.CENTER);avatar.setTypeface(null,android.graphics.Typeface.BOLD);avatar.setBackground(round(GRAY));select.addView(avatar,new LinearLayout.LayoutParams(StudioTypography.lineBox(this,14,1,8,32),StudioTypography.lineBox(this,14,1,8,32)));
-        LinearLayout copy=new LinearLayout(this);copy.setOrientation(LinearLayout.VERTICAL);TextView name=text(account.name,15);name.setTypeface(null,android.graphics.Typeface.BOLD);name.setSingleLine(true);name.setMaxWidth(dp(Math.max(40,Math.min(180,getResources().getConfiguration().screenWidthDp-160))));name.setEllipsize(TextUtils.TruncateAt.END);copy.addView(name);TextView detail=text("独立浏览空间",10);StudioTypography.meta(detail);copy.addView(detail);LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(0,-2,1);cp.setMargins(dp(10),0,dp(7),0);select.addView(copy,cp);
-        View dot=new View(this);GradientDrawable dotShape=new GradientDrawable();dotShape.setColor(Color.parseColor(account.color));dotShape.setShape(GradientDrawable.OVAL);dot.setBackground(dotShape);LinearLayout.LayoutParams dp=new LinearLayout.LayoutParams(dp(6),dp(6));dp.setMargins(0,0,dp(8),0);select.addView(dot,dp);ImageView arrow=new ImageView(this);arrow.setImageDrawable(new StudioIcon("chevron"));select.addView(arrow,new LinearLayout.LayoutParams(dp(16),dp(16)));header.addView(select,new LinearLayout.LayoutParams(0,-2,1));
-        ImageButton assets=iconButton("assets","资产与下载文件");assets.setOnClickListener(v->startActivity(new Intent(this,AssetWorkbenchActivity.class).putExtra(AssetWorkbenchActivity.ACCOUNT,state.activeAccount)));header.addView(assets,new LinearLayout.LayoutParams(dp(48),dp(48)));
-        int count=state.accounts.stream().mapToInt(a->a.tabs.size()).sum();tabCounter.setText(String.valueOf(count));tabCounter.setContentDescription("标签页："+account.current().title+"，查看所有 "+count+" 个标签页");
+        LinearLayout select=new LinearLayout(this);select.setGravity(Gravity.CENTER_VERTICAL);select.setPadding(dp(6),0,dp(6),0);select.setMinimumHeight(dp(48));select.setClickable(true);select.setFocusable(true);select.setContentDescription("切换账号，当前："+account.name);select.setOnClickListener(v->chooseAccount());
+        View dot=new View(this);GradientDrawable point=new GradientDrawable();point.setColor(Color.parseColor(account.color));point.setShape(GradientDrawable.OVAL);dot.setBackground(point);LinearLayout.LayoutParams pointSize=new LinearLayout.LayoutParams(dp(6),dp(6));pointSize.rightMargin=dp(8);select.addView(dot,pointSize);
+        TextView name=text(account.name,15);name.setGravity(Gravity.START|Gravity.CENTER_VERTICAL);name.setTypeface(null,android.graphics.Typeface.BOLD);name.setMaxLines(2);name.setEllipsize(TextUtils.TruncateAt.END);select.addView(name,new LinearLayout.LayoutParams(0,-2,1));ImageView arrow=new ImageView(this);arrow.setImageDrawable(new StudioIcon("chevron"));LinearLayout.LayoutParams ap=new LinearLayout.LayoutParams(dp(14),dp(14));ap.leftMargin=dp(7);select.addView(arrow,ap);header.addView(select,new LinearLayout.LayoutParams(0,-2,1));
+        tabCounter=button("对话 "+account.tabs.size(),"标签页："+account.current().title+"，查看打开的对话");tabCounter.setBackground(round(GRAY));tabCounter.setOnClickListener(v->showTabOverview());tabCounter.setOnLongClickListener(v->{if(ready&&!fatal)showTabMenu(state.activeAccount,state.current().activeTab);return true;});LinearLayout.LayoutParams counterSize=new LinearLayout.LayoutParams(-2,-2);counterSize.leftMargin=dp(8);header.addView(tabCounter,counterSize);
+        ImageButton more=iconButton("more","更多功能");more.setOnClickListener(v->showAccountMenu());header.addView(more,new LinearLayout.LayoutParams(dp(44),StudioTypography.controlHeight(this)));
     }
     private void rebindLivePages(){
         int retained=0;for(String id:new ArrayList<>(views.keySet())){String account=memory.accounts.get(id),storage=memory.storage.get(id);WorkspaceState.Account found=null;for(WorkspaceState.Account a:state.accounts)if(a.id.equals(account)&&a.storageId.equals(storage)&&(a.tabs.stream().anyMatch(t->t.id.equals(id))||a.closedTabs.stream().anyMatch(t->t.id.equals(id)))){found=a;break;}if(found==null){memory.destroy(id);continue;}
@@ -165,15 +161,15 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
     }
     private void showCurrent(){
         if(!ready||fatal)return;if(recovery!=null)recovery.checkpointVisible();cancelRequests();renderHeader();WorkspaceState.Account account=state.current();WorkspaceState.Tab tab=account.current();recentClosed.remove(tab.id);pruneRecent();
-        try{for(Map.Entry<String,WebView> held:views.entrySet())selectPage(held.getValue(),overview==null&&held.getKey().equals(tab.id));memory.refreshExecutionPolicy();WebView web=views.get(tab.id);if(web==null){web=makeWebView(account.id,tab.id,account.storageId);web.loadUrl(tab.url);}for(WorkspaceState.Account a:state.accounts)for(WorkspaceState.Tab t:a.tabs){WebView existing=views.get(t.id);if(existing==null)continue;if(existing.getParent()!=content){if(existing.getParent() instanceof ViewGroup)((ViewGroup)existing.getParent()).removeView(existing);content.addView(existing,new FrameLayout.LayoutParams(-1,-1));}selectPage(existing,overview==null&&t.id.equals(tab.id));}web.bringToFront();if(overview==null)web.requestFocus();web.onResume();if(recovery!=null){if(web.getProgress()==100)recovery.ready(web);recovery.visible();}if(overview!=null)overview.refresh();}catch(Exception e){fail("网页空间无法打开",e);}
+        try{for(Map.Entry<String,WebView> held:views.entrySet())selectPage(held.getValue(),held.getKey().equals(tab.id));memory.refreshExecutionPolicy();WebView web=views.get(tab.id);if(web==null){web=makeWebView(account.id,tab.id,account.storageId);web.loadUrl(tab.url);}for(WorkspaceState.Account a:state.accounts)for(WorkspaceState.Tab t:a.tabs){WebView existing=views.get(t.id);if(existing==null)continue;if(existing.getParent()!=content){if(existing.getParent() instanceof ViewGroup)((ViewGroup)existing.getParent()).removeView(existing);content.addView(existing,new FrameLayout.LayoutParams(-1,-1));}selectPage(existing,t.id.equals(tab.id));}web.bringToFront();if(overview==null)web.requestFocus();web.onResume();if(recovery!=null){if(web.getProgress()==100)recovery.ready(web);recovery.visible();}if(overview!=null)overview.refresh();}catch(Exception e){fail("对话暂时无法打开",e);}
     }
-    private void selectPage(WebView web,boolean selected){if(web instanceof RetainedWebView)((RetainedWebView)web).selectPage(selected);else web.setVisibility(selected?View.VISIBLE:View.INVISIBLE);}
+    private void selectPage(WebView web,boolean selected){if(web instanceof RetainedWebView){((RetainedWebView)web).blockInput(overview!=null);((RetainedWebView)web).selectPage(selected);}else web.setVisibility(selected?View.VISIBLE:View.INVISIBLE);}
 
     private void showTabOverview(){
         if(!ready||fatal||overview!=null)return;if(handoffs!=null&&handoffs.controller()!=null&&handoffs.controller().ownedBy(this))handoffs.controller().cancel("已打开标签总览，自动发送已停止，请检查目标对话");
-        ((InputMethodManager)getSystemService(INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(root.getWindowToken(),0);bottomToolbar.setVisibility(View.GONE);WebView behind=currentWeb();if(behind!=null)selectPage(behind,false);
+        ((InputMethodManager)getSystemService(INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(root.getWindowToken(),0);
         overview=new TabOverview(this,new TabOverview.Host(){
-            public WorkspaceState state(){return state;}public boolean loaded(String id){return views.containsKey(id);}public Bitmap thumbnail(String id){return memory.thumbnails.get(id);}
+            public WorkspaceState state(){return state;}
             public void activate(String account,String tab){if(change(next->{next.activeAccount=account;next.find(account).activeTab=tab;})){closeOverview();showCurrent();}}
             public void add(String account){if(change(next->{next.activeAccount=account;next.addTab(next.find(account));})){closeOverview();showCurrent();}}
             public void close(String account,String tab){closeTab(account,tab);}
@@ -182,17 +178,13 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
             public void rename(String account,String id,String title){if(change(next->{WorkspaceState.Tab tab=next.find(account).tabs.stream().filter(t->t.id.equals(id)).findFirst().orElseThrow();tab.title=title;tab.customTitle=true;}))refreshTabs();}
             public void move(String account,String id,int direction){if(change(next->{WorkspaceState.Account a=next.find(account);int from=-1;for(int n=0;n<a.tabs.size();n++)if(a.tabs.get(n).id.equals(id))from=n;int to=from+direction;if(from>=0&&to>=0&&to<a.tabs.size())java.util.Collections.swap(a.tabs,from,to);}))refreshTabs();}
             public void done(){closeOverview();}
-        });browserArea.addView(overview,new FrameLayout.LayoutParams(-1,-1));
+        });browserArea.addView(overview,new FrameLayout.LayoutParams(-1,-1));WebView behind=currentWeb();if(behind!=null)selectPage(behind,true);
     }
-    private void closeOverview(){if(overview==null)return;((InputMethodManager)getSystemService(INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(overview.getWindowToken(),0);browserArea.removeView(overview);overview=null;bottomToolbar.setVisibility(keyboardVisible?View.GONE:View.VISIBLE);WebView web=currentWeb();if(web!=null){selectPage(web,true);web.requestFocus();}}
+    private void closeOverview(){if(overview==null)return;((InputMethodManager)getSystemService(INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(overview.getWindowToken(),0);browserArea.removeView(overview);overview=null;WebView web=currentWeb();if(web!=null){selectPage(web,true);web.requestFocus();}}
     private void refreshTabs(){renderHeader();if(overview!=null)overview.refresh();}
     private void restoreTab(String account,String id){if(change(next->{WorkspaceState.Account a=next.find(account);if(a.tabs.size()>=WorkspaceState.MAX_TABS)throw new IllegalStateException("标签页已达上限");WorkspaceState.Tab tab=a.closedTabs.stream().filter(t->t.id.equals(id)).findFirst().orElseThrow();a.closedTabs.remove(tab);a.tabs.add(tab);a.activeTab=id;next.activeAccount=account;})){if(undoBar!=null){browserArea.removeView(undoBar);undoBar=null;}closeOverview();showCurrent();}}
     private void showUndo(String account,String tab,String title){
         if(undoBar!=null)browserArea.removeView(undoBar);LinearLayout bar=new LinearLayout(this);undoBar=bar;bar.setGravity(Gravity.CENTER_VERTICAL);bar.setPadding(dp(14),dp(3),dp(4),dp(3));bar.setBackground(round(INK));TextView label=text("已关闭 "+title,12);label.setTextColor(Color.WHITE);label.setMaxLines(2);bar.addView(label,new LinearLayout.LayoutParams(0,-2,1));TextView undo=button("撤销","撤销关闭标签页");undo.setTextColor(Color.WHITE);bar.addView(undo,new LinearLayout.LayoutParams(dp(56),dp(44)));undo.setOnClickListener(v->restoreTab(account,tab));FrameLayout.LayoutParams p=new FrameLayout.LayoutParams(-1,-2,Gravity.BOTTOM);p.setMargins(dp(16),0,dp(16),dp(overview==null?14:72));browserArea.addView(bar,p);long ticket=++undoSerial;recentHandler.postDelayed(()->{if(ticket==undoSerial&&undoBar==bar){browserArea.removeView(bar);undoBar=null;}},6000);
-    }
-    private void captureThumbnail(String tab){
-        if(!resumed||overview!=null||!active(tab))return;WebView web=views.get(tab);if(web==null||web.getWidth()<1||web.getHeight()<1||!web.isShown()||web.getProgress()<100)return;long now=android.os.SystemClock.elapsedRealtime();if(now-memory.thumbnailTimes.getOrDefault(tab,0L)<5000)return;memory.thumbnailTimes.put(tab,now);int[] location=new int[2];web.getLocationInWindow(location);int height=Math.min(web.getHeight(),web.getWidth()*4/5);Bitmap bitmap=Bitmap.createBitmap(192,Math.max(1,height*192/web.getWidth()),Bitmap.Config.ARGB_8888);long epoch=pageEpochs.getOrDefault(tab,0L);
-        try{android.view.PixelCopy.request(getWindow(),new Rect(location[0],location[1],location[0]+web.getWidth(),location[1]+height),bitmap,result->{if(result==android.view.PixelCopy.SUCCESS&&resumed&&overview==null&&active(tab)&&views.get(tab)==web&&pageEpochs.getOrDefault(tab,0L)==epoch){memory.thumbnails.put(tab,bitmap);while(memory.thumbnails.size()>20)memory.thumbnails.remove(memory.thumbnails.keySet().iterator().next());}},recentHandler);}catch(RuntimeException ignored){}
     }
     private void showDiagnostics(){
         String provider="未知";try{android.content.pm.PackageInfo info=WebView.getCurrentWebViewPackage();if(info!=null)provider=info.packageName+" "+info.versionName;}catch(RuntimeException ignored){}PowerManager power=(PowerManager)getSystemService(POWER_SERVICE);
@@ -230,7 +222,7 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
                 return true;
             }
             @Override public void onPageFinished(WebView view, String url) {
-                rememberURL(accountId,tabId,url);if(recovery!=null)recovery.ready(view);view.postDelayed(()->captureThumbnail(tabId),600);
+                rememberURL(accountId,tabId,url);if(recovery!=null)recovery.ready(view);
             }
             @Override public void doUpdateVisitedHistory(WebView view,String url,boolean reload){rememberURL(accountId,tabId,url);if(recovery!=null)recovery.ready(view);}
             @Override public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
@@ -291,38 +283,24 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
     private AssetDownloads assetDownloads;
     private AssetDownloads assetDownloads(){if(memory.assetDownloads==null)memory.assetDownloads=new AssetDownloads(getApplicationContext());assetDownloads=memory.assetDownloads;return assetDownloads;}
     private DownloadHelper downloads() { if(memory.downloads==null)memory.downloads=new DownloadHelper(this);else memory.downloads.attach(this);downloadHelper=memory.downloads;return downloadHelper; }
-    private void showAccountMenu() {
-        if(!ready||fatal){showDiagnostics();return;}
-        String[] actions = {"切换账号", "添加账号", "管理当前账号", "重新加载", "后退", "前进", "ChatGPT 首页", "恢复关闭的标签页", "资产与下载文件", "Skill 能力库","网页处理任务","本地恢复草稿","管理标签页","保活与诊断"};
-        new AlertDialog.Builder(this).setTitle(state.current().name).setItems(actions, (d, index) -> {
-            WebView web = currentWeb();
-            switch (index) {
-                case 0 -> chooseAccount(); case 1 -> editAccount(null); case 2 -> manageAccount();
-                case 3 -> {memory.diagnostics.event("reload-request",state.activeAccount,state.current().activeTab,null);showCurrent();if(currentWeb()!=null)currentWeb().reload();}
-                case 4 -> { if (web != null && web.canGoBack()) web.goBack(); }
-                case 5 -> { if (web != null && web.canGoForward()) web.goForward(); }
-                case 6 -> { showCurrent(); currentWeb().loadUrl(NavigationPolicy.HOME); }
-                case 7 -> {
-                    if (state.current().closedTabs.isEmpty()) { toast("没有可恢复的标签页"); return; }
-                    if (change(s -> { WorkspaceState.Account a = s.current(); if (a.tabs.size() >= WorkspaceState.MAX_TABS) throw new IllegalStateException("标签页已达上限"); WorkspaceState.Tab t = a.closedTabs.remove(a.closedTabs.size() - 1); a.tabs.add(t); a.activeTab = t.id; })) showCurrent();
-                }
-                case 8 -> startActivity(new Intent(this,AssetWorkbenchActivity.class).putExtra(AssetWorkbenchActivity.ACCOUNT,state.activeAccount));
-                case 9 -> startActivity(new Intent(this,AssetWorkbenchActivity.class).putExtra(AssetWorkbenchActivity.ACCOUNT,state.activeAccount).putExtra("skills",true));
-                case 10 -> showHandoffHistory();
-                case 11 -> showLocalDraft();
-                case 12 -> showTabOverview();case 13 -> showDiagnostics();
-
-            }
-        }).show();
+    private void showAccountMenu(){
+        if(!ready||fatal){toast("账号正在准备，请稍候");return;}
+        StudioSheet sheet=new StudioSheet(this,"更多","");
+        sheet.row("新开对话","","plus",()->{sheet.dismiss();if(change(next->next.addTab(next.current())))showCurrent();});
+        sheet.row("资产库","","folder",()->{sheet.dismiss();startActivity(new Intent(this,AssetWorkbenchActivity.class).putExtra(AssetWorkbenchActivity.ACCOUNT,state.activeAccount));});
+        sheet.row("能力库","","spark",()->{sheet.dismiss();startActivity(new Intent(this,AssetWorkbenchActivity.class).putExtra(AssetWorkbenchActivity.ACCOUNT,state.activeAccount).putExtra("skills",true));});
+        sheet.row("处理记录","","file",()->{sheet.dismiss();showHandoffHistory();});
+        sheet.row("账号管理","","account",()->{sheet.dismiss();manageAccount();});sheet.show();
     }
-    private void chooseAccount() {
-        CharSequence[] labels = new CharSequence[state.accounts.size()];
-        for (int i = 0; i < labels.length; i++) {
-            WorkspaceState.Account a = state.accounts.get(i);
-            SpannableString s = new SpannableString("● " + a.name + (a.id.equals(state.activeAccount) ? "  ✓" : "") + (a.email.trim().isEmpty() ? "" : "\n    " + a.email));
-            s.setSpan(new ForegroundColorSpan(Color.parseColor(a.color)), 0, 1, 0); labels[i] = s;
+    private void chooseAccount(){
+        StudioSheet sheet=new StudioSheet(this,"切换账号","");
+        for(WorkspaceState.Account account:state.accounts){
+            LinearLayout row=sheet.row(account.name,account.email,"",()->{sheet.dismiss();if(change(next->next.activeAccount=account.id)){closeOverview();showCurrent();}});
+            View dot=new View(this);GradientDrawable point=new GradientDrawable();point.setColor(Color.parseColor(account.color));point.setShape(GradientDrawable.OVAL);dot.setBackground(point);LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(dp(6),dp(6));p.rightMargin=dp(12);row.addView(dot,0,p);
+            if(account.id.equals(state.activeAccount)){ImageView check=new ImageView(this);check.setImageDrawable(new StudioIcon("check"));row.addView(check,new LinearLayout.LayoutParams(dp(20),dp(20)));}
         }
-        new AlertDialog.Builder(this).setTitle("切换账号").setItems(labels, (d, i) -> { String id = state.accounts.get(i).id; if (change(s -> s.activeAccount = id)){closeOverview();showCurrent();} }).setNeutralButton("添加账号", (d, w) -> editAccount(null)).show();
+        sheet.action("添加账号",true,()->{sheet.dismiss();editAccount(null);});
+        sheet.action("管理当前账号",false,()->{sheet.dismiss();manageAccount();});sheet.show();
     }
     private void editAccount(String accountId) {
         WorkspaceState.Account old = accountId == null ? null : state.find(accountId);
@@ -345,7 +323,8 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
     }
     private void manageAccount() {
         String id = state.activeAccount;
-        new AlertDialog.Builder(this).setTitle(state.current().name).setItems(new String[]{"编辑名称与邮箱备注", "向前移动账号", "向后移动账号", "清除本机登录数据", "移除账号"}, (d, i) -> {
+        new AlertDialog.Builder(this).setTitle(state.current().name).setItems(new String[]{"编辑名称与邮箱备注", "向前移动账号", "向后移动账号", "清除本机登录数据", "移除账号", "本机草稿"}, (d, i) -> {
+            if(i==5){showLocalDraft();return;}
             if (i == 0) editAccount(id);
             else if (i == 1 || i == 2) { if (change(s -> { int index = s.accounts.indexOf(s.find(id)), target = index + (i == 1 ? -1 : 1); if (target >= 0 && target < s.accounts.size()) java.util.Collections.swap(s.accounts, index, target); })) renderHeader(); }
             else new AlertDialog.Builder(this).setTitle(i == 3 ? "清除本机登录数据？" : "移除此账号？")
