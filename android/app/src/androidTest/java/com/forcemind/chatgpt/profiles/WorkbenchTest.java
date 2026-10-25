@@ -114,7 +114,11 @@ public class WorkbenchTest {
         chooseSpinner(0,label);
     }
     private void chooseSpinner(int index,String label)throws Exception{
-        until(()->{android.view.accessibility.AccessibilityNodeInfo root=InstrumentationRegistry.getInstrumentation().getUiAutomation().getRootInActiveWindow();if(root==null)return false;assertEquals(context.getPackageName(),String.valueOf(root.getPackageName()));List<android.view.accessibility.AccessibilityNodeInfo> found=new ArrayList<>();spinnerNodes(root,found);if(found.size()<=index)return false;tapNode(found.get(index));return true;});tapNative(label);
+        AtomicReference<Rect> previous=new AtomicReference<>();
+        try{
+            until(()->{android.view.accessibility.AccessibilityNodeInfo root=InstrumentationRegistry.getInstrumentation().getUiAutomation().getRootInActiveWindow();if(root==null)return false;assertEquals(context.getPackageName(),String.valueOf(root.getPackageName()));List<android.view.accessibility.AccessibilityNodeInfo> found=new ArrayList<>();spinnerNodes(root,found);if(found.size()<=index||!found.get(index).isVisibleToUser()||!found.get(index).isEnabled())return false;Rect bounds=new Rect();found.get(index).getBoundsInScreen(bounds);Rect old=previous.getAndSet(bounds);if(bounds.isEmpty()||!bounds.equals(old))return false;tapNode(found.get(index));return true;});tapNative(label);
+            until(()->{android.view.accessibility.AccessibilityNodeInfo root=InstrumentationRegistry.getInstrumentation().getUiAutomation().getRootInActiveWindow();if(root==null)return false;List<android.view.accessibility.AccessibilityNodeInfo> found=new ArrayList<>();spinnerNodes(root,found);if(found.size()<=index)return false;for(android.view.accessibility.AccessibilityNodeInfo text:found.get(index).findAccessibilityNodeInfosByText(label))if(label.contentEquals(text.getText()==null?"":text.getText()))return true;return false;});
+        }catch(AssertionError error){try{screenshot("android-spinner-failed-"+index+".png");}catch(Exception ignored){}throw new AssertionError("Native spinner selection failed: "+label,error);}
     }
     private JSONObject throughRenderMenu(ActivityScenario<AssetWorkbenchActivity> scene,AssetLedger ledger,JSONObject source,String format)throws Exception{
         String id=source.getString("id");AtomicBoolean ready=new AtomicBoolean();
