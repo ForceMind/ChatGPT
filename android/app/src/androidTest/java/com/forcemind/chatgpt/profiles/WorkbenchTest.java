@@ -421,7 +421,7 @@ public class WorkbenchTest {
             until(()->{android.view.accessibility.AccessibilityNodeInfo root=InstrumentationRegistry.getInstrumentation().getUiAutomation().getRootInActiveWindow();return root!=null&&setAccessibleText(root,"标签名称","窗口保活命名");});tapNative("保存");
             scene.onActivity(a->find(a.getWindow().getDecorView(),EditText.class).setText("窗口保活命名"));scene.recreate();
             scene.onActivity(a->{assertSame(original.get(),a.recoveryCurrentWeb());assertEquals("窗口保活命名",find(a.getWindow().getDecorView(),EditText.class).getText().toString());assertEquals(1,find(a.getWindow().getDecorView(),android.widget.GridView.class).getAdapter().getCount());});
-            WorkspaceState saved=WorkspaceFiles.read(context.getFilesDir());assertTrue(saved.find(account).current().customTitle);assertEquals("窗口保活命名",saved.find(account).current().title);assertEquals(2,loads.get());screenshot("android-tabs-native-overview.png");tapNative("完成");assertEquals(mark,recoveryPage(scene).getString("mark"));screenshot("android-browser-native-shell.png");
+            WorkspaceState saved=WorkspaceFiles.read(context.getFilesDir());assertTrue(saved.find(account).current().customTitle);assertEquals("窗口保活命名",saved.find(account).current().title);assertEquals(2,loads.get());scene.onActivity(a->find(a.getWindow().getDecorView(),EditText.class).setText(""));screenshot("android-tabs-native-overview.png");tapNative("完成");assertEquals(mark,recoveryPage(scene).getString("mark"));screenshot("android-browser-native-shell.png");
         }finally{MainActivity.handoffFixture=null;}
     }
     private boolean setAccessibleText(android.view.accessibility.AccessibilityNodeInfo node,String label,String text){

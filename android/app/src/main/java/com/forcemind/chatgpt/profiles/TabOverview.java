@@ -64,7 +64,7 @@ final class TabOverview extends LinearLayout {
             LinearLayout footer=new LinearLayout(getContext());footer.setGravity(Gravity.CENTER_VERTICAL);footer.setPadding(dp(10),0,0,0);root.addView(footer,new LayoutParams(-1,dp(54)));title.setMaxLines(2);title.setEllipsize(TextUtils.TruncateAt.END);footer.addView(title,new LayoutParams(0,-2,1));footer.addView(more,new LayoutParams(dp(44),dp(44)));
         }
     }
-    private ImageButton icon(String name,String label){ImageButton b=new ImageButton(getContext());b.setImageDrawable(new StudioIcon(name));b.setPadding(dp(13),dp(13),dp(13),dp(13));b.setBackgroundColor(Color.TRANSPARENT);b.setContentDescription(label);return b;}
+    private ImageButton icon(String name,String label){ImageButton b=new ImageButton(getContext());b.setImageDrawable(new StudioIcon(name));b.setScaleType(ImageView.ScaleType.FIT_CENTER);b.setPadding(dp(13),dp(13),dp(13),dp(13));b.setBackgroundColor(Color.TRANSPARENT);b.setContentDescription(label);return b;}
     private Button button(String label){Button b=new Button(getContext());b.setText(label);b.setTextSize(13);b.setAllCaps(false);b.setTextColor(Color.BLACK);b.setBackgroundColor(Color.TRANSPARENT);b.setMinHeight(dp(44));return b;}
     private TextView text(String value,int size){TextView t=new TextView(getContext());t.setText(value);t.setTextSize(size);t.setTextColor(0xff171717);return t;}
     private GradientDrawable round(int fill,int stroke,int radius){GradientDrawable d=new GradientDrawable();d.setColor(fill);d.setCornerRadius(dp(radius));if(stroke!=0)d.setStroke(dp(stroke==0xff171717?2:1),stroke);return d;}
