@@ -1,0 +1,162 @@
+{
+  "version": "3.0.0-alpha.17",
+  "name": "ChatGPT Studio",
+  "verifiedAt": "2026-10-25T06:33:08.449166+00:00",
+  "releaseURL": "https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.17",
+  "publishedAt": "2026-10-25T06:24:48Z",
+  "isDraft": false,
+  "isPrerelease": true,
+  "tagCommit": "42f455cf8a5b2413d447ae17b88e6912c1aa2507",
+  "manifest": "docs/releases/3.0.0-alpha.17.json",
+  "assetCount": 13,
+  "assetIntegrity": [
+    {
+      "file": "android-build-info.json",
+      "bytes": 898,
+      "githubSHA256": "sha256:92cdd3ae0be8fa917e84bffd2706f9e8163d3d67a6d3ea57947f54e01402fdf6",
+      "state": "uploaded"
+    },
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.17-android.apk",
+      "bytes": 7331287,
+      "githubSHA256": "sha256:fe6f64eafdee554f297114a447af6ad4a60b6f1885bef8b4b764135665258ff3",
+      "state": "uploaded"
+    },
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.17-mac-arm64.dmg",
+      "bytes": 154517193,
+      "githubSHA256": "sha256:07b227b1fe4cea59a8768c774676bbd372916a82de97ba067e83b63c5edba023",
+      "state": "uploaded"
+    },
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.17-mac-arm64.zip",
+      "bytes": 154471608,
+      "githubSHA256": "sha256:06fdbfa404794aa287f1d3c60bf85b39134b28e2cbd059fe806cb569e4e4c383",
+      "state": "uploaded"
+    },
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.17-windows-x64-setup.exe",
+      "bytes": 130964371,
+      "githubSHA256": "sha256:6f6b5e5381d1f8b8ce6fc7865b6bce780314a734ba4ed37cd2b243eac9b0b54a",
+      "state": "uploaded"
+    },
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.17-windows-x64.zip",
+      "bytes": 180726200,
+      "githubSHA256": "sha256:e259d20f5626cfcc132dcc48a7228fa2e3a590dbf92945c2555ff70594f2cd35",
+      "state": "uploaded"
+    },
+    {
+      "file": "mac-recovery-verification.json",
+      "bytes": 819,
+      "githubSHA256": "sha256:7306e19a5d7eef0eb4a5ffa2808ea33e1459cc249ca2d6993dbb2b770799c072",
+      "state": "uploaded"
+    },
+    {
+      "file": "mac-release-info.json",
+      "bytes": 27601,
+      "githubSHA256": "sha256:536350a2d04b94042336f4cb001a830bcd9c413106d242b9ebbc9060305dafa6",
+      "state": "uploaded"
+    },
+    {
+      "file": "mac-ui-verification.json",
+      "bytes": 377,
+      "githubSHA256": "sha256:5c1ba379588d05b9332f70826ef2f509e610dc786499aa39786fa48dd628833a",
+      "state": "uploaded"
+    },
+    {
+      "file": "mac-update-verification.json",
+      "bytes": 731,
+      "githubSHA256": "sha256:d9d86c3b99394f797b4c378e50560803243959a01d85b6ebf0a12b2b124059a6",
+      "state": "uploaded"
+    },
+    {
+      "file": "release-info.json",
+      "bytes": 4714,
+      "githubSHA256": "sha256:d8a4d1a1cd0c048389337df44012e8904f8d6b7bc49630c0f56828ef3212b108",
+      "state": "uploaded"
+    },
+    {
+      "file": "SHA256SUMS.txt",
+      "bytes": 1203,
+      "githubSHA256": "sha256:98572a89ed1f4a8d5f96326ecf924f1db96d6f88d2a02e05e0ae5aac3f3ec723",
+      "state": "uploaded"
+    },
+    {
+      "file": "windows-build-info.json",
+      "bytes": 27693,
+      "githubSHA256": "sha256:cfd18d2ca64b9289488bc27397c005a32fd6782321a9eb1d47b3dee9ed14a317",
+      "state": "uploaded"
+    }
+  ],
+  "binaryVerification": {
+    "runs": [
+      {
+        "kind": "macos package",
+        "runId": 40112367543,
+        "sourceCommit": "b631d2a0565c6857b515b3ff2c98bd1b85ab7985"
+      },
+      {
+        "kind": "macos regression",
+        "runId": 40111820234,
+        "sourceCommit": "de5d1461f8c4878c247173ebbfc5904c7790a8bb"
+      },
+      {
+        "kind": "windows package and acceptance",
+        "runId": 40111830238,
+        "sourceCommit": "de5d1461f8c4878c247173ebbfc5904c7790a8bb"
+      },
+      {
+        "kind": "hosted desktop artifact inspection",
+        "runId": 40162507100,
+        "sourceCommit": "393c4d667dc5a05418fa256bbb919e24f3947b03"
+      },
+      {
+        "kind": "android binary and current checks",
+        "runId": 40167544661,
+        "sourceCommit": "42f455cf8a5b2413d447ae17b88e6912c1aa2507"
+      },
+      {
+        "kind": "android phone and tablet acceptance",
+        "runId": 40167546226,
+        "sourceCommit": "42f455cf8a5b2413d447ae17b88e6912c1aa2507"
+      },
+      {
+        "kind": "android lifecycle matrix",
+        "runId": 40167311620,
+        "sourceCommit": "91947c705b4a1f8cdae4f6ac4accf310e104535d"
+      }
+    ],
+    "binarySourceCommits": {
+      "macos": "b631d2a0565c6857b515b3ff2c98bd1b85ab7985",
+      "windows": "de5d1461f8c4878c247173ebbfc5904c7790a8bb",
+      "android": "42f455cf8a5b2413d447ae17b88e6912c1aa2507"
+    },
+    "desktopBodiesDownloadedLocally": false,
+    "androidBuild": "GitHub Actions; original release signing performed locally without key export"
+  },
+  "promotion": {
+    "runId": 40168711337,
+    "sourceCommit": "0bd60d6d84d62a6b20d1c4a82c427b9195dfc101",
+    "conclusion": "success",
+    "all13AssetsVerifiedBeforePublication": true
+  },
+  "scopeConfirmed": "User explicitly selected the most recent iteration only; older iPhone/iPad, proxy/VLESS, passkeys and delta-update roadmap remains outside this release.",
+  "site": {
+    "status": "pending deployment",
+    "project": "chatgpt-profiles",
+    "expectedVersion": "3.0.0-alpha.17",
+    "domains": [
+      "https://chatgpt.xincreates.com",
+      "https://chatgpt-profiles.pages.dev"
+    ]
+  },
+  "manualAcceptancePending": [
+    "Android real ChatGPT homepage/manual verification, vendor physical devices, login and personal-data upgrade",
+    "macOS real authenticated attachment/send flow",
+    "Signed Touch ID/keychain flows require unavailable Developer ID certificate"
+  ],
+  "cleanup": {
+    "status": "pending final verification and cleanup"
+  }
+}

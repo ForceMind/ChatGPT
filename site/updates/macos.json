@@ -1,13 +1,13 @@
 {
   "schema": 1,
-  "version": "3.0.0-alpha.16",
-  "publishedAt": "2026-10-24T14:48:48Z",
-  "notes": "ChatGPT Studio 更名版：七阶段文件任务、指令完整性检查、资产双击与右键管理；保留原登录数据目录与加密身份。Touch ID 密钥保护仍需稳定签名；完整 ZIP 更新需要重启。",
+  "version": "3.0.0-alpha.17",
+  "publishedAt": "2026-10-25T06:24:48Z",
+  "notes": "macOS alpha.17：交互 HTML 临时存储与 HTTPS 资源开关、音视频和更多文件格式、系统应用打开；验证完整 Skill 指令和一次发送，保留旧登录与加密恢复。完整 ZIP 更新需要重启；Touch ID 密钥保护仍需稳定签名。",
   "files": {
     "arm64": {
-      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.16/ChatGPT-Profiles-3.0.0-alpha.16-mac-arm64.zip",
-      "size": 154466122,
-      "sha256": "d561df811361a20e4a2f1d64d121d029948c9355c7e4f743deb0831aa6a947ca"
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.17/ChatGPT-Profiles-3.0.0-alpha.17-mac-arm64.zip",
+      "size": 154471608,
+      "sha256": "06fdbfa404794aa287f1d3c60bf85b39134b28e2cbd059fe806cb569e4e4c383"
     }
   }
 }

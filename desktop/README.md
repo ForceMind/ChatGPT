@@ -1,14 +1,14 @@
 # ChatGPT Studio Desktop
 
-项目已更名为 **ChatGPT Studio**；当前公开版本为 alpha.16，安装文件中的旧名称为升级兼容保留。内部包名、加密身份和数据目录保留以兼容升级。
+项目已更名为 **ChatGPT Studio**；当前公开版本为 alpha.17，安装文件中的旧名称为升级兼容保留。内部包名、加密身份和数据目录保留以兼容升级。
 
-当前公开预发布版：macOS / Windows `3.0.0-alpha.16`。提供 macOS Apple Silicon 的 DMG / ZIP、Windows x64 的 EXE / ZIP；历史安装包保留。Electron `44.9.1`、React `19.3.1`、TypeScript。各设备独立使用，本版不需要自建服务。
+当前公开预发布版：macOS / Windows `3.0.0-alpha.17`。提供 macOS Apple Silicon 的 DMG / ZIP、Windows x64 的 EXE / ZIP；历史安装包保留。Electron `44.9.1`、React `19.3.1`、TypeScript。各设备独立使用，本版不需要自建服务。
 
-下载见[GitHub Release](https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.16)。当前 `main` 包含工作台、恢复、新图标与跨平台源码。真正退出后需要重新加载网页并恢复保存状态；macOS alpha.12 先显示本地只读快照，具体范围见下文。
+下载见[GitHub Release](https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.17)。当前 `main` 包含工作台、恢复、新图标与跨平台源码。真正退出后需要重新加载网页并恢复保存状态；macOS alpha.12 先显示本地只读快照，具体范围见下文。
 
-## alpha.17 开发候选：文件打开
+## alpha.17 文件打开
 
-此批仍在开发分支和 Actions 验证，不属于上方 alpha.16 公开包。文件可从资产卡片双击或右键打开；预览底部提供系统应用打开与另存为。
+文件可从资产卡片双击或右键打开；预览底部提供系统应用打开与另存为。本批能力包含在 alpha.17 安装包中。
 
 | 文件类型 | 内置查看 | 后备入口 |
 | --- | --- | --- |
@@ -21,7 +21,7 @@
 
 HTML 的临时网页空间不共享工作台接口或账号 Cookie；关闭预览后不保证网页内部状态保留。允许联网后，HTML 可以向外部服务请求或发送数据；此选择不自动沿用到下一次打开。预览不是完整的网页工程导入器，未导入的本地关联文件不会自动获得访问权。脚本、程序和安装包不会通过系统打开入口直接执行，可查看文本或在文件管理器选择合适应用。
 
-[候选验证记录](../docs/releases/3.0.0-alpha.17-ci.json)包含 Mac 24 项、Windows 14 项界面流程及各平台专属跳过项。HTML 交互、离线 / 联网隔离、实际 WAV 元数据、异常编码与文件损坏均使用隔离夹具测试；系统应用委派检查使用 OS handler stub，没有启动第三方办公软件，也未读取用户原 HTML。Mac DMG / ZIP 与 Windows EXE / ZIP 保留在对应 Actions 作业，尚未公开发布。
+[桌面验证记录](../docs/releases/3.0.0-alpha.17-ci.json)包含 Mac 24 项、Windows 14 项界面流程及各平台专属跳过项。HTML 交互、离线 / 联网隔离、实际 WAV 元数据、异常编码与文件损坏使用隔离夹具测试；系统应用委派使用 OS handler stub，没有启动第三方办公软件，也未读取用户原 HTML。准确包摘要与最终发布源见[发布索引](../docs/releases/3.0.0-alpha.17.json)。
 
 ## macOS alpha.14 验证版：任务流与资产操作
 

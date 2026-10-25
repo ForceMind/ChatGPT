@@ -6,16 +6,16 @@
 
 [项目主页](https://chatgpt.xincreates.com/) · [下载安装](#下载与安装) · [使用指南](#开始使用) · [路线图](#路线图与待完成事项) · [问题反馈](https://github.com/ForceMind/ChatGPT/issues)
 
-> 项目已从 ChatGPT Profiles 更名为 **ChatGPT Studio**。当前三端公开预发布版为 **3.0.0-alpha.16**；下表提供对应的安装包。历史文件名、应用标识和数据目录保留，用于兼容既有登录、加密记录与更新流程。
+> 项目已从 ChatGPT Profiles 更名为 **ChatGPT Studio**。当前三端公开预发布版为 **3.0.0-alpha.17**；下表提供对应的安装包。历史文件名、应用标识和数据目录保留，用于兼容既有登录、加密记录与更新流程。
 
 ![macOS 公开版实际窗口（更名前）](docs/images/macos-immersive.png)
 
 ## 产品能力
 
 - **账号空间**：独立 Cookie、网站存储和登录状态；账号名称、邮箱备注与色点帮助区分空间。
-- **标签管理**：按账号切换、新建、固定、排序、关闭与恢复。桌面端不主动冻结或丢弃已打开标签；Android 支持页面复用，长期后台保活仍在完善。
+- **标签管理**：按账号切换、新建、固定、排序、关闭与恢复。桌面端不主动冻结或丢弃已打开标签；Android 提供手机 / 平板卡片总览、窗口重建保留与可选后台任务模式。
 - **资产工作台**：按账号归档下载与导入文件，支持搜索、分类、收藏、标签、派生关系和可恢复回收站。
-- **预览与转换**：查看图片、PDF、HTML、Markdown、文本与 CSV；转换生成新副本，保留原文件。
+- **预览与转换**：查看图片、PDF、HTML、Markdown、文本、CSV 及支持的音视频；更多专用格式可交给系统应用。转换生成新副本，保留原文件。
 - **任务流**：选择文件、目标账号与 Skill，通过网页发起处理任务；保留进度、失败位置及结果不确定状态，不自动重复发送。
 - **能力库**：内置 120 个项目任务 Skill，包含步骤、交付结构与质量检查。智能体库入口已保留，当前没有预置角色。
 - **本地恢复**：保存账号、标签、草稿、阅读位置与工作台状态；macOS 另提供加密的只读对话快照及确认更新。
@@ -28,9 +28,9 @@ ChatGPT Studio 是独立维护的非官方客户端，不附带 ChatGPT 订阅�
 
 | 平台 | 版本 | 下载 | 要求 |
 | --- | --- | --- | --- |
-| macOS · Apple Silicon | 3.0.0-alpha.16 | [DMG](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.16/ChatGPT-Profiles-3.0.0-alpha.16-mac-arm64.dmg) · [ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.16/ChatGPT-Profiles-3.0.0-alpha.16-mac-arm64.zip) | macOS 13+ |
-| Windows · x64 | 3.0.0-alpha.16 | [EXE](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.16/ChatGPT-Profiles-3.0.0-alpha.16-windows-x64-setup.exe) · [免安装 ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.16/ChatGPT-Profiles-3.0.0-alpha.16-windows-x64.zip) | Windows 10 / 11 · 64 位 |
-| Android · 手机 / 平板 | 3.0.0-alpha.16 | [APK](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.16/ChatGPT-Profiles-3.0.0-alpha.16-android.apk) | Android 9+，WebView 支持多档案 |
+| macOS · Apple Silicon | 3.0.0-alpha.17 | [DMG](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.17/ChatGPT-Profiles-3.0.0-alpha.17-mac-arm64.dmg) · [ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.17/ChatGPT-Profiles-3.0.0-alpha.17-mac-arm64.zip) | macOS 13+ |
+| Windows · x64 | 3.0.0-alpha.17 | [EXE](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.17/ChatGPT-Profiles-3.0.0-alpha.17-windows-x64-setup.exe) · [免安装 ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.17/ChatGPT-Profiles-3.0.0-alpha.17-windows-x64.zip) | Windows 10 / 11 · 64 位 |
+| Android · 手机 / 平板 | 3.0.0-alpha.17 | [APK](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.17/ChatGPT-Profiles-3.0.0-alpha.17-android.apk) | Android 9+，WebView 支持多档案 |
 
 **macOS**：打开 DMG，将应用拖入“应用程序”。当前为 ad-hoc 签名，尚未经过 Apple 公证；首次启动被系统阻止时，核对来源和摘要后参阅 [Apple 安装说明](https://support.apple.com/zh-cn/102445)。
 
@@ -42,9 +42,9 @@ ChatGPT Studio 是独立维护的非官方客户端，不附带 ChatGPT 订阅�
 
 ### 版本与升级
 
-macOS alpha.14 的七阶段任务流、富文本写入改进、资产双击 / 右键菜单及 Android alpha.15 图标适配，均已并入 alpha.16 公开包。[此前 CI 记录](https://github.com/ForceMind/ChatGPT/actions/runs/39963836108)作为历史验证资料保留。上方下载及 Mac 更新清单已同步到本版本。
+**alpha.17** 完善桌面文件打开：交互式 HTML 可使用临时网页存储，默认离线，外部 HTTPS 资源由用户为当前文件开启；增加音视频、更多文本 / 代码格式与系统应用打开。办公文件、压缩包和浏览器不能解码的格式依赖本机已关联应用，原文件始终保留。
 
-开发分支的 **桌面 alpha.17 候选**已通过 CI，新增交互式 HTML 的临时存储、明确的联网资源开关、音视频预览、更多文本 / 代码格式，以及系统应用打开入口。办公文件、压缩包和浏览器不能解码的格式通过系统应用查看；原文件保留。Android alpha.17 候选另修正 Skill 启动时的网页准备时机，卡片式标签管理仍处于交互预览阶段；持续保活与逐系统版本测试列入下一轮计划。上述候选内容尚未进入本页的公开安装包，具体通过项与待验边界见[候选验证记录](docs/releases/3.0.0-alpha.17-ci.json)。
+Android 同步提供卡片式标签管理、账号筛选、搜索、重命名、固定、排序与恢复，修正隐藏页面的执行节流。App 在前台时保持已载入标签运行；需要后台继续任务时，可主动开启带通知的后台模式。窗口重建保留原页面，进程终止后恢复已保存草稿与阅读位置。安装包、源码、签名与验证范围见[发布索引](docs/releases/3.0.0-alpha.17.json)。
 
 Mac 从 alpha.12 起支持启动与每天上海时间 12:00 检查更新，确认后后台下载、校验完整 ZIP，可选择立即、下次退出或应用空闲时安装。原生程序更新需要重启，暂不支持增量更新；Windows / Android 当前手动升级。
 
@@ -59,6 +59,8 @@ Mac 从 alpha.12 起支持启动与每天上海时间 12:00 检查更新，确�
 账号备注不会替代网页登录身份。任务显示“已发送”表示网页已出现本次用户消息，不代表模型已完成处理；应用中断或发送结果未知时，请先检查目标对话。
 
 macOS 关闭窗口后保留后台页面。真正退出后，应用重新加载网页，再恢复已保存的草稿和阅读位置；网页已有草稿时保留网页版本。附件上传和模型生成不会跨进程继续。
+
+Android 点击底部标签数量打开总览。“更多 → 保活与诊断”可开启后台任务、查看当前 Android / WebView、网络与重载记录，并随时停止。模式会增加耗电；锁屏休眠、厂商省电、强制停止与网络服务仍可能中断运行，应用不会因此自动重发消息。
 
 ## 平台支持
 
@@ -93,16 +95,28 @@ macOS 关闭窗口后保留后台页面。真正退出后，应用重新加载�
 
 ## 验证与资源占用
 
-已归档的 alpha.14 macOS 独立验收包含 **63 项单元检查、21 项功能流程通过**；2 项 Windows 专属检查跳过。3 个账号、8 个长对话 / 图片标签隐藏约 331 秒后，页面实例、草稿及后台活动保持。
+本版使用 GitHub Actions 和独立临时数据验证：
+
+| 平台 | 本轮检查 |
+| --- | --- |
+| macOS | 63 项单元、24 项适用界面流程，完整 ZIP 安装与恢复组件校验 |
+| Windows | 62 项适用单元、14 项适用界面流程，安装 / 退出 / 卸载保留数据 |
+| Android | 66 项单元、手机 4 / 平板 4 项原生流程；兼容内核下 3 账号 / 8 页运行 330 秒、锁屏 / Doze / 断网后返回及实际进程重启恢复 |
+
+Android 矩阵覆盖 API28–36 的实际预装 WebView 组合。Android 12L / 15 / 16 的兼容内核通过完整流程；六组旧预装内核只验证“不支持多档案时提示更新”，不计为保活通过。系统版本与 WebView 版本须一起判断，详细条件见 [Android 验证索引](docs/releases/3.0.0-alpha.17-native-ci.json)。
+
+8 页合成负载的模拟器后台末段 PSS 合计约 **234–284 MiB**，各组 3 个短 CPU 样本的范围约 **1.9–5.8% 单核**。包含应用、WebView 沙箱渲染器和调试流负载，不能替代真实 ChatGPT 或实机测量，也不能与不同负载的桌面数据直接比较。
+
+以下为历史 alpha.14 macOS 合成负载，3 账号、8 标签隐藏约 331 秒后的资源记录：
 
 | 模拟负载 · 8 标签 | 工作集合计 | 空闲 CPU 合计 |
 | --- | --- | --- |
 | 轻量页面 | 约 1.08 GiB | 约 2.70% |
 | 长对话与图片 | 约 1.47 GiB | 约 1.72% |
 
-数据来自同一台 CI 主机上的本地模拟页面，工作集包含共享页；不能视为实际 ChatGPT 的占用上限或统计性性能保证。alpha.16 更名后已通过 23 项 macOS 适用流程、13 项 Windows 适用流程与 Android 的 63 项单元检查；各平台专属跳过、实际包名 / 显示名、安装及更新兼容范围见[候选验证索引](docs/releases/3.0.0-alpha.16-branding-ci.json)。历史资源数据分别记录。
+桌面数据来自同一台 CI 主机上的本地模拟页面，工作集包含共享页；不能视为实际 ChatGPT 的占用上限或统计性性能保证。真实账号、个人升级与厂商真机验收单独记录。
 
-[逐项回归结果](docs/benchmarks/macos-alpha14-regression-20261024.json) · [原始资源报告](docs/benchmarks/macos-alpha14-resources-20261024.json) · [完整开发与交付记录](MACOS_MIGRATION_PLAN.md)
+[Android 原始矩阵与资源](docs/benchmarks/android-alpha17-native-lifecycle.json) · [历史 Mac 回归](docs/benchmarks/macos-alpha14-regression-20261024.json) · [历史 Mac 资源](docs/benchmarks/macos-alpha14-resources-20261024.json) · [完整开发与交付记录](MACOS_MIGRATION_PLAN.md)
 
 ## 开发与交付
 
@@ -139,9 +153,9 @@ cd android
 | 优先级 / 阶段 | 工作 | 当前状态 |
 | --- | --- | --- |
 | 待人工验收 | Mac 真实账号的附件上传、首条消息与一次发送 | 用户稍后验收；隔离回归已通过 |
-| 待人工验收 | Android 实际首页、真实账号 / 登录、语音与文件流程 | 首页采集受人工验证限制，官网已有原生资产 / Skill 图 |
-| 已发布 | ChatGPT Studio alpha.16 三端包与官网品牌 | 安装包、官网与 Mac 更新清单均已上线；[发布与线上验证记录](docs/releases/3.0.0-alpha.16-publication.json) |
-| 平台迭代 | Windows 跟进后续桌面能力、Android 离线快照与更完整恢复 | 后续批次 |
+| 待人工验收 | Android 实际首页、真实账号 / 登录、语音与文件流程 | 官网展示原生标签 / 平板 / 资产 / Skill 测试界面，实站另验 |
+| 已发布 | alpha.17 三端包、Android 标签 / 后台任务与桌面文件打开 | 下载、官网与 Mac 更新清单同步；[发布与线上验证记录](docs/releases/3.0.0-alpha.17-publication.json) |
+| 平台迭代 | Windows 离线快照 / 自动更新，Android 完整离线快照 | 后续批次 |
 | 环境隔离 | Android 每账号语言 / 时区从独立 PoC 迁入日常客户端 | 路线验证完成，尚未替换普通内核 |
 | 系统集成 | 系统 / Chrome 通行密钥、真实 Touch ID 恢复与稳定签名 | 通行密钥未接入；Touch ID 受证书与实机验收条件限制 |
 | 能力内容 | 智能体库的自有预置角色与内容管理 | 入口已有，当前预置角色数为 0 |
