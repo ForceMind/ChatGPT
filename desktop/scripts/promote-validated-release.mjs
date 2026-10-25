@@ -29,7 +29,7 @@ assert(restRelease?.draft&&Number.isSafeInteger(restRelease.id));
 const draftId=restRelease.id;
 const desktopInputs=['desktop/src','desktop/assets','desktop/resources','desktop/package.json','desktop/package-lock.json','desktop/tsconfig.json','desktop/scripts/build.mjs','desktop/scripts/icon.mjs','desktop/scripts/package-mac.mjs','desktop/scripts/package-win.mjs'];
 for(const platform of ['macos','windows'])execFileSync('git',['diff','--exit-code',manifest.binarySourceCommits[platform],'HEAD','--',...desktopInputs],{stdio:'inherit'});
-execFileSync('git',['diff','--exit-code',manifest.binarySourceCommits.android,'HEAD','--','android/app','android/build.gradle','android/settings.gradle','android/gradle.properties','android/gradle'],{stdio:'inherit'});
+execFileSync('git',['diff','--exit-code',manifest.binarySourceCommits.android,'HEAD','--','android/app/src/main','android/app/src/release','android/app/build.gradle','android/app/proguard-rules.pro','android/build.gradle','android/settings.gradle','android/gradle.properties','android/gradle'],{stdio:'inherit'});
 const root=path.resolve('promotion'),out=path.join(root,'out');fs.mkdirSync(out,{recursive:true});
 const files=[];
 function walk(dir){for(const e of fs.readdirSync(dir,{withFileTypes:true})){if(e.name==='out')continue;const file=path.join(dir,e.name);assert(!e.isSymbolicLink());if(e.isDirectory())walk(file);else if(e.isFile())files.push(file);}}
