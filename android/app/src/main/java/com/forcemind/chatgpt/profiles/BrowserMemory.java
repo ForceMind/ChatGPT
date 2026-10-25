@@ -26,9 +26,19 @@ final class BrowserMemory {
     AssetDownloads assetDownloads;
     DownloadHelper downloads;
     private WeakReference<MainActivity> owner=new WeakReference<>(null);
+    private final Set<android.app.Activity> visibleActivities=Collections.newSetFromMap(new WeakHashMap<>());
     private final Runnable recentPruner=this::pruneRecent;
     private BrowserMemory(Context context){
         this.context=context;diagnostics=new BrowserDiagnostics(context.getFilesDir());diagnostics.event("process-start",null,null,null);
+        ((android.app.Application)context).registerActivityLifecycleCallbacks(new android.app.Application.ActivityLifecycleCallbacks(){
+            @Override public void onActivityStarted(android.app.Activity activity){visibleActivities.add(activity);refreshExecutionPolicy();}
+            @Override public void onActivityStopped(android.app.Activity activity){visibleActivities.remove(activity);refreshExecutionPolicy();}
+            @Override public void onActivityCreated(android.app.Activity activity,Bundle state){}
+            @Override public void onActivityResumed(android.app.Activity activity){}
+            @Override public void onActivityPaused(android.app.Activity activity){}
+            @Override public void onActivitySaveInstanceState(android.app.Activity activity,Bundle state){}
+            @Override public void onActivityDestroyed(android.app.Activity activity){}
+        });
         try{((ConnectivityManager)context.getSystemService(Context.CONNECTIVITY_SERVICE)).registerDefaultNetworkCallback(new ConnectivityManager.NetworkCallback(){
             @Override public void onAvailable(Network network){diagnostics.event("network-available",null,null,null);}
             @Override public void onLost(Network network){diagnostics.event("network-lost",null,null,null);}
@@ -36,7 +46,9 @@ final class BrowserMemory {
     }
     MainActivity owner(){return owner.get();}
     void attach(MainActivity activity){owner=new WeakReference<>(activity);if(recovery!=null)recovery.attach(activity);if(downloads!=null)downloads.attach(activity);}
-    void register(String tab,String account,String storageId,WebView web){views.put(tab,web);accounts.put(tab,account);storage.put(tab,storageId);epochs.putIfAbsent(tab,0L);}
+    boolean retainsExecution(){return !visibleActivities.isEmpty()||KeepaliveService.running();}
+    void refreshExecutionPolicy(){boolean retain=retainsExecution();for(WebView web:new ArrayList<>(views.values()))if(web instanceof RetainedWebView)((RetainedWebView)web).retainExecution(retain);}
+    void register(String tab,String account,String storageId,WebView web){views.put(tab,web);accounts.put(tab,account);storage.put(tab,storageId);epochs.putIfAbsent(tab,0L);if(web instanceof RetainedWebView)((RetainedWebView)web).retainExecution(retainsExecution());}
     void detach(MainActivity activity){
         if(owner()!=activity)return;owner.clear();if(recovery!=null)recovery.attach(null);if(downloads!=null)downloads.attach(null);
         for(Map.Entry<String,WebView> entry:new ArrayList<>(views.entrySet())){

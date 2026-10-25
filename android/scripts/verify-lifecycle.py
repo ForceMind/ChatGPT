@@ -125,13 +125,16 @@ try:
         background_start=int(time.time()*1000);adb('shell','input','keyevent','HOME');deadline=time.monotonic()+HOLD
         while time.monotonic()<deadline:
             time.sleep(min(15,max(.1,deadline-time.monotonic())));print(json.dumps({'phase':'native-background','seconds':int((time.time()*1000-background_start)/1000),'tabs':len((observations('seed') or {}).get('tabs',{}))}),flush=True)
-        final=observations('seed');cutoff=int(time.time()*1000)-35000
-        assert all(e['instance']==before['tabs'][i]['instance'] and e['documents']==1 and e['navigations']==1 and e['sent']==0 and e['events']>before['tabs'][i]['events'] and sum(t>=cutoff for t in e['times'])>=2 for i,e in final['tabs'].items()),'Background continuity or page identity failed'
+        final=observations('seed');cutoff=final['observedAt']-35000
+        def continuously_active(i,e):
+            late=[t for t in e['times'] if t>=cutoff]
+            return e['instance']==before['tabs'][i]['instance'] and e['documents']==1 and e['navigations']==1 and e['sent']==0 and e['events']>before['tabs'][i]['events'] and final['observedAt']-e['lastSeen']<=10000 and len(late)>=2 and max(late)-min(late)>=8000
+        assert all(continuously_active(i,e) for i,e in final['tabs'].items()),'Background continuity or page identity failed'
         report.update({'retentionPassed':True,'before':before,'afterBackground':final,'rotationRetained':True,'resources':resources})
         resources.append(metrics('background final'))
         adb('shell','input','keyevent','WAKEUP');adb('shell','input','keyevent','82');launch();final=retained_after_resume('return from background',final)
         print(json.dumps({'phase':'screen-lock-and-resume'}),flush=True);adb('shell','input','keyevent','SLEEP');time.sleep(30);report['lockedObservations']=observations('seed');adb('shell','input','keyevent','WAKEUP');adb('shell','input','keyevent','82');launch();final=retained_after_resume('screen lock 30s then resume',final)
-        print(json.dumps({'phase':'battery-saver-doze-and-resume'}),flush=True);adb('shell','cmd','power','set-mode','1',check=False);adb('shell','dumpsys','battery','unplug');adb('shell','input','keyevent','SLEEP');idle=text('shell','dumpsys','deviceidle','force-idle',check=False);report['dozeCommand']=idle;time.sleep(30);(OUT/'device-idle.txt').write_text(text('shell','dumpsys','deviceidle'));report['idleObservations']=observations('seed');adb('shell','dumpsys','deviceidle','unforce',check=False);adb('shell','dumpsys','battery','reset');adb('shell','cmd','power','set-mode','0',check=False);adb('shell','input','keyevent','WAKEUP');adb('shell','input','keyevent','82');launch();final=retained_after_resume('battery saver and forced Doze then resume; continuous work during Doze not required',final)
+        print(json.dumps({'phase':'battery-saver-doze-and-resume'}),flush=True);adb('shell','dumpsys','battery','unplug');adb('shell','cmd','power','set-mode','1',check=False);adb('shell','input','keyevent','SLEEP');idle=text('shell','dumpsys','deviceidle','force-idle',check=False);report['dozeCommand']=idle;time.sleep(30);(OUT/'device-idle.txt').write_text(text('shell','dumpsys','deviceidle'));(OUT/'device-power.txt').write_text(text('shell','dumpsys','power'));report['idleObservations']=observations('seed');adb('shell','dumpsys','deviceidle','unforce',check=False);adb('shell','dumpsys','battery','reset');adb('shell','cmd','power','set-mode','0',check=False);adb('shell','input','keyevent','WAKEUP');adb('shell','input','keyevent','82');launch();final=retained_after_resume('battery saver and forced Doze then resume; continuous work during Doze not required',final)
         print(json.dumps({'phase':'network-loss-and-resume'}),flush=True)
         # Doze may still be restoring connectivity when loopback has resumed.
         # Establish a real default network before asking the system to remove it.

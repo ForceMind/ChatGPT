@@ -21,10 +21,10 @@ public final class KeepaliveService extends Service {
             PendingIntent stop=PendingIntent.getService(this,1,new Intent(this,KeepaliveService.class).setAction(STOP),PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
             Notification notification=new Notification.Builder(this,CHANNEL).setSmallIcon(R.drawable.ic_launcher_foreground).setContentTitle("ChatGPT Studio · 后台任务运行中").setContentText("保留已打开的网页；点按返回，或停止后台模式").setContentIntent(open).setOngoing(true).setOnlyAlertOnce(true).setVisibility(Notification.VISIBILITY_PRIVATE).addAction(new Notification.Action.Builder(null,"停止后台模式",stop).build()).build();
             if(Build.VERSION.SDK_INT>=34)startForeground(2417,notification,ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);else startForeground(2417,notification);
-            running=true;BrowserMemory.get(this).diagnostics.event("background-start",null,null,null);
+            running=true;BrowserMemory.get(this).refreshExecutionPolicy();BrowserMemory.get(this).diagnostics.event("background-start",null,null,null);
         }catch(RuntimeException error){getSharedPreferences("browser-preferences",0).edit().putBoolean("backgroundTasks",false).apply();BrowserMemory.get(this).diagnostics.event("background-error",null,null,error.getClass().getSimpleName());stopSelf();}
         return START_NOT_STICKY;
     }
-    @Override public void onDestroy(){if(running)BrowserMemory.get(this).diagnostics.event("background-stop",null,null,null);running=false;super.onDestroy();}
+    @Override public void onDestroy(){if(running)BrowserMemory.get(this).diagnostics.event("background-stop",null,null,null);running=false;BrowserMemory.get(this).refreshExecutionPolicy();super.onDestroy();}
     @Override public IBinder onBind(Intent intent){return null;}
 }
