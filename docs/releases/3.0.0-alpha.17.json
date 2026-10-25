@@ -1,0 +1,113 @@
+{
+  "version": "3.0.0-alpha.17",
+  "name": "ChatGPT Studio",
+  "sourceCommit": "42f455cf8a5b2413d447ae17b88e6912c1aa2507",
+  "prerelease": true,
+  "platforms": [
+    "macOS arm64",
+    "Windows x64",
+    "Android System WebView"
+  ],
+  "artifacts": [
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.17-mac-arm64.dmg",
+      "bytes": 154517193,
+      "sha256": "07b227b1fe4cea59a8768c774676bbd372916a82de97ba067e83b63c5edba023",
+      "platform": "macos",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.17/ChatGPT-Profiles-3.0.0-alpha.17-mac-arm64.dmg"
+    },
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.17-mac-arm64.zip",
+      "bytes": 154471608,
+      "sha256": "06fdbfa404794aa287f1d3c60bf85b39134b28e2cbd059fe806cb569e4e4c383",
+      "platform": "macos",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.17/ChatGPT-Profiles-3.0.0-alpha.17-mac-arm64.zip"
+    },
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.17-windows-x64-setup.exe",
+      "bytes": 130964371,
+      "sha256": "6f6b5e5381d1f8b8ce6fc7865b6bce780314a734ba4ed37cd2b243eac9b0b54a",
+      "platform": "windows",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.17/ChatGPT-Profiles-3.0.0-alpha.17-windows-x64-setup.exe"
+    },
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.17-windows-x64.zip",
+      "bytes": 180726200,
+      "sha256": "e259d20f5626cfcc132dcc48a7228fa2e3a590dbf92945c2555ff70594f2cd35",
+      "platform": "windows",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.17/ChatGPT-Profiles-3.0.0-alpha.17-windows-x64.zip"
+    },
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.17-android.apk",
+      "bytes": 7331287,
+      "sha256": "fe6f64eafdee554f297114a447af6ad4a60b6f1885bef8b4b764135665258ff3",
+      "platform": "android",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.17/ChatGPT-Profiles-3.0.0-alpha.17-android.apk"
+    }
+  ],
+  "runs": {
+    "macos": 40112367543,
+    "macosRegression": 40111820234,
+    "windows": 40111830238,
+    "android": 40167544661,
+    "androidChecks": 40167544661,
+    "androidDevice": 40167546226,
+    "androidLifecycle": 40167311620
+  },
+  "binarySourceCommits": {
+    "macos": "b631d2a0565c6857b515b3ff2c98bd1b85ab7985",
+    "windows": "de5d1461f8c4878c247173ebbfc5904c7790a8bb",
+    "android": "42f455cf8a5b2413d447ae17b88e6912c1aa2507"
+  },
+  "verificationRuns": [
+    {
+      "kind": "macos package",
+      "runId": 40112367543,
+      "sourceCommit": "b631d2a0565c6857b515b3ff2c98bd1b85ab7985"
+    },
+    {
+      "kind": "macos regression",
+      "runId": 40111820234,
+      "sourceCommit": "de5d1461f8c4878c247173ebbfc5904c7790a8bb"
+    },
+    {
+      "kind": "windows package and acceptance",
+      "runId": 40111830238,
+      "sourceCommit": "de5d1461f8c4878c247173ebbfc5904c7790a8bb"
+    },
+    {
+      "kind": "hosted desktop artifact inspection",
+      "runId": 40162507100,
+      "sourceCommit": "393c4d667dc5a05418fa256bbb919e24f3947b03"
+    },
+    {
+      "kind": "android binary and current checks",
+      "runId": 40167544661,
+      "sourceCommit": "42f455cf8a5b2413d447ae17b88e6912c1aa2507"
+    },
+    {
+      "kind": "android phone and tablet acceptance",
+      "runId": 40167546226,
+      "sourceCommit": "42f455cf8a5b2413d447ae17b88e6912c1aa2507"
+    },
+    {
+      "kind": "android lifecycle matrix",
+      "runId": 40167311620,
+      "sourceCommit": "91947c705b4a1f8cdae4f6ac4accf310e104535d"
+    }
+  ],
+  "validation": "Shipping application/build inputs are unchanged from each platform binary source to the release source; debug fixtures, tests and documentation are checked separately. Desktop installer bodies were hashed in hosted CI and not downloaded locally.",
+  "signing": {
+    "macos": "ad-hoc; not notarized",
+    "windows": "NotSigned",
+    "androidCertificateSha256": "8b6eef928fded91f291ad954e20976b2cc6011b55e8cbec0152695fe1f05cf19"
+  },
+  "compatibility": "Internal app identity, original data folder, Keychain service, updater archive root and file prefix retained. No personal-data migration.",
+  "manualAcceptancePending": [
+    "Android real ChatGPT homepage/manual verification, vendor physical devices, login and personal-data upgrade",
+    "macOS real authenticated attachment/send flow",
+    "Signed Touch ID/keychain flows require unavailable Developer ID certificate"
+  ],
+  "scope": "Current approved iteration: native tab management, retention/recovery diagnostics, file opening, Skill workflow and publication. Older iOS/proxy/engine-migration/delta-update roadmap is not claimed complete.",
+  "nativeAcceptance": "docs/releases/3.0.0-alpha.17-native-ci.json"
+}

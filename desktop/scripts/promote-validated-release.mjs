@@ -15,6 +15,7 @@ const gh=args=>JSON.parse(execFileSync('gh',args,{encoding:'utf8'}));
 const verifiedRuns=[];
 assert.equal(manifest.artifacts.length,5);assert.equal(new Set(manifest.artifacts.map(a=>a.file)).size,5);
 assert(Array.isArray(manifest.verificationRuns)&&manifest.verificationRuns.length>=6);
+assert.equal(new Set(manifest.verificationRuns.map(r=>r.runId)).size,manifest.verificationRuns.length);
 for(const check of manifest.verificationRuns){
  assert(Number.isSafeInteger(check.runId)&&check.runId>0);assert.match(check.sourceCommit,/^[a-f0-9]{40}$/);
  const run=gh(['api','repos/'+repo+'/actions/runs/'+check.runId]);assert.equal(run.status,'completed');assert.equal(run.conclusion,'success');assert.equal(run.head_sha,check.sourceCommit);
@@ -29,7 +30,7 @@ assert(restRelease?.draft&&Number.isSafeInteger(restRelease.id));
 const draftId=restRelease.id;
 const desktopInputs=['desktop/src','desktop/assets','desktop/resources','desktop/package.json','desktop/package-lock.json','desktop/tsconfig.json','desktop/scripts/build.mjs','desktop/scripts/icon.mjs','desktop/scripts/package-mac.mjs','desktop/scripts/package-win.mjs'];
 for(const platform of ['macos','windows'])execFileSync('git',['diff','--exit-code',manifest.binarySourceCommits[platform],'HEAD','--',...desktopInputs],{stdio:'inherit'});
-execFileSync('git',['diff','--exit-code',manifest.binarySourceCommits.android,'HEAD','--','android/app/src/main','android/app/src/release','android/app/build.gradle','android/app/proguard-rules.pro','android/build.gradle','android/settings.gradle','android/gradle.properties','android/gradle'],{stdio:'inherit'});
+execFileSync('git',['diff','--exit-code',manifest.binarySourceCommits.android,'HEAD','--','android/app/src/main','android/app/src/release','android/app/build.gradle','android/app/proguard-rules.pro','android/build.gradle','android/settings.gradle','android/gradle.properties','android/gradle','android/gradlew','android/gradlew.bat','desktop/resources/capabilities'],{stdio:'inherit'});
 const root=path.resolve('promotion'),out=path.join(root,'out');fs.mkdirSync(out,{recursive:true});
 const files=[];
 function walk(dir){for(const e of fs.readdirSync(dir,{withFileTypes:true})){if(e.name==='out')continue;const file=path.join(dir,e.name);assert(!e.isSymbolicLink());if(e.isDirectory())walk(file);else if(e.isFile())files.push(file);}}

@@ -1,0 +1,496 @@
+{
+  "version": "3.0.0-alpha.17",
+  "verifiedAt": "2026-10-25T06:16:02.662866+00:00",
+  "status": "CI acceptance passed; publication is a separate step",
+  "finalApplicationSourceCommit": "42f455cf8a5b2413d447ae17b88e6912c1aa2507",
+  "build": {
+    "runId": 40167544661,
+    "sourceCommit": "42f455cf8a5b2413d447ae17b88e6912c1aa2507",
+    "unit": {
+      "tests": 66,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "lint": {
+      "Error": 0,
+      "Warning": 45
+    }
+  },
+  "nativeUI": {
+    "runId": 40167546226,
+    "sourceCommit": "42f455cf8a5b2413d447ae17b88e6912c1aa2507",
+    "devices": [
+      {
+        "scope": "phone",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "cases": [
+          "draftsAndReadingRestoreAcrossRecreationAndPreserveConflicts",
+          "assetDialogHandsActualFilesToTargetWebpageAndSendsOnce",
+          "switchingAccountsAndUndoCloseReuseTheLivePage",
+          "windowRecreationAndNativeTabCardsKeepVisitedPagesAndCustomTitles"
+        ]
+      },
+      {
+        "scope": "tablet",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "cases": [
+          "draftsAndReadingRestoreAcrossRecreationAndPreserveConflicts",
+          "assetDialogHandsActualFilesToTargetWebpageAndSendsOnce",
+          "switchingAccountsAndUndoCloseReuseTheLivePage",
+          "windowRecreationAndNativeTabCardsKeepVisitedPagesAndCustomTitles"
+        ]
+      }
+    ],
+    "inactivePageInputAndAccessibilityExcluded": true,
+    "overviewShieldsUnderlyingWebpage": true
+  },
+  "lifecycle": {
+    "runId": 40167311620,
+    "sourceCommit": "91947c705b4a1f8cdae4f6ac4accf310e104535d",
+    "apis": [
+      32,
+      35,
+      36
+    ],
+    "holdSeconds": 330,
+    "tabsPerOS": 8,
+    "passed": true,
+    "strictLateAcknowledgements": {
+      "maxAgeMs": 10000,
+      "minSpreadMs": 8000
+    },
+    "checks": [
+      "same document/no navigation",
+      "continued JS and three real loopback TCP SSE streams",
+      "rotation",
+      "user-visible service enable/stop",
+      "screen lock",
+      "battery saver/forced Doze then resume",
+      "real default-network loss/reconnect diagnostics",
+      "new PID after force-stop; eight saved drafts restored without sending"
+    ],
+    "coreInputsUnchangedToFinalBinary": true,
+    "sourceDeltaToFinalBinary": "Only overview transparency/input shielding and handoff interactive-page fence; final native phone/tablet and complete handoff flows rerun.",
+    "raw": "docs/benchmarks/android-alpha17-native-lifecycle.json"
+  },
+  "unsupportedStockApis": [
+    28,
+    29,
+    30,
+    31,
+    33,
+    34
+  ],
+  "stockGuardScope": "Only update-message acceptance on exact preinstalled providers; no retention claim for unsupported engines.",
+  "resources": [
+    {
+      "api": 35,
+      "webview": "124.0.6367.219",
+      "samples": [
+        {
+          "label": "1 visited tabs",
+          "processes": [
+            {
+              "pid": 2846,
+              "name": "com.google.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0",
+              "pssMiB": 4.6
+            },
+            {
+              "pid": 2875,
+              "name": "com.forcemind.chatgpt.profiles.debug",
+              "pssMiB": 87.14
+            },
+            {
+              "pid": 2968,
+              "name": "com.google.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0",
+              "pssMiB": 50.62
+            }
+          ],
+          "pssMiB": 142.36,
+          "cpuPercentOfOneCoreSamples": [
+            7.018,
+            0.862,
+            0.948
+          ],
+          "ownership": "Target package plus sandboxed WebView renderer processes in an isolated emulator; raw process list retained for coverage review. Any other provider client would overcount rather than silently omit renderer memory.",
+          "caveat": "Emulator PSS and short CPU samples with fixture beacon overhead, not physical-device or real ChatGPT measurements"
+        },
+        {
+          "label": "4 visited tabs",
+          "processes": [
+            {
+              "pid": 2846,
+              "name": "com.google.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0",
+              "pssMiB": 3.04
+            },
+            {
+              "pid": 2875,
+              "name": "com.forcemind.chatgpt.profiles.debug",
+              "pssMiB": 67.1
+            },
+            {
+              "pid": 2968,
+              "name": "com.google.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0",
+              "pssMiB": 38.42
+            }
+          ],
+          "pssMiB": 108.56,
+          "cpuPercentOfOneCoreSamples": [
+            2.804,
+            0.943,
+            1.942
+          ],
+          "ownership": "Target package plus sandboxed WebView renderer processes in an isolated emulator; raw process list retained for coverage review. Any other provider client would overcount rather than silently omit renderer memory.",
+          "caveat": "Emulator PSS and short CPU samples with fixture beacon overhead, not physical-device or real ChatGPT measurements"
+        },
+        {
+          "label": "8 visited tabs",
+          "processes": [
+            {
+              "pid": 2846,
+              "name": "com.google.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0",
+              "pssMiB": 3.25
+            },
+            {
+              "pid": 2875,
+              "name": "com.forcemind.chatgpt.profiles.debug",
+              "pssMiB": 77.18
+            },
+            {
+              "pid": 2968,
+              "name": "com.google.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0",
+              "pssMiB": 30.9
+            },
+            {
+              "pid": 4614,
+              "name": "com.google.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:1",
+              "pssMiB": 37.07
+            },
+            {
+              "pid": 4929,
+              "name": "com.google.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:2",
+              "pssMiB": 37.52
+            }
+          ],
+          "pssMiB": 185.92,
+          "cpuPercentOfOneCoreSamples": [
+            3.865,
+            3.738,
+            2.871
+          ],
+          "ownership": "Target package plus sandboxed WebView renderer processes in an isolated emulator; raw process list retained for coverage review. Any other provider client would overcount rather than silently omit renderer memory.",
+          "caveat": "Emulator PSS and short CPU samples with fixture beacon overhead, not physical-device or real ChatGPT measurements"
+        },
+        {
+          "label": "background final",
+          "processes": [
+            {
+              "pid": 2846,
+              "name": "com.google.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0",
+              "pssMiB": 2.01
+            },
+            {
+              "pid": 2875,
+              "name": "com.forcemind.chatgpt.profiles.debug",
+              "pssMiB": 82.63
+            },
+            {
+              "pid": 2968,
+              "name": "com.google.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0",
+              "pssMiB": 65.17
+            },
+            {
+              "pid": 4614,
+              "name": "com.google.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:1",
+              "pssMiB": 54.05
+            },
+            {
+              "pid": 4929,
+              "name": "com.google.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:2",
+              "pssMiB": 53.92
+            }
+          ],
+          "pssMiB": 257.78,
+          "cpuPercentOfOneCoreSamples": [
+            2.871,
+            3.865,
+            3.828
+          ],
+          "ownership": "Target package plus sandboxed WebView renderer processes in an isolated emulator; raw process list retained for coverage review. Any other provider client would overcount rather than silently omit renderer memory.",
+          "caveat": "Emulator PSS and short CPU samples with fixture beacon overhead, not physical-device or real ChatGPT measurements"
+        }
+      ]
+    },
+    {
+      "api": 32,
+      "webview": "120.0.6099.193",
+      "samples": [
+        {
+          "label": "1 visited tabs",
+          "processes": [
+            {
+              "pid": 2545,
+              "name": "com.forcemind.chatgpt.profiles.debug",
+              "pssMiB": 77.92
+            },
+            {
+              "pid": 2776,
+              "name": "com.google.android.webview:sandboxed_process0:org.chromium.content.app.Sandbo",
+              "pssMiB": 48.97
+            }
+          ],
+          "pssMiB": 126.89,
+          "cpuPercentOfOneCoreSamples": [
+            12.227,
+            0.0,
+            1.739
+          ],
+          "ownership": "Target package plus sandboxed WebView renderer processes in an isolated emulator; raw process list retained for coverage review. Any other provider client would overcount rather than silently omit renderer memory.",
+          "caveat": "Emulator PSS and short CPU samples with fixture beacon overhead, not physical-device or real ChatGPT measurements"
+        },
+        {
+          "label": "4 visited tabs",
+          "processes": [
+            {
+              "pid": 2545,
+              "name": "com.forcemind.chatgpt.profiles.debug",
+              "pssMiB": 46.37
+            },
+            {
+              "pid": 2776,
+              "name": "com.google.android.webview:sandboxed_process0:org.chromium.content.app.Sandbo",
+              "pssMiB": 30.5
+            }
+          ],
+          "pssMiB": 76.87,
+          "cpuPercentOfOneCoreSamples": [
+            2.844,
+            1.896,
+            1.923
+          ],
+          "ownership": "Target package plus sandboxed WebView renderer processes in an isolated emulator; raw process list retained for coverage review. Any other provider client would overcount rather than silently omit renderer memory.",
+          "caveat": "Emulator PSS and short CPU samples with fixture beacon overhead, not physical-device or real ChatGPT measurements"
+        },
+        {
+          "label": "8 visited tabs",
+          "processes": [
+            {
+              "pid": 2545,
+              "name": "com.forcemind.chatgpt.profiles.debug",
+              "pssMiB": 57.04
+            },
+            {
+              "pid": 2776,
+              "name": "com.google.android.webview:sandboxed_process0:org.chromium.content.app.Sandbo",
+              "pssMiB": 22.69
+            },
+            {
+              "pid": 6369,
+              "name": "com.google.android.webview:sandboxed_process0:org.chromium.content.app.Sandbo",
+              "pssMiB": 26.48
+            },
+            {
+              "pid": 7146,
+              "name": "com.google.android.webview:sandboxed_process0:org.chromium.content.app.Sandbo",
+              "pssMiB": 41.56
+            }
+          ],
+          "pssMiB": 147.77,
+          "cpuPercentOfOneCoreSamples": [
+            7.018,
+            3.636,
+            4.831
+          ],
+          "ownership": "Target package plus sandboxed WebView renderer processes in an isolated emulator; raw process list retained for coverage review. Any other provider client would overcount rather than silently omit renderer memory.",
+          "caveat": "Emulator PSS and short CPU samples with fixture beacon overhead, not physical-device or real ChatGPT measurements"
+        },
+        {
+          "label": "background final",
+          "processes": [
+            {
+              "pid": 2545,
+              "name": "com.forcemind.chatgpt.profiles.debug",
+              "pssMiB": 74.07
+            },
+            {
+              "pid": 2776,
+              "name": "com.google.android.webview:sandboxed_process0:org.chromium.content.app.Sandbo",
+              "pssMiB": 61.57
+            },
+            {
+              "pid": 6369,
+              "name": "com.google.android.webview:sandboxed_process0:org.chromium.content.app.Sandbo",
+              "pssMiB": 43.96
+            },
+            {
+              "pid": 7146,
+              "name": "com.google.android.webview:sandboxed_process0:org.chromium.content.app.Sandbo",
+              "pssMiB": 53.9
+            }
+          ],
+          "pssMiB": 233.5,
+          "cpuPercentOfOneCoreSamples": [
+            5.797,
+            4.854,
+            3.902
+          ],
+          "ownership": "Target package plus sandboxed WebView renderer processes in an isolated emulator; raw process list retained for coverage review. Any other provider client would overcount rather than silently omit renderer memory.",
+          "caveat": "Emulator PSS and short CPU samples with fixture beacon overhead, not physical-device or real ChatGPT measurements"
+        }
+      ]
+    },
+    {
+      "api": 36,
+      "webview": "133.0.6943.137",
+      "samples": [
+        {
+          "label": "1 visited tabs",
+          "processes": [
+            {
+              "pid": 2404,
+              "name": "com.forcemind.chatgpt.profiles.debug",
+              "pssMiB": 104.57
+            },
+            {
+              "pid": 2533,
+              "name": "com.google.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0",
+              "pssMiB": 81.09
+            }
+          ],
+          "pssMiB": 185.66,
+          "cpuPercentOfOneCoreSamples": [
+            0.93,
+            10.28,
+            8.969
+          ],
+          "ownership": "Target package plus sandboxed WebView renderer processes in an isolated emulator; raw process list retained for coverage review. Any other provider client would overcount rather than silently omit renderer memory.",
+          "caveat": "Emulator PSS and short CPU samples with fixture beacon overhead, not physical-device or real ChatGPT measurements"
+        },
+        {
+          "label": "4 visited tabs",
+          "processes": [
+            {
+              "pid": 2404,
+              "name": "com.forcemind.chatgpt.profiles.debug",
+              "pssMiB": 76.21
+            },
+            {
+              "pid": 2533,
+              "name": "com.google.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0",
+              "pssMiB": 50.91
+            }
+          ],
+          "pssMiB": 127.12,
+          "cpuPercentOfOneCoreSamples": [
+            3.941,
+            1.942,
+            1.942
+          ],
+          "ownership": "Target package plus sandboxed WebView renderer processes in an isolated emulator; raw process list retained for coverage review. Any other provider client would overcount rather than silently omit renderer memory.",
+          "caveat": "Emulator PSS and short CPU samples with fixture beacon overhead, not physical-device or real ChatGPT measurements"
+        },
+        {
+          "label": "8 visited tabs",
+          "processes": [
+            {
+              "pid": 2404,
+              "name": "com.forcemind.chatgpt.profiles.debug",
+              "pssMiB": 70.92
+            },
+            {
+              "pid": 2533,
+              "name": "com.google.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0",
+              "pssMiB": 30.35
+            },
+            {
+              "pid": 4895,
+              "name": "com.google.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:1",
+              "pssMiB": 43.96
+            },
+            {
+              "pid": 4972,
+              "name": "com.google.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0",
+              "pssMiB": 21.7
+            },
+            {
+              "pid": 5255,
+              "name": "com.google.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:2",
+              "pssMiB": 44.75
+            }
+          ],
+          "pssMiB": 211.68,
+          "cpuPercentOfOneCoreSamples": [
+            1.905,
+            5.742,
+            1.905
+          ],
+          "ownership": "Target package plus sandboxed WebView renderer processes in an isolated emulator; raw process list retained for coverage review. Any other provider client would overcount rather than silently omit renderer memory.",
+          "caveat": "Emulator PSS and short CPU samples with fixture beacon overhead, not physical-device or real ChatGPT measurements"
+        },
+        {
+          "label": "background final",
+          "processes": [
+            {
+              "pid": 2404,
+              "name": "com.forcemind.chatgpt.profiles.debug",
+              "pssMiB": 77.88
+            },
+            {
+              "pid": 2533,
+              "name": "com.google.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0",
+              "pssMiB": 65.07
+            },
+            {
+              "pid": 4895,
+              "name": "com.google.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:1",
+              "pssMiB": 61.81
+            },
+            {
+              "pid": 4972,
+              "name": "com.google.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0",
+              "pssMiB": 13.76
+            },
+            {
+              "pid": 5255,
+              "name": "com.google.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:2",
+              "pssMiB": 65.06
+            }
+          ],
+          "pssMiB": 283.58,
+          "cpuPercentOfOneCoreSamples": [
+            1.914,
+            4.739,
+            1.896
+          ],
+          "ownership": "Target package plus sandboxed WebView renderer processes in an isolated emulator; raw process list retained for coverage review. Any other provider client would overcount rather than silently omit renderer memory.",
+          "caveat": "Emulator PSS and short CPU samples with fixture beacon overhead, not physical-device or real ChatGPT measurements"
+        }
+      ]
+    }
+  ],
+  "manualAcceptancePending": [
+    "Physical vendor devices and real ChatGPT/accounts/homepage",
+    "macOS real authenticated attachment send",
+    "Personal upgrade data and Developer-ID-protected Touch ID"
+  ],
+  "firstFailures": [
+    {
+      "runId": 40165702476,
+      "reason": "All three supported providers retained documents but throttled hidden-page timers; fixed with explicit execution policy."
+    },
+    {
+      "runId": 40164418316,
+      "reason": "Eight native cases passed; stale homepage capture parser failed. Workflow modes separated."
+    }
+  ],
+  "referenceSourceVendored": false,
+  "personalDataAccessed": false,
+  "privateKeyExported": false
+}
