@@ -52,7 +52,7 @@ const single = app.requestSingleInstanceLock();
 if (!single) app.quit();
 let win: BrowserWindow | undefined;
 // Kept in main-process module scope so the native status item survives hidden windows.
-export let menuBar:MacMenuBar|undefined;
+let menuBar:MacMenuBar|undefined;
 let updates:UpdateManager|undefined,updateDialog=false;const offeredUpdates=new Set<string>(),readyUpdatePrompts=new Set<string>();
 let idleUpdate:IdleUpdate|undefined,idleTimer:ReturnType<typeof setTimeout>|undefined,idleNoticeWindow:BrowserWindow|undefined,idleInstallEpoch:number|undefined;
 let backgroundModePending=process.platform==='darwin'&&process.argv.includes('--profiles-background-update');
@@ -626,6 +626,8 @@ function installMenuBar():void{
   checkUpdates:()=>{reopenWindow();void checkUpdates(true).catch(report);},
   quit:()=>app.quit()
  });
+ // Main-process test access only; no renderer IPC or packaged application hook.
+ if(testMode)(app as typeof app&{profilesTestMenuBar?:MacMenuBar}).profilesTestMenuBar=menuBar;
 }
 function createWindow(): void {
   const b = store.read().bounds;
