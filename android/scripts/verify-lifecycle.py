@@ -43,7 +43,8 @@ def tap(predicate,seconds=20):
         return False
     return wait(action,seconds)
 def tap_text(label):tap(lambda n:n.get('text')==label)
-def visible_tabs():tap(lambda n:'查看所有 ' in n.get('content-desc',''))
+def visible_tabs():
+    tap(lambda n:'查看所有 ' in n.get('content-desc',''));wait(lambda:any(n.get('content-desc')=='标签页总览' for n in ui().iter('node')));time.sleep(.4)
 def open_tab(title):
     visible_tabs()
     for _ in range(8):
@@ -143,4 +144,5 @@ finally:
     adb('shell','dumpsys','deviceidle','unforce',check=False);adb('shell','dumpsys','battery','reset',check=False);adb('shell','cmd','power','set-mode','0',check=False);adb('shell','svc','wifi','enable',check=False);adb('shell','svc','data','enable',check=False)
     report['observationsAtEnd']=observations()
     (OUT/'lifecycle-verification.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
+    print(json.dumps({'outcome':report.get('outcome'),'error':report.get('error'),'environment':report.get('environment'),'tabs':{i:{k:e.get(k) for k in ['transport','streamStatus','documents','navigations','events','beats']} for i,e in (report['observationsAtEnd'] or {}).get('tabs',{}).items()}),flush=True)
     adb('shell','am','force-stop',PKG,check=False)

@@ -19,5 +19,6 @@ final class StudioIcon extends Drawable {
             case "pin"->{path(canvas,8,4,16,4,15,11,18,14,6,14,9,11,8,4);path(canvas,12,14,12,21);}
             default->{paint.setStyle(Paint.Style.FILL);canvas.drawCircle(5,12,1.6f,paint);canvas.drawCircle(12,12,1.6f,paint);canvas.drawCircle(19,12,1.6f,paint);paint.setStyle(Paint.Style.STROKE);}
         }canvas.restore();}
+    @Override public int getIntrinsicWidth(){return 24;}@Override public int getIntrinsicHeight(){return 24;}
     @Override public void setAlpha(int alpha){paint.setAlpha(alpha);invalidateSelf();}@Override public void setColorFilter(ColorFilter filter){paint.setColorFilter(filter);invalidateSelf();}@Override public int getOpacity(){return PixelFormat.TRANSLUCENT;}
 }

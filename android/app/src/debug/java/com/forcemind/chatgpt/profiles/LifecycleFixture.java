@@ -45,7 +45,7 @@ final class LifecycleFixture {
             if("/lifecycle-beacon".equals(path)){observe(tab,url);return response("text/plain","ok");}
             if("/lifecycle-poll".equals(path))return response("text/plain","event");
             if("/lifecycle-events".equals(path)&&streamingTabs.contains(tab)){
-                PipedInputStream input=new PipedInputStream(65536);PipedOutputStream output=new PipedOutputStream(input);Thread writer=new Thread(()->{try(output){output.write((":"+String.join("",Collections.nCopies(16384," "))+"\n\n").getBytes(StandardCharsets.UTF_8));output.flush();for(int n=1;n<2000;n++){output.write(("data: "+n+"\n\n").getBytes(StandardCharsets.UTF_8));output.flush();Thread.sleep(1000);}}catch(Exception ignored){}},"fixture-events");writer.setDaemon(true);writer.start();Map<String,String> headers=new HashMap<>();headers.put("Cache-Control","no-store");headers.put("Content-Type","text/event-stream; charset=utf-8");headers.put("X-Content-Type-Options","nosniff");return new WebResourceResponse("text/event-stream","UTF-8",200,"OK",headers,input);
+                Map<String,String> headers=new HashMap<>();headers.put("Cache-Control","no-store");headers.put("Content-Type","text/event-stream; charset=utf-8");headers.put("X-Content-Type-Options","nosniff");return new WebResourceResponse("text/event-stream","UTF-8",200,"OK",headers,new FixtureEventStream(1000));
             }
         }catch(Exception ignored){}
         return response("text/plain","Offline fixture request rejected");
