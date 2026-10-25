@@ -21,6 +21,7 @@ final class LifecycleFixture {
     }
     private final Application app;private final String phase,template;private final Map<String,String> owners=new HashMap<>();
     private final Set<String> streamingTabs=new HashSet<>();
+    private LoopbackFixtureServer streamServer;
     private final Map<String,JSONObject> observations=new LinkedHashMap<>();private final Map<String,Integer> navigations=new HashMap<>();
     private final Handler handler=new Handler(Looper.getMainLooper());private boolean flushPending;
     private final ExecutorService io=Executors.newSingleThreadExecutor(r->{Thread t=new Thread(r,"fixture-evidence");t.setDaemon(true);return t;});
@@ -31,22 +32,21 @@ final class LifecycleFixture {
         StateStore store=new StateStore(app.getFilesDir());WorkspaceState state;
         if(phase.equals("seed")){state=WorkspaceState.fresh();state.accounts.clear();for(int i=0;i<3;i++){WorkspaceState.Account account=new WorkspaceState.Account();account.name="CI 空间 "+(i+1);account.color=WorkspaceState.COLORS[i];account.tabs.clear();for(int n=0;n<(i==0?4:2);n++){WorkspaceState.Tab tab=new WorkspaceState.Tab();tab.title="Retention "+(i+1)+"-"+(n+1);tab.customTitle=true;tab.url="https://chatgpt.com/c/lifecycle-"+tab.id;account.tabs.add(tab);}account.activeTab=account.tabs.get(0).id;state.accounts.add(account);}state.activeAccount=state.accounts.get(0).id;store.save(state);}else state=store.load();
         for(WorkspaceState.Account account:state.accounts){streamingTabs.add(account.tabs.get(0).id);for(WorkspaceState.Tab tab:account.tabs)owners.put(tab.id,account.id);}
+        streamServer=new LoopbackFixtureServer(data.getString("token"),streamingTabs);
         try(InputStream in=app.getAssets().open("browser-lifecycle-fixture.html")){ByteArrayOutputStream out=new ByteArrayOutputStream();byte[] b=new byte[8192];int n;while((n=in.read(b))!=-1)out.write(b,0,n);template=new String(out.toByteArray(),StandardCharsets.UTF_8);}
         MainActivity.handoffFixture=(owner,request)->serve(owner,request);flush();
     }
     private WebResourceResponse serve(String account,WebResourceRequest request){
         try{
-            android.net.Uri url=request.getUrl();if(!"chatgpt.com".equals(url.getHost()))return response("text/plain","Blocked outside fixture");String path=url.getPath();
+            android.net.Uri url=request.getUrl();String localTab=url.getQueryParameter("tab");if(localTab!=null&&account.equals(owners.get(localTab))&&streamServer.matches(url.toString(),localTab))return null;
+            if(!"chatgpt.com".equals(url.getHost()))return response("text/plain","Blocked outside fixture");String path=url.getPath();
             if(request.isForMainFrame()&&path!=null&&path.startsWith("/c/lifecycle-")){
                 String tab=path.substring("/c/lifecycle-".length());if(!account.equals(owners.get(tab)))return response("text/plain","Wrong fixture owner");synchronized(this){navigations.put(tab,navigations.getOrDefault(tab,0)+1);}
-                JSONObject config=new JSONObject().put("tab",tab).put("owner",account).put("phase",phase).put("streaming",streamingTabs.contains(tab)).put("draft",phase.equals("seed")?"SAVED_DRAFT_"+tab:"");return response("text/html",template.replace("__CONFIG__",config.toString()));
+                JSONObject config=new JSONObject().put("tab",tab).put("owner",account).put("phase",phase).put("streaming",streamingTabs.contains(tab)).put("streamUrl",streamServer.url(tab)).put("draft",phase.equals("seed")?"SAVED_DRAFT_"+tab:"");return response("text/html",template.replace("__CONFIG__",config.toString()));
             }
             String tab=url.getQueryParameter("tab");if(tab==null||!account.equals(owners.get(tab)))return response("text/plain","Invalid fixture tab");
             if("/lifecycle-beacon".equals(path)){observe(tab,url);return response("text/plain","ok");}
             if("/lifecycle-poll".equals(path))return response("text/plain","event");
-            if("/lifecycle-events".equals(path)&&streamingTabs.contains(tab)){
-                Map<String,String> headers=new HashMap<>();headers.put("Cache-Control","no-store");headers.put("Content-Type","text/event-stream; charset=utf-8");headers.put("X-Content-Type-Options","nosniff");return new WebResourceResponse("text/event-stream","UTF-8",200,"OK",headers,new FixtureEventStream(1000));
-            }
         }catch(Exception ignored){}
         return response("text/plain","Offline fixture request rejected");
     }

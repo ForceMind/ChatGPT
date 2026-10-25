@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <application android:name=".RestartProbeApplication">
+    <application android:name=".RestartProbeApplication" android:networkSecurityConfig="@xml/ci_network_security">
         <activity android:name=".UploadProbeActivity" android:exported="false" />
         <activity android:name=".EnvironmentProbeActivity" android:exported="false" />
     </application>

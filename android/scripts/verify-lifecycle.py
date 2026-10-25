@@ -6,7 +6,7 @@ from pathlib import Path
 PKG='com.forcemind.chatgpt.profiles.debug'
 OUT=Path(sys.argv[1] if len(sys.argv)>1 else 'app/build/lifecycle-evidence');OUT.mkdir(parents=True,exist_ok=True)
 HOLD=int(os.environ.get('STUDIO_HOLD_SECONDS','330'));assert 10<=HOLD<=900
-report={'scope':'Native debug app and synthetic HTTPS-intercept fixtures; no instrumentation/DevTools attached, no real ChatGPT or personal data','holdSeconds':HOLD,'phases':[],'transportScope':'Three account-specific Java-intercepted SSE fetch streams and five finite polling tabs; complete SSE data frames are parsed with a streaming reader, eight independent JS heartbeats and network acknowledgements'}
+report={'scope':'Native debug app and synthetic HTTPS-intercept fixtures; no instrumentation/DevTools attached, no real ChatGPT or personal data','holdSeconds':HOLD,'phases':[],'transportScope':'Three account-specific real loopback TCP/chunked SSE fetch streams and five intercepted finite polling tabs; complete SSE data frames are parsed with a streaming reader, eight independent JS heartbeats and acknowledgements'}
 def adb(*args,check=True,timeout=30,input=None):
     r=subprocess.run(['adb',*args],input=input,stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=timeout)
     if check and r.returncode:raise RuntimeError('adb '+str(args[:3])+': '+r.stderr.decode(errors='replace')[-800:])
