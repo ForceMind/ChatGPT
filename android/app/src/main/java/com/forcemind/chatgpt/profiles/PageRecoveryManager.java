@@ -12,7 +12,7 @@ import org.json.*;
 /** Native-to-page snapshots only. No JavaScript-to-native bridge or background polling. */
 final class PageRecoveryManager {
     private static final ExecutorService IO=Executors.newSingleThreadExecutor();
-    private final MainActivity activity;
+    private MainActivity activity;
     final PageRecoveryStore store;
     private final Handler handler=new Handler(Looper.getMainLooper());
     private final Map<WebView,Session> sessions=new IdentityHashMap<>();
@@ -28,9 +28,10 @@ final class PageRecoveryManager {
         this.activity=activity;store=new PageRecoveryStore(activity.getFilesDir(),DevicePayloadKeys.recoveryCipher(activity.getApplicationContext()));
         try(InputStream in=activity.getAssets().open("page-recovery.js")){ByteArrayOutputStream bytes=new ByteArrayOutputStream();byte[] buffer=new byte[8192];int n;while((n=in.read(buffer))!=-1)bytes.write(buffer,0,n);script=new String(bytes.toByteArray(),StandardCharsets.UTF_8);}
     }
+    void attach(MainActivity activity){this.activity=activity;}
     void bind(WebView web,String account,String storage,String tab){sessions.put(web,new Session(web,account,storage,tab,store.generation(account,storage)));}
-    private boolean valid(Session s){return !closed&&sessions.get(s.web)==s&&activity.recoveryValid(s.account,s.storage,s.tab,s.web)&&store.generation(s.account,s.storage)==s.generation;}
-    private boolean visible(Session s){return foreground&&activity.recoveryCurrentWeb()==s.web&&s.web.isShown();}
+    private boolean valid(Session s){return !closed&&activity!=null&&sessions.get(s.web)==s&&activity.recoveryValid(s.account,s.storage,s.tab,s.web)&&store.generation(s.account,s.storage)==s.generation;}
+    private boolean visible(Session s){return foreground&&activity!=null&&activity.recoveryCurrentWeb()==s.web&&s.web.isShown();}
     void navigating(WebView web){Session s=sessions.get(web);if(s!=null){s.serial++;s.installed=false;s.loading=false;s.restoring=false;s.restoreCall=false;s.inflight=false;s.saved=null;}}
     void ready(WebView web){
         Session s=sessions.get(web);if(s==null||!valid(s)||web.getProgress()<100)return;String url=PageRecoveryRecord.url(web.getUrl());
@@ -61,8 +62,8 @@ final class PageRecoveryManager {
     }
     private void preserve(Session s){if(s.saved!=null&&!s.saved.optString("draft").isEmpty()){s.alternative=s.saved.optString("draft");notice("本地草稿已保留，可从账号菜单的“本地恢复草稿”查看；不会覆盖网页现有内容。");}finish(s);}
     private void finish(Session s){s.restoring=false;s.restoreCall=false;s.deadline=0;evaluate(s,"finish","",ignored->{});}
-    void visible(){WebView web=activity.recoveryCurrentWeb();Session s=sessions.get(web);if(s!=null&&s.restoring)restore(s);}
-    void checkpoint(){WebView web=activity.recoveryCurrentWeb();Session s=sessions.get(web);if(s!=null)capture(s,true);}
+    void visible(){if(activity==null)return;WebView web=activity.recoveryCurrentWeb();Session s=sessions.get(web);if(s!=null&&s.restoring)restore(s);}
+    void checkpoint(){if(activity==null)return;WebView web=activity.recoveryCurrentWeb();Session s=sessions.get(web);if(s!=null)capture(s,true);}
     void checkpointVisible(){for(Session s:new ArrayList<>(sessions.values()))if(s.web.getParent()!=null&&s.web.isShown())capture(s,true);}
     private void capture(Session s,boolean force){
         if(!valid(s)||!s.installed||s.loading||s.restoring||s.inflight||s.blocked)return;s.inflight=true;long ticket=++s.captureTicket,serial=s.serial;
@@ -81,8 +82,8 @@ final class PageRecoveryManager {
     void clear(String account,String storage)throws Exception{store.clear(account,storage);for(Session s:sessions.values())if(s.account.equals(account)&&s.storage.equals(storage)){s.serial++;s.blocked=true;}}
     void forget(String account,String storage,String tab){IO.execute(()->{try{store.forget(account,storage,tab);}catch(Exception e){handler.post(()->notice("旧标签恢复记录未能清理，文件已保留。"));}});}
     void localDraft(Consumer<JSONObject> done){
-        Session s=sessions.get(activity.recoveryCurrentWeb());if(s==null){done.accept(null);return;}String url=PageRecoveryRecord.url(s.web.getUrl());IO.execute(()->{try{JSONObject record=store.load(s.account,s.storage,s.tab,url);handler.post(()->{if(valid(s)&&visible(s)&&Objects.equals(s.url,PageRecoveryRecord.url(s.web.getUrl())))done.accept(record);});}catch(Exception e){handler.post(()->notice("本地恢复记录暂不可读，请保留应用数据并反馈。"));}});
+        if(activity==null){done.accept(null);return;}Session s=sessions.get(activity.recoveryCurrentWeb());if(s==null){done.accept(null);return;}String url=PageRecoveryRecord.url(s.web.getUrl());IO.execute(()->{try{JSONObject record=store.load(s.account,s.storage,s.tab,url);handler.post(()->{if(valid(s)&&visible(s)&&Objects.equals(s.url,PageRecoveryRecord.url(s.web.getUrl())))done.accept(record);});}catch(Exception e){handler.post(()->notice("本地恢复记录暂不可读，请保留应用数据并反馈。"));}});
     }
     void close(){closed=true;foreground=false;handler.removeCallbacksAndMessages(null);sessions.clear();}
-    private void notice(String message){if(!closed&&notices.add(message))activity.recoveryNotice(message);}
+    private void notice(String message){if(!closed&&activity!=null&&notices.add(message))activity.recoveryNotice(message);}
 }

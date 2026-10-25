@@ -195,7 +195,7 @@ jobs:
               phone_filter=("-Pandroid.testInstrumentationRunnerArguments.class=$tablet_filter")
             fi
             if [ "${{ inputs.recovery_only }}" = true ]; then
-              tablet_filter='com.forcemind.chatgpt.profiles.WorkbenchTest#draftsAndReadingRestoreAcrossRecreationAndPreserveConflicts,com.forcemind.chatgpt.profiles.WorkbenchTest#switchingAccountsAndUndoCloseReuseTheLivePage,com.forcemind.chatgpt.profiles.WorkbenchTest#assetDialogHandsActualFilesToTargetWebpageAndSendsOnce'
+              tablet_filter='com.forcemind.chatgpt.profiles.WorkbenchTest#draftsAndReadingRestoreAcrossRecreationAndPreserveConflicts,com.forcemind.chatgpt.profiles.WorkbenchTest#switchingAccountsAndUndoCloseReuseTheLivePage,com.forcemind.chatgpt.profiles.WorkbenchTest#assetDialogHandsActualFilesToTargetWebpageAndSendsOnce,com.forcemind.chatgpt.profiles.WorkbenchTest#windowRecreationAndNativeTabCardsKeepVisitedPagesAndCustomTitles'
               phone_filter=("-Pandroid.testInstrumentationRunnerArguments.class=$tablet_filter")
             fi
             if [ "${{ inputs.environment_probe_only }}" = true ]; then

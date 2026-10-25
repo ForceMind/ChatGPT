@@ -2,6 +2,10 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-feature android:name="android.hardware.microphone" android:required="false" />
     <application android:label="ChatGPT Studio" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round"
@@ -11,7 +15,10 @@
         <provider android:name=".HandoffFileProvider" android:authorities="${applicationId}.handoff" android:exported="false" android:grantUriPermissions="false" />
         <activity android:name=".AssetPreviewActivity" android:exported="false" />
         <activity android:name=".AssetRenderActivity" android:exported="false" android:process=":asset_renderer" android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden" />
-        <activity android:name=".MainActivity" android:exported="true" android:windowSoftInputMode="adjustResize">
+        <service android:name=".KeepaliveService" android:exported="false" android:foregroundServiceType="specialUse" android:stopWithTask="false">
+            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="User-initiated continuous browser tasks in isolated account tabs, with a visible ongoing notification and explicit stop action." />
+        </service>
+        <activity android:name=".MainActivity" android:exported="true" android:launchMode="singleTask" android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

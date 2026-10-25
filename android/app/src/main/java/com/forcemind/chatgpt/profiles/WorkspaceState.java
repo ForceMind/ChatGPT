@@ -20,8 +20,8 @@ public final class WorkspaceState {
     private static boolean validId(String s) { return s != null && s.matches("[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}"); }
     public static final class Tab {
         public String id = WorkspaceState.id(), url = NavigationPolicy.HOME, title = "ChatGPT";
-        public boolean pinned;
-        JSONObject json() throws JSONException { return new JSONObject().put("id", id).put("url", url).put("title", title).put("pinned", pinned); }
+        public boolean pinned,customTitle;
+        JSONObject json() throws JSONException { JSONObject value=new JSONObject().put("id", id).put("url", url).put("title", title).put("pinned", pinned);if(customTitle)value.put("customTitle",true);return value; }
     }
     public static final class Account {
         public String id = WorkspaceState.id(), storageId = WorkspaceState.id(), name = "个人账号", email = "", color = COLORS[0], activeTab;
@@ -89,7 +89,7 @@ public final class WorkspaceState {
         if (list.length() > max) throw new IllegalArgumentException("Too many tabs");
         for (int i = 0; i < list.length(); i++) {
             JSONObject j = list.getJSONObject(i); Tab t = new Tab(); t.id = j.getString("id"); t.url = j.getString("url");
-            t.title = j.getString("title"); t.pinned = j.getBoolean("pinned"); into.add(t);
+            t.title = j.getString("title"); t.pinned = j.getBoolean("pinned");if(j.has("customTitle")&&!(j.get("customTitle") instanceof Boolean))throw new IllegalArgumentException("Invalid custom title flag");t.customTitle=j.optBoolean("customTitle",false);into.add(t);
         }
     }
     public void validate() {
