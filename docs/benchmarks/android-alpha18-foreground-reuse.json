@@ -1,0 +1,92 @@
+{
+  "version": "3.0.0-alpha.18",
+  "sourceCommit": "d6b17689946ac26e42145b26d3bdc751d881b07e",
+  "ciRun": "https://github.com/ForceMind/ChatGPT/actions/runs/40203398117",
+  "verifiedAt": "2026-10-25T14:54:54.875974+00:00",
+  "scope": "Android 15 (API 35) official emulator, phone and tablet; isolated debug data and offline HTML fixtures. Not real ChatGPT account or all-device acceptance.",
+  "foregroundReuse": {
+    "backgroundServiceEnabled": false,
+    "accountSwitchesPerDevice": 20,
+    "initialMainFrameLoads": 2,
+    "additionalMainFrameLoadsDuringSwitches": 0,
+    "sameWebViewObject": true,
+    "draftAndScrollRetained": true,
+    "generationContextRetained": true,
+    "explicitLastTabCloseCreatesOneFallbackLoad": true,
+    "undoRestoresOriginalView": true
+  },
+  "phoneAndTabletSuites": [
+    {
+      "path": "outputs/androidTest-results/connected/debug/TEST-emulator-5554 - 15-_app-.xml",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "cases": [
+        {
+          "name": "draftsAndReadingRestoreAcrossRecreationAndPreserveConflicts",
+          "class": "com.forcemind.chatgpt.profiles.WorkbenchTest",
+          "skipped": false,
+          "failed": false
+        },
+        {
+          "name": "assetDialogHandsActualFilesToTargetWebpageAndSendsOnce",
+          "class": "com.forcemind.chatgpt.profiles.WorkbenchTest",
+          "skipped": false,
+          "failed": false
+        },
+        {
+          "name": "switchingAccountsAndUndoCloseReuseTheLivePage",
+          "class": "com.forcemind.chatgpt.profiles.WorkbenchTest",
+          "skipped": false,
+          "failed": false
+        },
+        {
+          "name": "windowRecreationAndNativeTabCardsKeepVisitedPagesAndCustomTitles",
+          "class": "com.forcemind.chatgpt.profiles.WorkbenchTest",
+          "skipped": false,
+          "failed": false
+        }
+      ]
+    },
+    {
+      "path": "device-evidence/phone-test-results/connected/debug/TEST-emulator-5554 - 15-_app-.xml",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "cases": [
+        {
+          "name": "draftsAndReadingRestoreAcrossRecreationAndPreserveConflicts",
+          "class": "com.forcemind.chatgpt.profiles.WorkbenchTest",
+          "skipped": false,
+          "failed": false
+        },
+        {
+          "name": "assetDialogHandsActualFilesToTargetWebpageAndSendsOnce",
+          "class": "com.forcemind.chatgpt.profiles.WorkbenchTest",
+          "skipped": false,
+          "failed": false
+        },
+        {
+          "name": "switchingAccountsAndUndoCloseReuseTheLivePage",
+          "class": "com.forcemind.chatgpt.profiles.WorkbenchTest",
+          "skipped": false,
+          "failed": false
+        },
+        {
+          "name": "windowRecreationAndNativeTabCardsKeepVisitedPagesAndCustomTitles",
+          "class": "com.forcemind.chatgpt.profiles.WorkbenchTest",
+          "skipped": false,
+          "failed": false
+        }
+      ]
+    }
+  ],
+  "otherPassedCases": [
+    "encrypted draft/recovery conflicts",
+    "native attachment bytes/target/single send",
+    "Activity recreation and same-account tab identity/custom titles"
+  ],
+  "nativeUiStatus": "New immersive Android layout is a separate unapproved proposal; existing native layout not presented as the new UI."
+}

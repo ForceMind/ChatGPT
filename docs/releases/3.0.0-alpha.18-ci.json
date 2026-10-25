@@ -1,0 +1,257 @@
+{
+  "version": "3.0.0-alpha.18",
+  "status": "macOS and Windows CI candidates verified; Android immersive UI awaits design approval; not a public release",
+  "verifiedAt": "2026-10-25T14:48:20.064510+00:00",
+  "branch": "codex/macos-assets-workbench",
+  "macos": {
+    "sourceCommit": "afb897aa34a54b818b3aedd51b0df4024a132100",
+    "runId": 40199523300,
+    "url": "https://github.com/ForceMind/ChatGPT/actions/runs/40199523300",
+    "unitTests": {
+      "tests": 63,
+      "passed": 63,
+      "failed": 0,
+      "skipped": 0
+    },
+    "uiTests": {
+      "startTime": "2026-10-25T13:51:52.142Z",
+      "duration": 201669.73700000002,
+      "expected": 26,
+      "skipped": 2,
+      "unexpected": 0,
+      "flaky": 0
+    },
+    "viewports": [
+      {
+        "width": 1440,
+        "height": 1000
+      },
+      {
+        "width": 1000,
+        "height": 760
+      },
+      {
+        "width": 900,
+        "height": 650
+      },
+      {
+        "width": 800,
+        "height": 600
+      }
+    ],
+    "package": {
+      "runId": 40200430620,
+      "url": "https://github.com/ForceMind/ChatGPT/actions/runs/40200430620",
+      "sourceCommit": "afb897aa34a54b818b3aedd51b0df4024a132100",
+      "artifacts": [
+        {
+          "file": "ChatGPT-Profiles-3.0.0-alpha.18-mac-arm64.dmg",
+          "bytes": 154514248,
+          "sha256": "3cd41e7ffe435ad43f52a2eb12fbef80679034a8e3f9e72582562c0f8a02f255"
+        },
+        {
+          "file": "ChatGPT-Profiles-3.0.0-alpha.18-mac-arm64.zip",
+          "bytes": 154478821,
+          "sha256": "b270a9ff763345205ade0b16a20599acf435e1dc2904273f7b95eadd1c89dccb"
+        }
+      ],
+      "artifactLinks": {
+        "dmg": "https://github.com/ForceMind/ChatGPT/actions/runs/40200430620/artifacts/12601893309",
+        "zip": "https://github.com/ForceMind/ChatGPT/actions/runs/40200430620/artifacts/12600859978"
+      },
+      "checks": {
+        "distFilesCompared": 230,
+        "uiAcceptance": {
+          "version": "3.0.0-alpha.18",
+          "commit": "afb897aa34a54b818b3aedd51b0df4024a132100",
+          "scope": "isolated Electron with real ProseMirror and loopback fixtures; no live ChatGPT or personal accounts",
+          "stats": {
+            "startTime": "2026-10-25T14:03:56.792Z",
+            "duration": 120168.453,
+            "expected": 10,
+            "skipped": 0,
+            "unexpected": 0,
+            "flaky": 0
+          }
+        },
+        "packagedUpdater": {
+          "version": "3.0.0-alpha.18",
+          "verifiedAt": "2026-10-25T14:07:36.543Z",
+          "scope": "real packaged ZIP, disposable old bundle, no personal account data; no live ChatGPT upgrade acceptance",
+          "zipSHA256": "b270a9ff763345205ade0b16a20599acf435e1dc2904273f7b95eadd1c89dccb",
+          "asarSHA256": "19fa7a3a9e6efd44ea82e5db2bf4e37e30733d7cd9c0b4e4b869e6f0beda7eb6",
+          "helperSHA256": "06f93c1c549a18a28f65a9d96f361fb5491d3c37db620de89007bf19b47e62aa",
+          "elapsedMs": 14001,
+          "checks": [
+            "ZIP digest and identity",
+            "full bundle signature and architecture",
+            "Electron fs.copyFileSync from shipping ASAR",
+            "parent exit wait",
+            "atomic swap",
+            "installed payload byte identity",
+            "previous bundle preserved"
+          ]
+        },
+        "nativeRecovery": {
+          "version": "3.0.0-alpha.18",
+          "verifiedAt": "2026-10-25T14:07:40.952Z",
+          "scope": "isolated Electron, actual packaged ASAR/native module; no personal profiles or Keychain items; signed Touch ID key creation not verified",
+          "branding": {
+            "displayName": "ChatGPT Studio",
+            "internalName": "ChatGPT Profiles",
+            "bundleId": "com.forcemind.chatgpt.profiles",
+            "legacyUpdateRoot": "ChatGPT Profiles.app"
+          },
+          "payloadFiles": 230,
+          "asarSHA256": "19fa7a3a9e6efd44ea82e5db2bf4e37e30733d7cd9c0b4e4b869e6f0beda7eb6",
+          "capabilities": {
+            "touchID": false,
+            "signed": false
+          },
+          "unsignedKeyRefused": true,
+          "checks": [
+            "all dist payload bytes match",
+            "deep strict code signature",
+            "packaged native module loads from ASAR",
+            "ad-hoc key creation refused before SecItem access"
+          ]
+        },
+        "nativeMenuBar": {
+          "version": "3.0.0-alpha.18",
+          "commit": "afb897aa34a54b818b3aedd51b0df4024a132100",
+          "verifiedAt": "2026-10-25T14:07:42.543Z",
+          "scope": "Actual shipping ASAR images loaded by isolated Electron on macOS with one local fixture window, real native Tray in the visible menu bar; full packaged main-process startup and physical-user dark-mode appearance are not verified here. No account spaces or personal Keychain items.",
+          "asarSHA256": "19fa7a3a9e6efd44ea82e5db2bf4e37e30733d7cd9c0b4e4b869e6f0beda7eb6",
+          "resources": [
+            {
+              "path": "dist/main/menuBarTemplate.png",
+              "width": 18,
+              "height": 18,
+              "sha256": "6bf511ea1e207d79eb446c25735591c066373732f0c33ee246c49c2f66096f19"
+            },
+            {
+              "path": "dist/main/menuBarTemplate@2x.png",
+              "width": 36,
+              "height": 36,
+              "sha256": "0b1242c594de958c6de38349365d90a0bfc097e2b5c4658971a4e0435b38ce29"
+            }
+          ],
+          "native": {
+            "imageSize": {
+              "width": 18,
+              "height": 18
+            },
+            "scaleFactors": [
+              1,
+              2
+            ],
+            "template": true,
+            "transparentPixels": 142,
+            "glyphPixels": 182,
+            "bounds": {
+              "x": 1349,
+              "y": 0,
+              "width": 34,
+              "height": 24
+            },
+            "displays": [
+              {
+                "bounds": {
+                  "x": 0,
+                  "y": 0,
+                  "width": 1600,
+                  "height": 1200
+                },
+                "workArea": {
+                  "x": 0,
+                  "y": 25,
+                  "width": 1600,
+                  "height": 1175
+                }
+              }
+            ],
+            "onVisibleMenuBar": true,
+            "destroyedOnExit": true,
+            "fixtureWindowCount": 1
+          },
+          "checks": [
+            "packaged image bytes match build",
+            "18px and 36px PNGs",
+            "ASAR native-image loading",
+            "template and Retina representations",
+            "black glyph with transparent background",
+            "native status item within the visible menu bar",
+            "native Tray disposal"
+          ]
+        }
+      },
+      "branding": {
+        "displayName": "ChatGPT Studio",
+        "internalName": "ChatGPT Profiles",
+        "bundleId": "com.forcemind.chatgpt.profiles",
+        "legacyUpdateRoot": "ChatGPT Profiles.app"
+      }
+    }
+  },
+  "windows": {
+    "sourceCommit": "afb897aa34a54b818b3aedd51b0df4024a132100",
+    "runId": 40199526065,
+    "url": "https://github.com/ForceMind/ChatGPT/actions/runs/40199526065",
+    "status": "completed",
+    "conclusion": "success",
+    "unitTests": {
+      "tests": 63,
+      "passed": 62,
+      "failed": 0,
+      "skipped": 1
+    },
+    "uiTests": {
+      "passed": 15,
+      "skipped": 13
+    },
+    "scope": "Shared desktop UI, isolated fixtures, native preferences, 330-second retention and installation/uninstallation; no personal accounts or live ChatGPT acceptance"
+  },
+  "android": {
+    "status": "design-review",
+    "preview": "http://127.0.0.1:4187/",
+    "previewScope": "Synthetic local interaction prototype; no real login, conversion, upload or send. Source UI not replaced before approval.",
+    "lastBuild": {
+      "runId": 40197224922,
+      "sourceCommit": "487840474d4cf83464a770b549931d7b817d782c",
+      "conclusion": "success"
+    },
+    "fontProbe": {
+      "runId": 40197229127,
+      "status": "incomplete",
+      "failure": "Search field clipped vertically: layout 69px versus content 66px; fix native padding/height when implementing the approved new design.",
+      "handoffAndRecreationPassed": true
+    },
+    "foregroundReuse": {
+      "runId": 40203398117,
+      "sourceCommit": "d6b17689946ac26e42145b26d3bdc751d881b07e",
+      "status": "completed",
+      "conclusion": "success",
+      "phoneTests": 4,
+      "tabletTests": 4,
+      "failures": 0,
+      "skipped": 0,
+      "evidence": "docs/benchmarks/android-alpha18-foreground-reuse.json",
+      "contract": "20 foreground account switches per device retain the same WebView, draft, scroll and generation context; 2 initial main-frame loads and 0 extra switch loads; background service off."
+    }
+  },
+  "delivery": {
+    "publicReleaseChanged": false,
+    "websiteChanged": false,
+    "mainUpdated": false,
+    "localMacInstallersDownloaded": false,
+    "localBuildDependenciesInstalled": false,
+    "temporaryReportDirectoriesRemoved": true,
+    "oldMacPreview4188Stopped": true,
+    "androidPreview4187KeptForApproval": true
+  },
+  "remaining": [
+    "Android immersive design approval",
+    "Native Android implementation and font/UI revalidation, then signed candidate",
+    "Real-account acceptance previously deferred by the user; signed Touch ID remains dependent on Developer ID"
+  ]
+}
