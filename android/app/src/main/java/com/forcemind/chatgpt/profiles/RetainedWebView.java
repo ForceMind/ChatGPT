@@ -2,19 +2,29 @@ package com.forcemind.chatgpt.profiles;
 
 import android.content.Context;
 import android.view.View;
+import android.view.MotionEvent;
+import android.view.KeyEvent;
 import android.webkit.WebView;
 
 /** Keep page scheduling active while Studio is foreground or its visible task service is running. */
 final class RetainedWebView extends WebView {
-    private boolean executionRetained;
+    private boolean executionRetained,selected;
     RetainedWebView(Context context){super(context);}
     void retainExecution(boolean retain){
         if(executionRetained==retain)return;executionRetained=retain;
-        // Drawing, touch, accessibility and focus still follow the actual Android view.
-        // These provider callbacks control Chromium's hidden-page timer scheduling.
+        updatePresentation();
         super.onWindowVisibilityChanged(retain?View.VISIBLE:getWindowVisibility());
-        super.onVisibilityChanged(this,retain?View.VISIBLE:getVisibility());
+    }
+    void selectPage(boolean value){if(selected==value)return;selected=value;updatePresentation();}
+    private void updatePresentation(){
+        // AwContents reads the real View visibility, not the callback argument.
+        // Inactive retained pages stay attached and transparent, without input/accessibility.
+        setAlpha(selected?1f:0f);setEnabled(selected);setFocusable(selected);setFocusableInTouchMode(selected);
+        setImportantForAccessibility(selected?View.IMPORTANT_FOR_ACCESSIBILITY_AUTO:View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
+        super.setVisibility(selected||executionRetained?View.VISIBLE:View.INVISIBLE);
     }
     @Override protected void onWindowVisibilityChanged(int visibility){super.onWindowVisibilityChanged(executionRetained?View.VISIBLE:visibility);}
-    @Override protected void onVisibilityChanged(View changedView,int visibility){super.onVisibilityChanged(changedView,executionRetained?View.VISIBLE:visibility);}
+    @Override public boolean dispatchTouchEvent(MotionEvent event){return selected&&super.dispatchTouchEvent(event);}
+    @Override public boolean dispatchGenericMotionEvent(MotionEvent event){return selected&&super.dispatchGenericMotionEvent(event);}
+    @Override public boolean dispatchKeyEvent(KeyEvent event){return selected&&super.dispatchKeyEvent(event);}
 }

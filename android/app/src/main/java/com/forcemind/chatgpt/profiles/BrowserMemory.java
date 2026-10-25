@@ -47,7 +47,7 @@ final class BrowserMemory {
     MainActivity owner(){return owner.get();}
     void attach(MainActivity activity){owner=new WeakReference<>(activity);if(recovery!=null)recovery.attach(activity);if(downloads!=null)downloads.attach(activity);}
     boolean retainsExecution(){return !visibleActivities.isEmpty()||KeepaliveService.running();}
-    void refreshExecutionPolicy(){boolean retain=retainsExecution();for(WebView web:new ArrayList<>(views.values()))if(web instanceof RetainedWebView)((RetainedWebView)web).retainExecution(retain);}
+    void refreshExecutionPolicy(){boolean retain=retainsExecution();for(Map.Entry<String,WebView> entry:new ArrayList<>(views.entrySet()))if(entry.getValue() instanceof RetainedWebView)((RetainedWebView)entry.getValue()).retainExecution(retain&&!recentClosed.containsKey(entry.getKey()));}
     void register(String tab,String account,String storageId,WebView web){views.put(tab,web);accounts.put(tab,account);storage.put(tab,storageId);epochs.putIfAbsent(tab,0L);if(web instanceof RetainedWebView)((RetainedWebView)web).retainExecution(retainsExecution());}
     void detach(MainActivity activity){
         if(owner()!=activity)return;owner.clear();if(recovery!=null)recovery.attach(null);if(downloads!=null)downloads.attach(null);
