@@ -96,6 +96,11 @@ def retained_after_resume(label,baseline):
         current=observations('seed')
         return current if current and set(current['tabs'])==set(baseline['tabs']) and all(e['instance']==baseline['tabs'][i]['instance'] and e['documents']==1 and e['navigations']==1 and e['sent']==0 and e['lastSeen']>=resumed and e['events']>baseline['tabs'][i]['events'] for i,e in current['tabs'].items()) else None
     result=wait(ready,45);report['phases'].append({'name':label,'sameDocuments':True,'networkFramesResumed':True,'autoSendCount':0});return result
+def network_event_after(kind,watermark):
+    return next((e for e in (private('browser-events.json') or []) if e.get('type')==kind and e.get('time',0)>watermark),None)
+def default_network_present():
+    status=text('shell','dumpsys','connectivity')
+    return bool(re.search(r'Active default network:\s*\d+',status))
 try:
     adb('shell','am','force-stop',PKG);configure('seed');launch();environment=wait(lambda:private('lifecycle-environment.json'));report['environment']=environment
     if not environment['multiProfile']:
@@ -127,7 +132,15 @@ try:
         adb('shell','input','keyevent','WAKEUP');adb('shell','input','keyevent','82');launch();final=retained_after_resume('return from background',final)
         print(json.dumps({'phase':'screen-lock-and-resume'}),flush=True);adb('shell','input','keyevent','SLEEP');time.sleep(30);report['lockedObservations']=observations('seed');adb('shell','input','keyevent','WAKEUP');adb('shell','input','keyevent','82');launch();final=retained_after_resume('screen lock 30s then resume',final)
         print(json.dumps({'phase':'battery-saver-doze-and-resume'}),flush=True);adb('shell','cmd','power','set-mode','1',check=False);adb('shell','dumpsys','battery','unplug');adb('shell','input','keyevent','SLEEP');idle=text('shell','dumpsys','deviceidle','force-idle',check=False);report['dozeCommand']=idle;time.sleep(30);(OUT/'device-idle.txt').write_text(text('shell','dumpsys','deviceidle'));report['idleObservations']=observations('seed');adb('shell','dumpsys','deviceidle','unforce',check=False);adb('shell','dumpsys','battery','reset');adb('shell','cmd','power','set-mode','0',check=False);adb('shell','input','keyevent','WAKEUP');adb('shell','input','keyevent','82');launch();final=retained_after_resume('battery saver and forced Doze then resume; continuous work during Doze not required',final)
-        print(json.dumps({'phase':'network-loss-and-resume'}),flush=True);network_start=int(time.time()*1000);adb('shell','svc','wifi','disable');adb('shell','svc','data','disable');time.sleep(8);lost=any(e.get('type')=='network-lost' and e.get('time',0)>=network_start for e in (private('browser-events.json') or []));(OUT/'network-disabled.txt').write_text(text('shell','dumpsys','connectivity'));adb('shell','svc','wifi','enable');adb('shell','svc','data','enable');wait(lambda:any(e.get('type')=='network-available' and e.get('time',0)>=network_start for e in (private('browser-events.json') or [])),45);final=retained_after_resume('system network disabled and restored',final);report['networkLossDiagnosticVerified']=lost;assert lost,'Network-loss diagnostic not observed';report['networkScope']='Real ConnectivityManager loss/reconnect callbacks; intercepted fixture transport does not measure real remote service reconnection.'
+        print(json.dumps({'phase':'network-loss-and-resume'}),flush=True)
+        # Doze may still be restoring connectivity when loopback has resumed.
+        # Establish a real default network before asking the system to remove it.
+        adb('shell','svc','wifi','enable');adb('shell','svc','data','enable');wait(default_network_present,60)
+        network_start=max((e.get('time',0) for e in (private('browser-events.json') or [])),default=0)
+        adb('shell','svc','wifi','disable');adb('shell','svc','data','disable');lost=wait(lambda:network_event_after('network-lost',network_start),45)
+        (OUT/'network-disabled.txt').write_text(text('shell','dumpsys','connectivity'));assert not default_network_present(),'System default network was not removed'
+        adb('shell','svc','wifi','enable');adb('shell','svc','data','enable');wait(lambda:network_event_after('network-available',lost['time']),60);wait(default_network_present,45)
+        final=retained_after_resume('system network disabled and restored',final);report['networkLossDiagnosticVerified']=True;report['networkScope']='Real default-network presence/removal and ConnectivityManager loss/reconnect callbacks; loopback fixture transport does not measure real remote service reconnection.'
         (OUT/'native-processes.txt').write_text(text('shell','ps','-A','-o','PID,PPID,NAME'));(OUT/'native-services.txt').write_text(text('shell','dumpsys','activity','services',PKG));(OUT/'diagnostics.json').write_text(json.dumps(private('browser-events.json'),ensure_ascii=False,indent=2))
         old_pid=text('shell','pidof',PKG);adb('shell','am','force-stop',PKG);wait(lambda:not text('shell','pidof',PKG,check=False),15);configure('verify');launch();new_env=wait(lambda:private('lifecycle-environment.json') if (private('lifecycle-environment.json') or {}).get('phase')=='verify' else None);assert str(new_env['pid'])!=old_pid
         restored=[]
@@ -143,6 +156,7 @@ except Exception as error:
 finally:
     adb('shell','dumpsys','deviceidle','unforce',check=False);adb('shell','dumpsys','battery','reset',check=False);adb('shell','cmd','power','set-mode','0',check=False);adb('shell','svc','wifi','enable',check=False);adb('shell','svc','data','enable',check=False)
     report['observationsAtEnd']=observations()
+    (OUT/'diagnostics.json').write_text(json.dumps(private('browser-events.json'),ensure_ascii=False,indent=2))
     (OUT/'lifecycle-verification.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
     print(json.dumps({'outcome':report.get('outcome'),'error':report.get('error'),'environment':report.get('environment'),'tabs':{i:{k:e.get(k) for k in ['transport','streamStatus','documents','navigations','events','beats']} for i,e in (report['observationsAtEnd'] or {}).get('tabs',{}).items()}}),flush=True)
     adb('shell','am','force-stop',PKG,check=False)
