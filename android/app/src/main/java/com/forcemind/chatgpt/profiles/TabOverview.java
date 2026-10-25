@@ -22,7 +22,7 @@ final class TabOverview extends LinearLayout {
     private final List<Entry> visible=new ArrayList<>();
     private record Entry(WorkspaceState.Account account,WorkspaceState.Tab tab){}
     TabOverview(Context context,Host host){
-        super(context);this.host=host;setOrientation(VERTICAL);setBackgroundColor(Color.rgb(247,247,247));setContentDescription("标签页总览");
+        super(context);this.host=host;setOrientation(VERTICAL);setBackgroundColor(Color.rgb(247,247,247));setContentDescription("标签页总览");setClickable(true);
         LinearLayout top=new LinearLayout(context);top.setGravity(Gravity.CENTER_VERTICAL);top.setPadding(dp(18),dp(10),dp(12),0);addView(top,new LayoutParams(-1,dp(78)));
         LinearLayout titles=new LinearLayout(context);titles.setOrientation(VERTICAL);TextView title=text("标签页",25);title.setTypeface(null,android.graphics.Typeface.BOLD);titles.addView(title);summary=text("",11);summary.setTextColor(Color.DKGRAY);titles.addView(summary);top.addView(titles,new LayoutParams(0,-2,1));Button done=button("完成");done.setOnClickListener(v->host.done());top.addView(done,new LayoutParams(dp(64),dp(48)));
         LinearLayout query=new LinearLayout(context);query.setGravity(Gravity.CENTER_VERTICAL);query.setPadding(dp(12),0,dp(8),0);query.setBackground(round(0xffeaeaea,0,12));LayoutParams qp=new LayoutParams(-1,dp(46));qp.setMargins(dp(16),dp(8),dp(16),dp(8));addView(query,qp);ImageView magnifier=new ImageView(context);magnifier.setImageDrawable(new StudioIcon("search"));query.addView(magnifier,new LayoutParams(dp(18),dp(18)));

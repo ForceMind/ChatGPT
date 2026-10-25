@@ -163,13 +163,13 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
     }
     private void showCurrent(){
         if(!ready||fatal)return;if(recovery!=null)recovery.checkpointVisible();cancelRequests();renderHeader();WorkspaceState.Account account=state.current();WorkspaceState.Tab tab=account.current();recentClosed.remove(tab.id);pruneRecent();
-        try{for(Map.Entry<String,WebView> held:views.entrySet())selectPage(held.getValue(),held.getKey().equals(tab.id));memory.refreshExecutionPolicy();WebView web=views.get(tab.id);if(web==null){web=makeWebView(account.id,tab.id,account.storageId);web.loadUrl(tab.url);}for(WorkspaceState.Account a:state.accounts)for(WorkspaceState.Tab t:a.tabs){WebView existing=views.get(t.id);if(existing==null)continue;if(existing.getParent()!=content){if(existing.getParent() instanceof ViewGroup)((ViewGroup)existing.getParent()).removeView(existing);content.addView(existing,new FrameLayout.LayoutParams(-1,-1));}selectPage(existing,t.id.equals(tab.id));}web.bringToFront();web.requestFocus();web.onResume();if(recovery!=null){if(web.getProgress()==100)recovery.ready(web);recovery.visible();}if(overview!=null)overview.refresh();}catch(Exception e){fail("网页空间无法打开",e);}
+        try{for(Map.Entry<String,WebView> held:views.entrySet())selectPage(held.getValue(),overview==null&&held.getKey().equals(tab.id));memory.refreshExecutionPolicy();WebView web=views.get(tab.id);if(web==null){web=makeWebView(account.id,tab.id,account.storageId);web.loadUrl(tab.url);}for(WorkspaceState.Account a:state.accounts)for(WorkspaceState.Tab t:a.tabs){WebView existing=views.get(t.id);if(existing==null)continue;if(existing.getParent()!=content){if(existing.getParent() instanceof ViewGroup)((ViewGroup)existing.getParent()).removeView(existing);content.addView(existing,new FrameLayout.LayoutParams(-1,-1));}selectPage(existing,overview==null&&t.id.equals(tab.id));}web.bringToFront();if(overview==null)web.requestFocus();web.onResume();if(recovery!=null){if(web.getProgress()==100)recovery.ready(web);recovery.visible();}if(overview!=null)overview.refresh();}catch(Exception e){fail("网页空间无法打开",e);}
     }
     private void selectPage(WebView web,boolean selected){if(web instanceof RetainedWebView)((RetainedWebView)web).selectPage(selected);else web.setVisibility(selected?View.VISIBLE:View.INVISIBLE);}
 
     private void showTabOverview(){
         if(!ready||fatal||overview!=null)return;if(handoffs!=null&&handoffs.controller()!=null&&handoffs.controller().ownedBy(this))handoffs.controller().cancel("已打开标签总览，自动发送已停止，请检查目标对话");
-        ((InputMethodManager)getSystemService(INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(root.getWindowToken(),0);bottomToolbar.setVisibility(View.GONE);
+        ((InputMethodManager)getSystemService(INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(root.getWindowToken(),0);bottomToolbar.setVisibility(View.GONE);WebView behind=currentWeb();if(behind!=null)selectPage(behind,false);
         overview=new TabOverview(this,new TabOverview.Host(){
             public WorkspaceState state(){return state;}public boolean loaded(String id){return views.containsKey(id);}public Bitmap thumbnail(String id){return memory.thumbnails.get(id);}
             public void activate(String account,String tab){if(change(next->{next.activeAccount=account;next.find(account).activeTab=tab;})){closeOverview();showCurrent();}}
@@ -182,7 +182,7 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
             public void done(){closeOverview();}
         });browserArea.addView(overview,new FrameLayout.LayoutParams(-1,-1));
     }
-    private void closeOverview(){if(overview==null)return;((InputMethodManager)getSystemService(INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(overview.getWindowToken(),0);browserArea.removeView(overview);overview=null;bottomToolbar.setVisibility(keyboardVisible?View.GONE:View.VISIBLE);WebView web=currentWeb();if(web!=null)web.requestFocus();}
+    private void closeOverview(){if(overview==null)return;((InputMethodManager)getSystemService(INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(overview.getWindowToken(),0);browserArea.removeView(overview);overview=null;bottomToolbar.setVisibility(keyboardVisible?View.GONE:View.VISIBLE);WebView web=currentWeb();if(web!=null){selectPage(web,true);web.requestFocus();}}
     private void refreshTabs(){renderHeader();if(overview!=null)overview.refresh();}
     private void restoreTab(String account,String id){if(change(next->{WorkspaceState.Account a=next.find(account);if(a.tabs.size()>=WorkspaceState.MAX_TABS)throw new IllegalStateException("标签页已达上限");WorkspaceState.Tab tab=a.closedTabs.stream().filter(t->t.id.equals(id)).findFirst().orElseThrow();a.closedTabs.remove(tab);a.tabs.add(tab);a.activeTab=id;next.activeAccount=account;})){if(undoBar!=null){browserArea.removeView(undoBar);undoBar=null;}closeOverview();showCurrent();}}
     private void showUndo(String account,String tab,String title){
@@ -484,7 +484,7 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
         String[] tab=new String[1];if(!change(s->{s.activeAccount=target;tab[0]=s.addTab(s.find(target)).id;}))throw new IllegalStateException("无法创建标签页");showCurrent();WebView web=views.get(tab[0]);if(web==null)throw new IllegalStateException("目标标签不可用");return new HandoffController.Page(tab[0],web);
     }
     @Override public boolean valid(JSONObject job,HandoffController.Page page){
-        try{return resumed&&ready&&!fatal&&state.activeAccount.equals(job.getString("targetAccountId"))&&state.current().activeTab.equals(page.tab)&&views.get(page.tab)==page.web&&page.web.getParent()==content&&page.web.isShown()&&state.find(job.getString("sourceAccountId")).storageId.equals(job.getString("sourceStorageId"))&&state.find(job.getString("targetAccountId")).storageId.equals(job.getString("targetStorageId"));}catch(Exception e){return false;}
+        try{return resumed&&ready&&!fatal&&overview==null&&state.activeAccount.equals(job.getString("targetAccountId"))&&state.current().activeTab.equals(page.tab)&&views.get(page.tab)==page.web&&page.web.getParent()==content&&page.web.isShown()&&page.web.getAlpha()==1f&&page.web.isEnabled()&&state.find(job.getString("sourceAccountId")).storageId.equals(job.getString("sourceStorageId"))&&state.find(job.getString("targetAccountId")).storageId.equals(job.getString("targetStorageId"));}catch(Exception e){return false;}
     }
     @Override public long epoch(HandoffController.Page page){return pageEpochs.getOrDefault(page.tab,-1L);}
     @Override public void changed(JSONObject job){
