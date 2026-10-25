@@ -6,6 +6,10 @@ on:
         description: Existing draft tag matching the checked release manifest
         type: string
         required: true
+      inspect_only:
+        description: Only verify desktop binaries and publish a small metadata artifact; no Release writes
+        type: boolean
+        default: false
 permissions:
   contents: write
   actions: read
@@ -23,41 +27,57 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '26.7.0'
+      - name: Read validated candidate run identities
+        id: settings
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import assert from 'node:assert/strict';
+          const p=JSON.parse(fs.readFileSync('desktop/package.json','utf8'));
+          const c=JSON.parse(fs.readFileSync('docs/releases/'+p.version+'-ci.json','utf8'));
+          for(const [key,value] of [['mac_run',c.macos.package.runId],['windows_run',c.windows.runId]]){assert(Number.isSafeInteger(value)&&value>0);fs.appendFileSync(process.env.GITHUB_OUTPUT,key+'='+value+'\n');}
+          NODE
       - uses: actions/download-artifact@v4
         with:
           name: mac-arm64-dmg
-          run-id: 40087980342
+          run-id: ${{ steps.settings.outputs.mac_run }}
           github-token: ${{ github.token }}
           path: promotion/mac-dmg
       - uses: actions/download-artifact@v4
         with:
           name: mac-arm64-zip
-          run-id: 40087980342
+          run-id: ${{ steps.settings.outputs.mac_run }}
           github-token: ${{ github.token }}
           path: promotion/mac-zip
       - uses: actions/download-artifact@v4
         with:
           name: mac-release-info
-          run-id: 40087980342
+          run-id: ${{ steps.settings.outputs.mac_run }}
           github-token: ${{ github.token }}
           path: promotion/mac-info
       - uses: actions/download-artifact@v4
         with:
           name: windows-x64-installer
-          run-id: 40089162364
+          run-id: ${{ steps.settings.outputs.windows_run }}
           github-token: ${{ github.token }}
           path: promotion/windows-installer
       - uses: actions/download-artifact@v4
         with:
           name: windows-x64-zip
-          run-id: 40089162364
+          run-id: ${{ steps.settings.outputs.windows_run }}
           github-token: ${{ github.token }}
           path: promotion/windows-zip
       - name: Verify frozen inputs and promote without overwriting assets
+        if: ${{ !inputs.inspect_only }}
         run: node desktop/scripts/promote-validated-release.mjs
+      - name: Inspect existing desktop binaries without Release writes
+        if: inputs.inspect_only
+        run: node desktop/scripts/inspect-release-artifacts.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: promotion-verification
           retention-days: 30
-          path: promotion/promotion-verification.json
+          path: |
+            promotion/promotion-verification.json
+            promotion/desktop-artifact-info.json

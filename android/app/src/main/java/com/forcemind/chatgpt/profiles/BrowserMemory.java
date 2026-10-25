@@ -58,7 +58,7 @@ final class BrowserMemory {
     }
     private void remember(String account,String tab,String url,String title){
         if(owner()!=null)return;
-        try{StateStore store=new StateStore(context.getFilesDir());WorkspaceState state=store.load();WorkspaceState.Account a=state.find(account);for(WorkspaceState.Tab t:a.tabs)if(t.id.equals(tab)){if(url!=null)t.url=NavigationPolicy.restorable(url);if(!t.customTitle&&title!=null&&!title.trim().isEmpty())t.title=title.substring(0,Math.min(120,title.length()));store.save(state);break;}}catch(Exception ignored){}
+        try{StateStore store=new StateStore(context.getFilesDir());WorkspaceState state=store.load();WorkspaceState.Account a=state.find(account);for(WorkspaceState.Tab t:a.tabs)if(t.id.equals(tab)){boolean changed=false;if(url!=null&&!t.url.equals(NavigationPolicy.restorable(url))){t.url=NavigationPolicy.restorable(url);changed=true;}if(!t.customTitle&&title!=null&&!title.trim().isEmpty()&&!t.title.equals(title.substring(0,Math.min(120,title.length())))){t.title=title.substring(0,Math.min(120,title.length()));changed=true;}if(changed)store.save(state);break;}}catch(Exception ignored){}
     }
     void destroy(String tab){
         WebView web=views.remove(tab);accounts.remove(tab);storage.remove(tab);epochs.remove(tab);popupOwners.remove(tab);recentClosed.remove(tab);thumbnails.remove(tab);thumbnailTimes.remove(tab);

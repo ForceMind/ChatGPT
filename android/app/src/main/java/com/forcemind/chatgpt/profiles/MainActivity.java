@@ -244,7 +244,7 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
         });
         web.setWebChromeClient(new WebChromeClient() {
             @Override public void onReceivedTitle(WebView view, String title) {
-                if (title == null || title.trim().isEmpty() || !exists(accountId, tabId)||state.find(accountId).tabs.stream().anyMatch(t->t.id.equals(tabId)&&t.customTitle)) return;
+                if (title == null || title.trim().isEmpty() || !exists(accountId, tabId)||state.find(accountId).tabs.stream().anyMatch(t->t.id.equals(tabId)&&(t.customTitle||t.title.equals(title.substring(0,Math.min(120,title.length())))))) return;
                 if (change(s -> s.find(accountId).tabs.stream().filter(t -> t.id.equals(tabId)).findFirst().orElseThrow(() -> new IllegalStateException("Missing account or tab")).title = title.substring(0, Math.min(120, title.length()))) && active(tabId)) renderHeader();
             }
             @Override public void onProgressChanged(WebView view, int value) {
