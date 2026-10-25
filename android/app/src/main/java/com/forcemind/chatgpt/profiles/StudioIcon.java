@@ -5,9 +5,9 @@ import android.graphics.drawable.Drawable;
 
 /** Small monochrome vector icons with a consistent 24-unit grid. */
 final class StudioIcon extends Drawable {
-    private final String name;private final Paint paint=new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final String name;private final Path shape=new Path();private final Paint paint=new Paint(Paint.ANTI_ALIAS_FLAG);
     StudioIcon(String name){this.name=name;paint.setColor(Color.rgb(23,23,23));paint.setStyle(Paint.Style.STROKE);paint.setStrokeWidth(1.8f);paint.setStrokeCap(Paint.Cap.ROUND);paint.setStrokeJoin(Paint.Join.ROUND);}
-    private void path(Canvas c,float...points){Path p=new Path();p.moveTo(points[0],points[1]);for(int i=2;i<points.length;i+=2)p.lineTo(points[i],points[i+1]);c.drawPath(p,paint);}
+    private void path(Canvas c,float...points){Path p=shape;p.reset();p.moveTo(points[0],points[1]);for(int i=2;i<points.length;i+=2)p.lineTo(points[i],points[i+1]);c.drawPath(p,paint);}
     @Override public void draw(Canvas canvas){canvas.save();canvas.translate(getBounds().left,getBounds().top);canvas.scale(getBounds().width()/24f,getBounds().height()/24f);
         switch(name){
             case "chevron"->path(canvas,7,10,12,15,17,10);case "back"->path(canvas,14,5,7,12,14,19);

@@ -10,7 +10,7 @@ import org.json.*;
 /** Opt-in private fixture, present only in the debug APK used by isolated CI. */
 public final class RestartProbeApplication extends Application {
     @Override public void onCreate(){
-        super.onCreate();File config=new File(getFilesDir(),"process-restart-fixture.json");if(!config.exists())return;
+        super.onCreate();if(LifecycleFixture.present(this)){LifecycleFixture.install(this);return;}File config=new File(getFilesDir(),"process-restart-fixture.json");if(!config.exists())return;
         // A malformed opt-in fixture must not fall through to a real network request.
         MainActivity.handoffFixture=(owner,request)->response("text/plain","Offline restart fixture unavailable");
         try{
