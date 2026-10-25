@@ -15,24 +15,24 @@ const platforms = {
     height: 1800,
   },
   android: {
-    image: "android-assets.png",
-    caption: "Android · 资产库实际界面 / 模拟器 · 示例文件",
-    alt: "Android 客户端资产库实际截图：独立账号下的 PDF、PNG 和 HTML 示例文件，带搜索、导入和交给 GPT 入口；采集于 Android 15 模拟器。",
+    image: "android-tabs.png",
+    caption: "Android · 原生标签总览 / 模拟器 · 本地测试账号",
+    alt: "Android 客户端原生标签总览实际截图：账号身份、筛选、搜索、标签卡片和新建入口。网页内容为本地测试素材，非真实 ChatGPT 首页。",
     width: 1080,
     height: 2400,
-    kind: "ANDROID · ACTUAL APP / DEMO FILES",
+    kind: "ANDROID · ACTUAL APP / LOCAL FIXTURES",
   },
 };
-const androidSkills = {
-  ...platforms.android,
-  image: "android-skills.png",
-  caption: "Android · 120 个 Skill 实际界面 / 模拟器 · 本地示例账号",
-  alt: "Android 客户端能力库实际截图：120 个项目 Skill、原生搜索与任务说明；采集于 Android 15 模拟器，尚无预置智能体。",
+const androidViews = {
+  tabs: platforms.android,
+  tablet: {...platforms.android,image:"android-tablet-tabs.png",width:1600,height:2560,caption:"Android · 平板原生标签总览 / 模拟器 · 本地测试账号",alt:"Android 平板原生三列标签总览，含账号筛选、搜索与标签管理入口；测试素材不是真实 ChatGPT 首页。"},
+  assets: {...platforms.android,image:"android-assets.png",caption:"Android · 资产库实际界面 / 模拟器 · 示例文件",alt:"Android 客户端资产库实际截图：独立账号下的 PDF、PNG 和 HTML 示例文件，带搜索、导入和交给 GPT 入口；采集于 Android 15 模拟器。"},
+  skills: {...platforms.android,image:"android-skills.png",caption:"Android · 120 个 Skill 实际界面 / 模拟器 · 本地示例账号",alt:"Android 客户端能力库实际截图：120 个项目 Skill、原生搜索与任务说明；采集于 Android 15 模拟器，尚无预置智能体。"},
 };
 const tabs = [...document.querySelectorAll("[data-platform]")];
 const image = document.querySelector("#product-image");
-function selectPlatform(name, view = "assets") {
-  const entry = name === "android" && view === "skills" ? androidSkills : platforms[name];
+function selectPlatform(name, view = "tabs") {
+  const entry = name === "android" ? androidViews[view] : platforms[name];
   if (!entry) return;
   tabs.forEach((tab) => {
     const selected = tab.dataset.platform === name;

@@ -52,6 +52,14 @@ test('Studio website renders its new brand on desktop and mobile with historical
    await expect.poll(()=>page.evaluate(()=>innerWidth)).toBe(width);
    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
    await page.screenshot({path:info.outputPath('studio-website-'+width+'.png')});
+   await page.getByRole('tab',{name:'Android',exact:true}).click();
+   for(const view of ['tabs','tablet','assets','skills']){
+    await page.locator('[data-android-view="'+view+'"]').click();
+    await expect(page.locator('[data-android-view="'+view+'"]')).toHaveAttribute('aria-pressed','true');
+    await expect.poll(()=>page.locator('#product-image').evaluate((image:HTMLImageElement)=>image.complete&&image.naturalWidth>0)).toBe(true);
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+    if(view==='tabs'||view==='tablet')await page.locator('#product-panel').screenshot({path:info.outputPath('studio-android-'+view+'-'+width+'.png')});
+   }
   }
   await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].setContentSize(1440,1000));
   const zip=release.artifacts.find((a:{file:string})=>a.file.endsWith('-mac-arm64.zip'));
