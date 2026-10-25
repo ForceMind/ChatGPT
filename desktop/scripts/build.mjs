@@ -5,9 +5,13 @@ import path from 'node:path';
 import { copyFileSync, cpSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import {buildRecoveryNative} from './build-recovery-native.mjs';
+import {Resvg} from '@resvg/resvg-js';
+import {readFileSync,writeFileSync} from 'node:fs';
 const root = fileURLToPath(new URL('..', import.meta.url));
 await bundle({ entryPoints: [path.join(root, 'src/main/main.ts'), path.join(root, 'src/main/preload.ts'),path.join(root,'src/main/update-notice-preload.ts')], outdir: path.join(root, 'dist/main'), outExtension: { '.js': '.cjs' }, bundle: true, platform: 'node', format: 'cjs', target: 'node22', external: ['electron'], sourcemap: true });
 copyFileSync(path.join(root,'assets/icon.png'),path.join(root,'dist/main/icon.png'));
+const menuBarSvg=readFileSync(path.join(root,'assets/menu-bar-template.svg'));
+for(const scale of [1,2])writeFileSync(path.join(root,'dist/main',`menuBarTemplate${scale===2?'@2x':''}.png`),new Resvg(menuBarSvg,{fitTo:{mode:'width',value:18*scale}}).render().asPng());
 buildRecoveryNative(root);
 if(process.platform==='darwin'){
  const helper=path.join(root,'dist/main/update-installer');

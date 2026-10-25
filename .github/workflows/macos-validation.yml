@@ -10,6 +10,10 @@ on:
         description: Compare alpha.13 and current on one host, then verify 330-second background retention
         type: boolean
         default: true
+      menu_bar_only:
+        description: Validate native macOS menu-bar creation, resources and account/window actions only
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
@@ -30,20 +34,25 @@ jobs:
           test "$(uname -m)" = arm64
           npm ci
           npm run check
-      - name: All isolated functional scenarios
+      - name: Applicable isolated functional scenarios
         env:
           PLAYWRIGHT_JSON_OUTPUT_FILE: test-results/full-regression.json
-        run: npx playwright test --reporter=list,json
+        run: |
+          if [ "${{ inputs.menu_bar_only }}" = true ]; then
+            npx playwright test tests/menu-bar.e2e.ts --reporter=list,json
+          else
+            npx playwright test --reporter=list,json
+          fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: macos-full-regression-results
+          name: ${{ inputs.menu_bar_only && 'macos-menubar-results' || 'macos-full-regression-results' }}
           retention-days: 14
           path: desktop/test-results/full-regression.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: macos-full-regression-evidence
+          name: ${{ inputs.menu_bar_only && 'macos-menubar-evidence' || 'macos-full-regression-evidence' }}
           retention-days: 14
           path: |
             desktop/test-results/

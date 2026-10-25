@@ -33,6 +33,7 @@ import { HandoffRunner } from './handoff-runner';
 import type { HandoffJob } from '../shared/handoff';
 import { LoginDiagnostics } from './login-diagnostics';
 import type { LinkKind } from '../shared/diagnostics';
+import {MacMenuBar} from './mac-menu-bar';
 
 const desktopWorkspace = desktopWorkspaceEnabled(process.platform);
 const testMode = !app.isPackaged && process.env.PROFILES_E2E === '1';
@@ -50,6 +51,8 @@ protocol.registerSchemesAsPrivileged([{ scheme: 'app', privileges: { standard: t
 const single = app.requestSingleInstanceLock();
 if (!single) app.quit();
 let win: BrowserWindow | undefined;
+// Kept in main-process module scope so the native status item survives hidden windows.
+export let menuBar:MacMenuBar|undefined;
 let updates:UpdateManager|undefined,updateDialog=false;const offeredUpdates=new Set<string>(),readyUpdatePrompts=new Set<string>();
 let idleUpdate:IdleUpdate|undefined,idleTimer:ReturnType<typeof setTimeout>|undefined,idleNoticeWindow:BrowserWindow|undefined,idleInstallEpoch:number|undefined;
 let backgroundModePending=process.platform==='darwin'&&process.argv.includes('--profiles-background-update');
@@ -94,7 +97,7 @@ const pendingProfiles = new Set<string>();
 const homepage = () => homeURL(fixtureOrigin);
 const activeProfile = () => { const s = store.read(); return s.profiles.find(p => p.id === s.activeProfileId)!; };
 const snapshot = (): Snapshot => ({ ...store.read(), version: APP_VERSION, platform: process.platform, fullScreen: win?.isFullScreen() ?? false, tabStatus: Object.fromEntries(status), testMode, recoveryAccess:recoveryAccess?{...recoveryAccess.status,blocking:!pagesStarted}:undefined, offline:offlinePages.get(activeProfile().activeTabId), update:updates?.status, notice: store.recoveryNotice || assetStore?.recoveryNotice || recoveryError, overlayImage, panel, assetError });
-function publish():void{if(publishTimer)return;publishTimer=setTimeout(()=>{publishTimer=undefined;if(win&&!win.isDestroyed())win.webContents.send('profiles:state',snapshot());},25);publishTimer.unref();}
+function publish():void{if(publishTimer)return;publishTimer=setTimeout(()=>{publishTimer=undefined;menuBar?.refresh();if(win&&!win.isDestroyed())win.webContents.send('profiles:state',snapshot());},25);publishTimer.unref();}
 function notice(message: string): void { if (win && !win.isDestroyed()) win.webContents.send('profiles:shortcut', `notice:${message}`); }
 function report(error: unknown): void { notice(error instanceof Error ? error.message : '操作失败，请重试。'); }
 function startPages(focus=true):void {if(pagesStarted)return;pagesStarted=true;showActive(focus);void warmPreviousTabs();}
@@ -537,7 +540,7 @@ function syncIdleTimer():void{
  idleTimer=setTimeout(()=>{void idleUpdate!.tick().finally(syncIdleTimer);},delay);idleTimer.unref();
 }
 async function safeForIdleUpdate():Promise<boolean>{
- if(!recovery||recoveryChanging||recoveryError||assetError||handoffError||overlayOpen||panel||updateDialog||pendingProfiles.size||restoringPages.size||warming||assetConversions?.hasRunning())return false;
+ if(!recovery||recoveryChanging||recoveryError||assetError||handoffError||overlayOpen||panel||updateDialog||menuBar?.isOpen||pendingProfiles.size||restoringPages.size||warming||assetConversions?.hasRunning())return false;
  if([...popups.keys()].some(p=>!p.isDestroyed())||[...assetDownloads.values()].some(d=>d.activeIds().length))return false;
  if(handoffRunner?.jobs.all().some(j=>['preparing','opening','uploading','drafting','sending'].includes(j.status)))return false;
  if(!views.size||store.read().tabs.some(t=>t.loaded&&!views.has(t.id)))return false;
@@ -558,7 +561,7 @@ function initializeIdleUpdate():void{
  const fast=testMode&&process.env.PROFILES_IDLE_FAST==='1';
  idleUpdate=new IdleUpdate({idleMs:fast?1000:1800000,countdownMs:fast?7000:60000,
   eligible:()=>updates?.status.phase==='ready'&&updates.status.idleEnabled===true&&!quitting,
-  focused:()=>BrowserWindow.getAllWindows().some(w=>w!==idleNoticeWindow&&w.isFocused()),safe:safeForIdleUpdate,
+  focused:()=>menuBar?.isOpen===true||BrowserWindow.getAllWindows().some(w=>w!==idleNoticeWindow&&w.isFocused()),safe:safeForIdleUpdate,
   countdown:showIdleNotice,visible:()=>idleNoticeWindow?.isVisible()===true,
   install:epoch=>{idleInstallEpoch=epoch;updates?.restartAfterInstall(true);app.quit();}
  });syncIdleTimer();
@@ -613,6 +616,17 @@ function registerProtocol(): void {
   const root = path.join(__dirname,'../renderer');
   protocol.handle('app',request=>localRendererResponse(root,request));
 }
+function installMenuBar():void{
+ if(process.platform!=='darwin')return;
+ menuBar=new MacMenuBar(path.join(__dirname,'menuBarTemplate.png'),{
+  read:()=>({profiles:store.read().profiles.map(({id,name,email})=>({id,name,email})),activeProfileId:store.read().activeProfileId,windowVisible:!!win&&!win.isDestroyed()&&win.isVisible()&&!win.isMinimized(),canInteract:pagesStarted&&!quitPending&&!quitting&&!recoveryChanging&&!pendingProfiles.size,canCheckUpdates:!!updates&&!quitPending&&!quitting,quitting:quitting||quitPending}),
+  activity:recordAppActivity,
+  toggleWindow:()=>{if(quitting)return;if(win&&!win.isDestroyed()&&win.isVisible()&&!win.isMinimized())win.close();else reopenWindow();},
+  command:command=>queueCommandInternal(async()=>{try{await dispatch(command);}finally{reopenWindow();}}),
+  checkUpdates:()=>{reopenWindow();void checkUpdates(true).catch(report);},
+  quit:()=>app.quit()
+ });
+}
 function createWindow(): void {
   const b = store.read().bounds;
   const onScreen = screen.getAllDisplays().some(d => b.x !== undefined && b.y !== undefined && b.x+Math.min(b.width,200)>d.workArea.x && b.x<d.workArea.x+d.workArea.width && b.y+40>d.workArea.y && b.y<d.workArea.y+d.workArea.height);
@@ -623,6 +637,7 @@ function createWindow(): void {
   if (process.platform === 'win32') win.setMenuBarVisibility(false);
   win.webContents.setWindowOpenHandler(()=>({action:'deny'}));
   win.webContents.on('will-navigate',event=>event.preventDefault());
+  for(const event of ['show','hide','minimize','restore'] as const)win.on(event,()=>menuBar?.refresh());
   win.on('focus',()=>{if(!backgroundModePending&&!pagesStarted&&recoveryAccess?.status.phase==='pending'&&!recoveryAccess.needsConsent)void authorizeRecovery();});
   win.on('resize',()=>{recordAppActivity();layout();clearTimeout(boundsTimer);boundsTimer=setTimeout(()=>{try{saveBounds();}catch(error){report(error);}},250);});
   win.on('move',()=>{recordAppActivity();clearTimeout(boundsTimer);boundsTimer=setTimeout(()=>{try{saveBounds();}catch(error){report(error);}},250);});
@@ -669,6 +684,7 @@ if (single) {
      initializeIdleUpdate();updates.start(()=>void checkUpdates().catch(report));powerMonitor.on('resume',()=>{recordAppActivity();updates?.resume(()=>void checkUpdates().catch(report));});
      win?.once('show',()=>void offerUpdate().catch(report));publish();
     }
+    try{installMenuBar();}catch(error){const message=error instanceof Error?error.message:'菜单栏暂不可用';console.error('菜单栏初始化失败:',message);win?.webContents.once('did-finish-load',()=>notice(message+'，仍可从 Dock 打开应用。'));}
     app.on('activate',reopenWindow);
   }).catch(error=>{dialog.showErrorBox('无法安全恢复账号',error instanceof Error?error.message:String(error));app.quit();});
   app.on('before-quit',event=>{
@@ -684,7 +700,7 @@ if (single) {
      reopenWindow();const choice=await dialog.showMessageBox(win!,{type:'warning',title:'退出准备尚未完成',message:'恢复记录或更新暂时无法准备完成',detail:(error instanceof Error?error.message:'本机加密或网页繁忙')+'。可以返回应用继续保存；仍然退出可能无法恢复最后的修改。',buttons:['返回应用','仍然退出'],defaultId:0,cancelId:0});if(choice.response===1){quitting=true;app.quit();}
     });return;
    }
-   quitting=true;recoveryAccess?.dispose();clearTimeout(idleTimer);idleUpdate?.cancel();idleNoticeWindow?.destroy();updates?.dispose();clearInterval(checkpointTimer);recentClosed.dispose();handoffRunner?.dispose();assetConversions?.dispose();for(const tracker of assetDownloads.values())tracker.dispose();
+   quitting=true;menuBar?.dispose();menuBar=undefined;recoveryAccess?.dispose();clearTimeout(idleTimer);idleUpdate?.cancel();idleNoticeWindow?.destroy();updates?.dispose();clearInterval(checkpointTimer);recentClosed.dispose();handoffRunner?.dispose();assetConversions?.dispose();for(const tracker of assetDownloads.values())tracker.dispose();
   });
   app.on('window-all-closed',()=>{if(process.platform!=='darwin'||testMode)app.quit();});
 }
