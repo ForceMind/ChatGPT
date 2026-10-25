@@ -23,7 +23,7 @@ test('desktop real download, account-scoped assets, safe HTML and full capabilit
     const origin=`http://127.0.0.1:${address.port}`;
     const launch=async()=>{
       app=await electron.launch({args:[desktop],env:{...process.env,PROFILES_E2E:'1',PROFILES_TEST_DATA:data,PROFILES_FIXTURE_ORIGIN:origin}});
-      const shell=await shellWindow(app);await shell.waitForURL('app://shell/index.html');await expect(shell.locator('.current-account')).toBeVisible();return shell;
+      const shell=await shellWindow(app,{width:1360,height:640});await shell.waitForURL('app://shell/index.html');await expect(shell.locator('.current-account')).toBeVisible();return shell;
     };
     const state=(shell:Page)=>shell.evaluate(()=>window.profiles.snapshot());
     let shell=await launch();

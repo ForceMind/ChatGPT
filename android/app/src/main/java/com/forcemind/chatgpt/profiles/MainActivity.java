@@ -50,6 +50,8 @@ import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.RadioButton;
+import android.widget.ScrollView;
 import android.widget.Toast;
 import androidx.webkit.ProfileStore;
 import androidx.webkit.WebViewCompat;
