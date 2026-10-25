@@ -227,7 +227,7 @@ jobs:
             adb shell wm size reset
             adb shell wm density reset
           fi
-          if [ "${{ inputs.workbench_only }}" = true ]; then
+          if [ "${{ inputs.workbench_only }}" = true ] || [ "${{ inputs.recovery_only }}" = true ] || [ "${{ inputs.handoff_only }}" = true ]; then
             test "${{ inputs.ui_only }}" != true
             echo 'Native workbench fixture tests only. Real ChatGPT UI and accounts were not verified.' > app/build/device-evidence/scope.txt
             exit 0

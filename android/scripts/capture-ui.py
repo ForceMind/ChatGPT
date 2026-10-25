@@ -44,7 +44,7 @@ def text(label):
     tap(find(lambda a: a.get('text') == label))
 
 def badge(name=None):
-    return find(lambda a: a.get('content-desc', '').startswith('账号与操作菜单') and (name is None or a['content-desc'] == '账号与操作菜单，当前：' + name))
+    return find(lambda a: a.get('content-desc', '').startswith('切换账号，当前：') and (name is None or a['content-desc'] == '切换账号，当前：' + name))
 
 def screenshot(name):
     (out / name).write_bytes(adb('exec-out', 'screencap', '-p'))
@@ -64,7 +64,7 @@ tap(field(0)); adb('shell', 'input', 'text', 'Work')
 tap(field(1)); adb('shell', 'input', 'text', 'work@example.test')
 text('保存'); badge('Work')
 print('Native account creation passed.', flush=True)
-tap(badge('Work')); text('切换账号')
+tap(badge('Work'))
 find(lambda a: 'Work' in a.get('text', '') and 'work@example.test' in a.get('text', ''))
 personal = find(lambda a: initial_name in a.get('text', ''))
 screenshot('android-accounts.png'); tap(personal); badge(initial_name)
@@ -78,7 +78,7 @@ screenshot('android-phone.png')
 # Homepage evidence must show the loaded webpage, with native menus closed.
 # The personal space may still be on Cloudflare's check; use the second,
 # isolated space only after its actual anonymous ChatGPT page is ready.
-tap(badge(initial_name)); text('切换账号')
+tap(badge(initial_name))
 tap(find(lambda a: 'Work' in a.get('text', '') and 'work@example.test' in a.get('text', '')))
 badge('Work')
 print('Checking actual anonymous webpage for homepage evidence.', flush=True)
