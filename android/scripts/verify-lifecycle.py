@@ -6,7 +6,7 @@ from pathlib import Path
 PKG='com.forcemind.chatgpt.profiles.debug'
 OUT=Path(sys.argv[1] if len(sys.argv)>1 else 'app/build/lifecycle-evidence');OUT.mkdir(parents=True,exist_ok=True)
 HOLD=int(os.environ.get('STUDIO_HOLD_SECONDS','330'));assert 10<=HOLD<=900
-report={'scope':'Native debug app and synthetic HTTPS-intercept fixtures; no instrumentation/DevTools attached, no real ChatGPT or personal data','holdSeconds':HOLD,'phases':[]}
+report={'scope':'Native debug app and synthetic HTTPS-intercept fixtures; no instrumentation/DevTools attached, no real ChatGPT or personal data','holdSeconds':HOLD,'phases':[],'transportScope':'Three account-specific Java-intercepted SSE streams and five finite polling tabs, avoiding interception-reader pool exhaustion; eight independent JS heartbeat and network acknowledgements'}
 def adb(*args,check=True,timeout=30,input=None):
     r=subprocess.run(['adb',*args],input=input,stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=timeout)
     if check and r.returncode:raise RuntimeError('adb '+str(args[:3])+': '+r.stderr.decode(errors='replace')[-800:])
@@ -97,7 +97,7 @@ try:
     else:
         if environment['api']>=33:adb('shell','pm','grant',PKG,'android.permission.POST_NOTIFICATIONS')
         workspace=wait(lambda:private('workspace.json'));tabs=[t for a in workspace['accounts'] for t in a['tabs']];assert len(tabs)==8
-        resources=[]
+        resources=[];report['resources']=resources
         for n,tab in enumerate(tabs):
             if n:open_tab(tab['title'])
             wait(lambda:tab_ready(tab['id'],'seed'));time.sleep(1)
@@ -129,5 +129,6 @@ except Exception as error:
     except Exception:pass
     raise
 finally:
+    report['observationsAtEnd']=observations()
     (OUT/'lifecycle-verification.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
     adb('shell','am','force-stop',PKG,check=False)
