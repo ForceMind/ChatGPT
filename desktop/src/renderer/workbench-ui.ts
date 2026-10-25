@@ -10,7 +10,7 @@ import { conversionFormats } from '../shared/conversion-formats';
 
 const esc = (v: unknown) => String(v ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 const classes = (value: string) => value.split(' ').filter(Boolean).map(c=>'aw-'+c).join(' ');
-const size = (n: number) => n>=1048576?`${(n/1048576).toFixed(1)} MB`:`${(n/1024).toFixed(1)} KB`;
+const size = (n: number) => n<1024?`${n} B`:n>=1048576?`${(n/1048576).toFixed(1)} MB`:`${(n/1024).toFixed(1)} KB`;
 const statusName: Record<string,string> = {ready:'可用',downloading:'下载中',paused:'已暂停',processing:'处理中',interrupted:'已中断',cancelled:'已取消',failed:'失败',missing:'文件丢失',changed:'文件已变更'};
 const filters = [{id:'all',name:'全部资产',icon:'grid'},{id:'image',name:'图片',icon:'image'},{id:'web',name:'网页',icon:'web'},{id:'document',name:'文档',icon:'document'},{id:'data',name:'数据与代码',icon:'code'},{id:'favorite',name:'收藏',icon:'star'},{id:'converted',name:'最近转换',icon:'convert'},{id:'trash',name:'回收站',icon:'trash'}];
 function selectors(value: string): string { return value.replace(/#([a-zA-Z][\w-]*)/g,'#wb-$1').replace(/\.([a-zA-Z][\w-]*)/g,'.aw-$1'); }

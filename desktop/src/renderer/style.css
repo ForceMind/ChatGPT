@@ -36,7 +36,8 @@
 .modal{width:680px;display:flex;flex-direction:column;max-height:calc(100vh - 88px);overflow:hidden;padding:24px}
 .modal-header,.modal h1,.modal-description,.account-maintenance{flex-shrink:0}
 .modal-description{font-size:var(--studio-type-small);line-height:1.6}
-.modal form{display:flex;flex-direction:column;flex:1;min-height:0}.account-form-body{overflow:auto;min-height:0;padding:0 8px 0 0;overscroll-behavior:contain}
+.modal form{display:flex;flex-direction:column;flex:1;min-height:0}.account-form-body{overflow:auto;min-height:0;padding:4px 8px 4px 4px;margin-left:-4px;overscroll-behavior:contain}
+.account-editor-header{gap:18px;margin-bottom:24px}.account-editor-header h1{font-size:22px;margin:0 0 8px;letter-spacing:0}.account-editor-header .modal-description{margin:0;line-height:1.6}
 .account-form-body>label{display:block;font-size:var(--studio-type-small);font-weight:500;margin-bottom:18px;color:#454545}
 .account-form-body>label>span{font-size:var(--studio-type-meta);color:var(--studio-muted)}
 .modal input:not([type=radio]){height:46px;font-size:var(--studio-type-body)}

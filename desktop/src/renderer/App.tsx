@@ -151,8 +151,7 @@ function App() {
     {diagnosticsOpen&&<LoginDiagnostics state={state} close={closeDiagnostics} notice={showToast}/>}
     {editor&&<div className="modal-backdrop" onMouseDown={event=>{if(event.target===event.currentTarget&&!busy)void closeEditor();}}>
       <div className="modal" role="dialog" aria-modal="true" aria-labelledby="editor-title" ref={modal}>
-        <div className="modal-header"><span className="modal-symbol"><Icon name={editing?'edit':'plus'} size={22}/></span><button className="tool" aria-label="关闭账号管理" disabled={busy} onClick={()=>void closeEditor()}><Icon name="close"/></button></div>
-        <h1 id="editor-title">{editing?'管理账号空间':'添加账号空间'}</h1><p className="modal-description">{editing?'设置清晰的标识，切换时一眼认出账号。':'创建独立的浏览器空间，然后在 ChatGPT 网页内登录。'}</p>
+        <div className="modal-header account-editor-header"><div><h1 id="editor-title">{editing?'管理账号空间':'添加账号空间'}</h1><p className="modal-description">{editing?'设置清晰的标识，切换时一眼认出账号。':'创建独立的浏览器空间，然后在 ChatGPT 网页内登录。'}</p></div><button className="tool" aria-label="关闭账号管理" disabled={busy} onClick={()=>void closeEditor()}><Icon name="close"/></button></div>
         <form key={editing?.id||'new'} onSubmit={event=>void submit(event)}><div className="account-form-body">
           <label>账号名称<input name="name" placeholder="例如：个人账号、工作账号" maxLength={40} required defaultValue={editing?.name||''} disabled={busy}/></label>
           <label>邮箱备注 <span>选填</span><input name="email" placeholder="name@example.com" maxLength={120} defaultValue={editing?.email||''} disabled={busy}/></label>

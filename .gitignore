@@ -20,3 +20,4 @@ android/release/
 *.keystore
 .wrangler/
 __pycache__/
+.codex-attachments/

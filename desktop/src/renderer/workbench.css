@@ -169,7 +169,7 @@ svg {
   color:var(--studio-muted);
   text-align: left;
 }
-.aw-browser-tab.active {
+.aw-browser-tab.aw-active {
   background: #fff;
   border: 1px solid #e4e4e4;
   color: #343434;
@@ -206,7 +206,7 @@ svg {
   font-size:var(--studio-type-small);
   white-space: nowrap;
 }
-.aw-title-action.active {
+.aw-title-action.aw-active {
   background: #eaeaea;
 }
 .aw-title-action > .aw-inline-icon svg {
@@ -273,7 +273,7 @@ svg {
   font-size:var(--studio-type-small);
   color:var(--studio-muted);
 }
-.aw-account-option.active {
+.aw-account-option.aw-active {
   background: #f5f5f5;
 }
 .aw-account-option > span:last-child {
@@ -357,8 +357,8 @@ svg {
   font-size:var(--studio-type-small);
   color:var(--studio-muted);
 }
-.aw-nav-item.active,
-.aw-library-tabs > button.active {
+.aw-nav-item.aw-active,
+.aw-library-tabs > button.aw-active {
   background: #eaeaea;
   color: #171717;
 }
@@ -572,7 +572,7 @@ h2 > span {
   width: 12px;
   height: 12px;
 }
-.aw-view-switch button.active {
+.aw-view-switch button.aw-active {
   background: #fff;
   color: #333;
   box-shadow: 0 1px 3px #0001;
@@ -624,7 +624,7 @@ h2 > span {
   border-color: #bcbcbc;
   box-shadow: 0 2px 12px #00000005;
 }
-.aw-asset-card.selected {
+.aw-asset-card.aw-selected {
   border: 1.5px solid #555;
   box-shadow: 0 0 0 1px #55555508;
 }
@@ -835,10 +835,10 @@ h2 > span {
   height: 11px;
 }
 .aw-asset-card:hover .aw-card-check,
-.aw-asset-card.checked .aw-card-check {
+.aw-asset-card.aw-checked .aw-card-check {
   opacity: 1;
 }
-.aw-asset-card.checked .aw-card-check {
+.aw-asset-card.aw-checked .aw-card-check {
   color: #fff;
   background: #333;
   border-color: #333;
@@ -863,10 +863,10 @@ h2 > span {
   height: 12px;
 }
 .aw-asset-card:hover .aw-card-star,
-.aw-card-star.is-favorite {
+.aw-card-star.aw-is-favorite {
   opacity: 1;
 }
-.aw-card-star.is-favorite svg {
+.aw-card-star.aw-is-favorite svg {
   fill: #777;
 }
 .aw-derived-marker {
@@ -1168,7 +1168,7 @@ h2 > span {
   overflow: visible;
   padding: 6px 8px 6px 30px;
 }
-.aw-list-mode .aw-asset-card.selected {
+.aw-list-mode .aw-asset-card.aw-selected {
   border-color: #d5d5d5;
   box-shadow: none;
   background: #f9f9f9;
@@ -1432,7 +1432,7 @@ h2 > span {
   font-size:var(--studio-type-small);
   color:var(--studio-muted);
 }
-.aw-library-toolbar .aw-secondary.active {
+.aw-library-toolbar .aw-secondary.aw-active {
   color: #222;
   background: #f0f0f0;
   border-color: #c7c7c7;
@@ -1492,7 +1492,7 @@ h2 > span {
 .aw-capability-card:hover {
   border-color: #bbb;
 }
-.aw-capability-card.selected {
+.aw-capability-card.aw-selected {
   border-color: #777;
 }
 .aw-capability-card-header {
@@ -1783,7 +1783,7 @@ h2 > span {
   margin-top: 6px;
   font-weight: 400;
 }
-.aw-format-option.active {
+.aw-format-option.aw-active {
   border-color: #555;
   background: #f7f7f7;
 }
@@ -1866,7 +1866,7 @@ h2 > span {
   padding: 8px 0 12px;
   border-bottom: 1px solid transparent;
 }
-.aw-viewer-tabs > button.active {
+.aw-viewer-tabs > button.aw-active {
   color: #333;
   border-bottom-color: #555;
 }
@@ -1913,16 +1913,16 @@ h2 > span {
   font-size:var(--studio-type-small);
   color:var(--studio-muted);
 }
-.aw-execution-step.active .aw-step-indicator {
+.aw-execution-step.aw-active .aw-step-indicator {
   background: #333;
   color: #fff;
 }
-.aw-execution-step.complete .aw-step-indicator {
+.aw-execution-step.aw-complete .aw-step-indicator {
   background: #e9e9e9;
   color: #444;
 }
-.aw-execution-step.active strong,
-.aw-execution-step.complete strong {
+.aw-execution-step.aw-active strong,
+.aw-execution-step.aw-complete strong {
   color: #333;
 }
 .aw-execution-finish {
@@ -2348,7 +2348,7 @@ h2 > span {
   }
 }
 .aw-asset-main { position: relative; }
-.aw-asset-main.drop-target::after {
+.aw-asset-main.aw-drop-target::after {
   content: "松开文件，在当前账号的资产中心预览";
   position: absolute;
   inset: 14px;

@@ -28,6 +28,7 @@ jobs:
           defaults write com.apple.dock autohide -bool true
           killall Dock || true
           "$RUNNER_TEMP/studio-ci-display"
+          "$RUNNER_TEMP/studio-ci-display" --check
       - name: Verify draft target before building
         if: inputs.release_tag != ''
         env:
