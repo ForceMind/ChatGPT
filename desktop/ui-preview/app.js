@@ -79,15 +79,16 @@ const mdSample =
 const assets = [
   {
     id: "a1",
-    profile: "work",
-    name: "still-studio-landing.html",
+    profile: "personal",
+    name: "interactive-web-demo.html",
     kind: "web",
     ext: "HTML",
-    bytes: 32768,
+    bytes: 113254,
+    addedAt: "2026/10/25 14:30:00",
     time: "10:32",
     order: 12,
-    tags: ["落地页", "产品设计"],
-    conversation: "落地页方案",
+    tags: [],
+    conversation: "网页交互分析 · 示例",
     text: htmlSample,
     favorite: true,
   },
@@ -302,7 +303,7 @@ const assets = [
   },
 ];
 const state = {
-  profile: "work",
+  profile: "personal",
   view: "assets",
   filter: "all",
   query: "",
@@ -492,7 +493,7 @@ function renderDetail() {
   }
   const parent = assets.find((x) => x.id === a.derivedFrom);
   $("#asset-detail").innerHTML =
-    `<div class="detail-topline"><span>文件详情</span><button class="icon-button" data-action="preview" aria-label="展开预览">${icon("expand")}</button></div><div class="detail-preview" role="button" tabindex="0" data-action="preview" aria-label="预览 ${esc(a.name)}">${thumb(a)}<span class="preview-expand">${icon("expand")}</span></div><h3 class="detail-name">${esc(a.name)}</h3><div class="detail-tags">${a.tags.map((t) => `<span class="tag">${esc(t)}</span>`).join("")}</div>${a.trashed ? '<button class="primary" data-action="restore-current">恢复这个文件</button>' : `<div class="detail-primary-actions"><button class="primary" data-action="send-current"><span class="inline-icon">${icon("sparkles")}</span>交给 GPT</button><button class="secondary" data-action="convert-current"><span class="inline-icon">${icon("convert")}</span>转换格式</button></div>`}<div class="detail-properties"><div class="property-row"><span>格式</span><span>${esc(a.ext)}${a.demoConverted ? " · 转换示意" : ""}</span></div><div class="property-row"><span>大小</span><span>${size(a.bytes)}${a.imported ? "" : " · 示例"}</span></div>${a.dimensions ? `<div class="property-row"><span>尺寸</span><span>${esc(a.dimensions)} · 示例</span></div>` : ""}<div class="property-row"><span>所属账号</span><span><span class="account-dot-small" style="background:${owner().color}"></span> ${esc(owner().name)}</span></div><div class="property-row"><span>来源对话</span><span><button class="source-link" data-action="source">${esc(a.conversation)} ↗</button></span></div><div class="property-row"><span>添加时间</span><span>${a.time === "昨天" ? "昨天" : `今天 ${esc(a.time)}`}</span></div>${parent ? `<div class="property-row"><span>派生自</span><span><button class="source-link" data-parent="${parent.id}">${esc(parent.name)}</button></span></div>` : ""}</div><div class="detail-section-title">整理标记<button data-action="edit-tags">编辑</button></div><div class="detail-tags">${a.tags.map((t) => `<span class="tag">${esc(t)}</span>`).join("") || '<span class="tag">尚未添加标签</span>'}</div><div class="detail-section-title">文件动态</div><div class="activity-line"><span class="activity-dot"></span><div>${a.demoConverted ? "添加转换结果示意" : a.imported ? "本页导入预览" : "从 ChatGPT 下载 · 示例"}<small>${esc(a.time)} · ${esc(owner().name)}</small></div></div>${parent ? '<div class="activity-line"><span class="activity-dot"></span><div>原始文件保留<small>副本与原件之间保留关联</small></div></div>' : ""}<div class="detail-small-actions"><button data-action="rename">${icon("edit")}重命名</button><button data-action="reveal">${icon("folder")}在访达显示</button><button data-action="trash-current">${icon(a.trashed ? "restore" : "trash")}${a.trashed ? "恢复" : "移至回收站"}</button></div>`;
+    `<div class="detail-topline"><span>文件详情</span><button class="icon-button" data-action="preview" aria-label="展开预览">${icon("expand")}</button></div><div class="detail-preview" role="button" tabindex="0" data-action="preview" aria-label="预览 ${esc(a.name)}">${thumb(a)}<span class="preview-expand">${icon("expand")}</span></div><h3 class="detail-name">${esc(a.name)}</h3><div class="detail-tags">${a.tags.map((t) => `<span class="tag">${esc(t)}</span>`).join("")}</div>${a.trashed ? '<button class="primary" data-action="restore-current">恢复这个文件</button>' : `<div class="detail-primary-actions"><button class="primary" data-action="send-current"><span class="inline-icon">${icon("sparkles")}</span>交给 GPT</button><button class="secondary" data-action="convert-current"><span class="inline-icon">${icon("convert")}</span>转换格式</button></div>`}<div class="detail-properties"><div class="property-row"><span>状态</span><span>${a.trashed ? "回收站" : "可用"}</span></div><div class="property-row"><span>格式</span><span>${esc(a.ext)}${a.demoConverted ? " · 转换示意" : ""}</span></div><div class="property-row"><span>大小</span><span>${size(a.bytes)}${a.imported ? "" : " · 示例"}</span></div>${a.dimensions ? `<div class="property-row"><span>尺寸</span><span>${esc(a.dimensions)} · 示例</span></div>` : ""}<div class="property-row"><span>所属账号</span><span><span class="account-dot-small" style="background:${owner().color}"></span> ${esc(owner().name)}</span></div><div class="property-row"><span>来源对话</span><span><button class="source-link" data-action="source">${esc(a.conversation)} ↗</button></span></div><div class="property-row"><span>添加时间</span><span>${a.addedAt ? esc(a.addedAt) : a.time === "昨天" ? "昨天" : `今天 ${esc(a.time)}`}</span></div>${parent ? `<div class="property-row"><span>派生自</span><span><button class="source-link" data-parent="${parent.id}">${esc(parent.name)}</button></span></div>` : ""}</div><div class="detail-section-title">整理标记<button data-action="edit-tags">编辑</button></div><div class="detail-tags">${a.tags.map((t) => `<span class="tag">${esc(t)}</span>`).join("") || '<span class="tag">尚未添加标签</span>'}</div><div class="detail-section-title">文件动态</div><div class="activity-line"><span class="activity-dot"></span><div>${a.demoConverted ? "添加转换结果示意" : a.imported ? "本页导入预览" : "从 ChatGPT 下载 · 示例"}<small>${esc(a.time)} · ${esc(owner().name)}</small></div></div>${parent ? '<div class="activity-line"><span class="activity-dot"></span><div>原始文件保留<small>副本与原件之间保留关联</small></div></div>' : ""}<div class="detail-small-actions"><button data-action="rename">${icon("edit")}重命名</button><button data-action="reveal">${icon("folder")}在访达显示</button><button data-action="trash-current">${icon(a.trashed ? "restore" : "trash")}${a.trashed ? "恢复" : "移至回收站"}</button></div>`;
 }
 function openModal(title, description, content, footer = "", extraClass = "") {
   modalToken++;
