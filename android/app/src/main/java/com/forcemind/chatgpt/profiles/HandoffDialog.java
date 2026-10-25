@@ -87,6 +87,6 @@ final class HandoffDialog {
     void close(){alive.set(false);if(dialog!=null)dialog.dismiss();}
     private String label(WorkspaceState.Account a){return a.name+(a.email.isEmpty()?"":" · "+a.email);}
     private ArrayAdapter<String> adapter(List<String> values){ArrayAdapter<String> result=new ArrayAdapter<>(activity,android.R.layout.simple_spinner_item,values);result.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);return result;}
-    private TextView text(String value){TextView text=new TextView(activity);text.setText(value);text.setTextColor(Color.rgb(35,35,35));text.setTextSize(13);text.setPadding(0,dp(8),0,dp(4));return text;}
+    private TextView text(String value){TextView text=new TextView(activity);text.setText(value);text.setTextColor(Color.rgb(35,35,35));StudioTypography.text(text,14);text.setPadding(0,dp(8),0,dp(4));return text;}
     private int dp(int n){return Math.round(n*activity.getResources().getDisplayMetrics().density);}
 }

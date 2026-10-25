@@ -1,6 +1,11 @@
 <resources>
     <style name="AppTheme" parent="android:style/Theme.Material.Light.NoActionBar">
         <item name="android:fontFamily">sans</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:textColorPrimary">#202020</item>
+        <item name="android:textColorSecondary">#606060</item>
+        <item name="android:textColorHint">#606060</item>
+        <item name="android:disabledAlpha">0.7</item>
         <item name="android:colorAccent">#171717</item>
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:windowLightNavigationBar">true</item>

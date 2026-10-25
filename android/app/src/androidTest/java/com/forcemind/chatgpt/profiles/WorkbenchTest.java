@@ -440,4 +440,59 @@ public class WorkbenchTest {
             nativeMenu(scene);tapNative("恢复关闭的标签页");until(()->recoveryPage(scene).optString("mark").equals(marker));scene.onActivity(a->assertSame(originalWeb.get(),a.recoveryCurrentWeb()));assertEquals(3,loads.get());assertEquals("保留活页面的草稿",recoveryPage(scene).getString("draft"));assertTrue(Math.abs(recoveryPage(scene).getDouble("scroll")-1200)<8);screenshot("android-recovery-undo-live-tab.png");
         }finally{MainActivity.handoffFixture=null;}
     }
+    private void fontScale(String value)throws Exception{
+        try(InputStream input=new android.os.ParcelFileDescriptor.AutoCloseInputStream(InstrumentationRegistry.getInstrumentation().getUiAutomation().executeShellCommand(value==null?"settings delete system font_scale":"settings put system font_scale "+value))){byte[] buffer=new byte[256];while(input.read(buffer)>=0){}}
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync();
+    }
+    private void nativeTextViews(View view,List<TextView> output){
+        if(view instanceof WebView||!view.isShown())return;
+        if(view instanceof TextView){TextView text=(TextView)view;android.graphics.Rect visible=new android.graphics.Rect();if(text.getGlobalVisibleRect(visible)&&(text.getText().length()>0||text.getHint()!=null&&text.getHint().length()>0))output.add(text);}
+        if(view instanceof ViewGroup){ViewGroup group=(ViewGroup)view;for(int i=0;i<group.getChildCount();i++)nativeTextViews(group.getChildAt(i),output);}
+    }
+    private double luminance(int color){double r=Color.red(color)/255d,g=Color.green(color)/255d,b=Color.blue(color)/255d;return .2126*linear(r)+.7152*linear(g)+.0722*linear(b);}
+    private double linear(double value){return value<=.04045?value/12.92:Math.pow((value+.055)/1.055,2.4);}
+    private int composite(int foreground,int background){double alpha=Color.alpha(foreground)/255d;return Color.rgb((int)Math.round(Color.red(foreground)*alpha+Color.red(background)*(1-alpha)),(int)Math.round(Color.green(foreground)*alpha+Color.green(background)*(1-alpha)),(int)Math.round(Color.blue(foreground)*alpha+Color.blue(background)*(1-alpha)));}
+    private int textBackground(View view){
+        List<View> chain=new ArrayList<>();View current=view;while(current!=null){chain.add(current);current=current.getParent() instanceof View?(View)current.getParent():null;}Collections.reverse(chain);int background=Color.WHITE;
+        for(View item:chain){int layer=Color.TRANSPARENT;android.graphics.drawable.Drawable drawable=item.getBackground();if(item instanceof Button&&item.getBackgroundTintList()!=null)layer=item.getBackgroundTintList().getColorForState(item.getDrawableState(),Color.TRANSPARENT);else if(drawable instanceof android.graphics.drawable.ColorDrawable)layer=((android.graphics.drawable.ColorDrawable)drawable).getColor();else if(drawable instanceof android.graphics.drawable.GradientDrawable){android.content.res.ColorStateList color=((android.graphics.drawable.GradientDrawable)drawable).getColor();if(color!=null)layer=color.getColorForState(item.getDrawableState(),color.getDefaultColor());}background=composite(layer,background);}return background;
+    }
+    private float[] auditNativeText(View root){
+        List<TextView> views=new ArrayList<>();nativeTextViews(root,views);assertTrue("No native text was rendered",views.size()>3);float min=Float.MAX_VALUE,required=android.util.TypedValue.applyDimension(android.util.TypedValue.COMPLEX_UNIT_SP,13,root.getResources().getDisplayMetrics());
+        for(TextView text:views){String label=String.valueOf(text.getText().length()>0?text.getText():text.getHint());min=Math.min(min,text.getTextSize());assertTrue(label+": native type is below 13sp",text.getTextSize()+.5f>=required);
+            if(text.getLayout()!=null)assertTrue(label+": text clips vertically (layout "+text.getLayout().getHeight()+", content "+(text.getHeight()-text.getCompoundPaddingTop()-text.getCompoundPaddingBottom())+")",text.getLayout().getHeight()<=text.getHeight()-text.getCompoundPaddingTop()-text.getCompoundPaddingBottom()+2);
+            int bg=textBackground(text),fg=composite(text.getText().length()>0?text.getCurrentTextColor():text.getCurrentHintTextColor(),bg);double a=luminance(fg),b=luminance(bg),contrast=(Math.max(a,b)+.05)/(Math.min(a,b)+.05);assertTrue(label+": text contrast "+contrast,contrast>=4.5);
+        }return new float[]{views.size(),min,required};
+    }
+    private void visibleDialogButton(String label){
+        android.view.accessibility.AccessibilityNodeInfo root=InstrumentationRegistry.getInstrumentation().getUiAutomation().getRootInActiveWindow();assertNotNull(root);android.graphics.Rect window=new android.graphics.Rect();root.getBoundsInScreen(window);boolean found=false;
+        for(android.view.accessibility.AccessibilityNodeInfo node:root.findAccessibilityNodeInfosByText(label))if(label.contentEquals(node.getText()==null?"":node.getText())&&node.isClickable()&&node.isVisibleToUser()){android.graphics.Rect bounds=new android.graphics.Rect();node.getBoundsInScreen(bounds);assertTrue(label+": dialog action outside window",window.contains(bounds));found=true;}
+        assertTrue("Dialog action not reachable: "+label,found);
+    }
+    private void fontEvidence(JSONObject report)throws Exception{
+        ContentValues values=new ContentValues();values.put(android.provider.MediaStore.Downloads.DISPLAY_NAME,"readability-fonts-"+context.getResources().getConfiguration().screenWidthDp+"dp.json");values.put(android.provider.MediaStore.Downloads.MIME_TYPE,"application/json");values.put(android.provider.MediaStore.Downloads.RELATIVE_PATH,android.os.Environment.DIRECTORY_DOWNLOADS+"/ProfilesFixtureEvidence");values.put(android.provider.MediaStore.Downloads.IS_PENDING,1);Uri destination=context.getContentResolver().insert(android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI,values);assertNotNull(destination);try(OutputStream stream=context.getContentResolver().openOutputStream(destination)){assertNotNull(stream);stream.write(report.toString(2).getBytes(StandardCharsets.UTF_8));}values.clear();values.put(android.provider.MediaStore.Downloads.IS_PENDING,0);context.getContentResolver().update(destination,values,null,null);
+    }
+    @Test public void nativeUiRemainsReadableAtSystemFontScales()throws Exception{
+        String originalScale=android.provider.Settings.System.getString(context.getContentResolver(),android.provider.Settings.System.FONT_SCALE);JSONArray rows=new JSONArray();JSONObject report=new JSONObject().put("api",android.os.Build.VERSION.SDK_INT).put("scope","Native debug UI with synthetic local files and offline WebView fixture; no personal account or real ChatGPT acceptance").put("scales",rows).put("metricColumns",new JSONArray(Arrays.asList("visibleNativeTextCount","minimumTextPx","reference13spPx")));
+        byte[] bytes="<!doctype html><meta charset='utf-8'><h1>Font readability fixture</h1>".getBytes(StandardCharsets.UTF_8);AssetLedger ledger=new AssetLedger(context.getFilesDir(),account);JSONObject source=ledger.importCopy(new ByteArrayInputStream(bytes),"可读性检查用的本地网页文件.html","text/html","import",null);
+        recoveryWorkspace();WorkspaceState workspace=WorkspaceFiles.read(context.getFilesDir());workspace.find(account).current().title="大字号下仍需清楚展示的对话标题";workspace.find(account).current().customTitle=true;new StateStore(context.getFilesDir()).save(workspace);
+        recoveryFixture(new AtomicReference<>(""),new AtomicBoolean(),new AtomicBoolean(),new AtomicInteger());
+        try{
+            for(float scale:new float[]{1f,1.3f,2f}){
+                fontScale(String.valueOf(scale));String suffix=String.valueOf(Math.round(scale*100));JSONObject row=new JSONObject().put("requestedScale",scale);rows.put(row);
+                AtomicReference<float[]> metrics=new AtomicReference<>();
+                try(ActivityScenario<AssetWorkbenchActivity> scene=ActivityScenario.launch(screen(AssetWorkbenchActivity.class))){
+                    until(()->{AtomicBoolean ready=new AtomicBoolean();scene.onActivity(a->{ListView list=find(a.getWindow().getDecorView(),ListView.class);ready.set(Math.abs(a.getResources().getConfiguration().fontScale-scale)<.02f&&list!=null&&list.getChildCount()>0);});return ready.get();});screenshot("readability-assets-"+suffix+".png");scene.onActivity(a->metrics.set(auditNativeText(a.getWindow().getDecorView())));row.put("assets",new JSONArray(metrics.get()));
+                    if(scale==2f){tapNative("交给 GPT");screenshot("readability-handoff-"+suffix+".png");visibleDialogButton("取消");visibleDialogButton("新建对话并发送");tapNative("取消");}
+                }
+                try(ActivityScenario<AssetWorkbenchActivity> scene=ActivityScenario.launch(screen(AssetWorkbenchActivity.class).putExtra("skills",true))){until(()->{AtomicBoolean ready=new AtomicBoolean();scene.onActivity(a->{ListView list=find(a.getWindow().getDecorView(),ListView.class);ready.set(list!=null&&list.getChildCount()>0);});return ready.get();});if(scale!=1.3f)screenshot("readability-skills-"+suffix+".png");scene.onActivity(a->metrics.set(auditNativeText(a.getWindow().getDecorView())));row.put("skills",new JSONArray(metrics.get()));}
+                try(ActivityScenario<MainActivity> scene=ActivityScenario.launch(new Intent(context,MainActivity.class))){
+                    until(()->recoveryPage(scene).optBoolean("ready"));if(scale!=1.3f)screenshot("readability-main-"+suffix+".png");scene.onActivity(a->{metrics.set(auditNativeText(a.getWindow().getDecorView()));TabCountButton tabs=find(a.getWindow().getDecorView(),TabCountButton.class);assertNotNull(tabs);assertTrue(tabs.performClick());});row.put("main",new JSONArray(metrics.get()));
+                    until(()->{AtomicBoolean ready=new AtomicBoolean();scene.onActivity(a->ready.set(find(a.getWindow().getDecorView(),TabOverview.class)!=null&&find(a.getWindow().getDecorView(),GridView.class).getChildCount()>0));return ready.get();});screenshot("readability-tabs-"+suffix+".png");AtomicInteger width=new AtomicInteger();scene.onActivity(a->{TabOverview overview=find(a.getWindow().getDecorView(),TabOverview.class);metrics.set(auditNativeText(overview));width.set(a.getResources().getConfiguration().screenWidthDp);});row.put("tabs",new JSONArray(metrics.get())).put("screenWidthDp",width.get());tapNative("完成");
+                    if(scale==2f){nativeMenu(scene);tapContaining("添加账号");screenshot("readability-account-"+suffix+".png");visibleDialogButton("取消");visibleDialogButton("保存");tapNative("取消");}
+                }
+                assertArrayEquals(bytes,Files.readAllBytes(ledger.verifiedFile(source.getString("id")).toPath()));
+            }
+            android.content.pm.PackageInfo provider=WebView.getCurrentWebViewPackage();report.put("webView",provider==null?"unknown":provider.packageName+" "+provider.versionName);fontEvidence(report);
+        }finally{MainActivity.handoffFixture=null;fontScale(originalScale);}
+    }
 }

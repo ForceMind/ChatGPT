@@ -2423,6 +2423,8 @@ h2 > span {
  .aw-modal-header p{font-size:var(--studio-type-small);line-height:1.6;color:#555}.aw-modal-content{padding:20px 24px;font-size:var(--studio-type-body);line-height:1.65}
  .aw-modal-footer{padding:18px 24px;gap:12px;flex-wrap:wrap;flex-shrink:0}.aw-modal-footer>span{font-size:var(--studio-type-meta)}
  .aw-field-label{font-size:var(--studio-type-small)}.aw-field-input,.aw-field-select,.aw-field-textarea{font-size:var(--studio-type-body);line-height:1.55;min-height:44px}
+ .aw-field-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.aw-field-row>div{min-width:0}.aw-field-input,.aw-field-select,.aw-field-textarea{min-width:0;max-width:100%}
+ .aw-empty-state h3,.aw-error-state h3{font-size:18px;color:#333}
  .aw-file-chip{max-width:100%;overflow-wrap:anywhere}.aw-file-chip small{font-size:var(--studio-type-meta)}
  .aw-modal-note,.aw-stage-notice,.aw-task-source-hint,.aw-viewer-caption{font-size:var(--studio-type-small);line-height:1.65;color:#555}
  .aw-preview-viewer pre,.aw-source-text{font-size:var(--studio-type-body);line-height:1.75}

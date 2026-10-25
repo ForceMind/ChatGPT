@@ -33,9 +33,9 @@ public final class AssetPreviewActivity extends ComponentActivity {
         super.onCreate(state);
         root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setBackgroundColor(Color.WHITE);
         setContentView(root);ViewCompat.setOnApplyWindowInsetsListener(root,(v,insets)->{androidx.core.graphics.Insets bars=insets.getInsets(WindowInsetsCompat.Type.systemBars());v.setPadding(dp(16)+bars.left,bars.top,dp(16)+bars.right,bars.bottom);return insets;});
-        controls=new LinearLayout(this);controls.setGravity(Gravity.CENTER_VERTICAL);root.addView(controls,new LinearLayout.LayoutParams(-1,dp(54)));
+        controls=new LinearLayout(this);controls.setGravity(Gravity.CENTER_VERTICAL);controls.setMinimumHeight(dp(54));HorizontalScrollView toolsScroll=new HorizontalScrollView(this);toolsScroll.setHorizontalScrollBarEnabled(false);toolsScroll.addView(controls,new android.widget.FrameLayout.LayoutParams(-2,-2));root.addView(toolsScroll,new LinearLayout.LayoutParams(-1,-2));
         Button back=button("返回资产");controls.addView(back);back.setOnClickListener(v->finish());
-        status=new TextView(this);status.setTextColor(Color.DKGRAY);status.setPadding(0,dp(10),0,dp(10));status.setText("正在读取文件…");root.addView(status);
+        status=new TextView(this);StudioTypography.text(status,15);status.setMaxLines(3);status.setEllipsize(android.text.TextUtils.TruncateAt.END);status.setTextColor(Color.DKGRAY);status.setPadding(0,dp(10),0,dp(10));status.setText("正在读取文件…");root.addView(status);
         id=getIntent().getStringExtra("asset");String account=getIntent().getStringExtra(AssetWorkbenchActivity.ACCOUNT);
         executor.execute(()->{
             try{
@@ -57,7 +57,7 @@ public final class AssetPreviewActivity extends ComponentActivity {
                     String html=(lower.endsWith(".svg")||mime.equals("image/svg+xml"))?"<!doctype html><html><head></head><body>"+text+"</body></html>":text;
                     runOnUiThread(()->showHtml(html,name));return;
                 }
-                runOnUiThread(()->{if(dead)return;status.setText(name);ScrollView scroll=new ScrollView(this);TextView content=new TextView(this);content.setText(text);content.setTextIsSelectable(true);content.setTextColor(Color.rgb(23,23,23));content.setTextSize(14);content.setTypeface(Typeface.MONOSPACE);scroll.addView(content);root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));});
+                runOnUiThread(()->{if(dead)return;status.setText(name);ScrollView scroll=new ScrollView(this);TextView content=new TextView(this);content.setText(text);content.setTextIsSelectable(true);content.setTextColor(Color.rgb(23,23,23));content.setTextSize(15);content.setTypeface(Typeface.MONOSPACE);scroll.addView(content);root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));});
             }catch(Exception e){error(e);}
         });
     }
@@ -97,7 +97,7 @@ public final class AssetPreviewActivity extends ComponentActivity {
     }
     private boolean textFormat(String mime,String name){if(mime.startsWith("text/")||mime.equals("application/json")||mime.equals("image/svg+xml"))return true;for(String ext:new String[]{".md",".txt",".csv",".json",".log",".js",".css",".xml",".html",".htm",".svg"})if(name.endsWith(ext))return true;return false;}
     private void error(Exception e){runOnUiThread(()->{if(dead)return;status.setText(e.getMessage()==null?"暂时无法预览，请导出后查看":e.getMessage());});}
-    private Button button(String label){Button v=new Button(this);v.setText(label);v.setTextSize(12);v.setTextColor(Color.rgb(23,23,23));v.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.rgb(245,245,245)));return v;}
+    private Button button(String label){Button v=new Button(this);StudioTypography.button(v);v.setText(label);v.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.rgb(245,245,245)));return v;}
     private int dp(int value){return Math.round(value*getResources().getDisplayMetrics().density);}
     @Override public void onDestroy(){dead=true;executor.shutdownNow();if(web!=null){root.removeView(web);web.stopLoading();web.destroy();web=null;}super.onDestroy();}
 }

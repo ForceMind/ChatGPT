@@ -44,9 +44,9 @@ public final class AssetRenderActivity extends ComponentActivity {
         if(!configured){WebView.setDataDirectorySuffix("asset-renderer");WebView.enableSlowWholeDocumentDraw();configured=true;}
         LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setBackgroundColor(Color.WHITE);setContentView(root);
         ViewCompat.setOnApplyWindowInsetsListener(root,(view,insets)->{androidx.core.graphics.Insets bars=insets.getInsets(WindowInsetsCompat.Type.systemBars());view.setPadding(dp(16)+bars.left,bars.top,dp(16)+bars.right,bars.bottom);return insets;});
-        LinearLayout top=new LinearLayout(this);top.setGravity(Gravity.CENTER_VERTICAL);root.addView(top,new LinearLayout.LayoutParams(-1,dp(56)));
-        Button cancel=new Button(this);cancel.setText("取消转换");cancel.setTextColor(Color.BLACK);cancel.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.rgb(245,245,245)));top.addView(cancel);cancel.setOnClickListener(v->fail("转换已取消，原文件保留"));
-        status=new TextView(this);status.setText("正在准备本机转换…");status.setTextColor(Color.rgb(23,23,23));status.setPadding(0,dp(12),0,dp(12));root.addView(status);
+        LinearLayout top=new LinearLayout(this);top.setGravity(Gravity.CENTER_VERTICAL);top.setMinimumHeight(dp(56));root.addView(top,new LinearLayout.LayoutParams(-1,-2));
+        Button cancel=new Button(this);StudioTypography.button(cancel);cancel.setText("取消转换");cancel.setTextColor(Color.BLACK);cancel.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.rgb(245,245,245)));top.addView(cancel);cancel.setOnClickListener(v->fail("转换已取消，原文件保留"));
+        status=new TextView(this);StudioTypography.text(status,15);status.setText("正在准备本机转换…");status.setTextColor(Color.rgb(23,23,23));status.setPadding(0,dp(12),0,dp(12));root.addView(status);
         FrameLayout frame=new FrameLayout(this);root.addView(frame,new LinearLayout.LayoutParams(-1,0,1));
         token=getIntent().getStringExtra("task");handler.postDelayed(timeout,60000);
         executor.execute(()->{

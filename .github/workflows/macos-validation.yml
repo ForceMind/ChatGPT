@@ -32,6 +32,10 @@ jobs:
       - name: Check platform and build existing application
         run: |
           test "$(uname -m)" = arm64
+          clang scripts/ci-display.c -framework CoreGraphics -framework CoreFoundation -o "$RUNNER_TEMP/studio-ci-display"
+          defaults write com.apple.dock autohide -bool true
+          killall Dock || true
+          "$RUNNER_TEMP/studio-ci-display"
           npm ci
           npm run check
       - name: Applicable isolated functional scenarios

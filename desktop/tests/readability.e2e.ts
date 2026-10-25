@@ -28,7 +28,11 @@ test('App text remains readable and drawer/form actions stay reachable in wide a
   const file=path.join(root,'本地网页交互与文字可读性检查.html'),original='<!doctype html><meta charset="utf-8"><h1>Readability file fixture</h1><p>Original file content stays unchanged.</p>';writeFileSync(file,original);await assets.importFile(profile,file,{kind:'import'});
   const note=path.join(root,'检查清单.txt');writeFileSync(note,'Synthetic fixture only');await assets.importFile(profile,note,{kind:'import'});
   app=await electron.launch({args:[desktop],env:{...process.env,PROFILES_E2E:'1',PROFILES_TEST_DATA:data,PROFILES_FIXTURE_ORIGIN:origin}});const shell=await shellWindow(app);
-  const resize=async(width:number,height:number)=>{await app!.evaluate(({BrowserWindow},{width,height})=>BrowserWindow.getAllWindows().find(w=>w.webContents.getURL()==='app://shell/index.html')!.setContentSize(width,height),{width,height});await expect.poll(()=>shell.evaluate(()=>({width:innerWidth,height:innerHeight}))).toEqual({width,height});};
+  const viewports:{width:number;height:number}[]=[];
+  const resize=async(width:number,requestedHeight:number)=>{
+   const height=await app!.evaluate(({BrowserWindow,screen},{width,requestedHeight})=>{const window=BrowserWindow.getAllWindows().find(w=>w.webContents.getURL()==='app://shell/index.html')!,frame=window.getBounds().height-window.getContentBounds().height,available=screen.getDisplayMatching(window.getBounds()).workArea.height-frame,height=Math.min(requestedHeight,available);if(height<600)throw Error('CI display cannot show the supported 600px minimum window');window.setContentSize(width,height);return height;},{width,requestedHeight});
+   await expect.poll(()=>shell.evaluate(()=>({width:innerWidth,height:innerHeight}))).toEqual({width,height});viewports.push({width,height});
+  };
   const fits=async(selector:string)=>{const r=await shell.locator(selector).evaluate(e=>({rect:e.getBoundingClientRect().toJSON(),width:innerWidth,height:innerHeight}));expect(r.rect.left).toBeGreaterThanOrEqual(0);expect(r.rect.right).toBeLessThanOrEqual(r.width+1);expect(r.rect.bottom).toBeLessThanOrEqual(r.height+1);};
   await resize(1440,1000);await expect(shell.locator('.titlebar')).toHaveCSS('height','52px');await readable(shell,'.workspace-action,.current-account',14);
   await shell.getByRole('button',{name:'资产中心',exact:true}).click();await expect(shell.locator('#wb-asset-grid [data-asset]')).toHaveCount(2);
@@ -39,7 +43,7 @@ test('App text remains readable and drawer/form actions stay reachable in wide a
   await shell.locator('#wb-capability-detail [data-action="use-capability"]').click();await expect(shell.getByRole('dialog',{name:'交给 GPT',exact:true})).toBeVisible();
   await readable(shell,'.aw-field-label,.aw-modal-note',14);await fits('.aw-modal-footer');await shell.screenshot({path:info.outputPath('readability-task-form.png')});await shell.locator('#wb-modal-root [data-action="close-modal"]').click();
   await shell.getByRole('button',{name:'资产中心',exact:true}).click();
-  for(const [width,height] of [[1000,760],[900,650],[800,540]]){
+  for(const [width,height] of [[1000,760],[900,650],[800,600]]){
    await resize(width,height);await expect(shell.locator('#wb-asset-detail')).toBeHidden();
    const card=shell.locator('#wb-asset-grid [data-asset]').filter({hasText:'本地网页交互'});await card.click();const detail=shell.getByRole('dialog',{name:'资产详情',exact:true});await expect(detail).toBeVisible();
    await readable(shell,'#wb-asset-detail .aw-detail-footer button',14);await fits('#wb-asset-detail .aw-detail-footer');
@@ -52,6 +56,6 @@ test('App text remains readable and drawer/form actions stay reachable in wide a
   await shell.getByRole('button',{name:'切换账号',exact:true}).click();await shell.getByRole('menuitem',{name:'管理 可读性验收账号',exact:true}).click();
   await expect(shell.getByRole('dialog',{name:'管理账号空间',exact:true})).toBeVisible();await readable(shell,'.account-form-body>label,.identity-note p',14);await readable(shell,'.modal input:not([type=radio])',15);await fits('.modal-actions');await shell.screenshot({path:info.outputPath('readability-account-small.png')});await shell.getByRole('button',{name:'关闭账号管理',exact:true}).click();
   await shell.getByRole('button',{name:'切换账号',exact:true}).click();await shell.getByRole('menuitem',{name:'登录与链接记录',exact:true}).click();await readable(shell,'.login-record-header p,.login-record-tools',14);await shell.screenshot({path:info.outputPath('readability-diagnostics.png')});
-  expect(readFileSync(file,'utf8')).toBe(original);
+  expect(readFileSync(file,'utf8')).toBe(original);writeFileSync(info.outputPath('readability-viewport-info.json'),JSON.stringify({platform:process.platform,viewports,scope:'Actual native windows constrained by CI work area; synthetic account/files only. Text, contrast, action visibility, double click and drawer interaction assertions apply at every recorded size.'},null,2));
  }finally{await app?.close().catch(()=>{});server.closeAllConnections();await new Promise<void>(r=>server.close(()=>r()));rmSync(root,{recursive:true,force:true});}
 });

@@ -50,12 +50,12 @@ public final class AssetWorkbenchActivity extends ComponentActivity {
             int bottom=Math.max(bars.bottom,insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.ime()).bottom);
             v.setPadding(dp(16)+bars.left,bars.top,dp(16)+bars.right,bottom);return insets;
         });
-        LinearLayout header=new LinearLayout(this);header.setGravity(Gravity.CENTER_VERTICAL);root.addView(header,new LinearLayout.LayoutParams(-1,dp(58)));
+        LinearLayout header=new LinearLayout(this);header.setGravity(Gravity.CENTER_VERTICAL);header.setMinimumHeight(dp(58));root.addView(header,new LinearLayout.LayoutParams(-1,-2));
         Button back=button("返回网页");header.addView(back);back.setOnClickListener(v->finish());
         TextView title=text(mode.equals("assets")?"资产":"能力库",22);header.addView(title,new LinearLayout.LayoutParams(0,-2,1));title.setPadding(dp(12),0,0,0);
         subtitle=text(accountName+" · 独立账号空间",12);root.addView(subtitle);
-        search=new EditText(this);search.setSingleLine(true);search.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(2000)});search.setTextSize(14);search.setHint(mode.equals("assets")?"搜索文件名":"搜索 Skill 名称、分类或任务");root.addView(search,new LinearLayout.LayoutParams(-1,dp(54)));
-        toolbar=new LinearLayout(this);root.addView(toolbar,new LinearLayout.LayoutParams(-1,dp(46)));
+        search=new EditText(this);search.setSingleLine(true);search.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(2000)});search.setTextSize(15);search.setHint(mode.equals("assets")?"搜索文件名":"搜索 Skill 名称、分类或任务");search.setHintTextColor(StudioTypography.MUTED);root.addView(search,new LinearLayout.LayoutParams(-1,StudioTypography.lineBox(this,15,1,16,54)));
+        toolbar=new LinearLayout(this);toolbar.setGravity(Gravity.CENTER_VERTICAL);toolbar.setMinimumHeight(StudioTypography.controlHeight(this));HorizontalScrollView toolsScroll=new HorizontalScrollView(this);toolsScroll.setHorizontalScrollBarEnabled(false);toolsScroll.setFillViewport(true);toolsScroll.addView(toolbar,new android.widget.FrameLayout.LayoutParams(-2,-2));root.addView(toolsScroll,new LinearLayout.LayoutParams(-1,-2));
         if(mode.equals("assets")){
             Button add=button("导入文件");toolbar.addView(add);add.setOnClickListener(v->chooseImport());
             Button send=button("交给 GPT");toolbar.addView(send);send.setOnClickListener(v->openHandoff(Collections.emptyList(),""));
@@ -97,9 +97,12 @@ public final class AssetWorkbenchActivity extends ComponentActivity {
         subtitle.setText(accountName+" · "+(mode.equals("assets")?shown.size()+" 个文件":shown.size()+" 个 Skill"));
         list.setAdapter(new ArrayAdapter<JSONObject>(this,android.R.layout.simple_list_item_2,android.R.id.text1,shown){
             @Override public View getView(int position,View convert,ViewGroup parent){
-                View row=super.getView(position,convert,parent);JSONObject a=getItem(position);
+                LinearLayout row;
+                if(convert instanceof LinearLayout&&"studio-asset-row".equals(convert.getTag()))row=(LinearLayout)convert;
+                else{row=new LinearLayout(AssetWorkbenchActivity.this);row.setTag("studio-asset-row");row.setOrientation(LinearLayout.VERTICAL);row.setPadding(dp(16),dp(12),dp(16),dp(12));row.setLayoutParams(new AbsListView.LayoutParams(-1,-2));TextView name=new TextView(AssetWorkbenchActivity.this);name.setId(android.R.id.text1);name.setMaxLines(2);name.setEllipsize(android.text.TextUtils.TruncateAt.END);row.addView(name);TextView description=new TextView(AssetWorkbenchActivity.this);description.setId(android.R.id.text2);description.setMaxLines(mode.equals("skills")?3:2);description.setEllipsize(android.text.TextUtils.TruncateAt.END);row.addView(description);}
+                JSONObject a=getItem(position);
                 TextView first=row.findViewById(android.R.id.text1),second=row.findViewById(android.R.id.text2);first.setTextColor(INK);first.setTextSize(15);first.setText(a.optString("name"));
-                second.setTextColor(Color.DKGRAY);second.setTextSize(12);
+                second.setTextColor(Color.DKGRAY);StudioTypography.text(second,14);
                 second.setText(mode.equals("skills")?a.optString("category")+" · "+a.optString("description"):
                     stateName(a.optString("status"))+" · "+android.text.format.Formatter.formatShortFileSize(AssetWorkbenchActivity.this,a.optLong("size"))+(a.optBoolean("favorite")?" · 已收藏":""));
                 row.setMinimumHeight(dp(76));return row;
@@ -264,8 +267,8 @@ public final class AssetWorkbenchActivity extends ComponentActivity {
         });
     }
     @Override protected void onSaveInstanceState(Bundle state){if(exportId!=null)state.putString("exportId",exportId);if(pendingRender!=null){state.putString("pendingRender",pendingRender.toString());state.putBoolean("renderLaunched",renderLaunched);}super.onSaveInstanceState(state);}
-    private Button button(String label){Button v=new Button(this);v.setText(label);v.setTextSize(12);v.setTextColor(INK);v.setBackgroundTintList(android.content.res.ColorStateList.valueOf(GRAY));return v;}
-    private TextView text(String value,int size){TextView v=new TextView(this);v.setText(value);v.setTextSize(size);v.setTextColor(INK);return v;}
+    private Button button(String label){Button v=new Button(this);StudioTypography.button(v);v.setText(label);v.setBackgroundTintList(android.content.res.ColorStateList.valueOf(GRAY));return v;}
+    private TextView text(String value,int size){TextView v=new TextView(this);v.setText(value);StudioTypography.text(v,Math.max(14,size));v.setTextColor(INK);return v;}
     private int dp(int value){return Math.round(value*getResources().getDisplayMetrics().density);}
     private String stateName(String value){switch(value){case "ready":return "已归档";case "processing":return "处理中";case "interrupted":return "任务已中断";case "deleting":return "删除未完成";default:return "任务未完成";}}
     private void notice(String value){Toast.makeText(this,value,Toast.LENGTH_LONG).show();}

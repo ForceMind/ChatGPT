@@ -22,6 +22,12 @@ jobs:
           node-version: '26.7.0'
       - name: Confirm architecture
         run: test "$(uname -m)" = arm64
+      - name: Configure hosted desktop for real UI viewport checks
+        run: |
+          clang desktop/scripts/ci-display.c -framework CoreGraphics -framework CoreFoundation -o "$RUNNER_TEMP/studio-ci-display"
+          defaults write com.apple.dock autohide -bool true
+          killall Dock || true
+          "$RUNNER_TEMP/studio-ci-display"
       - name: Verify draft target before building
         if: inputs.release_tag != ''
         env:
