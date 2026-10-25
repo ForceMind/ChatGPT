@@ -144,5 +144,5 @@ finally:
     adb('shell','dumpsys','deviceidle','unforce',check=False);adb('shell','dumpsys','battery','reset',check=False);adb('shell','cmd','power','set-mode','0',check=False);adb('shell','svc','wifi','enable',check=False);adb('shell','svc','data','enable',check=False)
     report['observationsAtEnd']=observations()
     (OUT/'lifecycle-verification.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
-    print(json.dumps({'outcome':report.get('outcome'),'error':report.get('error'),'environment':report.get('environment'),'tabs':{i:{k:e.get(k) for k in ['transport','streamStatus','documents','navigations','events','beats']} for i,e in (report['observationsAtEnd'] or {}).get('tabs',{}).items()}),flush=True)
+    print(json.dumps({'outcome':report.get('outcome'),'error':report.get('error'),'environment':report.get('environment'),'tabs':{i:{k:e.get(k) for k in ['transport','streamStatus','documents','navigations','events','beats']} for i,e in (report['observationsAtEnd'] or {}).get('tabs',{}).items()}}),flush=True)
     adb('shell','am','force-stop',PKG,check=False)

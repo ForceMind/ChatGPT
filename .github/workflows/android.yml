@@ -280,6 +280,7 @@ jobs:
       - name: Validate matrix and install official emulator packages
         run: |
           python3 -c 'import os; assert 28 <= int(os.environ["STUDIO_API"]) <= 36; assert 10 <= int(os.environ["STUDIO_HOLD_SECONDS"]) <= 900'
+          python3 -c 'import ast; ast.parse(open("android/scripts/verify-lifecycle.py").read())'
           sudo chmod 666 /dev/kvm
           sdkmanager 'platforms;android-36' 'build-tools;35.0.0' emulator "system-images;android-${STUDIO_API};google_apis;x86_64"
       - name: Build isolated debug application
