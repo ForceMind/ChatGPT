@@ -637,7 +637,8 @@ function createWindow(): void {
   if (process.platform === 'win32') win.setMenuBarVisibility(false);
   win.webContents.setWindowOpenHandler(()=>({action:'deny'}));
   win.webContents.on('will-navigate',event=>event.preventDefault());
-  for(const event of ['show','hide','minimize','restore'] as const)win.on(event,()=>menuBar?.refresh());
+  const refreshMenuBar=()=>menuBar?.refresh();
+  win.on('show',refreshMenuBar);win.on('hide',refreshMenuBar);win.on('minimize',refreshMenuBar);win.on('restore',refreshMenuBar);
   win.on('focus',()=>{if(!backgroundModePending&&!pagesStarted&&recoveryAccess?.status.phase==='pending'&&!recoveryAccess.needsConsent)void authorizeRecovery();});
   win.on('resize',()=>{recordAppActivity();layout();clearTimeout(boundsTimer);boundsTimer=setTimeout(()=>{try{saveBounds();}catch(error){report(error);}},250);});
   win.on('move',()=>{recordAppActivity();clearTimeout(boundsTimer);boundsTimer=setTimeout(()=>{try{saveBounds();}catch(error){report(error);}},250);});
