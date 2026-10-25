@@ -42,6 +42,7 @@ test('Studio website renders canonical pages and preserves legacy update feeds',
  try{
   app=await electron.launch({args:[entry],env:{...process.env,STUDIO_SITE_DATA:path.join(root,'data'),STUDIO_SITE_ORIGIN:origin}});const page=await app.firstWindow();const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
   await expect(page).toHaveTitle(/ChatGPT Studio/);await expect(page.getByRole('link',{name:'ChatGPT Studio 首页',exact:true})).toBeVisible();
+  await expect(page.locator('.hero-build')).toContainText(feed.version);
   const canonical='https://chatgpt-studio.pages.dev';
   if(publicOrigin){
    await expect.poll(()=>new URL(page.url()).origin).toBe(canonical);
