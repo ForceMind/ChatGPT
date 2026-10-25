@@ -32,6 +32,39 @@ export class WorkbenchUI {
   private previewAsset?:AssetItem;
   private jobs:HandoffJob[]=[];private jobView?:'list'|'detail';private currentJob?:string;private submitting=false;private taskRequestId='';private unsubscribeJobs:()=>void;
   private modalVersion=0;
+  private detailOpen=false;
+  private detailOrigin?:HTMLElement;
+  private detailTimer?:ReturnType<typeof setTimeout>;
+  private readonly narrow=window.matchMedia('(max-width:1180px)');
+  private readonly syncDetails=():void=>{
+    const drawer=this.narrow.matches&&this.detailOpen;
+    this.root.classList.toggle('aw-detail-open',this.detailOpen);
+    for(const kind of ['assets','library']){
+      const assets=kind==='assets',active=assets?this.panel==='assets':this.panel!=='assets';
+      const pane=this.$(assets?'#asset-detail':'#capability-detail');
+      if(drawer&&active){pane.setAttribute('role','dialog');pane.setAttribute('aria-modal','true');}else{pane.removeAttribute('role');pane.removeAttribute('aria-modal');}
+      const parent=this.$(assets?'#workbench':'#capability-page');
+      parent.querySelectorAll<HTMLElement>(':scope>.aw-sidebar,:scope>.aw-asset-main,:scope>.aw-capability-main').forEach(e=>{e.inert=drawer&&active;});
+    }
+  };
+  private openDetails(origin:HTMLElement,delay=0):void{
+    clearTimeout(this.detailTimer);const profile=this.profile.id,panel=this.panel;
+    const open=()=>{if(this.disposed||this.profile.id!==profile||this.panel!==panel)return;this.detailOrigin=origin;this.detailOpen=true;this.syncDetails();if(this.narrow.matches)this.$(this.panel==='assets'?'#asset-detail .detail-close':'#capability-detail .detail-close').focus();};
+    if(delay&&this.narrow.matches)this.detailTimer=setTimeout(open,delay);else open();
+  }
+  private closeDetails():void{clearTimeout(this.detailTimer);this.detailOpen=false;this.syncDetails();if(this.detailOrigin?.isConnected)this.detailOrigin.focus();}
+  private structureDetail(pane:HTMLElement):void{
+    const header=pane.querySelector<HTMLElement>('.aw-detail-topline')||document.createElement('div');header.className='aw-detail-topline';
+    if(!header.children.length){const label=document.createElement('span');label.textContent=pane.id==='wb-asset-detail'?'文件详情':'能力详情';header.append(label);}
+    const close=document.createElement('button');close.type='button';close.className='aw-icon-button aw-detail-close';close.dataset.action='close-details';close.setAttribute('aria-label','关闭详情抽屉');close.innerHTML=icon('close');header.append(close);
+    const body=document.createElement('div');body.className='aw-detail-body';const footer=document.createElement('div');footer.className='aw-detail-small-actions aw-detail-footer';
+    for(const child of [...pane.childNodes]){
+      if(child===header)continue;
+      if(child instanceof HTMLElement&&child.classList.contains('aw-detail-small-actions')&&child.querySelector('[data-action="rename"],[data-action="reveal"],[data-action="trash-current"],[data-action="export"]')){while(child.firstChild)footer.append(child.firstChild);}
+      else body.append(child);
+    }
+    pane.replaceChildren(header,body,...(footer.children.length?[footer]:[]));this.syncDetails();
+  }
   private assetMenu?:HTMLDivElement;
   private closeAssetMenu():void{this.assetMenu?.remove();this.assetMenu=undefined;}
   private readonly contextMenu=(event:MouseEvent):void=>{
@@ -76,11 +109,11 @@ export class WorkbenchUI {
     root.querySelectorAll('.aw-sidebar-bottom').forEach(e=>{const account=document.createElement('div');account.className='aw-sidebar-account';while(e.firstChild)account.append(e.firstChild);e.append(account);e.insertAdjacentHTML('afterbegin','<div class="aw-task-summary" data-task-summary></div><button class="aw-sidebar-action" data-action="handoff-history">'+icon('document')+'任务记录</button>');});
     this.unsubscribeJobs=api.subscribeHandoffs(()=>void this.refreshJobs());
     this.unsubscribe=api.subscribe(id=>{if(id===this.profile.id)void this.reload();});
-    this.restoreView(profile);for(const event of ['input','change','click','scroll'])root.addEventListener(event,this.scheduleView,true);
+    this.restoreView(profile);this.narrow.addEventListener('change',this.syncDetails);for(const event of ['input','change','click','scroll'])root.addEventListener(event,this.scheduleView,true);
     this.update(profile,profiles,panel);void this.refreshJobs();void this.reload();void this.loadCatalog();
   }
   private $<T extends HTMLElement=HTMLElement>(selector:string):T { const node=this.root.querySelector<T>(selectors(selector));if(!node)throw new Error('工作台界面不完整：'+selector);return node; }
-  private html(selector:string,value:string):void { this.$(selector).innerHTML=value.replace(/class="([^"]*)"/g,(_all,names:string)=>`class="${classes(names)}"`); }
+  private html(selector:string,value:string):void { const node=this.$(selector);node.innerHTML=value.replace(/class="([^"]*)"/g,(_all,names:string)=>`class="${classes(names)}"`);if(selector==='#asset-detail'||selector==='#capability-detail')this.structureDetail(node); }
   private notify(error:unknown):void { this.options.notice(typeof error==='string'?error:message(error)); }
   update(profile:Profile,profiles:Profile[],panel:WorkbenchPanel):void {
     this.closeAssetMenu();
@@ -91,7 +124,7 @@ export class WorkbenchUI {
     this.$('#sidebar-account').textContent=profile.name+'的本机文件';
     if(panel==='assets'){if(changed||oldPanel!==panel||!this.loaded)this.renderAssets();}
     else { if(this.libraryKind!==panel){this.libraryFilter='all';this.libraryQuery='';this.librarySelected=undefined;this.$<HTMLInputElement>('#capability-search').value='';}this.libraryKind=panel;this.renderLibrary(); }
-    this.restoreScroll();
+    if(changed||oldPanel!==panel){clearTimeout(this.detailTimer);this.detailOpen=false;}this.syncDetails();this.restoreScroll();
   }
   private async reload():Promise<void>{
     const ticket=++this.generation,profile=this.profile.id;
@@ -124,7 +157,7 @@ export class WorkbenchUI {
     if(!asset){this.html('#asset-detail',`<div class="empty-detail">${icon('document')}<p>选择一个文件<br>查看内容、来源与可用操作</p></div>`);return;}
     const parent=this.assets.find(a=>a.id===asset.source.fromAssetId),ready=asset.status==='ready'&&!asset.trashedAt;
     this.html('#asset-detail',`<div class="detail-topline"><span>文件详情</span><button class="icon-button" data-action="preview" aria-label="展开预览" ${ready?'':'disabled'}>${icon('expand')}</button></div><div class="detail-preview" id="wb-detail-content" tabindex="0" role="button" data-action="preview" aria-label="预览 ${esc(asset.name)}">${this.thumb(asset)}</div><h3 class="detail-name">${esc(asset.name)}</h3><div class="detail-tags">${asset.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>${asset.trashedAt?'<button class="primary" data-action="restore-current">恢复这个文件</button>':`<div class="detail-primary-actions"><button class="primary" data-action="send-current" ${ready?'':'disabled'}><span class="inline-icon">${icon('sparkles')}</span>交给 GPT</button><button class="secondary" data-action="convert-current" ${ready?'':'disabled'}><span class="inline-icon">${icon('convert')}</span>转换格式</button></div>`}<div class="detail-properties"><div class="property-row"><span>状态</span><span>${esc(statusName[asset.status])}</span></div><div class="property-row"><span>格式</span><span>${esc(asset.mime)}</span></div><div class="property-row"><span>大小</span><span>${size(asset.status==='ready'?asset.size:asset.receivedBytes)}${asset.totalBytes&&asset.status!=='ready'?' / '+size(asset.totalBytes):''}</span></div><div class="property-row"><span>所属账号</span><span>${esc(this.profile.name)}</span></div><div class="property-row"><span>来源</span><span>${asset.source.conversationURL?`<button class="source-link" data-action="source">${esc(asset.source.title||'ChatGPT 对话')} ↗</button>`:esc(asset.source.kind==='import'?'手动导入':asset.source.title||'网页下载')}</span></div><div class="property-row"><span>添加时间</span><span>${new Date(asset.createdAt).toLocaleString('zh-CN')}</span></div>${parent?`<div class="property-row"><span>原件</span><span><button class="source-link" data-parent="${parent.id}">${esc(parent.name)}</button></span></div>`:''}</div>${asset.error?`<p class="stage-notice">${esc(asset.error)}</p>`:''}<div class="detail-section-title">整理标记<button data-action="edit-tags">编辑</button></div><div class="detail-tags">${asset.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('')||'<span class="tag">尚未添加标签</span>'}</div>${['downloading','paused','interrupted'].includes(asset.status)?`<div class="detail-small-actions"><button data-action="download-${asset.status==='downloading'?'pause':'resume'}">${asset.status==='downloading'?'暂停':'继续'}</button><button data-action="download-cancel">取消下载</button></div>`:''}<div class="detail-small-actions"><button data-action="rename">${icon('edit')}重命名</button><button data-action="reveal">${icon('folder')}在访达显示</button><button data-action="trash-current">${icon('trash')}${asset.trashedAt?'恢复':'回收站'}</button></div><div class="detail-small-actions"><button data-action="export">${icon('download')}另存为</button></div>`);
-    if(asset.source.kind==='conversion'&&asset.status==='processing'){const cancel=document.createElement('button');cancel.className=classes('secondary');cancel.dataset.action='cancel-conversion';cancel.textContent='取消转换';this.$('#asset-detail').append(cancel);}
+    if(asset.source.kind==='conversion'&&asset.status==='processing'){const cancel=document.createElement('button');cancel.className=classes('secondary');cancel.dataset.action='cancel-conversion';cancel.textContent='取消转换';this.$('#asset-detail .detail-body').append(cancel);}
     if(ready&&asset.kind==='web')void this.api.preview(this.profile.id,asset.id).then(preview=>{if(this.disposed||ticket!==this.previewGeneration||!preview.url)return;this.html('#detail-content',`<iframe credentialless sandbox="allow-scripts allow-same-origin" title="${esc(asset.name)}" src="${esc(preview.url)}"></iframe>`);}).catch(()=>{});
   }
   private modal(title:string,description:string,content:string,footer=''):void {
@@ -248,14 +281,15 @@ export class WorkbenchUI {
     const check=element.closest<HTMLElement>('[data-check]');if(check){const id=check.dataset.check!;this.checked.has(id)?this.checked.delete(id):this.checked.add(id);this.renderAssets();return;}
     const favorite=element.closest<HTMLElement>('[data-favorite]');if(favorite){const asset=this.assets.find(a=>a.id===favorite.dataset.favorite)!;await this.act({type:'favorite',ids:[asset.id],favorite:!asset.favorite});return;}
     const favoriteCapability=element.closest<HTMLElement>('[data-capability-favorite]');if(favoriteCapability){const id=favoriteCapability.dataset.capabilityFavorite!,favorite=!this.capabilityFavorites.has(id);await this.api.favoriteCapability(id,favorite);favorite?this.capabilityFavorites.add(id):this.capabilityFavorites.delete(id);this.renderLibrary();return;}
-    const card=element.closest<HTMLElement>('[data-asset]');if(card&&!element.matches('input')){this.selected=card.dataset.asset;this.explicitSelection=true;this.root.querySelectorAll<HTMLElement>('[data-asset]').forEach(node=>node.classList.toggle('aw-selected',node.dataset.asset===this.selected));this.renderDetail();return;}
-    const capability=element.closest<HTMLElement>('[data-capability]');if(capability){this.librarySelected=capability.dataset.capability;this.renderLibrary();return;}
+    const card=element.closest<HTMLElement>('[data-asset]');if(card&&!element.matches('input')){this.selected=card.dataset.asset;this.explicitSelection=true;this.root.querySelectorAll<HTMLElement>('[data-asset]').forEach(node=>node.classList.toggle('aw-selected',node.dataset.asset===this.selected));this.renderDetail();this.openDetails(card,event.detail===1?300:0);return;}
+    const capability=element.closest<HTMLElement>('[data-capability]');if(capability){this.librarySelected=capability.dataset.capability;this.renderLibrary();this.openDetails(capability);return;}
     const filter=element.closest<HTMLElement>('[data-filter]');if(filter){this.filter=filter.dataset.filter!;this.checked.clear();this.renderAssets();return;}
     const libraryFilter=element.closest<HTMLElement>('[data-library-filter]');if(libraryFilter){this.libraryFilter=libraryFilter.dataset.libraryFilter!;this.renderLibrary();return;}
     const view=element.closest<HTMLElement>('[data-view]');if(view){this.layout=view.dataset.view!;this.renderAssets();return;}
     const format=element.closest<HTMLElement>('[data-format]');if(format){this.convertFormat=format.dataset.format as ConversionOptions['format'];this.root.querySelectorAll<HTMLElement>('[data-format]').forEach(b=>b.classList.toggle('aw-active',b===format));return;}
     const parent=element.closest<HTMLElement>('[data-parent]');if(parent){const asset=this.assets.find(a=>a.id===parent.dataset.parent);if(asset){this.filter=asset.trashedAt?'trash':'all';this.selected=asset.id;this.query='';this.$<HTMLInputElement>('#asset-search').value='';this.renderAssets();}return;}
     const action=element.closest<HTMLElement>('[data-action]')?.dataset.action;if(!action)return;
+    if(action==='close-details'){this.closeDetails();return;}
     if(action==='chat'){this.options.close();return;}
     if(action==='assets'||action==='skills'||action==='agents'){this.options.panel(action);return;}
     if(action==='close-modal'){this.closeModal();return;}
@@ -286,18 +320,18 @@ export class WorkbenchUI {
     if(action==='open-handoff'&&this.currentJob){await this.api.openHandoff(this.profile.id,this.currentJob);return;}
     if(action==='task-prompt'){const profile=this.profile.id;const prompt=await this.api.compose({skillId:this.$<HTMLSelectElement>('#task-skill').value||undefined,agentId:this.$<HTMLSelectElement>('#task-agent').value||undefined,language:this.$<HTMLSelectElement>('#task-language').value,instructions:this.$<HTMLTextAreaElement>('#task-instructions').value,files:this.taskFiles.map(a=>({name:a.name,mime:a.mime,size:a.size}))});if(profile===this.profile.id&&this.root.querySelector('#wb-prompt-preview'))this.html('#prompt-preview',`<pre class="source-text">${esc(prompt)}</pre>`);return;}
   }
-  private readonly doubleClick=(event:MouseEvent):void=>{const element=event.target instanceof Element?event.target:undefined;const card=element?.closest<HTMLElement>('[data-asset]');if(card&&!element?.closest('button'))void this.preview(this.assets.find(a=>a.id===card.dataset.asset)).catch(error=>this.notify(error));};
-  focusSearch():void{if(this.$('#modal-root').childElementCount)return;this.$<HTMLInputElement>(this.panel==='assets'?'#asset-search':'#capability-search').focus();}
+  private readonly doubleClick=(event:MouseEvent):void=>{clearTimeout(this.detailTimer);const element=event.target instanceof Element?event.target:undefined;const card=element?.closest<HTMLElement>('[data-asset]');if(card&&!element?.closest('button'))void this.preview(this.assets.find(a=>a.id===card.dataset.asset)).catch(error=>this.notify(error));};
+  focusSearch():void{if(this.$('#modal-root').childElementCount)return;if(this.narrow.matches&&this.detailOpen)this.closeDetails();this.$<HTMLInputElement>(this.panel==='assets'?'#asset-search':'#capability-search').focus();}
   private readonly keydown=(event:KeyboardEvent):void=>{
-    if(event.key==='Escape'){event.preventDefault();event.stopPropagation();this.root.querySelector('.aw-modal')?this.closeModal():this.options.close();return;}
+    if(event.key==='Escape'){event.preventDefault();event.stopPropagation();this.closeTop();return;}
     if((event.metaKey||event.ctrlKey)&&event.key.toLowerCase()==='k'){event.preventDefault();this.focusSearch();return;}
     const target=event.target instanceof HTMLElement?event.target:undefined;
     if((event.key==='Enter'||event.key===' ')&&target?.matches('[data-asset],[data-capability],[data-action="preview"]')){event.preventDefault();target.click();return;}
-    if(event.key==='Tab'){const modal=this.root.querySelector('.aw-modal');if(!modal)return;const items=[...modal.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled),select:not(:disabled),textarea:not(:disabled),a[href]')].filter(e=>e.getClientRects().length);if(!items.length)return;if(event.shiftKey&&document.activeElement===items[0]){event.preventDefault();items.at(-1)!.focus();}else if(!event.shiftKey&&document.activeElement===items.at(-1)){event.preventDefault();items[0].focus();}}
+    if(event.key==='Tab'){const modal=this.root.querySelector('.aw-modal')||(this.narrow.matches&&this.detailOpen?this.$(this.panel==='assets'?'#asset-detail':'#capability-detail'):undefined);if(!modal)return;const items=[...modal.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled),select:not(:disabled),textarea:not(:disabled),a[href]')].filter(e=>e.getClientRects().length);if(!items.length)return;if(event.shiftKey&&document.activeElement===items[0]){event.preventDefault();items.at(-1)!.focus();}else if(!event.shiftKey&&document.activeElement===items.at(-1)){event.preventDefault();items[0].focus();}}
   };
   private readonly dragover=(event:DragEvent):void=>{if(event.dataTransfer?.types.includes('Files')){event.preventDefault();this.$('.asset-main').classList.add('aw-drop-target');}};
   private readonly dragleave=(event:DragEvent):void=>{if(!event.relatedTarget||!this.root.contains(event.relatedTarget as Node))this.$('.asset-main').classList.remove('aw-drop-target');};
   private readonly drop=(event:DragEvent):void=>{if(!event.dataTransfer?.files.length)return;event.preventDefault();this.$('.asset-main').classList.remove('aw-drop-target');const profile=this.profile.id;void this.api.importDropped(profile,[...event.dataTransfer.files]).then(()=>{if(profile===this.profile.id)return this.reload();}).catch(error=>this.notify(error));};
-  closeTop():void {if(this.$('#modal-root').children.length)this.closeModal();else this.options.close();}
-  dispose():void {void this.flushView().catch(()=>{});for(const event of ['input','change','click','scroll'])this.root.removeEventListener(event,this.scheduleView,true);this.disposed=true;this.generation++;this.previewGeneration++;this.unsubscribe();this.unsubscribeJobs();this.root.removeEventListener('click',this.click);this.root.removeEventListener('keydown',this.keydown);this.root.removeEventListener('dblclick',this.doubleClick);this.root.removeEventListener('contextmenu',this.contextMenu);this.closeAssetMenu();this.root.removeEventListener('dragover',this.dragover);this.root.removeEventListener('dragleave',this.dragleave);this.root.removeEventListener('drop',this.drop);this.root.innerHTML='';}
+  closeTop():void {if(this.$('#modal-root').children.length)this.closeModal();else if(this.narrow.matches&&this.detailOpen)this.closeDetails();else this.options.close();}
+  dispose():void {void this.flushView().catch(()=>{});clearTimeout(this.detailTimer);this.narrow.removeEventListener('change',this.syncDetails);for(const event of ['input','change','click','scroll'])this.root.removeEventListener(event,this.scheduleView,true);this.disposed=true;this.generation++;this.previewGeneration++;this.unsubscribe();this.unsubscribeJobs();this.root.removeEventListener('click',this.click);this.root.removeEventListener('keydown',this.keydown);this.root.removeEventListener('dblclick',this.doubleClick);this.root.removeEventListener('contextmenu',this.contextMenu);this.closeAssetMenu();this.root.removeEventListener('dragover',this.dragover);this.root.removeEventListener('dragleave',this.dragleave);this.root.removeEventListener('drop',this.drop);this.root.classList.remove('aw-detail-open');this.root.innerHTML='';}
 }

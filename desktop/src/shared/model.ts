@@ -6,7 +6,7 @@ import type { WorkbenchAPI, WorkbenchPanel } from './workbench';
 import packageInfo from '../../package.json' with {type:'json'};
 export const APP_VERSION = packageInfo.version;
 export const desktopWorkspaceEnabled = (platform?:string):boolean => platform === 'darwin' || platform === 'win32';
-export const SHELL_HEIGHT = 46;
+export const SHELL_HEIGHT = 52;
 export const HOME = 'https://chatgpt.com/';
 export const COLORS = ['#32745d', '#5275a0', '#9b6eab', '#bb8050', '#b05f73', '#667485'] as const;
 export type Profile = { id: string; name: string; email: string; color: string; activeTabId: string; createdAt: number; language?:string; timeZone?:string; recoveryEpoch?:number; workspace?:WorkspaceState };

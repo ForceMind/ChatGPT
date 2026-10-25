@@ -1,0 +1,9 @@
+/* App-owned UI only. WebContents and file frames keep their own styles. */
+:root {
+  --studio-type-body:15px;
+  --studio-type-small:14px;
+  --studio-type-meta:13px;
+  --studio-text:#202020;
+  --studio-muted:#606060;
+  --studio-line:#dedede;
+}

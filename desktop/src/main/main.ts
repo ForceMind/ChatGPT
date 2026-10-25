@@ -550,7 +550,7 @@ async function safeForIdleUpdate():Promise<boolean>{
 function showIdleNotice(deadline?:number):void{
  idleNoticeWindow?.destroy();idleNoticeWindow=undefined;updates?.setIdleDeadline(deadline);
  if(deadline===undefined||quitting)return;
- const area=screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea,width=390,height=205;
+ const area=screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea,width=480,height=260;
  const note=new BrowserWindow({width,height,x:area.x+area.width-width-20,y:area.y+area.height-height-20,show:false,frame:false,focusable:false,resizable:false,movable:false,minimizable:false,maximizable:false,skipTaskbar:true,alwaysOnTop:true,backgroundColor:'#fafafa',webPreferences:{preload:path.join(__dirname,'update-notice-preload.cjs'),sandbox:true,contextIsolation:true,nodeIntegration:false,webSecurity:true}});
  idleNoticeWindow=note;note.setVisibleOnAllWorkspaces(true,{visibleOnFullScreen:true});note.webContents.setWindowOpenHandler(()=>({action:'deny'}));note.webContents.on('will-navigate',e=>e.preventDefault());
  note.once('ready-to-show',()=>{if(idleNoticeWindow===note&&idleUpdate?.deadline===deadline)note.showInactive();});
@@ -634,7 +634,7 @@ function createWindow(): void {
   const onScreen = screen.getAllDisplays().some(d => b.x !== undefined && b.y !== undefined && b.x+Math.min(b.width,200)>d.workArea.x && b.x<d.workArea.x+d.workArea.width && b.y+40>d.workArea.y && b.y<d.workArea.y+d.workArea.height);
   const chrome: Electron.BrowserWindowConstructorOptions = process.platform === 'win32'
     ? { titleBarStyle:'hidden', titleBarOverlay:{color:'#f8f8f8',symbolColor:'#171717',height:SHELL_HEIGHT},autoHideMenuBar:true,icon:path.join(__dirname,'icon.png') }
-    : { titleBarStyle:'hiddenInset',trafficLightPosition:{x:18,y:17} };
+    : { titleBarStyle:'hiddenInset',trafficLightPosition:{x:18,y:20} };
   win = new BrowserWindow({ ...b, ...(!onScreen ? {x:undefined,y:undefined} : {}), ...chrome, minWidth:800,minHeight:600,movable:true,title:'ChatGPT Studio',backgroundColor:'#ffffff',show:false,webPreferences:{preload:path.join(__dirname,'preload.cjs'),sandbox:true,contextIsolation:true,nodeIntegration:false,webSecurity:true} });
   if (process.platform === 'win32') win.setMenuBarVisibility(false);
   win.webContents.setWindowOpenHandler(()=>({action:'deny'}));
