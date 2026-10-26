@@ -38,9 +38,10 @@ jobs:
       - name: Typecheck, state tests and build
         run: npm run check
       - name: Windows isolation and interface acceptance
-        run: npx playwright test --max-failures=1
+        run: npx playwright test --max-failures=1 --reporter=list,json
         env:
           DEBUG: pw:browser
+          PLAYWRIGHT_JSON_OUTPUT_FILE: test-results/windows-ui.json
       - name: Native first-script language and login popup acceptance
         run: node scripts/check-native-preferences.mjs
       - name: Native background retention without automation flags
@@ -74,6 +75,7 @@ jobs:
             desktop/release/windows/*-setup.exe
             desktop/release/windows/windows-build-info.json
             desktop/release/windows/SHA256SUMS.txt
+            desktop/release/windows/alpha.yml
       - uses: actions/upload-artifact@v4
         with:
           name: windows-x64-zip

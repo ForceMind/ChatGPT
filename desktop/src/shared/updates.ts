@@ -1,6 +1,6 @@
 export type UpdateFile={url:string;size:number;sha256:string};
 export type UpdateManifest={schema:1;version:string;publishedAt:string;notes:string;files:Partial<Record<'arm64'|'x64',UpdateFile>>};
-export type UpdateStatus={phase:'idle'|'checking'|'available'|'downloading'|'ready'|'error';version?:string;progress?:number;idleEnabled?:boolean;idleDeadline?:number;message?:string};
+export type UpdateStatus={phase:'idle'|'checking'|'available'|'downloading'|'ready'|'error';version?:string;progress?:number;idleEnabled?:boolean;idleDeadline?:number;message?:string;installMode?:'automatic'|'manual'};
 const versionPattern=/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/;
 export function versionParts(value:string):(number|string)[]|undefined{
  if(value.length>100)return;const m=versionPattern.exec(value);if(!m)return;

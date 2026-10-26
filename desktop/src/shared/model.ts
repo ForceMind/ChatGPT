@@ -22,7 +22,7 @@ export type Command =
   | { type: 'tab:new'; url?: string }
   | { type: 'tab:activate' | 'tab:close' | 'tab:pin' | 'tab:menu'; id: string }
   | { type: 'tab:reorder'; ids: string[] }
-  | { type: 'update:check' | 'offline:live' | 'offline:retry' | 'tab:restore' | 'back' | 'forward' | 'reload' | 'home' | 'fullscreen' | 'maximize' | 'external' }
+  | { type: 'update:check' | 'update:save' | 'offline:live' | 'offline:retry' | 'tab:restore' | 'back' | 'forward' | 'reload' | 'home' | 'fullscreen' | 'maximize' | 'external' }
   | { type:'update:idle';enabled:boolean }
   | { type:'recovery:authorize'|'recovery:defer'|'recovery:settings' }
   | { type: 'overlay'; open: boolean }

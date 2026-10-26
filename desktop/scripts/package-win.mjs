@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import {windowsUpdateFeed} from './windows-update-feed.mjs';
 
 if(process.platform!=='win32'||process.arch!=='x64')throw new Error('请在 Windows x64 构建环境运行。');
 const root=fileURLToPath(new URL('..',import.meta.url));
@@ -20,9 +21,10 @@ const hash=data=>createHash('sha256').update(data).digest('hex');
 const payload={};
 function check(dir){for(const entry of readdirSync(dir,{withFileTypes:true})){const file=path.join(dir,entry.name);if(entry.isDirectory())check(file);else if(!entry.name.startsWith('._')){const relative=path.relative(root,file),key=relative.split(path.sep).join('/');const source=readFileSync(file),packed=asar.extractFile(archive,relative);if(!source.equals(packed))throw new Error('包内文件不一致：'+key);payload[key]=hash(packed);}}}
 check(path.join(root,'dist'));
-const artifacts=readdirSync(output).filter(file=>/\.(exe|zip|blockmap)$/.test(file)&&!file.startsWith('._')).map(file=>{const data=readFileSync(path.join(output,file));return{file,bytes:data.length,sha256:hash(data)};});
+const artifacts=readdirSync(output).filter(file=>/\.(exe|zip|blockmap)$/.test(file)&&!file.startsWith('._')).map(file=>{const data=readFileSync(path.join(output,file));return{file,bytes:data.length,sha256:hash(data),sha512:createHash('sha512').update(data).digest('base64')};});
 if(!artifacts.some(a=>a.file.endsWith('-setup.exe'))||!artifacts.some(a=>a.file.endsWith('.zip')))throw new Error('安装包或 ZIP 缺失。');
 const info={version:pkg.version,platform:'win32',architecture:'x64',signing:'unsigned',sourceCommit:process.env.GITHUB_SHA??null,application:'win-unpacked/'+executableName+'.exe',payload,artifacts};
 writeFileSync(path.join(output,'windows-build-info.json'),JSON.stringify(info,null,2)+'\n');
+writeFileSync(path.join(output,'alpha.yml'),JSON.stringify(windowsUpdateFeed(info,'本次 Windows 候选：自有智能体、设计补丁 Skill、更新下载与加密离线恢复。',new Date().toISOString()),null,2)+'\n');
 writeFileSync(path.join(output,'SHA256SUMS.txt'),artifacts.map(a=>a.sha256+'  '+a.file).join('\n')+'\n');
 console.log(JSON.stringify(info,null,2));

@@ -13,13 +13,14 @@
     "start": "npm run build && electron .",
     "start:built": "electron .",
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --test tests/state.test.ts tests/asset-store.test.ts tests/asset-downloads.test.ts tests/capabilities.test.ts tests/formats.test.ts tests/login-diagnostics.test.ts tests/handoff-store.test.ts tests/recovery-store.test.ts tests/updates.test.ts tests/update-installer.test.ts tests/idle-update.test.ts tests/recovery-access.test.ts",
+    "test": "node --import tsx --test tests/state.test.ts tests/asset-store.test.ts tests/asset-downloads.test.ts tests/capabilities.test.ts tests/formats.test.ts tests/login-diagnostics.test.ts tests/handoff-store.test.ts tests/recovery-store.test.ts tests/updates.test.ts tests/update-installer.test.ts tests/idle-update.test.ts tests/recovery-access.test.ts tests/windows-updates.test.ts",
     "test:e2e": "npm run build && playwright test",
     "check": "npm run typecheck && npm test && npm run build",
     "dist:mac": "npm run check && node scripts/icon.mjs && node scripts/package-mac.mjs",
     "dist:win": "npm run check && node scripts/icon.mjs && node scripts/package-win.mjs"
   },
   "dependencies": {
+    "electron-updater": "6.8.11",
     "marked": "18.1.1",
     "papaparse": "5.7.0",
     "pdfjs-dist": "6.4.299",
@@ -82,7 +83,7 @@
     },
     "win": {
       "icon": "assets/icon.ico",
-      "artifactName": "ChatGPT-Profiles-${version}-windows-${arch}.${ext}",
+      "artifactName": "ChatGPT-Studio-${version}-windows-${arch}.${ext}",
       "target": [
         {
           "target": "nsis",
@@ -97,10 +98,17 @@
           ]
         }
       ],
-      "executableName": "ChatGPT Profiles"
+      "executableName": "ChatGPT Profiles",
+      "publish": [
+        {
+          "provider": "generic",
+          "url": "https://chatgpt.xincreates.com/updates/windows/",
+          "channel": "alpha"
+        }
+      ]
     },
     "nsis": {
-      "artifactName": "ChatGPT-Profiles-${version}-windows-${arch}-setup.${ext}",
+      "artifactName": "ChatGPT-Studio-${version}-windows-${arch}-setup.${ext}",
       "oneClick": false,
       "perMachine": false,
       "allowElevation": false,

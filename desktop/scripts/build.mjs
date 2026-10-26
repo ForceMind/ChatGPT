@@ -8,7 +8,7 @@ import {buildRecoveryNative} from './build-recovery-native.mjs';
 import {Resvg} from '@resvg/resvg-js';
 import {readFileSync,writeFileSync} from 'node:fs';
 const root = fileURLToPath(new URL('..', import.meta.url));
-await bundle({ entryPoints: [path.join(root, 'src/main/main.ts'), path.join(root, 'src/main/preload.ts'),path.join(root,'src/main/update-notice-preload.ts')], outdir: path.join(root, 'dist/main'), outExtension: { '.js': '.cjs' }, bundle: true, platform: 'node', format: 'cjs', target: 'node22', external: ['electron'], sourcemap: true });
+await bundle({ entryPoints: [path.join(root, 'src/main/main.ts'), path.join(root, 'src/main/preload.ts'),path.join(root,'src/main/update-notice-preload.ts'),path.join(root,'src/main/windows-update-manager.ts'),path.join(root,'src/main/windows-update-platform.ts')], outdir: path.join(root, 'dist/main'), outExtension: { '.js': '.cjs' }, bundle: true, platform: 'node', format: 'cjs', target: 'node22', external: ['electron','electron-updater'], sourcemap: true });
 copyFileSync(path.join(root,'assets/icon.png'),path.join(root,'dist/main/icon.png'));
 const menuBarSvg=readFileSync(path.join(root,'assets/menu-bar-template.svg'));
 for(const scale of [1,2])writeFileSync(path.join(root,'dist/main',`menuBarTemplate${scale===2?'@2x':''}.png`),new Resvg(menuBarSvg,{fitTo:{mode:'width',value:18*scale}}).render().asPng());

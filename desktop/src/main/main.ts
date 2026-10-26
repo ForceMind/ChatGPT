@@ -4,6 +4,8 @@ import {RecoveryAccess,type PresenceKey} from './recovery-access';
 import {captureResume,applyResume,finishResume} from './page-resume';
 import {captureSnapshot} from './page-snapshot';
 import {UpdateManager} from './update-manager';
+import type {UpdateService} from './update-service';
+import {createWindowsUpdates} from './windows-update-platform';
 import {IdleUpdate} from './idle-update';
 import {pageSafeForIdle} from './page-idle';
 import {shanghaiDay} from '../shared/updates';
@@ -54,7 +56,7 @@ if (!single) app.quit();
 let win: BrowserWindow | undefined;
 // Kept in main-process module scope so the native status item survives hidden windows.
 let menuBar:MacMenuBar|undefined;
-let updates:UpdateManager|undefined,updateDialog=false;const offeredUpdates=new Set<string>(),readyUpdatePrompts=new Set<string>();
+let updates:UpdateService|undefined,updateDialog=false;const offeredUpdates=new Set<string>(),readyUpdatePrompts=new Set<string>();
 let idleUpdate:IdleUpdate|undefined,idleTimer:ReturnType<typeof setTimeout>|undefined,idleNoticeWindow:BrowserWindow|undefined,idleInstallEpoch:number|undefined;
 let backgroundModePending=process.platform==='darwin'&&process.argv.includes('--profiles-background-update');
 let store: StateStore;
@@ -395,7 +397,7 @@ function validateCommand(value: unknown): asserts value is Command {
   const c = value as Record<string, unknown>;
   if (typeof c.type !== 'string') throw new Error('无效操作');
   if(['recovery:authorize','recovery:defer','recovery:settings'].includes(c.type)){if(process.platform!=='darwin')throw Error('此恢复授权入口仅用于 macOS');return;}
-  const known = ['profile:add','profile:edit','profile:activate','profile:remove','profile:clear','profile:move','tab:new','tab:activate','tab:close','tab:pin','tab:menu','tab:reorder','tab:restore','back','forward','reload','home','fullscreen','maximize','external','overlay','panel','offline:live','offline:retry','update:check','update:idle'];
+  const known = ['profile:add','profile:edit','profile:activate','profile:remove','profile:clear','profile:move','tab:new','tab:activate','tab:close','tab:pin','tab:menu','tab:reorder','tab:restore','back','forward','reload','home','fullscreen','maximize','external','overlay','panel','offline:live','offline:retry','update:check','update:save','update:idle'];
   if (!known.includes(c.type)) throw new Error('未知操作');
   if (['profile:edit','profile:activate','profile:remove','profile:clear','profile:move','tab:activate','tab:close','tab:pin','tab:menu'].includes(c.type) && (typeof c.id !== 'string' || !/^[a-f0-9-]{36}$/.test(c.id))) throw new Error('无效标识');
   if (['profile:add','profile:edit'].includes(c.type) && (!validLabel(c.name,40,true) || !validLabel(c.email,120) || !(COLORS as readonly unknown[]).includes(c.color))) throw new Error('请填写 1–40 字账号名称、有效备注与颜色。');
@@ -464,8 +466,9 @@ async function dispatch(c: Command): Promise<void> {
       store.commit(next=>{if(dropReplacement)next.tabs=next.tabs.filter(t=>t.id!==replacement);const tab={...old,id};delete tab.closedPosition;next.closedTabs=next.closedTabs.filter(t=>t.id!==old.id);const siblings=next.tabs.filter(t=>t.profileId===tab.profileId);siblings.splice(Math.min(old.closedPosition??siblings.length,siblings.length),0,tab);siblings.sort((a,b)=>Number(b.pinned)-Number(a.pinned));next.tabs=[...next.tabs.filter(t=>t.profileId!==tab.profileId),...siblings];next.profiles.find(p=>p.id===tab.profileId)!.activeTabId=id;});
       if(dropReplacement&&replacement)destroyView(replacement);closedReplacements.delete(old.id);showActive();break;
     }
-    case 'update:idle': updates?.setIdleAllowed(c.enabled);break;
+    case 'update:idle': if(process.platform!=='darwin'||!updates?.setIdleAllowed)throw Error('当前平台请在退出时安装更新');updates.setIdleAllowed?.(c.enabled);break;
     case 'update:check': void checkUpdates(true).catch(report);break;
+    case 'update:save': await saveUpdatePackage();break;
     case 'offline:live': offlinePages.delete(activeProfile().activeTabId);layout();break;
     case 'offline:retry': {const id=activeProfile().activeTabId;destroyView(id);showActive();break;}
     case 'back': if (activeContents()?.navigationHistory.canGoBack()) activeContents()!.navigationHistory.goBack(); break;
@@ -549,14 +552,14 @@ async function safeForIdleUpdate():Promise<boolean>{
  return true;
 }
 function showIdleNotice(deadline?:number):void{
- idleNoticeWindow?.destroy();idleNoticeWindow=undefined;updates?.setIdleDeadline(deadline);
+ idleNoticeWindow?.destroy();idleNoticeWindow=undefined;updates?.setIdleDeadline?.(deadline);
  if(deadline===undefined||quitting)return;
  const area=screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea,width=480,height=260;
  const note=new BrowserWindow({width,height,x:area.x+area.width-width-20,y:area.y+area.height-height-20,show:false,frame:false,focusable:false,resizable:false,movable:false,minimizable:false,maximizable:false,skipTaskbar:true,alwaysOnTop:true,backgroundColor:'#fafafa',webPreferences:{preload:path.join(__dirname,'update-notice-preload.cjs'),sandbox:true,contextIsolation:true,nodeIntegration:false,webSecurity:true}});
  idleNoticeWindow=note;note.setVisibleOnAllWorkspaces(true,{visibleOnFullScreen:true});note.webContents.setWindowOpenHandler(()=>({action:'deny'}));note.webContents.on('will-navigate',e=>e.preventDefault());
  note.once('ready-to-show',()=>{if(idleNoticeWindow===note&&idleUpdate?.deadline===deadline)note.showInactive();});
  note.once('closed',()=>{if(idleNoticeWindow===note)idleNoticeWindow=undefined;});
- void note.loadURL('app://shell/update-notice.html?deadline='+deadline).catch(()=>{updates?.setIdleAllowed(false);recordAppActivity();notice('自动安装提示无法显示，已延后到下次退出时安装。');});
+ void note.loadURL('app://shell/update-notice.html?deadline='+deadline).catch(()=>{updates?.setIdleAllowed?.(false);recordAppActivity();notice('自动安装提示无法显示，已延后到下次退出时安装。');});
 }
 function initializeIdleUpdate():void{
  const fast=testMode&&process.env.PROFILES_IDLE_FAST==='1';
@@ -572,21 +575,30 @@ app.on('web-contents-created',(_event,contents)=>{
  contents.on('before-mouse-event',(_event,mouse)=>{if(contents!==idleNoticeWindow?.webContents&&!['mouseEnter','mouseLeave'].includes(mouse.type))recordAppActivity();});
 });
 app.on('browser-window-focus',(_event,window)=>{if(window!==idleNoticeWindow)recordAppActivity();});
+async function saveUpdatePackage():Promise<void>{
+ if(!win||!updates?.exportPackage||updates.status.phase!=='ready'||updates.status.installMode!=='manual')throw Error('没有可保存的免安装更新');
+ const result=await dialog.showSaveDialog(win,{title:'保存 Windows 免安装 ZIP',defaultPath:path.join(app.getPath('downloads'),updates.suggestedFilename||'ChatGPT-Studio-Windows.zip'),filters:[{name:'ZIP',extensions:['zip']}]});
+ if(result.canceled||!result.filePath)return;await updates.exportPackage(result.filePath);notice('ZIP 已保存。退出应用后可手动替换，账号与登录数据保留在原目录。');
+}
 async function offerUpdate(manual=false):Promise<void>{
  if(!updates||updateDialog||quitPending||quitting||!win?.isVisible()||win.isDestroyed())return;
  const state=updates.status,manifest=updates.manifest;
+ if(state.phase==='ready'&&state.installMode==='manual'){
+  if(!manual&&readyUpdatePrompts.has(state.version||''))return;readyUpdatePrompts.add(state.version||'');updateDialog=true;
+  try{const choice=await dialog.showMessageBox(win,{type:'info',title:'免安装更新已准备',message:`${state.version} ZIP 已下载并校验`,detail:'免安装版不会自动改动当前解压目录。保存 ZIP 后，退出应用并手动替换程序文件；账号目录与原始文件保留。',buttons:['保存 ZIP','稍后'],defaultId:0,cancelId:1});if(choice.response===0)await saveUpdatePackage();}finally{updateDialog=false;}return;
+ }
  if(state.phase==='ready'){
-  if(!manual&&readyUpdatePrompts.has(state.version||''))return;readyUpdatePrompts.add(state.version||'');updateDialog=true;try{const choice=await dialog.showMessageBox(win,{type:'info',title:'更新已准备',message:`${state.version} 已下载并校验`,detail:'可以立即保存并重启，或下次退出时安装。勾选空闲安装后，仅在本 App 处于后台且 30 分钟无操作、所有标签确认无生成和文件任务时，提前 60 秒提示；回到应用或取消会延后。其他软件的操作不影响计时。',checkboxLabel:'允许本 App 空闲 30 分钟后保存、安装并在后台重新打开',checkboxChecked:updates.idleChoiceMade()?state.idleEnabled===true:true,buttons:['下次退出时安装','保存并立即重启安装'],defaultId:0,cancelId:0});if(choice.response===1){updates.restartAfterInstall();app.quit();}else updates.setIdleAllowed(choice.checkboxChecked);}finally{updateDialog=false;recordAppActivity();syncIdleTimer();}return;
+  if(!manual&&readyUpdatePrompts.has(state.version||''))return;readyUpdatePrompts.add(state.version||'');updateDialog=true;try{const choice=await dialog.showMessageBox(win,{type:'info',title:'更新已准备',message:`${state.version} 已下载并校验`,detail:process.platform==='darwin'?'可以立即保存并重启，或下次退出时安装。勾选空闲安装后，仅在本 App 处于后台且 30 分钟无操作、所有标签确认无生成和文件任务时，提前 60 秒提示；回到应用或取消会延后。其他软件的操作不影响计时。':'将先保存工作区，再退出并运行更新安装程序。也可等下次真正退出应用时安装。',...(process.platform==='darwin'?{checkboxLabel:'允许本 App 空闲 30 分钟后保存、安装并在后台重新打开',checkboxChecked:updates.idleChoiceMade?.()?state.idleEnabled===true:true}:{}),buttons:['下次退出时安装','保存并立即重启安装'],defaultId:0,cancelId:0});if(choice.response===1){updates.restartAfterInstall();app.quit();}else if(process.platform==='darwin')updates.setIdleAllowed?.(choice.checkboxChecked);}finally{updateDialog=false;recordAppActivity();syncIdleTimer();}return;
  }
  if(state.phase!=='available'||!manifest||!manual&&offeredUpdates.has(manifest.version+':'+shanghaiDay(Date.now()).day))return;
  offeredUpdates.add(manifest.version+':'+shanghaiDay(Date.now()).day);updateDialog=true;let source=0;
- try{const choice=await dialog.showMessageBox(win,{type:'question',title:'发现新版本',message:`ChatGPT Studio ${manifest.version}`,detail:manifest.notes+'\n\n确认后后台下载、校验并准备安装，你可以继续使用。下次真正退出 App 时安装，登录数据保留。国内加速使用第三方 gh-proxy.org。',buttons:['稍后','后台下载更新','国内加速下载'],defaultId:1,cancelId:0});source=choice.response;}finally{updateDialog=false;}
+ try{const choice=await dialog.showMessageBox(win,{type:'question',title:'发现新版本',message:`ChatGPT Studio ${manifest.version}`,detail:manifest.notes+(state.installMode==='manual'?'\n\n确认后后台下载并校验 ZIP，可另存后退出并手动替换。原账号目录保持。':'\n\n确认后后台下载、校验并准备安装，你可以继续使用。下次真正退出 App 时安装，登录数据保留。')+' 国内加速使用第三方 gh-proxy.org。',buttons:['稍后',state.installMode==='manual'?'后台下载 ZIP':'后台下载更新','国内加速下载'],defaultId:1,cancelId:0});source=choice.response;}finally{updateDialog=false;}
  if(source===0)return;
- void updates.download(source===2).then(()=>{notice('更新已准备，下次退出时安装；可在「检查更新」中立即重启。');void offerUpdate().catch(report);}).catch(error=>{if(!quitPending&&!quitting)report(error);});
+ void updates.download(source===2).then(()=>{notice(updates?.status.installMode==='manual'?'ZIP 已校验，可在「检查更新」中保存。':'更新已准备，下次退出时安装；可在「检查更新」中立即重启。');void offerUpdate().catch(report);}).catch(error=>{if(!quitPending&&!quitting)report(error);});
 }
 async function checkUpdates(manual=false):Promise<void>{
  if(manual)recordAppActivity();
- if(!updates){if(manual)notice('自动更新将用于已安装的 macOS 客户端，开发模式和其他平台暂不替换应用。');return;}
+ if(!updates){if(manual)notice('当前无法自动更新，请从官网下载最新安装包；已有账号数据保留。');return;}
  if(manual&&updates.status.phase==='downloading'){notice(`更新正在后台下载 ${updates.status.progress||0}%`);return;}
  await updates.check();await offerUpdate(manual);
  if(manual&&['idle','error'].includes(updates.status.phase))notice(updates.status.message||'暂时无法检查更新');
@@ -595,7 +607,7 @@ function installMenu(): void {
   const action = (command: Command) => () => queueCommandInternal(() => dispatch(command));
   const tabStep = (delta: number) => () => { const p = activeProfile(), tabs = store.read().tabs.filter(t => t.profileId === p.id), i = tabs.findIndex(t => t.id === p.activeTabId); action({ type: 'tab:activate', id: tabs[(i+delta+tabs.length)%tabs.length].id })(); };
   const template: Electron.MenuItemConstructorOptions[] = [
-    { label: 'ChatGPT Studio', submenu: [{ role: 'about', label: '关于 ChatGPT Studio' }, ...(process.platform==='darwin'?[{id:'check-updates',label:'检查更新…',click:()=>void checkUpdates(true).catch(report)}]:[]), ...(process.platform === 'darwin' ? [{ type: 'separator' as const }, { role: 'services' as const, label: '服务' }, { role: 'hide' as const, label: '隐藏' }, { role: 'hideOthers' as const, label: '隐藏其他' }, { role: 'unhide' as const, label: '显示全部' }] : []), { type: 'separator' }, { role: 'quit', label: '退出' }] },
+    { label: 'ChatGPT Studio', submenu: [{ role: 'about', label: '关于 ChatGPT Studio' }, ...(desktopWorkspace?[{id:'check-updates',label:'检查更新…',click:()=>void checkUpdates(true).catch(report)}]:[]), ...(process.platform === 'darwin' ? [{ type: 'separator' as const }, { role: 'services' as const, label: '服务' }, { role: 'hide' as const, label: '隐藏' }, { role: 'hideOthers' as const, label: '隐藏其他' }, { role: 'unhide' as const, label: '显示全部' }] : []), { type: 'separator' }, { role: 'quit', label: '退出' }] },
     { label: '文件', submenu: [...(desktopWorkspace?[{id:'chat-search',label:'搜索 ChatGPT',accelerator:'CmdOrCtrl+K',click:()=>void openChatSearch().catch(report)},...(process.platform==='darwin'?[{id:'recovery-privacy',label:'隐私与本地恢复…',click:()=>void recoverySettings().catch(report)}]:[]),{id:'recovery-draft',label:'查看本地恢复草稿',click:()=>void showLocalDraft().catch(report)},{type:'separator' as const}]:[]),{ label: '新建标签页', accelerator: 'CmdOrCtrl+T', click: action({type:'tab:new'}) }, { label: '恢复关闭的标签页', accelerator: 'CmdOrCtrl+Shift+T', click: action({type:'tab:restore'}) }, { label: '添加账号', accelerator: 'CmdOrCtrl+Shift+N', click: () => win?.webContents.send('profiles:shortcut','add-profile') }, { type:'separator' }, { label:'关闭标签页', accelerator:'CmdOrCtrl+W', click: () => { const focused=BrowserWindow.getFocusedWindow(); if(focused&&focused!==win) focused.close(); else if(panel)win?.webContents.send('profiles:shortcut','close-workbench');else action({type:'tab:close',id:activeProfile().activeTabId})(); } }, { role:'close', label:process.platform==='darwin'?'关闭窗口（后台保留）':'关闭窗口', accelerator:'CmdOrCtrl+Shift+W' }] },
     { label: '编辑', submenu: [{role:'undo',label:'撤销'},{role:'redo',label:'重做'},{type:'separator'},{role:'cut',label:'剪切'},{role:'copy',label:'复制'},{role:'paste',label:'粘贴'},{role:'selectAll',label:'全选'}] },
     { label: '显示', submenu: [
@@ -637,7 +649,7 @@ function createWindow(): void {
     ? { titleBarStyle:'hidden', titleBarOverlay:{color:'#f8f8f8',symbolColor:'#171717',height:SHELL_HEIGHT},autoHideMenuBar:true,icon:path.join(__dirname,'icon.png') }
     : { titleBarStyle:'hiddenInset',trafficLightPosition:{x:18,y:20} };
   win = new BrowserWindow({ ...b, ...(!onScreen ? {x:undefined,y:undefined} : {}), ...chrome, minWidth:800,minHeight:600,movable:true,title:'ChatGPT Studio',backgroundColor:'#ffffff',show:false,webPreferences:{preload:path.join(__dirname,'preload.cjs'),sandbox:true,contextIsolation:true,nodeIntegration:false,webSecurity:true} });
-  if (process.platform === 'win32') win.setMenuBarVisibility(false);
+  if (process.platform === 'win32') {win.setMenuBarVisibility(false);win.on('query-session-end',()=>updates?.sessionEnd?.());}
   win.webContents.setWindowOpenHandler(()=>({action:'deny'}));
   win.webContents.on('will-navigate',event=>event.preventDefault());
   const refreshMenuBar=()=>menuBar?.refresh();
@@ -691,6 +703,13 @@ if (single) {
      updates=new UpdateManager(dataDir,APP_VERSION,process.arch,(url,options)=>updateSession.fetch(updateFixture?fixtureOrigin+(url===UPDATE_FEED?'/version.json':'/archive.zip'):url,options),()=>{publish();syncIdleTimer();},bundle);
      initializeIdleUpdate();updates.start(()=>void checkUpdates().catch(report));powerMonitor.on('resume',()=>{recordAppActivity();updates?.resume(()=>void checkUpdates().catch(report));});
      win?.once('show',()=>void offerUpdate().catch(report));publish();
+    }
+    if(process.platform==='win32'&&(app.isPackaged||updateFixture)){
+     try{
+      const updateSession=session.fromPartition('updates-windows',{cache:false});
+      updates=await createWindowsUpdates({dataDir,current:APP_VERSION,arch:process.arch,executable:process.execPath,protectedDirectories:['home','desktop','documents','downloads','appData','userData','temp'].map(name=>app.getPath(name as Parameters<typeof app.getPath>[0])),fetch:(url,options)=>updateSession.fetch(updateFixture?fixtureOrigin+(url.endsWith('.zip')?'/archive.zip':'/installer.exe'):url,options),changed:()=>publish(),fixtureOrigin:updateFixture?fixtureOrigin:undefined,fixtureMode:updateFixture&&process.env.PROFILES_WINDOWS_UPDATE_MANUAL==='1'?'manual':undefined});
+      updates.start(()=>void checkUpdates().catch(report));powerMonitor.on('resume',()=>updates?.resume(()=>void checkUpdates().catch(report)));win?.once('show',()=>void offerUpdate().catch(report));publish();
+     }catch(error){console.error('Windows update service:',error instanceof Error?error.message:'unavailable');}
     }
     try{installMenuBar();}catch(error){const message=error instanceof Error?error.message:'菜单栏暂不可用';console.error('菜单栏初始化失败:',message);win?.webContents.once('did-finish-load',()=>notice(message+'，仍可从 Dock 打开应用。'));}
     app.on('activate',reopenWindow);

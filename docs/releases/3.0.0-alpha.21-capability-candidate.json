@@ -1,0 +1,194 @@
+{
+  "version": "3.0.0-alpha.21",
+  "sourceCommit": "5b6d789325da497026fe54ef0463c14fb8bbfc87",
+  "ciRun": "https://github.com/ForceMind/ChatGPT/actions/runs/40345895390",
+  "artifacts": [
+    {
+      "file": "ChatGPT-Studio-3.0.0-alpha.21-mac-arm64.dmg",
+      "platform": "macos",
+      "purpose": "installer",
+      "bytes": 154506893,
+      "sha256": "286b904a21f4f9a783c37a8326b303798119ee96ff7f3c6888b7d26a952c8887"
+    },
+    {
+      "file": "ChatGPT-Studio-3.0.0-alpha.21-mac-arm64.zip",
+      "platform": "macos",
+      "purpose": "installer",
+      "bytes": 154492159,
+      "sha256": "7cf52a69822cc740449aa28ca8626d287e9fdafb6dc721dc8d80b7cdd7d80daf"
+    },
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.21-mac-arm64.zip",
+      "platform": "macos",
+      "purpose": "legacy-updater",
+      "bytes": 154610546,
+      "sha256": "f5dfd89cb02e527bd36395bfdecde04a564a3943353c19fc1ffe1a5cd6f704de"
+    }
+  ],
+  "signing": "ad-hoc, not notarized",
+  "checks": {
+    "distFilesCompared": 232,
+    "uiAcceptance": {
+      "version": "3.0.0-alpha.21",
+      "commit": "5b6d789325da497026fe54ef0463c14fb8bbfc87",
+      "scope": "isolated Electron with real ProseMirror and loopback fixtures; no live ChatGPT or personal accounts",
+      "stats": {
+        "startTime": "2026-10-26T15:06:21.956Z",
+        "duration": 123565.443,
+        "expected": 11,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      }
+    },
+    "packagedUpdater": {
+      "version": "3.0.0-alpha.21",
+      "verifiedAt": "2026-10-26T15:10:58.594Z",
+      "scope": "shipping ZIPs, pinned alpha.18 helper and disposable old bundles; fixture account data only, no personal Keychain or live ChatGPT acceptance",
+      "asarSHA256": "674da4fcc158d2dcce018471307ab101aded6bbab7271f749e9689f887c30cdd",
+      "helperSHA256": "6d76ffeab1a3de9fed9625389cba1380ba45a245ea8571f0ea69b6a0c1b81421",
+      "legacyAlpha18HelperSHA256": "06f93c1c549a18a28f65a9d96f361fb5491d3c37db620de89007bf19b47e62aa",
+      "elapsedMs": 39635,
+      "cases": [
+        {
+          "archive": "ChatGPT-Studio-3.0.0-alpha.21-mac-arm64.zip",
+          "zipSHA256": "7cf52a69822cc740449aa28ca8626d287e9fdafb6dc721dc8d80b7cdd7d80daf",
+          "legacyAlpha18Installer": false,
+          "installedBundle": "ChatGPT Studio.app",
+          "systemName": "ChatGPT Studio",
+          "executable": "ChatGPT Studio",
+          "previousBundlePreserved": true,
+          "accountDataUnchanged": true
+        },
+        {
+          "archive": "ChatGPT-Profiles-3.0.0-alpha.21-mac-arm64.zip",
+          "zipSHA256": "f5dfd89cb02e527bd36395bfdecde04a564a3943353c19fc1ffe1a5cd6f704de",
+          "legacyAlpha18Installer": true,
+          "installedBundle": "ChatGPT Studio.app",
+          "systemName": "ChatGPT Studio",
+          "executable": "ChatGPT Studio",
+          "previousBundlePreserved": true,
+          "accountDataUnchanged": true
+        }
+      ],
+      "checks": [
+        "canonical and legacy ZIP digests and signatures",
+        "legacy alpha.18 fixed archive root",
+        "actual published alpha.18 native installer",
+        "parent exit wait and atomic swap",
+        "signed no-overwrite rename to Studio.app",
+        "installed payload byte identity",
+        "system name and executable",
+        "previous app and account fixture preserved"
+      ]
+    },
+    "nativeRecovery": {
+      "version": "3.0.0-alpha.21",
+      "verifiedAt": "2026-10-26T15:11:04.039Z",
+      "scope": "isolated Electron, actual packaged ASAR/native module; no personal profiles or Keychain items; signed Touch ID key creation not verified",
+      "branding": {
+        "displayName": "ChatGPT Studio",
+        "internalName": "ChatGPT Studio",
+        "bundleId": "com.forcemind.chatgpt.profiles",
+        "applicationBundle": "ChatGPT Studio.app",
+        "legacyUpdateRoot": "ChatGPT Profiles.app",
+        "storageIdentity": "ChatGPT Profiles"
+      },
+      "payloadFiles": 232,
+      "asarSHA256": "674da4fcc158d2dcce018471307ab101aded6bbab7271f749e9689f887c30cdd",
+      "capabilities": {
+        "touchID": false,
+        "signed": false
+      },
+      "unsignedKeyRefused": true,
+      "checks": [
+        "all dist payload bytes match",
+        "deep strict code signature",
+        "packaged native module loads from ASAR",
+        "ad-hoc key creation refused before SecItem access"
+      ]
+    },
+    "nativeMenuBar": {
+      "version": "3.0.0-alpha.21",
+      "commit": "5b6d789325da497026fe54ef0463c14fb8bbfc87",
+      "verifiedAt": "2026-10-26T15:11:05.916Z",
+      "scope": "Actual shipping ASAR images loaded by isolated Electron on macOS with one local fixture window, real native Tray in the visible menu bar; full packaged main-process startup and physical-user dark-mode appearance are not verified here. No account spaces or personal Keychain items.",
+      "asarSHA256": "674da4fcc158d2dcce018471307ab101aded6bbab7271f749e9689f887c30cdd",
+      "resources": [
+        {
+          "path": "dist/main/menuBarTemplate.png",
+          "width": 18,
+          "height": 18,
+          "sha256": "6bf511ea1e207d79eb446c25735591c066373732f0c33ee246c49c2f66096f19"
+        },
+        {
+          "path": "dist/main/menuBarTemplate@2x.png",
+          "width": 36,
+          "height": 36,
+          "sha256": "0b1242c594de958c6de38349365d90a0bfc097e2b5c4658971a4e0435b38ce29"
+        }
+      ],
+      "native": {
+        "imageSize": {
+          "width": 18,
+          "height": 18
+        },
+        "scaleFactors": [
+          1,
+          2
+        ],
+        "template": true,
+        "transparentPixels": 142,
+        "glyphPixels": 182,
+        "bounds": {
+          "x": 1346,
+          "y": 0,
+          "width": 34,
+          "height": 24
+        },
+        "displays": [
+          {
+            "bounds": {
+              "x": 0,
+              "y": 0,
+              "width": 1600,
+              "height": 1200
+            },
+            "workArea": {
+              "x": 0,
+              "y": 25,
+              "width": 1600,
+              "height": 1175
+            }
+          }
+        ],
+        "onVisibleMenuBar": true,
+        "destroyedOnExit": true,
+        "fixtureWindowCount": 1
+      },
+      "checks": [
+        "packaged image bytes match build",
+        "18px and 36px PNGs",
+        "ASAR native-image loading",
+        "template and Retina representations",
+        "black glyph with transparent background",
+        "native status item within the visible menu bar",
+        "native Tray disposal"
+      ]
+    }
+  },
+  "status": "candidate-only-not-public",
+  "scope": "Original desktop capability library; isolated CI, no live ChatGPT or personal accounts",
+  "counts": {
+    "skills": 121,
+    "agents": 32,
+    "internetPriority": 24
+  },
+  "supersededRuns": [
+    40337798010,
+    40338576650,
+    40338769384,
+    40341304525
+  ],
+  "artifactsRemainInActions": true
+}
