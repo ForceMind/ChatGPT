@@ -15,7 +15,7 @@ permissions:
 jobs:
   upgrade:
     runs-on: windows-2025
-    timeout-minutes: 15
+    timeout-minutes: 20
     defaults:
       run:
         working-directory: desktop
@@ -30,13 +30,13 @@ jobs:
       - name: Validate reusable source and checks
         env:
           GH_TOKEN: ${{ github.token }}
-          PACKAGE_RUN: ${{ inputs.package_run || '40364964641' }}
+          PACKAGE_RUN: ${{ inputs.package_run || '40368174471' }}
         run: |
           if ($env:PACKAGE_RUN -notmatch '^\d+$') { throw 'Invalid package run' }
           $run = gh api "repos/$env:GITHUB_REPOSITORY/actions/runs/$env:PACKAGE_RUN" | ConvertFrom-Json
           if ($run.repository.full_name -ne $env:GITHUB_REPOSITORY -or $run.event -ne 'workflow_dispatch') { throw 'Wrong repository or event' }
           $jobs = gh api "repos/$env:GITHUB_REPOSITORY/actions/runs/$env:PACKAGE_RUN/jobs" | ConvertFrom-Json
-          foreach ($name in @('Typecheck, state tests and build','Windows isolation and interface acceptance','Native first-script language and login popup acceptance','Native background retention without automation flags','Package Windows x64','Install, launch and uninstall acceptance')) {
+          foreach ($name in @('Typecheck, state tests and build','Windows isolation and interface acceptance','Native first-script language and login popup acceptance','Package Windows x64','Install, launch and uninstall acceptance')) {
             $match = @($jobs.jobs.steps | Where-Object { $_.name -eq $name -and $_.conclusion -eq 'success' })
             if ($match.Count -ne 1) { throw "Reusable check is not successful: $name" }
           }
@@ -47,13 +47,13 @@ jobs:
         with:
           name: windows-x64-installer
           path: desktop/release/windows
-          run-id: ${{ inputs.package_run || '40364964641' }}
+          run-id: ${{ inputs.package_run || '40368174471' }}
           github-token: ${{ github.token }}
       - uses: actions/download-artifact@v4
         with:
           name: windows-x64-zip
           path: desktop/release/windows
-          run-id: ${{ inputs.package_run || '40364964641' }}
+          run-id: ${{ inputs.package_run || '40368174471' }}
           github-token: ${{ github.token }}
       - name: Verify original bytes and extract portable ASAR
         run: |
@@ -70,12 +70,19 @@ jobs:
           $zip = @($info.artifacts | Where-Object { $_.file.EndsWith('.zip') })
           if ($zip.Count -ne 1) { throw 'Ambiguous portable package' }
           Expand-Archive (Join-Path 'release/windows' $zip[0].file) release/windows/win-unpacked
-      - name: Prepare probe runtime without rebuilding application
-        run: npm ci
+      - name: Prepare probe runtime and verify unchanged compiled payload
+        run: |
+          npm ci
+          npm run check
+          if ($LASTEXITCODE -ne 0) { throw 'Current checks failed' }
+          node --input-type=module -e "import fs from 'node:fs';import crypto from 'node:crypto';const info=JSON.parse(fs.readFileSync('release/windows/windows-build-info.json'));for(const [file,hash] of Object.entries(info.payload)){if(crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex')!==hash)throw Error('Compiled payload changed: '+file)}console.log('Current compiled payload matches candidate receipt; no packages rebuilt');"
+          if ($LASTEXITCODE -ne 0) { throw 'Compiled payload differs' }
       - name: Install, launch and uninstall candidate
         run: ./scripts/check-windows-install.ps1
       - name: Real installed baseline to exact candidate upgrade
         run: ./scripts/check-windows-upgrade.ps1
+      - name: Native background retention without automation flags
+        run: node scripts/measure-resources.mjs --label windows-candidate-acceptance --keepalive-ms 330000 --output test-results/windows-native-retention.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -83,3 +90,4 @@ jobs:
           path: |
             desktop/release/windows/windows-smoke.json
             desktop/release/windows/windows-upgrade.json
+            desktop/test-results/windows-native-retention.json

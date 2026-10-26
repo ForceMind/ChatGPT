@@ -16,7 +16,8 @@ app.whenReady().then(async()=>{
  console.log('CI installer records:',JSON.stringify(records));
  console.log('CI target executable:',config.installed);
  assert.equal(registeredWindowsDirectory(config.installed,records,[process.env.APPDATA,process.env.RUNNER_TEMP]),path.dirname(config.installed));
- const oldPackage=require(path.join(path.dirname(config.installed),'resources/app.asar/package.json'));
+ const oldArchive=path.join(path.dirname(config.installed),'resources/app.asar');
+ const oldPackage=JSON.parse(require('@electron/asar').extractFile(oldArchive,'package.json').toString('utf8'));
  const oldVersion=oldPackage.version;assert.equal(oldVersion,'3.0.0-alpha.18');assert.equal(oldPackage.name,'chatgpt-profiles');
  const feed=JSON.parse(fs.readFileSync(config.feed,'utf8')),installer=fs.readFileSync(config.installer);let requests=0;
  const server=createServer((q,r)=>{if(q.url.startsWith('/updates/windows/alpha.yml')){r.setHeader('Content-Type','text/yaml');r.end(JSON.stringify(feed));}else if(q.url==='/installer.exe'){requests++;r.setHeader('Content-Length',installer.length);r.end(installer);}else{r.writeHead(404);r.end();}});
