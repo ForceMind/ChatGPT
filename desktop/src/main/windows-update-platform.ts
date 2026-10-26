@@ -35,7 +35,7 @@ export async function createWindowsUpdates(options:PlatformOptions):Promise<Wind
  native.installDirectory=directory;
  if(options.fixtureOrigin){
   native.forceDevUpdateConfig=true;const root=safeDirectory(path.join(realpathSync(options.dataDir),'updates-windows'));
-  native.updateConfigPath=path.join(root,'dev-app-update.yml');writeFileSync(native.updateConfigPath,JSON.stringify({provider:'generic',url:options.fixtureOrigin+'/updates/windows/',updaterCacheDirName:'studio-update-fixture-'+createHash('sha256').update(root).digest('hex').slice(0,12)}),{mode:0o600});
+  const configFile=path.join(root,'dev-app-update.yml');writeFileSync(configFile,JSON.stringify({provider:'generic',url:options.fixtureOrigin+'/updates/windows/',updaterCacheDirName:'studio-update-fixture-'+createHash('sha256').update(root).digest('hex').slice(0,12)}),{mode:0o600});native.updateConfigPath=configFile;
  }
  const backend=createWindowsUpdateBackend(native,options.fixtureOrigin);
  return new WindowsUpdateManager({dataDir:options.dataDir,current:options.current,arch:options.arch,mode,backend,fetch:options.fetch,changed:options.changed,verifyInstaller:verifyWindowsInstaller,preflight:async()=>{
