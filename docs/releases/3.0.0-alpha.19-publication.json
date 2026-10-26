@@ -36,7 +36,7 @@
       "site-legacy/compat/macos.json": "8c30c55cc56511c162af21130606ee41220ee12e5985da311c229433eacf60bb"
     }
   },
-  "siteDeploymentStatus": "pending",
+  "siteDeploymentStatus": "production-verified",
   "websiteArtifacts": [
     {
       "file": "ChatGPT-Profiles-3.0.0-alpha.18-mac-arm64.dmg",
@@ -104,22 +104,421 @@
       "sourceMember": "device-evidence/workbench-phone/readability-skills-100-1080x2400.png"
     }
   ],
+  "verifiedAt": "2026-10-26T09:25:07.368967+00:00",
+  "websiteSourceVerificationHistory": [
+    {
+      "runId": 40283064000,
+      "sourceCommit": "77070f87236f3218bc198bfc97d9e0f65d23a3b3",
+      "conclusion": "success",
+      "widths": [
+        1440,
+        390
+      ],
+      "platformVersions": {
+        "macos": "3.0.0-alpha.18",
+        "windows": "3.0.0-alpha.18",
+        "android": "3.0.0-alpha.19"
+      },
+      "downloadCount": 5,
+      "acceleratedDownloadCount": 5,
+      "sha256Clipboard": true,
+      "credentiallessMacFeed": true
+    }
+  ],
   "websiteSourceVerification": {
-    "runId": 40283064000,
-    "sourceCommit": "77070f87236f3218bc198bfc97d9e0f65d23a3b3",
+    "runId": 40297317167,
+    "sourceCommit": "390c6d6c589218e33dd72a8ea7d7f5d814b91b66",
+    "artifactId": 12638742635,
+    "archiveSha256": "55da1e4e7cf3792035f08669f53cbc362fb3b7aa15214d9de3931930c5b2e6b7",
+    "report": {
+      "origin": "http://127.0.0.1:49185",
+      "landedOrigin": "http://127.0.0.1:49185",
+      "platformVersions": {
+        "macos": "3.0.0-alpha.18",
+        "windows": "3.0.0-alpha.18",
+        "android": "3.0.0-alpha.19"
+      },
+      "macosUpdateVersion": "3.0.0-alpha.18",
+      "downloadFiles": 5,
+      "acceleratedFiles": 5,
+      "widths": [
+        1440,
+        390
+      ],
+      "checksumCopy": true,
+      "credentiallessElectronFeed": true,
+      "legacyPageRedirect": false,
+      "customDomainServedDirectly": false,
+      "repositoryNavigationAbsent": true,
+      "rootLicenseMatchesWebsite": true,
+      "publicCommercialContact": true,
+      "errors": []
+    }
+  },
+  "websiteDeployment": {
+    "project": "chatgpt-studio",
+    "branch": "main",
+    "sourceCommit": "390c6d6c589218e33dd72a8ea7d7f5d814b91b66",
+    "deploymentId": "4d74f32b-97f5-41fe-b60f-53f79339887c",
+    "url": "https://4d74f32b.chatgpt-studio.pages.dev"
+  },
+  "websiteProductionVerification": {
+    "runId": 40298693713,
+    "sourceCommit": "848737751cc11396d5c510af76df326bcc72392c",
     "conclusion": "success",
-    "widths": [
-      1440,
-      390
+    "artifacts": [
+      {
+        "artifactId": 12639855336,
+        "archiveSha256": "2a04a72073d59ebcc18277f08103ad39401d7346070a5f1356fae6f6b1e585b6",
+        "bytes": 563190,
+        "report": {
+          "origin": "https://chatgpt-studio.pages.dev",
+          "landedOrigin": "https://chatgpt-studio.pages.dev",
+          "licenseOrigin": "https://chatgpt-studio.pages.dev",
+          "platformVersions": {
+            "macos": "3.0.0-alpha.18",
+            "windows": "3.0.0-alpha.18",
+            "android": "3.0.0-alpha.19"
+          },
+          "macosUpdateVersion": "3.0.0-alpha.18",
+          "downloadFiles": 5,
+          "acceleratedFiles": 5,
+          "widths": [
+            1440,
+            390
+          ],
+          "checksumCopy": true,
+          "credentiallessElectronFeed": true,
+          "legacyPageRedirect": false,
+          "customDomainServedDirectly": false,
+          "repositoryNavigationAbsent": true,
+          "rootLicenseMatchesWebsite": true,
+          "publicCommercialContact": true,
+          "errors": []
+        }
+      },
+      {
+        "artifactId": 12639555928,
+        "archiveSha256": "3d8f28a55d54a1d09d5fcc6dd3a5af0b005e71a27674acf655030140ea24c3ef",
+        "bytes": 563188,
+        "report": {
+          "origin": "https://chatgpt.xincreates.com",
+          "landedOrigin": "https://chatgpt.xincreates.com",
+          "licenseOrigin": "https://chatgpt.xincreates.com",
+          "platformVersions": {
+            "macos": "3.0.0-alpha.18",
+            "windows": "3.0.0-alpha.18",
+            "android": "3.0.0-alpha.19"
+          },
+          "macosUpdateVersion": "3.0.0-alpha.18",
+          "downloadFiles": 5,
+          "acceleratedFiles": 5,
+          "widths": [
+            1440,
+            390
+          ],
+          "checksumCopy": true,
+          "credentiallessElectronFeed": true,
+          "legacyPageRedirect": false,
+          "customDomainServedDirectly": true,
+          "repositoryNavigationAbsent": true,
+          "rootLicenseMatchesWebsite": true,
+          "publicCommercialContact": true,
+          "errors": []
+        }
+      },
+      {
+        "artifactId": 12639368692,
+        "archiveSha256": "5eea486be49d0da4a97cbf415d7e5ba648c233e2cf0970ce1cfb0b2f58fadcd4",
+        "bytes": 563201,
+        "report": {
+          "origin": "https://chatgpt-profiles.pages.dev",
+          "landedOrigin": "https://chatgpt-studio.pages.dev",
+          "licenseOrigin": "https://chatgpt-studio.pages.dev",
+          "platformVersions": {
+            "macos": "3.0.0-alpha.18",
+            "windows": "3.0.0-alpha.18",
+            "android": "3.0.0-alpha.19"
+          },
+          "macosUpdateVersion": "3.0.0-alpha.18",
+          "downloadFiles": 5,
+          "acceleratedFiles": 5,
+          "widths": [
+            1440,
+            390
+          ],
+          "checksumCopy": true,
+          "credentiallessElectronFeed": true,
+          "legacyPageRedirect": true,
+          "customDomainServedDirectly": false,
+          "repositoryNavigationAbsent": true,
+          "rootLicenseMatchesWebsite": true,
+          "publicCommercialContact": true,
+          "errors": []
+        }
+      }
+    ]
+  },
+  "independentAnonymousHttpVerification": {
+    "checkedAt": "2026-10-26T09:16:36.470937+00:00",
+    "sourceCommit": "390c6d6c589218e33dd72a8ea7d7f5d814b91b66",
+    "publicResourceCount": 14,
+    "resources": [
+      {
+        "url": "https://chatgpt-studio.pages.dev/app.js",
+        "status": 200,
+        "location": null,
+        "contentType": "application/javascript",
+        "path": "app.js",
+        "sha256": "b1a466ed20d2aee5ef102893b0fcd7abee48bcfcdf0eea22401d23bcb050e321",
+        "bytes": 6178
+      },
+      {
+        "url": "https://chatgpt-studio.pages.dev/assets/android-assets.png",
+        "status": 200,
+        "location": null,
+        "contentType": "image/png",
+        "path": "assets/android-assets.png",
+        "sha256": "cca90311a5db1cab90b5e92a8d8c9fae8d5d09d3a7b7f193bf2ef57d037573a2",
+        "bytes": 69859
+      },
+      {
+        "url": "https://chatgpt-studio.pages.dev/assets/android-skills.png",
+        "status": 200,
+        "location": null,
+        "contentType": "image/png",
+        "path": "assets/android-skills.png",
+        "sha256": "fdef510c45f8d0d3d724fea2ba2d67aca8ccf63e5fa88b2e09c1e016d97f0fbb",
+        "bytes": 346485
+      },
+      {
+        "url": "https://chatgpt-studio.pages.dev/assets/android-tablet-tabs.png",
+        "status": 200,
+        "location": null,
+        "contentType": "image/png",
+        "path": "assets/android-tablet-tabs.png",
+        "sha256": "239f1cd608cbcfe514d223264bb89a8858e33d85170077c4ba8362333f2c9f20",
+        "bytes": 120969
+      },
+      {
+        "url": "https://chatgpt-studio.pages.dev/assets/android-tabs.png",
+        "status": 200,
+        "location": null,
+        "contentType": "image/png",
+        "path": "assets/android-tabs.png",
+        "sha256": "62662cee4fc379c0d4d8c21ccca7d238534e6b63a8e750fdd5b98b0b84243b07",
+        "bytes": 121069
+      },
+      {
+        "url": "https://chatgpt-studio.pages.dev/assets/icon.svg",
+        "status": 200,
+        "location": null,
+        "contentType": "image/svg+xml",
+        "path": "assets/icon.svg",
+        "sha256": "c40527d47803acd03080ba814abe214159f3117ff277c36a600ff0ccedac82b0",
+        "bytes": 2119
+      },
+      {
+        "url": "https://chatgpt-studio.pages.dev/assets/macos-window.png",
+        "status": 200,
+        "location": null,
+        "contentType": "image/png",
+        "path": "assets/macos-window.png",
+        "sha256": "b562a84cb733ff295a28a6f385ae3a9583dc0d6d5b95ce60cf3edead16ddcc38",
+        "bytes": 227406
+      },
+      {
+        "url": "https://chatgpt-studio.pages.dev/assets/windows-installed.png",
+        "status": 200,
+        "location": null,
+        "contentType": "image/png",
+        "path": "assets/windows-installed.png",
+        "sha256": "cf9556ec248f33e2ad70231a04231416b3d30fc73008ec1e9e727b023d5d2718",
+        "bytes": 48225
+      },
+      {
+        "url": "https://chatgpt-studio.pages.dev/",
+        "status": 200,
+        "location": null,
+        "contentType": "text/html; charset=utf-8",
+        "path": "index.html",
+        "sha256": "8611b9ce9759af4f90196b7783e11e77a651efcb1a6340ee4442a2ca22873a9e",
+        "bytes": 40063
+      },
+      {
+        "url": "https://chatgpt-studio.pages.dev/license.txt",
+        "status": 200,
+        "location": null,
+        "contentType": "text/plain; charset=utf-8",
+        "path": "license.txt",
+        "sha256": "9d1b471b68ba1bf60015a232b380a075da38f31a74c961247a03e281785cc4a9",
+        "bytes": 2435
+      },
+      {
+        "url": "https://chatgpt-studio.pages.dev/robots.txt",
+        "status": 200,
+        "location": null,
+        "contentType": "text/plain; charset=utf-8",
+        "path": "robots.txt",
+        "sha256": "7f425345d5aa792cc6bf96f6b8f8cf148c87e9404b07a0593073b8322f2b3ca7",
+        "bytes": 77
+      },
+      {
+        "url": "https://chatgpt-studio.pages.dev/sitemap.xml",
+        "status": 200,
+        "location": null,
+        "contentType": "application/xml",
+        "path": "sitemap.xml",
+        "sha256": "edd6e6b0a8d9d2da3a0c0a8d3b566a16112e79c8fee69206f187de93b7a757db",
+        "bytes": 164
+      },
+      {
+        "url": "https://chatgpt-studio.pages.dev/styles.css",
+        "status": 200,
+        "location": null,
+        "contentType": "text/css; charset=utf-8",
+        "path": "styles.css",
+        "sha256": "6ecbb8857d52ef3a1a7a33619a4284d3104ac914da4bc918298203ae18904f97",
+        "bytes": 36551
+      },
+      {
+        "url": "https://chatgpt-studio.pages.dev/updates/macos.json",
+        "status": 200,
+        "location": null,
+        "contentType": "application/json",
+        "path": "updates/macos.json",
+        "sha256": "8c30c55cc56511c162af21130606ee41220ee12e5985da311c229433eacf60bb",
+        "bytes": 626
+      }
     ],
-    "platformVersions": {
-      "macos": "3.0.0-alpha.18",
-      "windows": "3.0.0-alpha.18",
-      "android": "3.0.0-alpha.19"
+    "rootAndWebsiteLicenseIdentical": true,
+    "license": {
+      "url": "https://chatgpt.xincreates.com/license.txt",
+      "status": 200,
+      "location": null,
+      "contentType": "text/plain; charset=utf-8"
     },
-    "downloadCount": 5,
-    "acceleratedDownloadCount": 5,
-    "sha256Clipboard": true,
-    "credentiallessMacFeed": true
+    "pages": [
+      {
+        "url": "https://chatgpt-studio.pages.dev/?source=alpha19-check",
+        "status": 200,
+        "location": null,
+        "contentType": "text/html; charset=utf-8",
+        "rawSha256": "8611b9ce9759af4f90196b7783e11e77a651efcb1a6340ee4442a2ca22873a9e",
+        "sourceComparableSha256": "8611b9ce9759af4f90196b7783e11e77a651efcb1a6340ee4442a2ca22873a9e"
+      },
+      {
+        "url": "https://chatgpt.xincreates.com/?source=alpha19-check",
+        "status": 200,
+        "location": null,
+        "contentType": "text/html; charset=utf-8",
+        "observedTransformation": {
+          "type": "Cloudflare email address obfuscation",
+          "decodedMailtoCount": 3,
+          "decodedEmailSpanCount": 1,
+          "decoderScriptRemovedForComparison": true,
+          "observedCloudflareAnalyticsScriptRemovedForComparison": true
+        },
+        "rawSha256": "668c2b64b52518a9c00269ca0129e4cb74d9663af50967a23bfc2e1a677fbd83",
+        "sourceComparableSha256": "8611b9ce9759af4f90196b7783e11e77a651efcb1a6340ee4442a2ca22873a9e"
+      },
+      {
+        "url": "https://chatgpt-profiles.pages.dev/?source=alpha19-check",
+        "status": 308,
+        "location": "https://chatgpt-studio.pages.dev/?source=alpha19-check",
+        "contentType": null
+      }
+    ],
+    "feeds": [
+      {
+        "url": "https://chatgpt-studio.pages.dev/updates/macos.json",
+        "status": 200,
+        "location": null,
+        "contentType": "application/json",
+        "sha256": "8c30c55cc56511c162af21130606ee41220ee12e5985da311c229433eacf60bb",
+        "version": "3.0.0-alpha.18"
+      },
+      {
+        "url": "https://chatgpt.xincreates.com/updates/macos.json",
+        "status": 200,
+        "location": null,
+        "contentType": "application/json",
+        "sha256": "8c30c55cc56511c162af21130606ee41220ee12e5985da311c229433eacf60bb",
+        "version": "3.0.0-alpha.18"
+      },
+      {
+        "url": "https://chatgpt-profiles.pages.dev/updates/macos.json",
+        "status": 200,
+        "location": null,
+        "contentType": "application/json",
+        "sha256": "8c30c55cc56511c162af21130606ee41220ee12e5985da311c229433eacf60bb",
+        "version": "3.0.0-alpha.18"
+      }
+    ],
+    "anonymousRelease": {
+      "id": 423861858,
+      "publishedAt": "2026-10-26T06:52:18Z",
+      "assets": [
+        {
+          "name": "ChatGPT-Profiles-3.0.0-alpha.19-android.apk",
+          "size": 7335383,
+          "digest": "sha256:0e65cd85162b6cbab005e5d571e9856f91fc7dae1d2b4437426cebd85bc9e47f"
+        },
+        {
+          "name": "SHA256SUMS.txt",
+          "size": 110,
+          "digest": "sha256:c947488242c5df76be55e16feb0eb7a9ad6d7c3e5e032b96ffa1cc0056d60aca"
+        }
+      ]
+    }
+  },
+  "previousProductionVerificationFailures": [
+    {
+      "runId": 40284959909,
+      "sourceCommit": "95caa49776cc7936c48df3b5ec0a636d7ffba14a",
+      "failure": "custom domain expected redirect; user intentionally moved domain to new project",
+      "resolution": "Verify custom domain directly serves new site with 200, keeping legacy pages.dev redirect."
+    },
+    {
+      "runId": 40297710589,
+      "sourceCommit": "390c6d6c589218e33dd72a8ea7d7f5d814b91b66",
+      "failedJobId": 121487725868,
+      "failure": "Legacy pages.dev license fetch rejected intended ordinary-page redirect; production main and custom domain jobs passed.",
+      "resolution": "Fetch license from the landed page origin; keep strict no-redirect 200 license and legacy update feed assertions."
+    }
+  ],
+  "license": {
+    "name": "ChatGPT Studio 非商业源码许可 v1.0",
+    "adoptedAt": "2026-10-26",
+    "ownerApproved": true,
+    "file": "LICENSE",
+    "website": "https://chatgpt.xincreates.com/license.txt",
+    "sha256": "9d1b471b68ba1bf60015a232b380a075da38f31a74c961247a03e281785cc4a9",
+    "enterpriseInternalUseRequiresWrittenAuthorization": true,
+    "publicContact": "me@xincreates.com",
+    "isOsiOpenSourceLicense": false,
+    "professionalLegalReview": false
+  },
+  "websiteNavigation": {
+    "repositoryNavigationRemoved": true,
+    "existingDomainBindingsPreserved": true,
+    "customDomainDirect200": true,
+    "legacyPages308": true
+  },
+  "downloadMigration": {
+    "status": "awaiting-user-choice",
+    "currentSource": "GitHub Releases",
+    "proposedFreeOption": "First-party streaming URL backed by GitHub Releases, subject to account Workers plan and quotas",
+    "implemented": false,
+    "r2Created": false,
+    "paidPlanEnabled": false,
+    "legacyMacUpdaterUnchanged": true
+  },
+  "cleanup": {
+    "temporaryPublicationDirectory": "/private/tmp/studio-alpha19-publication-ml3p2i68",
+    "status": "removed after verification evidence archived in repository",
+    "userDataAndBackupsPreserved": true,
+    "completedAt": "2026-10-26T09:25:10.789803+00:00",
+    "removedLogicalBytes": 1185308
   }
 }
