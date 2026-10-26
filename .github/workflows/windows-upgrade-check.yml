@@ -2,7 +2,10 @@ name: Windows packaged upgrade acceptance
 on:
   push:
     branches: [codex/macos-assets-workbench]
-    paths: [.github/workflows/windows-upgrade-check.yml]
+    paths:
+      - .github/workflows/windows-upgrade-check.yml
+      - desktop/scripts/check-windows-upgrade.ps1
+      - desktop/scripts/windows-packaged-update-probe.cjs
   workflow_dispatch:
     inputs:
       package_run:

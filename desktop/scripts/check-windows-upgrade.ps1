@@ -27,8 +27,20 @@ try {
     $config = @{ root = $root; installed = $exe; archive = (Join-Path $output 'win-unpacked/resources/app.asar'); installer = (Join-Path $output $candidate[0].file); feed = (Join-Path $output 'alpha.yml'); sourceCommit = $env:GITHUB_SHA }
     $configFile = Join-Path $root 'config.json'
     $config | ConvertTo-Json | Set-Content $configFile -Encoding utf8NoBOM
-    & 'node_modules/electron/dist/electron.exe' 'scripts/windows-packaged-update-probe.cjs' $configFile
-    if ($LASTEXITCODE -ne 0) { throw 'Shipping updater probe failed' }
+    $probeOut = Join-Path $root 'probe-out.log'
+    $probeErr = Join-Path $root 'probe-error.log'
+    $runtime = (Resolve-Path 'node_modules/electron/dist/electron.exe').Path
+    $probeScript = (Resolve-Path 'scripts/windows-packaged-update-probe.cjs').Path
+    # electron.exe is a GUI process. Do not use the shell's stale LASTEXITCODE,
+    # or cleanup can uninstall the baseline while its verifier is still reading it.
+    $probe = Start-Process $runtime -ArgumentList @(('"' + $probeScript + '"'), ('"' + $configFile + '"')) -RedirectStandardOutput $probeOut -RedirectStandardError $probeErr -PassThru
+    try {
+        if (!$probe.WaitForExit(120000)) { $probe.Kill($true); throw 'Shipping updater probe timed out' }
+        if ($probe.ExitCode -ne 0) { throw "Shipping updater probe failed: $($probe.ExitCode)" }
+    } finally {
+        if (Test-Path $probeOut) { Get-Content $probeOut }
+        if (Test-Path $probeErr) { Get-Content $probeErr }
+    }
     $expectedHash = (Get-FileHash (Join-Path $output 'win-unpacked/resources/app.asar')).Hash
     if ($baselineHash -eq $expectedHash) { throw 'Baseline and candidate must differ' }
     $deadline = [DateTime]::UtcNow.AddSeconds(150)
