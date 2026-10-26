@@ -2,7 +2,7 @@ import {test,expect,_electron as electron,type ElectronApplication} from '@playw
 import {createServer} from 'node:http';import {createHash} from 'node:crypto';import {execFileSync} from 'node:child_process';
 import {mkdtempSync,readFileSync,writeFileSync,rmSync,existsSync} from 'node:fs';import path from 'node:path';import os from 'node:os';import {fileURLToPath} from 'node:url';
 import {shellWindow} from './helpers/shell';
-const desktop=fileURLToPath(new URL('..',import.meta.url));
+const desktop=path.resolve(fileURLToPath(new URL('..',import.meta.url)));
 const next='3.0.0-alpha.999';
 const digest=(bytes:Buffer,algorithm:string,encoding:'hex'|'base64')=>createHash(algorithm).update(bytes).digest(encoding);
 for(const mode of ['automatic','manual'] as const)test('Windows '+mode+' update uses verified native SDK or explicit ZIP save',async({},info)=>{
@@ -10,7 +10,7 @@ for(const mode of ['automatic','manual'] as const)test('Windows '+mode+' update 
  const marker=path.join(root,'installer-ran.json'),saved=path.join(root,'saved.zip'),source=path.join(root,'fixture.cs'),installer=path.join(root,'fixture.exe');
  writeFileSync(source,`using System;using System.IO;using System.Reflection;[assembly:AssemblyProduct("ChatGPT Studio")][assembly:AssemblyVersion("3.0.0.0")][assembly:AssemblyInformationalVersion("${next}")]class Fixture{static void Main(string[] args){File.WriteAllText(Environment.GetEnvironmentVariable("STUDIO_INSTALL_MARKER"),String.Join("\\n",args));}}`);
  execFileSync(path.join(process.env.SystemRoot!,'Microsoft.NET','Framework64','v4.0.30319','csc.exe'),['/nologo','/target:winexe','/out:'+installer,source],{stdio:'pipe'});
- const exe=readFileSync(installer),zip=Buffer.from('fixture ZIP bytes, saved only; native NSIS installation is checked separately');
+ const exe=readFileSync(installer),zip=Buffer.from('UEsDBBQAAAAIAEIFW11RwddZNwAAADcAAAALAAAAZml4dHVyZS50eHQLSy3KTMtMTVEIz8xLyS8vVojyDFAAMvJy8hNTFNIyK0pKi1KtFfJSy1KLFDLziksSc3JSU/QAUEsBAhQDFAAAAAgAQgVbXVHB11k3AAAANwAAAAsAAAAAAAAAAAAAAIABAAAAAGZpeHR1cmUudHh0UEsFBgAAAAABAAEAOQAAAGAAAAAAAA==','base64');
  const manifest={schema:1,appId:'com.forcemind.chatgpt.profiles',platform:'win32',architecture:'x64',version:next,releaseDate:new Date().toISOString(),releaseNotes:'Local update fixture, not a published version',files:[{url:`https://github.com/ForceMind/ChatGPT/releases/download/v${next}/ChatGPT-Studio-${next}-windows-x64-setup.exe`,size:exe.length,sha256:digest(exe,'sha256','hex'),sha512:digest(exe,'sha512','base64')},{url:`https://github.com/ForceMind/ChatGPT/releases/download/v${next}/ChatGPT-Studio-${next}-windows-x64.zip`,size:zip.length,sha256:digest(zip,'sha256','hex'),sha512:digest(zip,'sha512','base64')}]};
  let release!:()=>void,exeRequests=0,zipRequests=0;const gate=new Promise<void>(resolve=>{release=resolve;});
  const server=createServer(async(q,r)=>{
@@ -19,7 +19,7 @@ for(const mode of ['automatic','manual'] as const)test('Windows '+mode+' update 
   r.writeHead(200,{'Content-Type':'text/html;charset=utf-8','Cache-Control':'no-store'});r.end('<!doctype html><title>Windows update fixture</title><article data-message-author-role="assistant">Before update</article><textarea id="prompt-textarea"></textarea>');
  });await new Promise<void>(resolve=>server.listen(0,'127.0.0.1',resolve));const addr=server.address();if(!addr||typeof addr==='string')throw Error('fixture');const origin='http://127.0.0.1:'+addr.port,data=path.join(root,'data');
  try{
-  app=await electron.launch({args:[desktop],env:{...process.env,PROFILES_E2E:'1',PROFILES_TEST_DATA:data,PROFILES_FIXTURE_ORIGIN:origin,PROFILES_UPDATES_FIXTURE:'1',PROFILES_WINDOWS_UPDATE_MANUAL:mode==='manual'?'1':'0',STUDIO_INSTALL_MARKER:marker}});const shell=await shellWindow(app);
+  app=await test.step('launch isolated Windows application',()=>electron.launch({timeout:20000,args:[desktop],env:{...process.env,PROFILES_E2E:'1',PROFILES_TEST_DATA:data,PROFILES_FIXTURE_ORIGIN:origin,PROFILES_UPDATES_FIXTURE:'1',PROFILES_WINDOWS_UPDATE_MANUAL:mode==='manual'?'1':'0',STUDIO_INSTALL_MARKER:marker}}));const shell=await shellWindow(app);
   await app.evaluate(({app,dialog},saved)=>{const a=app as any;a.updateDialogs=[];a.acceptDownload=false;dialog.showMessageBox=(async(_w:any,o:any)=>{a.updateDialogs.push(o);return{response:o.title==='发现新版本'?(a.acceptDownload?1:0):o.title==='免安装更新已准备'?0:0,checkboxChecked:false};}) as typeof dialog.showMessageBox;dialog.showSaveDialog=(async()=>({canceled:false,filePath:saved})) as typeof dialog.showSaveDialog;},saved);release();
   await expect.poll(async()=>{const s=(await shell.evaluate(()=>window.profiles.snapshot())).update;if(s?.phase==='error')throw Error(s.message);return s?.phase;}).toBe('available');expect(exeRequests).toBe(0);expect(zipRequests).toBe(0);
   const before=await shell.evaluate(()=>window.profiles.snapshot());
