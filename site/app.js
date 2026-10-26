@@ -98,7 +98,7 @@ if (os) {
 }
 function locateDownload() {
   // Keep existing shared links useful on phones. Explicit platform links always win.
-  if (os && location.hash === "#downloads" && matchMedia("(max-width: 800px)").matches) {
+  if (os && location.hash === "#downloads" && (os === "android" || matchMedia("(max-width: 800px)").matches)) {
     history.replaceState(null, "", `#download-${os}`);
   }
   const platform = /^#download-(windows|macos|android)$/.exec(location.hash)?.[1];

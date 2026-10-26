@@ -112,6 +112,9 @@ test('Studio website renders canonical pages and preserves legacy update feeds',
   await expect.poll(()=>visibleCard('android')).toBe(true);
   await expect(page.getByRole('tab',{name:'Android',exact:true})).toHaveAttribute('aria-selected','true');
   await page.screenshot({path:info.outputPath('studio-android-download-390.png')});
+  await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].setContentSize(915,600));await page.goto(routedOrigin+'/?platform-check=android-wide#downloads');
+  await expect.poll(()=>new URL(page.url()).hash).toBe('#download-android');await expect.poll(()=>visibleCard('android')).toBe(true);
+  await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].setContentSize(390,844));
   await page.goto(routedOrigin+'/');await page.locator('#primary-download').click();
   await expect.poll(()=>new URL(page.url()).hash).toBe('#download-android');await expect.poll(()=>visibleCard('android')).toBe(true);
   await page.goto(routedOrigin+'/#download-windows');await expect.poll(()=>visibleCard('windows')).toBe(true);expect(new URL(page.url()).hash).toBe('#download-windows');
