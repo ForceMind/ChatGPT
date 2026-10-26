@@ -24,6 +24,11 @@ test('registered installers must match this executable directory and never claim
  assert.equal(registeredWindowsDirectory(exe,[{...record,InstallLocation:'C:\\other'}],[]),undefined);
  assert.equal(registeredWindowsDirectory(exe,[record],[dir]),undefined);
  assert.equal(registeredWindowsDirectory('\\\\server\\share\\ChatGPT Profiles.exe',[{...record,InstallLocation:'\\\\server\\share'}],[]),undefined);
+ const actual={InstallLocation:null,UninstallString:'"'+dir+'\\Uninstall ChatGPT Profiles.exe" /currentuser'};
+ assert.equal(registeredWindowsDirectory(exe,[actual],[]),dir);
+ assert.equal(registeredWindowsDirectory(exe,[{UninstallString:actual.UninstallString}],[]),dir);
+ for(const bad of [actual.UninstallString+' /allusers',actual.UninstallString+' & calc.exe',actual.UninstallString.replace(dir,'C:\\Other'),actual.UninstallString.replace('Uninstall ChatGPT Profiles.exe','Other.exe'),actual.UninstallString.replaceAll('"','')])assert.equal(registeredWindowsDirectory(exe,[{InstallLocation:null,UninstallString:bad}],[]),undefined);
+ assert.equal(registeredWindowsDirectory(exe,[{...actual,InstallLocation:'C:\\Other'}],[]),undefined);
 });
 test('Windows checks coalesce, save the Shanghai noon attempt and never download without approval',async t=>{
  const s=setup(t);let release!:()=>void;s.gate(new Promise<void>(resolve=>{release=resolve;}));

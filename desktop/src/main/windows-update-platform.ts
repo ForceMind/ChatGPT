@@ -12,7 +12,13 @@ export function registeredWindowsDirectory(executable:string,records:unknown,pro
  const directory=path.win32.dirname(executable);if(!path.win32.isAbsolute(executable)||directory.startsWith('\\\\')||protectedDirectories.some(p=>same(p,directory))||path.win32.parse(directory).root===directory||path.win32.basename(executable).toLowerCase()!=='chatgpt profiles.exe')return;
  for(const record of Array.isArray(records)?records:[]){
   if(!record||typeof record!=='object')continue;const item=record as Record<string,unknown>;
-  if(typeof item.InstallLocation==='string'&&same(item.InstallLocation,directory)&&typeof item.UninstallString==='string'&&item.UninstallString.toLowerCase().includes('uninstall'))return directory;
+  if(typeof item.UninstallString!=='string')continue;
+  const command=/^"([^"\r\n]+)"(?:\s+\/currentuser)?\s*$/i.exec(item.UninstallString);
+  if(!command||!path.win32.isAbsolute(command[1])||!/^Uninstall ChatGPT (?:Profiles|Studio)\.exe$/i.test(path.win32.basename(command[1]))||!same(path.win32.dirname(command[1]),directory))continue;
+  // NSIS does not always write InstallLocation. Its quoted, account-scoped
+  // uninstaller path identifies the same directory; never execute this string.
+  if(item.InstallLocation!=null&&(typeof item.InstallLocation!=='string'||!same(item.InstallLocation,directory)))continue;
+  return directory;
  }
 }
 async function registered(executable:string,protectedDirectories:string[]):Promise<string|undefined>{

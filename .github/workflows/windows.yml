@@ -44,8 +44,6 @@ jobs:
           PLAYWRIGHT_JSON_OUTPUT_FILE: test-results/windows-ui.json
       - name: Native first-script language and login popup acceptance
         run: node scripts/check-native-preferences.mjs
-      - name: Native background retention without automation flags
-        run: node scripts/measure-resources.mjs --label windows-public-release --keepalive-ms 330000 --output test-results/windows-native-retention.json
       - name: Package Windows x64
         run: |
           node scripts/icon.mjs
@@ -56,6 +54,8 @@ jobs:
       - name: Actual NSIS upgrade with shipping updater modules
         shell: pwsh
         run: ./scripts/check-windows-upgrade.ps1
+      - name: Native background retention without automation flags
+        run: node scripts/measure-resources.mjs --label windows-public-release --keepalive-ms 330000 --output test-results/windows-native-retention.json
       - name: Upload verified packages to draft
         if: inputs.release_tag != ''
         shell: pwsh
