@@ -1,0 +1,397 @@
+{
+  "schema": 1,
+  "version": "3.0.0-alpha.21",
+  "status": "verified-candidate-not-public",
+  "preparedAt": "2026-10-26T17:56:31.324170+00:00",
+  "scope": "Desktop original capability library and Windows update/offline alignment; no public Release, website feed or installed application replacement.",
+  "capabilities": {
+    "skills": 121,
+    "agents": 32,
+    "internetPriority": 24,
+    "baseAndroidSkills": 120,
+    "revision": "project-skills-v2",
+    "originalAgentNamespace": "studio-agent-001..032",
+    "designSkill": "skill-121"
+  },
+  "macos": {
+    "sourceCommit": "f6081c3ba71d614c713aa97b8dfbbbed8cda401c",
+    "runId": 40369794145,
+    "conclusion": "success",
+    "unit": {
+      "passed": 78,
+      "failed": 0,
+      "skipped": 0
+    },
+    "ui": {
+      "startTime": "2026-10-26T17:34:48.322Z",
+      "duration": 158096.93399999998,
+      "expected": 13,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    },
+    "signing": "ad-hoc, not notarized",
+    "artifacts": [
+      {
+        "file": "ChatGPT-Studio-3.0.0-alpha.21-mac-arm64.dmg",
+        "platform": "macos",
+        "purpose": "installer",
+        "bytes": 155092924,
+        "sha256": "fe8c17d6e91d98e2cc29d2ced6e54ca6e582292bf98395d733ddf9105672dc9c"
+      },
+      {
+        "file": "ChatGPT-Studio-3.0.0-alpha.21-mac-arm64.zip",
+        "platform": "macos",
+        "purpose": "installer",
+        "bytes": 155040004,
+        "sha256": "34e0e3b2003038b85d7a834657e4a0e4dbcf42cfd36190350b5b0b182cfac99a"
+      },
+      {
+        "file": "ChatGPT-Profiles-3.0.0-alpha.21-mac-arm64.zip",
+        "platform": "macos",
+        "purpose": "legacy-updater",
+        "bytes": 155157008,
+        "sha256": "ce19529eb9d40fe55a6e02bdcced7e40ba20a997ba89226e251b4c84b918d4fa"
+      }
+    ],
+    "packageChecks": {
+      "distFilesCompared": 236,
+      "uiAcceptance": {
+        "version": "3.0.0-alpha.21",
+        "commit": "f6081c3ba71d614c713aa97b8dfbbbed8cda401c",
+        "scope": "isolated Electron with real ProseMirror and loopback fixtures; no live ChatGPT or personal accounts",
+        "stats": {
+          "startTime": "2026-10-26T17:34:48.322Z",
+          "duration": 158096.93399999998,
+          "expected": 13,
+          "skipped": 0,
+          "unexpected": 0,
+          "flaky": 0
+        }
+      },
+      "packagedUpdater": {
+        "version": "3.0.0-alpha.21",
+        "verifiedAt": "2026-10-26T17:40:19.228Z",
+        "scope": "shipping ZIPs, pinned alpha.18 helper and disposable old bundles; fixture account data only, no personal Keychain or live ChatGPT acceptance",
+        "asarSHA256": "0889feea054d59aa5c6fe720f842dd5db49c42a9a4300fd4a6ba221c70bde00b",
+        "helperSHA256": "6d76ffeab1a3de9fed9625389cba1380ba45a245ea8571f0ea69b6a0c1b81421",
+        "legacyAlpha18HelperSHA256": "06f93c1c549a18a28f65a9d96f361fb5491d3c37db620de89007bf19b47e62aa",
+        "elapsedMs": 64970,
+        "cases": [
+          {
+            "archive": "ChatGPT-Studio-3.0.0-alpha.21-mac-arm64.zip",
+            "zipSHA256": "34e0e3b2003038b85d7a834657e4a0e4dbcf42cfd36190350b5b0b182cfac99a",
+            "legacyAlpha18Installer": false,
+            "installedBundle": "ChatGPT Studio.app",
+            "systemName": "ChatGPT Studio",
+            "executable": "ChatGPT Studio",
+            "previousBundlePreserved": true,
+            "accountDataUnchanged": true
+          },
+          {
+            "archive": "ChatGPT-Profiles-3.0.0-alpha.21-mac-arm64.zip",
+            "zipSHA256": "ce19529eb9d40fe55a6e02bdcced7e40ba20a997ba89226e251b4c84b918d4fa",
+            "legacyAlpha18Installer": true,
+            "installedBundle": "ChatGPT Studio.app",
+            "systemName": "ChatGPT Studio",
+            "executable": "ChatGPT Studio",
+            "previousBundlePreserved": true,
+            "accountDataUnchanged": true
+          }
+        ],
+        "checks": [
+          "canonical and legacy ZIP digests and signatures",
+          "legacy alpha.18 fixed archive root",
+          "actual published alpha.18 native installer",
+          "parent exit wait and atomic swap",
+          "signed no-overwrite rename to Studio.app",
+          "installed payload byte identity",
+          "system name and executable",
+          "previous app and account fixture preserved"
+        ]
+      },
+      "nativeRecovery": {
+        "version": "3.0.0-alpha.21",
+        "verifiedAt": "2026-10-26T17:40:27.998Z",
+        "scope": "isolated Electron, actual packaged ASAR/native module; no personal profiles or Keychain items; signed Touch ID key creation not verified",
+        "branding": {
+          "displayName": "ChatGPT Studio",
+          "internalName": "ChatGPT Studio",
+          "bundleId": "com.forcemind.chatgpt.profiles",
+          "applicationBundle": "ChatGPT Studio.app",
+          "legacyUpdateRoot": "ChatGPT Profiles.app",
+          "storageIdentity": "ChatGPT Profiles"
+        },
+        "payloadFiles": 236,
+        "asarSHA256": "0889feea054d59aa5c6fe720f842dd5db49c42a9a4300fd4a6ba221c70bde00b",
+        "capabilities": {
+          "touchID": false,
+          "signed": false
+        },
+        "unsignedKeyRefused": true,
+        "checks": [
+          "all dist payload bytes match",
+          "deep strict code signature",
+          "packaged native module loads from ASAR",
+          "ad-hoc key creation refused before SecItem access"
+        ]
+      },
+      "nativeMenuBar": {
+        "version": "3.0.0-alpha.21",
+        "commit": "f6081c3ba71d614c713aa97b8dfbbbed8cda401c",
+        "verifiedAt": "2026-10-26T17:40:30.039Z",
+        "scope": "Actual shipping ASAR images loaded by isolated Electron on macOS with one local fixture window, real native Tray in the visible menu bar; full packaged main-process startup and physical-user dark-mode appearance are not verified here. No account spaces or personal Keychain items.",
+        "asarSHA256": "0889feea054d59aa5c6fe720f842dd5db49c42a9a4300fd4a6ba221c70bde00b",
+        "resources": [
+          {
+            "path": "dist/main/menuBarTemplate.png",
+            "width": 18,
+            "height": 18,
+            "sha256": "6bf511ea1e207d79eb446c25735591c066373732f0c33ee246c49c2f66096f19"
+          },
+          {
+            "path": "dist/main/menuBarTemplate@2x.png",
+            "width": 36,
+            "height": 36,
+            "sha256": "0b1242c594de958c6de38349365d90a0bfc097e2b5c4658971a4e0435b38ce29"
+          }
+        ],
+        "native": {
+          "imageSize": {
+            "width": 18,
+            "height": 18
+          },
+          "scaleFactors": [
+            1,
+            2
+          ],
+          "template": true,
+          "transparentPixels": 142,
+          "glyphPixels": 182,
+          "bounds": {
+            "x": 1346,
+            "y": 0,
+            "width": 34,
+            "height": 24
+          },
+          "displays": [
+            {
+              "bounds": {
+                "x": 0,
+                "y": 0,
+                "width": 1600,
+                "height": 1200
+              },
+              "workArea": {
+                "x": 0,
+                "y": 25,
+                "width": 1600,
+                "height": 1175
+              }
+            }
+          ],
+          "onVisibleMenuBar": true,
+          "destroyedOnExit": true,
+          "fixtureWindowCount": 1
+        },
+        "checks": [
+          "packaged image bytes match build",
+          "18px and 36px PNGs",
+          "ASAR native-image loading",
+          "template and Retina representations",
+          "black glyph with transparent background",
+          "native status item within the visible menu bar",
+          "native Tray disposal"
+        ]
+      }
+    },
+    "ciArtifacts": [
+      {
+        "name": "mac-release-info",
+        "id": 12673046364,
+        "bytes": 17207,
+        "serviceDigest": "sha256:e3c3c2e315115c21ca775a0dad3b7f1e5bf6a6cb7d0b43771cb288945bfd664e",
+        "url": "https://github.com/ForceMind/ChatGPT/actions/runs/40369794145/artifacts/12673046364"
+      },
+      {
+        "name": "mac-arm64-zip",
+        "id": 12671494023,
+        "bytes": 310197394,
+        "serviceDigest": "sha256:c3f95f200a2296027141ba9bea5d64ca727fadeecb39d4824fe934bcdf56363b",
+        "url": "https://github.com/ForceMind/ChatGPT/actions/runs/40369794145/artifacts/12671494023"
+      },
+      {
+        "name": "mac-ui-evidence",
+        "id": 12671489276,
+        "bytes": 1754447,
+        "serviceDigest": "sha256:a984c16b4aa05346c2a9942089a913ba51ddc81d3b5d88af237f321ed46d7251",
+        "url": "https://github.com/ForceMind/ChatGPT/actions/runs/40369794145/artifacts/12671489276"
+      },
+      {
+        "name": "mac-arm64-dmg",
+        "id": 12671414395,
+        "bytes": 155093124,
+        "serviceDigest": "sha256:9b50f0916846618ebe7996f24a18007c6a0f61e5c262bbf5b43654a216aa2288",
+        "url": "https://github.com/ForceMind/ChatGPT/actions/runs/40369794145/artifacts/12671414395"
+      }
+    ],
+    "metadataArtifactSHA256VerifiedLocally": "e3c3c2e315115c21ca775a0dad3b7f1e5bf6a6cb7d0b43771cb288945bfd664e"
+  },
+  "windows": {
+    "binarySourceCommit": "4448cc54695f42a71e7da3c695494242a3932d08",
+    "packagingRunId": 40368174471,
+    "packagingRunConclusion": "failure",
+    "packagingRunFailure": "Native acceptance script; verified package artifacts retained without replacement. See separate unchanged-byte acceptance.",
+    "unit": {
+      "passed": 77,
+      "failed": 0,
+      "skipped": 1
+    },
+    "ui": {
+      "startTime": "2026-10-26T17:24:38.091Z",
+      "duration": 146274.51499999998,
+      "expected": 19,
+      "skipped": 13,
+      "unexpected": 0,
+      "flaky": 0
+    },
+    "signing": "unsigned",
+    "artifacts": [
+      {
+        "file": "ChatGPT-Studio-3.0.0-alpha.21-windows-x64-setup.exe",
+        "bytes": 131340242,
+        "sha256": "6e2a433bc3ff3a61981c5173ce4a1a5b96c1a4263b7e6cbac80682c653fb2999",
+        "sha512": "uW4K8HfY7njeqSIkl8g9i9a05I4GTZwk8KdCu5CNEssmnGR5JC14KXUNz45qot3d6BllGT6cPHkii92NkMDrKQ=="
+      },
+      {
+        "file": "ChatGPT-Studio-3.0.0-alpha.21-windows-x64.zip",
+        "bytes": 181273668,
+        "sha256": "f0748d8683a0431f49d32cd2d2c9a95cdfbda95bdb273c20efdfd0ce2e22854d",
+        "sha512": "ChhcgJNgbOQMk/8Khx5aJQRqNP80KB3Im7LXK5vGzdlfqO7ca7CXEtPvdRTLCJUpaomFwVvUFqGKJ01DfSB1Yw=="
+      }
+    ],
+    "compiledPayloadFiles": 234,
+    "installAcceptance": {
+      "normalExit": true,
+      "installed": true,
+      "desktopCapture": "captured",
+      "productVersion": "3.0.0.0",
+      "os": "Microsoft Windows NT 10.0.26100.0",
+      "accountDataRetained": true,
+      "launched": true,
+      "productName": "ChatGPT Studio",
+      "signature": "NotSigned",
+      "uninstalled": true
+    },
+    "acceptance": {
+      "runId": 40372832792,
+      "sourceCommit": "86c277f54747d1bd39e6275195ff385b833858e3",
+      "conclusion": "success",
+      "artifactId": 12674675532,
+      "artifactSHA256VerifiedLocally": "336b0d8aed5cb3910ade9b36d9fcd8cca1b831e247890f6cbb4ccfd994e75c3f",
+      "url": "https://github.com/ForceMind/ChatGPT/actions/runs/40372832792",
+      "originalInstallerAndZipBothDigestsVerifiedInCI": true,
+      "allCurrentCompiledDistBytesMatchOriginalCandidate": true,
+      "nativeUpgrade": {
+        "sourceCommit": "86c277f54747d1bd39e6275195ff385b833858e3",
+        "identityRetained": true,
+        "temporaryCleanup": true,
+        "scope": "Published alpha.18 NSIS -> candidate using shipping updater modules in disposable CI; no real ChatGPT accounts",
+        "installed": true,
+        "launch": true,
+        "prepared": {
+          "oldVersion": "3.0.0-alpha.18",
+          "newVersion": "3.0.0-alpha.21",
+          "sourceCommit": "86c277f54747d1bd39e6275195ff385b833858e3",
+          "shippingModules": true,
+          "sdk": "6.8.11",
+          "requests": 1,
+          "installerSHA256": "6e2a433bc3ff3a61981c5173ce4a1a5b96c1a4263b7e6cbac80682c653fb2999"
+        },
+        "version": "3.0.0-alpha.21"
+      },
+      "nativeRetention": {
+        "durationMs": 330347,
+        "profiles": 3,
+        "tabs": 8,
+        "stable": true,
+        "active": true,
+        "passed": true,
+        "workload": "Local lightweight synthetic pages, no live ChatGPT or memory/CPU limit",
+        "metrics": [
+          {
+            "tabs": 8,
+            "cpuPercent": 1.424027304174837,
+            "workingSetMiB": 1069.2747395833333,
+            "peakWorkingSetMiB": 1072.109375,
+            "processes": 12
+          }
+        ]
+      }
+    },
+    "ciArtifacts": [
+      {
+        "name": "windows-x64-installer",
+        "id": 12672260789,
+        "bytes": 131371154,
+        "serviceDigest": "sha256:27eb88db656a30ae0f557e09ad9aedea4013414ee7b92aca34769d795b6508d6",
+        "url": "https://github.com/ForceMind/ChatGPT/actions/runs/40368174471/artifacts/12672260789"
+      },
+      {
+        "name": "windows-x64-zip",
+        "id": 12671966554,
+        "bytes": 181273872,
+        "serviceDigest": "sha256:186ff5ff603744938d9956aad5061098ad6043de7dd3405e96c6ea88af4c3526",
+        "url": "https://github.com/ForceMind/ChatGPT/actions/runs/40368174471/artifacts/12671966554"
+      },
+      {
+        "name": "windows-acceptance-evidence",
+        "id": 12671861760,
+        "bytes": 1806712,
+        "serviceDigest": "sha256:4cf8458217ad607b80323c98878dab510a6e921fa0d20216573eb7813ca5171b",
+        "url": "https://github.com/ForceMind/ChatGPT/actions/runs/40368174471/artifacts/12671861760"
+      },
+      {
+        "name": "windows-release-info",
+        "id": 12670159917,
+        "bytes": 13267,
+        "serviceDigest": "sha256:5540c6e9e6273aefd86bf61447b842538906616a96c368ae59d02f1b96ae7590",
+        "url": "https://github.com/ForceMind/ChatGPT/actions/runs/40368174471/artifacts/12670159917"
+      }
+    ],
+    "metadataArtifactSHA256VerifiedLocally": "5540c6e9e6273aefd86bf61447b842538906616a96c368ae59d02f1b96ae7590",
+    "updateFeed": "alpha.yml in windows-release-info; not deployed",
+    "installedMode": "Current-user registered EXE: confirmed background download and quit installation. Portable/shared/unrecognized installations: verified ZIP saving only."
+  },
+  "shippingInputsUnchangedBetweenPlatformSources": true,
+  "installerBodiesDownloadedLocally": false,
+  "publicVersionsUnchanged": {
+    "macOS": "3.0.0-alpha.20",
+    "windows": "3.0.0-alpha.18",
+    "android": "3.0.0-alpha.19"
+  },
+  "androidWebsiteFix": "docs/releases/3.0.0-alpha.19-download-update.json",
+  "limitations": [
+    "Isolated Electron/loopback handoff acceptance, not live authenticated ChatGPT sending.",
+    "Windows native CI is Windows 2025 x64; physical Windows 10/11 and personal account upgrades are not verified.",
+    "Windows uses complete installer downloads; no idle installation, portable auto-replacement or delta updates.",
+    "macOS ad-hoc signing and Windows unsigned packages remain; signed Touch ID/passkey acceptance is outside this batch."
+  ],
+  "failureEvidence": {
+    "capabilityPhase": "docs/releases/3.0.0-alpha.21-capability-candidate.json",
+    "windowsRuns": [
+      40361048853,
+      40361497141,
+      40362167764,
+      40362799242,
+      40364964641,
+      40367424375,
+      40368174471,
+      40369744773,
+      40370588964,
+      40371438173
+    ],
+    "details": "MACOS_MIGRATION_PLAN.md"
+  },
+  "verifiedAt": "2026-10-26T18:02:45.511487+00:00"
+}

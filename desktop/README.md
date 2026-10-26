@@ -197,4 +197,6 @@ alpha.6 的 [Windows 构建与安装验收](https://github.com/ForceMind/ChatGPT
 - 免安装 ZIP、共享安装及无法确认当前用户安装位置的程序提供检查、下载、校验和另存入口；退出后手动替换程序文件，不自动改写解压目录。两种更新均保留 `%APPDATA%\ChatGPT Profiles\`，不会迁移登录与加密身份。
 - 更新清单使用官网独立的 `/updates/windows/alpha.yml`，由 CI 的同一组 EXE / ZIP 字节生成两种摘要；公开版本晋级前不部署候选清单。历史 alpha.18 没有该更新器，需先手动安装包含此功能的新版本。
 
-阶段 A 的[能力库候选收据](../docs/releases/3.0.0-alpha.21-capability-candidate.json)只证明对应源码的隔离测试与包检查。Windows 原生升级和最终两平台包的结果继续记录在[进度文件](../MACOS_MIGRATION_PLAN.md)；夹具验收不能替代真实 ChatGPT 账号发送与个人设备验证。
+候选下载保留在 Actions，可能需要登录 GitHub：[Mac DMG](https://github.com/ForceMind/ChatGPT/actions/runs/40369794145/artifacts/12671414395) · [Mac ZIP 工件](https://github.com/ForceMind/ChatGPT/actions/runs/40369794145/artifacts/12671494023) · [Windows EXE](https://github.com/ForceMind/ChatGPT/actions/runs/40368174471/artifacts/12672260789) · [Windows ZIP](https://github.com/ForceMind/ChatGPT/actions/runs/40368174471/artifacts/12671966554)。Mac ZIP 工件同时保留兼容更新包，手动安装选择名称为 ChatGPT-Studio 的 ZIP。
+
+[最终桌面候选收据](../docs/releases/3.0.0-alpha.21-desktop-candidate.json)记录来源、摘要、13 项 Mac / 19 项 Windows 界面流程、实际 NSIS 升级与 330 秒保活。Windows 原包构建工作流因验收脚本失败呈红色；[后续定向验收](https://github.com/ForceMind/ChatGPT/actions/runs/40372832792)核对原包和全部编译字节一致后完成升级 / 保活，未重打包。[阶段 A 收据](../docs/releases/3.0.0-alpha.21-capability-candidate.json)与[进度记录](../MACOS_MIGRATION_PLAN.md)保留原始失败和修正；夹具验收不能替代真实 ChatGPT 账号发送与个人设备验证。

@@ -17,6 +17,8 @@ ChatGPT Studio brings independent ChatGPT account spaces, tabs, downloaded asset
 
 > Previously named **ChatGPT Profiles**. The current public prereleases are **3.0.0-alpha.20** for macOS, **3.0.0-alpha.18** for Windows and **3.0.0-alpha.19** for Android. Platforms update independently. Legacy filenames, internal identifiers and data locations are retained for upgrade compatibility.
 
+**Development candidate alpha.21** adds original agent roles, a design-patch Skill, Windows updates and encrypted offline snapshots. See the [desktop candidate receipt](docs/releases/3.0.0-alpha.21-desktop-candidate.json) for packages and verification limits. Public downloads and installed applications have not been replaced.
+
 ![Actual historical macOS window, before the rename](docs/images/macos-immersive.png)
 
 ## Features
@@ -26,7 +28,7 @@ ChatGPT Studio brings independent ChatGPT account spaces, tabs, downloaded asset
 - **Local asset library:** account ownership, imports and downloads, categories, search, favorites, tags, derived files and a recoverable trash.
 - **Preview and conversion:** images, PDF, HTML, Markdown, text, CSV and supported media. Specialized formats can open in associated system applications. Conversions create new files and preserve originals.
 - **Reviewed tasks:** select files, a target account and a Skill, then follow preparation, upload, instruction entry, readiness, a single send and confirmation. An uncertain result is not retried automatically.
-- **Capabilities:** 120 project-authored task Skills with instructions, steps, deliverables and checks. The agent-library entry exists; it currently has no preset roles.
+- **Capabilities:** public builds include 120 project-authored task Skills with instructions, steps, deliverables and checks. The alpha.21 desktop candidate contains 121 Skills and 32 original roles, with 24 internet-related roles shown first.
 - **Local recovery:** saved account/tab state, drafts and reading positions. macOS also provides encrypted read-only conversation snapshots and confirmed updates.
 
 This is an independently maintained, unofficial client. It does not include a ChatGPT subscription. Models and website features depend on the signed-in account and the ChatGPT service. Browser-space isolation does not provide a network proxy or complete fingerprint isolation.
@@ -187,10 +189,11 @@ Cloudflare Pages uses Direct Upload; a Git push does not deploy the site automat
 | Android alpha.19 tab terminology | Published; layout/runtime retained; [publication/online record](docs/releases/3.0.0-alpha.19-publication.json) |
 | macOS alpha.20 complete Studio naming and legacy updater compatibility | App bundle, OS name and manual downloads use Studio; existing account and encryption identities retained. [Release record](docs/releases/3.0.0-alpha.20.json) |
 | Alpha.18 installers, immersive Android, readable UI and macOS menu bar | Published; [publication/online record](docs/releases/3.0.0-alpha.18-publication.json) |
-| Windows offline snapshots/auto-updates; complete Android offline snapshots | Future batch |
+| Windows encrypted offline snapshots, current-user EXE updates and verified ZIP saving | alpha.21 candidate; [packages and verification scope](docs/releases/3.0.0-alpha.21-desktop-candidate.json) |
+| Complete Android offline snapshots | Future batch |
 | Android per-account locale/timezone engine migration | Separate PoC; regular engine is unchanged |
 | System/Chrome passkeys, signed Touch ID and stable signing | Not integrated or dependent on unavailable certificates/device acceptance |
-| Project-authored agent presets | Entry exists; current preset count is zero |
+| Original agent presets and design-patch Skill | alpha.21 desktop candidate: 32 roles, role-only or combined Skill tasks, favorites and task recovery. Public builds still have zero presets |
 | In-app proxy/VLESS | Planning only; no free nodes supplied |
 | iPhone/iPad, Intel Mac, Linux and store distribution | Outside the current iteration; no packages |
 | Delta updates | Not implemented; native updates require restart |
