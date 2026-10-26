@@ -59,13 +59,13 @@ test('desktop real download, account-scoped assets, safe HTML and full capabilit
     await shell.screenshot({path:info.outputPath(process.platform+'-native-assets.png')});
     await shell.evaluate(()=>window.profiles.command({type:'profile:add',name:'Second profile',email:'',color:'#5275a0'}));await shell.getByRole('button',{name:'资产中心',exact:true}).click();await expect(shell.locator('#wb-asset-grid .aw-empty-state')).toBeVisible();await expect(shell.locator('#wb-asset-grid [data-asset]')).toHaveCount(0);
     await shell.evaluate(id=>window.profiles.command({type:'profile:activate',id}),profile);await expect(shell.locator('#wb-asset-grid [data-asset]')).toHaveCount(3);
-    await shell.getByRole('button',{name:'能力库',exact:true}).click();await expect(shell.locator('#wb-capability-grid [data-capability]')).toHaveCount(120);
+    await shell.getByRole('button',{name:'能力库',exact:true}).click();await expect(shell.locator('#wb-capability-grid [data-capability]')).toHaveCount(121);
     const favorite=shell.locator('[data-capability-favorite]').first();const favoriteId=await favorite.getAttribute('data-capability-favorite');await favorite.click();
     await expect(shell.locator('#wb-capability-detail')).toContainText('质量检查');
     await shell.screenshot({path:info.outputPath(process.platform+'-native-skills.png')});
-    await shell.locator('#wb-agents-nav').click();await expect(shell.locator('#wb-capability-grid [data-capability]')).toHaveCount(0);
-    await expect(shell.getByRole('heading',{name:'暂无预置智能体',exact:true})).toHaveText('暂无预置智能体');
-    await shell.screenshot({path:info.outputPath(process.platform+'-native-library-empty.png')});
+    await shell.locator('#wb-agents-nav').click();await expect(shell.locator('#wb-capability-grid [data-capability]')).toHaveCount(32);
+    await expect(shell.locator('#wb-capability-title')).toContainText('32');
+    await shell.screenshot({path:info.outputPath(process.platform+'-native-agents.png')});
     await app!.close();app=undefined;shell=await launch();await shell.getByRole('button',{name:'资产中心',exact:true}).click();await expect(shell.locator('#wb-asset-grid [data-asset]')).toHaveCount(3);
     const after=await shell.evaluate(()=>window.profiles.workbench.capabilities());expect(after.favorites).toContain(favoriteId);
     await shell.locator('#wb-workbench [data-action="chat"]').click();expect((await state(shell)).panel).toBeUndefined();

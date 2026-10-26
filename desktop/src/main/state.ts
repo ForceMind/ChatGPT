@@ -21,7 +21,8 @@ export function validateState(raw: unknown, fixtureOrigin?: string): SavedState 
   const fail = (): never => { throw new Error('账号状态文件格式无效，已停止覆盖现有数据。'); };
   if (!object(raw) || raw.schema !== 1 || !Array.isArray(raw.profiles) || !Array.isArray(raw.tabs) || !Array.isArray(raw.closedTabs) || typeof raw.sidebarOpen !== 'boolean' || !object(raw.bounds)) return fail();
   if (raw.profiles.length < 1 || raw.profiles.length > MAX_PROFILES || raw.tabs.length > MAX_TABS || raw.closedTabs.length > 24) return fail();
-  if (raw.capabilityFavorites !== undefined && (!Array.isArray(raw.capabilityFavorites) || raw.capabilityFavorites.length > 448 || new Set(raw.capabilityFavorites).size !== raw.capabilityFavorites.length || !raw.capabilityFavorites.every(id => typeof id === 'string' && /^(skill|agent)-\d{3}$/.test(id)))) return fail();
+  // Retain the 448 legacy favorites while allowing 32 new roles and one new Skill.
+  if (raw.capabilityFavorites !== undefined && (!Array.isArray(raw.capabilityFavorites) || raw.capabilityFavorites.length > 481 || new Set(raw.capabilityFavorites).size !== raw.capabilityFavorites.length || !raw.capabilityFavorites.every(id => typeof id === 'string' && /^(skill|agent|studio-agent)-\d{3}$/.test(id)))) return fail();
   const profiles = raw.profiles as Profile[], tabs = raw.tabs as Tab[], closedTabs = raw.closedTabs as Tab[];
   const ids = new Set<string>();
   for (const p of profiles) {

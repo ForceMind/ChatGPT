@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "source": "project",
+  "revision": "project-skills-v2",
+  "file": "desktop-capabilities.json",
+  "sha256": "404a4fa2d35169b08b80ac8c5eb4f55ee94e00f565ec2961e763098aeb431dad",
+  "skillCount": 1,
+  "agentCount": 32,
+  "internetAgentCount": 24
+}

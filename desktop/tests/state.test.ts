@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync, writeFileSync, readdirSync } from 'node:fs';
+import { mkdtempSync, readFileSync, writeFileSync, readdirSync,rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
@@ -49,4 +49,12 @@ test('旧账号兼容；语言与时区独立保存，非法偏好不覆盖状�
  const legacy=structuredClone(first);delete legacy.profiles[0].language;delete legacy.profiles[0].timeZone;assert.doesNotThrow(()=>validateState(legacy));
  store.commit(s=>{s.profiles[0].language='ja-JP';s.profiles[0].timeZone='America/New_York';});const restart=new StateStore(dir);assert.equal(restart.read().profiles[0].language,'ja-JP');assert.equal(restart.read().profiles[0].timeZone,'America/New_York');
  const before=readFileSync(store.file,'utf8');for(const value of ['Mars/Base','+08:00','../../bad',''])assert.throws(()=>store.commit(s=>{s.profiles[0].timeZone=value;}));assert.throws(()=>store.commit(s=>{s.profiles[0].language='not-a-locale';}));assert.equal(readFileSync(store.file,'utf8'),before);
+});
+test('new project-role favorites and workspace selection persist without changing account or tab identity',t=>{
+ const dir=mkdtempSync(path.join(tmpdir(),'studio-role-state-'));t.after(()=>rmSync(dir,{recursive:true,force:true}));const store=new StateStore(dir),before=store.read();
+ store.commit(s=>{s.capabilityFavorites=['agent-001','studio-agent-025','skill-121'];s.profiles[0].workspace={panel:'agents',workbench:{filter:'all',query:'',sort:'recent',layout:'grid',libraryKind:'agents',libraryFilter:'all',libraryQuery:'',librarySelected:'studio-agent-025',favoritesOnly:true,scroll:0,libraryScroll:0}};});
+ const reopened=new StateStore(dir);assert.equal(reopened.read().profiles[0].id,before.profiles[0].id);assert.deepEqual(reopened.read().tabs,before.tabs);assert.deepEqual(reopened.read().capabilityFavorites,['agent-001','studio-agent-025','skill-121']);assert.equal(reopened.read().profiles[0].workspace?.workbench?.librarySelected,'studio-agent-025');
+ const old=[...Array.from({length:120},(_,i)=>'skill-'+String(i+1).padStart(3,'0')),...Array.from({length:328},(_,i)=>'agent-'+String(i+1).padStart(3,'0'))];
+ store.commit(s=>{s.capabilityFavorites=[...old,...Array.from({length:32},(_,i)=>'studio-agent-'+String(i+1).padStart(3,'0')),'skill-121'];});assert.equal(new StateStore(dir).read().capabilityFavorites?.length,481);
+ const saved=readFileSync(store.file,'utf8');assert.throws(()=>store.commit(s=>{s.capabilityFavorites=['studio-agent-../025'];}));assert.equal(readFileSync(store.file,'utf8'),saved);
 });
