@@ -20,7 +20,7 @@ export function normalizeHandoffRequest(raw:unknown):HandoffRequest{
   if(!raw.skillId&&!raw.agentId&&!raw.instructions.trim())throw new Error('请选择任务、角色，或填写处理要求');
   return{requestId:raw.requestId,sourceProfileId:raw.sourceProfileId,targetProfileId:raw.targetProfileId,assetIds:[...raw.assetIds],crossAccountConfirmed:raw.crossAccountConfirmed,skillId:raw.skillId as string|undefined,agentId:raw.agentId as string|undefined,language:raw.language,instructions:raw.instructions};
 }
-const fingerprint=(request:HandoffRequest)=>createHash('sha256').update(JSON.stringify(request)).digest('hex');
+const fingerprint=(request:HandoffRequest)=>createHash('sha256').update(JSON.stringify(normalizeHandoffRequest(request))).digest('hex');
 type Data={schema:1;jobs:HandoffJob[]};
 function atomic(file:string,data:Data):void{const temporary=file+'.'+randomUUID()+'.tmp';let fd:number|undefined;try{fd=openSync(temporary,'wx',0o600);writeFileSync(fd,JSON.stringify(data)+'\n');fsyncSync(fd);closeSync(fd);fd=undefined;renameSync(temporary,file);}finally{if(fd!==undefined)closeSync(fd);if(existsSync(temporary))unlinkSync(temporary);}}
 
@@ -53,6 +53,7 @@ export class HandoffStore {
   list(profileId:string):HandoffJob[]{if(!uuid(profileId))throw new Error('账号标识无效');return this.data.jobs.filter(j=>j.request.sourceProfileId===profileId||j.request.targetProfileId===profileId).map(j=>structuredClone(j)).sort((a,b)=>b.createdAt-a.createdAt);}
   all():HandoffJob[]{return structuredClone(this.data.jobs);}
   create(request:HandoffRequest,files:HandoffFile[],sourceProfileName:string,targetProfileName:string,label:string):HandoffJob{
+    request=normalizeHandoffRequest(request);
     const existing=this.find(request);if(existing)return existing;if(this.data.jobs.length>=1000)throw new Error('本机任务记录已达 1000 条，请先整理任务记录。');const now=Date.now();
     const job:HandoffJob={id:randomUUID(),request:structuredClone(request),fingerprint:fingerprint(request),sourceProfileName,targetProfileName,label,status:'preparing',message:'正在校验选中的文件与目标账号。',createdAt:now,updatedAt:now,files:structuredClone(files),catalogCommit:CAPABILITY_REVISION};
     job.progress=[{stage:'files',startedAt:now}];const next=structuredClone(this.data);next.jobs.push(job);this.save(next);return this.get(job.id);
