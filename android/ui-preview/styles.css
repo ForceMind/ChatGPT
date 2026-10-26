@@ -19,3 +19,4 @@
 
 .field-error{font-size:calc(14px*var(--u));color:#333;line-height:1.6;margin:0 0 16px}
 .app-toast.inline,.app-toast.in-page{position:static;inset:auto;box-shadow:none;flex-shrink:0}.app-toast.inline{margin:0}.app-toast.in-page{margin:8px 14px}
+.web-unchanged{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;color:#606060;background:#fff;line-height:1.7}.web-unchanged strong{font-size:15px;font-weight:500;color:#404040}.web-unchanged p{font-size:13px;margin:10px 0 0}.device[data-web=unchanged] .web-page{visibility:hidden;pointer-events:none}.device[data-web=example] .web-unchanged{display:none}.design-notes h1{font-size:22px}.try-note ul{margin-top:10px;margin-bottom:20px}

@@ -4,25 +4,25 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <meta http-equiv="Content-Security-Policy" content="default-src 'self';script-src 'self';style-src 'self' 'unsafe-inline';img-src 'self' data:;connect-src 'none';form-action 'none';base-uri 'none';frame-src 'none'"/>
-<title>ChatGPT Studio · Android 沉浸设计预览</title>
+<title>ChatGPT Studio · Android 最小调整预览</title>
 <link rel="stylesheet" href="/styles.css"/>
 <script src="/app.js" defer></script>
 </head>
 <body>
-<header class="preview-heading"><div><strong>ChatGPT Studio</strong><span>Android 沉浸设计</span></div><p>交互原型 · 合成示例 · 不连接 ChatGPT，不上传、发送或修改真实文件</p></header>
-<nav class="preview-tools" aria-label="预览工具"><div><button data-device="phone" aria-pressed="true">手机</button><button data-device="small">小屏</button><button data-device="tablet">平板</button><button id="font-toggle" aria-pressed="false">系统大字号</button></div><div><button data-demo="home">网页首页</button><button data-demo="conversation">已有对话</button><button data-demo="tabs">对话管理</button><button data-demo="accounts">切换账号</button></div></nav>
+<header class="preview-heading"><div><strong>ChatGPT Studio</strong><span>Android 最小调整</span></div><p>仅预览 App 外壳 · 评审工具不进入 App · 不连接真实账号</p></header>
+<nav class="preview-tools" aria-label="预览工具"><div><button data-device="phone" aria-pressed="true">手机</button><button data-device="small">小屏</button><button data-device="tablet">平板</button><button id="font-toggle" aria-pressed="false">系统大字号</button></div><div><button id="web-example-toggle" aria-pressed="false">显示网页示意</button><button data-demo="home">首页</button><button data-demo="conversation">切换示例标签</button><button data-demo="tabs">标签管理</button><button data-demo="accounts">切换账号</button></div></nav>
 <main class="review-layout">
-<section class="device" data-device="phone" aria-label="Android App 交互预览">
+<section class="device" data-device="phone" data-web="unchanged" aria-label="Android App 外壳预览">
 <div class="system-status" aria-hidden="true"><b>9:41</b><span>5G　▮▮▮　▰</span></div>
 <div class="app-ui">
-<header class="appbar"><button class="account-trigger" id="account-trigger" aria-label="切换账号"><span class="account-dot"></span><span class="account-name"></span><span class="chevron">⌄</span></button><div class="app-actions"><button class="tab-trigger" id="tab-trigger" aria-label="查看打开的对话"></button><button class="icon-button" id="more-trigger" aria-label="更多功能">⋯</button></div></header>
-<div class="webstack" id="webstack"></div>
+<header class="appbar"><button class="account-trigger" id="account-trigger" aria-label="切换账号"><span class="account-dot"></span><span class="account-name"></span><span class="chevron">⌄</span></button><div class="app-actions"><button class="tab-trigger" id="tab-trigger" aria-label="查看标签页"></button><button class="icon-button" id="more-trigger" aria-label="更多功能">⋯</button></div></header>
+<div class="webstack" id="webstack"><div class="web-unchanged"><strong>ChatGPT 网页保持原样</strong><p>本轮只看顶部账号、标签和更多入口。<br />这里留白，不代表 App 会显示空白页。</p></div></div>
 </div>
 <div class="overlay" id="overlay" hidden></div>
 <div class="app-toast" id="app-toast" role="status" hidden></div>
 <div class="system-gesture" aria-hidden="true"><i></i></div>
 </section>
-<aside class="design-notes"><p class="eyebrow">本次设计</p><h1>打开就是网页。</h1><p>首页只保留账号、打开的对话和更多功能，给 ChatGPT 留出完整空间。</p><ul><li>没有常驻底栏与首页后退按钮。</li><li>对话采用清单弹层，标题和所属账号清楚可见。</li><li>“最近关闭”使用文字入口。</li><li>资产库与能力库按需打开。</li></ul><div class="try-note"><strong>可以试一下</strong><p>在网页输入区写一段草稿，切换到另一个对话，再切回来；也可以关闭后撤销、重命名或切换账号。</p></div><p class="scope">网页区域是本地示意。这里的草稿保留只演示交互；真实 App 的前台切换与页面保留会单独做原生验收。</p><p id="preview-feedback" role="status"></p></aside>
+<aside class="design-notes"><p class="eyebrow">以已发布的 alpha.18 为基线</p><h1>保留布局，只改必要细节。</h1><p>账号、标签入口和更多保持原位；列表、最近关闭及已有工具入口沿用。</p><div class="try-note"><strong>这轮的最小差异</strong><ul><li>“对话 2”改为“标签 2”。</li><li>“打开的对话”改为“标签页”。</li><li>标签管理的搜索、新建、关闭统一叫“标签页”。</li></ul></div><p class="scope">ChatGPT 首页、侧栏和输入框继续使用原网页。这份预览默认只标示网页区域；需要查看交互背景时，可在外面的评审工具开启“显示网页示意”。</p><p class="scope">本轮尚未修改安装版或线上发布。示例账号与文件只用于评审，不会登录、上传或发送。</p><p id="preview-feedback" role="status"></p></aside>
 </main>
 </body>
 </html>

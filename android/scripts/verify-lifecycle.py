@@ -44,7 +44,7 @@ def tap(predicate,seconds=20):
     return wait(action,seconds)
 def tap_text(label):tap(lambda n:n.get('text')==label)
 def visible_tabs():
-    tap(lambda n:'查看打开的对话' in n.get('content-desc',''));wait(lambda:any(n.get('content-desc')=='打开的对话面板' for n in ui().iter('node')));tap_text('全部账号');time.sleep(.4)
+    tap(lambda n:'查看标签页' in n.get('content-desc',''));wait(lambda:any(n.get('content-desc')=='标签页面板' for n in ui().iter('node')));tap_text('全部账号');time.sleep(.4)
 def open_tab(title):
     visible_tabs()
     for _ in range(8):
