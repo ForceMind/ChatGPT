@@ -30,7 +30,7 @@ test('Studio website renders canonical pages and preserves legacy update feeds',
   const name=new URL(q.url||'/','http://localhost').pathname;
   const file=path.resolve(site,'.'+(name==='/'?'/index.html':name));
   if(!file.startsWith(site+path.sep)){r.writeHead(403);r.end();return;}
-  try{r.setHeader('Content-Type',({'.html':'text/html;charset=utf-8','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.png':'image/png','.json':'application/json'}as Record<string,string>)[path.extname(file)]||'application/octet-stream');r.end(readFileSync(file));}catch{r.writeHead(404);r.end();}
+  try{r.setHeader('Content-Type',({'.html':'text/html;charset=utf-8','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.png':'image/png','.json':'application/json','.txt':'text/plain;charset=utf-8'}as Record<string,string>)[path.extname(file)]||'application/octet-stream');r.end(readFileSync(file));}catch{r.writeHead(404);r.end();}
  });
  await new Promise<void>(r=>server.listen(0,'127.0.0.1',r));const address=server.address();if(!address||typeof address==='string')throw Error('fixture');
  const publicOrigin=process.env.STUDIO_VERIFY_ORIGIN;
@@ -64,8 +64,10 @@ test('Studio website renders canonical pages and preserves legacy update feeds',
     expect(status).toBe(200);
    }
   }
-  const repositoryLinks=await page.locator('a[href^="https://github.com/ForceMind/ChatGPT"]').evaluateAll((links:HTMLAnchorElement[])=>links.map(a=>a.href).filter(href=>!href.includes('/releases/download/')));
+  const repositoryLinks=await page.locator('a[href^="https://github.com/ForceMind/ChatGPT"]').evaluateAll(links=>links.map(a=>(a as HTMLAnchorElement).href).filter(href=>!href.includes('/releases/download/')));
   expect(repositoryLinks).toEqual([]);
+  expect(await page.locator('a[href="/license.txt"]').count()).toBeGreaterThan(0);
+  expect(await page.locator('a[href^="mailto:me@xincreates.com"]').count()).toBeGreaterThan(0);
   for(const item of release.artifacts){
    expect(await page.locator('a[href="'+item.url+'"]').count()).toBeGreaterThanOrEqual(1);
    expect(await page.locator('a[href="https://gh-proxy.org/'+item.url+'"]').count()).toBeGreaterThanOrEqual(1);
@@ -93,7 +95,9 @@ test('Studio website renders canonical pages and preserves legacy update feeds',
   await page.screenshot({path:info.outputPath('studio-downloads-1440.png')});
   const remoteFeed=await app.evaluate(async({session},origin)=>{const response=await session.fromPartition('studio-feed-public-check').fetch(origin+'/updates/macos.json',{credentials:'omit',redirect:'error',headers:{Accept:'application/json'}});return{status:response.status,contentType:response.headers.get('content-type'),text:await response.text()};},origin);
   expect(remoteFeed.status).toBe(200);expect(remoteFeed.contentType).toContain('application/json');expect(JSON.parse(remoteFeed.text)).toEqual(feed);
-  writeFileSync(info.outputPath('site-verification.json'),JSON.stringify({origin,landedOrigin:new URL(page.url()).origin,platformVersions,macosUpdateVersion:feed.version,downloadFiles:release.artifacts.length,acceleratedFiles:release.artifacts.length,widths:[1440,390],checksumCopy:true,credentiallessElectronFeed:true,legacyPageRedirect:publicOrigin==='https://chatgpt-profiles.pages.dev',customDomainServedDirectly:publicOrigin==='https://chatgpt.xincreates.com',repositoryNavigationAbsent:true,errors}));
+  const remoteLicense=await app.evaluate(async({session},base)=>{const response=await session.fromPartition('studio-license-check').fetch(base+'/license.txt',{credentials:'omit',redirect:'error'});return{status:response.status,text:await response.text()};},origin);
+  expect(remoteLicense.status).toBe(200);expect(remoteLicense.text).toBe(readFileSync(path.join(desktop,'../LICENSE'),'utf8'));
+  writeFileSync(info.outputPath('site-verification.json'),JSON.stringify({origin,landedOrigin:new URL(page.url()).origin,platformVersions,macosUpdateVersion:feed.version,downloadFiles:release.artifacts.length,acceleratedFiles:release.artifacts.length,widths:[1440,390],checksumCopy:true,credentiallessElectronFeed:true,legacyPageRedirect:publicOrigin==='https://chatgpt-profiles.pages.dev',customDomainServedDirectly:publicOrigin==='https://chatgpt.xincreates.com',repositoryNavigationAbsent:true,rootLicenseMatchesWebsite:true,publicCommercialContact:true,errors}));
   expect(errors).toEqual([]);
  }finally{await app?.close().catch(()=>{});server.closeAllConnections();await new Promise<void>(r=>server.close(()=>r()));rmSync(root,{recursive:true,force:true});}
 });

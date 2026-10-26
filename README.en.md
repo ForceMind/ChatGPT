@@ -208,4 +208,6 @@ Follow repository working agreements and run checks relevant to your change. Dis
 
 ## License and trademarks
 
-A repository-wide code license has not been declared at the root. Dependency and icon notices are retained separately. ChatGPT/OpenAI names, icons and services belong to their respective rights holders. This project is not affiliated with OpenAI.
+Project-owned code uses the [ChatGPT Studio Noncommercial Source License v1.0](LICENSE). Noncommercial use, modification and source/binary redistribution are permitted under its conditions. Commercial use requires prior explicit written authorization; **internal business/office use also requires authorization**. Contact [me@xincreates.com](mailto:me@xincreates.com). This is a custom source-available, noncommercial license, not MIT/Apache/GPL or an OSI open-source license. The Chinese license text is authoritative; it has not undergone professional legal review.
+
+Dependencies and icons retain their own licenses and rights notices. The project license does not relicense them or grant OpenAI/ChatGPT trademark, account or service rights. This project is not affiliated with OpenAI.
