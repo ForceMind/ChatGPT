@@ -16,6 +16,15 @@ export function installedBundle(executable:string):string{
  if(!bundle.endsWith('.app')||bundle.includes('/AppTranslocation/')||bundle.startsWith('/Volumes/'))throw Error('请将 App 移到应用程序目录后再更新');
  return bundle;
 }
+export function updateArchiveRoot(listing:string[]):string{
+ if(!listing.length||listing.length>30000)throw Error('更新压缩包路径无效');
+ const roots=new Set<string>();
+ for(const name of listing){
+  if(name.startsWith('/')||name.split('/').includes('..')||name.includes('\\')||/[\u0000-\u001f]/.test(name))throw Error('更新压缩包路径无效');
+  const root=name.split('/')[0];if(!['ChatGPT Profiles.app','ChatGPT Studio.app'].includes(root)||!name.startsWith(root+'/'))throw Error('更新压缩包路径无效');roots.add(root);
+ }
+ if(roots.size!==1)throw Error('更新压缩包路径无效');return [...roots][0];
+}
 export type StagedUpdate={bundle:string;candidate:string;version:string;fromVersion:string;directory:string};
 export async function stageUpdate(zip:string,file:UpdateFile,version:string,bundle:string,directory:string,fromVersion:string,signal?:AbortSignal):Promise<StagedUpdate>{
  if(process.platform!=='darwin')throw Error('自动安装目前仅用于 macOS');safeDirectory(directory);await verifyUpdate(zip,file,signal);await verifyBundle(bundle,fromVersion,signal);
@@ -24,8 +33,8 @@ export async function stageUpdate(zip:string,file:UpdateFile,version:string,bund
  try{
   // Reject path traversal before extraction. Framework symlinks are verified by codesign.
   const listing=(await run('/usr/bin/unzip',['-Z1',zip],{timeout:30000,maxBuffer:8*1024*1024,signal})).stdout.split('\n').filter(Boolean);
-  if(!listing.length||listing.length>30000||listing.some(name=>name.startsWith('/')||name.split('/').includes('..')||name.includes('\\')||!name.startsWith('ChatGPT Profiles.app/')))throw Error('更新压缩包路径无效');
-  await run('/usr/bin/ditto',['-x','-k',zip,unpacked],{timeout:180000,signal});const source=path.join(unpacked,'ChatGPT Profiles.app');await verifyBundle(source,version,signal);
+  const archiveRoot=updateArchiveRoot(listing);
+  await run('/usr/bin/ditto',['-x','-k',zip,unpacked],{timeout:180000,signal});const source=path.join(unpacked,archiveRoot);await verifyBundle(source,version,signal);
   // Stage on the same filesystem for an atomic directory exchange. The running bundle is untouched.
   await run('/usr/bin/ditto',[source,candidate],{timeout:180000,signal});await verifyBundle(candidate,version,signal);
   return{bundle,candidate,version,fromVersion,directory};

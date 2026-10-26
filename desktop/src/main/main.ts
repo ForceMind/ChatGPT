@@ -34,6 +34,7 @@ import type { HandoffJob } from '../shared/handoff';
 import { LoginDiagnostics } from './login-diagnostics';
 import type { LinkKind } from '../shared/diagnostics';
 import {MacMenuBar} from './mac-menu-bar';
+import {migrateBundleName} from './bundle-name';
 
 const desktopWorkspace = desktopWorkspaceEnabled(process.platform);
 const testMode = !app.isPackaged && process.env.PROFILES_E2E === '1';
@@ -653,6 +654,10 @@ function createWindow(): void {
 if (single) {
   app.on('second-instance',reopenWindow);
   app.whenReady().then(async()=>{
+    if(process.platform==='darwin'&&app.isPackaged){
+     try{if(await migrateBundleName(process.execPath,APP_VERSION,dataDir,backgroundModePending)){quitting=true;app.quit();return;}}
+     catch(error){dialog.showErrorBox('ChatGPT Studio 应用名称',error instanceof Error?error.message:'应用更名暂未完成，原应用和账号数据已保留。');}
+    }
     app.setAboutPanelOptions({applicationName:'ChatGPT Studio',applicationVersion:APP_VERSION});
     store = new StateStore(dataDir, fixtureOrigin);
     if(desktopWorkspace){

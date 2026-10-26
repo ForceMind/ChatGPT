@@ -40,7 +40,33 @@ static void result(const char *file,int ok) {
  const char *body=ok?"{\"ok\":true}\n":"{\"ok\":false}\n";size_t n=strlen(body);
  if(write(fd,body,n)==(ssize_t)n&&fsync(fd)==0){close(fd);rename(temp,file);}else{close(fd);unlink(temp);}
 }
+static int open_bundle(const char *target,const char *mode) {
+ pid_t child;char *normal[]={"/usr/bin/open",(char*)target,NULL};char *quiet[]={"/usr/bin/open","-g","-j",(char*)target,"--args","--profiles-background-update",NULL};char **args=strcmp(mode,"background")==0?quiet:normal;return posix_spawn(&child,args[0],NULL,NULL,args,environ);
+}
+static int migrate_name(int argc,char **argv) {
+ if(argc!=8)return 2;
+ char *end=NULL;long pid=strtol(argv[2],&end,10);if(!end||*end||pid<=1||pid>INT_MAX)return 2;
+ const char *source=argv[3],*target=argv[4],*version=argv[5],*output=argv[6],*mode=argv[7];
+ const char *a=strrchr(source,'/'),*b=strrchr(target,'/');struct stat s;int code=3;
+ int can_result=lstat(output,&s)!=0&&errno==ENOENT;
+ int ended=0;for(int n=0;n<600;n++){if(kill((pid_t)pid,0)!=0&&errno==ESRCH){ended=1;break;}usleep(200000);}
+ if(!ended){code=4;goto failed;}
+ if(!can_result||!a||!b||strcmp(a,"/ChatGPT Profiles.app")||strcmp(b,"/ChatGPT Studio.app")||!same_parent(source,target)||!real_directory(source)||!bundle_valid(source,version))goto failed;
+ if(lstat(target,&s)==0||errno!=ENOENT)goto failed;
+ // Never replace a second installation, including a symlink or a racing move.
+ if(renameatx_np(AT_FDCWD,source,AT_FDCWD,target,RENAME_EXCL)!=0){code=5;goto failed;}
+ if(!bundle_valid(target,version)){renameatx_np(AT_FDCWD,target,AT_FDCWD,source,RENAME_EXCL);code=6;goto failed;}
+ result(output,1);
+ if(strcmp(mode,"no")!=0&&open_bundle(target,mode)!=0)return 7;
+ return 0;
+failed:
+ if(can_result)result(output,0);
+ // Keep the old location usable if a permission error or competing install won.
+ if(ended&&strcmp(mode,"no")!=0&&real_directory(source)&&bundle_valid(source,version))open_bundle(source,mode);
+ return code;
+}
 int main(int argc,char **argv) {
+ if(argc>1&&strcmp(argv[1],"--rename-bundle")==0)return migrate_name(argc,argv);
  if(argc!=8)return 2;
  char *end=NULL;long pid=strtol(argv[1],&end,10);if(!end||*end||pid<=1||pid>INT_MAX)return 2;
  const char *target=argv[2],*candidate=argv[3],*output=argv[4],*version=argv[5];int background=strcmp(argv[6],"background")==0;int restart=background||strcmp(argv[6],"yes")==0;

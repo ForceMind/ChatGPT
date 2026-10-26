@@ -1,6 +1,6 @@
 {
   "name": "chatgpt-profiles",
-  "version": "3.0.0-alpha.18",
+  "version": "3.0.0-alpha.20",
   "private": true,
   "description": "ChatGPT Studio — independent accounts, immersive browsing and local asset workflows",
   "author": "ForceMind",
@@ -63,7 +63,7 @@
     "npmRebuild": false,
     "mac": {
       "category": "public.app-category.productivity",
-      "artifactName": "ChatGPT-Profiles-${version}-mac-${arch}.${ext}",
+      "artifactName": "ChatGPT-Studio-${version}-mac-${arch}.${ext}",
       "icon": "assets/icon.icns",
       "identity": "-",
       "hardenedRuntime": false,
@@ -111,6 +111,12 @@
       "runAfterFinish": false,
       "shortcutName": "ChatGPT Studio",
       "uninstallDisplayName": "ChatGPT Studio"
-    }
+    },
+    "extraResources": [
+      {
+        "from": "../LICENSE",
+        "to": "LICENSE.txt"
+      }
+    ]
   }
 }

@@ -11,7 +11,10 @@ export class UpdateManager{
     const ownedCandidate=(v:unknown):v is string=>typeof v==='string'&&!!bundle&&path.dirname(v)===path.dirname(bundle)&&/^\.ChatGPT-Profiles-update-[a-f0-9-]{36}\.app$/.test(path.basename(v));
     if(ownedCandidate(s.backup))this.saved.backup=s.backup;
     const r=s.ready;
-    if(r&&validManifest(r.manifest)&&r.staged?.bundle===bundle&&r.staged.version===r.manifest.version&&r.staged.directory===this.directory&&typeof r.zip==='string'&&path.dirname(r.zip)===this.directory&&/^[a-f0-9-]{36}\.zip$/.test(path.basename(r.zip))&&ownedCandidate(r.staged.candidate)&&existsSync(r.staged.candidate)){
+    // A completed legacy updater installs at Profiles.app, then the new signed
+    // app moves to Studio.app. Recognize only that completed same-parent handoff.
+    const sameBundle=r?.staged?.bundle===bundle||!!bundle&&path.basename(bundle)==='ChatGPT Studio.app'&&typeof r?.staged?.bundle==='string'&&path.dirname(r.staged.bundle)===path.dirname(bundle)&&path.basename(r.staged.bundle)==='ChatGPT Profiles.app'&&r.manifest?.version===current&&readInstallResult(this.directory)===true;
+    if(r&&validManifest(r.manifest)&&sameBundle&&r.staged.version===r.manifest.version&&r.staged.directory===this.directory&&typeof r.zip==='string'&&path.dirname(r.zip)===this.directory&&/^[a-f0-9-]{36}\.zip$/.test(path.basename(r.zip))&&ownedCandidate(r.staged.candidate)&&existsSync(r.staged.candidate)){
      if(newerVersion(r.manifest.version,current)&&r.staged.fromVersion===current){
       this.saved.ready=r;this.manifest=r.manifest;this.status={phase:'ready',version:r.manifest.version,idleEnabled:r.idleAllowed===true,message:'更新已下载，下次退出时安装'};
      }else if(r.manifest.version===current&&readInstallResult(this.directory)===true){
