@@ -103,7 +103,8 @@ test('Studio website renders canonical pages and preserves legacy update feeds',
   const androidUA='Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Mobile Safari/537.36';
   await app.evaluate(({BrowserWindow},ua)=>{const w=BrowserWindow.getAllWindows()[0];w.setContentSize(390,844);w.webContents.setUserAgent(ua);},androidUA);
   const visibleCard=async(platform:string)=>page.evaluate(platform=>{const r=document.querySelector('#download-'+platform)!.getBoundingClientRect(),header=document.querySelector('header')!.getBoundingClientRect();return r.top>=header.bottom&&r.top<140;},platform);
-  await page.goto(routedOrigin+'/#downloads');
+  await page.goto(routedOrigin+'/?platform-check=android#downloads');
+  expect(await page.evaluate(()=>navigator.userAgent)).toContain('Android');
   await expect.poll(()=>new URL(page.url()).hash).toBe('#download-android');
   await expect(page.locator('#primary-download')).toHaveAttribute('href','#download-android');
   await expect(page.locator('#download-android .version')).toHaveText('v'+android.version);
@@ -115,7 +116,7 @@ test('Studio website renders canonical pages and preserves legacy update feeds',
   await expect.poll(()=>new URL(page.url()).hash).toBe('#download-android');await expect.poll(()=>visibleCard('android')).toBe(true);
   await page.goto(routedOrigin+'/#download-windows');await expect.poll(()=>visibleCard('windows')).toBe(true);expect(new URL(page.url()).hash).toBe('#download-windows');
   await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].webContents.setUserAgent('Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 Safari/604.1'));
-  await page.goto(routedOrigin+'/');await expect(page.locator('#primary-download')).toHaveAttribute('href','#downloads');await expect(page.locator('#primary-download')).toContainText('查看客户端下载');expect(await page.locator('.download-card.recommended').count()).toBe(0);
+  await page.goto(routedOrigin+'/?platform-check=ios');expect(await page.evaluate(()=>navigator.userAgent)).toContain('iPhone');await expect(page.locator('#primary-download')).toHaveAttribute('href','#downloads');await expect(page.locator('#primary-download')).toContainText('查看客户端下载');expect(await page.locator('.download-card.recommended').count()).toBe(0);
   await app.evaluate(({BrowserWindow},ua)=>{const w=BrowserWindow.getAllWindows()[0];w.webContents.setUserAgent(ua);w.setContentSize(1440,1000);},userAgent);await page.goto(routedOrigin+'/');
   const remoteFeed=await app.evaluate(async({session},origin)=>{const response=await session.fromPartition('studio-feed-public-check').fetch(origin+'/updates/macos.json',{credentials:'omit',redirect:'error',headers:{Accept:'application/json'}});return{status:response.status,contentType:response.headers.get('content-type'),text:await response.text()};},origin);
   expect(remoteFeed.status).toBe(200);expect(remoteFeed.contentType).toContain('application/json');expect(JSON.parse(remoteFeed.text)).toEqual(feed);
