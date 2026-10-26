@@ -13,6 +13,8 @@ app.whenReady().then(async()=>{
  const {execFileSync}=require('node:child_process');
  const ps=path.join(process.env.SystemRoot,'System32/WindowsPowerShell/v1.0/powershell.exe');
  const records=JSON.parse(execFileSync(ps,['-NoProfile','-NonInteractive','-Command',"[Console]::OutputEncoding=[Text.UTF8Encoding]::new($false); ConvertTo-Json -InputObject @(Get-ItemProperty 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*' -ErrorAction SilentlyContinue | Where-Object {$_.DisplayName -eq 'ChatGPT Studio'} | Select-Object InstallLocation,UninstallString) -Compress"],{encoding:'utf8'}));
+ console.log('CI installer records:',JSON.stringify(records));
+ console.log('CI target executable:',config.installed);
  assert.equal(registeredWindowsDirectory(config.installed,records,[process.env.APPDATA,process.env.RUNNER_TEMP]),path.dirname(config.installed));
  const oldPackage=require(path.join(path.dirname(config.installed),'resources/app.asar/package.json'));
  const oldVersion=oldPackage.version;assert.equal(oldVersion,'3.0.0-alpha.18');assert.equal(oldPackage.name,'chatgpt-profiles');

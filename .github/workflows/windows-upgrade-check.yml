@@ -1,0 +1,82 @@
+name: Windows packaged upgrade acceptance
+on:
+  workflow_dispatch:
+    inputs:
+      package_run:
+        description: Existing candidate run with all pre-upgrade checks successful
+        required: true
+        type: string
+permissions:
+  contents: read
+  actions: read
+jobs:
+  upgrade:
+    runs-on: windows-2025
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: desktop
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '26.7.0'
+      - name: Validate reusable source and checks
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PACKAGE_RUN: ${{ inputs.package_run }}
+        run: |
+          if ($env:PACKAGE_RUN -notmatch '^\d+$') { throw 'Invalid package run' }
+          $run = gh api "repos/$env:GITHUB_REPOSITORY/actions/runs/$env:PACKAGE_RUN" | ConvertFrom-Json
+          if ($run.repository.full_name -ne $env:GITHUB_REPOSITORY -or $run.event -ne 'workflow_dispatch') { throw 'Wrong repository or event' }
+          $jobs = gh api "repos/$env:GITHUB_REPOSITORY/actions/runs/$env:PACKAGE_RUN/jobs" | ConvertFrom-Json
+          foreach ($name in @('Typecheck, state tests and build','Windows isolation and interface acceptance','Native first-script language and login popup acceptance','Native background retention without automation flags','Package Windows x64','Install, launch and uninstall acceptance')) {
+            $match = @($jobs.jobs.steps | Where-Object { $_.name -eq $name -and $_.conclusion -eq 'success' })
+            if ($match.Count -ne 1) { throw "Reusable check is not successful: $name" }
+          }
+          git diff --exit-code $run.head_sha HEAD -- src assets resources scripts/build.mjs scripts/icon.mjs scripts/package-win.mjs scripts/windows-update-feed.mjs package.json package-lock.json tsconfig.json
+          if ($LASTEXITCODE -ne 0) { throw 'Shipping inputs changed: rebuild instead of reusing packages' }
+          "PACKAGE_SOURCE=$($run.head_sha)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows-x64-installer
+          path: desktop/release/windows
+          run-id: ${{ inputs.package_run }}
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows-x64-zip
+          path: desktop/release/windows
+          run-id: ${{ inputs.package_run }}
+          github-token: ${{ github.token }}
+      - name: Verify original bytes and extract portable ASAR
+        run: |
+          $info = Get-Content release/windows/windows-build-info.json -Raw | ConvertFrom-Json
+          if ($info.sourceCommit -ne $env:PACKAGE_SOURCE -or $info.version -ne (Get-Content package.json | ConvertFrom-Json).version) { throw 'Candidate identity differs' }
+          foreach ($item in @($info.artifacts | Where-Object { $_.file -match '(\.exe|\.zip)$' })) {
+            $file = Join-Path 'release/windows' $item.file
+            if ((Get-Item $file).Length -ne $item.bytes -or (Get-FileHash $file -Algorithm SHA256).Hash.ToLowerInvariant() -ne $item.sha256) { throw 'Candidate bytes differ' }
+            $sha = [Security.Cryptography.SHA512]::Create()
+            $stream = [IO.File]::OpenRead((Resolve-Path $file))
+            try { $digest = [Convert]::ToBase64String($sha.ComputeHash($stream)) } finally { $stream.Dispose(); $sha.Dispose() }
+            if ($digest -ne $item.sha512) { throw 'Candidate SHA512 differs' }
+          }
+          $zip = @($info.artifacts | Where-Object { $_.file.EndsWith('.zip') })
+          if ($zip.Count -ne 1) { throw 'Ambiguous portable package' }
+          Expand-Archive (Join-Path 'release/windows' $zip[0].file) release/windows/win-unpacked
+      - name: Prepare probe runtime without rebuilding application
+        run: npm ci
+      - name: Install, launch and uninstall candidate
+        run: ./scripts/check-windows-install.ps1
+      - name: Real installed baseline to exact candidate upgrade
+        run: ./scripts/check-windows-upgrade.ps1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-upgrade-acceptance
+          path: |
+            desktop/release/windows/windows-smoke.json
+            desktop/release/windows/windows-upgrade.json
