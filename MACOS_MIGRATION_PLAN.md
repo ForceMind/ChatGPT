@@ -737,3 +737,7 @@
 - 已重新核对构建 40268493816、原生 40268559379，均成功且 head 为 cfd2ed667fbc6c8fcf44f9a0854b2b97e1a52c1b；公开前验证草稿 ID 423861858、目标源码、APK 与摘要两个资产。该唯一草稿已于 2026-10-26T06:52:18Z 转为公开预发布 https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.19 ，沿用原 7335383 字节 APK 与服务端 SHA-256 0e65cd85162b6cbab005e5d571e9856f91fc7dae1d2b4437426cebd85bc9e47f，没有再打包或签名。
 - 本轮官网只更新 Android 卡片 / 国内加速 / 摘要、四张同源原生 CI 图及里程碑；主视觉说明各平台版本，Mac / Windows 下载仍为 alpha.18。中英文 README 与原评审页状态同步，历史发布记录保留。现有官网测试原来从 Mac 清单版本推导全部五包，已最小调整为保留桌面 manifest 并使用 Android 下载卡版本对应的既有签名收据验证 APK；分别断言三平台版本、五个下载和加速及摘要复制，继续检查 Mac 清单禁重定向。只有网站测试变更，App 源码与包输入不变。
 - Git 同步范围为 ForceMind/ChatGPT 的 codex/macos-assets-workbench，网站 / 说明 / 必要发布收据与对应浏览器测试。先在 Actions 验证源站渲染，通过后正常快进 main 并部署现有 chatgpt-studio Pages 项目；旧站配置与 Mac JSON 不变时不重部署。当前公开 APK 已完成，官网与 main 仍待本轮验证 / 部署，结果将在本记录和 docs/releases/3.0.0-alpha.19-publication.json 更新。
+
+- 网站源码验证 40283064000 已通过，源 77070f87236f3218bc198bfc97d9e0f65d23a3b3。验证分别覆盖 Mac / Windows alpha.18、Android alpha.19，五个原始 / 加速下载及摘要、1440 / 390 渲染与禁重定向 Mac 清单。用户另问许可证，已依据官方条款建议 Apache-2.0（接受合规闭源商用时）或 GPL-3.0（分发改版保持开源时）；尚未收到实施选择，未添加 LICENSE。
+
+<!-- sourceVerificationRun40283064000 -->

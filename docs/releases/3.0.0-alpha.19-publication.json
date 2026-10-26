@@ -103,5 +103,23 @@
       "sourceArtifactId": 12627013740,
       "sourceMember": "device-evidence/workbench-phone/readability-skills-100-1080x2400.png"
     }
-  ]
+  ],
+  "websiteSourceVerification": {
+    "runId": 40283064000,
+    "sourceCommit": "77070f87236f3218bc198bfc97d9e0f65d23a3b3",
+    "conclusion": "success",
+    "widths": [
+      1440,
+      390
+    ],
+    "platformVersions": {
+      "macos": "3.0.0-alpha.18",
+      "windows": "3.0.0-alpha.18",
+      "android": "3.0.0-alpha.19"
+    },
+    "downloadCount": 5,
+    "acceleratedDownloadCount": 5,
+    "sha256Clipboard": true,
+    "credentiallessMacFeed": true
+  }
 }
