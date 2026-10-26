@@ -53,6 +53,9 @@ jobs:
       - name: Install, launch and uninstall acceptance
         shell: pwsh
         run: ./scripts/check-windows-install.ps1
+      - name: Actual NSIS upgrade with shipping updater modules
+        shell: pwsh
+        run: ./scripts/check-windows-upgrade.ps1
       - name: Upload verified packages to draft
         if: inputs.release_tag != ''
         shell: pwsh
@@ -90,4 +93,5 @@ jobs:
             desktop/test-results/
             desktop/playwright-report/
             desktop/release/windows/windows-smoke.json
+            desktop/release/windows/windows-upgrade.json
             desktop/release/windows/windows-installed.png
