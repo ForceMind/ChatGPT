@@ -128,7 +128,7 @@ export class WorkbenchUI {
     this.$('#workbench').hidden=panel!=='assets';this.$('#capability-page').hidden=panel==='assets';
     this.$('#sidebar-account').textContent=profile.name+'的本机文件';
     if(panel==='assets'){if(changed||oldPanel!==panel||!this.loaded)this.renderAssets();}
-    else { if(this.libraryKind!==panel){this.libraryFilter='all';this.libraryQuery='';this.librarySelected=undefined;this.$<HTMLInputElement>('#capability-search').value='';}this.libraryKind=panel;this.renderLibrary(); }
+    else { this.selectLibrary(panel); }
     if(changed||oldPanel!==panel){clearTimeout(this.detailTimer);this.detailOpen=false;}this.syncDetails();this.restoreScroll();
   }
   private async reload():Promise<void>{
@@ -196,6 +196,10 @@ export class WorkbenchUI {
   private async act(action:AssetAction):Promise<void>{const profile=this.profile.id;await this.api.act(profile,action);if(profile===this.profile.id)await this.reload();}
   private async edit(tags=false):Promise<void>{const asset=this.current();if(!asset)return;this.modal(tags?'编辑标签':'重命名文件','原件与来源记录保留。',`<label class="field-label">${tags?'标签（逗号分隔）':'文件名称'}</label><input class="field-input" id="wb-edit-value" autofocus maxlength="240" value="${esc(tags?asset.tags.join('，'):asset.name)}">`,'<button class="secondary" data-action="close-modal">取消</button><button class="primary" data-action="save-edit">保存</button>');this.$('#edit-value').dataset.tags=String(tags);this.$('#edit-value').dataset.asset=asset.id;}
   private items():(SkillDefinition|AgentSummary)[]{return this.catalog?(this.libraryKind==='skills'?this.catalog.skills:this.catalog.agents):[];}
+  private selectLibrary(kind:'skills'|'agents'):void{
+    if(this.libraryKind!==kind){this.libraryFilter='all';this.libraryQuery='';this.librarySelected=undefined;this.$<HTMLInputElement>('#capability-search').value='';}
+    this.libraryKind=kind;this.renderLibrary();
+  }
   private renderLibrary():void {
     if(!this.catalog)return;const agents=this.libraryKind==='agents',all=this.items();
     const visible=all.filter(i=>(this.libraryFilter==='all'||this.libraryFilter==='internet'&&i.internetPriority||this.libraryFilter===i.category)&&(!this.favoritesOnly||this.capabilityFavorites.has(i.id))&&`${i.name} ${i.category} ${i.description}`.toLowerCase().includes(this.libraryQuery.toLowerCase())).sort((a,b)=>Number(b.internetPriority)-Number(a.internetPriority)||Number(this.capabilityFavorites.has(b.id))-Number(this.capabilityFavorites.has(a.id)));
@@ -296,7 +300,7 @@ export class WorkbenchUI {
     const action=element.closest<HTMLElement>('[data-action]')?.dataset.action;if(!action)return;
     if(action==='close-details'){this.closeDetails();return;}
     if(action==='chat'){this.options.close();return;}
-    if(action==='assets'||action==='skills'||action==='agents'){this.options.panel(action);return;}
+    if(action==='assets'||action==='skills'||action==='agents'){if(action!=='assets')this.selectLibrary(action);this.options.panel(action);return;}
     if(action==='close-modal'){this.closeModal();return;}
     if(action==='import'){await this.act({type:'import'});return;}
     if(action==='asset-folder'){await this.act({type:'open-folder'});return;}
