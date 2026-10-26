@@ -1,5 +1,8 @@
 name: Windows packaged upgrade acceptance
 on:
+  push:
+    branches: [codex/macos-assets-workbench]
+    paths: [.github/workflows/windows-upgrade-check.yml]
   workflow_dispatch:
     inputs:
       package_run:
@@ -27,7 +30,7 @@ jobs:
       - name: Validate reusable source and checks
         env:
           GH_TOKEN: ${{ github.token }}
-          PACKAGE_RUN: ${{ inputs.package_run }}
+          PACKAGE_RUN: ${{ inputs.package_run || '40364964641' }}
         run: |
           if ($env:PACKAGE_RUN -notmatch '^\d+$') { throw 'Invalid package run' }
           $run = gh api "repos/$env:GITHUB_REPOSITORY/actions/runs/$env:PACKAGE_RUN" | ConvertFrom-Json
@@ -44,13 +47,13 @@ jobs:
         with:
           name: windows-x64-installer
           path: desktop/release/windows
-          run-id: ${{ inputs.package_run }}
+          run-id: ${{ inputs.package_run || '40364964641' }}
           github-token: ${{ github.token }}
       - uses: actions/download-artifact@v4
         with:
           name: windows-x64-zip
           path: desktop/release/windows
-          run-id: ${{ inputs.package_run }}
+          run-id: ${{ inputs.package_run || '40364964641' }}
           github-token: ${{ github.token }}
       - name: Verify original bytes and extract portable ASAR
         run: |
