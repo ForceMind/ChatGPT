@@ -70,6 +70,18 @@ jobs:
           gh release upload $env:RELEASE_TAG @files release/windows/windows-build-info.json
           if ($LASTEXITCODE -ne 0) { throw 'Release upload failed' }
       - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-release-info
+          retention-days: 90
+          path: |
+            desktop/release/windows/windows-build-info.json
+            desktop/release/windows/alpha.yml
+            desktop/release/windows/SHA256SUMS.txt
+            desktop/release/windows/windows-smoke.json
+            desktop/release/windows/windows-upgrade.json
+      - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: windows-x64-installer
           compression-level: 0
@@ -80,6 +92,7 @@ jobs:
             desktop/release/windows/SHA256SUMS.txt
             desktop/release/windows/alpha.yml
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: windows-x64-zip
           compression-level: 0

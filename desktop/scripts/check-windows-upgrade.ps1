@@ -20,7 +20,8 @@ try {
     $setup = Start-Process $old -ArgumentList @('/S', "/D=$install") -PassThru
     if (!$setup.WaitForExit(120000) -or $setup.ExitCode -ne 0) { throw 'Baseline installation failed' }
     $exe = Join-Path $install 'ChatGPT Profiles.exe'
-    if ([Diagnostics.FileVersionInfo]::GetVersionInfo($exe).ProductVersion -ne '3.0.0-alpha.18') { throw 'Installed baseline version mismatch' }
+    if (!(Test-Path $exe) -or [Diagnostics.FileVersionInfo]::GetVersionInfo($exe).ProductName -ne 'ChatGPT Studio') { throw 'Installed baseline identity mismatch' }
+    $baselineHash = (Get-FileHash (Join-Path $install 'resources/app.asar')).Hash
     $candidate = @($info.artifacts | Where-Object { $_.file.EndsWith('-setup.exe') })
     if ($candidate.Count -ne 1) { throw 'Candidate installer ambiguous' }
     $config = @{ root = $root; installed = $exe; archive = (Join-Path $output 'win-unpacked/resources/app.asar'); installer = (Join-Path $output $candidate[0].file); feed = (Join-Path $output 'alpha.yml'); sourceCommit = $env:GITHUB_SHA }
@@ -28,12 +29,14 @@ try {
     $config | ConvertTo-Json | Set-Content $configFile -Encoding utf8NoBOM
     & 'node_modules/electron/dist/electron.exe' 'scripts/windows-packaged-update-probe.cjs' $configFile
     if ($LASTEXITCODE -ne 0) { throw 'Shipping updater probe failed' }
+    $expectedHash = (Get-FileHash (Join-Path $output 'win-unpacked/resources/app.asar')).Hash
+    if ($baselineHash -eq $expectedHash) { throw 'Baseline and candidate must differ' }
     $deadline = [DateTime]::UtcNow.AddSeconds(150)
     do {
         Start-Sleep -Milliseconds 500
-        $version = if (Test-Path $exe) { [Diagnostics.FileVersionInfo]::GetVersionInfo($exe).ProductVersion } else { '' }
-    } until ($version -eq $info.version -or [DateTime]::UtcNow -gt $deadline)
-    if ($version -ne $info.version) { throw 'Native NSIS upgrade did not install the candidate' }
+        try { $installedHash = (Get-FileHash (Join-Path $install 'resources/app.asar')).Hash } catch { $installedHash = '' }
+    } until ($installedHash -eq $expectedHash -or [DateTime]::UtcNow -gt $deadline)
+    if ($installedHash -ne $expectedHash) { throw 'Native NSIS upgrade did not install the exact candidate ASAR' }
     $result.installed = $true
     if ((Get-FileHash (Join-Path $install 'resources/app.asar')).Hash -ne (Get-FileHash (Join-Path $output 'win-unpacked/resources/app.asar')).Hash) { throw 'Installed shipping ASAR differs' }
     $result.prepared = Get-Content (Join-Path $root 'prepared.json') -Raw | ConvertFrom-Json
@@ -48,13 +51,22 @@ try {
     if (!$process.CloseMainWindow() -or !$process.WaitForExit(20000)) { throw 'Upgraded app did not quit normally' }
     $after = Get-Content $stateFile -Raw | ConvertFrom-Json
     if ($after.activeProfileId -ne $before.activeProfileId -or ($after.tabs.id -join ',') -ne ($before.tabs.id -join ',')) { throw 'Relaunch changed account or tab identities' }
+} catch {
+    $result.error = $_.Exception.Message
+    throw
 } finally {
     if ($process -and !$process.HasExited) { $process.Kill($true) }
-    $result | ConvertTo-Json -Depth 8 | Set-Content (Join-Path $output 'windows-upgrade.json') -Encoding utf8
     $uninstaller = Get-ChildItem $install -Filter 'Uninstall*.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
-    if ($uninstaller) { $remove = Start-Process $uninstaller.FullName -ArgumentList '/S' -PassThru; [void]$remove.WaitForExit(120000) }
-    # Only the uniquely created CI directory is removed; account files remain available for evidence.
-    Remove-Item $root -Recurse -Force
+    try {
+        if ($uninstaller) { $remove = Start-Process $uninstaller.FullName -ArgumentList '/S' -PassThru; [void]$remove.WaitForExit(120000) }
+        # NSIS can return before its temporary uninstaller releases its working directory.
+        $cleanupDeadline = [DateTime]::UtcNow.AddSeconds(30)
+        do {
+            try { Remove-Item $root -Recurse -Force; break } catch { Start-Sleep -Milliseconds 500 }
+        } until ([DateTime]::UtcNow -gt $cleanupDeadline)
+        $result.temporaryCleanup = !(Test-Path $root)
+    } catch { $result.cleanupError = $_.Exception.Message }
+    $result | ConvertTo-Json -Depth 8 | Set-Content (Join-Path $output 'windows-upgrade.json') -Encoding utf8
 }
 if (!$result.installed -or !$result.identityRetained -or !$result.launch) { throw 'Upgrade incomplete' }
 $result | ConvertTo-Json -Depth 8

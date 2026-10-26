@@ -185,4 +185,16 @@ npm run dist:win
 
 alpha.6 的 [Windows 构建与安装验收](https://github.com/ForceMind/ChatGPT/actions/runs/39720554528) 针对源码 `4107ce4`：43 项单元、12 项原生流程、首次脚本与登录弹窗偏好、3 账号 / 8 标签隐藏约 330 秒的同实例保活、EXE / ZIP、安装启动、正常退出及卸载保留数据均通过。截图使用本地素材或未登录网页，未验证真实账号登录、发送和语音。
 
-上述为历史验收记录；本地构建缓存已清理。当前 Windows 公开包及摘要见 [alpha.11 Release](https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.11)，历史附件保留。
+上述为历史验收记录；本地构建缓存已清理。当前 Windows 公开包及摘要见 [alpha.18 Release](https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.18)，历史附件保留。
+
+## alpha.21 开发候选
+
+此批尚未替换官网公开版本，候选安装包在 GitHub Actions 中验证与保留。
+
+- 桌面能力库包含 121 个 Skill、32 个自有专业角色，其中 24 个互联网相关角色优先展示。角色可单独使用或搭配 Skill 与附件，仍由用户确认目标账号与发送；恢复任务记录不会重发状态不明的消息。设计补丁 Skill 根据实际项目、当前哈希及节点生成最小补丁，回原工作台审核后应用。
+- Windows 支持加密的只读对话快照；退出后离线重开可阅读已保存内容，重连后再恢复草稿与阅读位置。登录、验证码与临时聊天不采集，上传与模型生成不能跨进程继续。
+- Windows x64 EXE 安装版启动及上海时间中午检查更新；确认后后台下载，校验 SHA-512、SHA-256、大小、产品及版本。准备完成后可保存并立即重启安装，或下次退出时安装；系统关机 / 注销时延后。此批未加入 Windows 空闲安装与差量更新。
+- 免安装 ZIP 及无法确认安装位置的程序提供检查、下载、校验和另存入口；退出后手动替换程序文件，不自动改写解压目录。两种更新均保留 `%APPDATA%\ChatGPT Profiles\`，不会迁移登录与加密身份。
+- 更新清单使用官网独立的 `/updates/windows/alpha.yml`，由 CI 的同一组 EXE / ZIP 字节生成两种摘要；公开版本晋级前不部署候选清单。历史 alpha.18 没有该更新器，需先手动安装包含此功能的新版本。
+
+阶段 A 的[能力库候选收据](../docs/releases/3.0.0-alpha.21-capability-candidate.json)只证明对应源码的隔离测试与包检查。Windows 原生升级和最终两平台包的结果继续记录在[进度文件](../MACOS_MIGRATION_PLAN.md)；夹具验收不能替代真实 ChatGPT 账号发送与个人设备验证。

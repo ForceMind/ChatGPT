@@ -14,8 +14,8 @@ app.whenReady().then(async()=>{
  const ps=path.join(process.env.SystemRoot,'System32/WindowsPowerShell/v1.0/powershell.exe');
  const records=JSON.parse(execFileSync(ps,['-NoProfile','-NonInteractive','-Command',"[Console]::OutputEncoding=[Text.UTF8Encoding]::new($false); ConvertTo-Json -InputObject @(Get-ItemProperty 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*' -ErrorAction SilentlyContinue | Where-Object {$_.DisplayName -eq 'ChatGPT Studio'} | Select-Object InstallLocation,UninstallString) -Compress"],{encoding:'utf8'}));
  assert.equal(registeredWindowsDirectory(config.installed,records,[process.env.APPDATA,process.env.RUNNER_TEMP]),path.dirname(config.installed));
- process.env.STUDIO_OLD_EXE=config.installed;
- const oldVersion=execFileSync(ps,['-NoProfile','-NonInteractive','-Command','[Diagnostics.FileVersionInfo]::GetVersionInfo($env:STUDIO_OLD_EXE).ProductVersion'],{encoding:'utf8'}).trim();assert.equal(oldVersion,'3.0.0-alpha.18');
+ const oldPackage=require(path.join(path.dirname(config.installed),'resources/app.asar/package.json'));
+ const oldVersion=oldPackage.version;assert.equal(oldVersion,'3.0.0-alpha.18');assert.equal(oldPackage.name,'chatgpt-profiles');
  const feed=JSON.parse(fs.readFileSync(config.feed,'utf8')),installer=fs.readFileSync(config.installer);let requests=0;
  const server=createServer((q,r)=>{if(q.url.startsWith('/updates/windows/alpha.yml')){r.setHeader('Content-Type','text/yaml');r.end(JSON.stringify(feed));}else if(q.url==='/installer.exe'){requests++;r.setHeader('Content-Length',installer.length);r.end(installer);}else{r.writeHead(404);r.end();}});
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));const origin='http://127.0.0.1:'+server.address().port;
