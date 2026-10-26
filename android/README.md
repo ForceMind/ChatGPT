@@ -1,10 +1,10 @@
 # ChatGPT Studio for Android
 
-项目已更名为 **ChatGPT Studio**，当前公开 APK 为 alpha.17，历史版本保留，应用包名和签名身份保留。
+项目已更名为 **ChatGPT Studio**，当前公开 APK 为 alpha.19。下载文件名统一为 `ChatGPT-Studio-3.0.0-alpha.19-android.apk`，应用包名和签名身份保持不变；已安装的 App 无需因文件更名而重装。
 
-原生 Java + Android System WebView。当前公开预发布版为 `3.0.0-alpha.17`，提供卡片式标签管理、窗口保留、可选后台执行、诊断、工作台与文件任务；APK 沿用既有固定签名，历史安装包保留。打开即进入网页，没有地址栏，延续白色、浅灰和黑色控件。手机与平板使用同一 APK，各设备分别登录。
+原生 Java + Android System WebView。当前公开预发布版为 `3.0.0-alpha.19`，默认进入网页，标签清单按需展开；支持窗口保留、工作台与文件任务。APK 沿用既有固定签名，历史安装包保留。没有地址栏，延续白色、浅灰和黑色控件。手机与平板使用同一 APK，各设备分别登录。
 
-下载见[GitHub Release](https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.17)。普通 APK 的业务内核与数据目录保持，未加入 Gecko；每账号浏览器语言和时区尚未迁入。[独立环境 PoC](environment-poc/README.md)只验证研发路线，不是普通客户端下载版本。完整页面快照和离线阅读属于下一版计划。
+下载：[Android APK](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.19/ChatGPT-Studio-3.0.0-alpha.19-android.apk) · [Release](https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.19)。普通 APK 的业务内核与数据目录保持，未加入 Gecko；每账号浏览器语言和时区尚未迁入。[独立环境 PoC](environment-poc/README.md)只验证研发路线，不是普通客户端下载版本。完整页面快照和离线阅读属于后续计划。
 
 ## alpha.17 标签管理与后台任务
 

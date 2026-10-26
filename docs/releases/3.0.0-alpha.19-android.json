@@ -325,5 +325,17 @@
     "mainUnchanged": true,
     "verifiedMainCommit": "e783eb5e9dd14213af338313b8799feea16b3d3c",
     "verifiedMacFeedVersion": "3.0.0-alpha.18"
+  },
+  "publicDownload": {
+    "file": "ChatGPT-Studio-3.0.0-alpha.19-android.apk",
+    "bytes": 7335383,
+    "sha256": "0e65cd85162b6cbab005e5d571e9856f91fc7dae1d2b4437426cebd85bc9e47f",
+    "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.19/ChatGPT-Studio-3.0.0-alpha.19-android.apk",
+    "assetId": 678200273,
+    "legacyFile": "ChatGPT-Profiles-3.0.0-alpha.19-android.apk",
+    "legacyAssetId": 677022093,
+    "aliasWorkflowRun": 40327927056,
+    "sameSignedBytes": true,
+    "rebuilt": false
   }
 }

@@ -713,6 +713,7 @@ h2 {
   align-items: start;
 }
 .download-card {
+  scroll-margin-top: 100px;
   padding: 26px;
   border: 1px solid #c8c8c8;
   background: #ececec;

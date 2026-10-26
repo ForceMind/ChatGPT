@@ -89,7 +89,25 @@ if (os) {
   // Device detection suggests a platform; the download section keeps architecture and signing requirements visible.
   document.querySelector("#primary-download span").textContent =
     `获取 ${os === "macos" ? "macOS" : os === "windows" ? "Windows" : "Android"} 客户端`;
+  document.querySelectorAll('a[href="#downloads"]').forEach(link => {
+    link.setAttribute("href", `#download-${os}`);
+  });
+  selectPlatform(os);
+} else {
+  document.querySelector("#primary-download span").textContent = "查看客户端下载";
 }
+function locateDownload() {
+  // Keep existing shared links useful on phones. Explicit platform links always win.
+  if (os && location.hash === "#downloads" && matchMedia("(max-width: 800px)").matches) {
+    history.replaceState(null, "", `#download-${os}`);
+  }
+  const platform = /^#download-(windows|macos|android)$/.exec(location.hash)?.[1];
+  if (!platform) return;
+  requestAnimationFrame(() => document.getElementById(`download-${platform}`)?.scrollIntoView({block:"start",behavior:"instant"}));
+}
+window.addEventListener("hashchange", locateDownload);
+window.addEventListener("load", locateDownload, {once:true});
+locateDownload();
 let toastTimer;
 function notify(message) {
   const toast = document.querySelector(".toast");
