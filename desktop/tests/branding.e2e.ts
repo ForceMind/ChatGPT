@@ -54,10 +54,18 @@ test('Studio website renders canonical pages and preserves legacy update feeds',
   for(const [platform,version] of Object.entries(platformVersions))await expect(page.locator('article[data-os="'+platform+'"] .version')).toHaveText('v'+version);
   const canonical='https://chatgpt-studio.pages.dev';
   if(publicOrigin){
-   await expect.poll(()=>new URL(page.url()).origin).toBe(canonical);
+   const landed=publicOrigin==='https://chatgpt-profiles.pages.dev'?canonical:publicOrigin;
+   await expect.poll(()=>new URL(page.url()).origin).toBe(landed);
    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href',canonical+'/');
-   if(publicOrigin!==canonical){await page.goto(publicOrigin+'/?source=legacy-check#downloads');await expect.poll(()=>new URL(page.url()).origin).toBe(canonical);expect(new URL(page.url()).hash).toBe('#downloads');await page.goto(canonical+'/');}
+   if(publicOrigin==='https://chatgpt-profiles.pages.dev'){await page.goto(publicOrigin+'/?source=legacy-check#downloads');await expect.poll(()=>new URL(page.url()).origin).toBe(canonical);expect(new URL(page.url()).hash).toBe('#downloads');await page.goto(canonical+'/');}
+   if(publicOrigin==='https://chatgpt.xincreates.com'){
+    expect(new URL(page.url()).origin).toBe(publicOrigin);
+    const status=await app.evaluate(async({session},base)=>(await session.fromPartition('studio-custom-domain-check').fetch(base+'/',{credentials:'omit',redirect:'error'})).status,publicOrigin);
+    expect(status).toBe(200);
+   }
   }
+  const repositoryLinks=await page.locator('a[href^="https://github.com/ForceMind/ChatGPT"]').evaluateAll((links:HTMLAnchorElement[])=>links.map(a=>a.href).filter(href=>!href.includes('/releases/download/')));
+  expect(repositoryLinks).toEqual([]);
   for(const item of release.artifacts){
    expect(await page.locator('a[href="'+item.url+'"]').count()).toBeGreaterThanOrEqual(1);
    expect(await page.locator('a[href="https://gh-proxy.org/'+item.url+'"]').count()).toBeGreaterThanOrEqual(1);
@@ -85,7 +93,7 @@ test('Studio website renders canonical pages and preserves legacy update feeds',
   await page.screenshot({path:info.outputPath('studio-downloads-1440.png')});
   const remoteFeed=await app.evaluate(async({session},origin)=>{const response=await session.fromPartition('studio-feed-public-check').fetch(origin+'/updates/macos.json',{credentials:'omit',redirect:'error',headers:{Accept:'application/json'}});return{status:response.status,contentType:response.headers.get('content-type'),text:await response.text()};},origin);
   expect(remoteFeed.status).toBe(200);expect(remoteFeed.contentType).toContain('application/json');expect(JSON.parse(remoteFeed.text)).toEqual(feed);
-  writeFileSync(info.outputPath('site-verification.json'),JSON.stringify({origin,landedOrigin:new URL(page.url()).origin,platformVersions,macosUpdateVersion:feed.version,downloadFiles:release.artifacts.length,acceleratedFiles:release.artifacts.length,widths:[1440,390],checksumCopy:true,credentiallessElectronFeed:true,legacyPageRedirect:!!publicOrigin&&publicOrigin!==canonical,errors}));
+  writeFileSync(info.outputPath('site-verification.json'),JSON.stringify({origin,landedOrigin:new URL(page.url()).origin,platformVersions,macosUpdateVersion:feed.version,downloadFiles:release.artifacts.length,acceleratedFiles:release.artifacts.length,widths:[1440,390],checksumCopy:true,credentiallessElectronFeed:true,legacyPageRedirect:publicOrigin==='https://chatgpt-profiles.pages.dev',customDomainServedDirectly:publicOrigin==='https://chatgpt.xincreates.com',repositoryNavigationAbsent:true,errors}));
   expect(errors).toEqual([]);
  }finally{await app?.close().catch(()=>{});server.closeAllConnections();await new Promise<void>(r=>server.close(()=>r()));rmSync(root,{recursive:true,force:true});}
 });
