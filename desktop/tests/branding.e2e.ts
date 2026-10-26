@@ -110,6 +110,7 @@ test('Studio website renders canonical pages and preserves legacy update feeds',
   await expect(page.locator('#download-android .version')).toHaveText('v'+android.version);
   await expect(page.locator('#download-android > a')).toHaveAttribute('href',release.artifacts.find((a:{platform:string})=>a.platform==='android').url);
   await expect.poll(()=>visibleCard('android')).toBe(true);
+  writeFileSync(info.outputPath('mobile-route-geometry.json'),JSON.stringify(await page.evaluate(()=>({userAgent:navigator.userAgent,width:innerWidth,hash:location.hash,cardTop:document.querySelector('#download-android')!.getBoundingClientRect().top,headerBottom:document.querySelector('header')!.getBoundingClientRect().bottom,scrollPadding:getComputedStyle(document.documentElement).scrollPaddingTop,cardScrollMargin:getComputedStyle(document.querySelector('#download-android')!).scrollMarginTop}))));
   await expect(page.getByRole('tab',{name:'Android',exact:true})).toHaveAttribute('aria-selected','true');
   await page.screenshot({path:info.outputPath('studio-android-download-390.png')});
   await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].setContentSize(915,600));await page.goto(routedOrigin+'/?platform-check=android-wide#downloads');
