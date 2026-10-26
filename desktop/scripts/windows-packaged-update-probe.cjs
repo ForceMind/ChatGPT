@@ -23,9 +23,12 @@ app.whenReady().then(async()=>{
  const server=createServer((q,r)=>{if(q.url.startsWith('/updates/windows/alpha.yml')){r.setHeader('Content-Type','text/yaml');r.end(JSON.stringify(feed));}else if(q.url==='/installer.exe'){requests++;r.setHeader('Content-Length',installer.length);r.end(installer);}else{r.writeHead(404);r.end();}});
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));const origin='http://127.0.0.1:'+server.address().port;
  const cfg=path.join(config.root,'app-update.yml');fs.writeFileSync(cfg,JSON.stringify({provider:'generic',url:origin+'/updates/windows/',updaterCacheDirName:'studio-native-'+path.basename(config.root)}));
- // The version comes from the real installed alpha.18 executable, not a fabricated downgrade.
- const adapter={version:oldVersion,name:'ChatGPT Profiles',isPackaged:true,appUpdateConfigPath:cfg,userDataPath:data,baseCachePath:path.join(config.root,'cache'),whenReady:()=>app.whenReady(),relaunch:()=>app.relaunch(),quit:()=>app.quit(),onQuit:handler=>app.once('quit',(_e,code)=>handler(code))};
- const native=new NsisUpdater({provider:'generic',url:origin+'/updates/windows/'},adapter);native.installDirectory=path.dirname(config.installed);
+ // Use the normal Electron executor. SDK custom adapters deliberately have no
+ // HTTP executor. This isolated host reports the version read from the verified
+ // installed alpha.18 ASAR; the shipping package and its version are untouched.
+ app.setName('ChatGPT Profiles');app.getVersion=()=>oldVersion;
+ const native=new NsisUpdater({provider:'generic',url:origin+'/updates/windows/'});native.forceDevUpdateConfig=true;native.updateConfigPath=cfg;native.installDirectory=path.dirname(config.installed);
+ native.on('error',error=>console.error('CI SDK error:',error.message));
  const manager=new WindowsUpdateManager({dataDir:data,current:oldVersion,arch:process.arch,mode:'automatic',backend:createWindowsUpdateBackend(native,origin),fetch:()=>{throw Error('Unexpected portable download');},changed:()=>{},verifyInstaller:verifyWindowsInstaller,preflight:async()=>{assert(fs.existsSync(config.installed));}});
  await manager.check();assert.equal(manager.status.phase,'available');assert.equal(manager.manifest.version,feed.version);assert.equal(requests,0);
  await manager.download();assert.equal(manager.status.phase,'ready');assert.equal(requests,1);
