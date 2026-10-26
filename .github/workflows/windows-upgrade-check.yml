@@ -85,7 +85,10 @@ jobs:
       - name: Real installed baseline to exact candidate upgrade
         run: ./scripts/check-windows-upgrade.ps1
       - name: Native background retention without automation flags
-        run: node scripts/measure-resources.mjs --label windows-candidate-acceptance --keepalive-ms 330000 --output test-results/windows-native-retention.json
+        run: |
+          New-Item -ItemType Directory -Force test-results | Out-Null
+          node scripts/measure-resources.mjs --label windows-candidate-acceptance --keepalive-ms 330000 --output test-results/windows-native-retention.json
+          if ($LASTEXITCODE -ne 0) { throw 'Native retention failed' }
       - uses: actions/upload-artifact@v4
         if: always()
         with:
