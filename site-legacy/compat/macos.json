@@ -1,13 +1,13 @@
 {
   "schema": 1,
-  "version": "3.0.0-alpha.18",
-  "publishedAt": "2026-10-25T15:57:04Z",
-  "notes": "macOS alpha.18：统一清晰字号与对比度、窄窗详情抽屉，恢复顶部菜单栏图标；保留文件处理、独立账号、登录和加密恢复数据。完整 ZIP 更新仍需重启，Touch ID 密钥保护仍需稳定签名。",
+  "version": "3.0.0-alpha.20",
+  "publishedAt": "2026-10-26T09:53:58Z",
+  "notes": "macOS alpha.20：应用文件、系统显示名与可执行文件统一 ChatGPT Studio；兼容旧版自动更新并在首次启动迁移应用名称，已有同名应用不覆盖。保留账号目录、登录与加密身份。完整更新仍需重启，当前为临时签名、尚未公证。",
   "files": {
     "arm64": {
-      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.18/ChatGPT-Profiles-3.0.0-alpha.18-mac-arm64.zip",
-      "size": 154478821,
-      "sha256": "b270a9ff763345205ade0b16a20599acf435e1dc2904273f7b95eadd1c89dccb"
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.20/ChatGPT-Profiles-3.0.0-alpha.20-mac-arm64.zip",
+      "size": 154597920,
+      "sha256": "416c3b40303f2145e1a4852d0474d7ac99255d10c08b85d1d8dc9ffdb1d6f3cb"
     }
   }
 }

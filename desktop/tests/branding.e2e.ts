@@ -37,20 +37,24 @@ test('Studio website renders canonical pages and preserves legacy update feeds',
  if(publicOrigin&&!['https://chatgpt-studio.pages.dev','https://chatgpt.xincreates.com','https://chatgpt-profiles.pages.dev'].includes(publicOrigin))throw Error('Unexpected website verification origin');
  const origin=publicOrigin||'http://127.0.0.1:'+address.port,entry=path.join(root,'main.cjs');
  const feed=JSON.parse(readFileSync(path.join(site,'updates/macos.json'),'utf8'));expect(validManifest(feed)).toBe(true);
- const release=JSON.parse(readFileSync(path.join(desktop,'../docs/releases',feed.version+'.json'),'utf8'));
- const androidVersion=readFileSync(path.join(site,'index.html'),'utf8').match(/<article\b[^>]*data-os="android"[^>]*>[\s\S]*?<span class="version">v([^<]+)<\/span>/)?.[1];
- expect(androidVersion).toMatch(/^\d+\.\d+\.\d+-alpha\.\d+$/);
- const android=JSON.parse(readFileSync(path.join(desktop,'../docs/releases',androidVersion+'-android.json'),'utf8'));
- expect(android.version).toBe(androidVersion);
- release.artifacts=release.artifacts.filter((item:{platform:string})=>item.platform!=='android').concat({...android.artifact,platform:'android',url:'https://github.com/ForceMind/ChatGPT/releases/download/v'+android.version+'/'+android.artifact.file});
+ const versionFor=(platform:string)=>readFileSync(path.join(site,'index.html'),'utf8').match(new RegExp('<article\\b[^>]*data-os="'+platform+'"[^>]*>[\\s\\S]*?<span class="version">v([^<]+)<\\/span>'))?.[1];
+ const platformVersions={macos:versionFor('macos'),windows:versionFor('windows'),android:versionFor('android')};
+ for(const version of Object.values(platformVersions))expect(version).toMatch(/^\d+\.\d+\.\d+-alpha\.\d+$/);
+ expect(platformVersions.macos).toBe(feed.version);
+ const manifest=(version:string)=>JSON.parse(readFileSync(path.join(desktop,'../docs/releases',version+'.json'),'utf8'));
+ const mac=manifest(platformVersions.macos!),windows=manifest(platformVersions.windows!);
+ const android=JSON.parse(readFileSync(path.join(desktop,'../docs/releases',platformVersions.android+'-android.json'),'utf8'));
+ expect(android.version).toBe(platformVersions.android);
+ const release={artifacts:[...mac.artifacts.filter((item:{platform:string;purpose?:string})=>item.platform==='macos'&&item.purpose!=='legacy-updater'),...windows.artifacts.filter((item:{platform:string})=>item.platform==='windows'),{...android.artifact,platform:'android',url:'https://github.com/ForceMind/ChatGPT/releases/download/v'+android.version+'/'+android.artifact.file}]};
  expect(release.artifacts).toHaveLength(5);
- const platformVersions={macos:feed.version,windows:feed.version,android:android.version};
+ const updateFile=mac.artifacts.find((item:{file:string})=>feed.files.arm64?.url.endsWith('/'+item.file));
+ expect(updateFile.sha256).toBe(feed.files.arm64?.sha256);expect(updateFile.bytes).toBe(feed.files.arm64?.size);
  writeFileSync(entry,"const {app,BrowserWindow}=require('electron');require('node:fs').mkdirSync(process.env.STUDIO_SITE_DATA,{recursive:true});app.setPath('userData',process.env.STUDIO_SITE_DATA);app.whenReady().then(()=>{const win=new BrowserWindow({width:1440,height:1000,webPreferences:{sandbox:true,contextIsolation:true,nodeIntegration:false}});win.loadURL(process.env.STUDIO_SITE_ORIGIN)});");
  try{
   app=await electron.launch({args:[entry],env:{...process.env,STUDIO_SITE_DATA:path.join(root,'data'),STUDIO_SITE_ORIGIN:origin}});const page=await app.firstWindow();const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
   await expect(page).toHaveTitle(/ChatGPT Studio/);await expect(page.getByRole('link',{name:'ChatGPT Studio 首页',exact:true})).toBeVisible();
   await expect(page.locator('.hero-build')).toContainText(feed.version);
-  await expect(page.locator('.hero-build')).toContainText(android.version);
+  for(const version of Object.values(platformVersions))await expect(page.locator('.hero-build')).toContainText(version!);
   for(const [platform,version] of Object.entries(platformVersions))await expect(page.locator('article[data-os="'+platform+'"] .version')).toHaveText('v'+version);
   const canonical='https://chatgpt-studio.pages.dev';
   if(publicOrigin){

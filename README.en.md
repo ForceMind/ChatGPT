@@ -15,7 +15,7 @@
 
 ChatGPT Studio brings independent ChatGPT account spaces, tabs, downloaded assets, previews, conversions and reviewed file tasks into one application. Launch directly into the website with a white, gray and black interface and no address bar. Each device signs in independently; no OpenAI API key is required.
 
-> Previously named **ChatGPT Profiles**. The current public prereleases are **3.0.0-alpha.18** for macOS/Windows and **3.0.0-alpha.19** for Android. Platforms update independently. Legacy filenames, internal identifiers and data locations are retained for upgrade compatibility.
+> Previously named **ChatGPT Profiles**. The current public prereleases are **3.0.0-alpha.20** for macOS, **3.0.0-alpha.18** for Windows and **3.0.0-alpha.19** for Android. Platforms update independently. Legacy filenames, internal identifiers and data locations are retained for upgrade compatibility.
 
 ![Actual historical macOS window, before the rename](docs/images/macos-immersive.png)
 
@@ -60,7 +60,7 @@ Devices do not synchronize sign-in credentials. Alternative Android engines rema
 
 | Platform | Version | Downloads | Requirements |
 | --- | --- | --- | --- |
-| macOS · Apple Silicon | 3.0.0-alpha.18 | [DMG](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.18/ChatGPT-Profiles-3.0.0-alpha.18-mac-arm64.dmg) · [ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.18/ChatGPT-Profiles-3.0.0-alpha.18-mac-arm64.zip) | macOS 13+ |
+| macOS · Apple Silicon | 3.0.0-alpha.20 | [DMG](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.20/ChatGPT-Studio-3.0.0-alpha.20-mac-arm64.dmg) · [ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.20/ChatGPT-Studio-3.0.0-alpha.20-mac-arm64.zip) | macOS 13+ |
 | Windows · x64 | 3.0.0-alpha.18 | [EXE](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.18/ChatGPT-Profiles-3.0.0-alpha.18-windows-x64-setup.exe) · [Portable ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.18/ChatGPT-Profiles-3.0.0-alpha.18-windows-x64.zip) | Windows 10/11, 64-bit |
 | Android · Phone/tablet | 3.0.0-alpha.19 | [APK](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.19/ChatGPT-Profiles-3.0.0-alpha.19-android.apk) | Android 9+, WebView with multi-profile support |
 
@@ -80,7 +80,7 @@ This update only makes tab terminology consistent. Account controls, layout, nav
 
 App-owned desktop UI now uses clearer type and contrast, with 15px body text, 14px supporting text and a 13px label floor. Narrow windows use a details drawer. The macOS menu bar icon is restored for window, account, workbench and update actions.
 
-Android opens directly into the webpage with account, tabs and more controls. A searchable tab sheet supports pinning, renaming, sorting, closing and restoring recent tabs. Browser-style bottom controls and developer diagnostics are removed from normal menus. Foreground switches reuse the original webpage, draft, scroll and generation context without a background service. Window recreation reuses pages; process termination requires reloading before restoring saved drafts and positions. See the [desktop release manifest](docs/releases/3.0.0-alpha.18.json) and [Android alpha.19 record](docs/releases/3.0.0-alpha.19-android.json) for exact binaries, sources and signatures.
+Android opens directly into the webpage with account, tabs and more controls. A searchable tab sheet supports pinning, renaming, sorting, closing and restoring recent tabs. Browser-style bottom controls and developer diagnostics are removed from normal menus. Foreground switches reuse the original webpage, draft, scroll and generation context without a background service. Window recreation reuses pages; process termination requires reloading before restoring saved drafts and positions. See the [macOS alpha.20 release manifest](docs/releases/3.0.0-alpha.20.json), [Windows alpha.18 manifest](docs/releases/3.0.0-alpha.18.json) and [Android alpha.19 record](docs/releases/3.0.0-alpha.19-android.json) for exact binaries, sources and signatures.
 
 macOS checks for updates at launch and at noon in Shanghai time. After confirmation it downloads and verifies a complete ZIP. Installation can run immediately, on exit or after the app has been idle under the configured safeguards. Native application updates require a restart; delta updates are not implemented. Windows and Android currently update manually.
 
@@ -123,7 +123,7 @@ Website images support copying original pixels, saving to the asset library, ret
 | Windows, installed or ZIP | `%APPDATA%\ChatGPT Profiles\` |
 | Android | Existing app-private directory; package identity is unchanged |
 
-The rename does not migrate or delete these directories. Internal application identifiers, the `ChatGPT Profiles.app` update archive root, executable names and encryption identity remain compatible. Normal upgrades do not require uninstalling or clearing account data.
+The rename does not migrate or delete these data directories. macOS alpha.20 uses ChatGPT Studio for its app bundle, system name and executable. Older updaters receive a dedicated ChatGPT-Profiles ZIP; its first launch verifies the signature and moves to the sibling ChatGPT Studio.app without replacing another installation. Internal application identifiers, the internal storage name, Windows executable name and encryption identity remain compatible. Normal upgrades do not require uninstalling or clearing account data.
 
 Desktop state is stored in `state.json`, browser spaces in `Partitions/profile-UUID`, and assets/tasks/recovery records under the same data root. To back up desktop data, fully exit before copying the entire directory. Android uninstalling removes its local spaces.
 
@@ -183,6 +183,7 @@ Cloudflare Pages uses Direct Upload; a Git push does not deploy the site automat
 | Real macOS account upload/first-message/single-send acceptance | Deferred manual acceptance; isolated flows pass |
 | Android real homepage, accounts, voice/files and vendor devices | Deferred manual acceptance; website images are labeled native fixtures |
 | Android alpha.19 tab terminology | Published; layout/runtime retained; [publication/online record](docs/releases/3.0.0-alpha.19-publication.json) |
+| macOS alpha.20 complete Studio naming and legacy updater compatibility | App bundle, OS name and manual downloads use Studio; existing account and encryption identities retained. [Release record](docs/releases/3.0.0-alpha.20.json) |
 | Alpha.18 installers, immersive Android, readable UI and macOS menu bar | Published; [publication/online record](docs/releases/3.0.0-alpha.18-publication.json) |
 | Windows offline snapshots/auto-updates; complete Android offline snapshots | Future batch |
 | Android per-account locale/timezone engine migration | Separate PoC; regular engine is unchanged |

@@ -17,7 +17,7 @@
 
 在独立账号空间中使用 ChatGPT，管理标签与会话，把下载、预览、格式转换和文件处理集中在一个应用里。启动直接进入网页，采用白灰黑界面，没有地址栏；各设备独立登录，无需配置 OpenAI API Key。
 
-> 项目已从 ChatGPT Profiles 更名为 **ChatGPT Studio**。当前 macOS / Windows 公开版为 **3.0.0-alpha.18**，Android 为 **3.0.0-alpha.19**；各平台按下表独立更新。历史文件名、应用标识和数据目录保留，用于兼容既有登录、加密记录与更新流程。
+> 项目已从 ChatGPT Profiles 更名为 **ChatGPT Studio**。当前 macOS 公开版为 **3.0.0-alpha.20**，Windows 为 **3.0.0-alpha.18**，Android 为 **3.0.0-alpha.19**；各平台按下表独立更新。历史文件名、应用标识和数据目录保留，用于兼容既有登录、加密记录与更新流程。
 
 ![macOS 公开版实际窗口（更名前）](docs/images/macos-immersive.png)
 
@@ -64,7 +64,7 @@ flowchart LR
 
 | 平台 | 版本 | 下载 | 要求 |
 | --- | --- | --- | --- |
-| macOS · Apple Silicon | 3.0.0-alpha.18 | [DMG](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.18/ChatGPT-Profiles-3.0.0-alpha.18-mac-arm64.dmg) · [ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.18/ChatGPT-Profiles-3.0.0-alpha.18-mac-arm64.zip) | macOS 13+ |
+| macOS · Apple Silicon | 3.0.0-alpha.20 | [DMG](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.20/ChatGPT-Studio-3.0.0-alpha.20-mac-arm64.dmg) · [ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.20/ChatGPT-Studio-3.0.0-alpha.20-mac-arm64.zip) | macOS 13+ |
 | Windows · x64 | 3.0.0-alpha.18 | [EXE](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.18/ChatGPT-Profiles-3.0.0-alpha.18-windows-x64-setup.exe) · [免安装 ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.18/ChatGPT-Profiles-3.0.0-alpha.18-windows-x64.zip) | Windows 10 / 11 · 64 位 |
 | Android · 手机 / 平板 | 3.0.0-alpha.19 | [APK](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.19/ChatGPT-Profiles-3.0.0-alpha.19-android.apk) | Android 9+，WebView 支持多档案 |
 
@@ -84,7 +84,7 @@ flowchart LR
 
 **桌面 alpha.18** 统一 App 自有界面的字号与对比度：正文 15、辅助 14、标签至少 13，窄窗详情使用抽屉，文件操作保留清晰入口；恢复 macOS 顶部菜单栏图标，支持显示窗口、切换账号、打开资产 / 能力库和检查更新。
 
-Android 默认进入网页，顶部仅保留账号、标签和更多；按需展开可搜索的标签清单，支持重命名、固定、排序、关闭和最近关闭恢复。主页移除浏览器式底栏，普通菜单移除开发诊断。App 前台切换已载入页面会复用同一网页、草稿、滚动和生成上下文，无需开启后台服务；窗口重建保留原页面，进程终止后需加载一次再恢复已保存草稿与阅读位置。桌面安装包、源码和签名见[alpha.18 发布索引](docs/releases/3.0.0-alpha.18.json)，Android 见[alpha.19 记录](docs/releases/3.0.0-alpha.19-android.json)。
+Android 默认进入网页，顶部仅保留账号、标签和更多；按需展开可搜索的标签清单，支持重命名、固定、排序、关闭和最近关闭恢复。主页移除浏览器式底栏，普通菜单移除开发诊断。App 前台切换已载入页面会复用同一网页、草稿、滚动和生成上下文，无需开启后台服务；窗口重建保留原页面，进程终止后需加载一次再恢复已保存草稿与阅读位置。Mac 安装包、兼容更新与签名见[alpha.20 发布索引](docs/releases/3.0.0-alpha.20.json)，Windows 见[alpha.18 发布索引](docs/releases/3.0.0-alpha.18.json)，Android 见[alpha.19 记录](docs/releases/3.0.0-alpha.19-android.json)。
 
 Mac 从 alpha.12 起支持启动与每天上海时间 12:00 检查更新，确认后后台下载、校验完整 ZIP，可选择立即、下次退出或应用空闲时安装。原生程序更新需要重启，暂不支持增量更新；Windows / Android 当前手动升级。
 
@@ -127,7 +127,7 @@ Android 点击底部标签数量打开总览。“更多 → 保活与诊断”�
 | Windows · EXE / ZIP | %APPDATA%\ChatGPT Profiles\ |
 | Android | 原应用私有目录，包名保持不变 |
 
-更名不迁移或删除这些目录。内部应用名、macOS 更新包中的 ChatGPT Profiles.app、Windows 可执行文件名及既有加密身份保留为兼容标识；对外显示名称为 ChatGPT Studio。常规升级无需卸载或清理账号数据。
+更名不迁移或删除这些数据目录。macOS alpha.20 的应用文件、系统名称与可执行文件统一为 ChatGPT Studio；旧版自动更新仍使用专用的 ChatGPT-Profiles ZIP，首次启动时校验签名并迁移到同级 ChatGPT Studio.app，不覆盖已有同名应用。内部应用名、应用标识、Windows 可执行文件名与既有加密身份保留为兼容标识。常规升级无需卸载或清理账号数据。
 
 账号与标签位于 state.json，浏览器数据位于 Partitions/profile-UUID，资产、任务和恢复记录保存在同一数据根目录。备份时应在应用真正退出后复制整个目录；Android 卸载会删除对应的本机空间。
 
@@ -198,6 +198,7 @@ cd android
 | 待人工验收 | Mac 真实账号的附件上传、首条消息与一次发送 | 用户稍后验收；隔离回归已通过 |
 | 待人工验收 | Android 实际首页、真实账号 / 登录、语音与文件流程 | 官网展示原生标签 / 平板 / 资产 / Skill 测试界面，实站另验 |
 | 已发布 | Android alpha.19 最小文案统一 | 布局与功能沿用；[发布与线上记录](docs/releases/3.0.0-alpha.19-publication.json) |
+| 已发布 | macOS alpha.20 完整更名与旧版兼容更新 | 应用、系统名称与手动下载统一 Studio，账号目录与加密身份保留；[发布记录](docs/releases/3.0.0-alpha.20.json) |
 | 已发布 | alpha.18 三端包、沉浸式 Android、清晰字号与 Mac 菜单栏 | 下载、官网与 Mac 更新清单同步；[发布与线上验证记录](docs/releases/3.0.0-alpha.18-publication.json) |
 | 平台迭代 | Windows 离线快照 / 自动更新，Android 完整离线快照 | 后续批次 |
 | 环境隔离 | Android 每账号语言 / 时区从独立 PoC 迁入日常客户端 | 路线验证完成，尚未替换普通内核 |
