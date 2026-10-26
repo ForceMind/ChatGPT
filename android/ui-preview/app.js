@@ -83,4 +83,4 @@ document.addEventListener('keydown',event=>{
  if(event.key==='Tab'&&!$('#overlay').hidden){const controls=[...$('#overlay').querySelectorAll('button,input,textarea,select')].filter(e=>e.getClientRects().length);if(event.shiftKey&&document.activeElement===controls[0]){event.preventDefault();controls.at(-1)?.focus();}else if(!event.shiftKey&&document.activeElement===controls.at(-1)){event.preventDefault();controls[0]?.focus();}}
 });
 const streamTimer=setInterval(()=>{const tab=tabs.find(t=>t.id==='p2');if(!tab||tab.tick>=5){clearInterval(streamTimer);return;}tab.tick++;tab.answer+='\n\n'+['先确认每一段内容要回答哪个问题。','把主要操作放在容易找到的位置。','正文和辅助信息使用清楚的层次。','长内容可以滚动，不靠缩小文字容纳。','最后检查实际使用时的完整流程。'][tab.tick-1];const answer=pages.get(tab.id)?.querySelector('.assistant-message');if(answer)answer.textContent=tab.answer;},2400);
-renderHeader();renderPages();feedback('这是设计评审预览。仅预览局部文案调整，安装版和现有登录数据没有改变。');
+renderHeader();renderPages();feedback('这是设计评审预览。标签文案已随 Android alpha.19 发布；本页仅演示外壳，不连接真实账号。');

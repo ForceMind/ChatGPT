@@ -16,8 +16,8 @@ const platforms = {
   },
   android: {
     image: "android-tabs.png",
-    caption: "Android alpha.18 · 原生对话清单 / 模拟器 · 本地测试账号",
-    alt: "Android alpha.18 客户端原生对话清单截图：账号筛选、搜索、完整边框、最近关闭和新开对话。背后网页为本地测试素材，非真实 ChatGPT 首页。",
+    caption: "Android alpha.19 · 原生标签页 / 模拟器 · 本地测试账号",
+    alt: "Android alpha.19 客户端原生标签页截图：账号筛选、搜索、完整边框、最近关闭和新建标签页。背后网页为本地测试素材，非真实 ChatGPT 首页。",
     width: 1080,
     height: 2400,
     kind: "ANDROID · ACTUAL APP / LOCAL FIXTURES",
@@ -25,9 +25,9 @@ const platforms = {
 };
 const androidViews = {
   tabs: platforms.android,
-  tablet: {...platforms.android,image:"android-tablet-tabs.png",width:1600,height:2560,caption:"Android alpha.18 · 平板原生对话清单 / 模拟器 · 本地测试账号",alt:"Android alpha.18 平板原生右侧对话清单，含账号筛选、搜索和管理入口；背后网页为测试素材，并非真实 ChatGPT 首页。"},
-  assets: {...platforms.android,image:"android-assets.png",caption:"Android alpha.18 · 资产库 / 模拟器 · 本地示例文件",alt:"Android alpha.18 资产库原生截图：独立账号下的本地 HTML 示例文件，带搜索、导入和交给 GPT 入口；采集于 Android 15 模拟器。"},
-  skills: {...platforms.android,image:"android-skills.png",caption:"Android alpha.18 · 120 个 Skill / 模拟器 · 本地示例账号",alt:"Android 客户端能力库实际截图：120 个项目 Skill、原生搜索与任务说明；采集于 Android 15 模拟器，尚无预置智能体。"},
+  tablet: {...platforms.android,image:"android-tablet-tabs.png",width:1600,height:2560,caption:"Android alpha.19 · 平板原生标签页 / 模拟器 · 本地测试账号",alt:"Android alpha.19 平板原生右侧标签列表，含账号筛选、搜索和管理入口；背后网页为测试素材，并非真实 ChatGPT 首页。"},
+  assets: {...platforms.android,image:"android-assets.png",caption:"Android alpha.19 · 资产库 / 模拟器 · 本地示例文件",alt:"Android alpha.19 资产库原生截图：独立账号下的本地 HTML 示例文件，带搜索、导入和交给 GPT 入口；采集于 Android 15 模拟器。"},
+  skills: {...platforms.android,image:"android-skills.png",caption:"Android alpha.19 · 120 个 Skill / 模拟器 · 本地示例账号",alt:"Android 客户端能力库实际截图：120 个项目 Skill、原生搜索与任务说明；采集于 Android 15 模拟器，尚无预置智能体。"},
 };
 const tabs = [...document.querySelectorAll("[data-platform]")];
 const image = document.querySelector("#product-image");

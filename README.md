@@ -4,7 +4,7 @@
   <p>独立账号空间 · 沉浸式网页 · 本地文件工作流</p>
   <p><strong>简体中文</strong> · <a href="README.en.md">English</a></p>
   <p>
-    <a href="https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.18"><img alt="Latest prerelease" src="https://img.shields.io/github/v/release/ForceMind/ChatGPT?include_prereleases&amp;sort=semver&amp;label=pre-release&amp;labelColor=171717&amp;color=555555" /></a>
+    <a href="https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.19"><img alt="Latest prerelease" src="https://img.shields.io/github/v/release/ForceMind/ChatGPT?include_prereleases&amp;sort=semver&amp;label=pre-release&amp;labelColor=171717&amp;color=555555" /></a>
     <a href="https://github.com/ForceMind/ChatGPT/actions/workflows/android.yml"><img alt="Android CI" src="https://img.shields.io/github/actions/workflow/status/ForceMind/ChatGPT/android.yml?branch=main&amp;label=Android%20CI&amp;labelColor=171717&amp;color=555555" /></a>
     <img alt="Electron 44.9" src="https://img.shields.io/badge/Electron-44.9-555555?logo=electron&amp;logoColor=white&amp;labelColor=171717" />
     <img alt="Java 17" src="https://img.shields.io/badge/Java-17-555555?labelColor=171717" />
@@ -17,7 +17,7 @@
 
 在独立账号空间中使用 ChatGPT，管理标签与会话，把下载、预览、格式转换和文件处理集中在一个应用里。启动直接进入网页，采用白灰黑界面，没有地址栏；各设备独立登录，无需配置 OpenAI API Key。
 
-> 项目已从 ChatGPT Profiles 更名为 **ChatGPT Studio**。当前三端公开预发布版为 **3.0.0-alpha.18**；下表提供对应的安装包。历史文件名、应用标识和数据目录保留，用于兼容既有登录、加密记录与更新流程。
+> 项目已从 ChatGPT Profiles 更名为 **ChatGPT Studio**。当前 macOS / Windows 公开版为 **3.0.0-alpha.18**，Android 为 **3.0.0-alpha.19**；各平台按下表独立更新。历史文件名、应用标识和数据目录保留，用于兼容既有登录、加密记录与更新流程。
 
 ![macOS 公开版实际窗口（更名前）](docs/images/macos-immersive.png)
 
@@ -66,7 +66,7 @@ flowchart LR
 | --- | --- | --- | --- |
 | macOS · Apple Silicon | 3.0.0-alpha.18 | [DMG](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.18/ChatGPT-Profiles-3.0.0-alpha.18-mac-arm64.dmg) · [ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.18/ChatGPT-Profiles-3.0.0-alpha.18-mac-arm64.zip) | macOS 13+ |
 | Windows · x64 | 3.0.0-alpha.18 | [EXE](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.18/ChatGPT-Profiles-3.0.0-alpha.18-windows-x64-setup.exe) · [免安装 ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.18/ChatGPT-Profiles-3.0.0-alpha.18-windows-x64.zip) | Windows 10 / 11 · 64 位 |
-| Android · 手机 / 平板 | 3.0.0-alpha.18 | [APK](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.18/ChatGPT-Profiles-3.0.0-alpha.18-android.apk) | Android 9+，WebView 支持多档案 |
+| Android · 手机 / 平板 | 3.0.0-alpha.19 | [APK](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.19/ChatGPT-Profiles-3.0.0-alpha.19-android.apk) | Android 9+，WebView 支持多档案 |
 
 **macOS**：打开 DMG，将应用拖入“应用程序”。当前为 ad-hoc 签名，尚未经过 Apple 公证；首次启动被系统阻止时，核对来源和摘要后参阅 [Apple 安装说明](https://support.apple.com/zh-cn/102445)。
 
@@ -80,9 +80,11 @@ flowchart LR
 
 ### 版本与升级
 
-**alpha.18** 统一 App 自有界面的字号与对比度：正文 15、辅助 14、标签至少 13，窄窗详情使用抽屉，文件操作保留清晰入口；恢复 macOS 顶部菜单栏图标，支持显示窗口、切换账号、打开资产 / 能力库和检查更新。
+**Android alpha.19** 仅统一标签管理文案，沿用 alpha.18 的现有布局、入口和功能。顶部计数、管理面板、搜索、新建、固定、重命名和关闭使用“标签页”；ChatGPT 原网页与云端对话保持原样。[Android 构建与原生验证记录](docs/releases/3.0.0-alpha.19-android.json)。
 
-Android 默认进入网页，顶部仅保留账号、对话和更多；按需展开可搜索的对话清单，支持重命名、固定、排序、关闭和最近关闭恢复。主页移除浏览器式底栏，普通菜单移除开发诊断。App 前台切换已载入页面会复用同一网页、草稿、滚动和生成上下文，无需开启后台服务；窗口重建保留原页面，进程终止后需加载一次再恢复已保存草稿与阅读位置。安装包、源码、签名与验证范围见[发布索引](docs/releases/3.0.0-alpha.18.json)。
+**桌面 alpha.18** 统一 App 自有界面的字号与对比度：正文 15、辅助 14、标签至少 13，窄窗详情使用抽屉，文件操作保留清晰入口；恢复 macOS 顶部菜单栏图标，支持显示窗口、切换账号、打开资产 / 能力库和检查更新。
+
+Android 默认进入网页，顶部仅保留账号、标签和更多；按需展开可搜索的标签清单，支持重命名、固定、排序、关闭和最近关闭恢复。主页移除浏览器式底栏，普通菜单移除开发诊断。App 前台切换已载入页面会复用同一网页、草稿、滚动和生成上下文，无需开启后台服务；窗口重建保留原页面，进程终止后需加载一次再恢复已保存草稿与阅读位置。桌面安装包、源码和签名见[alpha.18 发布索引](docs/releases/3.0.0-alpha.18.json)，Android 见[alpha.19 记录](docs/releases/3.0.0-alpha.19-android.json)。
 
 Mac 从 alpha.12 起支持启动与每天上海时间 12:00 检查更新，确认后后台下载、校验完整 ZIP，可选择立即、下次退出或应用空闲时安装。原生程序更新需要重启，暂不支持增量更新；Windows / Android 当前手动升级。
 
@@ -141,7 +143,7 @@ Android 点击底部标签数量打开总览。“更多 → 保活与诊断”�
 | Windows | 62 项适用单元、14 项适用界面流程，安装 / 退出 / 卸载保留数据 |
 | Android | 66 项单元、手机 4 / 平板 4 项原生流程；兼容内核下 3 账号 / 8 页运行 330 秒、锁屏 / Doze / 断网后返回及实际进程重启恢复 |
 
-Android 矩阵覆盖 API28–36 的实际预装 WebView 组合。Android 12L / 15 / 16 的兼容内核通过完整流程；六组旧预装内核只验证“不支持多档案时提示更新”，不计为保活通过。系统版本与 WebView 版本须一起判断，详细条件见 [alpha.17 系统兼容记录](docs/releases/3.0.0-alpha.17-native-ci.json)；alpha.18 的新界面与前台复用见[当前验收索引](docs/releases/3.0.0-alpha.18-ci.json)。
+Android 矩阵覆盖 API28–36 的实际预装 WebView 组合。Android 12L / 15 / 16 的兼容内核通过完整流程；六组旧预装内核只验证“不支持多档案时提示更新”，不计为保活通过。系统版本与 WebView 版本须一起判断，详细条件见 [alpha.17 系统兼容记录](docs/releases/3.0.0-alpha.17-native-ci.json)；alpha.18 的新界面与前台复用见[alpha.18 验收索引](docs/releases/3.0.0-alpha.18-ci.json)。
 
 8 页合成负载的模拟器后台末段 PSS 合计约 **234–284 MiB**，各组 3 个短 CPU 样本的范围约 **1.9–5.8% 单核**。包含应用、WebView 沙箱渲染器和调试流负载，不能替代真实 ChatGPT 或实机测量，也不能与不同负载的桌面数据直接比较。
 
@@ -195,6 +197,7 @@ cd android
 | --- | --- | --- |
 | 待人工验收 | Mac 真实账号的附件上传、首条消息与一次发送 | 用户稍后验收；隔离回归已通过 |
 | 待人工验收 | Android 实际首页、真实账号 / 登录、语音与文件流程 | 官网展示原生标签 / 平板 / 资产 / Skill 测试界面，实站另验 |
+| 已发布 | Android alpha.19 最小文案统一 | 布局与功能沿用；[发布与线上记录](docs/releases/3.0.0-alpha.19-publication.json) |
 | 已发布 | alpha.18 三端包、沉浸式 Android、清晰字号与 Mac 菜单栏 | 下载、官网与 Mac 更新清单同步；[发布与线上验证记录](docs/releases/3.0.0-alpha.18-publication.json) |
 | 平台迭代 | Windows 离线快照 / 自动更新，Android 完整离线快照 | 后续批次 |
 | 环境隔离 | Android 每账号语言 / 时区从独立 PoC 迁入日常客户端 | 路线验证完成，尚未替换普通内核 |

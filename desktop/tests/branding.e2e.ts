@@ -38,11 +38,20 @@ test('Studio website renders canonical pages and preserves legacy update feeds',
  const origin=publicOrigin||'http://127.0.0.1:'+address.port,entry=path.join(root,'main.cjs');
  const feed=JSON.parse(readFileSync(path.join(site,'updates/macos.json'),'utf8'));expect(validManifest(feed)).toBe(true);
  const release=JSON.parse(readFileSync(path.join(desktop,'../docs/releases',feed.version+'.json'),'utf8'));
+ const androidVersion=readFileSync(path.join(site,'index.html'),'utf8').match(/<article\b[^>]*data-os="android"[^>]*>[\s\S]*?<span class="version">v([^<]+)<\/span>/)?.[1];
+ expect(androidVersion).toMatch(/^\d+\.\d+\.\d+-alpha\.\d+$/);
+ const android=JSON.parse(readFileSync(path.join(desktop,'../docs/releases',androidVersion+'-android.json'),'utf8'));
+ expect(android.version).toBe(androidVersion);
+ release.artifacts=release.artifacts.filter((item:{platform:string})=>item.platform!=='android').concat({...android.artifact,platform:'android',url:'https://github.com/ForceMind/ChatGPT/releases/download/v'+android.version+'/'+android.artifact.file});
+ expect(release.artifacts).toHaveLength(5);
+ const platformVersions={macos:feed.version,windows:feed.version,android:android.version};
  writeFileSync(entry,"const {app,BrowserWindow}=require('electron');require('node:fs').mkdirSync(process.env.STUDIO_SITE_DATA,{recursive:true});app.setPath('userData',process.env.STUDIO_SITE_DATA);app.whenReady().then(()=>{const win=new BrowserWindow({width:1440,height:1000,webPreferences:{sandbox:true,contextIsolation:true,nodeIntegration:false}});win.loadURL(process.env.STUDIO_SITE_ORIGIN)});");
  try{
   app=await electron.launch({args:[entry],env:{...process.env,STUDIO_SITE_DATA:path.join(root,'data'),STUDIO_SITE_ORIGIN:origin}});const page=await app.firstWindow();const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
   await expect(page).toHaveTitle(/ChatGPT Studio/);await expect(page.getByRole('link',{name:'ChatGPT Studio 首页',exact:true})).toBeVisible();
   await expect(page.locator('.hero-build')).toContainText(feed.version);
+  await expect(page.locator('.hero-build')).toContainText(android.version);
+  for(const [platform,version] of Object.entries(platformVersions))await expect(page.locator('article[data-os="'+platform+'"] .version')).toHaveText('v'+version);
   const canonical='https://chatgpt-studio.pages.dev';
   if(publicOrigin){
    await expect.poll(()=>new URL(page.url()).origin).toBe(canonical);
@@ -76,7 +85,7 @@ test('Studio website renders canonical pages and preserves legacy update feeds',
   await page.screenshot({path:info.outputPath('studio-downloads-1440.png')});
   const remoteFeed=await app.evaluate(async({session},origin)=>{const response=await session.fromPartition('studio-feed-public-check').fetch(origin+'/updates/macos.json',{credentials:'omit',redirect:'error',headers:{Accept:'application/json'}});return{status:response.status,contentType:response.headers.get('content-type'),text:await response.text()};},origin);
   expect(remoteFeed.status).toBe(200);expect(remoteFeed.contentType).toContain('application/json');expect(JSON.parse(remoteFeed.text)).toEqual(feed);
-  writeFileSync(info.outputPath('site-verification.json'),JSON.stringify({origin,landedOrigin:new URL(page.url()).origin,version:feed.version,downloadFiles:release.artifacts.length,acceleratedFiles:release.artifacts.length,widths:[1440,390],checksumCopy:true,credentiallessElectronFeed:true,legacyPageRedirect:!!publicOrigin&&publicOrigin!==canonical,errors}));
+  writeFileSync(info.outputPath('site-verification.json'),JSON.stringify({origin,landedOrigin:new URL(page.url()).origin,platformVersions,macosUpdateVersion:feed.version,downloadFiles:release.artifacts.length,acceleratedFiles:release.artifacts.length,widths:[1440,390],checksumCopy:true,credentiallessElectronFeed:true,legacyPageRedirect:!!publicOrigin&&publicOrigin!==canonical,errors}));
   expect(errors).toEqual([]);
  }finally{await app?.close().catch(()=>{});server.closeAllConnections();await new Promise<void>(r=>server.close(()=>r()));rmSync(root,{recursive:true,force:true});}
 });
