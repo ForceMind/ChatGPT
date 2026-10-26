@@ -72,6 +72,8 @@ Devices do not synchronize sign-in credentials. Alternative Android engines rema
 
 The [website](https://chatgpt-studio.pages.dev/) provides GitHub downloads and optional third-party acceleration links. Compare downloads with `SHA256SUMS.txt` in the Release. The current version is a **prerelease**; stable-only tools may report no Latest release. The version badge above includes prereleases, and the table links directly to the published assets.
 
+For the Android Studio filename, use [SHA256SUMS-studio.txt](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.19/SHA256SUMS-studio.txt). The legacy filename and checksum remain available; both APKs contain the same signed bytes.
+
 ### Android alpha.19
 
 This update only makes tab terminology consistent. Account controls, layout, navigation, the original ChatGPT webpage and runtime behavior are retained from alpha.18. Tab counts, management, search, new tabs, pinning, renaming and closing now use tab labels. See the [Android build/native verification record](docs/releases/3.0.0-alpha.19-android.json).

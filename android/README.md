@@ -6,6 +6,8 @@
 
 下载：[Android APK](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.19/ChatGPT-Studio-3.0.0-alpha.19-android.apk) · [Release](https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.19)。普通 APK 的业务内核与数据目录保持，未加入 Gecko；每账号浏览器语言和时区尚未迁入。[独立环境 PoC](environment-poc/README.md)只验证研发路线，不是普通客户端下载版本。完整页面快照和离线阅读属于后续计划。
 
+当前 Studio 文件名的校验清单为 [SHA256SUMS-studio.txt](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.19/SHA256SUMS-studio.txt)。以下保留各批次能力及验证记录。
+
 ## alpha.17 标签管理与后台任务
 
 原生界面采用顶部账号身份和底部操作栏，没有地址栏。点击底部标签数量打开总览，手机为两列卡片、平板为三列；支持账号筛选、搜索、固定、重命名、前后排序、关闭、撤销和最近关闭。每张卡片标明所属账号。缩略图只保留最多 20 张小型内存副本；从未载入的页面按需打开，不为了预览提前启动所有网页。
