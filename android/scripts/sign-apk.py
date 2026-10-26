@@ -43,7 +43,7 @@ with zipfile.ZipFile(source) as archive, source.open("rb") as raw:
         if offset % alignment:
             raise SystemExit("APK requires zipalign before signing: " + entry.filename)
 properties = dict(line.split("=", 1) for line in (root / "keystore.properties").read_text().splitlines() if "=" in line and not line.startswith("#"))
-output = Path(os.environ.get("APK_OUTPUT_DIR", str(root / "release"))) / ("ChatGPT-Profiles-" + version + "-android.apk")
+output = Path(os.environ.get("APK_OUTPUT_DIR", str(root / "release"))) / ("ChatGPT-Studio-" + version + "-android.apk")
 output.parent.mkdir(parents=True, exist_ok=True)
 if output.exists():
     raise SystemExit("Output already exists; choose APK_OUTPUT_DIR rather than overwriting an existing package.")

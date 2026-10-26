@@ -1,0 +1,60 @@
+name: Publish Android Studio download filename
+on:
+  workflow_dispatch:
+  push:
+    branches: ['codex/macos-assets-workbench']
+    paths: ['.github/workflows/android-studio-download.yml']
+permissions:
+  contents: write
+concurrency:
+  group: android-alpha19-studio-download
+  cancel-in-progress: false
+jobs:
+  rename-download:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Publish verified bytes under the Studio filename
+        run: |
+          python3 - <<'PY'
+          import subprocess,json,pathlib,hashlib,os
+          repo=os.environ['GH_REPO'];tag='v3.0.0-alpha.19'
+          root=pathlib.Path(os.environ['RUNNER_TEMP'])/'studio-download';root.mkdir()
+          old='ChatGPT-Profiles-3.0.0-alpha.19-android.apk'
+          new='ChatGPT-Studio-3.0.0-alpha.19-android.apk'
+          expected='0e65cd85162b6cbab005e5d571e9856f91fc7dae1d2b4437426cebd85bc9e47f'
+          def gh(*args):
+              return subprocess.check_output(['gh',*args],text=True)
+          def release():
+              value=json.loads(gh('api',f'repos/{repo}/releases/tags/{tag}'))
+              assert value['id']==423861858 and not value['draft'] and value['prerelease']
+              assert value['target_commitish']=='cfd2ed667fbc6c8fcf44f9a0854b2b97e1a52c1b'
+              return value
+          initial=release();legacy=next(a for a in initial['assets'] if a['name']==old)
+          assert legacy['size']==7335383 and legacy['digest']=='sha256:'+expected
+          gh('release','download',tag,'--repo',repo,'--pattern',old,'--dir',str(root))
+          body=(root/old).read_bytes();assert len(body)==7335383 and hashlib.sha256(body).hexdigest()==expected
+          (root/new).write_bytes(body)
+          checksum='SHA256SUMS-studio.txt';(root/checksum).write_text(expected+'  '+new+'\n')
+          for name in [new,checksum]:
+              current=release();existing=next((a for a in current['assets'] if a['name']==name),None)
+              size=(root/name).stat().st_size;digest='sha256:'+hashlib.sha256((root/name).read_bytes()).hexdigest()
+              if existing:assert existing['size']==size and existing['digest']==digest
+              else:gh('release','upload',tag,str(root/name),'--repo',repo)
+          final=release();alias=next(a for a in final['assets'] if a['name']==new)
+          assert alias['size']==7335383 and alias['digest']=='sha256:'+expected
+          assert next(a for a in final['assets'] if a['name']==old)['digest']==legacy['digest']
+          for asset,label in [(legacy,'Legacy filename - retained for existing links'),(alias,'ChatGPT Studio Android APK')]:
+              gh('api','--method','PATCH',f'repos/{repo}/releases/assets/{asset["id"]}','-f','label='+label)
+          receipt={'version':'3.0.0-alpha.19','releaseId':final['id'],'originalSourceCommit':final['target_commitish'],'aliasWorkflowCommit':os.environ['GITHUB_SHA'],'legacyFile':old,'file':new,'url':alias['browser_download_url'],'bytes':alias['size'],'sha256':expected,'assetId':alias['id'],'legacyAssetId':legacy['id'],'signatureAndApplicationIdentityUnchanged':True,'binaryRebuilt':False,'checksumFile':checksum}
+          (root/'distribution.json').write_text(json.dumps(receipt,indent=2)+'\n')
+          print(json.dumps(receipt))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-studio-distribution
+          path: ${{ runner.temp }}/studio-download/distribution.json
+          retention-days: 30
