@@ -24,7 +24,9 @@ test('original role library keeps internet priority, runs an agent-only task onc
   let shell=await launch();const initial=await shell.evaluate(()=>window.profiles.snapshot());
   await shell.getByRole('button',{name:'能力库',exact:true}).click();await shell.locator('#wb-agents-nav').click();
   const grid=shell.locator('#wb-capability-grid'),cards=grid.locator('[data-capability]');await expect(cards).toHaveCount(32);
-  await expect(shell.locator('#wb-agents-nav')).toContainText('32');await expect(shell.locator('#wb-skills-nav')).toContainText('121');
+  await expect(shell.locator('#wb-agents-nav [data-capability-count="agents"]')).toHaveText('32');await expect(shell.locator('#wb-skills-nav [data-capability-count="skills"]')).toHaveText('121');
+  expect(await shell.locator('[data-capability-count="skills"]').allTextContents()).toEqual(['121','121']);expect(await shell.locator('[data-capability-count="agents"]').allTextContents()).toEqual(['32','32']);
+  await expect(shell.locator('#wb-agents-nav [data-icon="agents"] svg')).toHaveCount(1);await expect(shell.locator('#wb-skills-nav [data-icon="sparkles"] svg')).toHaveCount(1);
   const priority=await cards.evaluateAll(items=>items.map(item=>item.getAttribute('data-priority')));expect(priority.slice(0,24)).toEqual(Array(24).fill('true'));expect(priority.slice(24)).toEqual(Array(8).fill('false'));
   await shell.locator('[data-capability-favorite="studio-agent-025"]').click();
   expect((await cards.first().getAttribute('data-priority'))).toBe('true');
