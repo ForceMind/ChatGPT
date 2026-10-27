@@ -338,13 +338,13 @@ function ensureView(tab: Tab): WebContentsView {
   const ready=prepared.then(async()=>{
    if(!stillCurrent()||c.isDestroyed())return;
    if(recovery){try{const record=await recovery.load(tab.profileId,tab.id,tab.url);if(stillCurrent()&&record?.page){savedPages.set(tab.id,record.page);offlinePages.set(tab.id,record.page);layout();publish();}}catch(error){report(error);}}
-   if(!stillCurrent()||c.isDestroyed())return;await c.loadURL(tab.url);if(!stillCurrent()||c.isDestroyed())return;
-   if(desktopWorkspace){store.commit(s=>{const t=s.tabs.find(t=>t.id===tab.id);if(t)t.loaded=true;});await restoreTab(tab,c);}
+   if(!stillCurrent()||c.isDestroyed())return;await c.loadURL(tab.url);if(!stillCurrent()||c.isDestroyed()||reloadRecoveries.has(tab.id))return;
+   if(desktopWorkspace){store.commit(s=>{const t=s.tabs.find(t=>t.id===tab.id);if(t)t.loaded=true;});await restoreTab(tab,c,()=>stillCurrent()&&!reloadRecoveries.has(tab.id));}
    if(stillCurrent()&&!c.isDestroyed()){
     const usable=await c.executeJavaScript(`!!document.querySelector('[data-message-id],[data-message-author-role],#prompt-textarea,input[type="password"]')`);
     if(usable||resumeURL(c.getURL(),fixtureOrigin)!==resumeURL(tab.url,fixtureOrigin)){offlinePages.delete(tab.id);layout();publish();}
    }
-  }).catch(error=>update({loading:false,error:error.message})).finally(()=>{if(views.get(tab.id)===view)restoringPages.delete(tab.id);});pageReady.set(tab.id,ready);
+  }).catch(error=>{if(!reloadRecoveries.has(tab.id))update({loading:false,error:error.message});}).finally(()=>{if(views.get(tab.id)===view&&!reloadRecoveries.has(tab.id))restoringPages.delete(tab.id);});pageReady.set(tab.id,ready);
   layout();
   return view;
 }
@@ -401,12 +401,12 @@ async function forceReloadTab(id:string):Promise<void>{
  const tab=store.read().tabs.find(t=>t.id===id&&t.profileId===activeProfile().id);if(!tab)throw Error('标签不属于当前账号');
  await checkpointTab(id);reloadRecoveries.get(id)?.cancel();
  const contents=views.get(id)?.webContents;
- if(!contents||contents.isDestroyed()||contents.isCrashed()||!isWebURL(contents.getURL())){destroyView(id);ensureView(tab);layout();return;}
- const current=():boolean=>reloadRecoveries.get(id)===task&&views.get(id)?.webContents===contents&&!pendingProfiles.has(tab.profileId)&&store.read().tabs.some(t=>t.id===id&&t.profileId===tab.profileId);
+ if(!contents||contents.isDestroyed()||contents.isCrashed()||!isAllowedURL(contents.getURL(),fixtureOrigin)){destroyView(id);ensureView(tab);layout();return;}
+ const current=():boolean=>reloadRecoveries.get(id)===task&&views.get(id)?.webContents===contents&&!pendingProfiles.has(tab.profileId)&&[...store.read().tabs,...store.read().closedTabs].some(t=>t.id===id&&t.profileId===tab.profileId);
  const cleanup=():void=>{clearTimeout(timer);contents.removeListener('did-finish-load',finished);contents.removeListener('did-fail-load',failed);contents.removeListener('destroyed',cleanup);contents.removeListener('render-process-gone',cleanup);if(reloadRecoveries.get(id)===task){reloadRecoveries.delete(id);restoringPages.delete(id);}};
  const task={cancel:cleanup};
  const finished=():void=>{void(async()=>{
-  try{if(!current())return;await restoreTab(tab,contents,current);if(!current())return;
+  try{if(!current())return;store.commit(s=>{const t=[...s.tabs,...s.closedTabs].find(t=>t.id===id);if(t)t.loaded=true;});await restoreTab(tab,contents,current);if(!current())return;
    const usable=await contents.executeJavaScript(`!!document.querySelector('[data-message-id],[data-message-author-role],#prompt-textarea,input[type="password"]')`);
    if(current()&&(usable||resumeURL(contents.getURL(),fixtureOrigin)!==resumeURL(tab.url,fixtureOrigin))){offlinePages.delete(id);layout();publish();}
    if(current()&&id===activeProfile().activeTabId&&!overlayOpen&&!panel)contents.focus();
