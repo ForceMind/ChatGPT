@@ -6,6 +6,14 @@ on:
         type: string
         required: false
         default: '[28,35]'
+      managed:
+        type: boolean
+        required: false
+        default: false
+      core_only:
+        type: boolean
+        required: false
+        default: false
 permissions:
   contents: read
 jobs:
@@ -104,7 +112,15 @@ jobs:
             adb shell pm disable-user --user 0 com.google.android.apps.nexuslauncher
           fi
           adb install environment-poc/build/outputs/apk/debug/environment-poc-x86_64-debug.apk
-          timeout 900 python3 -u scripts/recovery-environment-poc.py environment-poc/build/recovery-evidence
+          if [ "${{ inputs.managed }}" = true ]; then
+            if [ "${{ inputs.core_only }}" = true ]; then
+              timeout 900 python3 -u scripts/managed-recovery-poc.py environment-poc/build/recovery-evidence --core
+            else
+              timeout 1200 python3 -u scripts/managed-recovery-poc.py environment-poc/build/recovery-evidence
+            fi
+          else
+            timeout 900 python3 -u scripts/recovery-environment-poc.py environment-poc/build/recovery-evidence
+          fi
       - name: Record measurement status
         if: always()
         working-directory: android
@@ -112,17 +128,19 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           import json,os
-          p=Path('environment-poc/build/recovery-evidence/recovery-report.json')
+          p=Path('environment-poc/build/recovery-evidence')/('managed-report.json' if '${{ inputs.managed }}'=='true' else 'recovery-report.json')
           r=json.loads(p.read_text()) if p.exists() else {}
           with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as out:
               out.write('## Independent recovery PoC, API '+os.environ['RECOVERY_API']+'\n\n')
-              out.write('Measurements complete: '+str(r.get('experimentComplete',False))+'\n\nNative migration ready: '+str(r.get('nativeRecoveryReady',False))+'\n\n')
+              out.write('Managed scope: '+str(r.get('scope','native baseline'))+'\n\n')
+              out.write('Measurements complete: '+str(r.get('experimentComplete',False))+'\n\nMeasured recovery gates passed: '+str(r.get('managedControllerReady',r.get('nativeRecoveryReady',False)))+'\n\n')
+              out.write('Formal migration ready: '+str(r.get('formalMigrationReady',False))+'\n\n')
               out.write('No production app, login data, signing key or public release was used. Native capability gaps fail the migration gate; see the report.\n')
           PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: android-recovery-poc-api-${{ matrix.api }}
+          name: ${{ inputs.managed && 'android-managed-recovery' || 'android-recovery-poc' }}-api-${{ matrix.api }}
           retention-days: 14
           path: |
             android/environment-poc/build/recovery-evidence/

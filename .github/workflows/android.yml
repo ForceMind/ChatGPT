@@ -78,6 +78,14 @@ on:
         description: Measure standalone native page recovery on Android 9 and Android 15
         type: boolean
         default: false
+      managed_recovery_poc:
+        description: Verify independent app-owned draft, offline snapshot and conflict recovery
+        type: boolean
+        default: false
+      managed_recovery_core:
+        description: Run the single-account managed recovery core before the full matrix
+        type: boolean
+        default: false
       recovery_poc_apis:
         description: Standalone recovery emulator APIs; 28 and 35 only
         type: string
@@ -98,7 +106,7 @@ permissions:
   contents: read
 jobs:
   build:
-    if: github.event_name != 'workflow_dispatch' || (!inputs.device_only && !inputs.standalone_environment_poc && !inputs.grouped_environment_poc && !inputs.grouped_clear_only && !inputs.recovery_environment_poc && !inputs.lifecycle_only)
+    if: github.event_name != 'workflow_dispatch' || (!inputs.device_only && !inputs.standalone_environment_poc && !inputs.grouped_environment_poc && !inputs.grouped_clear_only && !inputs.recovery_environment_poc && !inputs.managed_recovery_poc && !inputs.lifecycle_only)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -137,7 +145,7 @@ jobs:
             android/app/build/reports/
             android/app/build/test-results/
   device:
-    if: github.event_name == 'workflow_dispatch' && inputs.run_device_tests && !inputs.standalone_environment_poc && !inputs.grouped_environment_poc && !inputs.grouped_clear_only && !inputs.recovery_environment_poc && !inputs.lifecycle_only
+    if: github.event_name == 'workflow_dispatch' && inputs.run_device_tests && !inputs.standalone_environment_poc && !inputs.grouped_environment_poc && !inputs.grouped_clear_only && !inputs.recovery_environment_poc && !inputs.managed_recovery_poc && !inputs.lifecycle_only
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
@@ -292,10 +300,12 @@ jobs:
       grouped: ${{ inputs.grouped_environment_poc || inputs.grouped_clear_only }}
       clear_only: ${{ inputs.grouped_clear_only }}
   recovery-poc:
-    if: github.event_name == 'workflow_dispatch' && inputs.recovery_environment_poc
+    if: github.event_name == 'workflow_dispatch' && (inputs.recovery_environment_poc || inputs.managed_recovery_poc)
     uses: ./.github/workflows/android-recovery-poc.yml
     with:
       apis: ${{ inputs.recovery_poc_apis || '[28,35]' }}
+      managed: ${{ inputs.managed_recovery_poc }}
+      core_only: ${{ inputs.managed_recovery_core }}
   lifecycle:
     if: github.event_name == 'workflow_dispatch' && inputs.lifecycle_only
     runs-on: ubuntu-latest

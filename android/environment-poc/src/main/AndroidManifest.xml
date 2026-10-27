@@ -15,5 +15,8 @@
         <activity android:name=".RecoveryAActivity" android:exported="true" android:launchMode="singleTask" />
         <activity android:name=".RecoveryBActivity" android:process=":recovery_b" android:exported="false" android:launchMode="singleTask" />
         <activity android:name=".RecoveryCActivity" android:exported="false" android:launchMode="singleTask" />
+        <activity android:name=".ManagedAActivity" android:exported="true" android:launchMode="singleTask" android:taskAffinity="com.forcemind.chatgpt.environmentpoc.managed.a" />
+        <activity android:name=".ManagedBActivity" android:process=":managed_b" android:exported="true" android:launchMode="singleTask" android:taskAffinity="com.forcemind.chatgpt.environmentpoc.managed.b" />
+        <activity android:name=".ManagedCActivity" android:exported="true" android:launchMode="singleTask" android:taskAffinity="com.forcemind.chatgpt.environmentpoc.managed.c" />
     </application>
 </manifest>

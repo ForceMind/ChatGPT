@@ -234,116 +234,117 @@ def guard():
         answer=text('shell','run-as',PACKAGE,'sh','-c',"'if [ -e files/"+name+" ]; then echo PRESENT; else echo ABSENT; fi'",check=False)
         if answer!='ABSENT':raise SystemExit('Experiment directory safety state not confirmed: '+name)
 
-guard();report={'sourceSha':os.environ.get('GITHUB_SHA'),'runId':os.environ.get('GITHUB_RUN_ID'),'scope':'Independent native Gecko session-state measurements on synthetic loopback pages. No production data. Missing native capabilities are failures of migration readiness, not filled in by fixture scripts.',
-    'inputMode':'Android InputConnection on its own handler; AVD hardware keyboard, software IME hidden before page gestures','api':text('shell','getprop','ro.build.version.sdk'),'deviceAbi':text('shell','getprop','ro.product.cpu.abi'),'systemBefore':{'locale':text('shell','getprop','persist.sys.locale'),'timeZone':text('shell','getprop','persist.sys.timezone')},'cases':{}}
-server=ThreadingHTTPServer(('127.0.0.1',8765),Handler);threading.Thread(target=server.serve_forever,daemon=True).start();text('reverse','tcp:8765','tcp:8765')
-def expired(_signal,_frame):raise TimeoutError('Recovery experiment time limit reached')
-signal.signal(signal.SIGTERM,expired)
-failure=None
-try:
-    print('1/7 Seed four real pages via Android input connection and page scroll',flush=True)
-    launch('A',tabs=2)
-    for t in ('0','1'):wait(lambda t=t:latest('A',t,phase),90,label='initial A page '+t)
-    for a in ('C','B'):
-        launch(a);wait(lambda a=a:latest(a,'0',phase),90,label='initial '+a+' page')
-    baseline={a+':'+t:seed(a,t) for a,t in TABS}
-    select('A','1');checkpoint('A');checkpoint('B')
-    launch('A','freeze');wait(lambda:adb('exec-out','run-as',PACKAGE,'cat','files/recovery-records/measurement-frozen',check=False)==b'\x01',label='explicit saved-baseline freeze')
-    report['baseline']={'observations':baseline,'native':{a:native(a) for a in ('A','B','C')}}
-    report['baseline']['sameAccountSharedStorage']=baseline['A:0']['owner']==baseline['A:1']['owner']
-    report['baseline']['differentAccountStorage']=len({baseline[a+':0']['owner']['token'] for a in ('A','B','C')})==3
-    originals={a+'-'+t+'.bin':private(a+'-'+t+'.bin') for a,t in TABS}
-    report['encryptedRecords']={name:{'bytes':len(value),'sha256':hashlib.sha256(value).hexdigest(),'noDraftPlaintext':all(marker.encode() not in value for marker in markers.values())} for name,value in originals.items()}
-    if not all(r['noDraftPlaintext'] for r in report['encryptedRecords'].values()):raise RuntimeError('Synthetic record encryption check failed')
-
-    print('2/7 Activity recreation must reuse live sessions',flush=True)
-    old={k:v['document'] for k,v in baseline.items()};started=time.monotonic();launch('A','recreate')
-    after={a+':'+t:wait(lambda a=a,t=t:fresh(a,t,phase,started),label='live after recreation') for a,t in TABS}
-    report['cases']['activityRecreation']={'sameDocuments':all(after[k]['document']==old[k] for k in old),'draftsUnchanged':all(after[k]['standard']==markers[k] and after[k]['rich']==markers[k] for k in old)}
-    capture('recovery-seeded')
-
-    print('3/7 Normal save/close then app-owned session restoration',flush=True)
-    checkpoint('B',True);checkpoint('A',True)
-    normal,normal_rows=observe_restore('normal-close',baseline);report['cases']['normalClose']=normal
-    select('A','0');launch('A','back');back=wait(lambda:(lambda r:r if r and r['page']=='start' else None)(latest('A','0',phase)),label='restored browser back history')
-    launch('A','forward');forward=wait(lambda:(lambda r:r if r and r['page']=='detail' else None)(latest('A','0',phase)),label='restored browser forward history')
-    report['cases']['history']={'backPage':back['page'],'forwardPage':forward['page']}
-    capture('normal-native-restoration')
-
-    print('4/7 Real force-stop, no shutdown callback or script-provided restore URL',flush=True)
-    old_pids=stop();force_reference={key:{**baseline[key],'document':normal_rows[key]['document']} for key in baseline};restart,restart_rows=observe_restore('force-stop',force_reference);restart['oldPids']=old_pids;restart['newPid']=str(native('A').get('pid'));restart['newProcess']=restart['newPid'] not in old_pids
-    report['cases']['forceStop']=restart
-
-    print('5/7 Disconnect loopback transport, restore offline, then reconnect',flush=True)
-    offline_account=saved_account();offline_tab='1' if offline_account=='A' else '0';stop();phase='offline';text('reverse','--remove','tcp:8765');started=time.monotonic();launch();time.sleep(8)
-    report['cases']['offline']={'account':offline_account,'tab':offline_tab,'native':native(offline_account),'pageEvents':sum(e['phase']=='offline' for e in events),'httpRequests':sum(e['phase']=='offline' for e in requests),'contentRecovered':any(e['phase']=='offline' and e['page']=='detail' for e in events),'transportRemoved':True}
-    capture('native-offline-restoration')
-    root=ET.fromstring((OUT/'native-offline-restoration.xml').read_bytes());labels=' '.join(n.get('text','')+' '+n.get('content-desc','') for n in root.iter('node'))
-    report['cases']['offline']['contentRecovered']='合成对话' in labels
-    report['cases']['offline']['contentEvidence']='Android accessibility tree plus native-offline-restoration.png; lack of offline network reports alone is not treated as proof.'
-    text('reverse','tcp:8765','tcp:8765');phase='reconnected';launch(offline_account,'retry')
-    reconnected=wait(lambda:latest(offline_account,offline_tab,'reconnected'),label='explicit retry after reconnect');report['cases']['offline']['reconnectedPage']=reconnected['page']
-
-    print('6/7 Existing webpage draft conflict; observe whether native restore overwrites it',flush=True)
-    stop();phase='draft-conflict';conflict=True;started=time.monotonic();launch('A')
-    row=wait(lambda:fresh('A','0',phase,started),label='conflicting restored page')
-    # Observe through a bounded settling window: a later form restore must not be missed.
-    time.sleep(4);row=latest('A','0',phase)
-    report['cases']['draftConflict']={'serverDraft':current_draft,'previousDraft':markers['A:0'],'observedStandard':row['standard'],'observedRich':row['rich'],
-        'standardCurrentPreserved':row['standard']==current_draft,'richCurrentPreserved':row['rich']==current_draft,
-        'standardOverwroteCurrent':row['standard']==markers['A:0'],'richOverwroteCurrent':row['rich']==markers['A:0']}
-    select('A','0');capture('native-draft-conflict')
-
-    print('7/7 Reject damaged or account-swapped encrypted records; preserve originals',flush=True)
-    stop();phase='damaged-record';conflict=False;damaged=bytearray(originals['A-0.bin']);damaged[-1]^=1;private_write('A-0.bin',bytes(damaged));launch('A')
-    rejected=wait(lambda:(lambda n:n if any(t['index']=='0' and t['blocked'] for t in n.get('tabs',[])) else None)(native('A')),label='damaged encrypted state rejection')
-    report['cases']['damagedRecord']={'blocked':True,'bytesPreserved':private('A-0.bin')==bytes(damaged),'native':rejected}
-    stop();phase='swapped-record';private_write('C-0.bin',originals['A-0.bin']);launch('C')
-    rejected=wait(lambda:(lambda n:n if any(t['index']=='0' and t['blocked'] for t in n.get('tabs',[])) else None)(native('C')),label='foreign account record rejection')
-    report['cases']['swappedRecord']={'blocked':True,'bytesPreserved':private('C-0.bin')==originals['A-0.bin'],'native':rejected}
-    report['experimentComplete']=True
-except Exception as error:
-    failure=str(error);report['failure']=failure;print('Recovery experiment failed:',failure,flush=True)
+if __name__ == "__main__":
+    guard();report={'sourceSha':os.environ.get('GITHUB_SHA'),'runId':os.environ.get('GITHUB_RUN_ID'),'scope':'Independent native Gecko session-state measurements on synthetic loopback pages. No production data. Missing native capabilities are failures of migration readiness, not filled in by fixture scripts.',
+        'inputMode':'Android InputConnection on its own handler; AVD hardware keyboard, software IME hidden before page gestures','api':text('shell','getprop','ro.build.version.sdk'),'deviceAbi':text('shell','getprop','ro.product.cpu.abi'),'systemBefore':{'locale':text('shell','getprop','persist.sys.locale'),'timeZone':text('shell','getprop','persist.sys.timezone')},'cases':{}}
+    server=ThreadingHTTPServer(('127.0.0.1',8765),Handler);threading.Thread(target=server.serve_forever,daemon=True).start();text('reverse','tcp:8765','tcp:8765')
+    def expired(_signal,_frame):raise TimeoutError('Recovery experiment time limit reached')
+    signal.signal(signal.SIGTERM,expired)
+    failure=None
     try:
-        capture('failure')
-        (OUT/'failure-activities.txt').write_text(text('shell','dumpsys','activity','activities',check=False))
-    except (OSError,subprocess.SubprocessError) as diagnostic:report['diagnosticFailure']=str(diagnostic)
-finally:
-    report['submissions']=submissions;report['noAutomaticSubmission']=not submissions
-    report['scrollSamples']=scroll_samples
-    report['checkpointReceipts']=checkpoint_receipts
-    report['processStops']=process_stops
-    report['systemAfter']={'locale':text('shell','getprop','persist.sys.locale'),'timeZone':text('shell','getprop','persist.sys.timezone')};report['systemUnchanged']=report['systemAfter']==report['systemBefore']
-    isolation_errors=[]
-    for row in events:
-        a=row['account'];expected_lang='en-US' if a=='B' else 'zh-CN';expected_zone='America/New_York' if a=='B' else 'Asia/Shanghai'
-        if row.get('language')!=expected_lang or row.get('timeZone')!=expected_zone or row.get('owner',{}).get('owner')!=a or not row.get('acceptLanguage','').lower().startswith(expected_lang.lower()) or any(x!=a for x in re.findall(r'(?:^|;\s*)recovery-owner=([^;]*)',row.get('requestCookie',''))):isolation_errors.append({'account':a,'tab':row['tab'],'phase':row['phase'],'document':row['document']})
-    report['isolationErrors']=isolation_errors
-    log=text('logcat','-d',check=False,timeout=30);(OUT/'runtime.log').write_text(log)
-    report['engineSignals']={'sessionStoreWindowNull':sum('WindowEventDispatcher", win is null' in line for line in log.splitlines()),'stateUpdateNoListener':sum('No listener for GeckoView:StateUpdated' in line for line in log.splitlines()),'fatalExceptions':sum('FATAL EXCEPTION' in line for line in log.splitlines())}
-    restored=[item for case in ('normalClose','forceStop') for item in report['cases'].get(case,{}).get('restored',{}).values()]
-    conflicts=report['cases'].get('draftConflict',{});offline=report['cases'].get('offline',{})
-    cases=report['cases'];baseline=report.get('baseline',{})
-    report['migrationGates']={'measurementsComplete':bool(report.get('experimentComplete')),'sameAccountStorageShared':bool(baseline.get('sameAccountSharedStorage')),'differentAccountStorage':bool(baseline.get('differentAccountStorage')),
-        'allCheckpointRequestsAcknowledged':len(checkpoint_receipts)==4 and all(v['flushAcknowledged'] and not v['flushTimedOut'] for v in checkpoint_receipts),'allSwipeSamplesObserved':len(scroll_samples)==4 and all(v['gestureObserved'] for v in scroll_samples.values()),'activityDocumentsRetained':bool(cases.get('activityRecreation',{}).get('sameDocuments')),'activityDraftsRetained':bool(cases.get('activityRecreation',{}).get('draftsUnchanged')),
-        'eightRestoreObservations':len(restored)==8,'savedActiveTabRestored':all(cases.get(k,{}).get('launcherSelected')==cases.get(k,{}).get('expectedSelected') and 'expectedSelected' in cases.get(k,{}) for k in ('normalClose','forceStop')),
-        'savedActiveAccountRestored':all(cases.get(k,{}).get('launcherAccount')==cases.get(k,{}).get('expectedAccount') and 'expectedAccount' in cases.get(k,{}) for k in ('normalClose','forceStop')),
-        'backAndForwardHistory':cases.get('history',{}).get('backPage')=='start' and cases.get('history',{}).get('forwardPage')=='detail',
-        'newProcessAfterForceStop':bool(cases.get('forceStop',{}).get('newProcess')),'standardDraftsRestored':len(restored)==8 and all(r['standardDraft'] for r in restored),
-        'noUnexpectedProcessRestart':bool(process_stops) and not any(p['unexpectedNewProcesses'] for p in process_stops),
-        'dynamicDraftsRestored':len(restored)==8 and all(r['richDraft'] for r in restored),'readingPositionsRestored':len(restored)==8 and all(r['readingPosition'] for r in restored),
-        'ownerStorageRetained':len(restored)==8 and all(r['sameOwnerStorage'] for r in restored),'offlineContentObserved':bool(offline.get('contentRecovered')),
-        'existingStandardDraftPreserved':bool(conflicts.get('standardCurrentPreserved')),'existingDynamicDraftPreserved':bool(conflicts.get('richCurrentPreserved')),
-        'damagedRecordRejectedAndPreserved':bool(cases.get('damagedRecord',{}).get('blocked')) and bool(cases.get('damagedRecord',{}).get('bytesPreserved')),
-        'foreignRecordRejectedAndPreserved':bool(cases.get('swappedRecord',{}).get('blocked')) and bool(cases.get('swappedRecord',{}).get('bytesPreserved')),
-        'noAutomaticSubmission':report['noAutomaticSubmission'],'noIsolationErrors':not isolation_errors,'systemUnchanged':report['systemUnchanged']}
-    report['nativeRecoveryReady']=all(report['migrationGates'].values())
-    report['limitations']=['Synthetic textarea and contenteditable fixtures are not the real ChatGPT editor.','Native-only restoration has no custom offline snapshot, draft conflict guard or page-specific adapter.','A restored session may reload the network document; retaining a running JS heap after process death is not tested or promised.','Saved baseline records remain read-only during repeated restore measurements so a failed restore cannot replace the reference record.','API level and ABI are recorded; emulator results do not establish OEM phone or Android low-memory survival guarantees.']
-    for name,data in (('recovery-report.json',report),('recovery-events.json',events),('recovery-requests.json',requests),('gestures.json',gestures)):(OUT/name).write_text(json.dumps(data,ensure_ascii=False,indent=2))
-    for a in ('A','B','C'):
-        (OUT/('native-'+a+'.jsonl')).write_bytes(adb('exec-out','run-as',PACKAGE,'cat','files/recovery-events-'+a+'.jsonl',check=False))
-    text('shell','am','force-stop',PACKAGE,check=False);text('reverse','--remove','tcp:8765',check=False);server.shutdown()
-if failure or not report.get('experimentComplete') or not report['systemUnchanged'] or report['isolationErrors'] or not report['noAutomaticSubmission'] or not report['cases'].get('damagedRecord',{}).get('bytesPreserved') or not report['cases'].get('swappedRecord',{}).get('bytesPreserved'):raise SystemExit(1)
-if not report['nativeRecoveryReady']:
-    print('MEASUREMENTS COMPLETE; native-only recovery does not meet the migration acceptance criteria. See recovery-report.json.',flush=True)
-    raise SystemExit(2)
+        print('1/7 Seed four real pages via Android input connection and page scroll',flush=True)
+        launch('A',tabs=2)
+        for t in ('0','1'):wait(lambda t=t:latest('A',t,phase),90,label='initial A page '+t)
+        for a in ('C','B'):
+            launch(a);wait(lambda a=a:latest(a,'0',phase),90,label='initial '+a+' page')
+        baseline={a+':'+t:seed(a,t) for a,t in TABS}
+        select('A','1');checkpoint('A');checkpoint('B')
+        launch('A','freeze');wait(lambda:adb('exec-out','run-as',PACKAGE,'cat','files/recovery-records/measurement-frozen',check=False)==b'\x01',label='explicit saved-baseline freeze')
+        report['baseline']={'observations':baseline,'native':{a:native(a) for a in ('A','B','C')}}
+        report['baseline']['sameAccountSharedStorage']=baseline['A:0']['owner']==baseline['A:1']['owner']
+        report['baseline']['differentAccountStorage']=len({baseline[a+':0']['owner']['token'] for a in ('A','B','C')})==3
+        originals={a+'-'+t+'.bin':private(a+'-'+t+'.bin') for a,t in TABS}
+        report['encryptedRecords']={name:{'bytes':len(value),'sha256':hashlib.sha256(value).hexdigest(),'noDraftPlaintext':all(marker.encode() not in value for marker in markers.values())} for name,value in originals.items()}
+        if not all(r['noDraftPlaintext'] for r in report['encryptedRecords'].values()):raise RuntimeError('Synthetic record encryption check failed')
+
+        print('2/7 Activity recreation must reuse live sessions',flush=True)
+        old={k:v['document'] for k,v in baseline.items()};started=time.monotonic();launch('A','recreate')
+        after={a+':'+t:wait(lambda a=a,t=t:fresh(a,t,phase,started),label='live after recreation') for a,t in TABS}
+        report['cases']['activityRecreation']={'sameDocuments':all(after[k]['document']==old[k] for k in old),'draftsUnchanged':all(after[k]['standard']==markers[k] and after[k]['rich']==markers[k] for k in old)}
+        capture('recovery-seeded')
+
+        print('3/7 Normal save/close then app-owned session restoration',flush=True)
+        checkpoint('B',True);checkpoint('A',True)
+        normal,normal_rows=observe_restore('normal-close',baseline);report['cases']['normalClose']=normal
+        select('A','0');launch('A','back');back=wait(lambda:(lambda r:r if r and r['page']=='start' else None)(latest('A','0',phase)),label='restored browser back history')
+        launch('A','forward');forward=wait(lambda:(lambda r:r if r and r['page']=='detail' else None)(latest('A','0',phase)),label='restored browser forward history')
+        report['cases']['history']={'backPage':back['page'],'forwardPage':forward['page']}
+        capture('normal-native-restoration')
+
+        print('4/7 Real force-stop, no shutdown callback or script-provided restore URL',flush=True)
+        old_pids=stop();force_reference={key:{**baseline[key],'document':normal_rows[key]['document']} for key in baseline};restart,restart_rows=observe_restore('force-stop',force_reference);restart['oldPids']=old_pids;restart['newPid']=str(native('A').get('pid'));restart['newProcess']=restart['newPid'] not in old_pids
+        report['cases']['forceStop']=restart
+
+        print('5/7 Disconnect loopback transport, restore offline, then reconnect',flush=True)
+        offline_account=saved_account();offline_tab='1' if offline_account=='A' else '0';stop();phase='offline';text('reverse','--remove','tcp:8765');started=time.monotonic();launch();time.sleep(8)
+        report['cases']['offline']={'account':offline_account,'tab':offline_tab,'native':native(offline_account),'pageEvents':sum(e['phase']=='offline' for e in events),'httpRequests':sum(e['phase']=='offline' for e in requests),'contentRecovered':any(e['phase']=='offline' and e['page']=='detail' for e in events),'transportRemoved':True}
+        capture('native-offline-restoration')
+        root=ET.fromstring((OUT/'native-offline-restoration.xml').read_bytes());labels=' '.join(n.get('text','')+' '+n.get('content-desc','') for n in root.iter('node'))
+        report['cases']['offline']['contentRecovered']='合成对话' in labels
+        report['cases']['offline']['contentEvidence']='Android accessibility tree plus native-offline-restoration.png; lack of offline network reports alone is not treated as proof.'
+        text('reverse','tcp:8765','tcp:8765');phase='reconnected';launch(offline_account,'retry')
+        reconnected=wait(lambda:latest(offline_account,offline_tab,'reconnected'),label='explicit retry after reconnect');report['cases']['offline']['reconnectedPage']=reconnected['page']
+
+        print('6/7 Existing webpage draft conflict; observe whether native restore overwrites it',flush=True)
+        stop();phase='draft-conflict';conflict=True;started=time.monotonic();launch('A')
+        row=wait(lambda:fresh('A','0',phase,started),label='conflicting restored page')
+        # Observe through a bounded settling window: a later form restore must not be missed.
+        time.sleep(4);row=latest('A','0',phase)
+        report['cases']['draftConflict']={'serverDraft':current_draft,'previousDraft':markers['A:0'],'observedStandard':row['standard'],'observedRich':row['rich'],
+            'standardCurrentPreserved':row['standard']==current_draft,'richCurrentPreserved':row['rich']==current_draft,
+            'standardOverwroteCurrent':row['standard']==markers['A:0'],'richOverwroteCurrent':row['rich']==markers['A:0']}
+        select('A','0');capture('native-draft-conflict')
+
+        print('7/7 Reject damaged or account-swapped encrypted records; preserve originals',flush=True)
+        stop();phase='damaged-record';conflict=False;damaged=bytearray(originals['A-0.bin']);damaged[-1]^=1;private_write('A-0.bin',bytes(damaged));launch('A')
+        rejected=wait(lambda:(lambda n:n if any(t['index']=='0' and t['blocked'] for t in n.get('tabs',[])) else None)(native('A')),label='damaged encrypted state rejection')
+        report['cases']['damagedRecord']={'blocked':True,'bytesPreserved':private('A-0.bin')==bytes(damaged),'native':rejected}
+        stop();phase='swapped-record';private_write('C-0.bin',originals['A-0.bin']);launch('C')
+        rejected=wait(lambda:(lambda n:n if any(t['index']=='0' and t['blocked'] for t in n.get('tabs',[])) else None)(native('C')),label='foreign account record rejection')
+        report['cases']['swappedRecord']={'blocked':True,'bytesPreserved':private('C-0.bin')==originals['A-0.bin'],'native':rejected}
+        report['experimentComplete']=True
+    except Exception as error:
+        failure=str(error);report['failure']=failure;print('Recovery experiment failed:',failure,flush=True)
+        try:
+            capture('failure')
+            (OUT/'failure-activities.txt').write_text(text('shell','dumpsys','activity','activities',check=False))
+        except (OSError,subprocess.SubprocessError) as diagnostic:report['diagnosticFailure']=str(diagnostic)
+    finally:
+        report['submissions']=submissions;report['noAutomaticSubmission']=not submissions
+        report['scrollSamples']=scroll_samples
+        report['checkpointReceipts']=checkpoint_receipts
+        report['processStops']=process_stops
+        report['systemAfter']={'locale':text('shell','getprop','persist.sys.locale'),'timeZone':text('shell','getprop','persist.sys.timezone')};report['systemUnchanged']=report['systemAfter']==report['systemBefore']
+        isolation_errors=[]
+        for row in events:
+            a=row['account'];expected_lang='en-US' if a=='B' else 'zh-CN';expected_zone='America/New_York' if a=='B' else 'Asia/Shanghai'
+            if row.get('language')!=expected_lang or row.get('timeZone')!=expected_zone or row.get('owner',{}).get('owner')!=a or not row.get('acceptLanguage','').lower().startswith(expected_lang.lower()) or any(x!=a for x in re.findall(r'(?:^|;\s*)recovery-owner=([^;]*)',row.get('requestCookie',''))):isolation_errors.append({'account':a,'tab':row['tab'],'phase':row['phase'],'document':row['document']})
+        report['isolationErrors']=isolation_errors
+        log=text('logcat','-d',check=False,timeout=30);(OUT/'runtime.log').write_text(log)
+        report['engineSignals']={'sessionStoreWindowNull':sum('WindowEventDispatcher", win is null' in line for line in log.splitlines()),'stateUpdateNoListener':sum('No listener for GeckoView:StateUpdated' in line for line in log.splitlines()),'fatalExceptions':sum('FATAL EXCEPTION' in line for line in log.splitlines())}
+        restored=[item for case in ('normalClose','forceStop') for item in report['cases'].get(case,{}).get('restored',{}).values()]
+        conflicts=report['cases'].get('draftConflict',{});offline=report['cases'].get('offline',{})
+        cases=report['cases'];baseline=report.get('baseline',{})
+        report['migrationGates']={'measurementsComplete':bool(report.get('experimentComplete')),'sameAccountStorageShared':bool(baseline.get('sameAccountSharedStorage')),'differentAccountStorage':bool(baseline.get('differentAccountStorage')),
+            'allCheckpointRequestsAcknowledged':len(checkpoint_receipts)==4 and all(v['flushAcknowledged'] and not v['flushTimedOut'] for v in checkpoint_receipts),'allSwipeSamplesObserved':len(scroll_samples)==4 and all(v['gestureObserved'] for v in scroll_samples.values()),'activityDocumentsRetained':bool(cases.get('activityRecreation',{}).get('sameDocuments')),'activityDraftsRetained':bool(cases.get('activityRecreation',{}).get('draftsUnchanged')),
+            'eightRestoreObservations':len(restored)==8,'savedActiveTabRestored':all(cases.get(k,{}).get('launcherSelected')==cases.get(k,{}).get('expectedSelected') and 'expectedSelected' in cases.get(k,{}) for k in ('normalClose','forceStop')),
+            'savedActiveAccountRestored':all(cases.get(k,{}).get('launcherAccount')==cases.get(k,{}).get('expectedAccount') and 'expectedAccount' in cases.get(k,{}) for k in ('normalClose','forceStop')),
+            'backAndForwardHistory':cases.get('history',{}).get('backPage')=='start' and cases.get('history',{}).get('forwardPage')=='detail',
+            'newProcessAfterForceStop':bool(cases.get('forceStop',{}).get('newProcess')),'standardDraftsRestored':len(restored)==8 and all(r['standardDraft'] for r in restored),
+            'noUnexpectedProcessRestart':bool(process_stops) and not any(p['unexpectedNewProcesses'] for p in process_stops),
+            'dynamicDraftsRestored':len(restored)==8 and all(r['richDraft'] for r in restored),'readingPositionsRestored':len(restored)==8 and all(r['readingPosition'] for r in restored),
+            'ownerStorageRetained':len(restored)==8 and all(r['sameOwnerStorage'] for r in restored),'offlineContentObserved':bool(offline.get('contentRecovered')),
+            'existingStandardDraftPreserved':bool(conflicts.get('standardCurrentPreserved')),'existingDynamicDraftPreserved':bool(conflicts.get('richCurrentPreserved')),
+            'damagedRecordRejectedAndPreserved':bool(cases.get('damagedRecord',{}).get('blocked')) and bool(cases.get('damagedRecord',{}).get('bytesPreserved')),
+            'foreignRecordRejectedAndPreserved':bool(cases.get('swappedRecord',{}).get('blocked')) and bool(cases.get('swappedRecord',{}).get('bytesPreserved')),
+            'noAutomaticSubmission':report['noAutomaticSubmission'],'noIsolationErrors':not isolation_errors,'systemUnchanged':report['systemUnchanged']}
+        report['nativeRecoveryReady']=all(report['migrationGates'].values())
+        report['limitations']=['Synthetic textarea and contenteditable fixtures are not the real ChatGPT editor.','Native-only restoration has no custom offline snapshot, draft conflict guard or page-specific adapter.','A restored session may reload the network document; retaining a running JS heap after process death is not tested or promised.','Saved baseline records remain read-only during repeated restore measurements so a failed restore cannot replace the reference record.','API level and ABI are recorded; emulator results do not establish OEM phone or Android low-memory survival guarantees.']
+        for name,data in (('recovery-report.json',report),('recovery-events.json',events),('recovery-requests.json',requests),('gestures.json',gestures)):(OUT/name).write_text(json.dumps(data,ensure_ascii=False,indent=2))
+        for a in ('A','B','C'):
+            (OUT/('native-'+a+'.jsonl')).write_bytes(adb('exec-out','run-as',PACKAGE,'cat','files/recovery-events-'+a+'.jsonl',check=False))
+        text('shell','am','force-stop',PACKAGE,check=False);text('reverse','--remove','tcp:8765',check=False);server.shutdown()
+    if failure or not report.get('experimentComplete') or not report['systemUnchanged'] or report['isolationErrors'] or not report['noAutomaticSubmission'] or not report['cases'].get('damagedRecord',{}).get('bytesPreserved') or not report['cases'].get('swappedRecord',{}).get('bytesPreserved'):raise SystemExit(1)
+    if not report['nativeRecoveryReady']:
+        print('MEASUREMENTS COMPLETE; native-only recovery does not meet the migration acceptance criteria. See recovery-report.json.',flush=True)
+        raise SystemExit(2)

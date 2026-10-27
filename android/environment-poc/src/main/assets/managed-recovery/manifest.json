@@ -1,0 +1,13 @@
+{
+  "manifest_version": 2,
+  "name": "Studio independent recovery bridge",
+  "version": "1.0",
+  "browser_specific_settings": {"gecko": {"id": "studio-recovery-poc@local.invalid"}},
+  "permissions": ["nativeMessaging", "nativeMessagingFromContent", "geckoViewAddons"],
+  "content_scripts": [{
+    "matches": ["http://127.0.0.1/recovery*"],
+    "js": ["recovery.js"],
+    "run_at": "document_idle",
+    "all_frames": false
+  }]
+}
