@@ -1,0 +1,28 @@
+{
+  "passed": true,
+  "scope": "Android CI emulator; actual force-stop and new process; offline fixture, not real ChatGPT",
+  "source": "fb82e20d38431e2a17bfe6212835471a340c480a",
+  "pidBefore": "3711",
+  "pidAfter": "4104",
+  "checks": [
+    "saved encrypted checkpoint",
+    "checkpoint contains no plaintext marker",
+    "marker removed from next-launch fixture config",
+    "old process absent",
+    "new application PID",
+    "offline native transcript from encrypted checkpoint",
+    "bounded saved picture available offline",
+    "offline viewing leaves checkpoint unchanged",
+    "unchanged account/storage/tab identity",
+    "draft restored into initially empty page",
+    "reading position 1400 restored",
+    "no automatic send"
+  ],
+  "checkpointSha256BeforeStop": "825c538abb67a51524de351f648831524b7807b958b00c43457e6673782bc0ca",
+  "limitations": [
+    "not real ChatGPT",
+    "not physical device",
+    "not personal data upgrade",
+    "does not cover unsaved edits after the checkpoint"
+  ]
+}

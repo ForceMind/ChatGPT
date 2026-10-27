@@ -21,7 +21,7 @@
 
 **桌面 alpha.21 已公开**：自有角色、设计补丁 Skill，以及 Windows 更新与加密离线快照。安装包与验收范围见[发布记录](docs/releases/3.0.0-alpha.21.json)，原包与独立验收来源见[候选收据](docs/releases/3.0.0-alpha.21-desktop-candidate.json)。
 
-**Android alpha.22 正在候选验收**：加密只读对话 / 画面快照、断网重开，以及 121 个 Skill、32 个自有角色。公开 APK 仍为 alpha.19；候选行为与验收边界见 [Android 说明](android/README.md#alpha22-候选离线阅读与能力库)。
+**Android alpha.22 已完成 CI 候选验收**：加密只读对话 / 画面快照、断网重开，以及 121 个 Skill、32 个自有角色。公开 APK 仍为 alpha.19；[候选记录](docs/releases/3.0.0-alpha.22-android-candidate.json)包含 Actions 工件与验收范围，尚未提供原签名升级包。详见 [Android 说明](android/README.md#alpha22-候选离线阅读与能力库)。
 
 ![macOS 公开版实际窗口（更名前）](docs/images/macos-immersive.png)
 
@@ -207,7 +207,7 @@ cd android
 | 已发布 | macOS alpha.20 完整更名与旧版兼容更新 | 应用、系统名称与手动下载统一 Studio，账号目录与加密身份保留；[发布记录](docs/releases/3.0.0-alpha.20.json) |
 | 已发布 | alpha.18 三端包、沉浸式 Android、清晰字号与 Mac 菜单栏 | 下载、官网与 Mac 更新清单同步；[发布与线上验证记录](docs/releases/3.0.0-alpha.18-publication.json) |
 | 已发布 | Windows 加密离线快照、当前用户 EXE 更新，ZIP 校验与另存 | alpha.21；[验证范围与包](docs/releases/3.0.0-alpha.21-desktop-candidate.json) |
-| 候选验收 | Android 加密离线快照与 121 Skill / 32 自有角色 | alpha.22；[候选说明](android/README.md#alpha22-候选离线阅读与能力库)，尚未替换公开版 |
+| 已验收候选 | Android 加密离线快照与 121 Skill / 32 自有角色 | alpha.22；[CI 与工件记录](docs/releases/3.0.0-alpha.22-android-candidate.json)，待原签名与实机验收，尚未替换公开版 |
 | 环境隔离 | Android 每账号语言 / 时区从独立 PoC 迁入日常客户端 | 路线验证完成，尚未替换普通内核 |
 | 系统集成 | 系统 / Chrome 通行密钥、真实 Touch ID 恢复与稳定签名 | 通行密钥未接入；Touch ID 受证书与实机验收条件限制 |
 | 已发布 | 自有智能体与设计补丁 Skill | alpha.21 桌面含 32 个角色，支持单独使用、组合 Skill、收藏与任务恢复 |

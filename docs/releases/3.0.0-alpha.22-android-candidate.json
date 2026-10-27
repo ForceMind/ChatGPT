@@ -1,0 +1,269 @@
+{
+  "schema": 1,
+  "product": "ChatGPT Studio",
+  "platform": "android",
+  "version": "3.0.0-alpha.22",
+  "versionCode": 3000022,
+  "status": "ci-verified-candidate-awaiting-production-signing",
+  "publicRelease": false,
+  "source": "85ff89ff973f730dbe3792eb0778aced81741411",
+  "branch": "codex/macos-assets-workbench",
+  "publicVersions": {
+    "macOS": "3.0.0-alpha.21",
+    "windows": "3.0.0-alpha.21",
+    "android": "3.0.0-alpha.19"
+  },
+  "capabilities": {
+    "skills": 121,
+    "originalAgents": 32,
+    "internetPriorityAgents": 24,
+    "files": {
+      "manifest.json": "4bef4a708e27b8ba7a05327044f36ada83e338bd641e12c57132b9aad4cf21b1",
+      "skills.json": "3fa86a91baab95a8839accfa11de041c401c22346f1adbf66a4119039ca7ce92",
+      "desktop-manifest.json": "fad4c7ea465e3fd6ae2bad7a4b8065cb1a7efaf25c4945a8792b706da83250e9",
+      "desktop-capabilities.json": "404a4fa2d35169b08b80ac8c5eb4f55ee94e00f565ec2961e763098aeb431dad"
+    }
+  },
+  "verification": {
+    "offlineNative": {
+      "source": "365900d10645cff7cb2a50a81eb1943b03380730",
+      "buildRun": 40463117636,
+      "nativeRun": 40463120182,
+      "phone": {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "tablet": {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "artifact": {
+        "id": 12715234404,
+        "bytes": 4185191,
+        "sha256": "99434623fa5e03be180bd063409c5399385612587fe7534f591747aadd24ace2",
+        "archiveVerified": true
+      },
+      "screenshotsInspected": [
+        "phone offline text",
+        "phone offline picture",
+        "tablet offline text"
+      ],
+      "reuse": {
+        "unchangedProductionPaths": [
+          "android/app/src/main/assets/page-recovery.js",
+          "android/app/src/main/java/com/forcemind/chatgpt/profiles/PageRecoveryManager.java",
+          "android/app/src/main/java/com/forcemind/chatgpt/profiles/PageRecoveryStore.java",
+          "android/app/src/main/java/com/forcemind/chatgpt/profiles/PageRecoveryRecord.java",
+          "android/app/src/main/java/com/forcemind/chatgpt/profiles/PageSnapshot.java",
+          "android/app/src/main/java/com/forcemind/chatgpt/profiles/OfflineSnapshotView.java",
+          "android/app/src/main/java/com/forcemind/chatgpt/profiles/BrowserMemory.java"
+        ],
+        "comparison": "365900d..85ff89f",
+        "mainActivityChange": "Additional title callback guard while the saved snapshot is shown; exercised by later offline readability flow."
+      }
+    },
+    "processRestart": {
+      "source": "fb82e20d38431e2a17bfe6212835471a340c480a",
+      "run": 40463530040,
+      "passed": true,
+      "receipt": "docs/benchmarks/android-alpha22-process-restart.json",
+      "artifact": {
+        "id": 12715388021,
+        "bytes": 833144,
+        "sha256": "b972a5c18327ed938a7127d0521184d4ac9b2dbb754aa606dc1bac3259bfca08",
+        "archiveVerified": true
+      },
+      "screenshotsInspected": [
+        "actual process restart offline picture"
+      ]
+    },
+    "candidate": {
+      "source": "85ff89ff973f730dbe3792eb0778aced81741411",
+      "buildRun": 40468096647,
+      "capabilitiesRun": 40468099314,
+      "readabilityRun": 40466592252,
+      "readabilitySource": "f94d51dd9c76b7fe43ebe063f4a0195065b7f425",
+      "status": "success",
+      "build": {
+        "run": 40468096647,
+        "status": "success",
+        "unitTests": {
+          "tests": 72,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "lint": {
+          "errors": 0,
+          "fatal": 0,
+          "warnings": 49
+        },
+        "artifacts": [
+          {
+            "id": 12717940198,
+            "name": "android-apks",
+            "sha256": "1752848680667750a41c5f685fff4b9d109313a33087a2c33f05b2f58ab63d49",
+            "bytes": 6468085,
+            "archiveVerified": true
+          },
+          {
+            "id": 12716814616,
+            "name": "android-check-reports",
+            "sha256": "ad1472ad29c0e365775995d117a4b58c60bdb95c1e5a82a929b642f0ed4a7316",
+            "bytes": 83829,
+            "archiveVerified": true
+          }
+        ]
+      },
+      "readability": {
+        "run": 40466592252,
+        "source": "f94d51dd9c76b7fe43ebe063f4a0195065b7f425",
+        "status": "success",
+        "phone": {
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "tablet": {
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "fontScales": [
+          1,
+          1.3,
+          2
+        ],
+        "receipt": "docs/benchmarks/android-alpha22-native-readability.json",
+        "artifact": {
+          "id": 12717806023,
+          "bytes": 12107748,
+          "sha256": "f0e4ddd1027419e53195b72626a419b2b5bae5b4062129056a84e2e1d5b858bf",
+          "archiveVerified": true
+        },
+        "screenshotsInspected": [
+          "phone agents at 100%",
+          "phone offline text at 200%",
+          "phone handoff dialog at 200%"
+        ],
+        "reuse": "No native UI layout or typography changes after this source. Later input-connection timing change is verified by the separate capability flow."
+      },
+      "capabilities": {
+        "run": 40468099314,
+        "source": "85ff89ff973f730dbe3792eb0778aced81741411",
+        "status": "success",
+        "phone": {
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "tablet": {
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "checks": [
+          "121 Skills and 32 original roles, first 24 internet-related",
+          "full-text search and account-bound library state after Activity recreation",
+          "role-only task without an implicit Skill or attachment",
+          "role + Skill + two actual files into the explicitly confirmed target account",
+          "complete first message and actual file SHA-256",
+          "one submission with replay refused and temporary file grants revoked"
+        ],
+        "artifact": {
+          "id": 12718210513,
+          "bytes": 4555615,
+          "sha256": "02e1b85b23328d7f40712d21e290ab7a72efaebad0ce764b8282b5edb2161ba7",
+          "archiveVerified": true
+        },
+        "screenshotsInspected": [
+          "phone role-only submitted fixture",
+          "tablet original role library"
+        ]
+      }
+    }
+  },
+  "failedAttempts": [
+    {
+      "run": 40465604715,
+      "source": "0509e4fca208c6800bcd89d78236a22e3db0fcb5",
+      "stage": "compileDebugJavaWithJavac",
+      "cause": "Ambiguous ClipboardManager from wildcard imports in new role-copy action",
+      "fix": "92f90c2d7e04c3a8487d8bc1cb9848bb45045324"
+    },
+    {
+      "run": 40466542727,
+      "source": "f94d51dd9c76b7fe43ebe063f4a0195065b7f425",
+      "stage": "compileDebugUnitTestJavaWithJavac",
+      "cause": "Test fixture used Files.readString, absent from the Android test compile API; replaced with readAllBytes and UTF-8. Product code and device-test APK inputs unchanged.",
+      "fix": "d248dbee24c062d1cb353972733fdac42db8a6ae"
+    },
+    {
+      "run": 40466587675,
+      "source": "f94d51dd9c76b7fe43ebe063f4a0195065b7f425",
+      "stage": "phone role-only native flow",
+      "cause": "InputConnection insert returned false immediately after focusing a newly opened webpage; no message sent. Library and combined-file flows passed.",
+      "fix": "85ff89ff973f730dbe3792eb0778aced81741411",
+      "change": "Poll for an active text editor before one commitText call; retain fresh-page, empty-composer, account and epoch fences; no retry after an actual commit attempt."
+    }
+  ],
+  "cancelledSupersededRuns": [
+    40465606632,
+    40465611224,
+    40466256640
+  ],
+  "identity": {
+    "releasePackage": "com.forcemind.chatgpt.profiles",
+    "debugPackage": "com.forcemind.chatgpt.profiles.debug",
+    "keyStoreAndRecoveryIdentity": "unchanged",
+    "releaseSigning": "CI builds unsigned release; existing private production key remains local and is not uploaded",
+    "expectedProductionCertificateSha256": "8b6eef928fded91f291ad954e20976b2cc6011b55e8cbec0152695fe1f05cf19"
+  },
+  "limitations": [
+    "Official Android 15 x86_64 emulators and explicitly labelled offline fixtures, not real ChatGPT",
+    "Not physical devices or personal-data upgrade acceptance",
+    "Process termination loses active JavaScript and remote generation context; snapshots are bounded saved text and a recent picture",
+    "Unsaved changes after the last checkpoint cannot be recovered",
+    "No per-account locale/timezone engine migration, iOS, VPN or delta update in this batch",
+    "No public release, main merge, website deployment, own-domain download resource or local production installation performed"
+  ],
+  "packages": [
+    {
+      "path": "debug/app-debug.apk",
+      "bytes": 9026336,
+      "sha256": "45bf64d4d69c9ed421c2f8a84a6dd5caae5739d5b13675f7d6da43d0ddf0e311"
+    },
+    {
+      "path": "release/app-release-unsigned.apk",
+      "bytes": 7351662,
+      "sha256": "dbfeaa8ad312e89c3c9ce48edd049822c8f5aa51dc29e0d2a8a160ac0c295232",
+      "projectCapabilityResourcesVerified": {
+        "assets/capabilities/desktop-capabilities.json": "404a4fa2d35169b08b80ac8c5eb4f55ee94e00f565ec2961e763098aeb431dad",
+        "assets/capabilities/desktop-manifest.json": "fad4c7ea465e3fd6ae2bad7a4b8065cb1a7efaf25c4945a8792b706da83250e9",
+        "assets/capabilities/manifest.json": "4bef4a708e27b8ba7a05327044f36ada83e338bd641e12c57132b9aad4cf21b1",
+        "assets/capabilities/skills.json": "3fa86a91baab95a8839accfa11de041c401c22346f1adbf66a4119039ca7ce92"
+      },
+      "debugFixtureClassesAbsent": true
+    },
+    {
+      "path": "androidTest/debug/app-debug-androidTest.apk",
+      "bytes": 1060267,
+      "sha256": "e022c21551872f96709a342416c418edc2d28c6b7cae97d5e580000b21425bce"
+    }
+  ],
+  "verifiedAt": "2026-10-27T07:46:38Z",
+  "download": {
+    "artifactUrl": "https://github.com/ForceMind/ChatGPT/actions/runs/40468096647/artifacts/12717940198",
+    "requiresGitHubAuthentication": true,
+    "expiresAt": "2027-01-25T07:36:05Z",
+    "contents": "Independent debug APK, unsigned release APK, instrumentation APK. This is not a production upgrade release."
+  }
+}

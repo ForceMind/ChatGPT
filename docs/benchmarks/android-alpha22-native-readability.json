@@ -1,0 +1,233 @@
+{
+  "schema": 1,
+  "source": "f94d51dd9c76b7fe43ebe063f4a0195065b7f425",
+  "run": 40466592252,
+  "phone": {
+    "api": 35,
+    "scope": "Native debug UI with synthetic local files and offline WebView fixture; no personal account or real ChatGPT acceptance",
+    "scales": [
+      {
+        "requestedScale": 1,
+        "assets": [
+          9,
+          36.75,
+          34.125
+        ],
+        "skills": [
+          20,
+          36.75,
+          34.125
+        ],
+        "agents": [
+          20,
+          36.75,
+          34.125
+        ],
+        "main": [
+          2,
+          36.75,
+          34.125
+        ],
+        "tabs": [
+          10,
+          34.125,
+          34.125
+        ],
+        "screenWidthDp": 411,
+        "offlineSnapshot": [
+          23,
+          34.125,
+          34.125
+        ]
+      },
+      {
+        "requestedScale": 1.2999999523162842,
+        "assets": [
+          9,
+          49.35,
+          45.15
+        ],
+        "skills": [
+          16,
+          49.35,
+          45.15
+        ],
+        "agents": [
+          16,
+          49.35,
+          45.15
+        ],
+        "main": [
+          2,
+          49.35,
+          45.15
+        ],
+        "tabs": [
+          10,
+          45.15,
+          45.15
+        ],
+        "screenWidthDp": 411,
+        "offlineSnapshot": [
+          19,
+          45.15,
+          45.15
+        ]
+      },
+      {
+        "requestedScale": 2,
+        "assets": [
+          9,
+          68.25,
+          65.625
+        ],
+        "skills": [
+          14,
+          68.25,
+          65.625
+        ],
+        "agents": [
+          14,
+          68.25,
+          65.625
+        ],
+        "main": [
+          2,
+          68.25,
+          65.625
+        ],
+        "tabs": [
+          10,
+          65.625,
+          65.625
+        ],
+        "screenWidthDp": 411,
+        "offlineSnapshot": [
+          15,
+          65.625,
+          65.625
+        ]
+      }
+    ],
+    "metricColumns": [
+      "visibleNativeTextCount",
+      "minimumTextPx",
+      "reference13spPx"
+    ],
+    "webView": "com.google.android.webview 124.0.6367.219"
+  },
+  "tablet": {
+    "api": 35,
+    "scope": "Native debug UI with synthetic local files and offline WebView fixture; no personal account or real ChatGPT acceptance",
+    "scales": [
+      {
+        "requestedScale": 1,
+        "assets": [
+          9,
+          21,
+          19.5
+        ],
+        "skills": [
+          40,
+          21,
+          19.5
+        ],
+        "agents": [
+          40,
+          21,
+          19.5
+        ],
+        "main": [
+          2,
+          21,
+          19.5
+        ],
+        "tabs": [
+          10,
+          19.5,
+          19.5
+        ],
+        "screenWidthDp": 1067,
+        "offlineSnapshot": [
+          42,
+          19.5,
+          19.5
+        ]
+      },
+      {
+        "requestedScale": 1.2999999523162842,
+        "assets": [
+          9,
+          28.199999,
+          25.800001
+        ],
+        "skills": [
+          34,
+          28.199999,
+          25.800001
+        ],
+        "agents": [
+          34,
+          28.199999,
+          25.800001
+        ],
+        "main": [
+          2,
+          28.199999,
+          25.800001
+        ],
+        "tabs": [
+          10,
+          25.800001,
+          25.800001
+        ],
+        "screenWidthDp": 1067,
+        "offlineSnapshot": [
+          36,
+          25.800001,
+          25.800001
+        ]
+      },
+      {
+        "requestedScale": 2,
+        "assets": [
+          9,
+          39,
+          37.5
+        ],
+        "skills": [
+          27,
+          39,
+          37.5
+        ],
+        "agents": [
+          27,
+          39,
+          37.5
+        ],
+        "main": [
+          2,
+          39,
+          37.5
+        ],
+        "tabs": [
+          10,
+          37.5,
+          37.5
+        ],
+        "screenWidthDp": 1067,
+        "offlineSnapshot": [
+          29,
+          37.5,
+          37.5
+        ]
+      }
+    ],
+    "metricColumns": [
+      "visibleNativeTextCount",
+      "minimumTextPx",
+      "reference13spPx"
+    ],
+    "webView": "com.google.android.webview 124.0.6367.219"
+  }
+}
