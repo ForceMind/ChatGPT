@@ -81,6 +81,7 @@ public abstract class GroupedActivity extends Activity {
     @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);setIntent(intent);handle(intent);}
     private void handle(Intent intent){
         String target=intent.getStringExtra("account");int count=intent.getIntExtra("tabs",0);boolean probe=intent.getBooleanExtra("probe",false),clear=intent.getBooleanExtra("clear",false);
+        if(target!=null&&!target.equals("A")&&!target.equals("B")&&!target.equals("C")){record("invalid-target","");return;}
         if(target!=null&&!target.equals(account())){switchAccount(target,count,probe,clear,intent.getBooleanExtra("next",false),intent.getBooleanExtra("recreate",false));return;}
         if(clear){clearAccount();intent.removeExtra("clear");return;}
         if(probe){resize(0,false);resize(1,true);intent.removeExtra("probe");}

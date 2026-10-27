@@ -1,6 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET" />
-    <application android:label="Profiles Environment PoC" android:icon="@drawable/ic_launcher"
+    <application android:label="Profiles Environment PoC" android:icon="@mipmap/ic_launcher"
         android:theme="@android:style/Theme.Material.Light.NoActionBar"
         android:allowBackup="false" android:usesCleartextTraffic="false"
         android:networkSecurityConfig="@xml/network_security_config">

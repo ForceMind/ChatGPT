@@ -38,6 +38,7 @@ class GroupedValidationTests(unittest.TestCase):
         frame=sample(kind="frame");frame["idbState"]="blocked";frame["idb"]=None;self.assertEqual([],validate(frame))
         frame["idbState"]="error";self.assertTrue(validate(frame))
         row=sample();row["kind"]="unexpected";self.assertTrue(validate(row))
+        row=sample();row["service"]={"state":"unsupported"};self.assertTrue(validate(row))
 
     def test_same_account_must_share_real_tokens_and_other_account_must_not(self):
         a0=sample();a1=copy.deepcopy(a0);c=sample("C")

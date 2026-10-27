@@ -27,6 +27,7 @@ def validate(row):
             for key in ("local","idb","cache"):
                 if row.get(key+"State")!="ready" or not row.get(key):errors.append("missing first-party "+key)
         service=row.get("service",{})
+        if row["kind"]=="main" and not row.get("probe") and service.get("state") in ("unsupported","error"):errors.append("service worker unavailable")
         if service.get("owner") not in (None,account):errors.append("foreign service worker registration")
         response=service.get("response")
         if response:

@@ -15,8 +15,9 @@ android {
 }
 dependencies { implementation 'org.mozilla.geckoview:geckoview:158.0.20261021001945' }
 tasks.register('copyPocIcon', Copy) {
-    from '../app/src/main/res/drawable/ic_launcher.xml'
-    into layout.buildDirectory.dir('generated/poc-res/drawable')
+    from '../app/src/main/res'
+    include 'drawable/ic_launcher_foreground.xml', 'mipmap-anydpi-v26/ic_launcher.xml', 'mipmap-anydpi-v33/ic_launcher.xml', 'values/launcher.xml'
+    into layout.buildDirectory.dir('generated/poc-res')
 }
 // The preBuild dependency above explicitly orders generation. AGP 9 requires
 // a concrete path here rather than an ambiguous directory Provider.

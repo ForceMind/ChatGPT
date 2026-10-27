@@ -135,9 +135,9 @@ def main_row(case,account,tab="0",probe=False):
 
 def ready_main(case,account,tab="0"):
     row=main_row(case,account,tab)
-    if not row or row.get("decodedImages")!=6 or validate(row):return False
+    if not row or row.get("decodedImages")!=6 or any(row.get(k+"State") not in ("ready","blocked","error") for k in ("local","idb","cache")):return False
     service=row.get("service",{});response=service.get("response") or {}
-    return service.get("state")=="ready" and service.get("owner")==account and response.get("owner")==account
+    return service.get("state") in ("unsupported","error") or (service.get("state")=="ready" and bool(service.get("owner")) and bool(response.get("owner")))
 
 def expected_contexts(case):
     keys={(r.get("account"),r.get("tab"),r.get("kind")) for r in records(case) if not r.get("probe") and not str(r.get("tab","")).startswith("popup-")}
@@ -197,7 +197,13 @@ def popup(case,account):
     if not geo or not point:return False
     before={r["instance"] for r in records(case) if r.get("account")==account and r.get("kind")=="popup"}
     adb("shell","input","tap",str(round(geo["viewX"]+point["x"]*point["ratio"])),str(round(geo["viewY"]+point["y"]*point["ratio"])))
-    return bool(wait(lambda:any(r.get("account")==account and r.get("kind")=="popup" and r.get("instance") not in before and not validate(r) for r in records(case)),35))
+    def shared_popup():
+        main=main_row(case,account)
+        for row in reversed(records(case)):
+            if row.get("account")!=account or row.get("kind")!="popup" or row.get("instance") in before or validate(row) or not main:continue
+            if row.get("cookie")==main.get("cookie") and all(row.get(k)==main.get(k) for k in ("local","idb","cache")):return row
+        return None
+    return bool(wait(shared_popup,35))
 
 def popup_contexts_ready(case):
     rows=records(case)
@@ -208,7 +214,8 @@ def popup_contexts_ready(case):
 
 devices=[x.split()[0] for x in adb("devices").splitlines()[1:] if x.endswith("\tdevice")]
 if os.environ.get("GITHUB_ACTIONS")!="true" or len(devices)!=1 or not devices[0].startswith("emulator-") or adb("shell","getprop","ro.kernel.qemu")!="1":raise SystemExit("Only one fresh GitHub Actions emulator is allowed; physical devices refused")
-if adb("shell","pidof",PACKAGE,check=False) or adb("shell","run-as",PACKAGE,"sh","-c","'test -d files/grouped-poc-grouped-a && echo exists'",check=False) or adb("shell","run-as",PACKAGE,"sh","-c","'test -d files/poc-gecko-A && echo exists'",check=False):raise SystemExit("Existing experiment process/profile found; refusing to touch it")
+profile_names=["poc-gecko-A","poc-gecko-B"]+["grouped-poc-"+mode+"-"+slot for mode in ("grouped","control") for slot in ("a","b","c")]
+if process_list() or any(adb("exec-out","run-as",PACKAGE,"ls","-d","files/"+name,check=False) for name in profile_names):raise SystemExit("Existing experiment process/profile found; refusing to touch it")
 
 report={"schema":1,"engine":"GeckoView 158.0.20261021001945","package":PACKAGE,"sourceSha":os.environ.get("GITHUB_SHA"),"runId":os.environ.get("GITHUB_RUN_ID"),"remoteDebugging":False,
         "scope":"Independent synthetic loopback fixture; Android 15 x86_64 emulator. No production package, personal account or real ChatGPT.",
@@ -265,6 +272,11 @@ finally:
         account=request.get("account")
         if account not in ("A","B","C"):continue
         if not request["acceptLanguage"].lower().startswith(expected(account)[0].lower()) or any(value!=account for value in re.findall(r"(?:^|;\s*)poc-owner=([^;]*)",request["cookie"])):report["initialRequestErrors"].append(request)
+    for case in ("isolation","grouped-resource","control-resource"):
+        for account,tab in (("A","0"),("A","1"),("B","0"),("C","0")):
+            for path in ("/page","/frame","/worker.js","/image.png"):
+                if not any(item["phase"]==case and item["account"]==account and urlparse(item["path"]).path==path and parse_qs(urlparse(item["path"]).query).get("tab")==[tab] for item in requests):
+                    report["initialRequestErrors"].append({"phase":case,"account":account,"tab":tab,"missing":path})
     resources=report["resources"];report["resourcesComplete"]=len(resources)==2 and all(r.get("processRelationCorrect") and r.get("sameAccountStorageTokens") and r["memory"]["complete"] and r["cpu"].get("allProcessesCovered") and len(r["cpu"].get("samplesOneCorePercent",[]))>=3 for r in resources)
     keep=resources[0].get("keepAlive",{}) if resources else {};report["keepAlivePassed"]=keep.get("originalContexts")==12 and keep.get("continuingContexts")==12 and keep.get("newDocuments")==0 and keep.get("newDocumentsAfterSwitch")==0
     report["apks"]=[{"file":apk.name,"bytes":apk.stat().st_size,"sha256":hashlib.sha256(apk.read_bytes()).hexdigest()} for apk in Path("environment-poc/build/outputs/apk/debug").glob("*.apk")]
