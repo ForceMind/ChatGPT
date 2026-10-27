@@ -78,7 +78,7 @@ public abstract class ManagedRecoveryActivity extends Activity {
                 File profile=new File(getFilesDir(),account().equals("B")?"managed-poc-b":"managed-poc-a");if(!profile.isDirectory()&&!profile.mkdirs())throw new IllegalStateException("Cannot create independent profile");
                 Bundle env=new Bundle();env.putString("env0","TZ="+zone);
                 runtime=GeckoRuntime.create(getApplicationContext(),new GeckoRuntimeSettings.Builder().arguments(new String[]{"-profile",profile.getAbsolutePath()}).extras(env).locales(new String[]{lang}).remoteDebuggingEnabled(false).consoleOutput(true).build());environment=wanted;
-                controller=new ManagedPageController(runtime,store,owner->{ManagedRecoveryActivity host=hosts.get(owner);if(host!=null)host.refresh();});
+                controller=new ManagedPageController(runtime,store,owner->{ManagedRecoveryActivity host=hosts.get(owner);if(host!=null)host.refresh();},entry->{ManagedRecoveryActivity host=hosts.get(entry.account);return host!=null&&host.current()==entry&&host.web.getSession()==entry.session?host.web:null;});
             }
             if(!wanted.equals(environment))throw new IllegalStateException("Environment mismatch");
             openTabs();
@@ -156,11 +156,11 @@ public abstract class ManagedRecoveryActivity extends Activity {
         ui.postDelayed(()->record("inspected"),500);
     }
     @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);setIntent(intent);try{boolean empty=tabs().isEmpty();openTabs();if(empty)show();command(intent);}catch(Exception error){startupError=error.toString();refresh();}}
-    @Override protected void onResume(){super.onResume();if(web!=null){web.requestFocus();if(current()!=null&&controller!=null){if(current().session.isOpen())current().session.setActive(true);controller.visible(current(),web.hasWindowFocus());}ui.postDelayed(()->record("resumed"),500);}}
-    @Override public void onWindowFocusChanged(boolean focused){super.onWindowFocusChanged(focused);if(controller!=null&&current()!=null){controller.visible(current(),focused);if(focused)try{store.write("A","index",new JSONObject().put("activeAccount",account()));}catch(Exception error){startupError=error.toString();}record("window-focus");}}
+    @Override protected void onResume(){super.onResume();if(hosts.get(account())!=this)return;if(web!=null){web.requestFocus();if(current()!=null&&controller!=null){if(current().session.isOpen()){current().session.setActive(true);if(web.hasWindowFocus())current().session.setFocused(true);}controller.visible(current(),web.hasWindowFocus());}ui.postDelayed(()->record("resumed"),500);}}
+    @Override public void onWindowFocusChanged(boolean focused){super.onWindowFocusChanged(focused);if(hosts.get(account())!=this)return;if(controller!=null&&current()!=null){if(current().session.isOpen()&&focused)current().session.setFocused(true);controller.visible(current(),focused);if(focused)try{store.write("A","index",new JSONObject().put("activeAccount",account()));}catch(Exception error){startupError=error.toString();}record("window-focus");}}
     private static void retainSessions(){if(controller!=null)for(ManagedPageController.Entry e:controller.all())if(e.session.isOpen())e.session.setActive(true);}
     @Override protected void onStop(){super.onStop();retainSessions();ui.postDelayed(ManagedRecoveryActivity::retainSessions,500);ui.postDelayed(ManagedRecoveryActivity::retainSessions,1500);}
-    @Override protected void onDestroy(){if(controller!=null&&current()!=null)controller.visible(current(),false);release();if(hosts.get(account())==this)hosts.remove(account());super.onDestroy();}
+    @Override protected void onDestroy(){if(hosts.get(account())==this&&controller!=null&&current()!=null)controller.visible(current(),false);release();if(hosts.get(account())==this)hosts.remove(account());super.onDestroy();}
     private void record(String event){if(hosts.get(account())!=this)return;try{
         JSONArray entries=new JSONArray();if(controller!=null)for(ManagedPageController.Entry e:tabs())entries.put(controller.metadata(e));JSONObject row=new JSONObject().put("event",event).put("account",account()).put("pid",android.os.Process.myPid()).put("selected",selected.getOrDefault(account(),0)).put("entries",entries).put("startupError",startupError).put("bridgeError",controller==null?"":controller.startupError).put("elapsedMs",SystemClock.elapsedRealtime());
         if(web!=null){int[] xy=new int[2];web.getLocationOnScreen(xy);row.put("viewX",xy[0]).put("viewY",xy[1]).put("viewWidth",web.getWidth()).put("viewHeight",web.getHeight()).put("windowFocused",web.hasWindowFocus()).put("viewShown",web.isShown());}

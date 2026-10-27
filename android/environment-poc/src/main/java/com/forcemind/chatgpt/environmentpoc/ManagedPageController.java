@@ -37,11 +37,12 @@ final class ManagedPageController {
         Entry(String account,int index){this.account=account;id=Integer.toString(index);session=new GeckoSession(new GeckoSessionSettings.Builder().contextId("managed-recovery-"+account).build());}
     }
     interface Listener {void changed(String account);}
+    interface InputViewProvider {View view(Entry entry);}
     private final Handler ui=new Handler(Looper.getMainLooper());
-    private final GeckoRuntime runtime;final RecoveryStore store;private final Listener listener;
+    private final GeckoRuntime runtime;final RecoveryStore store;private final Listener listener;private final InputViewProvider inputViews;
     private final Map<String,Entry> entries=new HashMap<>();private WebExtension extension;String startupError="";
-    ManagedPageController(GeckoRuntime runtime,RecoveryStore store,Listener listener){
-        this.runtime=runtime;this.store=store;this.listener=listener;
+    ManagedPageController(GeckoRuntime runtime,RecoveryStore store,Listener listener,InputViewProvider inputViews){
+        this.runtime=runtime;this.store=store;this.listener=listener;this.inputViews=inputViews;
         runtime.getWebExtensionController().ensureBuiltIn("resource://android/assets/managed-recovery/",EXTENSION).accept(ext->{extension=ext;for(Entry e:entries.values())if(!e.blocked)attach(e);},error->{startupError=error.toString();for(Entry e:entries.values())fail(e,"bridge-install-failed");});
     }
     static boolean allowed(String url,String account,String id){
@@ -192,12 +193,19 @@ final class ManagedPageController {
         if(e.writing||e.desired==null)return;
         if(!current.getString(editor).equals(e.approved.getString(editor))){showConflict(e,current);return;}
         String expected=current.getString(editor),goal=e.desired.getString(editor),token=e.token;long epoch=e.epoch;long started=android.os.SystemClock.elapsedRealtime();e.writing=true;
-        ui.post(new Runnable(){public void run(){
+        ui.post(new Runnable(){boolean restarted;public void run(){
             if(e.closed||e.epoch!=epoch||!token.equals(e.token))return;
             if(!e.visible){e.writing=false;e.pendingEditor="";return;}
-            View view=e.session.getTextInput().getView();InputConnection input=view==null?null:view.onCreateInputConnection(new EditorInfo());
+            View view=inputViews.view(e);
+            if(view!=null&&e.session.getTextInput().getView()!=view)e.session.getTextInput().setView(view);
             if(view!=null&&!view.hasFocus()){view.requestFocus();ui.postDelayed(this,100);return;}
-            if(view==null||!view.hasWindowFocus()||input==null){if(android.os.SystemClock.elapsedRealtime()-started<5000){ui.postDelayed(this,100);return;}fail(e,"editor-input-unavailable");return;}
+            if(view!=null&&view.hasWindowFocus())e.session.setFocused(true);
+            InputConnection input=view==null?null:view.onCreateInputConnection(new EditorInfo());
+            if(view==null||!view.hasWindowFocus()||input==null){
+                if(view!=null&&view.hasWindowFocus()&&!restarted){((android.view.inputmethod.InputMethodManager)view.getContext().getSystemService(android.content.Context.INPUT_METHOD_SERVICE)).restartInput(view);restarted=true;}
+                if(android.os.SystemClock.elapsedRealtime()-started<5000){ui.postDelayed(this,100);return;}
+                fail(e,"editor-input-unavailable:view="+(view!=null)+",window="+(view!=null&&view.hasWindowFocus())+",connection="+(input!=null));return;
+            }
             Handler target=input.getHandler();if(target==null)target=ui;
             Runnable retry=this;
             target.post(()->{

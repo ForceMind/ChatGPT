@@ -140,7 +140,7 @@ def tap_label(label):
 
 def private(name):return adb('exec-out','run-as',PACKAGE,'cat','files/managed-recovery-records/'+name)
 def private_write(name,value):
-    if not re.fullmatch('[ABC]-page-[01]\.bin',name):raise ValueError('Invalid fixture file')
+    if not re.fullmatch('[ABC]-page-[01]\.bin(?:\.bak)?',name):raise ValueError('Invalid fixture file')
     adb('shell','run-as '+PACKAGE+" sh -c 'cat > files/managed-recovery-records/"+name+"'",data=value)
 
 def guard():
@@ -209,6 +209,10 @@ try:
     launch('A','backups');root=tree();labels=' '.join(n.get('text','') for n in root.iter('node'));assert first_current in labels and second_current in labels;tap_label('关闭');report['cases']['restoreSavedConflictAndBackupAccess']=True
 
     print('7/8 Reject damaged encrypted record and retain original bytes',flush=True)
+    if not CORE:
+        stop();base.phase='atomic-backup';base.conflict=False;original=private('A-page-0.bin');private_write('A-page-0.bin.bak',original)
+        text('shell','run-as',PACKAGE,'rm','files/managed-recovery-records/A-page-0.bin');launch('A');healthy('A','0');same_values('A','0',first_current)
+        report['cases']['interruptedAtomicRecordRecovery']=True
     stop();base.phase='corrupt-record';base.conflict=False;original=private('A-page-0.bin');damaged=bytearray(original);damaged[-1]^=1;private_write('A-page-0.bin',bytes(damaged));launch('A')
     wait(lambda:entry('A','0') and entry('A','0')['blocked'],label='corrupt record blocked');assert private('A-page-0.bin')==bytes(damaged);report['cases']['corruptRecordPreserved']=True
     if not CORE:
@@ -240,7 +244,7 @@ except Exception as error:
 finally:
     report['native']={a:native(a) for a in ('A','B','C')};report['submissions']=base.submissions;report['processStops']=base.process_stops
     required={'initialCapture','normalClose','saveAfterRestore','historyAndURLIsolation','offlineReadOnlySnapshot','forceStopAndReconnect','keepCurrentConflict','restoreSavedConflictAndBackupAccess','corruptRecordPreserved','noAutomaticSendAndNoWebNativeAccess','accountEnvironmentAndStorageIsolation'}
-    if not CORE:required.update(('crossAccountRecordPreserved','unresolvedConflictRestartAndURLBinding'))
+    if not CORE:required.update(('crossAccountRecordPreserved','unresolvedConflictRestartAndURLBinding','interruptedAtomicRecordRecovery'))
     report['managedControllerReady']=bool(report.get('experimentComplete')) and all(report['cases'].get(name,False) for name in required)
     report['formalMigrationReady']=False
     report['platformFindings']={'unexpectedProcessRestartObserved':any(s['unexpectedNewProcesses'] for s in base.process_stops),'extraForceStopRequests':sum(s['forceStopRequests']-1 for s in base.process_stops),'touchScrollAcceptance':'Not established here; reading samples use native PanZoom API.'}

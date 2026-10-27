@@ -45,7 +45,8 @@ final class RecoveryStore {
         try{out.write(1);marker.finishWrite(out);}catch(Exception error){marker.failWrite(out);throw error;}
     }
     JSONObject read(String account,String tab)throws Exception{
-        AtomicFile file=file(account,tab);if(!file.getBaseFile().exists())return null;
+        AtomicFile file=file(account,tab);File backup=new File(file.getBaseFile().getPath()+".bak");
+        if(!file.getBaseFile().exists()&&!backup.exists())return null;
         byte[] bytes=file.readFully();if(bytes.length<29||bytes.length>1024*1024)throw new IllegalStateException("Invalid record size; original preserved");
         Cipher cipher=Cipher.getInstance("AES/GCM/NoPadding");cipher.init(Cipher.DECRYPT_MODE,key,new GCMParameterSpec(128,Arrays.copyOfRange(bytes,0,12)));
         cipher.updateAAD((scope+"/"+account+"/"+tab).getBytes(StandardCharsets.UTF_8));
