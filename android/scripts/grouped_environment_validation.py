@@ -24,6 +24,8 @@ def validate(row):
         if any(owner!=account for owner in owners):errors.append("foreign "+key)
         if key=="cookie" and row["kind"] in ("main","popup") and not row.get("probe") and owners!=[account]:errors.append("missing first-party cookie")
     if row["kind"]!="worker":
+        if row.get("cookieState") not in ("ready","blocked"):errors.append("cookie read error")
+        if row["kind"] in ("main","popup") and row.get("cookieState")!="ready":errors.append("first-party cookie unavailable")
         for key in ("local","idb","cache"):
             if row.get(key+"State") not in ("ready","blocked"):errors.append(key+" read error")
         for key in ("local","localPrevious","idb","idbPrevious","cache","cachePrevious"):

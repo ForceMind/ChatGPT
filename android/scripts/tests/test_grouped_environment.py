@@ -11,7 +11,7 @@ def sample(account="A",kind="main"):
     environment={"language":lang,"languages":[lang],"localeMaximized":maximized,"numberLocaleMaximized":maximized,"timeZone":zone,"winterOffset":winter,"summerOffset":summer,"localNoon":noon,"parsedNoon":noon,"dstGap":gap}
     return {"account":account,"kind":kind,"language":lang,"languages":[lang],"localeMaximized":maximized,"numberLocaleMaximized":maximized,"timeZone":zone,
             "winterOffset":winter,"summerOffset":summer,"localNoon":noon,"parsedNoon":noon,"dstGap":gap,
-            "acceptLanguage":lang+",en;q=0.5","cookie":"poc-owner="+account,"previousCookie":"","requestCookie":"poc-owner="+account,
+            "acceptLanguage":lang+",en;q=0.5","cookie":"poc-owner="+account,"previousCookie":"","requestCookie":"poc-owner="+account,"cookieState":"ready",
             "localState":"ready","idbState":"ready","cacheState":"ready","local":copy.deepcopy(marker),"idb":copy.deepcopy(marker),"cache":copy.deepcopy(marker),
             "service":{"state":"ready","owner":account,"response":{"owner":account,**environment}}}
 
@@ -43,6 +43,7 @@ class GroupedValidationTests(unittest.TestCase):
     def test_first_party_failures_are_not_hidden_by_privacy_blocking(self):
         row=sample();row["idbState"]="blocked";row["idb"]=None;self.assertTrue(validate(row))
         frame=sample(kind="frame");frame["idbState"]="blocked";frame["idb"]=None;self.assertEqual([],validate(frame))
+        frame["cookieState"]="blocked";frame["cookie"]="";self.assertEqual([],validate(frame))
         frame["idbState"]="error";self.assertTrue(validate(frame))
         row=sample();row["kind"]="unexpected";self.assertTrue(validate(row))
         row=sample();row["service"]={"state":"unsupported"};self.assertTrue(validate(row))

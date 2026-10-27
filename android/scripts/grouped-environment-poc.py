@@ -77,7 +77,8 @@ async function stored(write){
  try{const c=await caches.open('grouped-owner');let prior=await c.match('/__grouped_owner');result.cachePrevious=prior?await prior.json():null;
  if(!prior&&write){await c.put('/__grouped_owner',new Response(JSON.stringify({owner:base.account,token:crypto.randomUUID()})));prior=await c.match('/__grouped_owner');}
  result.cache=prior?await prior.json():null;result.cacheState='ready';}catch(e){result.cacheState=e&&['SecurityError','NotAllowedError'].includes(e.name)?'blocked':'error';}
- result.previousCookie=document.cookie;if(!document.cookie&&write)document.cookie='poc-owner='+base.account+'; SameSite=Lax; path=/';result.cookie=document.cookie;return result;
+ try{result.previousCookie=document.cookie;if(!document.cookie&&write)document.cookie='poc-owner='+base.account+'; SameSite=Lax; path=/';result.cookie=document.cookie;result.cookieState='ready';}
+ catch(e){result.cookieState=e&&['SecurityError','NotAllowedError'].includes(e.name)?'blocked':'error';}return result;
 }"""
 
 class Handler(BaseHTTPRequestHandler):
@@ -255,22 +256,22 @@ try:
     for account in ("A","C","B"):launch(account,next=True)
     time.sleep(5);grouped["keepAlive"]["newDocumentsAfterSwitch"]=len({r["instance"] for r in latest(phase).values()}-set(end));report["resources"].append(grouped)
 
-    before_clear={a:main_row(phase,a) for a in ("A","B","C")};phase="selective-clear";launch("C",clear=True)
+    before_clear={a:main_row(phase,a) for a in ("A","B","C")};clear_started=time.monotonic();phase="selective-clear";launch("C",clear=True)
     clear_file="files/grouped-clear-grouped-C.json"
     if not wait(lambda:adb("exec-out","run-as",PACKAGE,"cat",clear_file,check=False),20):raise RuntimeError("C clear was not requested")
     launch("C",probe=True)
     def cleared():
         row=main_row("selective-clear","C",probe=True)
-        if not row or row.get("cookie") or row.get("previousCookie") or row.get("requestCookie"):return None
+        if not row or row.get("cookieState")!="ready" or row.get("cookie") or row.get("previousCookie") or row.get("requestCookie"):return None
         if any(row.get(k+"State")!="ready" or row.get(k) is not None or row.get(k+"Previous") is not None for k in ("local","idb","cache")):return None
         if row.get("service",{}).get("state")!="ready" or row.get("service",{}).get("owner") is not None:return None
         return row
-    clean=wait(cleared,45);time.sleep(3)
-    unchanged={}
-    for account in ("A","B"):
+    clean=wait(cleared,45)
+    def unaffected(account):
         after=main_row("grouped-resource",account);before=before_clear[account]
         service=after.get("service",{}) if after else {}
-        unchanged[account]=bool(after and before and all(after.get(k)==before.get(k) for k in ("local","idb","cache","cookie")) and service.get("owner")==account and (service.get("response") or {}).get("owner")==account and after.get("instance")==before.get("instance"))
+        return bool(after and before and after.get("received",0)>clear_started and after.get("ticks",0)>before.get("ticks",0) and all(after.get(k)==before.get(k) for k in ("local","idb","cache","cookie")) and service.get("owner")==account and (service.get("response") or {}).get("owner")==account and after.get("instance")==before.get("instance"))
+    wait(lambda:all(unaffected(a) for a in ("A","B")),20);unchanged={a:unaffected(a) for a in ("A","B")}
     report["selectiveClear"]={"clearedCMarkers":bool(clean),"unaffectedAccounts":unchanged,"passed":bool(clean) and all(unchanged.values()),"probe":clean}
 
     adb("shell","am","force-stop",PACKAGE);time.sleep(2);phase="control-resource"
