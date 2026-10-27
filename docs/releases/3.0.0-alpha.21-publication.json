@@ -1,0 +1,559 @@
+{
+  "version": "3.0.0-alpha.21",
+  "verifiedAt": "2026-10-27T04:43:42.352696+00:00",
+  "release": {
+    "id": 425028163,
+    "url": "https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.21",
+    "tag": "v3.0.0-alpha.21",
+    "publishedAt": "2026-10-27T04:17:09Z",
+    "prerelease": true,
+    "sourceCommit": "5ba2f7366361bb53a740c0366fc7f1f38902ea23",
+    "assets": [
+      {
+        "id": 680407664,
+        "name": "ChatGPT-Profiles-3.0.0-alpha.21-mac-arm64.zip",
+        "size": 155157008,
+        "digest": "sha256:ce19529eb9d40fe55a6e02bdcced7e40ba20a997ba89226e251b4c84b918d4fa",
+        "state": "uploaded"
+      },
+      {
+        "id": 680407869,
+        "name": "ChatGPT-Studio-3.0.0-alpha.21-mac-arm64.dmg",
+        "size": 155092924,
+        "digest": "sha256:fe8c17d6e91d98e2cc29d2ced6e54ca6e582292bf98395d733ddf9105672dc9c",
+        "state": "uploaded"
+      },
+      {
+        "id": 680408140,
+        "name": "ChatGPT-Studio-3.0.0-alpha.21-mac-arm64.zip",
+        "size": 155040004,
+        "digest": "sha256:34e0e3b2003038b85d7a834657e4a0e4dbcf42cfd36190350b5b0b182cfac99a",
+        "state": "uploaded"
+      },
+      {
+        "id": 680408322,
+        "name": "ChatGPT-Studio-3.0.0-alpha.21-windows-x64-setup.exe",
+        "size": 131340242,
+        "digest": "sha256:6e2a433bc3ff3a61981c5173ce4a1a5b96c1a4263b7e6cbac80682c653fb2999",
+        "state": "uploaded"
+      },
+      {
+        "id": 680408557,
+        "name": "ChatGPT-Studio-3.0.0-alpha.21-windows-x64.zip",
+        "size": 181273668,
+        "digest": "sha256:f0748d8683a0431f49d32cd2d2c9a95cdfbda95bdb273c20efdfd0ce2e22854d",
+        "state": "uploaded"
+      },
+      {
+        "id": 680408870,
+        "name": "mac-recovery-verification.json",
+        "size": 907,
+        "digest": "sha256:ea56846efb23e961e587db511b809a1983815cc910d25176e0b60900ee71c234",
+        "state": "uploaded"
+      },
+      {
+        "id": 680408918,
+        "name": "mac-release-info.json",
+        "size": 28863,
+        "digest": "sha256:9d6228814a968b74e1501baa34718a0ee6c43a7d45f39c1e24d89ceaee182c10",
+        "state": "uploaded"
+      },
+      {
+        "id": 680408983,
+        "name": "mac-ui-verification.json",
+        "size": 377,
+        "digest": "sha256:f07a8a6f13a544abb51b25ec133ea1f5ca9fb14427b44253c432c84869a16132",
+        "state": "uploaded"
+      },
+      {
+        "id": 680409019,
+        "name": "mac-update-verification.json",
+        "size": 1718,
+        "digest": "sha256:4801dd273b34a87d281cab6c2249519b39640c27f11dbebe8231c2ad0626150c",
+        "state": "uploaded"
+      },
+      {
+        "id": 680409075,
+        "name": "release-info.json",
+        "size": 4580,
+        "digest": "sha256:8d6e56fdf86dd761c579941a860ee4f4181d09220ba0381d6120306e89dca084",
+        "state": "uploaded"
+      },
+      {
+        "id": 680409330,
+        "name": "SHA256SUMS.txt",
+        "size": 1380,
+        "digest": "sha256:b45da353fe332c7d7c9ef500c2e2fb483241813e25c19aee4813abd72843fa8e",
+        "state": "uploaded"
+      },
+      {
+        "id": 680409129,
+        "name": "windows-build-info.json",
+        "size": 28916,
+        "digest": "sha256:e9a9843bac64dd533b81319c936a78f4b33261e7935839f888c73b1451c11bdd",
+        "state": "uploaded"
+      },
+      {
+        "id": 680409171,
+        "name": "windows-native-retention.json",
+        "size": 13028,
+        "digest": "sha256:566205e7ba8942fdae73a47b307ef802bb78c6e3ccdaba88b86d1d545bcbfad7",
+        "state": "uploaded"
+      },
+      {
+        "id": 680409219,
+        "name": "windows-update-feed.yml",
+        "size": 1302,
+        "digest": "sha256:7780a97856251f81d689da452ddeef3beeee8c5e404061a6e0ff000e6825fd28",
+        "state": "uploaded"
+      },
+      {
+        "id": 680409271,
+        "name": "windows-upgrade.json",
+        "size": 650,
+        "digest": "sha256:719776369b698b4a23b121224721619ba9050b51ae1ff3dfc2d7c4daee68791c",
+        "state": "uploaded"
+      }
+    ]
+  },
+  "promotion": {
+    "runId": 40448668471,
+    "artifactId": 12709516824,
+    "artifactSHA256VerifiedLocally": "40c0d3557a15b9c27db3f256d3e92fec8a691ea2f66c0f977d21f1218f424d16",
+    "verification": {
+      "version": "3.0.0-alpha.21",
+      "sourceCommit": "a5d2169157c5ba241b5a93eb465d61e69bf2cf04",
+      "publisherCommit": "5ba2f7366361bb53a740c0366fc7f1f38902ea23",
+      "verifiedAt": "2026-10-27T04:16:03.774Z",
+      "draftVerified": true,
+      "originalPackagesRebuilt": false,
+      "macRun": 40369794145,
+      "windowsPackagingRun": 40368174471,
+      "windowsAcceptanceRun": 40372832792,
+      "shippingInputsUnchanged": true,
+      "acceptanceReportVerified": true,
+      "assets": [
+        {
+          "file": "ChatGPT-Profiles-3.0.0-alpha.21-mac-arm64.zip",
+          "bytes": 155157008,
+          "sha256": "ce19529eb9d40fe55a6e02bdcced7e40ba20a997ba89226e251b4c84b918d4fa"
+        },
+        {
+          "file": "ChatGPT-Studio-3.0.0-alpha.21-mac-arm64.dmg",
+          "bytes": 155092924,
+          "sha256": "fe8c17d6e91d98e2cc29d2ced6e54ca6e582292bf98395d733ddf9105672dc9c"
+        },
+        {
+          "file": "ChatGPT-Studio-3.0.0-alpha.21-mac-arm64.zip",
+          "bytes": 155040004,
+          "sha256": "34e0e3b2003038b85d7a834657e4a0e4dbcf42cfd36190350b5b0b182cfac99a"
+        },
+        {
+          "file": "ChatGPT-Studio-3.0.0-alpha.21-windows-x64-setup.exe",
+          "bytes": 131340242,
+          "sha256": "6e2a433bc3ff3a61981c5173ce4a1a5b96c1a4263b7e6cbac80682c653fb2999"
+        },
+        {
+          "file": "ChatGPT-Studio-3.0.0-alpha.21-windows-x64.zip",
+          "bytes": 181273668,
+          "sha256": "f0748d8683a0431f49d32cd2d2c9a95cdfbda95bdb273c20efdfd0ce2e22854d"
+        },
+        {
+          "file": "mac-recovery-verification.json",
+          "bytes": 907,
+          "sha256": "ea56846efb23e961e587db511b809a1983815cc910d25176e0b60900ee71c234"
+        },
+        {
+          "file": "mac-release-info.json",
+          "bytes": 28863,
+          "sha256": "9d6228814a968b74e1501baa34718a0ee6c43a7d45f39c1e24d89ceaee182c10"
+        },
+        {
+          "file": "mac-ui-verification.json",
+          "bytes": 377,
+          "sha256": "f07a8a6f13a544abb51b25ec133ea1f5ca9fb14427b44253c432c84869a16132"
+        },
+        {
+          "file": "mac-update-verification.json",
+          "bytes": 1718,
+          "sha256": "4801dd273b34a87d281cab6c2249519b39640c27f11dbebe8231c2ad0626150c"
+        },
+        {
+          "file": "release-info.json",
+          "bytes": 4580,
+          "sha256": "8d6e56fdf86dd761c579941a860ee4f4181d09220ba0381d6120306e89dca084"
+        },
+        {
+          "file": "windows-build-info.json",
+          "bytes": 28916,
+          "sha256": "e9a9843bac64dd533b81319c936a78f4b33261e7935839f888c73b1451c11bdd"
+        },
+        {
+          "file": "windows-native-retention.json",
+          "bytes": 13028,
+          "sha256": "566205e7ba8942fdae73a47b307ef802bb78c6e3ccdaba88b86d1d545bcbfad7"
+        },
+        {
+          "file": "windows-update-feed.yml",
+          "bytes": 1302,
+          "sha256": "7780a97856251f81d689da452ddeef3beeee8c5e404061a6e0ff000e6825fd28"
+        },
+        {
+          "file": "windows-upgrade.json",
+          "bytes": 650,
+          "sha256": "719776369b698b4a23b121224721619ba9050b51ae1ff3dfc2d7c4daee68791c"
+        },
+        {
+          "file": "SHA256SUMS.txt",
+          "bytes": 1380,
+          "sha256": "b45da353fe332c7d7c9ef500c2e2fb483241813e25c19aee4813abd72843fa8e"
+        }
+      ]
+    }
+  },
+  "website": {
+    "sourceCommit": "5ba2f7366361bb53a740c0366fc7f1f38902ea23",
+    "deployments": {
+      "chatgpt-studio": "ef857d31-097d-45a0-b3d0-4c6301a13642",
+      "chatgpt-profiles": "161f2424-6d33-4a7f-8b34-97a95d0e986c"
+    },
+    "browserChecks": [
+      {
+        "runId": 40448672881,
+        "artifactId": 12708554743,
+        "artifactSHA256VerifiedLocally": "94db66b6d6717b91ed12bed61140e16d8dd76292acd7c028f846f89186d229d8",
+        "verification": {
+          "origin": "http://127.0.0.1:49188",
+          "landedOrigin": "http://127.0.0.1:49188",
+          "licenseOrigin": "http://127.0.0.1:49188",
+          "platformVersions": {
+            "macos": "3.0.0-alpha.21",
+            "windows": "3.0.0-alpha.21",
+            "android": "3.0.0-alpha.19"
+          },
+          "macosUpdateVersion": "3.0.0-alpha.21",
+          "downloadFiles": 5,
+          "acceleratedFiles": 5,
+          "widths": [
+            1440,
+            390
+          ],
+          "mobilePlatformRouting": {
+            "android": true,
+            "sharedDownloadAnchor": true,
+            "explicitPlatformRespected": true,
+            "unsupportedDevicesGeneric": true
+          },
+          "checksumCopy": true,
+          "credentiallessElectronFeed": true,
+          "legacyPageRedirect": false,
+          "customDomainServedDirectly": false,
+          "repositoryNavigationAbsent": true,
+          "rootLicenseMatchesWebsite": true,
+          "publicCommercialContact": true,
+          "errors": []
+        },
+        "stats": {
+          "startTime": "2026-10-27T04:15:22.566Z",
+          "duration": 13263.599,
+          "expected": 1,
+          "skipped": 0,
+          "unexpected": 0,
+          "flaky": 0
+        }
+      },
+      {
+        "runId": 40449195942,
+        "artifactId": 12709905493,
+        "artifactSHA256VerifiedLocally": "ba3b20cffa70743e5b08c8bdfdee9fd5d0a6171548853fe9a9ed3e4de92b4e19",
+        "verification": {
+          "origin": "https://chatgpt-studio.pages.dev",
+          "landedOrigin": "https://chatgpt-studio.pages.dev",
+          "licenseOrigin": "https://chatgpt-studio.pages.dev",
+          "platformVersions": {
+            "macos": "3.0.0-alpha.21",
+            "windows": "3.0.0-alpha.21",
+            "android": "3.0.0-alpha.19"
+          },
+          "macosUpdateVersion": "3.0.0-alpha.21",
+          "downloadFiles": 5,
+          "acceleratedFiles": 5,
+          "widths": [
+            1440,
+            390
+          ],
+          "mobilePlatformRouting": {
+            "android": true,
+            "sharedDownloadAnchor": true,
+            "explicitPlatformRespected": true,
+            "unsupportedDevicesGeneric": true
+          },
+          "checksumCopy": true,
+          "credentiallessElectronFeed": true,
+          "legacyPageRedirect": false,
+          "customDomainServedDirectly": false,
+          "repositoryNavigationAbsent": true,
+          "rootLicenseMatchesWebsite": true,
+          "publicCommercialContact": true,
+          "errors": []
+        },
+        "stats": {
+          "startTime": "2026-10-27T04:21:00.640Z",
+          "duration": 16221.522,
+          "expected": 1,
+          "skipped": 0,
+          "unexpected": 0,
+          "flaky": 0
+        }
+      },
+      {
+        "runId": 40449195942,
+        "artifactId": 12709517708,
+        "artifactSHA256VerifiedLocally": "404df3c9ec505971a3812705fbbc21408e96bc3d384d2681044a194c48f5650f",
+        "verification": {
+          "origin": "https://chatgpt.xincreates.com",
+          "landedOrigin": "https://chatgpt.xincreates.com",
+          "licenseOrigin": "https://chatgpt.xincreates.com",
+          "platformVersions": {
+            "macos": "3.0.0-alpha.21",
+            "windows": "3.0.0-alpha.21",
+            "android": "3.0.0-alpha.19"
+          },
+          "macosUpdateVersion": "3.0.0-alpha.21",
+          "downloadFiles": 5,
+          "acceleratedFiles": 5,
+          "widths": [
+            1440,
+            390
+          ],
+          "mobilePlatformRouting": {
+            "android": true,
+            "sharedDownloadAnchor": true,
+            "explicitPlatformRespected": true,
+            "unsupportedDevicesGeneric": true
+          },
+          "checksumCopy": true,
+          "credentiallessElectronFeed": true,
+          "legacyPageRedirect": false,
+          "customDomainServedDirectly": true,
+          "repositoryNavigationAbsent": true,
+          "rootLicenseMatchesWebsite": true,
+          "publicCommercialContact": true,
+          "errors": []
+        },
+        "stats": {
+          "startTime": "2026-10-27T04:21:10.913Z",
+          "duration": 20344.401,
+          "expected": 1,
+          "skipped": 0,
+          "unexpected": 0,
+          "flaky": 0
+        }
+      },
+      {
+        "runId": 40449195942,
+        "artifactId": 12709288559,
+        "artifactSHA256VerifiedLocally": "aabeaed7ee2ba10faf63a2fbe51abaf9d235aa5a8a7cd49321d00d8f47d257cc",
+        "verification": {
+          "origin": "https://chatgpt-profiles.pages.dev",
+          "landedOrigin": "https://chatgpt-studio.pages.dev",
+          "licenseOrigin": "https://chatgpt-studio.pages.dev",
+          "platformVersions": {
+            "macos": "3.0.0-alpha.21",
+            "windows": "3.0.0-alpha.21",
+            "android": "3.0.0-alpha.19"
+          },
+          "macosUpdateVersion": "3.0.0-alpha.21",
+          "downloadFiles": 5,
+          "acceleratedFiles": 5,
+          "widths": [
+            1440,
+            390
+          ],
+          "mobilePlatformRouting": {
+            "android": true,
+            "sharedDownloadAnchor": true,
+            "explicitPlatformRespected": true,
+            "unsupportedDevicesGeneric": true
+          },
+          "checksumCopy": true,
+          "credentiallessElectronFeed": true,
+          "legacyPageRedirect": true,
+          "customDomainServedDirectly": false,
+          "repositoryNavigationAbsent": true,
+          "rootLicenseMatchesWebsite": true,
+          "publicCommercialContact": true,
+          "errors": []
+        },
+        "stats": {
+          "startTime": "2026-10-27T04:21:00.030Z",
+          "duration": 15834.792,
+          "expected": 1,
+          "skipped": 0,
+          "unexpected": 0,
+          "flaky": 0
+        }
+      }
+    ],
+    "independentHTTP": {
+      "scope": "Changed resources and core scripts/license; unchanged PNGs covered by native render CI",
+      "results": {
+        "https://chatgpt-studio.pages.dev": {
+          "files": {
+            "index.html": {
+              "byteIdentical": true,
+              "sha256": "88b8a16387e7048b83c05530f82130875215f69169054dcbe70004807a2678b5"
+            },
+            "app.js": {
+              "byteIdentical": true,
+              "sha256": "e4e5eecd24322e5f1104f43aacd625d80a5b7f188de4add38520b2246ebbb8d4"
+            },
+            "styles.css": {
+              "byteIdentical": true,
+              "sha256": "df4ee39f9cd53992e7c2e718c83f941afe238fadc1c2c84ae8a7a72a11fcf1a1"
+            },
+            "license.txt": {
+              "byteIdentical": true,
+              "sha256": "9d1b471b68ba1bf60015a232b380a075da38f31a74c961247a03e281785cc4a9"
+            },
+            "assets/icon.svg": {
+              "byteIdentical": true,
+              "sha256": "c40527d47803acd03080ba814abe214159f3117ff277c36a600ff0ccedac82b0"
+            },
+            "updates/macos.json": {
+              "byteIdentical": true,
+              "sha256": "331a61b002409b9ad8845e4f6c0d35aa15f4b5db20c8aae62a6ce915647224e3"
+            },
+            "updates/windows/alpha.yml": {
+              "byteIdentical": true,
+              "sha256": "7780a97856251f81d689da452ddeef3beeee8c5e404061a6e0ff000e6825fd28"
+            }
+          },
+          "sourceCommit": "5ba2f7366361bb53a740c0366fc7f1f38902ea23",
+          "macFeedDirect": "3.0.0-alpha.21",
+          "windowsFeedDirect": "3.0.0-alpha.21"
+        },
+        "https://chatgpt.xincreates.com": {
+          "files": {
+            "index.html": {
+              "normalizedMatches": true,
+              "existingZoneTransforms": [
+                "email protection",
+                "web analytics"
+              ],
+              "rawSHA256": "8707c64cbd871927a0dd9d537a840214dbef206ac2195993f37b59d592d57ffb"
+            },
+            "app.js": {
+              "byteIdentical": true,
+              "sha256": "e4e5eecd24322e5f1104f43aacd625d80a5b7f188de4add38520b2246ebbb8d4"
+            },
+            "styles.css": {
+              "byteIdentical": true,
+              "sha256": "df4ee39f9cd53992e7c2e718c83f941afe238fadc1c2c84ae8a7a72a11fcf1a1"
+            },
+            "license.txt": {
+              "byteIdentical": true,
+              "sha256": "9d1b471b68ba1bf60015a232b380a075da38f31a74c961247a03e281785cc4a9"
+            },
+            "assets/icon.svg": {
+              "byteIdentical": true,
+              "sha256": "c40527d47803acd03080ba814abe214159f3117ff277c36a600ff0ccedac82b0"
+            },
+            "updates/macos.json": {
+              "byteIdentical": true,
+              "sha256": "331a61b002409b9ad8845e4f6c0d35aa15f4b5db20c8aae62a6ce915647224e3"
+            },
+            "updates/windows/alpha.yml": {
+              "byteIdentical": true,
+              "sha256": "7780a97856251f81d689da452ddeef3beeee8c5e404061a6e0ff000e6825fd28"
+            }
+          },
+          "sourceCommit": "5ba2f7366361bb53a740c0366fc7f1f38902ea23",
+          "macFeedDirect": "3.0.0-alpha.21",
+          "windowsFeedDirect": "3.0.0-alpha.21"
+        },
+        "https://chatgpt-profiles.pages.dev": {
+          "macFeedDirect": "3.0.0-alpha.21",
+          "pageRedirect": 308
+        }
+      }
+    },
+    "downloadHeadChecks": [
+      {
+        "file": "ChatGPT-Studio-3.0.0-alpha.21-mac-arm64.dmg",
+        "accelerated": false,
+        "status": 200,
+        "contentDisposition": "attachment; filename=ChatGPT-Studio-3.0.0-alpha.21-mac-arm64.dmg",
+        "contentLength": "155092924"
+      },
+      {
+        "file": "ChatGPT-Studio-3.0.0-alpha.21-mac-arm64.dmg",
+        "accelerated": true,
+        "status": 200,
+        "contentDisposition": "attachment; filename=ChatGPT-Studio-3.0.0-alpha.21-mac-arm64.dmg",
+        "contentLength": "155092924"
+      },
+      {
+        "file": "ChatGPT-Studio-3.0.0-alpha.21-mac-arm64.zip",
+        "accelerated": false,
+        "status": 200,
+        "contentDisposition": "attachment; filename=ChatGPT-Studio-3.0.0-alpha.21-mac-arm64.zip",
+        "contentLength": "155040004"
+      },
+      {
+        "file": "ChatGPT-Studio-3.0.0-alpha.21-mac-arm64.zip",
+        "accelerated": true,
+        "status": 200,
+        "contentDisposition": "attachment; filename=ChatGPT-Studio-3.0.0-alpha.21-mac-arm64.zip",
+        "contentLength": "155040004"
+      },
+      {
+        "file": "ChatGPT-Studio-3.0.0-alpha.21-windows-x64-setup.exe",
+        "accelerated": false,
+        "status": 200,
+        "contentDisposition": "attachment; filename=ChatGPT-Studio-3.0.0-alpha.21-windows-x64-setup.exe",
+        "contentLength": "131340242"
+      },
+      {
+        "file": "ChatGPT-Studio-3.0.0-alpha.21-windows-x64-setup.exe",
+        "accelerated": true,
+        "status": 200,
+        "contentDisposition": "attachment; filename=ChatGPT-Studio-3.0.0-alpha.21-windows-x64-setup.exe",
+        "contentLength": "131340242"
+      },
+      {
+        "file": "ChatGPT-Studio-3.0.0-alpha.21-windows-x64.zip",
+        "accelerated": false,
+        "status": 200,
+        "contentDisposition": "attachment; filename=ChatGPT-Studio-3.0.0-alpha.21-windows-x64.zip",
+        "contentLength": "181273668"
+      },
+      {
+        "file": "ChatGPT-Studio-3.0.0-alpha.21-windows-x64.zip",
+        "accelerated": true,
+        "status": 200,
+        "contentDisposition": "attachment; filename=ChatGPT-Studio-3.0.0-alpha.21-windows-x64.zip",
+        "contentLength": "181273668"
+      }
+    ],
+    "domainBindingsChanged": false,
+    "screenshotsAndAndroidVersionRetained": true
+  },
+  "macOSLocalUpgrade": {
+    "installedVersion": "3.0.0-alpha.21",
+    "asarSHA256": "0889feea054d59aa5c6fe720f842dd5db49c42a9a4300fd4a6ba221c70bde00b",
+    "applicationRunning": true,
+    "savedIdentityPreserved": true,
+    "closedTabsPreserved": true,
+    "encryptedOriginalsInPrivateBackupVerified": true,
+    "recoveryConsentCompleted": true,
+    "privateDataUploaded": false,
+    "keychainExported": false,
+    "privateRollbackBackupRetained": true,
+    "duplicateSwapBundleRemoved": true,
+    "nativeAboutVersionVerified": true,
+    "temporaryDownloadAndExportRemoved": true
+  },
+  "localPrivacy": "Private profile identifiers, counts, backup locations, login/session details and all user files are excluded. Complete verified private data and old application backups are retained on the owner machine.",
+  "scope": "Existing desktop CI binaries promoted without rebuild; website and update feeds published; local Mac backed up and upgraded. Android remains alpha.19. Live ChatGPT attachment sending and Windows physical-device acceptance remain separate."
+}
