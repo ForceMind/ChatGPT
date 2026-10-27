@@ -202,14 +202,21 @@ def popup(case,account):
     previous=native(account,"grouped").get("elapsedMs",-1);started=time.monotonic();launch(account,inspect=True)
     def focused_view():
         value=native(account,"grouped");lines=adb("shell","dumpsys","window","windows",check=False).splitlines()
-        focused=[line.strip() for line in lines if "mCurrentFocus=" in line and "Grouped"+account+"Activity" in line]
-        return {**value,"osFocusedWindow":focused[0]} if focused and value.get("elapsedMs",-1)>previous and value.get("viewHeight",0)>0 else None
+        focused=[line.strip() for line in lines if ("mCurrentFocus=" in line or "mFocusedApp=" in line) and "Grouped"+account+"Activity" in line]
+        activities=adb("shell","dumpsys","activity","activities",check=False).splitlines()
+        top=[line.strip() for line in activities if "topResumedActivity" in line]
+        resumed=top if top else [line.strip() for line in activities if "mResumedActivity" in line]
+        foreground=[line for line in resumed if "Grouped"+account+"Activity" in line]
+        evidence=focused or foreground
+        return {**value,"osForegroundEvidence":evidence} if evidence and value.get("elapsedMs",-1)>previous and value.get("viewHeight",0)>0 else None
     geo=wait(focused_view,20)
     focused_at=time.monotonic() if geo else started
     row=wait(lambda:(lambda value:value if value and value.get("received",0)>focused_at and value.get("popupButton") else None)(main_row(case,account)),20)
     point=row and row.get("popupButton");window_dump=adb("shell","dumpsys","window","windows",check=False)
     focus_lines=[line.strip() for line in window_dump.splitlines() if "mCurrentFocus=" in line or "mFocusedApp=" in line]
-    attempt={"account":account,"focusedView":geo,"lastNative":native(account,"grouped"),"focusWindows":focus_lines,"point":point,"freshPageReport":bool(row)};popup_attempts.append(attempt)
+    activity_dump=adb("shell","dumpsys","activity","activities",check=False)
+    activity_lines=[line.strip() for line in activity_dump.splitlines() if "topResumedActivity" in line or "mResumedActivity" in line]
+    attempt={"account":account,"focusedView":geo,"lastNative":native(account,"grouped"),"focusWindows":focus_lines,"resumedActivities":activity_lines,"point":point,"freshPageReport":bool(row)};popup_attempts.append(attempt)
     screenshot("popup-"+account.lower()+"-before")
     if not geo or not point:attempt["reason"]="foreground view or fresh page coordinates unavailable";return False
     before={r["instance"] for r in records(case) if r.get("account")==account and r.get("kind")=="popup"}
@@ -240,9 +247,10 @@ def heartbeat_ticks(case):
     return result
 
 def measurement(case,mode):
-    time.sleep(30);mem=memory(case);before=heartbeat_ticks(case);cpu_result=cpu(case);after=heartbeat_ticks(case)
-    activity={key:before[key] is not None and after[key] is not None and after[key]>before[key] for key in before}
-    return {"mode":mode,"memory":mem,"cpu":cpu_result,"heartbeatBefore":before,"heartbeatAfter":after,"activeDuringCpuSample":activity}
+    started=time.monotonic();time.sleep(30);mem30=memory(case+"-30");before30=heartbeat_ticks(case);sample30=time.monotonic()-started;cpu30=cpu(case+"-30");after30=heartbeat_ticks(case)
+    time.sleep(max(0,60-(time.monotonic()-started)));mem60=memory(case+"-60");before60=heartbeat_ticks(case);sample60=time.monotonic()-started;cpu60=cpu(case+"-60");after60=heartbeat_ticks(case)
+    activity={str(window)+"/"+key:before[key] is not None and after[key] is not None and after[key]>before[key] for window,before,after in ((30,before30,after30),(60,before60,after60)) for key in before}
+    return {"mode":mode,"memoryAfter30":mem30,"memory":mem60,"cpuAfter30":cpu30,"cpu":cpu60,"cpuSampleSecondsAfterReady":[round(sample30,1),round(sample60,1)],"heartbeatBefore30":before30,"heartbeatAfter30":after30,"heartbeatBefore60":before60,"heartbeatAfter60":after60,"activeDuringCpuSample":activity}
 
 devices=[x.split()[0] for x in adb("devices").splitlines()[1:] if x.endswith("\tdevice")]
 if os.environ.get("GITHUB_ACTIONS")!="true" or len(devices)!=1 or not devices[0].startswith("emulator-") or adb("shell","getprop","ro.kernel.qemu")!="1":raise SystemExit("Only one fresh GitHub Actions emulator is allowed; physical devices refused")
@@ -282,7 +290,7 @@ try:
     warmup=start_workload(phase,"control");warmup["sameAccountStorageTokens"]=same_account_tokens(phase)
     warmup["environmentErrors"]=[{"account":r["account"],"kind":r["kind"],"errors":validate(r)} for r in records(phase) if validate(r)]
     warmup["passed"]=warmup["processRelationCorrect"] and warmup["sameAccountStorageTokens"] and not warmup["environmentErrors"];report["controlWarmup"]=warmup
-    report["comparisonConditions"]="Both modes preloaded four equal pages, then restarted. The grouped profile also retained popup history from the isolation stage. Both wait 30 seconds after readiness before sampling; synthetic storage probes and heartbeats remain active."
+    report["comparisonConditions"]="Both modes preloaded four equal pages, then restarted. The grouped profile also retained popup history from the isolation stage. Both sample at approximately 30 and 60 seconds after readiness; synthetic storage probes and heartbeats remain active."
     print("Stage 3/5: grouped processes and 330-second retention",flush=True)
     adb("shell","am","force-stop",PACKAGE);time.sleep(2);phase="grouped-resource"
     grouped=start_workload(phase,"grouped");new_pids={grouped["native"][a]["pid"] for a in ("A","B","C")};reopened={}
@@ -325,7 +333,9 @@ try:
 except Exception as error:
     failure=str(error);report["failure"]=failure;print("Grouped PoC failure:",failure,flush=True)
 finally:
-    report["systemAfter"]={"locale":adb("shell","getprop","persist.sys.locale"),"timeZone":adb("shell","getprop","persist.sys.timezone")};report["systemUnchanged"]=report["systemBefore"]==report["systemAfter"]
+    try:report["systemAfter"]={"locale":adb("shell","getprop","persist.sys.locale"),"timeZone":adb("shell","getprop","persist.sys.timezone")}
+    except (OSError,subprocess.SubprocessError) as error:report["systemAfter"]={"error":str(error)}
+    report["systemUnchanged"]=report["systemBefore"]==report["systemAfter"]
     report["initialRequestErrors"]=[]
     for request in requests:
         account=request.get("account")
@@ -336,13 +346,21 @@ finally:
             for path in ("/page","/frame","/worker.js","/image.png"):
                 if not any(item["phase"]==case and item["account"]==account and urlparse(item["path"]).path==path and parse_qs(urlparse(item["path"]).query).get("tab")==[tab] for item in requests):
                     report["initialRequestErrors"].append({"phase":case,"account":account,"tab":tab,"missing":path})
-    resources=report["resources"];report["resourcesComplete"]=bool(report.get("controlWarmup",{}).get("passed")) and len(resources)==2 and all(r.get("processRelationCorrect") and r.get("sameAccountStorageTokens") and r["memory"]["complete"] and r["cpu"].get("allProcessesCovered") and len(r["cpu"].get("samplesOneCorePercent",[]))>=3 and all(r.get("activeDuringCpuSample",{}).values()) and len(r.get("activeDuringCpuSample",{}))==4 for r in resources)
+    resources=report["resources"];report["resourcesComplete"]=bool(report.get("controlWarmup",{}).get("passed")) and len(resources)==2 and all(r.get("processRelationCorrect") and r.get("sameAccountStorageTokens") and r["memoryAfter30"]["complete"] and r["memory"]["complete"] and all(r[k].get("allProcessesCovered") and len(r[k].get("samplesOneCorePercent",[]))>=3 for k in ("cpuAfter30","cpu")) and all(r.get("activeDuringCpuSample",{}).values()) and len(r.get("activeDuringCpuSample",{}))==8 for r in resources)
     keep=resources[0].get("keepAlive",{}) if resources else {};report["keepAlivePassed"]=keep.get("originalContexts")==12 and keep.get("continuingContexts")==12 and keep.get("newDocuments")==0 and keep.get("newDocumentsAfterSwitch")==0
-    restart=resources[0].get("processRestart",{}) if resources else {};report["reopenPassed"]=restart.get("newProcesses",False) and len(restart.get("accountsRetained",{}))==3 and all(restart["accountsRetained"].values())
+    restart=resources[0].get("processRestart",{}) if resources else {};report["storageAfterForceStopPassed"]=restart.get("newProcesses",False) and len(restart.get("accountsRetained",{}))==3 and all(restart["accountsRetained"].values())
+    try:runtime_log=adb("logcat","-d",check=False,timeout=30)
+    except (OSError,subprocess.SubprocessError) as error:runtime_log="Log capture failed: "+str(error);report["logCaptureError"]=str(error)
+    report["engineSignals"]={"sessionStoreWindowNull":sum('WindowEventDispatcher", win is null' in line for line in runtime_log.splitlines()),"stateUpdateNoListener":sum('No listener for GeckoView:StateUpdated' in line for line in runtime_log.splitlines()),"fatalExceptionsInDeviceLog":sum('FATAL EXCEPTION' in line for line in runtime_log.splitlines())}
+    report["scopeLimitations"]=["A force-stop test reopens synthetic pages from script-provided URLs; it validates retained browser storage, not automatic tab, draft or reading-position restoration.","Foreground retention uses synthetic storage probes and a two-second network heartbeat; silent pages and real ChatGPT are not covered.","Only Android 15 x86_64 emulator was measured; experiment minSdk 29 does not establish Android 9 compatibility.","App UI and A/C runtime share the experiment's default process; a separate production UI process and migration overhead are not measured."]
     report["apks"]=[{"file":apk.name,"bytes":apk.stat().st_size,"sha256":hashlib.sha256(apk.read_bytes()).hexdigest()} for apk in Path("environment-poc/build/outputs/apk/debug").glob("*.apk")]
     report["popupAttempts"]=popup_attempts
     for name,data in (("report.json",report),("events.json",records()),("requests.json",requests),("heartbeats.json",heartbeats)):(OUT/name).write_text(json.dumps(data,ensure_ascii=False,indent=2))
-    (OUT/"runtime.log").write_text(adb("logcat","-d",check=False,timeout=30));(OUT/"processes.txt").write_text(adb("shell","ps","-A","-o","PID,PPID,NAME,ARGS"))
+    (OUT/"runtime.log").write_text(runtime_log)
+    try:(OUT/"processes.txt").write_text(adb("shell","ps","-A","-o","PID,PPID,NAME,ARGS"))
+    except (OSError,subprocess.SubprocessError) as error:(OUT/"processes.txt").write_text("Process capture failed: "+str(error))
     for apk in report["apks"]:print(apk["file"],apk["bytes"],apk["sha256"],flush=True)
-    adb("shell","am","force-stop",PACKAGE,check=False);adb("reverse","--remove","tcp:8765",check=False);server.shutdown()
-if failure or not report.get("isolation",{}).get("passed") or not report.get("selectiveClear",{}).get("passed") or not report["systemUnchanged"] or not report["resourcesComplete"] or not report["keepAlivePassed"] or not report["reopenPassed"] or report.get("resourceEnvironmentErrors") or report["initialRequestErrors"]:raise SystemExit(1)
+    try:adb("shell","am","force-stop",PACKAGE,check=False);adb("reverse","--remove","tcp:8765",check=False)
+    except (OSError,subprocess.SubprocessError) as error:print("Emulator cleanup unavailable:",str(error),flush=True)
+    server.shutdown()
+if failure or not report.get("isolation",{}).get("passed") or not report.get("selectiveClear",{}).get("passed") or not report["systemUnchanged"] or not report["resourcesComplete"] or not report["keepAlivePassed"] or not report["storageAfterForceStopPassed"] or report.get("resourceEnvironmentErrors") or report["initialRequestErrors"]:raise SystemExit(1)
