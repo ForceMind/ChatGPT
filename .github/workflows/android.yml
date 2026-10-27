@@ -70,6 +70,10 @@ on:
         description: Run independent three-account grouped versus separate Gecko environment experiment
         type: boolean
         default: false
+      grouped_clear_only:
+        description: Run only the standalone three-account selective-clear confirmation
+        type: boolean
+        default: false
       lifecycle_only:
         description: Native lifecycle/retention and resource matrix, no instrumentation or real ChatGPT
         type: boolean
@@ -86,7 +90,7 @@ permissions:
   contents: read
 jobs:
   build:
-    if: github.event_name != 'workflow_dispatch' || (!inputs.device_only && !inputs.standalone_environment_poc && !inputs.grouped_environment_poc && !inputs.lifecycle_only)
+    if: github.event_name != 'workflow_dispatch' || (!inputs.device_only && !inputs.standalone_environment_poc && !inputs.grouped_environment_poc && !inputs.grouped_clear_only && !inputs.lifecycle_only)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -125,7 +129,7 @@ jobs:
             android/app/build/reports/
             android/app/build/test-results/
   device:
-    if: github.event_name == 'workflow_dispatch' && inputs.run_device_tests && !inputs.standalone_environment_poc && !inputs.grouped_environment_poc && !inputs.lifecycle_only
+    if: github.event_name == 'workflow_dispatch' && inputs.run_device_tests && !inputs.standalone_environment_poc && !inputs.grouped_environment_poc && !inputs.grouped_clear_only && !inputs.lifecycle_only
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
@@ -274,10 +278,11 @@ jobs:
             android/app/build/outputs/androidTest-results/
             android/app/build/device-evidence/
   environment-poc:
-    if: github.event_name == 'workflow_dispatch' && (inputs.standalone_environment_poc || inputs.grouped_environment_poc)
+    if: github.event_name == 'workflow_dispatch' && (inputs.standalone_environment_poc || inputs.grouped_environment_poc || inputs.grouped_clear_only)
     uses: ./.github/workflows/android-environment-poc.yml
     with:
-      grouped: ${{ inputs.grouped_environment_poc }}
+      grouped: ${{ inputs.grouped_environment_poc || inputs.grouped_clear_only }}
+      clear_only: ${{ inputs.grouped_clear_only }}
   lifecycle:
     if: github.event_name == 'workflow_dispatch' && inputs.lifecycle_only
     runs-on: ubuntu-latest

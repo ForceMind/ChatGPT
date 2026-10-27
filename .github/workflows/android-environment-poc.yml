@@ -6,6 +6,10 @@ on:
         type: boolean
         required: false
         default: false
+      clear_only:
+        type: boolean
+        required: false
+        default: false
 permissions:
   contents: read
 jobs:
@@ -49,7 +53,9 @@ jobs:
           adb shell input keyevent 82
           adb shell pm disable-user --user 0 com.google.android.apps.nexuslauncher
           adb install environment-poc/build/outputs/apk/debug/environment-poc-x86_64-debug.apk
-          if [ "${{ inputs.grouped }}" = true ]; then
+          if [ "${{ inputs.clear_only }}" = true ]; then
+            timeout 300 python3 -u scripts/grouped-clear-smoke.py environment-poc/build/evidence
+          elif [ "${{ inputs.grouped }}" = true ]; then
             timeout 900 python3 -u scripts/grouped-environment-poc.py environment-poc/build/evidence
           else
             timeout 900 python3 -u scripts/environment-poc.py environment-poc/build/evidence
@@ -65,7 +71,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always() && inputs.grouped
         with:
-          name: android-grouped-environment-evidence
+          name: ${{ inputs.clear_only && 'android-grouped-clear-evidence' || 'android-grouped-environment-evidence' }}
           retention-days: 14
           path: |
             android/environment-poc/build/evidence/
