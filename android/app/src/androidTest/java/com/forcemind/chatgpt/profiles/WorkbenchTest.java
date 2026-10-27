@@ -159,7 +159,7 @@ public class WorkbenchTest {
             screenshot("android-website-assets.png");
         }
         try(ActivityScenario<AssetWorkbenchActivity> scene=ActivityScenario.launch(screen(AssetWorkbenchActivity.class).putExtra("skills",true))){
-            AtomicInteger count=new AtomicInteger();until(()->{scene.onActivity(a->count.set(find(a.getWindow().getDecorView(),ListView.class).getAdapter()==null?0:find(a.getWindow().getDecorView(),ListView.class).getAdapter().getCount()));return count.get()==120;});
+            AtomicInteger count=new AtomicInteger();until(()->{scene.onActivity(a->count.set(find(a.getWindow().getDecorView(),ListView.class).getAdapter()==null?0:find(a.getWindow().getDecorView(),ListView.class).getAdapter().getCount()));return count.get()==121;});
             screenshot("android-website-skills.png");
         }
     }

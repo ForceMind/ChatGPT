@@ -4,9 +4,21 @@
 
 原生 Java + Android System WebView。当前公开预发布版为 `3.0.0-alpha.19`，默认进入网页，标签清单按需展开；支持窗口保留、工作台与文件任务。APK 沿用既有固定签名，历史安装包保留。没有地址栏，延续白色、浅灰和黑色控件。手机与平板使用同一 APK，各设备分别登录。
 
-下载：[Android APK](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.19/ChatGPT-Studio-3.0.0-alpha.19-android.apk) · [Release](https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.19)。普通 APK 的业务内核与数据目录保持，未加入 Gecko；每账号浏览器语言和时区尚未迁入。[独立环境 PoC](environment-poc/README.md)只验证研发路线，不是普通客户端下载版本。完整页面快照和离线阅读属于后续计划。
+下载：[Android APK](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.19/ChatGPT-Studio-3.0.0-alpha.19-android.apk) · [Release](https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.19)。普通 APK 的业务内核与数据目录保持，未加入 Gecko；每账号浏览器语言和时区尚未迁入。[独立环境 PoC](environment-poc/README.md)只验证研发路线，不是普通客户端下载版本。alpha.22 候选中的离线快照与能力库见下节，公开下载仍为 alpha.19。
 
 当前 Studio 文件名的校验清单为 [SHA256SUMS-studio.txt](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.19/SHA256SUMS-studio.txt)。以下保留各批次能力及验证记录。
+
+## alpha.22 候选：离线阅读与能力库
+
+候选版本为 `3.0.0-alpha.22` / `3000022`，沿用原应用、账号空间和加密身份。GitHub Actions 编译与原生验收完成后提供候选工件，不自动替换公开 Release、官网或已安装版本。
+
+- App 运行时切换标签与账号继续复用原网页。进程结束后，保存过的持久对话可先显示本机只读文字和最近画面，同时尝试连接；这不保留已结束进程的 JavaScript 或远端生成任务。
+- 快照沿用 Android KeyStore 加密记录，并绑定账号空间、标签和对话 URL。临时聊天、登录与验证页面不保存画面；截图失败仍可保存文字。画面有时间标记、尺寸与字节上限，不能视为完整网页存档。
+- 离线界面可切换文字 / 画面和重新连接。重连恢复已保存草稿与阅读位置；出现网页草稿冲突或身份验证时停止自动恢复，不发送消息或自动重试结果不明的任务。
+- 能力库新增 `Skill 121` / `智能体 32`，24 个互联网角色排在前面；支持全文搜索、查看完整指令、角色单独使用或与 Skill、附件组合。源数据为本项目自有定义，基础 120 Skill 文件保持原样，新增资源随包核验摘要。
+- “交给 GPT”仍先确认目标账号、附件、Skill / 角色及补充要求。跨账号文件继续单独确认，任务中断不自动再次发送；角色选择不授予额外文件或工具权限。
+
+首轮离线检查已通过手机 / 平板各 7 项，并通过实际 force-stop、新 PID、断网只读和重连检查。能力流程与大字号检查继续在 Actions 进行，最终证据集中于根目录 [迭代记录](../MACOS_MIGRATION_PLAN.md)。模拟网页与官方模拟器不替代真实 ChatGPT、厂商设备和原有个人数据升级验收。原签名材料保留本机，不上传到 CI；未签名 Release 不能直接安装，debug 工件使用独立包名。
 
 ## alpha.17 标签管理与后台任务
 
