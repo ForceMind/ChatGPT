@@ -17,6 +17,12 @@ public class HandoffStoreTest {
     private HandoffStore store()throws Exception{return new HandoffStore(temporary.getRoot(),cipher);}
     private JSONObject create(HandoffStore store,JSONObject request)throws Exception{return store.create(request,new JSONArray(),"source","target","自定义任务","Sensitive fixture prompt never in metadata");}
     private void draft(HandoffStore store,String id)throws Exception{store.transition(id,"ready","ready");store.claim(id,store.payload(id).getString("launchToken"));store.bindTab(id,WorkspaceState.id());store.transition(id,"drafting","drafting");}
+    @Test public void optionalRolesKeepLegacyRequestsCompatibleAndRemainBoundToTheTask()throws Exception{
+        JSONObject legacy=HandoffRequest.normalize(request());String fingerprint=HandoffRequest.hash(legacy.toString().getBytes(StandardCharsets.UTF_8));assertEquals(fingerprint,HandoffRequest.fingerprint(new JSONObject(legacy.toString()).put("agentId","")));assertFalse(HandoffRequest.normalize(new JSONObject(legacy.toString()).put("agentId","")).has("agentId"));
+        JSONObject roleOnly=new JSONObject(legacy.toString()).put("instructions","").put("agentId","studio-agent-001");HandoffStore store=store();String id=store.create(roleOnly,new JSONArray(),"source","target","互联网产品经理","full role fixture").getString("id");assertEquals("studio-agent-001",store.payload(id).getJSONObject("request").getString("agentId"));
+        assertThrows(Exception.class,()->store.create(new JSONObject(roleOnly.toString()).put("agentId","studio-agent-002"),new JSONArray(),"source","target","different","different"));assertThrows(Exception.class,()->HandoffRequest.normalize(new JSONObject(roleOnly.toString()).put("agentId","agent-001")));
+        store.recover();assertEquals("interrupted",store.get(id).getString("status"));assertEquals("full role fixture",store.payload(id).getString("prompt"));assertThrows(Exception.class,()->store.claim(id,store.payload(id).getString("launchToken")));
+    }
     @Test public void encryptedPayloadBindsJobAndDoesNotAppearInJournal()throws Exception{
         HandoffStore store=store();JSONObject request=request(),job=create(store,request);String id=job.getString("id");
         assertEquals("Sensitive fixture prompt never in metadata",store.payload(id).getString("prompt"));assertFalse(new String(Files.readAllBytes(new File(temporary.getRoot(),"handoff/jobs.json").toPath()),StandardCharsets.UTF_8).contains("Sensitive fixture"));

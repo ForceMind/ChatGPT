@@ -64,7 +64,7 @@ android.packaging.resources.merges += ['META-INF/LICENSE', 'META-INF/LICENSE.txt
 def capabilityAssets = layout.buildDirectory.dir("generated/project-capabilities")
 tasks.register('copyProjectCapabilities', Sync) {
     from rootProject.file('../desktop/resources/capabilities')
-    include 'manifest.json', 'skills.json'
+    include 'manifest.json', 'skills.json', 'desktop-manifest.json', 'desktop-capabilities.json'
     into capabilityAssets.map { it.dir('capabilities') }
 }
 android.sourceSets.main.assets.srcDir(capabilityAssets)

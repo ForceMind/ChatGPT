@@ -16,11 +16,11 @@ final class HandoffDialog {
     private final WorkspaceState state;
     private final WorkspaceState.Account source;
     private final SkillCatalog catalog;
-    private final List<JSONObject> files,skills;
+    private final List<JSONObject> files,skills,agents;
     private final LinkedHashSet<String> selected=new LinkedHashSet<>();
     private final AtomicBoolean alive=new AtomicBoolean(true);
     private final String requestId=WorkspaceState.id();
-    private Spinner target,skill;
+    private Spinner target,skill,agent;
     private EditText instructions,language;
     private CheckBox cross;
     private TextView summary,status;
@@ -29,25 +29,31 @@ final class HandoffDialog {
     private boolean preparing;
 
     HandoffDialog(Activity activity,WorkspaceState state,String sourceId,SkillCatalog catalog,List<JSONObject> files,List<String> initial,String skillId)throws Exception{
-        this.activity=activity;this.state=state;source=state.find(sourceId);this.catalog=catalog;this.skills=catalog.list();this.files=new ArrayList<>();
+        this(activity,state,sourceId,catalog,files,initial,skillId,"");
+    }
+    HandoffDialog(Activity activity,WorkspaceState state,String sourceId,SkillCatalog catalog,List<JSONObject> files,List<String> initial,String skillId,String agentId)throws Exception{
+        this.activity=activity;this.state=state;source=state.find(sourceId);this.catalog=catalog;this.skills=catalog.list();this.agents=catalog.agents();this.files=new ArrayList<>();
         for(JSONObject file:files)if(file.optString("status").equals("ready")&&!file.optBoolean("trashed"))this.files.add(file);
         for(String id:initial)if(this.files.stream().anyMatch(f->f.optString("id").equals(id)))selected.add(id);
-        show(skillId);
+        show(skillId,agentId);
     }
-    private void show(String skillId){
+    private void show(String skillId,String agentId){
         LinearLayout fields=new LinearLayout(activity);fields.setOrientation(LinearLayout.VERTICAL);int pad=dp(20);fields.setPadding(pad,dp(8),pad,dp(12));
         fields.addView(text("文件来源："+label(source)+"\n将在目标账号新建对话并发送一次。离开前台或任务中断会停止自动处理。"));
-        fields.addView(text("目标账号"));target=new Spinner(activity);List<String> labels=new ArrayList<>();int initial=0;
+        fields.addView(text("目标账号"));target=new Spinner(activity);target.setContentDescription("目标账号");List<String> labels=new ArrayList<>();int initial=0;
         for(int i=0;i<state.accounts.size();i++){labels.add(label(state.accounts.get(i)));if(state.accounts.get(i).id.equals(source.id))initial=i;}
         target.setAdapter(adapter(labels));target.setSelection(initial);fields.addView(target);
         attachments=new Button(activity);attachments.setText("选择附件");fields.addView(attachments);attachments.setOnClickListener(v->chooseFiles());summary=text("");fields.addView(summary);
         cross=new CheckBox(activity);cross.setText("我确认将所选文件发送到另一个账号");cross.setTextColor(Color.BLACK);fields.addView(cross);
         target.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener(){public void onItemSelected(AdapterView<?> p,View v,int i,long id){cross.setChecked(false);refresh();}public void onNothingSelected(AdapterView<?> p){}});
-        fields.addView(text("处理 Skill"));skill=new Spinner(activity);labels=new ArrayList<>();labels.add("自定义处理要求");int skillIndex=0;
+        fields.addView(text("处理 Skill"));skill=new Spinner(activity);skill.setContentDescription("处理 Skill");labels=new ArrayList<>();labels.add("不使用 Skill");int skillIndex=0;
         for(int i=0;i<skills.size();i++){JSONObject s=skills.get(i);labels.add(s.optString("name"));if(s.optString("id").equals(skillId))skillIndex=i+1;}
         skill.setAdapter(adapter(labels));skill.setSelection(skillIndex);fields.addView(skill);
+        fields.addView(text("处理角色"));agent=new Spinner(activity);agent.setContentDescription("处理角色");labels=new ArrayList<>();labels.add("不使用角色");int agentIndex=0;
+        for(int i=0;i<agents.size();i++){JSONObject role=agents.get(i);labels.add(role.optString("name"));if(role.optString("id").equals(agentId))agentIndex=i+1;}
+        agent.setAdapter(adapter(labels));agent.setSelection(agentIndex);fields.addView(agent);
         fields.addView(text("输出语言"));language=new EditText(activity);language.setSingleLine(true);language.setText("简体中文");language.setFilters(new InputFilter[]{new InputFilter.LengthFilter(80)});fields.addView(language);
-        fields.addView(text("补充要求"));instructions=new EditText(activity);instructions.setHint("说明希望如何处理文件，或选择上方 Skill");instructions.setMinLines(3);instructions.setMaxLines(6);instructions.setGravity(android.view.Gravity.TOP);instructions.setFilters(new InputFilter[]{new InputFilter.LengthFilter(12000)});
+        fields.addView(text("补充要求"));instructions=new EditText(activity);instructions.setHint("说明希望如何处理文件，或选择 Skill / 角色");instructions.setMinLines(3);instructions.setMaxLines(6);instructions.setGravity(android.view.Gravity.TOP);instructions.setFilters(new InputFilter[]{new InputFilter.LengthFilter(12000)});
         if(!selected.isEmpty())instructions.setText("请分析这些附件，说明主要内容并给出处理建议。");fields.addView(instructions);
         fields.addView(text("最多 20 个附件，单个 100 MB，合计 200 MB。HTML、SVG 和代码按文本附件提交，保留原件。"));status=text("");fields.addView(status);
         ScrollView scroll=new ScrollView(activity);scroll.addView(fields);
@@ -68,11 +74,11 @@ final class HandoffDialog {
     private void submit(){
         if(preparing||!alive.get())return;
         try{
-            WorkspaceState.Account destination=state.accounts.get(target.getSelectedItemPosition());int s=skill.getSelectedItemPosition();
+            WorkspaceState.Account destination=state.accounts.get(target.getSelectedItemPosition());int s=skill.getSelectedItemPosition(),a=agent.getSelectedItemPosition();
             JSONObject request=new JSONObject().put("requestId",requestId).put("sourceAccountId",source.id).put("sourceStorageId",source.storageId).put("targetAccountId",destination.id).put("targetStorageId",destination.storageId)
-                .put("assetIds",new JSONArray(selected)).put("crossAccountConfirmed",cross.isChecked()).put("skillId",s==0?"":skills.get(s-1).getString("id")).put("instructions",instructions.getText().toString()).put("language",language.getText().toString());
+                .put("assetIds",new JSONArray(selected)).put("crossAccountConfirmed",cross.isChecked()).put("skillId",s==0?"":skills.get(s-1).getString("id")).put("agentId",a==0?"":agents.get(a-1).getString("id")).put("instructions",instructions.getText().toString()).put("language",language.getText().toString());
             request=HandoffRequest.normalize(request);HandoffRuntime runtime=HandoffRuntime.get(activity);JSONObject accepted=request;
-            preparing=true;dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);attachments.setEnabled(false);target.setEnabled(false);skill.setEnabled(false);cross.setEnabled(false);instructions.setEnabled(false);language.setEnabled(false);status.setText("正在校验并准备附件，原件保留…");
+            preparing=true;dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);attachments.setEnabled(false);target.setEnabled(false);skill.setEnabled(false);agent.setEnabled(false);cross.setEnabled(false);instructions.setEnabled(false);language.setEnabled(false);status.setText("正在校验并准备附件，原件保留…");
             runtime.io.execute(()->{
                 try{JSONObject launch=runtime.prepare(accepted,catalog,alive::get);
                     runtime.handler.post(()->{if(!alive.get()||activity.isFinishing()||activity.isDestroyed()){cancelReady(runtime);return;}

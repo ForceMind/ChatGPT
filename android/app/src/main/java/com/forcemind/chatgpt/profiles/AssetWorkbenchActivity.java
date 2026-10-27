@@ -24,10 +24,11 @@ public final class AssetWorkbenchActivity extends ComponentActivity {
     private LinearLayout root,toolbar;
     private ListView list;
     private EditText search;
-    private TextView subtitle;
+    private TextView subtitle,skillTab,agentTab;
     private AssetLedger ledger;
     private String accountId,accountName,mode="assets",filter="all",exportId;
-    private volatile List<JSONObject> records=new ArrayList<>(),skills=new ArrayList<>(),shown=new ArrayList<>();
+    private volatile List<JSONObject> records=new ArrayList<>(),skills=new ArrayList<>(),agents=new ArrayList<>(),shown=new ArrayList<>();
+    private String restoredQuery="";private int restoredPosition;private boolean restoreLibraryPosition;
     private boolean busy;
     private HandoffDialog handoffDialog;
     private volatile JSONObject pendingRender;
@@ -38,6 +39,7 @@ public final class AssetWorkbenchActivity extends ComponentActivity {
 
     @Override public void onCreate(Bundle state){
         super.onCreate(state);if(state!=null)exportId=state.getString("exportId");accountId=getIntent().getStringExtra(ACCOUNT);mode=getIntent().getBooleanExtra("skills",false)?"skills":"assets";
+        if(state!=null&&accountId!=null&&accountId.equals(state.getString("libraryAccount"))&&!mode.equals("assets")){String savedMode=state.getString("libraryMode","skills");if(savedMode.equals("skills")||savedMode.equals("agents"))mode=savedMode;restoredQuery=state.getString("libraryQuery","");restoredPosition=state.getInt("libraryPosition",0);restoreLibraryPosition=true;}
         if(state!=null&&state.containsKey("pendingRender"))try{
             pendingRender=new JSONObject(state.getString("pendingRender"));renderLaunched=state.getBoolean("renderLaunched");
             if(!renderLaunched){try{RenderTasks.cleanup(getCacheDir(),pendingRender.getString("task"));}catch(Exception ignored){}pendingRender=null;}
@@ -54,19 +56,20 @@ public final class AssetWorkbenchActivity extends ComponentActivity {
         Button back=button("返回网页");header.addView(back);back.setOnClickListener(v->finish());
         TextView title=text(mode.equals("assets")?"资产":"能力库",22);header.addView(title,new LinearLayout.LayoutParams(0,-2,1));title.setPadding(dp(12),0,0,0);
         subtitle=text(accountName+" · 独立账号空间",12);root.addView(subtitle);
-        search=new EditText(this);search.setSingleLine(true);search.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(2000)});search.setTextSize(15);search.setHint(mode.equals("assets")?"搜索文件名":"搜索 Skill 名称、分类或任务");search.setHintTextColor(StudioTypography.MUTED);search.setPadding(dp(8),dp(8),dp(8),dp(8));root.addView(search,new LinearLayout.LayoutParams(-1,StudioTypography.lineBox(this,15,1,16,54)));
-        toolbar=new LinearLayout(this);toolbar.setGravity(Gravity.CENTER_VERTICAL);toolbar.setMinimumHeight(StudioTypography.controlHeight(this));HorizontalScrollView toolsScroll=new HorizontalScrollView(this);toolsScroll.setHorizontalScrollBarEnabled(false);toolsScroll.setFillViewport(true);toolsScroll.addView(toolbar,new android.widget.FrameLayout.LayoutParams(-2,-2));root.addView(toolsScroll,new LinearLayout.LayoutParams(-1,-2));
+        search=new EditText(this);search.setSingleLine(true);search.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(2000)});search.setTextSize(15);search.setHint(mode.equals("assets")?"搜索文件名":"搜索能力、分类或任务");search.setHintTextColor(StudioTypography.MUTED);search.setPadding(dp(8),dp(8),dp(8),dp(8));search.setText(restoredQuery);root.addView(search,new LinearLayout.LayoutParams(-1,StudioTypography.lineBox(this,15,1,16,54)));
+        toolbar=new LinearLayout(this);toolbar.setGravity(Gravity.CENTER_VERTICAL);toolbar.setMinimumHeight(StudioTypography.controlHeight(this));
+        if(mode.equals("assets")){HorizontalScrollView toolsScroll=new HorizontalScrollView(this);toolsScroll.setHorizontalScrollBarEnabled(false);toolsScroll.setFillViewport(true);toolsScroll.addView(toolbar,new android.widget.FrameLayout.LayoutParams(-2,-2));root.addView(toolsScroll,new LinearLayout.LayoutParams(-1,-2));}else root.addView(toolbar,new LinearLayout.LayoutParams(-1,-2));
         if(mode.equals("assets")){
             Button add=button("导入文件");toolbar.addView(add);add.setOnClickListener(v->chooseImport());
             Button send=button("交给 GPT");toolbar.addView(send);send.setOnClickListener(v->openHandoff(Collections.emptyList(),""));
             Button filters=button("全部文件 ▾");toolbar.addView(filters);filters.setOnClickListener(v->new AlertDialog.Builder(this).setTitle("查看文件")
                 .setItems(new String[]{"全部文件","图片","网页 / HTML","文档 / 数据","收藏","回收站"},(d,i)->{filter=new String[]{"all","image","web","document","favorite","trash"}[i];filters.setText(new String[]{"全部文件 ▾","图片 ▾","网页 / HTML ▾","文档 / 数据 ▾","收藏 ▾","回收站 ▾"}[i]);render();}).show());
         }else{
-            TextView count=text("120 个项目 Skill · 暂无预置智能体",12);toolbar.addView(count);
+            skillTab=capabilityTab("Skill …","skills");agentTab=capabilityTab("智能体 …","agents");toolbar.addView(skillTab,new LinearLayout.LayoutParams(0,-2,1));toolbar.addView(agentTab,new LinearLayout.LayoutParams(0,-2,1));
         }
         list=new ListView(this);list.setDividerHeight(0);root.addView(list,new LinearLayout.LayoutParams(-1,0,1));
         search.addTextChangedListener(new TextWatcher(){public void beforeTextChanged(CharSequence s,int a,int c,int f){}public void onTextChanged(CharSequence s,int a,int b,int c){render();}public void afterTextChanged(Editable e){}});
-        list.setOnItemClickListener((parent,view,position,id)->{JSONObject a=shown.get(position);if(mode.equals("skills"))showSkill(a);else assetActions(a);});
+        list.setOnItemClickListener((parent,view,position,id)->{JSONObject a=shown.get(position);if(mode.equals("skills"))showSkill(a);else if(mode.equals("agents"))showAgent(a);else assetActions(a);});
         load();
     }
     private WorkspaceState.Account account() throws Exception {
@@ -77,12 +80,12 @@ public final class AssetWorkbenchActivity extends ComponentActivity {
         task(()->{
             account();
             if(mode.equals("assets")){ledger=new AssetLedger(getFilesDir(),accountId);records=ledger.list();}
-            else{SkillCatalog catalog=new SkillCatalog(getAssets().open("capabilities/manifest.json"),getAssets().open("capabilities/skills.json"));skills=catalog.list();}
+            else{SkillCatalog catalog=SkillCatalog.packaged(getAssets());skills=catalog.list();agents=catalog.agents();}
         },()->{render();if(ledger!=null&&ledger.recoveryNotice!=null)notice(ledger.recoveryNotice);});
     }
     private void render(){
         if(list==null)return;String query=search.getText().toString().trim().toLowerCase(Locale.ROOT);shown=new ArrayList<>();
-        for(JSONObject a:mode.equals("assets")?records:skills){
+        for(JSONObject a:mode.equals("assets")?records:mode.equals("agents")?agents:skills){
             if(mode.equals("assets")){
                 boolean trash=a.optBoolean("trashed");if(trash!=filter.equals("trash"))continue;
                 String mime=a.optString("mime"),name=a.optString("name").toLowerCase(Locale.ROOT);
@@ -91,24 +94,26 @@ public final class AssetWorkbenchActivity extends ComponentActivity {
                 if(filter.equals("document")&&(mime.startsWith("image/")||mime.equals("text/html")))continue;
                 if(filter.equals("favorite")&&!a.optBoolean("favorite"))continue;
             }
-            String haystack=a.optString("name")+" "+a.optString("category")+" "+a.optString("description");
+            String haystack=a.optString("name")+" "+a.optString("category")+" "+a.optString("description")+(mode.equals("assets")?"":" "+a.optString("instructions"));
             if(!haystack.toLowerCase(Locale.ROOT).contains(query))continue;shown.add(a);
         }
-        subtitle.setText(accountName+" · "+(mode.equals("assets")?shown.size()+" 个文件":shown.size()+" 个 Skill"));
+        subtitle.setText(accountName+" · "+(mode.equals("assets")?shown.size()+" 个文件":mode.equals("agents")?shown.size()+" 个智能体 · 互联网相关优先":shown.size()+" 个 Skill"));
+        if(skillTab!=null){skillTab.setText("Skill "+skills.size());agentTab.setText("智能体 "+agents.size());for(TextView tab:new TextView[]{skillTab,agentTab}){boolean selected=mode.equals(tab.getTag());tab.setSelected(selected);tab.setTypeface(null,selected?android.graphics.Typeface.BOLD:android.graphics.Typeface.NORMAL);tab.setPaintFlags(selected?tab.getPaintFlags()|android.graphics.Paint.UNDERLINE_TEXT_FLAG:tab.getPaintFlags()&~android.graphics.Paint.UNDERLINE_TEXT_FLAG);tab.setTextColor(selected?INK:StudioTypography.MUTED);}}
         list.setAdapter(new ArrayAdapter<JSONObject>(this,android.R.layout.simple_list_item_2,android.R.id.text1,shown){
             @Override public View getView(int position,View convert,ViewGroup parent){
                 LinearLayout row;
                 if(convert instanceof LinearLayout&&"studio-asset-row".equals(convert.getTag()))row=(LinearLayout)convert;
-                else{row=new LinearLayout(AssetWorkbenchActivity.this);row.setTag("studio-asset-row");row.setOrientation(LinearLayout.VERTICAL);row.setPadding(dp(16),dp(12),dp(16),dp(12));row.setLayoutParams(new AbsListView.LayoutParams(-1,-2));TextView name=new TextView(AssetWorkbenchActivity.this);name.setId(android.R.id.text1);name.setMaxLines(2);name.setEllipsize(android.text.TextUtils.TruncateAt.END);row.addView(name);TextView description=new TextView(AssetWorkbenchActivity.this);description.setId(android.R.id.text2);description.setMaxLines(mode.equals("skills")?3:2);description.setEllipsize(android.text.TextUtils.TruncateAt.END);row.addView(description);}
+                else{row=new LinearLayout(AssetWorkbenchActivity.this);row.setTag("studio-asset-row");row.setOrientation(LinearLayout.VERTICAL);row.setPadding(dp(16),dp(12),dp(16),dp(12));row.setLayoutParams(new AbsListView.LayoutParams(-1,-2));TextView name=new TextView(AssetWorkbenchActivity.this);name.setId(android.R.id.text1);name.setMaxLines(2);name.setEllipsize(android.text.TextUtils.TruncateAt.END);row.addView(name);TextView description=new TextView(AssetWorkbenchActivity.this);description.setId(android.R.id.text2);description.setMaxLines(mode.equals("assets")?2:3);description.setEllipsize(android.text.TextUtils.TruncateAt.END);row.addView(description);}
                 JSONObject a=getItem(position);
-                TextView first=row.findViewById(android.R.id.text1),second=row.findViewById(android.R.id.text2);first.setTextColor(INK);first.setTextSize(15);first.setText(a.optString("name"));
+                TextView first=row.findViewById(android.R.id.text1),second=row.findViewById(android.R.id.text2);first.setTextColor(INK);first.setTextSize(15);first.setTypeface(null,mode.equals("assets")?android.graphics.Typeface.NORMAL:android.graphics.Typeface.BOLD);first.setText(a.optString("name"));
                 second.setTextColor(Color.DKGRAY);StudioTypography.text(second,14);
-                second.setText(mode.equals("skills")?a.optString("category")+" · "+a.optString("description"):
+                second.setText(!mode.equals("assets")?a.optString("category")+(mode.equals("agents")&&a.optBoolean("internetPriority")?" · 互联网相关":"")+"\n"+a.optString("description"):
                     stateName(a.optString("status"))+" · "+android.text.format.Formatter.formatShortFileSize(AssetWorkbenchActivity.this,a.optLong("size"))+(a.optBoolean("favorite")?" · 已收藏":""));
                 row.setMinimumHeight(dp(76));return row;
             }
         });
-        TextView empty=text(mode.equals("assets")?(ledger!=null&&ledger.recoveryNotice!=null?ledger.recoveryNotice:"这里还没有文件\n从 ChatGPT 下载或导入本机文件后，会按账号保存在这里。"):"没有匹配的 Skill",14);
+        if(restoreLibraryPosition){list.setSelection(Math.max(0,restoredPosition));restoreLibraryPosition=false;}
+        TextView empty=text(mode.equals("assets")?(ledger!=null&&ledger.recoveryNotice!=null?ledger.recoveryNotice:"这里还没有文件\n从 ChatGPT 下载或导入本机文件后，会按账号保存在这里。"):"没有匹配的能力",14);
         empty.setGravity(Gravity.CENTER);empty.setPadding(dp(20),dp(40),dp(20),dp(40));
         View old=root.findViewWithTag("empty-assets");if(old!=null)root.removeView(old);
         empty.setTag("empty-assets");root.addView(empty);list.setEmptyView(empty);
@@ -246,11 +251,22 @@ public final class AssetWorkbenchActivity extends ComponentActivity {
                 .setNegativeButton("关闭",null).setPositiveButton("复制指令",(d,w)->{((android.content.ClipboardManager)getSystemService(CLIPBOARD_SERVICE)).setPrimaryClip(ClipData.newPlainText("Skill 任务",prompt));notice("指令已复制");}).show();
         }catch(Exception e){notice("无法读取 Skill");}
     }
+    private TextView capabilityTab(String label,String kind){
+        TextView tab=text(label,14);tab.setTag(kind);tab.setGravity(Gravity.CENTER);tab.setMinHeight(StudioTypography.controlHeight(this));tab.setPadding(dp(8),dp(8),dp(8),dp(8));tab.setClickable(true);tab.setFocusable(true);tab.setBackgroundResource(android.R.drawable.list_selector_background);
+        tab.setOnClickListener(v->{if(mode.equals(kind))return;mode=kind;restoreLibraryPosition=false;search.setText("");render();});return tab;
+    }
+    private void showAgent(JSONObject role){
+        try{String prompt=role.getString("instructions");new AlertDialog.Builder(this).setTitle(role.getString("name")).setMessage(prompt)
+            .setNeutralButton("交给 GPT",(d,w)->openHandoff(Collections.emptyList(),"",role.optString("id")))
+            .setNegativeButton("关闭",null).setPositiveButton("复制指令",(d,w)->{((ClipboardManager)getSystemService(CLIPBOARD_SERVICE)).setPrimaryClip(ClipData.newPlainText("角色指令",prompt));notice("指令已复制");}).show();
+        }catch(Exception error){notice("无法读取角色定义");}
+    }
     private interface Work {void run() throws Exception;}
-    private void openHandoff(List<String> initial,String skillId){
+    private void openHandoff(List<String> initial,String skillId){openHandoff(initial,skillId,"");}
+    private void openHandoff(List<String> initial,String skillId,String agentId){
         final WorkspaceState[] snapshot=new WorkspaceState[1];final SkillCatalog[] catalog=new SkillCatalog[1];final List<JSONObject> files=new ArrayList<>();
-        task(()->{snapshot[0]=WorkspaceFiles.read(getFilesDir());snapshot[0].find(accountId);catalog[0]=new SkillCatalog(getAssets().open("capabilities/manifest.json"),getAssets().open("capabilities/skills.json"));files.addAll(new AssetLedger(getFilesDir(),accountId).list());},()->{
-            try{if(handoffDialog!=null)handoffDialog.close();handoffDialog=new HandoffDialog(this,snapshot[0],accountId,catalog[0],files,initial,skillId);}catch(Exception e){notice("无法准备任务，请检查账号和资产库");}
+        task(()->{snapshot[0]=WorkspaceFiles.read(getFilesDir());snapshot[0].find(accountId);catalog[0]=SkillCatalog.packaged(getAssets());files.addAll(new AssetLedger(getFilesDir(),accountId).list());},()->{
+            try{if(handoffDialog!=null)handoffDialog.close();handoffDialog=new HandoffDialog(this,snapshot[0],accountId,catalog[0],files,initial,skillId,agentId);}catch(Exception e){notice("无法准备任务，请检查账号和资产库");}
         });
     }
     private void mutate(Work work){task(()->{account();work.run();records=ledger.list();},this::render);}
@@ -266,7 +282,7 @@ public final class AssetWorkbenchActivity extends ComponentActivity {
             });
         });
     }
-    @Override protected void onSaveInstanceState(Bundle state){if(exportId!=null)state.putString("exportId",exportId);if(pendingRender!=null){state.putString("pendingRender",pendingRender.toString());state.putBoolean("renderLaunched",renderLaunched);}super.onSaveInstanceState(state);}
+    @Override protected void onSaveInstanceState(Bundle state){if(exportId!=null)state.putString("exportId",exportId);if(!mode.equals("assets")&&search!=null&&list!=null){state.putString("libraryAccount",accountId);state.putString("libraryMode",mode);state.putString("libraryQuery",search.getText().toString());state.putInt("libraryPosition",list.getFirstVisiblePosition());}if(pendingRender!=null){state.putString("pendingRender",pendingRender.toString());state.putBoolean("renderLaunched",renderLaunched);}super.onSaveInstanceState(state);}
     private Button button(String label){Button v=new Button(this);StudioTypography.button(v);v.setText(label);v.setBackgroundTintList(android.content.res.ColorStateList.valueOf(GRAY));return v;}
     private TextView text(String value,int size){TextView v=new TextView(this);v.setText(value);StudioTypography.text(v,Math.max(14,size));v.setTextColor(INK);return v;}
     private int dp(int value){return Math.round(value*getResources().getDisplayMetrics().density);}

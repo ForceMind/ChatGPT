@@ -22,7 +22,8 @@ final class HandoffRequest {
         if(!(raw.get("crossAccountConfirmed") instanceof Boolean))throw new IOException("跨账号确认无效");boolean confirmed=raw.getBoolean("crossAccountConfirmed");
         if(!out.getString("sourceAccountId").equals(out.getString("targetAccountId"))&&ids.length()>0&&!confirmed)throw new IOException("请明确确认将这些文件交给另一个账号");out.put("crossAccountConfirmed",confirmed);
         String skill=raw.has("skillId")?string(raw,"skillId",32,false):"";if(!skill.isEmpty()&&!skill.matches("skill-[0-9]{3}"))throw new IOException("Skill 标识无效");out.put("skillId",skill);
-        String instructions=string(raw,"instructions",12000,false),language=string(raw,"language",80,true);if(skill.isEmpty()&&instructions.trim().isEmpty())throw new IOException("请选择 Skill 或填写处理要求");
+        String agent=raw.has("agentId")?string(raw,"agentId",32,false):"";if(!agent.isEmpty()){if(!agent.matches("studio-agent-[0-9]{3}"))throw new IOException("角色标识无效");out.put("agentId",agent);}
+        String instructions=string(raw,"instructions",12000,false),language=string(raw,"language",80,true);if(skill.isEmpty()&&agent.isEmpty()&&instructions.trim().isEmpty())throw new IOException("请选择 Skill、角色或填写处理要求");
         out.put("instructions",instructions);out.put("language",language);return out;
     }
     static String hash(byte[] bytes)throws Exception{StringBuilder result=new StringBuilder();for(byte value:MessageDigest.getInstance("SHA-256").digest(bytes))result.append(String.format(Locale.ROOT,"%02x",value&255));return result.toString();}

@@ -42,6 +42,10 @@ on:
         description: Run the native attachment handoff flow on phone and tablet only
         type: boolean
         default: false
+      capabilities_only:
+        description: Verify complete Skill/role library, role-only and combined file tasks on phone/tablet
+        type: boolean
+        default: false
       readability_only:
         description: Verify native UI at 1.0, 1.3 and 2.0 system font scales plus handoff and retained tabs on phone/tablet
         type: boolean
@@ -210,6 +214,10 @@ jobs:
               tablet_filter='com.forcemind.chatgpt.profiles.WorkbenchTest#assetDialogHandsActualFilesToTargetWebpageAndSendsOnce'
               phone_filter=("-Pandroid.testInstrumentationRunnerArguments.class=$tablet_filter")
             fi
+            if [ "${{ inputs.capabilities_only }}" = true ]; then
+              tablet_filter='com.forcemind.chatgpt.profiles.WorkbenchTest#allProjectSkillsAreVisibleAndNativeSearchFiltersThem,com.forcemind.chatgpt.profiles.WorkbenchTest#originalRoleAloneUsesNoDefaultSkillAndSubmitsExactlyOnce,com.forcemind.chatgpt.profiles.WorkbenchTest#assetDialogHandsActualFilesToTargetWebpageAndSendsOnce'
+              phone_filter=("-Pandroid.testInstrumentationRunnerArguments.class=$tablet_filter")
+            fi
             if [ "${{ inputs.recovery_only }}" = true ]; then
               tablet_filter='com.forcemind.chatgpt.profiles.WorkbenchTest#draftsAndReadingRestoreAcrossRecreationAndPreserveConflicts,com.forcemind.chatgpt.profiles.WorkbenchTest#encryptedSnapshotIsReadOnlyAccountScopedAndReconnectsWithoutSending,com.forcemind.chatgpt.profiles.WorkbenchTest#sameTabNavigationDoesNotAttachAnOldConversationSnapshotToANewUrl,com.forcemind.chatgpt.profiles.WorkbenchTest#authenticationFailureRevealsTheLivePageWithoutRestoringDraftIntoIt,com.forcemind.chatgpt.profiles.WorkbenchTest#switchingAccountsAndUndoCloseReuseTheLivePage,com.forcemind.chatgpt.profiles.WorkbenchTest#assetDialogHandsActualFilesToTargetWebpageAndSendsOnce,com.forcemind.chatgpt.profiles.WorkbenchTest#windowRecreationAndNativeTabCardsKeepVisitedPagesAndCustomTitles'
               phone_filter=("-Pandroid.testInstrumentationRunnerArguments.class=$tablet_filter")
@@ -235,7 +243,7 @@ jobs:
             adb shell wm size reset
             adb shell wm density reset
           fi
-          if [ "${{ inputs.workbench_only }}" = true ] || [ "${{ inputs.recovery_only }}" = true ] || [ "${{ inputs.handoff_only }}" = true ] || [ "${{ inputs.readability_only }}" = true ]; then
+          if [ "${{ inputs.workbench_only }}" = true ] || [ "${{ inputs.recovery_only }}" = true ] || [ "${{ inputs.handoff_only }}" = true ] || [ "${{ inputs.readability_only }}" = true ] || [ "${{ inputs.capabilities_only }}" = true ]; then
             test "${{ inputs.ui_only }}" != true
             echo 'Native workbench fixture tests only. Real ChatGPT UI and accounts were not verified.' > app/build/device-evidence/scope.txt
             exit 0
