@@ -133,6 +133,7 @@ final class ManagedPageController {
                 if(!e.pendingEditor.equals(msg.getString("editor"))||!msg.getBoolean("active")||!e.visible)throw new IllegalArgumentException("Unexpected editor focus");commit(e,current,e.pendingEditor);return;
             }
             if("scrolled".equals(type)&&e.awaitingScroll){
+                if(e.desired!=null&&(!current.getString("standard").equals(e.desired.getString("standard"))||!current.getString("rich").equals(e.desired.getString("rich")))){showConflict(e,current);return;}
                 double expected=Math.max(0,Math.min(e.preview==null?0:e.preview.getDouble("scroll"),current.getDouble("height")-current.getDouble("viewport")));
                 if(Math.abs(current.getDouble("scroll")-expected)>80){fail(e,"reading-position-not-confirmed:"+expected+"/"+current.getDouble("scroll"));return;}
                 e.awaitingScroll=false;complete(e,current);return;
@@ -155,7 +156,7 @@ final class ManagedPageController {
         e.desired=copy(e.preview);for(String key:new String[]{"standard","rich"})if(e.desired.getString(key).isEmpty())e.desired.put(key,current.getString(key));e.approved=copy(current);e.state="restoring";advance(e,current);
     }
     private void showConflict(Entry e,JSONObject current)throws Exception{
-        e.state="conflict";e.pendingEditor="";e.writing=false;e.desired=null;e.conflict=new JSONObject().put("saved",copy(e.preview)).put("current",copy(current)).put("url",e.url).put("document",e.document);
+        e.state="conflict";e.pendingEditor="";e.writing=false;e.awaitingScroll=false;e.desired=null;e.conflict=new JSONObject().put("saved",copy(e.preview)).put("current",copy(current)).put("url",e.url).put("document",e.document);
         JSONObject old=pending(e,e.url);
         if(old!=null&&!drafts(old.getJSONObject("current")).toString().equals(drafts(current).toString())){
             JSONArray alternatives=e.record.getJSONArray("alternatives");alternatives.put(new JSONObject().put("saved",drafts(old.getJSONObject("saved"))).put("current",drafts(old.getJSONObject("current"))).put("choice","unresolved-kept").put("at",System.currentTimeMillis()));while(alternatives.length()>4)alternatives.remove(0);

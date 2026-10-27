@@ -156,9 +156,10 @@ public abstract class ManagedRecoveryActivity extends Activity {
         ui.postDelayed(()->record("inspected"),500);
     }
     @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);setIntent(intent);try{boolean empty=tabs().isEmpty();openTabs();if(empty)show();command(intent);}catch(Exception error){startupError=error.toString();refresh();}}
-    @Override protected void onResume(){super.onResume();if(web!=null){web.requestFocus();if(current()!=null&&controller!=null)controller.visible(current(),web.hasWindowFocus());ui.postDelayed(()->record("resumed"),500);}}
+    @Override protected void onResume(){super.onResume();if(web!=null){web.requestFocus();if(current()!=null&&controller!=null){if(current().session.isOpen())current().session.setActive(true);controller.visible(current(),web.hasWindowFocus());}ui.postDelayed(()->record("resumed"),500);}}
     @Override public void onWindowFocusChanged(boolean focused){super.onWindowFocusChanged(focused);if(controller!=null&&current()!=null){controller.visible(current(),focused);if(focused)try{store.write("A","index",new JSONObject().put("activeAccount",account()));}catch(Exception error){startupError=error.toString();}record("window-focus");}}
-    @Override protected void onStop(){super.onStop();if(controller!=null)for(ManagedPageController.Entry e:controller.all())if(e.session.isOpen())e.session.setActive(true);}
+    private static void retainSessions(){if(controller!=null)for(ManagedPageController.Entry e:controller.all())if(e.session.isOpen())e.session.setActive(true);}
+    @Override protected void onStop(){super.onStop();retainSessions();ui.postDelayed(ManagedRecoveryActivity::retainSessions,500);ui.postDelayed(ManagedRecoveryActivity::retainSessions,1500);}
     @Override protected void onDestroy(){if(controller!=null&&current()!=null)controller.visible(current(),false);release();if(hosts.get(account())==this)hosts.remove(account());super.onDestroy();}
     private void record(String event){if(hosts.get(account())!=this)return;try{
         JSONArray entries=new JSONArray();if(controller!=null)for(ManagedPageController.Entry e:tabs())entries.put(controller.metadata(e));JSONObject row=new JSONObject().put("event",event).put("account",account()).put("pid",android.os.Process.myPid()).put("selected",selected.getOrDefault(account(),0)).put("entries",entries).put("startupError",startupError).put("bridgeError",controller==null?"":controller.startupError).put("elapsedMs",SystemClock.elapsedRealtime());

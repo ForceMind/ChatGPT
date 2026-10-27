@@ -162,7 +162,9 @@ try:
     for a,t in TABS:
         select(a,t);r=wait(lambda:latest(a,t),label='initial page');point(a,t,'detail');wait(lambda:(lambda r:r if r and r['page']=='detail' else None)(latest(a,t)),label='real detail navigation');healthy(a,t)
         type_values(a,t,markers[a+':'+t]);checkpoint(a)
-    baseline={a+':'+t:latest(a,t) for a,t in TABS};report['cases']['initialCapture']=True;capture('captured')
+    baseline={a+':'+t:latest(a,t) for a,t in TABS};baseline_time=time.monotonic();reference_tokens={a:baseline[a+':0']['owner']['token'] for a in {a for a,t in TABS}}
+    if not CORE:assert baseline['A:0']['owner']==baseline['A:1']['owner']
+    report['cases']['initialCapture']=True;capture('captured')
 
     print('2/8 Normal close restores through app-owned state and trusted input',flush=True)
     if not CORE:checkpoint('B',True)
@@ -172,7 +174,7 @@ try:
     print('3/8 Updates after restoration must replace the saved cache',flush=True);base.phase='latest-input'
     for a,t in TABS:type_values(a,t,latest_markers[a+':'+t],replace=True);checkpoint(a)
     select('A','0');launch('A','back');healthy('A','0')
-    wait(lambda:(lambda r:r if r and r['page']=='start' and r['standardModel']=='' and r['richModel']=='' else None)(latest('A','0')),label='history URL does not inherit another page draft')
+    wait(lambda:(lambda r:r if r and r['page']=='start' and r.get('standardModel')=='' and r.get('richModel')=='' else None)(latest('A','0')),label='history URL does not inherit another page draft')
     launch('A','forward');healthy('A','0');same_values('A','0',latest_markers['A:0']);report['cases']['historyAndURLIsolation']=True
     select('A','0');checkpoint('A');latest_rows={a+':'+t:latest(a,t) for a,t in TABS};report['cases']['saveAfterRestore']=True
 
@@ -192,10 +194,10 @@ try:
     if not CORE:
         stop();base.phase='unresolved-conflict-restart';launch('A');wait(lambda:entry('A','0') and entry('A','0')['state']=='conflict',label='unresolved conflict survives restart')
         r=current_values('A','0',first_current);assert entry('A','0')['richSha256']==hashlib.sha256(latest_markers['A:0'].encode()).hexdigest()
-        launch('A','back');healthy('A','0');wait(lambda:(lambda r:r if r and r['page']=='start' and r['richModel']=='' and r['standardModel']=='' else None)(latest('A','0')),label='pending conflict cannot leak into another URL')
+        launch('A','back');healthy('A','0');wait(lambda:(lambda r:r if r and r['page']=='start' and r.get('richModel')=='' and r.get('standardModel')=='' else None)(latest('A','0')),label='pending conflict cannot leak into another URL')
         assert not entry('A','0')['pendingConflict'] and entry('A','0')['pendingConflictCount']==1
         launch('A','forward');wait(lambda:entry('A','0') and entry('A','0')['state']=='conflict',label='original URL retains pending conflict')
-        r=wait(lambda:(lambda r:r if r and r['page']=='detail' and r['richModel']==first_current else None)(latest('A','0')),label='original current draft preserved')
+        r=wait(lambda:(lambda r:r if r and r['page']=='detail' and r.get('richModel')==first_current else None)(latest('A','0')),label='original current draft preserved')
         report['cases']['unresolvedConflictRestartAndURLBinding']=True
     tap_label('保留网页草稿');healthy('A','0');same_values('A','0',first_current);assert entry('A','0')['alternativeCount']>=1;report['cases']['keepCurrentConflict']=True
 
@@ -222,8 +224,8 @@ try:
         a=r['account'];lang='en-US' if a=='B' else 'zh-CN';zone='America/New_York' if a=='B' else 'Asia/Shanghai'
         assert r['language']==lang and r['timeZone']==zone and r['acceptLanguage'].lower().startswith(lang.lower())
         assert r['owner']['owner']==a and all(value==a for value in re.findall(r'(?:^|;\s*)recovery-owner=([^;]*)',r['requestCookie']))
-        if a in tokens:assert tokens[a]==r['owner']['token']
-        else:tokens[a]=r['owner']['token']
+        if r['received']>=baseline_time:assert reference_tokens[a]==r['owner']['token']
+        tokens[a]=r['owner']['token']
     if not CORE:assert set(tokens)=={'A','B','C'} and len(set(tokens.values()))==3
     for request in base.requests:
         assert request['acceptLanguage'].lower().startswith('en-us' if request['account']=='B' else 'zh-cn')
