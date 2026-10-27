@@ -21,7 +21,7 @@ from grouped_environment_validation import expected,validate,shared_markers,prof
 PACKAGE = "com.forcemind.chatgpt.environmentpoc"
 COMPONENT = PACKAGE + "/" + PACKAGE + ".GroupedAActivity"
 OUT = Path(sys.argv[1]); OUT.mkdir(parents=True, exist_ok=True)
-events, requests, lock = [], [], threading.Lock()
+events, requests, heartbeats, lock = [], [], [], threading.Lock()
 phase = "isolation"
 
 def adb(*args, check=True, timeout=25):
@@ -74,7 +74,7 @@ async function stored(write){
  const result={};try{const key='grouped-owner',raw=localStorage.getItem(key);result.localPrevious=raw?JSON.parse(raw):null;
  if(!raw&&write)localStorage.setItem(key,JSON.stringify({owner:base.account,token:crypto.randomUUID()}));const now=localStorage.getItem(key);result.local=now?JSON.parse(now):null;result.localState='ready';}catch(e){result.localState=e&&['SecurityError','NotAllowedError'].includes(e.name)?'blocked':'error';}
  try{const v=await dbValue(write);result.idbPrevious=v.previous;result.idb=v.current;result.idbState='ready';}catch(e){result.idbState=e&&['SecurityError','NotAllowedError'].includes(e.name)?'blocked':'error';}
- try{const c=await caches.open('grouped-owner');let prior=await c.match('/__grouped_owner');result.cachePrevious=prior?await prior.json():null;
+ try{const c=await caches.open('grouped-owner');let prior=await c.match('/__grouped_owner');result.cachePrevious=prior?await prior.clone().json():null;
  if(!prior&&write){await c.put('/__grouped_owner',new Response(JSON.stringify({owner:base.account,token:crypto.randomUUID()})));prior=await c.match('/__grouped_owner');}
  result.cache=prior?await prior.json():null;result.cacheState='ready';}catch(e){result.cacheState=e&&['SecurityError','NotAllowedError'].includes(e.name)?'blocked':'error';}
  try{result.previousCookie=document.cookie;if(!document.cookie&&write)document.cookie='poc-owner='+base.account+'; SameSite=Lax; path=/';result.cookie=document.cookie;result.cookieState='ready';}
@@ -89,12 +89,12 @@ class Handler(BaseHTTPRequestHandler):
         try:self.wfile.write(body)
         except (BrokenPipeError,ConnectionResetError):pass
     def do_POST(self):
-        if self.path!="/report":self.send_error(404);return
+        if self.path not in ("/report","/heartbeat"):self.send_error(404);return
         size=int(self.headers.get("Content-Length","0"))
         if size>32768:self.send_error(413);return
         try:
             value=json.loads(self.rfile.read(size));value["received"]=time.monotonic();value["acceptLanguage"]=self.headers.get("Accept-Language","");value["requestCookie"]=self.headers.get("Cookie","")
-            with lock:events.append(value)
+            with lock:(heartbeats if self.path=="/heartbeat" else events).append(value)
             self.reply("{}","application/json")
         except (ValueError,TypeError):self.send_error(400)
     def do_GET(self):
@@ -116,7 +116,7 @@ class Handler(BaseHTTPRequestHandler):
         if kind=="main":
             script+="async function serviceCheck(){if(!('serviceWorker' in navigator))return {state:'unsupported'};try{if(!base.probe){if(!registrationPromise)registrationPromise=navigator.serviceWorker.register('/sw.js?account='+base.account,{scope:'/'});await registrationPromise;}const regs=await navigator.serviceWorker.getRegistrations();const active=regs.find(r=>r.active)?.active;let response=null;if(active){try{const r=await fetch('/sw-check?account='+base.account,{cache:'no-store'});if(r.ok)response=await r.json();}catch(e){}}return {state:'ready',owner:active?new URL(active.scriptURL).searchParams.get('account'):null,response};}catch(e){return {state:'error',message:String(e)};}}"
         else:script+="async function serviceCheck(){return {state:'not-applicable'};}"
-        script+="let busy=false;async function report(){if(busy)return;busy=true;try{service=await serviceCheck();const payload={...base,...environment(),...(await stored(!base.probe)),service,ticks,decodedImages};const b=document.querySelector('#popup');if(b){const r=b.getBoundingClientRect();payload.popupButton={x:r.x+r.width/2,y:r.y+r.height/2,ratio:devicePixelRatio};}fetch('/report',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).catch(()=>{});document.querySelector('#result').textContent=JSON.stringify(payload,null,2);}finally{busy=false;}}report();setInterval(()=>{ticks++;report()},2000);"
+        script+="let busy=false;async function report(){if(busy)return;busy=true;try{service=await serviceCheck();const payload={...base,...environment(),...(await stored(!base.probe)),service,ticks,decodedImages};const b=document.querySelector('#popup');if(b){const r=b.getBoundingClientRect();payload.popupButton={x:r.x+r.width/2,y:r.y+r.height/2,ratio:devicePixelRatio};}fetch('/report',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).catch(()=>{});document.querySelector('#result').textContent=JSON.stringify(payload,null,2);}finally{busy=false;}}function heartbeat(){if(base.kind==='main')fetch('/heartbeat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...base,ticks})}).catch(()=>{});}report();setInterval(()=>{ticks++;heartbeat();report()},2000);"
         if kind in ("main","popup"):
             script+="new Worker('/worker.js?"+args+"');Promise.all(Array.from(document.images,i=>i.decode())).then(()=>{decodedImages=document.images.length;report()}).catch(()=>{});"
         popup=urlencode({"account":account,"tab":"popup-"+str(uuid.uuid4()),"pid":base["pid"],"probe":"false"})
@@ -181,7 +181,11 @@ def cpu(case):
 def start_workload(case,mode):
     started=time.monotonic();launch("A",mode,1)
     if not wait(lambda:ready_main(case,"A"),90):raise RuntimeError(case+": A first page/storage/service worker not ready")
-    launch("A",mode,2);launch("C",mode,1);launch("B",mode,1)
+    launch("A",mode,2)
+    if not wait(lambda:ready_main(case,"A","1"),80):raise RuntimeError(case+": A second tab not ready")
+    launch("C",mode,1)
+    if not wait(lambda:ready_main(case,"C"),80):raise RuntimeError(case+": C page not ready")
+    launch("B",mode,1)
     if not wait(lambda:expected_contexts(case) and all(ready_main(case,a,t) for a,t in (("A","0"),("A","1"),("B","0"),("C","0"))),100):raise RuntimeError(case+": four tabs or their storage not ready")
     times=round(time.monotonic()-started,2);info={a:native(a,mode) for a in ("A","B","C")}
     if not all(info[a].get("pid") for a in info):raise RuntimeError(case+": missing native account identity")
@@ -227,7 +231,7 @@ if existing_processes or existing_profiles:raise SystemExit("Existing experiment
 
 report={"schema":1,"engine":"GeckoView 158.0.20261021001945","package":PACKAGE,"sourceSha":os.environ.get("GITHUB_SHA"),"runId":os.environ.get("GITHUB_RUN_ID"),"remoteDebugging":False,
         "scope":"Independent synthetic loopback fixture; Android 15 x86_64 emulator. No production package, personal account or real ChatGPT.",
-        "fixture":{"messagesPerPage":240,"imagesPerPage":6,"imageDimensions":[1024,768],"imageBytes":len(PNG)},
+        "fixture":{"messagesPerPage":240,"imagesPerPage":6,"imageDimensions":[1024,768],"imageBytes":len(PNG),"diagnosticMainHeartbeatSeconds":2},
         "device":{"model":adb("shell","getprop","ro.product.model"),"release":adb("shell","getprop","ro.build.version.release"),"sdk":adb("shell","getprop","ro.build.version.sdk"),"abi":adb("shell","getprop","ro.product.cpu.abi")},
         "systemBefore":{"locale":adb("shell","getprop","persist.sys.locale"),"timeZone":adb("shell","getprop","persist.sys.timezone")},"resources":[]}
 server=ThreadingHTTPServer(("127.0.0.1",8765),Handler);threading.Thread(target=server.serve_forever,daemon=True).start();adb("reverse","tcp:8765","tcp:8765")
@@ -296,7 +300,7 @@ finally:
     keep=resources[0].get("keepAlive",{}) if resources else {};report["keepAlivePassed"]=keep.get("originalContexts")==12 and keep.get("continuingContexts")==12 and keep.get("newDocuments")==0 and keep.get("newDocumentsAfterSwitch")==0
     restart=resources[0].get("processRestart",{}) if resources else {};report["reopenPassed"]=restart.get("newProcesses",False) and len(restart.get("accountsRetained",{}))==3 and all(restart["accountsRetained"].values())
     report["apks"]=[{"file":apk.name,"bytes":apk.stat().st_size,"sha256":hashlib.sha256(apk.read_bytes()).hexdigest()} for apk in Path("environment-poc/build/outputs/apk/debug").glob("*.apk")]
-    for name,data in (("report.json",report),("events.json",records()),("requests.json",requests)):(OUT/name).write_text(json.dumps(data,ensure_ascii=False,indent=2))
+    for name,data in (("report.json",report),("events.json",records()),("requests.json",requests),("heartbeats.json",heartbeats)):(OUT/name).write_text(json.dumps(data,ensure_ascii=False,indent=2))
     (OUT/"runtime.log").write_text(adb("logcat","-d",check=False,timeout=30));(OUT/"processes.txt").write_text(adb("shell","ps","-A","-o","PID,PPID,NAME,ARGS"))
     for apk in report["apks"]:print(apk["file"],apk["bytes"],apk["sha256"],flush=True)
     adb("shell","am","force-stop",PACKAGE,check=False);adb("reverse","--remove","tcp:8765",check=False);server.shutdown()
