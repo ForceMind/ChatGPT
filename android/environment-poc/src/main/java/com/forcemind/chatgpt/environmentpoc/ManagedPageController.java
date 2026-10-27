@@ -33,7 +33,7 @@ final class ManagedPageController {
         JSONObject record,preview,current,desired,approved,conflict;
         WebExtension.Port port;String url,document="",pendingEditor="",state="loading",error="",fingerprint="",checkpoint="",checkpointSource="";
         volatile String token="";volatile long epoch;volatile boolean visible,closed;
-        long sequence,revision;int rejected;boolean blocked,writing,awaitingScroll,loading=true;
+        long sequence,revision;int rejected;boolean blocked,writing,awaitingScroll,loading=true,bridgeBound,loadStarted;
         Entry(String account,int index){this.account=account;id=Integer.toString(index);session=new GeckoSession(new GeckoSessionSettings.Builder().contextId("managed-recovery-"+account).build());}
     }
     interface Listener {void changed(String account);}
@@ -95,6 +95,7 @@ final class ManagedPageController {
     }
     private JSONObject page(Entry e,String url)throws Exception{JSONArray pages=e.record.getJSONArray("pages");for(int i=0;i<pages.length();i++){JSONObject p=pages.getJSONObject(i);if(url.equals(p.getString("url")))return copy(p);}return null;}
     private void attach(Entry e){
+        if(e.bridgeBound){viewReady(e);return;}
         e.session.getWebExtensionController().setMessageDelegate(extension,new WebExtension.MessageDelegate(){
             @Override public void onConnect(WebExtension.Port port){
                 if(e.closed||e.blocked||port.sender.session!=e.session||!port.sender.isTopLevel()||port.sender.environmentType!=WebExtension.MessageSender.ENV_TYPE_CONTENT_SCRIPT||!EXTENSION.equals(port.sender.webExtension.id)||!e.url.equals(port.sender.url)){
@@ -107,7 +108,14 @@ final class ManagedPageController {
                 });
             }
         },APP);
-        e.session.loadUri(e.url);
+        e.bridgeBound=true;viewReady(e);
+    }
+    void viewReady(Entry e){
+        if(e.closed||e.blocked||e.loadStarted||!e.bridgeBound)return;
+        View view=inputViews.view(e);if(view==null||!view.hasWindowFocus())return;
+        if(!view.isAttachedToWindow()||view.getWidth()<=0||view.getHeight()<=0){ui.postDelayed(()->viewReady(e),100);return;}
+        if(e.session.getTextInput().getView()!=view)e.session.getTextInput().setView(view);
+        view.requestFocus();focus(e);e.loadStarted=true;e.session.loadUri(e.url);
     }
     private void navigation(Entry e,String url){
         try{
@@ -243,8 +251,8 @@ final class ManagedPageController {
     }
     private void persist(Entry e)throws Exception{long next=e.revision+1;e.record.put("revision",next);if(e.record.toString().getBytes(StandardCharsets.UTF_8).length>900000)throw new java.io.IOException("Recovery quota exceeded; original retained");store.write(e.account,"page-"+e.id,e.record);e.revision=next;}
     private void focus(Entry e){for(Entry other:entries.values())if(other!=e&&other.session.isOpen())other.session.setFocused(false);if(e.session.isOpen())e.session.setFocused(true);}
-    void visible(Entry e,boolean visible){synchronized(e.inputLock){e.visible=visible;}if(visible)focus(e);else if(e.session.isOpen())e.session.setFocused(false);if(!visible&&!e.writing)e.pendingEditor="";if(visible&&"restoring".equals(e.state)&&e.current!=null)try{advance(e,e.current);}catch(Exception error){fail(e,"resume-restore-failed");}}
-    void retry(Entry e){if(!e.blocked&&!e.closed)e.session.loadUri(e.url);}
+    void visible(Entry e,boolean visible){synchronized(e.inputLock){e.visible=visible;}if(visible){focus(e);viewReady(e);}else if(e.session.isOpen())e.session.setFocused(false);if(!visible&&!e.writing)e.pendingEditor="";if(visible&&"restoring".equals(e.state)&&e.current!=null)try{advance(e,e.current);}catch(Exception error){fail(e,"resume-restore-failed");}}
+    void retry(Entry e){if(!e.blocked&&!e.closed){if(e.loadStarted)e.session.loadUri(e.url);else viewReady(e);}}
     void checkpoint(Entry e,String request)throws Exception{
         if(e.error.startsWith("save-failed"))throw new IllegalStateException("Unsaved current data");
         if(e.port==null||!"ready".equals(e.state)){e.checkpoint=request;e.checkpointSource=e.preview!=null?"last-saved-cache":e.blocked?"blocked-original-preserved":"no-editable-page";changed(e);return;}
