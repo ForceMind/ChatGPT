@@ -67,8 +67,9 @@ final class ManagedPageController {
         Entry e=new Entry(account,index);entries.put(key,e);
         try{
             e.record=store.read(account,"page-"+e.id);
-            if(e.record==null)e.record=new JSONObject().put("kind","managed-page-v1").put("pages",new JSONArray()).put("history",new JSONArray()).put("historyIndex",-1).put("alternatives",new JSONArray());
+            if(e.record==null)e.record=new JSONObject().put("kind","managed-page-v1").put("pages",new JSONArray()).put("history",new JSONArray()).put("historyIndex",-1).put("alternatives",new JSONArray()).put("pendingConflicts",new JSONArray());
             if(!"managed-page-v1".equals(e.record.getString("kind")))throw new IllegalArgumentException("Invalid page record");
+            if(e.record.optJSONArray("pendingConflicts")==null){JSONArray pending=new JSONArray();JSONObject old=e.record.optJSONObject("pendingConflict");if(old!=null)pending.put(old);e.record.put("pendingConflicts",pending);e.record.remove("pendingConflict");}
             JSONArray pages=e.record.getJSONArray("pages"),history=e.record.getJSONArray("history");if(pages.length()>4||history.length()>16||e.record.getJSONArray("alternatives").length()>4)throw new IllegalArgumentException("Oversized record");
             for(int i=0;i<pages.length();i++)normalize(e,pages.getJSONObject(i));
             for(int i=0;i<history.length();i++)if(!allowed(history.getString(i),account,e.id))throw new IllegalArgumentException("Foreign history");
@@ -133,7 +134,7 @@ final class ManagedPageController {
             }
             if("scrolled".equals(type)&&e.awaitingScroll){
                 double expected=Math.max(0,Math.min(e.preview==null?0:e.preview.getDouble("scroll"),current.getDouble("height")-current.getDouble("viewport")));
-                if(Math.abs(current.getDouble("scroll")-expected)>80){fail(e,"reading-position-not-confirmed");return;}
+                if(Math.abs(current.getDouble("scroll")-expected)>80){fail(e,"reading-position-not-confirmed:"+expected+"/"+current.getDouble("scroll"));return;}
                 e.awaitingScroll=false;complete(e,current);return;
             }
             if("capture".equals(type)||"checkpoint".equals(type)){
@@ -150,17 +151,23 @@ final class ManagedPageController {
     }
     private void reconcile(Entry e,JSONObject current)throws Exception{
         if(e.preview==null){complete(e,current);return;}
-        if(e.record.has("pendingConflict")||conflict(e.preview,current)){showConflict(e,current);return;}
+        if(pending(e,e.url)!=null||conflict(e.preview,current)){showConflict(e,current);return;}
         e.desired=copy(e.preview);for(String key:new String[]{"standard","rich"})if(e.desired.getString(key).isEmpty())e.desired.put(key,current.getString(key));e.approved=copy(current);e.state="restoring";advance(e,current);
     }
     private void showConflict(Entry e,JSONObject current)throws Exception{
         e.state="conflict";e.pendingEditor="";e.writing=false;e.desired=null;e.conflict=new JSONObject().put("saved",copy(e.preview)).put("current",copy(current)).put("url",e.url).put("document",e.document);
-        e.record.put("pendingConflict",new JSONObject().put("saved",drafts(e.preview)).put("current",drafts(current)));persist(e);changed(e);
+        JSONObject old=pending(e,e.url);
+        if(old!=null&&!drafts(old.getJSONObject("current")).toString().equals(drafts(current).toString())){
+            JSONArray alternatives=e.record.getJSONArray("alternatives");alternatives.put(new JSONObject().put("saved",drafts(old.getJSONObject("saved"))).put("current",drafts(old.getJSONObject("current"))).put("choice","unresolved-kept").put("at",System.currentTimeMillis()));while(alternatives.length()>4)alternatives.remove(0);
+        }
+        JSONArray list=withoutPending(e,e.url);list.put(new JSONObject().put("saved",drafts(e.preview)).put("current",drafts(current)));if(list.length()>4)throw new IllegalStateException("Pending conflict limit reached");e.record.put("pendingConflicts",list);persist(e);changed(e);
     }
+    private JSONObject pending(Entry e,String url)throws Exception{JSONArray list=e.record.optJSONArray("pendingConflicts");if(list!=null)for(int i=0;i<list.length();i++){JSONObject pair=list.getJSONObject(i);if(url.equals(pair.getJSONObject("saved").getString("url")))return pair;}return null;}
+    private JSONArray withoutPending(Entry e,String url)throws Exception{JSONArray next=new JSONArray(),list=e.record.getJSONArray("pendingConflicts");for(int i=0;i<list.length();i++)if(!url.equals(list.getJSONObject(i).getJSONObject("saved").getString("url")))next.put(list.getJSONObject(i));return next;}
     void choose(Entry e,boolean restoreSaved)throws Exception{
         if(!"conflict".equals(e.state)||e.conflict==null||e.current==null)return;
         JSONArray alternatives=e.record.getJSONArray("alternatives");alternatives.put(new JSONObject().put("saved",drafts(e.conflict.getJSONObject("saved"))).put("current",drafts(e.current)).put("choice",restoreSaved?"saved":"current").put("at",System.currentTimeMillis()));while(alternatives.length()>4)alternatives.remove(0);
-        e.record.put("alternatives",alternatives);e.record.remove("pendingConflict");persist(e);e.conflict=null;
+        e.record.put("alternatives",alternatives).put("pendingConflicts",withoutPending(e,e.url));persist(e);e.conflict=null;
         if(!restoreSaved){complete(e,e.current);return;}
         e.desired=copy(e.preview);e.approved=copy(e.current);e.state="restoring";advance(e,e.current);changed(e);
     }
@@ -236,6 +243,6 @@ final class ManagedPageController {
     JSONObject metadata(Entry e)throws Exception{
         JSONArray alternatives=new JSONArray(),source=e.record==null?null:e.record.optJSONArray("alternatives");
         if(source!=null)for(int i=0;i<source.length();i++){JSONObject pair=source.getJSONObject(i);alternatives.put(new JSONObject().put("savedRichSha256",digest(pair.getJSONObject("saved").getString("rich"))).put("currentRichSha256",digest(pair.getJSONObject("current").getString("rich"))).put("choice",pair.getString("choice")));}
-        return new JSONObject().put("id",e.id).put("url",e.url==null?"":e.url).put("state",e.state).put("error",e.error).put("blocked",e.blocked).put("revision",e.revision).put("document",e.document).put("epoch",e.epoch).put("rejected",e.rejected).put("visible",e.visible).put("bridgeConnected",e.port!=null).put("hasSnapshot",e.preview!=null).put("standardSha256",digest(e.preview==null?"":e.preview.optString("standard"))).put("richSha256",digest(e.preview==null?"":e.preview.optString("rich"))).put("transcriptLength",e.preview==null?0:e.preview.optString("transcript").length()).put("alternativeCount",source==null?0:source.length()).put("alternativeHashes",alternatives).put("pendingConflict",e.record!=null&&e.record.has("pendingConflict")).put("historyCount",e.record==null||e.record.optJSONArray("history")==null?0:e.record.getJSONArray("history").length()).put("checkpoint",e.checkpoint).put("checkpointSource",e.checkpointSource);
+        return new JSONObject().put("id",e.id).put("url",e.url==null?"":e.url).put("state",e.state).put("error",e.error).put("blocked",e.blocked).put("revision",e.revision).put("document",e.document).put("epoch",e.epoch).put("rejected",e.rejected).put("visible",e.visible).put("bridgeConnected",e.port!=null).put("hasSnapshot",e.preview!=null).put("standardSha256",digest(e.preview==null?"":e.preview.optString("standard"))).put("richSha256",digest(e.preview==null?"":e.preview.optString("rich"))).put("transcriptLength",e.preview==null?0:e.preview.optString("transcript").length()).put("alternativeCount",source==null?0:source.length()).put("alternativeHashes",alternatives).put("pendingConflict",e.record!=null&&pending(e,e.url)!=null).put("historyCount",e.record==null||e.record.optJSONArray("history")==null?0:e.record.getJSONArray("history").length()).put("checkpoint",e.checkpoint).put("checkpointSource",e.checkpointSource);
     }
 }

@@ -76,7 +76,8 @@ def healthy(a,t,seconds=70):
     return wait(ready,seconds,label='managed ready '+a+'/'+t)
 
 def select(a,t):
-    launch(a,'select',int(t));wait(lambda:foreground(a),label='focused managed account '+a)
+    if not foreground(a) or native(a).get('selected')!=int(t):launch(a,'select',int(t))
+    wait(lambda:foreground(a),label='focused managed account '+a)
     if entry(a,t) and entry(a,t)['state']=='offline':launch(a,'retry')
     return healthy(a,t)
 
@@ -113,11 +114,13 @@ def checkpoint(a,close=False):
 
 def capture(name):base.capture('managed-'+name)
 def stop():return base.stop()
-def restored(case,expected,old_documents):
-    base.phase=case;launch();wait(lambda:foreground('A'),label='saved launcher account A');assert native('A')['selected']==0
+def restored(case,expected,old_documents,open_app=True):
+    base.phase=case
+    if open_app:launch()
+    wait(lambda:foreground('A'),label='saved launcher account A');assert native('A')['selected']==0
     rows={}
     for a,t in TABS:
-        select(a,t);r=same_values(a,t,expected[a+':'+t],old_documents[a+':'+t]);assert abs(r['scrollY']-1400)<80;rows[a+':'+t]=r
+        select(a,t);r=same_values(a,t,expected[a+':'+t],old_documents[a+':'+t]);time.sleep(1);r=latest(a,t);assert abs(r['scrollY']-1400)<80;rows[a+':'+t]=r
     return rows
 
 def tree():
@@ -177,7 +180,7 @@ try:
     assert not any(r['phase']=='offline' for r in base.events)
     report['cases']['offlineReadOnlySnapshot']=True;capture('offline')
     text('reverse','tcp:8765','tcp:8765');base.phase='reconnected';launch('A','retry')
-    rows=restored('reconnected',latest_markers,{k:r['document'] for k,r in latest_rows.items()});assert str(native('A')['pid']) not in old_pids;report['cases']['forceStopAndReconnect']=True
+    rows=restored('reconnected',latest_markers,{k:r['document'] for k,r in latest_rows.items()},open_app=False);assert str(native('A')['pid']) not in old_pids;report['cases']['forceStopAndReconnect']=True
 
     print('5/8 Conflict preserves both versions before user choice',flush=True)
     select('A','0');stop();base.phase='conflict-keep';base.conflict=True;base.current_draft='current-web-'+uuid.uuid4().hex;first_current=base.current_draft;launch('A')

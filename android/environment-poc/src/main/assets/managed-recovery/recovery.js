@@ -34,9 +34,21 @@
       requestAnimationFrame(() => send("focused", {editor:message.editor, active:document.activeElement === element, snapshot:snapshot()}));
     } else if (message.type === "scroll") {
       if (document.activeElement === standard || document.activeElement === rich) document.activeElement.blur();
-      const top = Math.max(0,Math.min(Number(message.top),document.documentElement.scrollHeight-window.innerHeight));
-      window.scrollTo({top,behavior:"instant"});
-      requestAnimationFrame(() => requestAnimationFrame(() => send("scrolled", {snapshot:snapshot()})));
+      // Drop the selection created by our restore input before returning to the
+      // reading position. Gecko may otherwise scroll the old caret into view.
+      window.getSelection()?.removeAllRanges();
+      const started = performance.now();let stable = null;
+      const settle = () => {
+        if (disconnected || location.href !== initialURL) return;
+        const top = Math.max(0,Math.min(Number(message.top),document.documentElement.scrollHeight-window.innerHeight));
+        if (Math.abs(window.scrollY-top)>1) { stable=null;window.scrollTo({top,behavior:"instant"}); }
+        else if (stable===null) stable=performance.now();
+        if ((stable!==null && performance.now()-stable>=400 && performance.now()-started>=1000) || performance.now()-started>=3000) {
+          send("scrolled", {snapshot:snapshot()});return;
+        }
+        setTimeout(settle,50);
+      };
+      requestAnimationFrame(settle);
     } else if (message.type === "checkpoint") {
       send("checkpoint", {request:message.request, snapshot:snapshot()});
     }
