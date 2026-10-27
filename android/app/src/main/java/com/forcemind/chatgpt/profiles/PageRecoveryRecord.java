@@ -7,7 +7,7 @@ import java.nio.file.*;
 import java.util.*;
 import org.json.*;
 
-/** Only composer text and reading coordinates; never login fields or page HTML. */
+/** Encrypted composer, reading position and optional inert conversation snapshot. */
 final class PageRecoveryRecord {
     static String url(String value){
         if(!NavigationPolicy.chat(value))return null;
@@ -28,6 +28,7 @@ final class PageRecoveryRecord {
         for(String key:new String[]{"scroll","ratio"}){Object value=raw.get(key);if(!(value instanceof Number))throw new IOException("阅读位置无效");double n=((Number)value).doubleValue();if(!Double.isFinite(n)||n<0||n>(key.equals("ratio")?1:100000000))throw new IOException("阅读位置无效");out.put(key,n);}
         Object time=raw.get("capturedAt");if(!(time instanceof Number)||((Number)time).doubleValue()!=((Number)time).longValue()||((Number)time).longValue()<0)throw new IOException("恢复时间无效");out.put("capturedAt",time);
         if(raw.has("anchor")){JSONObject anchor=raw.getJSONObject("anchor");String kind=anchor.getString("kind"),value=HandoffRequest.string(anchor,"value",160,true);Object offset=anchor.get("offset");if(!Arrays.asList("id","message").contains(kind)||!(offset instanceof Number)||!Double.isFinite(((Number)offset).doubleValue())||Math.abs(((Number)offset).doubleValue())>100000)throw new IOException("阅读锚点无效");out.put("anchor",new JSONObject().put("kind",kind).put("value",value).put("offset",offset));}
+        if(raw.has("page"))out.put("page",PageSnapshot.normalize(raw.getJSONObject("page"),address));
         return out;
     }
     static void available(File files,String account,String storage,String tab)throws Exception{

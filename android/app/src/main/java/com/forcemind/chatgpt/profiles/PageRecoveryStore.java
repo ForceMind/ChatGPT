@@ -35,14 +35,18 @@ final class PageRecoveryStore {
             return value!=null&&value.getString("url").equals(url)?value:null;
         }
     }
-    void save(JSONObject raw,long generation)throws Exception{
+    boolean save(JSONObject raw,long generation)throws Exception{
         JSONObject record=PageRecoveryRecord.normalize(raw);String account=record.getString("accountId"),storage=record.getString("storageId"),tab=record.getString("tabId");
-        synchronized(LOCK){if(generation(account,storage)!=generation)return;PageRecoveryRecord.available(files,account,storage,tab);String text=record.toString(),fingerprint=fingerprint(record);String id=key(account,storage)+"/"+tab;if(fingerprint.equals(fingerprints.get(id)))return;
-            byte[] encrypted=cipher.seal(tab,text);PageRecoveryRecord.available(files,account,storage,tab);if(generation(account,storage)!=generation)return;
+        synchronized(LOCK){if(generation(account,storage)!=generation)return false;PageRecoveryRecord.available(files,account,storage,tab);String text=record.toString(),fingerprint=fingerprint(record);String id=key(account,storage)+"/"+tab;if(fingerprint.equals(fingerprints.get(id)))return false;
+            byte[] encrypted=cipher.seal(tab,text);PageRecoveryRecord.available(files,account,storage,tab);if(generation(account,storage)!=generation)return false;
             File dir=directory(account,storage,true),file=new File(dir,tab+".bin");if(file.exists()){decode(dir,file.getName(),account,storage,tab);write(new File(dir,file.getName()+".bak"),Files.readAllBytes(file.toPath()));}write(file,encrypted);fingerprints.put(id,fingerprint);
-        }
+            return true;}
     }
-    private String fingerprint(JSONObject record)throws Exception{return HandoffRequest.hash(new JSONObject(record.toString()).put("capturedAt",0).toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));}
+    private String fingerprint(JSONObject record)throws Exception{
+        JSONObject value=new JSONObject(record.toString()).put("capturedAt",0),page=value.optJSONObject("page");
+        if(page!=null){page.put("capturedAt",0);if(page.has("imageCapturedAt"))page.put("imageCapturedAt",0);}
+        return HandoffRequest.hash(value.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    }
     private void write(File target,byte[] bytes)throws Exception{
         File parent=target.getParentFile();HandoffFiles.directory(parent,false);File next=new File(parent,target.getName()+".new");
         if(target.exists())HandoffFiles.regular(parent,target.getName(),1024*1024+32);if(next.exists())HandoffFiles.regular(parent,next.getName(),1024*1024+32);

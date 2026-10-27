@@ -857,3 +857,6 @@
 - 2026-10-27 只读核对官方额度：Pages 单文件上限 25 MiB，不能直接放本项目 125–173 MiB 的桌面包；R2 Standard 提供每月 10 GB-month、100 万次 A / 1000 万次 B 操作和免费出口，超额可能计费，账户现有用量未核实，开通需 R2 订阅。当前五个普通下载包合计约 0.63 GB，旧 Mac 更新兼容包另约 0.155 GB；额度按整个账户及存放时间计，不承诺零费用。R2 自定义域名可让实际文件独立于 GitHub，生产不建议使用受限的 r2.dev 开发域名。
 - 另一方案是 Workers 免费额度内流式转发现有 GitHub 文件，自有域名可作为用户可见地址，但真实源站仍是 GitHub；免费版目前有每天 10 万请求、每次 10ms CPU 等限制，断点续传、速度、上游可用性和超额行为需实际验证，不保证国内可达。旧版 Mac 更新器及当前 Windows 更新清单均限制 GitHub 文件地址；普通网页下载可分阶段调整，已安装客户端的兼容清单不能直接改为自有域名。仅完成比较，没有创建资源或改变下载路径。
 - 官方资料：[Pages 直传限制](https://developers.cloudflare.com/pages/get-started/direct-upload/)、[R2 价格](https://developers.cloudflare.com/r2/pricing/)、[R2 开通](https://developers.cloudflare.com/r2/get-started/)、[R2 自定义域名](https://developers.cloudflare.com/r2/buckets/public-buckets/)、[Workers 限制](https://developers.cloudflare.com/workers/platform/limits/)。
+
+- 电脑崩溃后已核对工作区仍为 be19372，离线快照相关 WIP 完整保留，未 reset / stash / clean。已接入兼容旧加密记录的可选 page 字段、纯原生只读文字 / 画面查看、切换账号与页面 URL 绑定、安全重连，以及有尺寸 / 字节 / 生命周期限制的 PixelCopy 截图。登录 / 验证字段、临时聊天及覆盖窗口不参与截图，认证错误显示原网页，不向登录页恢复草稿；截图失败保留可读文字。嵌套时间戳不触发无意义重写，截图回调在导航 / 销毁时释放缓冲。
+- Android 本批候选统一 alpha.22 / 3000022，当前先验证离线恢复阶段，能力库仍待后续对齐。新增单元检查覆盖旧格式、加密 / 大小 / URL / 敏感记录与不重复写入，原生流程覆盖画面 / 文字、账号切换、前后台、重连不发送、同标签 SPA 导航不混入旧快照与认证页保护。原始草稿 / 保活 / 附件等必要回归保留，下一步由 Actions 编译、Lint、手机和平板原生验收；尚未宣称通过或交付可升级签名 APK。

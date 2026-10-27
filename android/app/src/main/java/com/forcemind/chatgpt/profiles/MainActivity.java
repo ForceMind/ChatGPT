@@ -75,6 +75,8 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
     private ProgressBar progress;
     private BrowserMemory memory;
     private FrameLayout browserArea;
+    private OfflineSnapshotView offlineSnapshot;
+    private WebView snapshotOwner;
     private LinearLayout undoBar;
     private TextView tabCounter;
     private TabOverview overview;
@@ -160,10 +162,41 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
         }if(retained>0)memory.diagnostics.event("activity-retained",null,null,"pages:"+retained);
     }
     private void showCurrent(){
-        if(!ready||fatal)return;if(recovery!=null)recovery.checkpointVisible();cancelRequests();renderHeader();WorkspaceState.Account account=state.current();WorkspaceState.Tab tab=account.current();recentClosed.remove(tab.id);pruneRecent();
-        try{for(Map.Entry<String,WebView> held:views.entrySet())selectPage(held.getValue(),held.getKey().equals(tab.id));memory.refreshExecutionPolicy();WebView web=views.get(tab.id);if(web==null){web=makeWebView(account.id,tab.id,account.storageId);web.loadUrl(tab.url);}for(WorkspaceState.Account a:state.accounts)for(WorkspaceState.Tab t:a.tabs){WebView existing=views.get(t.id);if(existing==null)continue;if(existing.getParent()!=content){if(existing.getParent() instanceof ViewGroup)((ViewGroup)existing.getParent()).removeView(existing);content.addView(existing,new FrameLayout.LayoutParams(-1,-1));}selectPage(existing,t.id.equals(tab.id));}web.bringToFront();if(overview==null)web.requestFocus();web.onResume();if(recovery!=null){if(web.getProgress()==100)recovery.ready(web);recovery.visible();}if(overview!=null)overview.refresh();}catch(Exception e){fail("标签页暂时无法打开",e);}
+        if(!ready||fatal)return;if(recovery!=null)recovery.checkpointVisible();if(snapshotOwner!=null)recoveryHideSnapshot(snapshotOwner);cancelRequests();renderHeader();WorkspaceState.Account account=state.current();WorkspaceState.Tab tab=account.current();recentClosed.remove(tab.id);pruneRecent();
+        try{
+            for(Map.Entry<String,WebView> held:views.entrySet())selectPage(held.getValue(),held.getKey().equals(tab.id));memory.refreshExecutionPolicy();WebView web=views.get(tab.id);boolean created=web==null;
+            if(created){web=makeWebView(account.id,tab.id,account.storageId);WebView fresh=web;String address=tab.url;if(recovery!=null)recovery.prepare(fresh,address,()->fresh.loadUrl(address));else fresh.loadUrl(address);}
+            for(WorkspaceState.Account a:state.accounts)for(WorkspaceState.Tab t:a.tabs){WebView existing=views.get(t.id);if(existing==null)continue;if(existing.getParent()!=content){if(existing.getParent() instanceof ViewGroup)((ViewGroup)existing.getParent()).removeView(existing);content.addView(existing,new FrameLayout.LayoutParams(-1,-1));}selectPage(existing,t.id.equals(tab.id));}
+            web.bringToFront();if(overview==null&&offlineSnapshot==null)web.requestFocus();web.onResume();if(recovery!=null){if(!created&&web.getProgress()==100)recovery.ready(web);recovery.visible();}if(overview!=null)overview.refresh();
+        }catch(Exception e){fail("标签页暂时无法打开",e);}
     }
-    private void selectPage(WebView web,boolean selected){if(web instanceof RetainedWebView){((RetainedWebView)web).blockInput(overview!=null);((RetainedWebView)web).selectPage(selected);}else web.setVisibility(selected?View.VISIBLE:View.INVISIBLE);}
+    private void selectPage(WebView web,boolean selected){if(web instanceof RetainedWebView){((RetainedWebView)web).blockInput(overview!=null||snapshotOwner==web);((RetainedWebView)web).selectPage(selected);}else web.setVisibility(selected?View.VISIBLE:View.INVISIBLE);}
+
+    void recoveryShowSnapshot(WebView web,JSONObject page,String problem){
+        if(page==null||!ready||fatal||isFinishing()||isDestroyed()||overview!=null||currentWeb()!=web)return;
+        try{
+            if(offlineSnapshot==null||snapshotOwner!=web){
+                if(snapshotOwner!=null)recoveryHideSnapshot(snapshotOwner);snapshotOwner=web;
+                offlineSnapshot=new OfflineSnapshotView(this,page,()->{if(!ready||fatal||currentWeb()!=web||state==null)return;web.stopLoading();web.loadUrl(state.current().current().url);});
+                browserArea.addView(offlineSnapshot,new FrameLayout.LayoutParams(-1,-1));selectPage(web,true);web.clearFocus();
+            }
+            if(!problem.isEmpty())offlineSnapshot.unavailable(problem);offlineSnapshot.bringToFront();
+        }catch(Exception error){if(snapshotOwner==web)recoveryHideSnapshot(web);recoveryNotice("已保存的页面暂不可查看；网页与本地记录保留。");}
+    }
+    void recoveryHideSnapshot(WebView web){if(snapshotOwner!=web)return;OfflineSnapshotView old=offlineSnapshot;offlineSnapshot=null;snapshotOwner=null;if(old!=null)browserArea.removeView(old);if(web!=null)selectPage(web,currentWeb()==web);}
+    boolean recoveryCanCapturePicture(WebView web){
+        if(!ready||fatal||!resumed||isFinishing()||isDestroyed()||keyboardVisible||overview!=null||offlineSnapshot!=null||undoBar!=null||currentWeb()!=web||!web.isShown()||web.getAlpha()<0.99f)return false;
+        View decor=getWindow().peekDecorView();if(decor==null||!decor.hasWindowFocus())return false;Rect visible=new Rect();return web.getGlobalVisibleRect(visible)&&visible.width()==web.getWidth()&&visible.height()==web.getHeight();
+    }
+    void recoveryCapturePicture(WebView web,Consumer<Bitmap> done){
+        if(!recoveryCanCapturePicture(web)){done.accept(null);return;}View decor=getWindow().peekDecorView();int width=web.getWidth(),height=web.getHeight();int[] location=new int[2];web.getLocationInWindow(location);
+        Rect source=new Rect(location[0],location[1],location[0]+width,location[1]+height);
+        if(width<=0||height<=0||source.left<0||source.top<0||source.right>decor.getWidth()||source.bottom>decor.getHeight()){done.accept(null);return;}
+        double scale=Math.min(1d,Math.min(720d/width,1440d/height));Bitmap bitmap;
+        try{bitmap=Bitmap.createBitmap(Math.max(1,(int)(width*scale)),Math.max(1,(int)(height*scale)),Bitmap.Config.ARGB_8888);}catch(OutOfMemoryError error){done.accept(null);return;}
+        try{android.view.PixelCopy.request(getWindow(),source,bitmap,result->{if(result==android.view.PixelCopy.SUCCESS&&recoveryCanCapturePicture(web))done.accept(bitmap);else{bitmap.recycle();done.accept(null);}},new android.os.Handler(android.os.Looper.getMainLooper()));}
+        catch(RuntimeException error){bitmap.recycle();done.accept(null);}
+    }
 
     private void showTabOverview(){
         if(!ready||fatal||overview!=null)return;if(handoffs!=null&&handoffs.controller()!=null&&handoffs.controller().ownedBy(this))handoffs.controller().cancel("已打开标签总览，自动发送已停止，请检查目标对话");
@@ -180,7 +213,7 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
             public void done(){closeOverview();}
         });browserArea.addView(overview,new FrameLayout.LayoutParams(-1,-1));WebView behind=currentWeb();if(behind!=null)selectPage(behind,true);
     }
-    private void closeOverview(){if(overview==null)return;((InputMethodManager)getSystemService(INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(overview.getWindowToken(),0);browserArea.removeView(overview);overview=null;WebView web=currentWeb();if(web!=null){selectPage(web,true);web.requestFocus();}}
+    private void closeOverview(){if(overview==null)return;((InputMethodManager)getSystemService(INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(overview.getWindowToken(),0);browserArea.removeView(overview);overview=null;WebView web=currentWeb();if(web!=null){selectPage(web,true);if(offlineSnapshot==null)web.requestFocus();}if(recovery!=null)recovery.visible();}
     private void refreshTabs(){renderHeader();if(overview!=null)overview.refresh();}
     private void restoreTab(String account,String id){if(change(next->{WorkspaceState.Account a=next.find(account);if(a.tabs.size()>=WorkspaceState.MAX_TABS)throw new IllegalStateException("标签页已达上限");WorkspaceState.Tab tab=a.closedTabs.stream().filter(t->t.id.equals(id)).findFirst().orElseThrow();a.closedTabs.remove(tab);a.tabs.add(tab);a.activeTab=id;next.activeAccount=account;})){if(undoBar!=null){browserArea.removeView(undoBar);undoBar=null;}closeOverview();showCurrent();}}
     private void showUndo(String account,String tab,String title){
@@ -212,7 +245,7 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
         web.setBackgroundColor(Color.WHITE);
         web.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT,false);pageEpochs.putIfAbsent(tabId,0L);if(initial&&recovery!=null)recovery.bind(web,accountId,storageId,tabId);
         web.setWebViewClient(new WebViewClient() {
-            @Override public void onPageStarted(WebView view,String url,android.graphics.Bitmap icon){pageEpochs.put(tabId,pageEpochs.getOrDefault(tabId,0L)+1);if(recovery!=null)recovery.navigating(view);memory.diagnostics.event("page-load",accountId,tabId,null);}
+            @Override public void onPageStarted(WebView view,String url,android.graphics.Bitmap icon){pageEpochs.put(tabId,pageEpochs.getOrDefault(tabId,0L)+1);if(recovery!=null)recovery.navigating(view,url);memory.diagnostics.event("page-load",accountId,tabId,null);}
             @Override public WebResourceResponse shouldInterceptRequest(WebView view,WebResourceRequest request){if(BuildConfig.DEBUG&&handoffFixture!=null)return handoffFixture.response(accountId,request);return null;}
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 String url = request.getUrl().toString();
@@ -226,10 +259,14 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
             }
             @Override public void doUpdateVisitedHistory(WebView view,String url,boolean reload){rememberURL(accountId,tabId,url);if(recovery!=null)recovery.ready(view);}
             @Override public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
-                if(request.isForMainFrame())memory.diagnostics.event("page-error",accountId,tabId,"code:"+error.getErrorCode());if (request.isForMainFrame() && active(tabId)&&resumed) showMessage("网页暂时无法加载", "请检查网络后重试。账号登录数据仍保留。", "重试", () -> { showCurrent(); currentWeb().loadUrl(state.current().current().url); });
+                if(!request.isForMainFrame())return;memory.diagnostics.event("page-error",accountId,tabId,"code:"+error.getErrorCode());boolean saved=recovery!=null&&recovery.failed(view,request.getUrl().toString(),false);if(active(tabId)&&resumed&&!saved)showMessage("网页暂时无法加载", "请检查网络后重试。账号登录数据仍保留。", "重试", () -> { showCurrent(); currentWeb().loadUrl(state.current().current().url); });
+            }
+            @Override public void onReceivedHttpError(WebView view,WebResourceRequest request,WebResourceResponse response){
+                if(!request.isForMainFrame()||recovery==null)return;int code=response.getStatusCode();
+                if(code==401||code==403)recovery.revealForAuthentication(view);else if(code>=400)recovery.failed(view,request.getUrl().toString(),false);
             }
             @Override public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
-                handler.cancel();memory.diagnostics.event("ssl-error",accountId,tabId,null); if (active(tabId)&&resumed) showMessage("连接证书校验失败", "请检查设备时间与网络，确认后重新打开。", "重试", () -> { showCurrent(); currentWeb().reload(); });
+                handler.cancel();memory.diagnostics.event("ssl-error",accountId,tabId,null);boolean saved=recovery!=null&&recovery.failed(view,error.getUrl(),true);if(active(tabId)&&resumed&&!saved)showMessage("连接证书校验失败", "请检查设备时间与网络，确认后重新打开。", "重试", () -> { showCurrent(); currentWeb().reload(); });
             }
             @Override public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
                 memory.diagnostics.event(detail.didCrash()?"renderer-crash":"renderer-reclaimed",accountId,tabId,"priority:"+detail.rendererPriorityAtExit());memory.destroy(tabId);if(overview!=null)overview.refresh();

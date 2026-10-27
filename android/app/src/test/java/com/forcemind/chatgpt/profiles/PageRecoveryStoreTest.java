@@ -45,4 +45,24 @@ public class PageRecoveryStoreTest {
         PageRecoveryStore store=store();JSONObject r=record("safe");store.save(r,0);File outside=temporary.newFile("outside");Files.write(outside.toPath(),new byte[]{7});Files.delete(file().toPath());Files.createSymbolicLink(file().toPath(),outside.toPath());assertThrows(Exception.class,()->store.load(account.id,account.storageId,account.activeTab,r.getString("url")));assertThrows(Exception.class,()->store.save(record("must not write"),0));assertArrayEquals(new byte[]{7},Files.readAllBytes(outside.toPath()));
         assertThrows(Exception.class,()->store.save(r.put("storageId",WorkspaceState.id()),0));
     }
+    @Test public void oldRecordsRemainReadableAndConversationSnapshotsAreEncryptedAndAccountBound()throws Exception{
+        PageRecoveryStore store=store();JSONObject old=record("old draft");store.save(old,0);assertFalse(store.load(account.id,account.storageId,account.activeTab,old.getString("url")).has("page"));
+        JSONObject page=new JSONObject().put("title","本地对话").put("capturedAt",456).put("truncated",false).put("messages",new JSONArray().put(new JSONObject().put("role","user").put("text","私人消息标记"))).put("html","ignored");
+        JSONObject r=record("updated").put("page",page);store.save(r,0);byte[] encrypted=Files.readAllBytes(file().toPath());assertFalse(new String(encrypted,StandardCharsets.UTF_8).contains("私人消息标记"));
+        JSONObject restored=store.load(account.id,account.storageId,account.activeTab,r.getString("url")).getJSONObject("page");assertEquals("私人消息标记",restored.getJSONArray("messages").getJSONObject(0).getString("text"));assertFalse(restored.has("html"));assertNull(store.load(account.id,account.storageId,account.activeTab,"https://chatgpt.com/c/other"));
+    }
+    @Test public void snapshotRejectsTemporaryLoginOversizedAndInvalidImageWithoutDamagingExistingRecord()throws Exception{
+        PageRecoveryStore store=store();store.save(record("safe"),0);byte[] original=Files.readAllBytes(file().toPath());
+        JSONObject page=new JSONObject().put("title","ChatGPT").put("capturedAt",1).put("truncated",false).put("messages",new JSONArray().put(new JSONObject().put("role","assistant").put("text","ok")));
+        assertFalse(PageSnapshot.conversation("https://chatgpt.com/"));assertFalse(PageSnapshot.conversation("https://chatgpt.com/c/local-chatgpt%3Aabc/"));assertFalse(PageSnapshot.conversation("https://chatgpt.com/c/a?temporary-chat=true"));assertFalse(PageSnapshot.conversation("https://auth.openai.com/login"));assertTrue(PageSnapshot.conversation("https://chatgpt.com/g/abc/c/real"));
+        assertThrows(Exception.class,()->store.save(record("new").put("page",new JSONObject(page.toString()).put("image","not a JPEG")),0));
+        assertThrows(Exception.class,()->store.save(record("new").put("page",new JSONObject(page.toString()).put("messages",new JSONArray().put(new JSONObject().put("role","assistant").put("text","x".repeat(60001))))),0));
+        assertThrows(Exception.class,()->store.save(record("new").put("url","https://chatgpt.com/").put("page",page),0));assertArrayEquals(original,Files.readAllBytes(file().toPath()));
+    }
+    @Test public void unchangedSnapshotTimestampsDoNotRewriteEncryptedRecords()throws Exception{
+        PageRecoveryStore store=store();JSONObject page=new JSONObject().put("title","ChatGPT").put("capturedAt",1).put("truncated",false).put("messages",new JSONArray().put(new JSONObject().put("role","assistant").put("text","same")));
+        JSONObject first=record("draft").put("page",page);store.save(first,0);byte[] initial=Files.readAllBytes(file().toPath());
+        store.save(record("draft").put("capturedAt",9999).put("page",new JSONObject(page.toString()).put("capturedAt",9999)),0);assertArrayEquals(initial,Files.readAllBytes(file().toPath()));
+        JSONObject changed=new JSONObject(page.toString());changed.getJSONArray("messages").getJSONObject(0).put("text","changed");store.save(record("draft").put("page",changed),0);assertEquals("changed",store.load(account.id,account.storageId,account.activeTab,"https://chatgpt.com/c/fixture").getJSONObject("page").getJSONArray("messages").getJSONObject(0).getString("text"));
+    }
 }

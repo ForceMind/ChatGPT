@@ -58,7 +58,7 @@ final class BrowserMemory {
             web.setOnTouchListener(null);web.setDownloadListener(null);
             web.setWebChromeClient(new WebChromeClient(){@Override public void onReceivedTitle(WebView view,String title){remember(account,tab,null,title);}});
             web.setWebViewClient(new WebViewClient(){
-                @Override public void onPageStarted(WebView view,String url,android.graphics.Bitmap icon){epochs.put(tab,epochs.getOrDefault(tab,0L)+1);if(recovery!=null)recovery.navigating(view);diagnostics.event("page-load",account,tab,null);}
+                @Override public void onPageStarted(WebView view,String url,android.graphics.Bitmap icon){epochs.put(tab,epochs.getOrDefault(tab,0L)+1);if(recovery!=null)recovery.navigating(view,url);diagnostics.event("page-load",account,tab,null);}
                 @Override public void onPageFinished(WebView view,String url){remember(account,tab,url,null);}
                 @Override public void doUpdateVisitedHistory(WebView view,String url,boolean reload){remember(account,tab,url,null);}
                 @Override public boolean shouldOverrideUrlLoading(WebView view,WebResourceRequest request){return !NavigationPolicy.internal(request.getUrl().toString());}
