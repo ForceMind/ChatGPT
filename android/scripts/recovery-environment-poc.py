@@ -129,7 +129,13 @@ def point_tap(a,t,name):
     text('shell','input','tap',str(x),str(y))
 
 def select(a,t):
-    started=time.monotonic();launch(a,'select',int(t));wait(lambda:(lambda n:n if n.get('selected')==int(t) and n.get('event') in ('layout','inspected','visible','session-state') else None)(native(a)),label='selected tab')
+    started=time.monotonic();launch(a,'select',int(t))
+    def visible():
+        n=native(a);dump=text('shell','dumpsys','activity','activities',check=False)
+        lines=[line for line in dump.splitlines() if 'topResumedActivity' in line]
+        if not lines:lines=[line for line in dump.splitlines() if 'mResumedActivity' in line]
+        return n if n.get('selected')==int(t) and n.get('windowFocused') and n.get('viewShown') and any('Recovery'+a+'Activity' in line for line in lines) else None
+    wait(visible,label='selected tab in actual focused foreground')
     return wait(lambda:fresh(a,t,phase,started),label='fresh selected page')
 
 def seed(a,t):
@@ -177,11 +183,26 @@ def stop():
     (OUT/('process-stop-'+str(number)+'-before.txt')).write_text(raw)
     pids=[r['pid'] for r in before if r['name']==PACKAGE and r['state']!='Z']
     if not pids:raise RuntimeError('No live main process before force-stop')
-    entry={'phase':phase,'before':before,'after':None,'terminated':False};process_stops.append(entry)
+    entry={'phase':phase,'before':before,'after':None,'terminated':False,'unexpectedNewProcesses':[],'forceStopRequests':1};process_stops.append(entry)
     text('shell','am','force-stop',PACKAGE)
+    empty_since=None;old_live={r['pid'] for r in before if r['state']!='Z'}
     def terminated():
+        nonlocal empty_since
         raw,rows=process_rows();entry['after']=rows;(OUT/('process-stop-'+str(number)+'-after.txt')).write_text(raw)
-        return not any(row['state']!='Z' for row in rows)
+        live=[r for r in rows if r['state']!='Z']
+        if live:
+            empty_since=None
+            if not any(r['pid'] in old_live for r in live) and entry['forceStopRequests']==1:
+                entry['unexpectedNewProcesses']=live
+                (OUT/('process-stop-'+str(number)+'-unexpected-restart.txt')).write_text(raw)
+                # A pending Activity launch on old Android can race the first
+                # force-stop. Preserve that failure gate and quiesce once more
+                # solely to allow the independent offline/integrity cases.
+                pids.extend(r['pid'] for r in live if r['name']==PACKAGE)
+                entry['forceStopRequests']+=1;text('shell','am','force-stop',PACKAGE)
+            return False
+        if empty_since is None:empty_since=time.monotonic()
+        return time.monotonic()-empty_since>=1
     wait(terminated,20,label='real process termination with state evidence');entry['terminated']=True
     return pids
 
@@ -309,6 +330,7 @@ finally:
         'savedActiveAccountRestored':all(cases.get(k,{}).get('launcherAccount')==cases.get(k,{}).get('expectedAccount') and 'expectedAccount' in cases.get(k,{}) for k in ('normalClose','forceStop')),
         'backAndForwardHistory':cases.get('history',{}).get('backPage')=='start' and cases.get('history',{}).get('forwardPage')=='detail',
         'newProcessAfterForceStop':bool(cases.get('forceStop',{}).get('newProcess')),'standardDraftsRestored':len(restored)==8 and all(r['standardDraft'] for r in restored),
+        'noUnexpectedProcessRestart':bool(process_stops) and not any(p['unexpectedNewProcesses'] for p in process_stops),
         'dynamicDraftsRestored':len(restored)==8 and all(r['richDraft'] for r in restored),'readingPositionsRestored':len(restored)==8 and all(r['readingPosition'] for r in restored),
         'ownerStorageRetained':len(restored)==8 and all(r['sameOwnerStorage'] for r in restored),'offlineContentObserved':bool(offline.get('contentRecovered')),
         'existingStandardDraftPreserved':bool(conflicts.get('standardCurrentPreserved')),'existingDynamicDraftPreserved':bool(conflicts.get('richCurrentPreserved')),
