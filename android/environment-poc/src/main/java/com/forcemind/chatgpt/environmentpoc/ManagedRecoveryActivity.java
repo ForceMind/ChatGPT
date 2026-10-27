@@ -128,7 +128,14 @@ public abstract class ManagedRecoveryActivity extends Activity {
         String request=UUID.randomUUID().toString();List<ManagedPageController.Entry> active=controller.all();long started=SystemClock.elapsedRealtime();
         try{workspace();for(ManagedPageController.Entry e:active)controller.checkpoint(e,request);}catch(Exception error){record("checkpoint-unavailable");return;}
         ui.post(new Runnable(){public void run(){boolean done=active.stream().allMatch(e->request.equals(e.checkpoint));if(!done&&SystemClock.elapsedRealtime()-started<10000){ui.postDelayed(this,100);return;}
-            record(done?"checkpoint-saved":"checkpoint-timeout");if(done&&close){for(ManagedRecoveryActivity host:new ArrayList<>(hosts.values()))host.release();controller.closeAll();groups.clear();record("closed");finishAndRemoveTask();}
+            record(done?"checkpoint-saved":"checkpoint-timeout");if(done&&close){
+                for(ManagedRecoveryActivity host:new ArrayList<>(hosts.values()))host.release();controller.closeAll();groups.clear();
+                for(ManagedRecoveryActivity host:new ArrayList<>(hosts.values()))host.finishAndRemoveTask();
+                record("closed");
+                // This control means an explicit complete exit of the lab app.
+                // Ordinary Activity destruction above retains process-owned tabs.
+                android.os.Process.killProcess(android.os.Process.myPid());
+            }
         }});
     }
     private void sample(String encoded,boolean replace){

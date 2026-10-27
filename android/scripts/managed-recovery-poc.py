@@ -114,7 +114,9 @@ def checkpoint(a,close=False):
         rows=[r for r in native_events(a) if r['elapsedMs']>old]
         if any(r['event'] in ('checkpoint-timeout','checkpoint-unavailable') for r in rows):raise RuntimeError('Managed checkpoint not saved')
         return next((r for r in reversed(rows) if r['event']==('closed' if close else 'checkpoint-saved')),None)
-    return wait(result,15,label='managed durable checkpoint')
+    receipt=wait(result,15,label='managed durable checkpoint')
+    if close:wait(lambda:not any(r['pid']==str(receipt['pid']) and r['state']!='Z' for r in base.process_rows()[1]),20,label='explicit complete app exit')
+    return receipt
 
 def capture(name):base.capture('managed-'+name)
 def stop():return base.stop()
