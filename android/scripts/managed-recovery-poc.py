@@ -24,6 +24,7 @@ base.TABS=TABS
 OUT=base.OUT;PACKAGE=base.PACKAGE
 markers={a+':'+t:'demo-'+a+'-'+t+'-'+uuid.uuid4().hex for a,t in TABS}
 latest_markers={key:value+'-latest' for key,value in markers.items()}
+if not CORE:latest_markers['A:0']+='\n第二行恢复验证 🙂'
 wait=base.wait;text=base.text;adb=base.adb
 
 class Handler(base.Handler):
@@ -88,6 +89,9 @@ def same_values(a,t,value,document=None,seconds=40):
     row=wait(good,seconds,label='real DOM and editor models '+a+'/'+t)
     digest=hashlib.sha256(value.encode()).hexdigest();wait(lambda:(lambda e:e if e and e['state']=='ready' and e['standardSha256']==digest and e['richSha256']==digest else None)(entry(a,t)),20,label='encrypted capture committed')
     return row
+
+def current_values(a,t,value):
+    return wait(lambda:(lambda r:r if r and all(r.get(k)==value for k in ('standard','rich','standardModel','richModel')) else None)(latest(a,t)),label='complete current editor models')
 
 def point(a,t,name):
     launch(a,'inspect');wait(lambda:foreground(a),label='native input focus');started=time.monotonic();r=wait(lambda:(lambda r:r if r and r['received']>started else None)(latest(a,t)),label='fresh page point')
@@ -184,12 +188,20 @@ try:
 
     print('5/8 Conflict preserves both versions before user choice',flush=True)
     select('A','0');stop();base.phase='conflict-keep';base.conflict=True;base.current_draft='current-web-'+uuid.uuid4().hex;first_current=base.current_draft;launch('A')
-    wait(lambda:entry('A','0') and entry('A','0')['state']=='conflict',label='native conflict prompt');r=wait(lambda:latest('A','0'),label='live conflicting values');assert all(r[k]==first_current for k in ('standard','rich','standardModel','richModel'));assert entry('A','0')['pendingConflict'];capture('conflict')
+    wait(lambda:entry('A','0') and entry('A','0')['state']=='conflict',label='native conflict prompt');r=current_values('A','0',first_current);assert entry('A','0')['pendingConflict'];capture('conflict')
+    if not CORE:
+        stop();base.phase='unresolved-conflict-restart';launch('A');wait(lambda:entry('A','0') and entry('A','0')['state']=='conflict',label='unresolved conflict survives restart')
+        r=current_values('A','0',first_current);assert entry('A','0')['richSha256']==hashlib.sha256(latest_markers['A:0'].encode()).hexdigest()
+        launch('A','back');healthy('A','0');wait(lambda:(lambda r:r if r and r['page']=='start' and r['richModel']=='' and r['standardModel']=='' else None)(latest('A','0')),label='pending conflict cannot leak into another URL')
+        assert not entry('A','0')['pendingConflict'] and entry('A','0')['pendingConflictCount']==1
+        launch('A','forward');wait(lambda:entry('A','0') and entry('A','0')['state']=='conflict',label='original URL retains pending conflict')
+        r=wait(lambda:(lambda r:r if r and r['page']=='detail' and r['richModel']==first_current else None)(latest('A','0')),label='original current draft preserved')
+        report['cases']['unresolvedConflictRestartAndURLBinding']=True
     tap_label('保留网页草稿');healthy('A','0');same_values('A','0',first_current);assert entry('A','0')['alternativeCount']>=1;report['cases']['keepCurrentConflict']=True
 
     print('6/8 Explicit restore uses native editor input and preserves other draft',flush=True)
     stop();base.phase='conflict-restore';base.current_draft='current-web-'+uuid.uuid4().hex;second_current=base.current_draft;launch('A')
-    wait(lambda:entry('A','0') and entry('A','0')['state']=='conflict',label='second conflict prompt');r=wait(lambda:latest('A','0'),label='second current draft');assert r['richModel']==second_current
+    wait(lambda:entry('A','0') and entry('A','0')['state']=='conflict',label='second conflict prompt');r=current_values('A','0',second_current)
     tap_label('恢复上次草稿');healthy('A','0');same_values('A','0',first_current);assert entry('A','0')['alternativeCount']>=2
     hashes=entry('A','0')['alternativeHashes'];assert any(p['currentRichSha256']==hashlib.sha256(second_current.encode()).hexdigest() and p['savedRichSha256']==hashlib.sha256(first_current.encode()).hexdigest() for p in hashes)
     launch('A','backups');root=tree();labels=' '.join(n.get('text','') for n in root.iter('node'));assert first_current in labels and second_current in labels;tap_label('关闭');report['cases']['restoreSavedConflictAndBackupAccess']=True
@@ -202,8 +214,21 @@ try:
         wait(lambda:entry('C','0') and entry('C','0')['blocked'],label='cross-account encrypted record blocked');assert private('C-page-0.bin')==original;report['cases']['crossAccountRecordPreserved']=True
 
     print('8/8 Verify no sends, forged webpage access or foreign cookies',flush=True)
-    assert not base.submissions and all(not r.get('pageNativeAPI',False) for r in base.events)
+    model_rows=[r for r in base.events if 'pageNativeAPI' in r]
+    assert not base.submissions and model_rows and all(not r['pageNativeAPI'] for r in model_rows)
     assert not any(r['rich']=='UNTRUSTED-FORGED-DRAFT' for r in base.events)
+    tokens={}
+    for r in base.events:
+        a=r['account'];lang='en-US' if a=='B' else 'zh-CN';zone='America/New_York' if a=='B' else 'Asia/Shanghai'
+        assert r['language']==lang and r['timeZone']==zone and r['acceptLanguage'].lower().startswith(lang.lower())
+        assert r['owner']['owner']==a and all(value==a for value in re.findall(r'(?:^|;\s*)recovery-owner=([^;]*)',r['requestCookie']))
+        if a in tokens:assert tokens[a]==r['owner']['token']
+        else:tokens[a]=r['owner']['token']
+    if not CORE:assert set(tokens)=={'A','B','C'} and len(set(tokens.values()))==3
+    for request in base.requests:
+        assert request['acceptLanguage'].lower().startswith('en-us' if request['account']=='B' else 'zh-cn')
+        assert all(value==request['account'] for value in re.findall(r'(?:^|;\s*)recovery-owner=([^;]*)',request['cookie']))
+    report['cases']['accountEnvironmentAndStorageIsolation']=True
     report['cases']['noAutomaticSendAndNoWebNativeAccess']=True
     report['experimentComplete']=True
 except Exception as error:
@@ -212,10 +237,11 @@ except Exception as error:
     except Exception as diagnostic:report['diagnosticFailure']=str(diagnostic)
 finally:
     report['native']={a:native(a) for a in ('A','B','C')};report['submissions']=base.submissions;report['processStops']=base.process_stops
-    required={'initialCapture','normalClose','saveAfterRestore','historyAndURLIsolation','offlineReadOnlySnapshot','forceStopAndReconnect','keepCurrentConflict','restoreSavedConflictAndBackupAccess','corruptRecordPreserved','noAutomaticSendAndNoWebNativeAccess'}
-    if not CORE:required.add('crossAccountRecordPreserved')
+    required={'initialCapture','normalClose','saveAfterRestore','historyAndURLIsolation','offlineReadOnlySnapshot','forceStopAndReconnect','keepCurrentConflict','restoreSavedConflictAndBackupAccess','corruptRecordPreserved','noAutomaticSendAndNoWebNativeAccess','accountEnvironmentAndStorageIsolation'}
+    if not CORE:required.update(('crossAccountRecordPreserved','unresolvedConflictRestartAndURLBinding'))
     report['managedControllerReady']=bool(report.get('experimentComplete')) and all(report['cases'].get(name,False) for name in required)
     report['formalMigrationReady']=False
+    report['platformFindings']={'unexpectedProcessRestartObserved':any(s['unexpectedNewProcesses'] for s in base.process_stops),'extraForceStopRequests':sum(s['forceStopRequests']-1 for s in base.process_stops),'touchScrollAcceptance':'Not established here; reading samples use native PanZoom API.'}
     report['limits']=['Synthetic textarea/contenteditable editor models only; no real ChatGPT.','Touch scrolling, OEM/physical devices, production lifecycle integration and package-size work remain separate gates.','This controller intentionally avoids blanket native form restoration; browser history is tracked in app-owned records.']
     for name,value in (('managed-report.json',report),('managed-events.json',base.events),('managed-requests.json',base.requests)):(OUT/name).write_text(json.dumps(value,ensure_ascii=False,indent=2))
     for a in ('A','B','C'):(OUT/('managed-native-'+a+'.jsonl')).write_bytes(adb('exec-out','run-as',PACKAGE,'cat','files/managed-events-'+a+'.jsonl',check=False))

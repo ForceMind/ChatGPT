@@ -108,10 +108,11 @@ public abstract class ManagedRecoveryActivity extends Activity {
         if(!startupError.isEmpty()){status.setText("独立实验无法启动");preview.setText(startupError);overlay.setVisibility(View.VISIBLE);record("changed");return;}
         if(e==null)return;
         String title="账号 "+account()+" · 标签 "+(selected.getOrDefault(account(),0)+1)+"/"+tabs().size()+" · ";
-        boolean ready="ready".equals(e.state);status.setText(title+(ready?"网页已恢复":"conflict".equals(e.state)?"检测到另一份草稿":"restoring".equals(e.state)?"正在恢复草稿":"上次保存的对话"));
+        boolean ready="ready".equals(e.state);String statusText=title+(ready?"网页已恢复":"conflict".equals(e.state)?"检测到另一份草稿":"restoring".equals(e.state)?"正在恢复草稿":"上次保存的对话");if(!status.getText().toString().equals(statusText))status.setText(statusText);
         overlay.setVisibility(ready?View.GONE:View.VISIBLE);conflictControls.setVisibility("conflict".equals(e.state)?View.VISIBLE:View.GONE);retry.setEnabled(!e.blocked);retry.setVisibility("conflict".equals(e.state)?View.GONE:View.VISIBLE);
         web.setImportantForAccessibility(ready?View.IMPORTANT_FOR_ACCESSIBILITY_AUTO:View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
         overlay.setClickable(!ready);
+        if(ready){record("changed");return;}
         String text="正在连接网页…";
         try{
             if(e.conflict!=null){text="两份草稿均已保留，请选择。\n\n上次草稿\n"+e.conflict.getJSONObject("saved").getString("standard")+"\n"+e.conflict.getJSONObject("saved").getString("rich")+"\n\n网页现有草稿\n"+e.current.getString("standard")+"\n"+e.current.getString("rich");}
