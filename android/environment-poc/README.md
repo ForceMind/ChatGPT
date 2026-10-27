@@ -34,3 +34,11 @@ gh workflow run android.yml --ref codex/macos-assets-workbench \
 工作流使用新 Android 15 x86_64 模拟器，开启 `adb reverse`，由 `../scripts/environment-poc.py` 提供 loopback 素材并采集真实结果。脚本拒绝物理设备、非 CI 环境和已有 PoC 空间，避免覆盖已有实验数据。APK 离开这个夹具服务后不具备可浏览的真实网页。
 
 下载 `android-environment-poc` 任务附件查看 `evidence/report.json`、原始事件、HTTP 请求、进程 / 内存 / CPU 输出和截图。`isolation.passed`、`resourcesComplete`、`keepAlivePassed` 与系统设置不变分别记录；不忽略失败、不把单个页面通过当作完整验收。最终结果与开发进度统一写入仓库根目录 `MACOS_MIGRATION_PLAN.md`。
+
+## 三账号分组实验
+
+独立三账号的完整模拟器运行见 [40503073397](https://github.com/ForceMind/ChatGPT/actions/runs/40503073397)：A / C 同环境但使用各自存储空间，B 使用不同语言与时区；四页、弹窗和 330 秒持续检查已在合成素材下运行。进程强停后的检查由脚本重新打开页面，只验证浏览器存储，不能证明对话、草稿或阅读位置自动恢复。清除 C 后 A / B 是否在确认清空后继续活动，另用定向复验检查；完整限制和复验状态记录于根目录 `MACOS_MIGRATION_PLAN.md`。
+
+实测资源、SessionStore 日志、Android 9 和真实设备 / ChatGPT 的验证边界应在制定正式迁移方案时重新评估；这个实验不修改已安装应用，也不是正式版本。
+
+补充的[定向复验](https://github.com/ForceMind/ChatGPT/actions/runs/40505986900) 在观察到 C 的主页面和 iframe 存储清空后，确认 A / B 的主页面、iframe、Worker 仍以原实例继续上报。两轮分别使用新的模拟器；可核对的指标与限制见 [实验汇总](../../docs/benchmarks/android-grouped-environment-poc.json)。

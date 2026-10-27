@@ -1,0 +1,264 @@
+{
+  "scope": "Independent synthetic GeckoView Android 15 x86_64 emulator; not production or real accounts",
+  "fullRun": {
+    "url": "https://github.com/ForceMind/ChatGPT/actions/runs/40503073397",
+    "sourceSha": "8228afbecc733df75276e3c78d21326e39262b0f",
+    "evidenceSha256": "1394b8169761e06f16bedc2ebb6e73befcd30418e2d7891e12b2f6388262a44e",
+    "device": {
+      "model": "sdk_gphone64_x86_64",
+      "release": "15",
+      "sdk": "35",
+      "abi": "x86_64"
+    },
+    "fixture": {
+      "messagesPerPage": 240,
+      "imagesPerPage": 6,
+      "imageDimensions": [
+        1024,
+        768
+      ],
+      "imageBytes": 2360847,
+      "diagnosticMainHeartbeatSeconds": 2
+    },
+    "isolationPassed": true,
+    "popups": {
+      "A": true,
+      "C": true,
+      "B": true
+    },
+    "keepAlivePassed": true,
+    "storageAfterForceStopPassed": true,
+    "systemUnchanged": true,
+    "engineSignals": {
+      "sessionStoreWindowNull": 39,
+      "stateUpdateNoListener": 37,
+      "fatalExceptionsInDeviceLog": 0
+    },
+    "continuity": [
+      {
+        "account": "A",
+        "tab": "0",
+        "kind": "frame",
+        "count": 215,
+        "spanSeconds": 427.15,
+        "maxGapSeconds": 3.4
+      },
+      {
+        "account": "A",
+        "tab": "0",
+        "kind": "main",
+        "count": 215,
+        "spanSeconds": 429.16,
+        "maxGapSeconds": 3.12
+      },
+      {
+        "account": "A",
+        "tab": "0",
+        "kind": "worker",
+        "count": 215,
+        "spanSeconds": 429.17,
+        "maxGapSeconds": 3.09
+      },
+      {
+        "account": "A",
+        "tab": "1",
+        "kind": "frame",
+        "count": 212,
+        "spanSeconds": 423.37,
+        "maxGapSeconds": 3.4
+      },
+      {
+        "account": "A",
+        "tab": "1",
+        "kind": "main",
+        "count": 211,
+        "spanSeconds": 422.69,
+        "maxGapSeconds": 4.14
+      },
+      {
+        "account": "A",
+        "tab": "1",
+        "kind": "worker",
+        "count": 212,
+        "spanSeconds": 422.7,
+        "maxGapSeconds": 2.89
+      },
+      {
+        "account": "B",
+        "tab": "0",
+        "kind": "frame",
+        "count": 207,
+        "spanSeconds": 413.07,
+        "maxGapSeconds": 2.19
+      },
+      {
+        "account": "B",
+        "tab": "0",
+        "kind": "main",
+        "count": 207,
+        "spanSeconds": 413.37,
+        "maxGapSeconds": 2.3
+      },
+      {
+        "account": "B",
+        "tab": "0",
+        "kind": "worker",
+        "count": 207,
+        "spanSeconds": 413.41,
+        "maxGapSeconds": 2.23
+      },
+      {
+        "account": "C",
+        "tab": "0",
+        "kind": "frame",
+        "count": 205,
+        "spanSeconds": 409.33,
+        "maxGapSeconds": 2.58
+      },
+      {
+        "account": "C",
+        "tab": "0",
+        "kind": "main",
+        "count": 206,
+        "spanSeconds": 411.18,
+        "maxGapSeconds": 2.71
+      },
+      {
+        "account": "C",
+        "tab": "0",
+        "kind": "worker",
+        "count": 206,
+        "spanSeconds": 411.2,
+        "maxGapSeconds": 2.21
+      }
+    ],
+    "limitations": [
+      "A force-stop test reopens synthetic pages from script-provided URLs; it validates retained browser storage, not automatic tab, draft or reading-position restoration.",
+      "Foreground retention uses synthetic storage probes and a two-second network heartbeat; silent pages and real ChatGPT are not covered.",
+      "Only Android 15 x86_64 emulator was measured; experiment minSdk 29 does not establish Android 9 compatibility.",
+      "App UI and A/C runtime share the experiment's default process; a separate production UI process and migration overhead are not measured."
+    ],
+    "resourceEnvironmentErrors": [],
+    "initialRequestErrors": [],
+    "selectiveClearCObserved": true,
+    "selectiveClearUnaffectedAccountsTimingLimit": "Full run only established fresh A/B events after clear request; targeted verification after confirmed clear is recorded separately.",
+    "resources": [
+      {
+        "mode": "grouped",
+        "readySeconds": 21.28,
+        "pssMiB30": 994.97,
+        "pssMiB60": 1036.25,
+        "cpu30": [
+          8.0,
+          6.0,
+          7.0,
+          26.5
+        ],
+        "cpu60": [
+          8.0,
+          9.0,
+          8.5,
+          8.5
+        ],
+        "cpu30Mean": 11.88,
+        "cpu60Mean": 8.5
+      },
+      {
+        "mode": "control",
+        "readySeconds": 21.68,
+        "pssMiB30": 1194.08,
+        "pssMiB60": 1226.67,
+        "cpu30": [
+          114.0,
+          71.5,
+          98.0,
+          44.0
+        ],
+        "cpu60": [
+          12.5,
+          11.5,
+          10.0,
+          9.0
+        ],
+        "cpu30Mean": 81.88,
+        "cpu60Mean": 10.75
+      }
+    ],
+    "apks": [
+      {
+        "file": "environment-poc-x86_64-debug.apk",
+        "bytes": 228211116,
+        "sha256": "d67a3488a56a0337dda9bf1b3d9c151a476e4d558fc16ee5a35a5319c2d37adf"
+      },
+      {
+        "file": "environment-poc-arm64-v8a-debug.apk",
+        "bytes": 208685091,
+        "sha256": "22ce038cfa82765ac49286d31881910b868fc0e5cfc95f4c4c2a5f121b1b9db6"
+      }
+    ]
+  },
+  "targetedClear": {
+    "url": "https://github.com/ForceMind/ChatGPT/actions/runs/40505986900",
+    "status": "success",
+    "sourceSha": "45cd781d8de5b1706d34923e988310bb346b3514",
+    "evidenceSha256": "091858dee847d3bbbea913c4461866819f17f061a4a37972df977db09edb84e5",
+    "artifactExpires": "2026-11-10T12:47:35Z",
+    "baselinePassed": true,
+    "cMainAndFrameCleared": true,
+    "aAndBUnchanged": {
+      "A": true,
+      "B": true
+    },
+    "confirmedAfterClear": {
+      "A": {
+        "main": {
+          "secondsAfterConfirmedClear": 1.38,
+          "ticksBefore": 12,
+          "ticksAfter": 16,
+          "sameInstance": true,
+          "sameStorage": true
+        },
+        "frame": {
+          "secondsAfterConfirmedClear": 1.97,
+          "ticksBefore": 11,
+          "ticksAfter": 15,
+          "sameInstance": true,
+          "sameStorage": true
+        },
+        "worker": {
+          "secondsAfterConfirmedClear": 1.36,
+          "ticksBefore": 12,
+          "ticksAfter": 16,
+          "sameInstance": true,
+          "sameStorage": null
+        }
+      },
+      "B": {
+        "main": {
+          "secondsAfterConfirmedClear": 1.24,
+          "ticksBefore": 2,
+          "ticksAfter": 6,
+          "sameInstance": true,
+          "sameStorage": true
+        },
+        "frame": {
+          "secondsAfterConfirmedClear": 1.92,
+          "ticksBefore": 1,
+          "ticksAfter": 5,
+          "sameInstance": true,
+          "sameStorage": true
+        },
+        "worker": {
+          "secondsAfterConfirmedClear": 2.09,
+          "ticksBefore": 1,
+          "ticksAfter": 6,
+          "sameInstance": true,
+          "sameStorage": null
+        }
+      }
+    },
+    "systemUnchanged": true,
+    "initialRequestErrors": [],
+    "scope": "Targeted synthetic selective-clear test only; reuse the earlier run for long retention, popups and resources."
+  }
+}
