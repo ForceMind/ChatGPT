@@ -258,7 +258,7 @@ public final class AssetWorkbenchActivity extends ComponentActivity {
     private void showAgent(JSONObject role){
         try{String prompt=role.getString("instructions");new AlertDialog.Builder(this).setTitle(role.getString("name")).setMessage(prompt)
             .setNeutralButton("交给 GPT",(d,w)->openHandoff(Collections.emptyList(),"",role.optString("id")))
-            .setNegativeButton("关闭",null).setPositiveButton("复制指令",(d,w)->{((ClipboardManager)getSystemService(CLIPBOARD_SERVICE)).setPrimaryClip(ClipData.newPlainText("角色指令",prompt));notice("指令已复制");}).show();
+            .setNegativeButton("关闭",null).setPositiveButton("复制指令",(d,w)->{((android.content.ClipboardManager)getSystemService(CLIPBOARD_SERVICE)).setPrimaryClip(ClipData.newPlainText("角色指令",prompt));notice("指令已复制");}).show();
         }catch(Exception error){notice("无法读取角色定义");}
     }
     private interface Work {void run() throws Exception;}
