@@ -2,6 +2,7 @@ import{test,expect,_electron as electron,type ElectronApplication,type Page}from
 import{createServer,type Server}from'node:http';
 import{mkdtempSync,rmSync,writeFileSync,readFileSync}from'node:fs';
 import path from'node:path';import os from'node:os';
+import{execFileSync}from'node:child_process';
 import{shellWindow}from'./helpers/shell';
 let server:Server,origin='',hits=0,sends=0;
 test.beforeAll(async()=>{
@@ -16,7 +17,7 @@ test.beforeAll(async()=>{
 test.afterAll(async()=>{server.closeAllConnections();await new Promise<void>(r=>server.close(()=>r()));});
 async function launch(data:string){
  const app=await electron.launch({args:[path.resolve('.')],env:{...process.env,PROFILES_E2E:'1',PROFILES_TEST_DATA:data,PROFILES_FIXTURE_ORIGIN:origin}});
- const shell=await shellWindow(app,{width:1100,height:800});await expect.poll(()=>remote(app,'window.instance')).toBeTruthy();return{app,shell};
+ const shell=await shellWindow(app,{width:1100,height:800});await expect.poll(()=>remote(app,'window.instance')).toBeTruthy();await app.evaluate(({app,BrowserWindow})=>{app.focus({steal:true});const w=BrowserWindow.getAllWindows().find(w=>w.webContents.getURL()==='app://shell/index.html')!;w.show();w.focus();});return{app,shell};
 }
 async function remote(app:ElectronApplication,script:string,id?:number):Promise<any>{return app.evaluate(({BrowserWindow},{script,id})=>{
  const w=BrowserWindow.getAllWindows().find(w=>w.webContents.getURL()==='app://shell/index.html')!;
@@ -28,11 +29,14 @@ async function native(app:ElectronApplication,id?:number){return app.evaluate(({
  const view=id?views.find(v=>v.webContents.id===id):views.find(v=>v.getVisible());return view?{id:view.webContents.id,visible:view.getVisible()}:undefined;
 },id);}
 const state=(shell:Page)=>shell.evaluate(()=>window.profiles.snapshot());
-async function swatch(app:ElectronApplication){return app.evaluate(async({BrowserWindow})=>{
- const w=BrowserWindow.getAllWindows().find(w=>w.webContents.getURL()==='app://shell/index.html')!;
- const image=await w.capturePage({x:40,y:92,width:16,height:16});return Array.from(image.toBitmap({scaleFactor:1}).subarray(0,4));
-});}
-async function screenshot(app:ElectronApplication,file:string){const png=await app.evaluate(async({BrowserWindow})=>(await BrowserWindow.getAllWindows().find(w=>w.webContents.getURL()==='app://shell/index.html')!.capturePage()).toPNG().toString('base64'));writeFileSync(file,Buffer.from(png,'base64'));}
+async function capture(app:ElectronApplication,file:string,patch=false){
+ const b=await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().find(w=>w.webContents.getURL()==='app://shell/index.html')!.getContentBounds());
+ // BrowserWindow.capturePage captures the shell surface on macOS, omitting
+ // embedded native views. Read the actual compositor output instead.
+ const region=patch?[b.x+40,b.y+92,16,16]:[b.x,b.y,b.width,b.height];execFileSync('/usr/sbin/screencapture',['-x','-R'+region.join(','),file],{timeout:10000});
+}
+async function swatch(app:ElectronApplication,file:string){await capture(app,file,true);return app.evaluate(({nativeImage},file)=>Array.from(nativeImage.createFromPath(file).toBitmap({scaleFactor:1}).subarray(0,4)),file);}
+async function screenshot(app:ElectronApplication,file:string){await capture(app,file);}
 async function holdDecode(shell:Page){await shell.evaluate(()=>{
  const original=HTMLImageElement.prototype.decode;
  (window as any).previewWaiting=false;(window as any).releasePreview=undefined;
@@ -44,16 +48,16 @@ test('account menu paints its full-resolution placeholder before hiding the live
  try{
   const page=await native(app),instance=await remote(app,'window.instance');expect(page).toBeTruthy();
   await remote(app,'document.querySelector("textarea").value="菜单切换保留的草稿"');
-  await expect.poll(()=>swatch(app)).toEqual([225,213,203,255]);const before=await swatch(app);
+  const sample=()=>swatch(app,info.outputPath('native-swatch.png'));await expect.poll(sample).toEqual([225,213,203,255]);const before=await sample();
   await holdDecode(shell);await shell.getByRole('button',{name:'切换账号',exact:true}).click();await expect.poll(()=>shell.evaluate(()=>(window as any).previewWaiting)).toBe(true);
   expect((await state(shell)).overlayTransition?.phase).toBe('prepare');expect((await native(app,page!.id))?.visible).toBe(true);
   const dimensions=await app.evaluate(async({BrowserWindow,nativeImage})=>{const w=BrowserWindow.getAllWindows().find(w=>w.webContents.getURL()==='app://shell/index.html')!,v=(w.contentView.children as Electron.WebContentsView[]).find(v=>v.getVisible())!;const snapshot=await w.webContents.executeJavaScript('window.profiles.snapshot()');return{preview:nativeImage.createFromDataURL(snapshot.overlayImage).getSize(),live:(await v.webContents.capturePage()).getSize()};});expect(dimensions.preview).toEqual(dimensions.live);
   await shell.evaluate(()=>(window as any).releasePreview());await expect.poll(async()=>(await state(shell)).overlayTransition?.phase).toBe('visible');expect((await native(app,page!.id))?.visible).toBe(false);
-  expect(await swatch(app)).toEqual(before);await screenshot(app,info.outputPath('mac-account-menu-no-blank.png'));
+  expect(await sample()).toEqual(before);await screenshot(app,info.outputPath('mac-account-menu-no-blank.png'));
   await shell.getByRole('menu',{name:'账号空间',exact:true}).press('Escape');await expect.poll(async()=>(await state(shell)).overlayTransition).toBeUndefined();await expect(shell.locator('.page-preview')).toHaveCount(0);
-  expect((await native(app,page!.id))?.visible).toBe(true);expect(await swatch(app)).toEqual(before);expect(await remote(app,'window.instance')).toBe(instance);expect(await remote(app,'document.querySelector("textarea").value')).toBe('菜单切换保留的草稿');
+  expect((await native(app,page!.id))?.visible).toBe(true);expect(await sample()).toEqual(before);expect(await remote(app,'window.instance')).toBe(instance);expect(await remote(app,'document.querySelector("textarea").value')).toBe('菜单切换保留的草稿');
   expect(readFileSync(path.join(root,'state.json'),'utf8')).not.toMatch(/overlayImage|overlayTransition/);expect(sends).toBe(0);
-  writeFileSync(info.outputPath('overlay-verification.json'),JSON.stringify({scope:'Real macOS Electron and loopback fixture; no personal account',imageDecodeHeldBeforeHide:true,nativeImageSize:dimensions,swatchBefore:before,swatchDuring:await swatch(app),samePageInstance:true,draftRetained:true,noUnexpectedSend:true},null,2));
+  writeFileSync(info.outputPath('overlay-verification.json'),JSON.stringify({scope:'Real macOS Electron and loopback fixture; no personal account',imageDecodeHeldBeforeHide:true,nativeImageSize:dimensions,swatchBefore:before,swatchAfter:await sample(),samePageInstance:true,draftRetained:true,noUnexpectedSend:true},null,2));
  }finally{await app.close();rmSync(root,{recursive:true,force:true});}
 });
 test('closing a menu while its image is decoding ignores the late paint acknowledgment',async()=>{
@@ -75,13 +79,13 @@ test('tab refresh bypasses cache, restores the saved draft and reading position,
   await remote(app,'document.querySelector("textarea").value="强制刷新前的草稿";document.querySelector("main").scrollTop=1234;document.cookie="refresh-fixture=keep;path=/";localStorage.setItem("refresh-fixture","keep")');
   await app.evaluate(({webContents},id)=>{const c=webContents.fromId(id)!;const original=c.reloadIgnoringCache.bind(c);(c as any).forcedReloads=0;c.reloadIgnoringCache=()=>{(c as any).forcedReloads++;original();};},page!.id);
   await shell.getByRole('button',{name:'新建标签页',exact:true}).click();await expect.poll(()=>remote(app,'window.instance')).toBeTruthy();const other=await native(app),otherKey=await remote(app,'window.instance');
-  await shell.evaluate(id=>window.profiles.command({type:'tab:activate',id}),tab);await shell.getByRole('button',{name:/^强制刷新标签 /}).click();
+  await shell.evaluate(id=>window.profiles.command({type:'tab:activate',id}),tab);await expect(shell.getByRole('tab').nth(0)).toHaveAttribute('aria-selected','true');await shell.getByRole('button',{name:/^强制刷新标签 /}).click();
   await expect.poll(()=>remote(app,'window.instance')).not.toBe(old.instance);await expect.poll(()=>remote(app,'document.querySelector("textarea")?.value')).toBe('强制刷新前的草稿');expect(await remote(app,'document.querySelector("main").scrollTop')).toBe(1234);
   expect((await native(app))?.id).toBe(page!.id);expect(await remote(app,'window.serial')).toBeGreaterThan(old.serial);expect(await remote(app,'[localStorage.getItem("refresh-fixture"),document.cookie]')).toEqual(['keep','refresh-fixture=keep']);
   expect(await app.evaluate(({webContents},id)=>(webContents.fromId(id) as any).forcedReloads,page!.id)).toBe(1);expect(await remote(app,'window.instance',other!.id)).toBe(otherKey);
   await shell.evaluate(()=>window.profiles.command({type:'profile:add',name:'另一隔离账号',email:'',color:'#5275a0'}));await expect.poll(()=>remote(app,'window.instance')).toBeTruthy();const isolated=await native(app),isolatedKey=await remote(app,'window.instance');
   expect((await shell.evaluate(id=>window.profiles.command({type:'tab:reload',id}),tab)).ok).toBe(false);expect(await remote(app,'window.instance')).toBe(isolatedKey);
-  await shell.evaluate(id=>window.profiles.command({type:'profile:activate',id}),profile);const current=await remote(app,'window.instance');await app.evaluate(({Menu,BrowserWindow})=>{const item=Menu.getApplicationMenu()!.getMenuItemById('force-reload-page')!;item.click(item,BrowserWindow.getAllWindows()[0],{triggeredByAccelerator:false});});
+  await shell.evaluate(id=>window.profiles.command({type:'profile:activate',id}),profile);await expect(shell.getByRole('button',{name:'切换账号',exact:true})).toContainText('个人账号');await expect(shell.getByRole('tab').nth(0)).toHaveAttribute('aria-selected','true');const current=await remote(app,'window.instance');await app.evaluate(({Menu,BrowserWindow})=>{const item=Menu.getApplicationMenu()!.getMenuItemById('force-reload-page')!;item.click(item,BrowserWindow.getAllWindows()[0],{triggeredByAccelerator:false});});
   await expect.poll(()=>remote(app,'window.instance')).not.toBe(current);await expect.poll(()=>remote(app,'document.querySelector("textarea")?.value')).toBe('强制刷新前的草稿');expect(await remote(app,'window.instance',isolated!.id)).toBe(isolatedKey);expect(sends).toBe(0);
   await screenshot(app,info.outputPath('mac-tab-force-refresh.png'));writeFileSync(info.outputPath('refresh-verification.json'),JSON.stringify({scope:'Real macOS Electron and cached loopback fixture; no ChatGPT',cacheBypassMethodInvoked:true,networkResponseChanged:true,draftAndReadingRestored:true,cookieAndLocalStorageRetained:true,otherTabAndAccountUnchanged:true,crossAccountRefreshRejected:true,noUnexpectedSend:true},null,2));
  }finally{await app.close();rmSync(root,{recursive:true,force:true});}
