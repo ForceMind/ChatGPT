@@ -8,6 +8,7 @@ import json
 import os
 import random
 import re
+import signal
 import statistics
 import struct
 import subprocess
@@ -198,13 +199,17 @@ def same_account_tokens(case):
     return shared_markers(a0,a1,c)
 
 def popup(case,account):
-    previous=native(account,"grouped").get("elapsedMs",-1);started=time.monotonic();launch(account)
+    previous=native(account,"grouped").get("elapsedMs",-1);started=time.monotonic();launch(account,inspect=True)
     def focused_view():
-        value=native(account,"grouped")
-        return value if value.get("elapsedMs",-1)>previous and value.get("viewHeight",0)>0 and value.get("viewShown") and value.get("windowFocused") else None
+        value=native(account,"grouped");lines=adb("shell","dumpsys","window","windows",check=False).splitlines()
+        focused=[line.strip() for line in lines if "mCurrentFocus=" in line and "Grouped"+account+"Activity" in line]
+        return {**value,"osFocusedWindow":focused[0]} if focused and value.get("elapsedMs",-1)>previous and value.get("viewHeight",0)>0 else None
     geo=wait(focused_view,20)
-    row=wait(lambda:(lambda value:value if value and value.get("received",0)>started and value.get("popupButton") else None)(main_row(case,account)),20)
-    point=row and row.get("popupButton");attempt={"account":account,"focusedView":geo,"point":point,"freshPageReport":bool(row)};popup_attempts.append(attempt)
+    focused_at=time.monotonic() if geo else started
+    row=wait(lambda:(lambda value:value if value and value.get("received",0)>focused_at and value.get("popupButton") else None)(main_row(case,account)),20)
+    point=row and row.get("popupButton");window_dump=adb("shell","dumpsys","window","windows",check=False)
+    focus_lines=[line.strip() for line in window_dump.splitlines() if "mCurrentFocus=" in line or "mFocusedApp=" in line]
+    attempt={"account":account,"focusedView":geo,"lastNative":native(account,"grouped"),"focusWindows":focus_lines,"point":point,"freshPageReport":bool(row)};popup_attempts.append(attempt)
     screenshot("popup-"+account.lower()+"-before")
     if not geo or not point:attempt["reason"]="foreground view or fresh page coordinates unavailable";return False
     before={r["instance"] for r in records(case) if r.get("account")==account and r.get("kind")=="popup"}
@@ -226,6 +231,19 @@ def popup_contexts_ready(case):
         if not any(all(any(r.get("account")==account and r.get("tab")==tab and r.get("kind")==kind for r in rows) for kind in ("popup","frame","worker")) for tab in tabs):return False
     return True
 
+def heartbeat_ticks(case):
+    with lock:rows=list(heartbeats)
+    result={}
+    for account,tab in (("A","0"),("A","1"),("B","0"),("C","0")):
+        row=next((r for r in reversed(rows) if r.get("phase")==case and r.get("account")==account and r.get("tab")==tab and r.get("kind")=="main"),None)
+        result[account+":"+tab]=row.get("ticks") if row else None
+    return result
+
+def measurement(case,mode):
+    time.sleep(30);mem=memory(case);before=heartbeat_ticks(case);cpu_result=cpu(case);after=heartbeat_ticks(case)
+    activity={key:before[key] is not None and after[key] is not None and after[key]>before[key] for key in before}
+    return {"mode":mode,"memory":mem,"cpu":cpu_result,"heartbeatBefore":before,"heartbeatAfter":after,"activeDuringCpuSample":activity}
+
 devices=[x.split()[0] for x in adb("devices").splitlines()[1:] if x.endswith("\tdevice")]
 if os.environ.get("GITHUB_ACTIONS")!="true" or len(devices)!=1 or not devices[0].startswith("emulator-") or adb("shell","getprop","ro.kernel.qemu")!="1":raise SystemExit("Only one fresh GitHub Actions emulator is allowed; physical devices refused")
 profile_names=["poc-gecko-A","poc-gecko-B"]+["grouped-poc-"+mode+"-"+slot for mode in ("grouped","control") for slot in ("a","b","c")]
@@ -243,8 +261,11 @@ report={"schema":1,"engine":"GeckoView 158.0.20261021001945","package":PACKAGE,"
         "device":{"model":adb("shell","getprop","ro.product.model"),"release":adb("shell","getprop","ro.build.version.release"),"sdk":adb("shell","getprop","ro.build.version.sdk"),"abi":adb("shell","getprop","ro.product.cpu.abi")},
         "systemBefore":{"locale":adb("shell","getprop","persist.sys.locale"),"timeZone":adb("shell","getprop","persist.sys.timezone")},"resources":[]}
 server=ThreadingHTTPServer(("127.0.0.1",8765),Handler);threading.Thread(target=server.serve_forever,daemon=True).start();adb("reverse","tcp:8765","tcp:8765")
+def timed_out(_signal,_frame):raise TimeoutError("CI experiment time limit reached")
+signal.signal(signal.SIGTERM,timed_out)
 failure=None
 try:
+    print("Stage 1/5: three-account isolation and popups",flush=True)
     phase="isolation";isolation=start_workload(phase,"grouped");isolation["sameAccountStorageTokens"]=same_account_tokens(phase)
     isolation["popups"]={a:popup(phase,a) for a in ("A","C","B")}
     isolation["popupContextsReported"]=bool(wait(lambda:popup_contexts_ready("isolation"),40))
@@ -256,18 +277,28 @@ try:
     report["isolation"]=isolation;screenshot("grouped-isolation")
 
     original={a:main_row("isolation",a) for a in ("A","B","C")};old_pids={isolation["native"][a]["pid"] for a in ("A","B","C")}
+    print("Stage 2/5: warm the separate-process comparison profiles",flush=True)
+    adb("shell","am","force-stop",PACKAGE);time.sleep(2);phase="control-warmup"
+    warmup=start_workload(phase,"control");warmup["sameAccountStorageTokens"]=same_account_tokens(phase)
+    warmup["environmentErrors"]=[{"account":r["account"],"kind":r["kind"],"errors":validate(r)} for r in records(phase) if validate(r)]
+    warmup["passed"]=warmup["processRelationCorrect"] and warmup["sameAccountStorageTokens"] and not warmup["environmentErrors"];report["controlWarmup"]=warmup
+    report["comparisonConditions"]="Both modes preloaded four equal pages, then restarted. The grouped profile also retained popup history from the isolation stage. Both wait 30 seconds after readiness before sampling; synthetic storage probes and heartbeats remain active."
+    print("Stage 3/5: grouped processes and 330-second retention",flush=True)
     adb("shell","am","force-stop",PACKAGE);time.sleep(2);phase="grouped-resource"
     grouped=start_workload(phase,"grouped");new_pids={grouped["native"][a]["pid"] for a in ("A","B","C")};reopened={}
     for account in ("A","B","C"):
         before=original[account];after=main_row(phase,account);service=after.get("service",{}) if after else {}
         reopened[account]=bool(before and after and all(before.get(k)==after.get(k) for k in ("local","idb","cache","cookie")) and service.get("owner")==account and (service.get("response") or {}).get("owner")==account)
     grouped["processRestart"]={"oldPids":sorted(old_pids),"newPids":sorted(new_pids),"newProcesses":not bool(old_pids&new_pids),"accountsRetained":reopened}
-    time.sleep(12);grouped.update({"mode":"grouped","memory":memory(phase),"cpu":cpu(phase),"sameAccountStorageTokens":same_account_tokens(phase)})
-    start={r["instance"]:r for r in latest(phase).values() if not r.get("probe")};begin=time.monotonic();time.sleep(330)
+    grouped.update(measurement(phase,"grouped"));grouped["sameAccountStorageTokens"]=same_account_tokens(phase)
+    start={r["instance"]:r for r in latest(phase).values() if not r.get("probe")};begin=time.monotonic()
+    while time.monotonic()-begin<330:
+        time.sleep(min(30,max(0,330-(time.monotonic()-begin))));print("Retention elapsed:",round(time.monotonic()-begin,1),"seconds",flush=True)
     end={r["instance"]:r for r in latest(phase).values() if not r.get("probe")};grouped["keepAlive"]={"durationSeconds":round(time.monotonic()-begin,1),"originalContexts":len(start),"continuingContexts":sum(k in end and end[k]["ticks"]>v["ticks"] and end[k]["received"]>begin+320 for k,v in start.items()),"newDocuments":len(set(end)-set(start))}
     for account in ("A","C","B"):launch(account,next=True)
     time.sleep(5);grouped["keepAlive"]["newDocumentsAfterSwitch"]=len({r["instance"] for r in latest(phase).values()}-set(end));report["resources"].append(grouped)
 
+    print("Stage 4/5: clear C and verify A/B continue",flush=True)
     before_clear={a:main_row(phase,a) for a in ("A","B","C")};clear_started=time.monotonic();phase="selective-clear";launch("C",clear=True)
     clear_file="files/grouped-clear-grouped-C.json"
     if not wait(lambda:adb("exec-out","run-as",PACKAGE,"cat",clear_file,check=False),20):raise RuntimeError("C clear was not requested")
@@ -286,9 +317,10 @@ try:
     wait(lambda:all(unaffected(a) for a in ("A","B")),20);unchanged={a:unaffected(a) for a in ("A","B")}
     report["selectiveClear"]={"clearedCMarkers":bool(clean),"unaffectedAccounts":unchanged,"passed":bool(clean) and all(unchanged.values()),"probe":clean}
 
+    print("Stage 5/5: measure the equally warmed separate-process control",flush=True)
     adb("shell","am","force-stop",PACKAGE);time.sleep(2);phase="control-resource"
-    control=start_workload(phase,"control");time.sleep(12);control.update({"mode":"control","memory":memory(phase),"cpu":cpu(phase),"sameAccountStorageTokens":same_account_tokens(phase)});report["resources"].append(control)
-    report["resourceEnvironmentErrors"]=[{"phase":r["phase"],"account":r["account"],"kind":r["kind"],"errors":validate(r)} for r in records() if r["phase"] in ("grouped-resource","control-resource") and validate(r)]
+    control=start_workload(phase,"control");control.update(measurement(phase,"control"));control["sameAccountStorageTokens"]=same_account_tokens(phase);report["resources"].append(control)
+    report["resourceEnvironmentErrors"]=[{"phase":r["phase"],"account":r["account"],"kind":r["kind"],"errors":validate(r)} for r in records() if r["phase"] in ("control-warmup","grouped-resource","control-resource") and validate(r)]
     screenshot("control-resource")
 except Exception as error:
     failure=str(error);report["failure"]=failure;print("Grouped PoC failure:",failure,flush=True)
@@ -304,7 +336,7 @@ finally:
             for path in ("/page","/frame","/worker.js","/image.png"):
                 if not any(item["phase"]==case and item["account"]==account and urlparse(item["path"]).path==path and parse_qs(urlparse(item["path"]).query).get("tab")==[tab] for item in requests):
                     report["initialRequestErrors"].append({"phase":case,"account":account,"tab":tab,"missing":path})
-    resources=report["resources"];report["resourcesComplete"]=len(resources)==2 and all(r.get("processRelationCorrect") and r.get("sameAccountStorageTokens") and r["memory"]["complete"] and r["cpu"].get("allProcessesCovered") and len(r["cpu"].get("samplesOneCorePercent",[]))>=3 for r in resources)
+    resources=report["resources"];report["resourcesComplete"]=bool(report.get("controlWarmup",{}).get("passed")) and len(resources)==2 and all(r.get("processRelationCorrect") and r.get("sameAccountStorageTokens") and r["memory"]["complete"] and r["cpu"].get("allProcessesCovered") and len(r["cpu"].get("samplesOneCorePercent",[]))>=3 and all(r.get("activeDuringCpuSample",{}).values()) and len(r.get("activeDuringCpuSample",{}))==4 for r in resources)
     keep=resources[0].get("keepAlive",{}) if resources else {};report["keepAlivePassed"]=keep.get("originalContexts")==12 and keep.get("continuingContexts")==12 and keep.get("newDocuments")==0 and keep.get("newDocumentsAfterSwitch")==0
     restart=resources[0].get("processRestart",{}) if resources else {};report["reopenPassed"]=restart.get("newProcesses",False) and len(restart.get("accountsRetained",{}))==3 and all(restart["accountsRetained"].values())
     report["apks"]=[{"file":apk.name,"bytes":apk.stat().st_size,"sha256":hashlib.sha256(apk.read_bytes()).hexdigest()} for apk in Path("environment-poc/build/outputs/apk/debug").glob("*.apk")]

@@ -53,7 +53,7 @@ public abstract class GroupedActivity extends Activity {
         LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setBackgroundColor(Color.WHITE);
         TextView heading=new TextView(this);heading.setText("独立分组验证 · 仅本地夹具");heading.setTextColor(Color.BLACK);heading.setPadding(16,32,16,8);root.addView(heading);
         LinearLayout controls=new LinearLayout(this);root.addView(controls);
-        for(String id:new String[]{"A","B","C"})button(controls,"账号 "+id,()->switchAccount(id,0,false,false,false,false));
+        for(String id:new String[]{"A","B","C"})button(controls,"账号 "+id,()->switchAccount(id,0,false,false,false,false,false));
         button(controls,"下个标签",()->{if(!tabs().isEmpty()){selected.put(account(),(selected.getOrDefault(account(),0)+1)%tabs().size());showTab();}});
         status=new TextView(this);status.setTextColor(Color.DKGRAY);status.setPadding(16,8,16,8);root.addView(status);
         view=new GeckoView(this);root.addView(view,new LinearLayout.LayoutParams(-1,0,1));setContentView(root);
@@ -75,10 +75,10 @@ public abstract class GroupedActivity extends Activity {
         }catch(Exception e){status.setText("实验启动失败："+e);record("startup-error",e.toString());}
     }
     private void button(LinearLayout row,String text,Runnable action){Button b=new Button(this);b.setText(text);b.setTextColor(Color.BLACK);row.addView(b,new LinearLayout.LayoutParams(0,-2,1));b.setOnClickListener(v->action.run());}
-    private void switchAccount(String target,int count,boolean probe,boolean clear,boolean nextTab,boolean recreate){
+    private void switchAccount(String target,int count,boolean probe,boolean clear,boolean nextTab,boolean recreate,boolean inspect){
         Class<? extends GroupedActivity> cls=target.equals("B")?GroupedBActivity.class:target.equals("C")?(mode().equals("control")?GroupedCControlActivity.class:GroupedCActivity.class):GroupedAActivity.class;
         Intent next=new Intent(this,cls).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT).putExtra("mode",mode()).putExtra("account",target);
-        if(count>0)next.putExtra("tabs",count);if(probe)next.putExtra("probe",true);if(clear)next.putExtra("clear",true);if(nextTab)next.putExtra("next",true);if(recreate)next.putExtra("recreate",true);startActivity(next);
+        if(count>0)next.putExtra("tabs",count);if(probe)next.putExtra("probe",true);if(clear)next.putExtra("clear",true);if(nextTab)next.putExtra("next",true);if(recreate)next.putExtra("recreate",true);if(inspect)next.putExtra("inspect",true);startActivity(next);
     }
     @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);setIntent(intent);handle(intent);}
     @Override protected void onResume(){super.onResume();new Handler(Looper.getMainLooper()).postDelayed(()->{if(view!=null)record("resumed","");},600);}
@@ -86,11 +86,12 @@ public abstract class GroupedActivity extends Activity {
     private void handle(Intent intent){
         String target=intent.getStringExtra("account");int count=intent.getIntExtra("tabs",0);boolean probe=intent.getBooleanExtra("probe",false),clear=intent.getBooleanExtra("clear",false);
         if(target!=null&&!target.equals("A")&&!target.equals("B")&&!target.equals("C")){record("invalid-target","");return;}
-        if(target!=null&&!target.equals(account())){switchAccount(target,count,probe,clear,intent.getBooleanExtra("next",false),intent.getBooleanExtra("recreate",false));return;}
+        if(target!=null&&!target.equals(account())){switchAccount(target,count,probe,clear,intent.getBooleanExtra("next",false),intent.getBooleanExtra("recreate",false),intent.getBooleanExtra("inspect",false));return;}
         if(clear){clearAccount();intent.removeExtra("clear");return;}
         if(probe){resize(0,false);resize(1,true);intent.removeExtra("probe");}
         else if(count>0&&count<=4)resize(count,false);
         if(intent.getBooleanExtra("next",false)&&!tabs().isEmpty()){selected.put(account(),(selected.getOrDefault(account(),0)+1)%tabs().size());showTab();intent.removeExtra("next");}
+        if(intent.getBooleanExtra("inspect",false)){intent.removeExtra("inspect");new Handler(Looper.getMainLooper()).postDelayed(()->record("inspected",""),1000);}
         if(intent.getBooleanExtra("recreate",false)){intent.removeExtra("recreate");recreate();}
     }
     private static GeckoSession newSession(String owner,String context){
