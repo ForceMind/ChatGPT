@@ -1,6 +1,11 @@
 """Validate isolated browser observations; synthetic fixture data only."""
 import re
 
+def profile_present(marker):
+    if marker=="POC_PRESENT":return True
+    if marker=="POC_ABSENT":return False
+    raise ValueError("Experiment profile state could not be verified")
+
 def expected(account):
     return (("en-US","America/New_York",300,240,"2026-01-15T17:00:00.000Z","2026-03-08T07:30:00.000Z","en-Latn-US") if account=="B"
             else ("zh-CN","Asia/Shanghai",-480,-480,"2026-01-15T04:00:00.000Z","2026-03-07T18:30:00.000Z","zh-Hans-CN"))
@@ -9,7 +14,8 @@ def validate(row):
     account=row["account"]
     if account not in ("A","B","C") or row.get("kind") not in ("main","frame","worker","popup"):return ["unknown account or context"]
     lang,zone,winter,summer,noon,gap,maximized=expected(account);errors=[]
-    for key,value in {"language":lang,"timeZone":zone,"winterOffset":winter,"summerOffset":summer,"localNoon":noon,"parsedNoon":noon,"dstGap":gap,"localeMaximized":maximized}.items():
+    environment={"language":lang,"timeZone":zone,"winterOffset":winter,"summerOffset":summer,"localNoon":noon,"parsedNoon":noon,"dstGap":gap,"localeMaximized":maximized,"numberLocaleMaximized":maximized}
+    for key,value in environment.items():
         if row.get(key)!=value:errors.append(key+": "+str(row.get(key))+" != "+str(value))
     if not row.get("languages") or row["languages"][0]!=lang:errors.append("navigator.languages")
     if not row.get("acceptLanguage","").lower().startswith(lang.lower()):errors.append("request Accept-Language")
@@ -32,7 +38,7 @@ def validate(row):
         response=service.get("response")
         if response:
             if response.get("owner")!=account:errors.append("foreign service worker response")
-            if response.get("language")!=lang or response.get("timeZone")!=zone:errors.append("service worker environment")
+            if any(response.get(key)!=value for key,value in environment.items()) or not response.get("languages") or response["languages"][0]!=lang:errors.append("service worker environment")
     return errors
 
 def shared_markers(a0,a1,c):

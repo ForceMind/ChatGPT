@@ -3,18 +3,25 @@ import sys
 import unittest
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
-from grouped_environment_validation import expected,validate,shared_markers
+from grouped_environment_validation import expected,validate,shared_markers,profile_present
 
 def sample(account="A",kind="main"):
     lang,zone,winter,summer,noon,gap,maximized=expected(account)
     marker={"owner":account,"token":"token-"+account}
-    return {"account":account,"kind":kind,"language":lang,"languages":[lang],"localeMaximized":maximized,"timeZone":zone,
+    environment={"language":lang,"languages":[lang],"localeMaximized":maximized,"numberLocaleMaximized":maximized,"timeZone":zone,"winterOffset":winter,"summerOffset":summer,"localNoon":noon,"parsedNoon":noon,"dstGap":gap}
+    return {"account":account,"kind":kind,"language":lang,"languages":[lang],"localeMaximized":maximized,"numberLocaleMaximized":maximized,"timeZone":zone,
             "winterOffset":winter,"summerOffset":summer,"localNoon":noon,"parsedNoon":noon,"dstGap":gap,
             "acceptLanguage":lang+",en;q=0.5","cookie":"poc-owner="+account,"previousCookie":"","requestCookie":"poc-owner="+account,
             "localState":"ready","idbState":"ready","cacheState":"ready","local":copy.deepcopy(marker),"idb":copy.deepcopy(marker),"cache":copy.deepcopy(marker),
-            "service":{"state":"ready","owner":account,"response":{"owner":account,"language":lang,"timeZone":zone}}}
+            "service":{"state":"ready","owner":account,"response":{"owner":account,**environment}}}
 
 class GroupedValidationTests(unittest.TestCase):
+    def test_profile_guard_rejects_unrecognized_output(self):
+        self.assertTrue(profile_present('POC_PRESENT'));self.assertFalse(profile_present('POC_ABSENT'))
+        for text in ('','ls: missing','POC_ABSENT\npermission denied','POC_PRESENT\nPOC_ABSENT'):
+            with self.subTest(text=text):
+                with self.assertRaises(ValueError):profile_present(text)
+
     def test_expected_environments_and_valid_observations(self):
         for account in ("A","B","C"):
             for kind in ("main","frame","worker","popup"):
@@ -39,6 +46,7 @@ class GroupedValidationTests(unittest.TestCase):
         frame["idbState"]="error";self.assertTrue(validate(frame))
         row=sample();row["kind"]="unexpected";self.assertTrue(validate(row))
         row=sample();row["service"]={"state":"unsupported"};self.assertTrue(validate(row))
+        row=sample();row["service"]["response"]["summerOffset"]=0;self.assertTrue(validate(row))
 
     def test_same_account_must_share_real_tokens_and_other_account_must_not(self):
         a0=sample();a1=copy.deepcopy(a0);c=sample("C")

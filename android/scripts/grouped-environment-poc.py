@@ -16,7 +16,7 @@ import threading
 import time
 import uuid
 import zlib
-from grouped_environment_validation import expected,validate,shared_markers
+from grouped_environment_validation import expected,validate,shared_markers,profile_present
 
 PACKAGE = "com.forcemind.chatgpt.environmentpoc"
 COMPONENT = PACKAGE + "/" + PACKAGE + ".GroupedAActivity"
@@ -60,7 +60,8 @@ def image():
 PNG=image()
 ENVIRONMENT="""function environment(){const f=new Intl.DateTimeFormat().resolvedOptions();return {
  language:navigator.language,languages:Array.from(navigator.languages),locale:f.locale,
- localeMaximized:new Intl.Locale(f.locale).maximize().toString(),timeZone:f.timeZone,
+ localeMaximized:new Intl.Locale(f.locale).maximize().toString(),numberLocale:new Intl.NumberFormat().resolvedOptions().locale,
+ numberLocaleMaximized:new Intl.Locale(new Intl.NumberFormat().resolvedOptions().locale).maximize().toString(),timeZone:f.timeZone,
  winterOffset:new Date('2026-01-15T12:00:00Z').getTimezoneOffset(),summerOffset:new Date('2026-07-15T12:00:00Z').getTimezoneOffset(),
  localNoon:new Date(2026,0,15,12).toISOString(),parsedNoon:new Date('2026-01-15T12:00:00').toISOString(),
  dstGap:new Date(2026,2,8,2,30).toISOString()};}"""
@@ -101,7 +102,7 @@ class Handler(BaseHTTPRequestHandler):
         if url.path=="/image.png":self.reply(PNG,"image/png");return
         if url.path=="/sw-check":self.reply("not controlled","text/plain",404);return
         if url.path=="/sw.js":
-            owner=json.dumps(account);self.reply("const owner="+owner+";self.addEventListener('install',e=>e.waitUntil(self.skipWaiting()));self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));self.addEventListener('fetch',e=>{if(new URL(e.request.url).pathname==='/sw-check')e.respondWith(new Response(JSON.stringify({owner,language:self.navigator.language,timeZone:new Intl.DateTimeFormat().resolvedOptions().timeZone}),{headers:{'Content-Type':'application/json'}}));});","application/javascript");return
+            owner=json.dumps(account);self.reply(ENVIRONMENT+"const owner="+owner+";self.addEventListener('install',e=>e.waitUntil(self.skipWaiting()));self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));self.addEventListener('fetch',e=>{if(new URL(e.request.url).pathname==='/sw-check')e.respondWith(new Response(JSON.stringify({owner,...environment()}),{headers:{'Content-Type':'application/json'}}));});","application/javascript");return
         if url.path not in ("/page","/frame","/popup","/worker.js"):self.send_error(404);return
         kind={"/page":"main","/frame":"frame","/popup":"popup","/worker.js":"worker"}[url.path]
         base={"phase":phase,"account":account,"tab":tab,"kind":kind,"instance":str(uuid.uuid4()),"pid":q.get("pid",[""])[0],"probe":q.get("probe",["false"])[0]=="true"}
@@ -215,7 +216,13 @@ def popup_contexts_ready(case):
 devices=[x.split()[0] for x in adb("devices").splitlines()[1:] if x.endswith("\tdevice")]
 if os.environ.get("GITHUB_ACTIONS")!="true" or len(devices)!=1 or not devices[0].startswith("emulator-") or adb("shell","getprop","ro.kernel.qemu")!="1":raise SystemExit("Only one fresh GitHub Actions emulator is allowed; physical devices refused")
 profile_names=["poc-gecko-A","poc-gecko-B"]+["grouped-poc-"+mode+"-"+slot for mode in ("grouped","control") for slot in ("a","b","c")]
-if process_list() or any(adb("exec-out","run-as",PACKAGE,"ls","-d","files/"+name,check=False) for name in profile_names):raise SystemExit("Existing experiment process/profile found; refusing to touch it")
+existing_processes=process_list();existing_profiles=[]
+for name in profile_names:
+    marker=adb("shell","run-as",PACKAGE,"sh","-c","'if [ -d files/"+name+" ]; then echo POC_PRESENT; else echo POC_ABSENT; fi'",check=False)
+    try:present=profile_present(marker)
+    except ValueError:raise SystemExit("Cannot safely verify experiment directory: "+name)
+    if present:existing_profiles.append(name)
+if existing_processes or existing_profiles:raise SystemExit("Existing experiment process/profile found; refusing to touch it: "+str({"processes":existing_processes,"profiles":existing_profiles}))
 
 report={"schema":1,"engine":"GeckoView 158.0.20261021001945","package":PACKAGE,"sourceSha":os.environ.get("GITHUB_SHA"),"runId":os.environ.get("GITHUB_RUN_ID"),"remoteDebugging":False,
         "scope":"Independent synthetic loopback fixture; Android 15 x86_64 emulator. No production package, personal account or real ChatGPT.",
@@ -235,8 +242,14 @@ try:
     isolation["passed"]=isolation["processRelationCorrect"] and isolation["sameAccountStorageTokens"] and all(isolation["popups"].values()) and isolation["recreationNewDocuments"]==0 and not isolation["environmentErrors"]
     report["isolation"]=isolation;screenshot("grouped-isolation")
 
+    original={a:main_row("isolation",a) for a in ("A","B","C")};old_pids={isolation["native"][a]["pid"] for a in ("A","B","C")}
     adb("shell","am","force-stop",PACKAGE);time.sleep(2);phase="grouped-resource"
-    grouped=start_workload(phase,"grouped");time.sleep(12);grouped.update({"mode":"grouped","memory":memory(phase),"cpu":cpu(phase),"sameAccountStorageTokens":same_account_tokens(phase)})
+    grouped=start_workload(phase,"grouped");new_pids={grouped["native"][a]["pid"] for a in ("A","B","C")};reopened={}
+    for account in ("A","B","C"):
+        before=original[account];after=main_row(phase,account);service=after.get("service",{}) if after else {}
+        reopened[account]=bool(before and after and all(before.get(k)==after.get(k) for k in ("local","idb","cache","cookie")) and service.get("owner")==account and (service.get("response") or {}).get("owner")==account)
+    grouped["processRestart"]={"oldPids":sorted(old_pids),"newPids":sorted(new_pids),"newProcesses":not bool(old_pids&new_pids),"accountsRetained":reopened}
+    time.sleep(12);grouped.update({"mode":"grouped","memory":memory(phase),"cpu":cpu(phase),"sameAccountStorageTokens":same_account_tokens(phase)})
     start={r["instance"]:r for r in latest(phase).values() if not r.get("probe")};begin=time.monotonic();time.sleep(330)
     end={r["instance"]:r for r in latest(phase).values() if not r.get("probe")};grouped["keepAlive"]={"durationSeconds":round(time.monotonic()-begin,1),"originalContexts":len(start),"continuingContexts":sum(k in end and end[k]["ticks"]>v["ticks"] and end[k]["received"]>begin+320 for k,v in start.items()),"newDocuments":len(set(end)-set(start))}
     for account in ("A","C","B"):launch(account,next=True)
@@ -248,15 +261,16 @@ try:
     launch("C",probe=True)
     def cleared():
         row=main_row("selective-clear","C",probe=True)
-        if not row or row.get("cookie") or row.get("requestCookie"):return None
-        if any(row.get(k+"State")!="ready" or row.get(k) is not None for k in ("local","idb","cache")):return None
+        if not row or row.get("cookie") or row.get("previousCookie") or row.get("requestCookie"):return None
+        if any(row.get(k+"State")!="ready" or row.get(k) is not None or row.get(k+"Previous") is not None for k in ("local","idb","cache")):return None
         if row.get("service",{}).get("state")!="ready" or row.get("service",{}).get("owner") is not None:return None
         return row
     clean=wait(cleared,45);time.sleep(3)
     unchanged={}
     for account in ("A","B"):
         after=main_row("grouped-resource",account);before=before_clear[account]
-        unchanged[account]=bool(after and before and all(after.get(k)==before.get(k) for k in ("local","idb","cache","cookie")) and after.get("service",{}).get("owner")==account and after.get("instance")==before.get("instance"))
+        service=after.get("service",{}) if after else {}
+        unchanged[account]=bool(after and before and all(after.get(k)==before.get(k) for k in ("local","idb","cache","cookie")) and service.get("owner")==account and (service.get("response") or {}).get("owner")==account and after.get("instance")==before.get("instance"))
     report["selectiveClear"]={"clearedCMarkers":bool(clean),"unaffectedAccounts":unchanged,"passed":bool(clean) and all(unchanged.values()),"probe":clean}
 
     adb("shell","am","force-stop",PACKAGE);time.sleep(2);phase="control-resource"
@@ -279,9 +293,10 @@ finally:
                     report["initialRequestErrors"].append({"phase":case,"account":account,"tab":tab,"missing":path})
     resources=report["resources"];report["resourcesComplete"]=len(resources)==2 and all(r.get("processRelationCorrect") and r.get("sameAccountStorageTokens") and r["memory"]["complete"] and r["cpu"].get("allProcessesCovered") and len(r["cpu"].get("samplesOneCorePercent",[]))>=3 for r in resources)
     keep=resources[0].get("keepAlive",{}) if resources else {};report["keepAlivePassed"]=keep.get("originalContexts")==12 and keep.get("continuingContexts")==12 and keep.get("newDocuments")==0 and keep.get("newDocumentsAfterSwitch")==0
+    restart=resources[0].get("processRestart",{}) if resources else {};report["reopenPassed"]=restart.get("newProcesses",False) and len(restart.get("accountsRetained",{}))==3 and all(restart["accountsRetained"].values())
     report["apks"]=[{"file":apk.name,"bytes":apk.stat().st_size,"sha256":hashlib.sha256(apk.read_bytes()).hexdigest()} for apk in Path("environment-poc/build/outputs/apk/debug").glob("*.apk")]
     for name,data in (("report.json",report),("events.json",records()),("requests.json",requests)):(OUT/name).write_text(json.dumps(data,ensure_ascii=False,indent=2))
     (OUT/"runtime.log").write_text(adb("logcat","-d",check=False,timeout=30));(OUT/"processes.txt").write_text(adb("shell","ps","-A","-o","PID,PPID,NAME,ARGS"))
     for apk in report["apks"]:print(apk["file"],apk["bytes"],apk["sha256"],flush=True)
     adb("shell","am","force-stop",PACKAGE,check=False);adb("reverse","--remove","tcp:8765",check=False);server.shutdown()
-if failure or not report.get("isolation",{}).get("passed") or not report.get("selectiveClear",{}).get("passed") or not report["systemUnchanged"] or not report["resourcesComplete"] or not report["keepAlivePassed"] or report.get("resourceEnvironmentErrors") or report["initialRequestErrors"]:raise SystemExit(1)
+if failure or not report.get("isolation",{}).get("passed") or not report.get("selectiveClear",{}).get("passed") or not report["systemUnchanged"] or not report["resourcesComplete"] or not report["keepAlivePassed"] or not report["reopenPassed"] or report.get("resourceEnvironmentErrors") or report["initialRequestErrors"]:raise SystemExit(1)
