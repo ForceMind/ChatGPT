@@ -881,3 +881,13 @@
 - Mac DMG、Studio ZIP 与旧版更新兼容 ZIP 均在 Actions 生成，保留临时签名 / 未公证状态。实际两种 ZIP 的升级器、原公开 alpha.18 助手、原子替换 / Studio 名称、夹具账号保留、236 个打包文件字节、恢复原生模块与菜单栏图标均通过。仅在本机读取并校验 17 KB 元数据和约 3 MB 原生证据，没有下载大型 Mac 安装包。摘要、CI 下载入口与准确边界在 docs/releases/3.0.0-alpha.22-macos-candidate.json，关键像素 / 刷新数据在 docs/benchmarks/macos-alpha22-shell-transitions.json。
 - Android 已使用既有本机证书签好原 CI 85ff89f APK，保持包名、alpha.22 / 3000022、Studio 标签、非调试属性和所有 218 个原 ZIP 文件，仅增加 3 份标准签名元数据；官方 apksigner 验证 v3，通过的证书摘要与公开 alpha.19 一致，并回读旧公开 APK 摘要未变。交付文件 ChatGPT-Studio-3.0.0-alpha.22-android.apk 为 7,376,521 字节，SHA-256 为 39a06004608162884c5d2a11277eee840f5311438376bd7541adc638b1e55e53；签名收据在 docs/releases/3.0.0-alpha.22-android-signed-candidate.json，APK 与校验单留在忽略的 android/release/ 供对话下载。
 - 临时 JRE 从官方发布元数据核对 SHA-256，慢连接使用既有公开加速通道完成，私钥 / 密码不发送到网络；Google SDK 整包以流式校验官方摘要，仅提取两个签名工具，没有安装完整 SDK。签名、包内容核对结束后，确认无打开句柄，删除本轮约 213.5 MB 逻辑字节的运行时 / 工具 / 下载，正式私钥、App、用户登录和备份未改。后续只需同步候选收据与中英文说明，并清理 Mac 小型证据下载；main、官网、更新接口与公开 Release 仍保留原版，真实设备和真实账号验收按用户意愿延期。
+
+## Android 账号语言 / 时区：三账号独立验证（2026-10-27）
+
+- 现状：alpha.22 候选已交付；普通客户端仍使用 Android System WebView 的多 Profile，以账号的 `storageId` 绑定浏览器空间，最多 30 个账号、每账号最多 30 个标签。独立 Gecko PoC 的 A / B 为固定账号、分别使用两个进程 / Runtime；它只证明已有报告列出的两组环境及 24 个上下文，不证明 30 账号或跨引擎登录迁移。
+- 建议先扩展原独立 PoC，在 CI 临时模拟器上验证三账号、两组环境：A / C 均为 `zh-CN / Asia/Shanghai`，使用同一进程 / Runtime、不同 session context；B 为 `en-US / America/New_York`，使用另一进程。A 的两个标签验证同账号共享，C 验证同环境不同账号隔离，B 验证跨环境隔离。A / C 分开保留各自标签列表和当前标签，不能复用原 PoC 按进程保存单个账号的静态列表。
+- 验收以真实首个文档和资源请求的 `Accept-Language`、主文档 / iframe / Dedicated Worker / 弹窗的语言与时区、夏令时、Cookie / localStorage / IndexedDB / Cache Storage 为依据；同账号标签可共享，任一账号出现另一账号的数据即失败。增加 Service Worker、账号清除及关闭重开验证；这些能力此前尚未完整证明。Gecko 官方文档说明 context ID 可隔离 Cookie / localStorage，清除前必须关闭该 context 的会话，其他存储与 158 版本的具体表现仍须实测：[Session context](https://mozilla.github.io/geckoview/javadoc/mozilla-central/org/mozilla/geckoview/GeckoSessionSettings.Builder.html)、[StorageController](https://mozilla.github.io/geckoview/javadoc/mozilla-central/org/mozilla/geckoview/StorageController.html)。
+- 同一 CI 主机、相同本地素材下比较共享环境与每账号独立进程两种实验：至少记录同账号 / 跨账号切换前后页面实例、生成计时和 330 秒持续性，并采集全进程 PSS、CPU、启动时间和 APK 大小。报告负面结果；不把模拟器或短采样数字当作真实 ChatGPT / 真机占用，也不以系统回收之外的冻结换取低内存。
+- 若共享环境隔离失败，不进入正式客户端；回退为继续使用现有 WebView，再评估可维护且资源可接受的其他路线。若通过，也只形成正式迁移方案：逐步接入账号设置、标签、资产 / 文件、恢复和登录弹窗，分别验证系统 / 真机兼容，不直接把独立 PoC 当成正式功能。
+- 旧 WebView 与 Gecko 的 Cookie / 网站存储处于不同浏览器空间，尚无已验证的可靠自动迁移方案；不承诺换内核后免登录，不复制或删除旧登录数据。正式接入前须明确旧空间保留、用户选择、重新登录提示、回退和备份策略。系统 WebView 的 Profile 是独立会话；当前公开 API 未核实有与本需求等价的按 Profile 完整语言 / 时区设置：[AndroidX Profile](https://developer.android.com/reference/androidx/webkit/Profile)。
+- 用户选择先做上述独立验证；该批准覆盖独立 PoC、关联 CI、证据与进度记录，不自动替换正式内核、签名、发布版本、官网、现有账号 / 标签 / 恢复数据。构建、测试、资源测量与打包仍在 GitHub Actions；结果出来后再确定正式迁移方案。

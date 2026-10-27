@@ -1,5 +1,11 @@
 name: Android Environment PoC
-on: workflow_call
+on:
+  workflow_call:
+    inputs:
+      grouped:
+        type: boolean
+        required: false
+        default: false
 permissions:
   contents: read
 jobs:
@@ -18,6 +24,7 @@ jobs:
       - name: Build standalone experiment
         working-directory: android
         run: |
+          if [ "${{ inputs.grouped }}" = true ]; then python3 -m unittest discover -s scripts/tests -p 'test_grouped_environment.py' -v; fi
           sdkmanager 'platforms;android-37.0' 'build-tools;36.0.0' 'emulator' 'system-images;android-35;google_apis;x86_64'
           ./environment-poc/gradlew -p environment-poc --no-daemon assembleDebug lintDebug
       - name: Verify isolation and measure resources
@@ -35,12 +42,24 @@ jobs:
           adb shell input keyevent 82
           adb shell pm disable-user --user 0 com.google.android.apps.nexuslauncher
           adb install environment-poc/build/outputs/apk/debug/environment-poc-x86_64-debug.apk
-          timeout 900 python3 -u scripts/environment-poc.py environment-poc/build/evidence
+          if [ "${{ inputs.grouped }}" = true ]; then
+            timeout 900 python3 -u scripts/grouped-environment-poc.py environment-poc/build/evidence
+          else
+            timeout 900 python3 -u scripts/environment-poc.py environment-poc/build/evidence
+          fi
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && !inputs.grouped
         with:
           name: android-environment-poc
           path: |
             android/environment-poc/build/outputs/apk/debug/*.apk
+            android/environment-poc/build/evidence/
+            android/environment-poc/build/reports/lint-results-debug.*
+      - uses: actions/upload-artifact@v4
+        if: always() && inputs.grouped
+        with:
+          name: android-grouped-environment-evidence
+          retention-days: 14
+          path: |
             android/environment-poc/build/evidence/
             android/environment-poc/build/reports/lint-results-debug.*

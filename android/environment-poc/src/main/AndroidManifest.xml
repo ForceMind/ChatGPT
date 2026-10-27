@@ -8,5 +8,9 @@
             <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
         </activity>
         <activity android:name=".AccountBActivity" android:process=":account_b" android:exported="false" android:launchMode="singleTask" />
+        <activity android:name=".GroupedAActivity" android:exported="true" android:launchMode="singleTask" />
+        <activity android:name=".GroupedBActivity" android:process=":group_b" android:exported="false" android:launchMode="singleTask" />
+        <activity android:name=".GroupedCActivity" android:exported="false" android:launchMode="singleTask" />
+        <activity android:name=".GroupedCControlActivity" android:process=":group_c" android:exported="false" android:launchMode="singleTask" />
     </application>
 </manifest>
