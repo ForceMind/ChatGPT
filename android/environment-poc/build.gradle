@@ -4,7 +4,9 @@ android {
     compileSdk { version = release(37) { minorApiLevel = 0 } }
     defaultConfig {
         applicationId 'com.forcemind.chatgpt.environmentpoc'
-        minSdk 29
+        // Compatibility probes may lower only this isolated app's declared API.
+        // Library manifest requirements remain enforced by the normal merger.
+        minSdk providers.gradleProperty('pocMinSdk').map { Integer.parseInt(it) }.getOrElse(29)
         targetSdk 36
         versionCode 1
         versionName '0.1-poc'

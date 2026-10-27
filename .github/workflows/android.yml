@@ -74,6 +74,10 @@ on:
         description: Run only the standalone three-account selective-clear confirmation
         type: boolean
         default: false
+      recovery_environment_poc:
+        description: Measure standalone native page recovery on Android 9 and Android 15
+        type: boolean
+        default: false
       lifecycle_only:
         description: Native lifecycle/retention and resource matrix, no instrumentation or real ChatGPT
         type: boolean
@@ -90,7 +94,7 @@ permissions:
   contents: read
 jobs:
   build:
-    if: github.event_name != 'workflow_dispatch' || (!inputs.device_only && !inputs.standalone_environment_poc && !inputs.grouped_environment_poc && !inputs.grouped_clear_only && !inputs.lifecycle_only)
+    if: github.event_name != 'workflow_dispatch' || (!inputs.device_only && !inputs.standalone_environment_poc && !inputs.grouped_environment_poc && !inputs.grouped_clear_only && !inputs.recovery_environment_poc && !inputs.lifecycle_only)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -129,7 +133,7 @@ jobs:
             android/app/build/reports/
             android/app/build/test-results/
   device:
-    if: github.event_name == 'workflow_dispatch' && inputs.run_device_tests && !inputs.standalone_environment_poc && !inputs.grouped_environment_poc && !inputs.grouped_clear_only && !inputs.lifecycle_only
+    if: github.event_name == 'workflow_dispatch' && inputs.run_device_tests && !inputs.standalone_environment_poc && !inputs.grouped_environment_poc && !inputs.grouped_clear_only && !inputs.recovery_environment_poc && !inputs.lifecycle_only
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
@@ -283,6 +287,9 @@ jobs:
     with:
       grouped: ${{ inputs.grouped_environment_poc || inputs.grouped_clear_only }}
       clear_only: ${{ inputs.grouped_clear_only }}
+  recovery-poc:
+    if: github.event_name == 'workflow_dispatch' && inputs.recovery_environment_poc
+    uses: ./.github/workflows/android-recovery-poc.yml
   lifecycle:
     if: github.event_name == 'workflow_dispatch' && inputs.lifecycle_only
     runs-on: ubuntu-latest

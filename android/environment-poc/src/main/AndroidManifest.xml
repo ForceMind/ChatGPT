@@ -12,5 +12,8 @@
         <activity android:name=".GroupedBActivity" android:process=":group_b" android:exported="false" android:launchMode="singleTask" />
         <activity android:name=".GroupedCActivity" android:exported="false" android:launchMode="singleTask" />
         <activity android:name=".GroupedCControlActivity" android:process=":group_c" android:exported="false" android:launchMode="singleTask" />
+        <activity android:name=".RecoveryAActivity" android:exported="true" android:launchMode="singleTask" />
+        <activity android:name=".RecoveryBActivity" android:process=":recovery_b" android:exported="false" android:launchMode="singleTask" />
+        <activity android:name=".RecoveryCActivity" android:exported="false" android:launchMode="singleTask" />
     </application>
 </manifest>
