@@ -42,3 +42,32 @@ gh workflow run android.yml --ref codex/macos-assets-workbench \
 实测资源、SessionStore 日志、Android 9 和真实设备 / ChatGPT 的验证边界应在制定正式迁移方案时重新评估；这个实验不修改已安装应用，也不是正式版本。
 
 补充的[定向复验](https://github.com/ForceMind/ChatGPT/actions/runs/40505986900) 在观察到 C 的主页面和 iframe 存储清空后，确认 A / B 的主页面、iframe、Worker 仍以原实例继续上报。两轮分别使用新的模拟器；可核对的指标与限制见 [实验汇总](../../docs/benchmarks/android-grouped-environment-poc.json)。
+
+## 页面恢复与 Android 9：第一阶段
+
+本阶段的合成网页测量已完成，**当前原生恢复接入尚不满足正式迁移条件**。Android 15 的[完整测量](https://github.com/ForceMind/ChatGPT/actions/runs/40516494405)与 Android 9 的[定向复验](https://github.com/ForceMind/ChatGPT/actions/runs/40524577766)使用不同源码，均保留真实失败门槛；它们不是同一 HEAD 的全量通过。指标、工件摘要与每轮诊断来源见[恢复证据](../../docs/benchmarks/android-recovery-environment-poc.json)。
+
+| 测量项 | 两组模拟器中的观察 |
+| --- | --- |
+| 正常关闭 / 真实进程强停后恢复 | 四页标准 textarea 草稿、阅读位置、历史及账号存储可恢复 |
+| 动态 contenteditable 草稿 | 未恢复 |
+| 网页已有标准草稿 | 被原生表单恢复覆盖，缺少冲突保护 |
+| 离线对话内容 | 未观察到回显；重新连接后可打开页面 |
+| 损坏 / 跨账号加密记录 | 拒绝读取并保留原文件 |
+| 自动发送 | 未发生 |
+
+以 minSdk 28 构建的独立 APK 已在 API 28 安装并执行恢复测量，固定 Gecko 158 AAR 清单最低版本为 API 26；这不代表完成所有 Android 9 机型验收。两组设备都是 x86_64 模拟器，真实 ChatGPT、arm64 真机、32 位设备和厂商系统尚未覆盖。实验使用硬件键盘配置和 Android 输入接口；部分触摸滑动没有验证成功，阅读位置由公开 PanZoom API 产生时会明确记录，不能把它算作滑动通过。
+
+Android 9 出现过强停后由 Activity 启动创建新进程的情况。测试记录该失败项，仅在旧进程已退出、出现新 PID 时最多再次强停一次，以继续独立用例；进程表必须连续一秒没有存活实验进程。该问题仍需稳定性排查。Android 15 仍记录到关闭附近的 SessionStore 空窗口错误，也没有标为已修复。
+
+会话记录使用独立 Android Keystore AES-GCM 和按账号 / 标签绑定的数据，准备阶段正常保存，之后冻结基准供重复恢复观察。**冻结回放不能证明生产控制器会持续保存最新界面**，也不能保留进程结束后的 JavaScript 堆或网络请求。正式迁移前需要接入应用自己的动态草稿、冲突保护和只读离线快照，并完成旧系统生命周期与真实服务验收。
+
+构建与设备测量均在 GitHub Actions。完整矩阵或仅 Android 9 可分别执行：
+
+```sh
+gh workflow run android.yml --ref codex/macos-assets-workbench \
+  -f recovery_environment_poc=true -f device_only=true \
+  -f 'recovery_poc_apis=[28,35]'
+```
+
+将最后一个参数设为 `[28]` 可只复验 Android 9。任务保留小型原始事件、请求、进程表、报告和画面，不发布正式安装包、不导入现有登录或恢复数据。测量完整执行但原生能力不足时，任务仍失败并在报告中给出具体门槛。

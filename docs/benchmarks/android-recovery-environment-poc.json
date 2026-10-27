@@ -1,0 +1,767 @@
+{
+  "schema": 1,
+  "scope": "Android migration stage 1: standalone synthetic native-session recovery; no production app, login data or real ChatGPT.",
+  "engine": "GeckoView 158.0.20261021001945",
+  "sourceAndTestBoundary": "API 35 full native measurements and API 28 targeted baseline-lock correction have distinct source revisions; no claim of a single-HEAD full matrix pass.",
+  "method": {
+    "accounts": 3,
+    "tabs": 4,
+    "fixtureInputs": "Actual Android text input connection, verified by webpage observations.",
+    "readingPosition": "Actual ADB swipe where observed; otherwise public Gecko PanZoomController. Failed swipe gate remains failed.",
+    "records": "Account/tab-bound AES-GCM native SessionState plus atomic workspace metadata. Reference records become read-only for repeated restore measurements. This is not a production recovery controller.",
+    "offline": "Remove adb reverse; inspect Android accessibility tree and native screen, then explicitly reconnect.",
+    "realAccounts": false,
+    "buildAndDeviceTests": "GitHub Actions only",
+    "processTermination": "PID/S/NAME live-state tables; require at least one second without live experiment processes. One extra stop is allowed only for newly spawned PIDs, with a failed unexpected-restart gate retained."
+  },
+  "results": {
+    "api35": {
+      "url": "https://github.com/ForceMind/ChatGPT/actions/runs/40516494405",
+      "sourceSha": "66b5a237fd33f1b8554f0ed338e2a3ee4c1d1b5e",
+      "artifactSha256": "6d683737ba948e1e0d2f4bbad4ccd05ed1394082b091285cf4c3ba8227abe500",
+      "compatibility": {
+        "sourceSha": "66b5a237fd33f1b8554f0ed338e2a3ee4c1d1b5e",
+        "requestedMinSdk": 29,
+        "testApi": 35,
+        "buildOutcome": "success",
+        "version": "158.0.20261021001945",
+        "libraries": [
+          {
+            "file": "geckoview-158.0.20261021001945.aar",
+            "bytes": 243952421,
+            "sha256": "45c5c4e452ad7b52778c27bc5e7583f3cb182df4c6615e42849afe2b8a2d71ba",
+            "minSdk": "26"
+          }
+        ],
+        "apk": {
+          "bytes": 228243972,
+          "sha256": "269e1ca178d58d08b631a402a87da2de0fd1356a84df4f8a4ae01da6f8b0db77"
+        }
+      },
+      "experimentComplete": true,
+      "nativeRecoveryReady": false,
+      "gates": {
+        "measurementsComplete": true,
+        "sameAccountStorageShared": true,
+        "differentAccountStorage": true,
+        "allCheckpointRequestsAcknowledged": true,
+        "allSwipeSamplesObserved": false,
+        "activityDocumentsRetained": true,
+        "activityDraftsRetained": true,
+        "eightRestoreObservations": true,
+        "savedActiveTabRestored": true,
+        "savedActiveAccountRestored": true,
+        "backAndForwardHistory": true,
+        "newProcessAfterForceStop": true,
+        "standardDraftsRestored": true,
+        "dynamicDraftsRestored": false,
+        "readingPositionsRestored": true,
+        "ownerStorageRetained": true,
+        "offlineContentObserved": false,
+        "existingStandardDraftPreserved": false,
+        "existingDynamicDraftPreserved": true,
+        "damagedRecordRejectedAndPreserved": true,
+        "foreignRecordRejectedAndPreserved": true,
+        "noAutomaticSubmission": true,
+        "noIsolationErrors": true,
+        "systemUnchanged": true
+      },
+      "restoreObservations": {
+        "normalClose": {
+          "A:0": {
+            "standardDraft": true,
+            "richDraft": false,
+            "readingPosition": true,
+            "scrollBefore": 1400,
+            "scrollAfter": 1400,
+            "sameOwnerStorage": true,
+            "newDocument": true
+          },
+          "A:1": {
+            "standardDraft": true,
+            "richDraft": false,
+            "readingPosition": true,
+            "scrollBefore": 588.6333618164062,
+            "scrollAfter": 589,
+            "sameOwnerStorage": true,
+            "newDocument": true
+          },
+          "B:0": {
+            "standardDraft": true,
+            "richDraft": false,
+            "readingPosition": true,
+            "scrollBefore": 587.1333618164062,
+            "scrollAfter": 587,
+            "sameOwnerStorage": true,
+            "newDocument": true
+          },
+          "C:0": {
+            "standardDraft": true,
+            "richDraft": false,
+            "readingPosition": true,
+            "scrollBefore": 582.6666870117188,
+            "scrollAfter": 583,
+            "sameOwnerStorage": true,
+            "newDocument": true
+          }
+        },
+        "forceStop": {
+          "A:0": {
+            "standardDraft": true,
+            "richDraft": false,
+            "readingPosition": true,
+            "scrollBefore": 1400,
+            "scrollAfter": 1400,
+            "sameOwnerStorage": true,
+            "newDocument": true
+          },
+          "A:1": {
+            "standardDraft": true,
+            "richDraft": false,
+            "readingPosition": true,
+            "scrollBefore": 588.6333618164062,
+            "scrollAfter": 589,
+            "sameOwnerStorage": true,
+            "newDocument": true
+          },
+          "B:0": {
+            "standardDraft": true,
+            "richDraft": false,
+            "readingPosition": true,
+            "scrollBefore": 587.1333618164062,
+            "scrollAfter": 587,
+            "sameOwnerStorage": true,
+            "newDocument": true
+          },
+          "C:0": {
+            "standardDraft": true,
+            "richDraft": false,
+            "readingPosition": true,
+            "scrollBefore": 582.6666870117188,
+            "scrollAfter": 583,
+            "sameOwnerStorage": true,
+            "newDocument": true
+          }
+        }
+      },
+      "readingInputSamples": {
+        "A:0": {
+          "gestureObserved": false,
+          "gestureScrollY": 0,
+          "source": "Gecko public PanZoomController.scrollTo; gesture gate remains failed"
+        },
+        "A:1": {
+          "gestureObserved": true,
+          "gestureScrollY": 588.6333618164062,
+          "source": "ADB swipe"
+        },
+        "B:0": {
+          "gestureObserved": true,
+          "gestureScrollY": 587.1333618164062,
+          "source": "ADB swipe"
+        },
+        "C:0": {
+          "gestureObserved": true,
+          "gestureScrollY": 582.6666870117188,
+          "source": "ADB swipe"
+        }
+      },
+      "engineSignals": {
+        "sessionStoreWindowNull": 6,
+        "stateUpdateNoListener": 0,
+        "fatalExceptions": 0
+      },
+      "conflict": {
+        "standardCurrentPreserved": false,
+        "richCurrentPreserved": true,
+        "standardOverwroteCurrent": true,
+        "richOverwroteCurrent": false
+      },
+      "offline": {
+        "contentObserved": false,
+        "reconnectedPage": "detail"
+      },
+      "automaticSubmissions": 0,
+      "independentAudit": "Raw events checked for all eight standard-draft / reading / owner / fresh-document restorations; all GET language/cookie headers checked; native offline image visually inspected.",
+      "engineWarningAudit": {
+        "location": "GeckoViewSessionStore.sys.mjs:149 onTabStateUpdate; updateSessionStoreFromTabListener:241",
+        "observedContext": "Null-window errors adjacent to the RecoveryBActivity CLOSE transition in the device log.",
+        "interpretation": "Close-time state-update path located; causal engine fix and effect on saved-state durability not established.",
+        "stateUpdateNoListener": 0
+      },
+      "actualApkMinSdk": 29,
+      "actualApkAbi": "'x86_64'"
+    },
+    "api28": {
+      "url": "https://github.com/ForceMind/ChatGPT/actions/runs/40524577766",
+      "sourceSha": "5fd61a07be4e7f3f48ac60f36784fca4fc75a7ab",
+      "artifactSha256": "9978f4bf92a6467e058790fd91856abee972f9c83c39e7d83da4016d313a7864",
+      "compatibility": {
+        "sourceSha": "5fd61a07be4e7f3f48ac60f36784fca4fc75a7ab",
+        "requestedMinSdk": 28,
+        "testApi": 28,
+        "buildOutcome": "success",
+        "version": "158.0.20261021001945",
+        "libraries": [
+          {
+            "file": "geckoview-158.0.20261021001945.aar",
+            "bytes": 243952421,
+            "sha256": "45c5c4e452ad7b52778c27bc5e7583f3cb182df4c6615e42849afe2b8a2d71ba",
+            "minSdk": "26"
+          }
+        ],
+        "apk": {
+          "bytes": 228243972,
+          "sha256": "c783dfcc73d9f3f4fa4bd84ff8ea9e5939b4bafe5f511aff4db96dbdc562589d"
+        }
+      },
+      "experimentComplete": true,
+      "nativeRecoveryReady": false,
+      "gates": {
+        "measurementsComplete": true,
+        "sameAccountStorageShared": true,
+        "differentAccountStorage": true,
+        "allCheckpointRequestsAcknowledged": true,
+        "allSwipeSamplesObserved": false,
+        "activityDocumentsRetained": true,
+        "activityDraftsRetained": true,
+        "eightRestoreObservations": true,
+        "savedActiveTabRestored": true,
+        "savedActiveAccountRestored": true,
+        "backAndForwardHistory": true,
+        "newProcessAfterForceStop": true,
+        "standardDraftsRestored": true,
+        "noUnexpectedProcessRestart": false,
+        "dynamicDraftsRestored": false,
+        "readingPositionsRestored": true,
+        "ownerStorageRetained": true,
+        "offlineContentObserved": false,
+        "existingStandardDraftPreserved": false,
+        "existingDynamicDraftPreserved": true,
+        "damagedRecordRejectedAndPreserved": true,
+        "foreignRecordRejectedAndPreserved": true,
+        "noAutomaticSubmission": true,
+        "noIsolationErrors": true,
+        "systemUnchanged": true
+      },
+      "restoreObservations": {
+        "normalClose": {
+          "A:0": {
+            "standardDraft": true,
+            "richDraft": false,
+            "readingPosition": true,
+            "scrollBefore": 1400,
+            "scrollAfter": 1400,
+            "sameOwnerStorage": true,
+            "newDocument": true
+          },
+          "A:1": {
+            "standardDraft": true,
+            "richDraft": false,
+            "readingPosition": true,
+            "scrollBefore": 1400,
+            "scrollAfter": 1400,
+            "sameOwnerStorage": true,
+            "newDocument": true
+          },
+          "B:0": {
+            "standardDraft": true,
+            "richDraft": false,
+            "readingPosition": true,
+            "scrollBefore": 1400,
+            "scrollAfter": 1400,
+            "sameOwnerStorage": true,
+            "newDocument": true
+          },
+          "C:0": {
+            "standardDraft": true,
+            "richDraft": false,
+            "readingPosition": true,
+            "scrollBefore": 1400,
+            "scrollAfter": 1400,
+            "sameOwnerStorage": true,
+            "newDocument": true
+          }
+        },
+        "forceStop": {
+          "A:0": {
+            "standardDraft": true,
+            "richDraft": false,
+            "readingPosition": true,
+            "scrollBefore": 1400,
+            "scrollAfter": 1400,
+            "sameOwnerStorage": true,
+            "newDocument": true
+          },
+          "A:1": {
+            "standardDraft": true,
+            "richDraft": false,
+            "readingPosition": true,
+            "scrollBefore": 1400,
+            "scrollAfter": 1400,
+            "sameOwnerStorage": true,
+            "newDocument": true
+          },
+          "B:0": {
+            "standardDraft": true,
+            "richDraft": false,
+            "readingPosition": true,
+            "scrollBefore": 1400,
+            "scrollAfter": 1400,
+            "sameOwnerStorage": true,
+            "newDocument": true
+          },
+          "C:0": {
+            "standardDraft": true,
+            "richDraft": false,
+            "readingPosition": true,
+            "scrollBefore": 1400,
+            "scrollAfter": 1400,
+            "sameOwnerStorage": true,
+            "newDocument": true
+          }
+        }
+      },
+      "readingInputSamples": {
+        "A:0": {
+          "gestureObserved": false,
+          "gestureScrollY": 0,
+          "source": "Gecko public PanZoomController.scrollTo; gesture gate remains failed"
+        },
+        "A:1": {
+          "gestureObserved": false,
+          "gestureScrollY": 0,
+          "source": "Gecko public PanZoomController.scrollTo; gesture gate remains failed"
+        },
+        "B:0": {
+          "gestureObserved": false,
+          "gestureScrollY": 0,
+          "source": "Gecko public PanZoomController.scrollTo; gesture gate remains failed"
+        },
+        "C:0": {
+          "gestureObserved": false,
+          "gestureScrollY": 0,
+          "source": "Gecko public PanZoomController.scrollTo; gesture gate remains failed"
+        }
+      },
+      "engineSignals": {
+        "sessionStoreWindowNull": 0,
+        "stateUpdateNoListener": 0,
+        "fatalExceptions": 0
+      },
+      "conflict": {
+        "standardCurrentPreserved": false,
+        "richCurrentPreserved": true,
+        "standardOverwroteCurrent": true,
+        "richOverwroteCurrent": false
+      },
+      "offline": {
+        "contentObserved": false,
+        "reconnectedPage": "detail"
+      },
+      "processStops": [
+        {
+          "phase": "normal-close",
+          "before": [
+            {
+              "pid": "4038",
+              "state": "S",
+              "name": "com.forcemind.chatgpt.environmentpoc"
+            },
+            {
+              "pid": "4080",
+              "state": "S",
+              "name": "com.forcemind.chatgpt.environmentpoc:crashhelper_disable_art_image_"
+            },
+            {
+              "pid": "4190",
+              "state": "S",
+              "name": "com.forcemind.chatgpt.environmentpoc:gpu_disable_art_image_"
+            },
+            {
+              "pid": "6502",
+              "state": "S",
+              "name": "com.forcemind.chatgpt.environmentpoc:recovery_b"
+            },
+            {
+              "pid": "7472",
+              "state": "S",
+              "name": "com.forcemind.chatgpt.environmentpoc:tab_disable_art_image_14"
+            },
+            {
+              "pid": "7569",
+              "state": "S",
+              "name": "com.forcemind.chatgpt.environmentpoc:tab_disable_art_image_28"
+            },
+            {
+              "pid": "7585",
+              "state": "S",
+              "name": "com.forcemind.chatgpt.environmentpoc:tab_disable_art_image_35"
+            },
+            {
+              "pid": "7765",
+              "state": "S",
+              "name": "com.forcemind.chatgpt.environmentpoc:tab_disable_art_image_34"
+            },
+            {
+              "pid": "7801",
+              "state": "S",
+              "name": "com.forcemind.chatgpt.environmentpoc:tab_disable_art_image_21"
+            }
+          ],
+          "after": [],
+          "terminated": true,
+          "unexpectedNewProcesses": [
+            {
+              "pid": "7900",
+              "state": "S",
+              "name": "com.forcemind.chatgpt.environmentpoc"
+            }
+          ],
+          "forceStopRequests": 2
+        },
+        {
+          "phase": "force-stop",
+          "before": [
+            {
+              "pid": "7952",
+              "state": "S",
+              "name": "com.forcemind.chatgpt.environmentpoc"
+            },
+            {
+              "pid": "7970",
+              "state": "S",
+              "name": "com.forcemind.chatgpt.environmentpoc:crashhelper_disable_art_image_"
+            },
+            {
+              "pid": "8023",
+              "state": "S",
+              "name": "com.forcemind.chatgpt.environmentpoc:gpu_disable_art_image_"
+            },
+            {
+              "pid": "8144",
+              "state": "S",
+              "name": "com.forcemind.chatgpt.environmentpoc:tab_disable_art_image_28"
+            },
+            {
+              "pid": "8256",
+              "state": "S",
+              "name": "com.forcemind.chatgpt.environmentpoc:recovery_b"
+            },
+            {
+              "pid": "8398",
+              "state": "S",
+              "name": "com.forcemind.chatgpt.environmentpoc:tab_disable_art_image_24"
+            },
+            {
+              "pid": "8448",
+              "state": "S",
+              "name": "com.forcemind.chatgpt.environmentpoc:tab_disable_art_image_35"
+            },
+            {
+              "pid": "8534",
+              "state": "S",
+              "name": "com.forcemind.chatgpt.environmentpoc:tab_disable_art_image_9"
+            },
+            {
+              "pid": "8570",
+              "state": "S",
+              "name": "com.forcemind.chatgpt.environmentpoc:tab_disable_art_image_8"
+            }
+          ],
+          "after": [],
+          "terminated": true,
+          "unexpectedNewProcesses": [
+            {
+              "pid": "8638",
+              "state": "R",
+              "name": "com.forcemind.chatgpt.environmentpoc"
+            }
+          ],
+          "forceStopRequests": 2
+        },
+        {
+          "phase": "reconnected",
+          "before": [
+            {
+              "pid": "8683",
+              "state": "S",
+              "name": "com.forcemind.chatgpt.environmentpoc"
+            },
+            {
+              "pid": "8704",
+              "state": "S",
+              "name": "com.forcemind.chatgpt.environmentpoc:crashhelper_disable_art_image_"
+            },
+            {
+              "pid": "8749",
+              "state": "S",
+              "name": "com.forcemind.chatgpt.environmentpoc:gpu_disable_art_image_"
+            },
+            {
+              "pid": "8834",
+              "state": "S",
+              "name": "com.forcemind.chatgpt.environmentpoc:tab_disable_art_image_36"
+            },
+            {
+              "pid": "8883",
+              "state": "S",
+              "name": "com.forcemind.chatgpt.environmentpoc:tab_disable_art_image_15"
+            }
+          ],
+          "after": [],
+          "terminated": true,
+          "unexpectedNewProcesses": [],
+          "forceStopRequests": 1
+        },
+        {
+          "phase": "draft-conflict",
+          "before": [
+            {
+              "pid": "8981",
+              "state": "S",
+              "name": "com.forcemind.chatgpt.environmentpoc"
+            },
+            {
+              "pid": "9001",
+              "state": "S",
+              "name": "com.forcemind.chatgpt.environmentpoc:crashhelper_disable_art_image_"
+            },
+            {
+              "pid": "9055",
+              "state": "S",
+              "name": "com.forcemind.chatgpt.environmentpoc:gpu_disable_art_image_"
+            },
+            {
+              "pid": "9153",
+              "state": "S",
+              "name": "com.forcemind.chatgpt.environmentpoc:tab_disable_art_image_6"
+            },
+            {
+              "pid": "9221",
+              "state": "S",
+              "name": "com.forcemind.chatgpt.environmentpoc:tab_disable_art_image_34"
+            }
+          ],
+          "after": [],
+          "terminated": true,
+          "unexpectedNewProcesses": [],
+          "forceStopRequests": 1
+        },
+        {
+          "phase": "damaged-record",
+          "before": [
+            {
+              "pid": "9324",
+              "state": "S",
+              "name": "com.forcemind.chatgpt.environmentpoc"
+            },
+            {
+              "pid": "9340",
+              "state": "S",
+              "name": "com.forcemind.chatgpt.environmentpoc:crashhelper_disable_art_image_"
+            },
+            {
+              "pid": "9394",
+              "state": "S",
+              "name": "com.forcemind.chatgpt.environmentpoc:gpu_disable_art_image_"
+            },
+            {
+              "pid": "9422",
+              "state": "R",
+              "name": "com.forcemind.chatgpt.environmentpoc:tab_disable_art_image_2"
+            }
+          ],
+          "after": [],
+          "terminated": true,
+          "unexpectedNewProcesses": [],
+          "forceStopRequests": 1
+        }
+      ],
+      "automaticSubmissions": 0,
+      "independentAudit": "Raw events checked for eight standard-draft / reading / owner / fresh-document restorations; GET language/cookie headers, live-process state tables, new main PID, preserved rejected records and no submissions checked. Native offline image visually inspected.",
+      "actualApkMinSdk": 28,
+      "actualApkAbi": "'x86_64'"
+    }
+  },
+  "limitations": [
+    "Synthetic textarea/contenteditable fixture is not real ChatGPT.",
+    "API 28 and 35 are x86_64 emulators; no OEM phone, arm64 runtime, or 32-bit compatibility claim.",
+    "CI uses a hardware-keyboard configuration to isolate page gestures from software IME; real-phone keyboard behavior remains unverified.",
+    "Read-only replay of a fixed saved reference does not validate a production controller continually persisting the latest workspace.",
+    "Native state restoration reloads documents; it does not preserve a running JavaScript heap, network request or generation after process death.",
+    "A background B process was reclaimed during earlier API 28 seeding; this PoC does not guarantee all engine processes remain alive while another account is foreground."
+  ],
+  "retainedAttempts": [
+    {
+      "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40509439047",
+      "api": 28,
+      "sourceSha": "a86832b50d659bbc79d6a0ffded89496abf13045",
+      "artifactSha256": "1f89644029992bc806f05bfd0e5a3ad715912a0551c4d9a3579b108aeb49adcf",
+      "experimentComplete": false,
+      "failure": "Timed out: rich real keyboard draft",
+      "completedCases": [],
+      "scopeOfConclusion": "Native capability gates may be evaluated only for a completed run; earlier blocked attempts are diagnostic evidence."
+    },
+    {
+      "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40509439047",
+      "api": 35,
+      "sourceSha": "a86832b50d659bbc79d6a0ffded89496abf13045",
+      "artifactSha256": "7a057675698111c2e3416af1e39422e6f98b58e3d58965d3823bf16c933205ef",
+      "experimentComplete": false,
+      "failure": "Timed out: actual detail navigation",
+      "completedCases": [],
+      "scopeOfConclusion": "Native capability gates may be evaluated only for a completed run; earlier blocked attempts are diagnostic evidence."
+    },
+    {
+      "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40511063958",
+      "api": 28,
+      "sourceSha": "3d998247afbb303010a1a2a16a406626f3d4b231",
+      "artifactSha256": "ef22f3dc3b88843498ff49a7edeba3d5daad6d4b0e728ea0f3fe7e85c4f39f07",
+      "experimentComplete": false,
+      "failure": "Timed out: standard real keyboard draft",
+      "completedCases": [],
+      "scopeOfConclusion": "Native capability gates may be evaluated only for a completed run; earlier blocked attempts are diagnostic evidence."
+    },
+    {
+      "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40511063958",
+      "api": 35,
+      "sourceSha": "3d998247afbb303010a1a2a16a406626f3d4b231",
+      "artifactSha256": "0783fb244a115c05a04e8b4692246ac590edc6eb99799c458b919270428ca1c6",
+      "experimentComplete": false,
+      "failure": "Timed out: actual page scroll",
+      "completedCases": [],
+      "scopeOfConclusion": "Native capability gates may be evaluated only for a completed run; earlier blocked attempts are diagnostic evidence."
+    },
+    {
+      "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40512725181",
+      "api": 28,
+      "sourceSha": "442e795feee765ac0ae01b674b265f551f51763c",
+      "artifactSha256": "c85ec1cea536ef01eb6fc59a99fafdb4522ee91a340a09d1a177369a3de77dbd",
+      "experimentComplete": false,
+      "failure": "Timed out: actual page scroll",
+      "completedCases": [],
+      "scopeOfConclusion": "Native capability gates may be evaluated only for a completed run; earlier blocked attempts are diagnostic evidence."
+    },
+    {
+      "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40512725181",
+      "api": 35,
+      "sourceSha": "442e795feee765ac0ae01b674b265f551f51763c",
+      "artifactSha256": "dd26d6ffec2097e0a42d22df8ef748de8b7f9d922c0757ff2af7c396f91f568f",
+      "experimentComplete": false,
+      "failure": "Timed out: focused current-account native geometry",
+      "completedCases": [],
+      "scopeOfConclusion": "Native capability gates may be evaluated only for a completed run; earlier blocked attempts are diagnostic evidence."
+    },
+    {
+      "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40514784192",
+      "api": 28,
+      "sourceSha": "54061a7934fc345e86d3f96b79a0b2a89671dbf3",
+      "artifactSha256": "fb5df4f32419f3e34ad26a24cc1bf769c6691adcb1e5e3b7b8c8d90cdb050132",
+      "experimentComplete": false,
+      "failure": "Timed out: saved launcher account A",
+      "completedCases": [
+        "activityRecreation"
+      ],
+      "scopeOfConclusion": "Native capability gates may be evaluated only for a completed run; earlier blocked attempts are diagnostic evidence."
+    },
+    {
+      "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40514784192",
+      "api": 35,
+      "sourceSha": "54061a7934fc345e86d3f96b79a0b2a89671dbf3",
+      "artifactSha256": "b5b4d18ff8517810d5f68ca9d263e2fca37a3c121f35dc7ec0e91db6b34b3d9c",
+      "experimentComplete": false,
+      "failure": "Timed out: standard real keyboard draft",
+      "completedCases": [],
+      "scopeOfConclusion": "Native capability gates may be evaluated only for a completed run; earlier blocked attempts are diagnostic evidence."
+    },
+    {
+      "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40516494405",
+      "api": 28,
+      "sourceSha": "66b5a237fd33f1b8554f0ed338e2a3ee4c1d1b5e",
+      "artifactSha256": "4134d269e5acfeee0cc24b60f46a915f155c64fc416b2e9dce6fa0fd0a8210e6",
+      "experimentComplete": false,
+      "failure": "Saved URL was not restored: B/0",
+      "completedCases": [
+        "activityRecreation"
+      ],
+      "scopeOfConclusion": "Native capability gates may be evaluated only for a completed run; earlier blocked attempts are diagnostic evidence."
+    },
+    {
+      "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40516494405",
+      "api": 35,
+      "sourceSha": "66b5a237fd33f1b8554f0ed338e2a3ee4c1d1b5e",
+      "artifactSha256": "6d683737ba948e1e0d2f4bbad4ccd05ed1394082b091285cf4c3ba8227abe500",
+      "experimentComplete": true,
+      "failure": null,
+      "completedCases": [
+        "activityRecreation",
+        "normalClose",
+        "history",
+        "forceStop",
+        "offline",
+        "draftConflict",
+        "damagedRecord",
+        "swappedRecord"
+      ],
+      "scopeOfConclusion": "Native capability gates may be evaluated only for a completed run; earlier blocked attempts are diagnostic evidence."
+    },
+    {
+      "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40518475009",
+      "api": 28,
+      "sourceSha": "2df1afdc308a8443aa41f9c23d75c3da3cc15cf5",
+      "artifactSha256": "462a99ac4c3e004642f91a169095f755820ca5a70f2f76fea324e247b02ce641",
+      "experimentComplete": false,
+      "failure": "Timed out: explicit saved-baseline freeze",
+      "completedCases": [],
+      "scopeOfConclusion": "Native capability gates may be evaluated only for a completed run; earlier blocked attempts are diagnostic evidence."
+    },
+    {
+      "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40520473155",
+      "api": 28,
+      "sourceSha": "0043f59f6b3e4385664a429167da2132afeaaa2c",
+      "artifactSha256": "31dd3c3bc48d90efb643151d9dfd07aff1649629f46314dc4897344e4b86f021",
+      "experimentComplete": false,
+      "failure": "Timed out: real process termination",
+      "completedCases": [
+        "activityRecreation",
+        "normalClose",
+        "history"
+      ],
+      "scopeOfConclusion": "Native capability gates may be evaluated only for a completed run; earlier blocked attempts are diagnostic evidence."
+    },
+    {
+      "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40522469176",
+      "api": 28,
+      "sourceSha": "c3e4e7135932fd486430cc6921ca7b551d77956f",
+      "artifactSha256": "2cf00495e72df348a0c0c2aa29523a9e742f0b69739803dafa71990d8fb22864",
+      "experimentComplete": false,
+      "failure": "Fresh Activity main process appeared after the second force-stop; later cases not executed.",
+      "completedCases": [
+        "activityRecreation",
+        "normalClose",
+        "history",
+        "forceStop"
+      ]
+    }
+  ],
+  "conclusion": {
+    "stage1MeasurementsComplete": true,
+    "formalMigrationReady": false,
+    "sharedBlockingFindings": [
+      "Contenteditable draft not restored by this native-only integration.",
+      "Native form restoration overwrote a pre-existing server-provided textarea draft.",
+      "No offline conversation content observed without an application snapshot layer.",
+      "Not all touch swipe samples were observed; some reading positions came from the public PanZoom API."
+    ],
+    "android9AdditionalFinding": "Fresh main processes appeared after two force-stop requests; a second bounded stop was needed, and the unexpected-restart gate remains failed.",
+    "nextWorkBeforeMigration": [
+      "Separate app-owned draft, reading and read-only offline snapshot recovery from native history restoration.",
+      "Preserve both drafts on conflict before any overwrite; never send automatically.",
+      "Stabilize Android 9 activity/process teardown and touch interaction before production acceptance.",
+      "Retest real ChatGPT and real phones separately; keep legacy WebView login spaces until an explicit migration is accepted."
+    ],
+    "formalDataTouched": false,
+    "scopeOfCompatibility": "API 28 and 35 x86_64 emulator baseline only; touch samples and Android 9 unexpected restart gates failed. No whole-device compatibility claim."
+  }
+}
