@@ -21,7 +21,7 @@ COMPONENT=PACKAGE+'/'+PACKAGE+'.RecoveryAActivity'
 OUT=Path(sys.argv[1]);OUT.mkdir(parents=True,exist_ok=True)
 TABS=(('A','0'),('A','1'),('B','0'),('C','0'))
 phase='seed';conflict=False
-events=[];requests=[];submissions=[];gestures=[];scroll_samples={};checkpoint_receipts=[];lock=threading.Lock()
+events=[];requests=[];submissions=[];gestures=[];scroll_samples={};checkpoint_receipts=[];process_stops=[];lock=threading.Lock()
 markers={a+':'+t:'draft-'+a+'-'+t+'-'+uuid.uuid4().hex for a,t in TABS}
 current_draft='server-current-'+uuid.uuid4().hex
 
@@ -161,9 +161,28 @@ def capture(name):
     text('shell','uiautomator','dump','--compressed','/sdcard/recovery-poc.xml',check=False)
     (OUT/(name+'.xml')).write_bytes(adb('exec-out','cat','/sdcard/recovery-poc.xml',check=False))
 
+def process_rows():
+    raw=text('shell','ps','-A','-o','PID,S,NAME')
+    lines=raw.splitlines()
+    if not lines or lines[0].split()!=['PID','S','NAME']:raise RuntimeError('Process-state table could not be verified')
+    rows=[]
+    for line in lines[1:]:
+        parts=line.split(None,2)
+        if len(parts)==3 and parts[0].isdigit() and (parts[2]==PACKAGE or parts[2].startswith(PACKAGE+':')):
+            rows.append({'pid':parts[0],'state':parts[1],'name':parts[2]})
+    return raw,rows
+
 def stop():
-    pids=text('shell','pidof',PACKAGE,check=False).split();text('shell','am','force-stop',PACKAGE)
-    wait(lambda:not text('shell','pidof',PACKAGE,check=False),15,label='real process termination')
+    raw,before=process_rows();number=len(process_stops)+1
+    (OUT/('process-stop-'+str(number)+'-before.txt')).write_text(raw)
+    pids=[r['pid'] for r in before if r['name']==PACKAGE and r['state']!='Z']
+    if not pids:raise RuntimeError('No live main process before force-stop')
+    entry={'phase':phase,'before':before,'after':None,'terminated':False};process_stops.append(entry)
+    text('shell','am','force-stop',PACKAGE)
+    def terminated():
+        raw,rows=process_rows();entry['after']=rows;(OUT/('process-stop-'+str(number)+'-after.txt')).write_text(raw)
+        return not any(row['state']!='Z' for row in rows)
+    wait(terminated,20,label='real process termination with state evidence');entry['terminated']=True
     return pids
 
 def private(name):return adb('exec-out','run-as',PACKAGE,'cat','files/recovery-records/'+name)
@@ -189,7 +208,7 @@ def observe_restore(case,before):
 def guard():
     devices=[x.split()[0] for x in text('devices').splitlines()[1:] if x.endswith('\tdevice')]
     if os.environ.get('GITHUB_ACTIONS')!='true' or len(devices)!=1 or not devices[0].startswith('emulator-') or text('shell','getprop','ro.kernel.qemu')!='1':raise SystemExit('Requires one fresh GitHub Actions emulator; physical devices refused')
-    if text('shell','pidof',PACKAGE,check=False):raise SystemExit('Existing experiment process; refusing to continue')
+    if process_rows()[1]:raise SystemExit('Existing experiment process; refusing to continue')
     for name in ('recovery-records','recovery-poc-a','recovery-poc-b','poc-gecko-A','grouped-poc-grouped-a'):
         answer=text('shell','run-as',PACKAGE,'sh','-c',"'if [ -e files/"+name+" ]; then echo PRESENT; else echo ABSENT; fi'",check=False)
         if answer!='ABSENT':raise SystemExit('Experiment directory safety state not confirmed: '+name)
@@ -272,6 +291,7 @@ finally:
     report['submissions']=submissions;report['noAutomaticSubmission']=not submissions
     report['scrollSamples']=scroll_samples
     report['checkpointReceipts']=checkpoint_receipts
+    report['processStops']=process_stops
     report['systemAfter']={'locale':text('shell','getprop','persist.sys.locale'),'timeZone':text('shell','getprop','persist.sys.timezone')};report['systemUnchanged']=report['systemAfter']==report['systemBefore']
     isolation_errors=[]
     for row in events:
