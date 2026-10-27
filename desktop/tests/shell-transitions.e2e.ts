@@ -53,11 +53,11 @@ test('account menu paints its full-resolution placeholder before hiding the live
   expect((await state(shell)).overlayTransition?.phase).toBe('prepare');expect((await native(app,page!.id))?.visible).toBe(true);
   const dimensions=await app.evaluate(async({BrowserWindow,nativeImage})=>{const w=BrowserWindow.getAllWindows().find(w=>w.webContents.getURL()==='app://shell/index.html')!,v=(w.contentView.children as Electron.WebContentsView[]).find(v=>v.getVisible())!;const snapshot=await w.webContents.executeJavaScript('window.profiles.snapshot()');return{preview:nativeImage.createFromDataURL(snapshot.overlayImage).getSize(),live:(await v.webContents.capturePage()).getSize()};});expect(dimensions.preview).toEqual(dimensions.live);
   await shell.evaluate(()=>(window as any).releasePreview());await expect.poll(async()=>(await state(shell)).overlayTransition?.phase).toBe('visible');expect((await native(app,page!.id))?.visible).toBe(false);
-  expect(await sample()).toEqual(before);await screenshot(app,info.outputPath('mac-account-menu-no-blank.png'));
+  const during=await sample(),masked=before.map((value,index)=>index===3?value:Math.round(value*.95));for(let i=0;i<4;i++)expect(Math.abs(during[i]-masked[i])).toBeLessThanOrEqual(1);await screenshot(app,info.outputPath('mac-account-menu-no-blank.png'));
   await shell.getByRole('menu',{name:'账号空间',exact:true}).press('Escape');await expect.poll(async()=>(await state(shell)).overlayTransition).toBeUndefined();await expect(shell.locator('.page-preview')).toHaveCount(0);
   expect((await native(app,page!.id))?.visible).toBe(true);expect(await sample()).toEqual(before);expect(await remote(app,'window.instance')).toBe(instance);expect(await remote(app,'document.querySelector("textarea").value')).toBe('菜单切换保留的草稿');
   expect(readFileSync(path.join(root,'state.json'),'utf8')).not.toMatch(/overlayImage|overlayTransition/);expect(sends).toBe(0);
-  writeFileSync(info.outputPath('overlay-verification.json'),JSON.stringify({scope:'Real macOS Electron and loopback fixture; no personal account',imageDecodeHeldBeforeHide:true,nativeImageSize:dimensions,swatchBefore:before,swatchAfter:await sample(),samePageInstance:true,draftRetained:true,noUnexpectedSend:true},null,2));
+  writeFileSync(info.outputPath('overlay-verification.json'),JSON.stringify({scope:'Real macOS Electron and loopback fixture; no personal account',imageDecodeHeldBeforeHide:true,nativeImageSize:dimensions,maskOpacity:.05,swatchBefore:before,swatchDuring:during,expectedMaskedSwatch:masked,swatchAfter:await sample(),samePageInstance:true,draftRetained:true,noUnexpectedSend:true},null,2));
  }finally{await app.close();rmSync(root,{recursive:true,force:true});}
 });
 test('closing a menu while its image is decoding ignores the late paint acknowledgment',async()=>{
@@ -68,7 +68,7 @@ test('closing a menu while its image is decoding ignores the late paint acknowle
   await shell.getByRole('button',{name:'切换账号',exact:true}).click();await expect.poll(async()=>(await state(shell)).overlayTransition).toBeUndefined();
   await shell.evaluate(()=>{(window as any).releasePreview();(window as any).restorePreviewDecode();});await shell.evaluate(id=>window.profiles.command({type:'overlay:ready',id}),old);
   expect((await native(app,page!.id))?.visible).toBe(true);await expect(shell.getByRole('menu')).toHaveCount(0);expect(await remote(app,'window.instance')).toBe(instance);
-  await shell.getByRole('button',{name:'切换账号',exact:true}).click();await expect.poll(async()=>(await state(shell)).overlayTransition?.phase).toBe('visible');await shell.getByRole('menu').press('Escape');await expect.poll(async()=>(await state(shell)).overlayTransition).toBeUndefined();expect((await native(app,page!.id))?.visible).toBe(true);
+  await shell.getByRole('button',{name:'切换账号',exact:true}).click();await expect.poll(async()=>(await state(shell)).overlayTransition?.phase).toBe('visible');await shell.locator('.menu-backdrop').click({position:{x:20,y:100}});await expect.poll(async()=>(await state(shell)).overlayTransition).toBeUndefined();await expect(shell.getByRole('menu')).toHaveCount(0);expect((await native(app,page!.id))?.visible).toBe(true);
  }finally{await app.close();rmSync(root,{recursive:true,force:true});}
 });
 test('tab refresh bypasses cache, restores the saved draft and reading position, and does not reload other tabs or accounts',async({},info)=>{

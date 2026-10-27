@@ -136,7 +136,7 @@ function App() {
     {desktopWorkspaceEnabled(state.platform)&&!state.recoveryAccess?.blocking&&state.panel&&<Suspense fallback={<div className="workbench-loading" role="status">正在打开工作台…</div>}><Workbench state={state} close={()=>void send({type:'panel'})} panel={panel=>void send({type:'panel',panel})} notice={showToast}/></Suspense>}
     {!state.recoveryAccess?.blocking&&['deferred','error'].includes(state.recoveryAccess?.phase||'')&&<div className="recovery-banner" role="status">旧恢复原件保留，本次草稿暂未保存。<button onClick={()=>void send({type:'recovery:authorize'})}>重新授权</button></div>}
     {toast&&<div className="toast" role="status"><Icon name="check" size={15}/>{toast}<button aria-label="关闭提示" onClick={()=>setToast('')}><Icon name="close" size={13}/></button></div>}
-    {menuOpen&&<div className="menu-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)void closeAccounts();}}>
+    {menuOpen&&<div className="menu-backdrop" onClick={e=>{if(e.target===e.currentTarget)void closeAccounts();}}>
       <div className="account-menu" role="menu" aria-label="账号空间" ref={accountMenu}>
         <div className="menu-heading">账号空间<span>本机独立保存</span></div>
         <div className="account-list">{state.profiles.map(p=><button key={p.id} className={'account-item '+(p.id===profile.id?'selected':'')} role="menuitemradio" aria-label={'切换到 '+p.name} aria-checked={p.id===profile.id} onClick={async()=>{if(await send({type:'profile:activate',id:p.id}))await closeAccounts();}}>
