@@ -36,6 +36,11 @@ final class RecoveryStore {
         if(!account.matches("[ABC]")||!tab.matches("(?:workspace|[01])"))throw new IllegalArgumentException("Invalid synthetic identity");
         return new AtomicFile(new File(root,account+"-"+tab+".bin"));
     }
+    boolean frozen(){return new File(root,"measurement-frozen").exists();}
+    void freeze()throws Exception{
+        AtomicFile marker=new AtomicFile(new File(root,"measurement-frozen"));FileOutputStream out=marker.startWrite();
+        try{out.write(1);marker.finishWrite(out);}catch(Exception error){marker.failWrite(out);throw error;}
+    }
     JSONObject read(String account,String tab)throws Exception{
         AtomicFile file=file(account,tab);if(!file.getBaseFile().exists())return null;
         byte[] bytes=file.readFully();if(bytes.length<29||bytes.length>1024*1024)throw new IllegalStateException("Invalid record size; original preserved");

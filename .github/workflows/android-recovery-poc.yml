@@ -1,6 +1,11 @@
 name: Android Recovery PoC
 on:
   workflow_call:
+    inputs:
+      apis:
+        type: string
+        required: false
+        default: '[28,35]'
 permissions:
   contents: read
 jobs:
@@ -10,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        api: [28, 35]
+        api: ${{ fromJSON(inputs.apis) }}
     env:
       RECOVERY_API: ${{ matrix.api }}
       POC_MIN_API: ${{ matrix.api == 28 && 28 || 29 }}
@@ -26,6 +31,7 @@ jobs:
       - name: Prepare isolated compatibility measurement
         working-directory: android
         run: |
+          python3 -c 'import os; assert int(os.environ["RECOVERY_API"]) in (28,35)'
           mkdir -p environment-poc/build/recovery-evidence
           python3 -c 'import ast; ast.parse(open("scripts/recovery-environment-poc.py").read())'
           sdkmanager 'platforms;android-37.0' 'build-tools;36.0.0' emulator "system-images;android-${RECOVERY_API};google_apis;x86_64"

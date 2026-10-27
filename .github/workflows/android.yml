@@ -78,6 +78,10 @@ on:
         description: Measure standalone native page recovery on Android 9 and Android 15
         type: boolean
         default: false
+      recovery_poc_apis:
+        description: Standalone recovery emulator APIs; 28 and 35 only
+        type: string
+        default: '[28,35]'
       lifecycle_only:
         description: Native lifecycle/retention and resource matrix, no instrumentation or real ChatGPT
         type: boolean
@@ -290,6 +294,8 @@ jobs:
   recovery-poc:
     if: github.event_name == 'workflow_dispatch' && inputs.recovery_environment_poc
     uses: ./.github/workflows/android-recovery-poc.yml
+    with:
+      apis: ${{ inputs.recovery_poc_apis || '[28,35]' }}
   lifecycle:
     if: github.event_name == 'workflow_dispatch' && inputs.lifecycle_only
     runs-on: ubuntu-latest

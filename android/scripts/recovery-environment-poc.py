@@ -208,6 +208,7 @@ try:
         launch(a);wait(lambda a=a:latest(a,'0',phase),90,label='initial '+a+' page')
     baseline={a+':'+t:seed(a,t) for a,t in TABS}
     select('A','1');checkpoint('A');checkpoint('B')
+    launch('A','freeze');wait(lambda:text('exec-out','run-as',PACKAGE,'sh','-c',"'if [ -f files/recovery-records/measurement-frozen ]; then echo FROZEN; fi'",check=False)=='FROZEN',label='explicit saved-baseline freeze')
     report['baseline']={'observations':baseline,'native':{a:native(a) for a in ('A','B','C')}}
     report['baseline']['sameAccountSharedStorage']=baseline['A:0']['owner']==baseline['A:1']['owner']
     report['baseline']['differentAccountStorage']=len({baseline[a+':0']['owner']['token'] for a in ('A','B','C')})==3

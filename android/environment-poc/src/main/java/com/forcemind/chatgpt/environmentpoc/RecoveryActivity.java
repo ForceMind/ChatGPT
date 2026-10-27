@@ -52,7 +52,7 @@ public abstract class RecoveryActivity extends Activity {
     private TextView status;
     private static final class Tab {
         final String owner,id;final GeckoSession session;
-        boolean restored,blocked;String location="",title="",error="",hash="";
+        boolean restored,blocked,savedHasDraft;String location="",title="",error="",hash="";
         int callbacks,historyCount,historyIndex;long savedAt,lastCallback,flushRequested;
         Tab(String owner,int index){this.owner=owner;id=Integer.toString(index);session=new GeckoSession(new GeckoSessionSettings.Builder().contextId("recovery-poc-"+owner).build());}
     }
@@ -105,7 +105,7 @@ public abstract class RecoveryActivity extends Activity {
                         GeckoSession.SessionState state=GeckoSession.SessionState.fromString(saved.getString("state"));
                         if(state==null||state.isEmpty())throw new IllegalStateException("Empty saved state");
                         for(GeckoSession.HistoryDelegate.HistoryItem item:state)if(!allowed(item.getUri(),account(),tab.id))throw new IllegalStateException("Foreign session history");
-                        tab.restored=true;tab.hash=digest(saved.getString("state"));tab.historyCount=state.size();tab.historyIndex=state.getCurrentIndex();tab.session.restoreState(state);
+                        tab.restored=true;tab.hash=digest(saved.getString("state"));tab.savedHasDraft=saved.getString("state").contains("draft-"+tab.owner+"-"+tab.id+"-");tab.historyCount=state.size();tab.historyIndex=state.getCurrentIndex();tab.session.restoreState(state);
                     }else tab.session.loadUri("http://127.0.0.1:8765/recovery?account="+account()+"&tab="+tab.id+"&page=start");
                 }catch(Exception error){tab.blocked=true;tab.error="saved-record-rejected:"+error.getClass().getSimpleName();record("record-rejected",tab.id+":"+tab.error);}
             }
@@ -130,16 +130,16 @@ public abstract class RecoveryActivity extends Activity {
             @Override public void onSessionStateChange(GeckoSession s,GeckoSession.SessionState state){
                 tab.callbacks++;tab.lastCallback=SystemClock.elapsedRealtime();tab.historyCount=state.size();tab.historyIndex=state.getCurrentIndex();
                 // Restored experiments intentionally preserve the baseline record for repeated measurements.
-                if(!tab.restored&&!tab.blocked)try{
+                if(!store.frozen()&&!tab.blocked)try{
                     if(state.isEmpty())return;for(GeckoSession.HistoryDelegate.HistoryItem item:state)if(!allowed(item.getUri(),tab.owner,tab.id))return;
-                    String serialized=state.toString();store.write(tab.owner,tab.id,new JSONObject().put("state",serialized).put("engine","158.0.20261021001945"));tab.hash=digest(serialized);tab.savedAt=SystemClock.elapsedRealtime();
+                    String serialized=state.toString();store.write(tab.owner,tab.id,new JSONObject().put("state",serialized).put("engine","158.0.20261021001945"));tab.hash=digest(serialized);tab.savedHasDraft=serialized.contains("draft-"+tab.owner+"-"+tab.id+"-");tab.savedAt=SystemClock.elapsedRealtime();
                 }catch(Exception error){tab.error="save-failed:"+error.getClass().getSimpleName();}
                 recordFor(tab.owner,"session-state",tab.id);
             }
         });return tab;
     }
     private static String digest(String text)throws Exception{byte[] sum=MessageDigest.getInstance("SHA-256").digest(text.getBytes(StandardCharsets.UTF_8));StringBuilder out=new StringBuilder();for(byte b:sum)out.append(String.format(Locale.ROOT,"%02x",b&255));return out.toString();}
-    private void saveWorkspace(){if(tabs().stream().anyMatch(tab->tab.restored||tab.blocked))return;try{store.write(account(),"workspace",new JSONObject().put("count",tabs().size()).put("selected",selected.getOrDefault(account(),0)));}catch(Exception error){record("workspace-error",error.toString());}}
+    private void saveWorkspace(){if(store.frozen()||tabs().stream().anyMatch(tab->tab.blocked))return;try{store.write(account(),"workspace",new JSONObject().put("count",tabs().size()).put("selected",selected.getOrDefault(account(),0)));}catch(Exception error){record("workspace-error",error.toString());}}
     private void checkpoint(boolean close){
         long started=SystemClock.elapsedRealtime();for(List<Tab> group:sessions.values())for(Tab tab:group){tab.flushRequested=started;tab.session.flushSessionState();}saveWorkspace();record("checkpoint-request","");
         Runnable ready=new Runnable(){public void run(){boolean done=true;for(List<Tab> group:sessions.values())for(Tab tab:group)done&=tab.lastCallback>=started;
@@ -158,6 +158,7 @@ public abstract class RecoveryActivity extends Activity {
         if("back".equals(action))tabs().get(selected.getOrDefault(account(),0)).session.goBack();
         if("forward".equals(action))tabs().get(selected.getOrDefault(account(),0)).session.goForward();
         if("retry".equals(action))tabs().get(selected.getOrDefault(account(),0)).session.reload();
+        if("freeze".equals(action)){store.freeze();record("baseline-frozen","");}
         if("scrollSample".equals(action)){Tab targetTab=tabs().get(selected.getOrDefault(account(),0));long started=SystemClock.elapsedRealtime();handler.post(new Runnable(){public void run(){
             if(!view.hasWindowFocus()){if(SystemClock.elapsedRealtime()-started<10000){handler.postDelayed(this,200);return;}record("scroll-error","Window focus unavailable");return;}
             if(view.getSession()!=targetTab.session){record("scroll-error","Target session changed");return;}
@@ -182,7 +183,7 @@ public abstract class RecoveryActivity extends Activity {
         record("visible","");handler.postDelayed(()->record("layout",""),500);
     }
     private void record(String event,String detail){if(hosts.get(account())!=this)return;try{
-        JSONArray tabs=new JSONArray();for(Tab tab:tabs())tabs.put(new JSONObject().put("index",tab.id).put("open",tab.session.isOpen()).put("restored",tab.restored).put("blocked",tab.blocked).put("error",tab.error).put("location",tab.location).put("title",tab.title).put("callbacks",tab.callbacks).put("lastCallback",tab.lastCallback).put("flushRequested",tab.flushRequested).put("savedAt",tab.savedAt).put("stateSha256",tab.hash).put("historyCount",tab.historyCount).put("historyIndex",tab.historyIndex));
+        JSONArray tabs=new JSONArray();for(Tab tab:tabs())tabs.put(new JSONObject().put("index",tab.id).put("open",tab.session.isOpen()).put("restored",tab.restored).put("blocked",tab.blocked).put("error",tab.error).put("location",tab.location).put("title",tab.title).put("callbacks",tab.callbacks).put("lastCallback",tab.lastCallback).put("flushRequested",tab.flushRequested).put("savedAt",tab.savedAt).put("stateSha256",tab.hash).put("savedHasSyntheticDraft",tab.savedHasDraft).put("historyCount",tab.historyCount).put("historyIndex",tab.historyIndex));
         JSONObject row=new JSONObject().put("account",account()).put("pid",android.os.Process.myPid()).put("selected",selected.getOrDefault(account(),0)).put("event",event).put("detail",detail).put("tabs",tabs).put("elapsedMs",SystemClock.elapsedRealtime());
         if(view!=null){int[] xy=new int[2];view.getLocationOnScreen(xy);row.put("viewX",xy[0]).put("viewY",xy[1]).put("viewWidth",view.getWidth()).put("viewHeight",view.getHeight()).put("viewShown",view.isShown()).put("windowFocused",view.hasWindowFocus()).put("viewFocused",view.hasFocus());}
         byte[] bytes=row.toString().getBytes(StandardCharsets.UTF_8);Files.write(new File(getFilesDir(),"recovery-native-"+account()+".json").toPath(),bytes);
