@@ -4,7 +4,7 @@
   "platform": "android",
   "version": "3.0.0-alpha.22",
   "versionCode": 3000022,
-  "status": "ci-verified-candidate-awaiting-production-signing",
+  "status": "ci-verified-candidate-signed-locally",
   "publicRelease": false,
   "source": "85ff89ff973f730dbe3792eb0778aced81741411",
   "branch": "codex/macos-assets-workbench",
@@ -224,7 +224,7 @@
     "releasePackage": "com.forcemind.chatgpt.profiles",
     "debugPackage": "com.forcemind.chatgpt.profiles.debug",
     "keyStoreAndRecoveryIdentity": "unchanged",
-    "releaseSigning": "CI builds unsigned release; existing private production key remains local and is not uploaded",
+    "releaseSigning": "Original CI APK signed locally with the existing production certificate after user approval of temporary tools; private key not uploaded. See signed-candidate receipt.",
     "expectedProductionCertificateSha256": "8b6eef928fded91f291ad954e20976b2cc6011b55e8cbec0152695fe1f05cf19"
   },
   "limitations": [
@@ -265,5 +265,6 @@
     "requiresGitHubAuthentication": true,
     "expiresAt": "2027-01-25T07:36:05Z",
     "contents": "Independent debug APK, unsigned release APK, instrumentation APK. This is not a production upgrade release."
-  }
+  },
+  "signedCandidateReceipt": "docs/releases/3.0.0-alpha.22-android-signed-candidate.json"
 }

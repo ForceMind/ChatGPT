@@ -19,7 +19,9 @@ ChatGPT Studio brings independent ChatGPT account spaces, tabs, downloaded asset
 
 **Desktop alpha.21 is published:** original agent roles, a design-patch Skill, Windows updates and encrypted offline snapshots. See the [release manifest](docs/releases/3.0.0-alpha.21.json) and [original candidate/acceptance receipt](docs/releases/3.0.0-alpha.21-desktop-candidate.json).
 
-**Android alpha.22 passed CI candidate acceptance:** encrypted read-only conversation/image snapshots, offline reopening, 121 Skills and 32 original roles. The public APK remains alpha.19. The [candidate receipt](docs/releases/3.0.0-alpha.22-android-candidate.json) lists Actions artifacts and verification limits; an upgrade signed with the production key is not provided yet. See the [Android candidate notes](android/README.md#alpha22-候选离线阅读与能力库).
+**macOS alpha.22 passed CI candidate acceptance:** a light account-menu backdrop, coordinated page painting and force refresh on the active tab. [DMG artifact](https://github.com/ForceMind/ChatGPT/actions/runs/40477100725/artifacts/12720429629), [ZIP artifact](https://github.com/ForceMind/ChatGPT/actions/runs/40477100725/artifacts/12720618740) and [verification receipt](docs/releases/3.0.0-alpha.22-macos-candidate.json). Public downloads and update feeds are unchanged.
+
+**Android alpha.22 passed CI candidate acceptance and has a production-certificate APK:** encrypted read-only conversation/image snapshots, offline reopening, 121 Skills and 32 original roles. The public APK remains alpha.19. The [candidate receipt](docs/releases/3.0.0-alpha.22-android-candidate.json) lists Actions artifacts and verification limits; the [signing receipt](docs/releases/3.0.0-alpha.22-android-signed-candidate.json) confirms the existing certificate and unchanged application files. See the [Android candidate notes](android/README.md#alpha22-候选离线阅读与能力库).
 
 ![Actual historical macOS window, before the rename](docs/images/macos-immersive.png)
 
@@ -192,7 +194,8 @@ Cloudflare Pages uses Direct Upload; a Git push does not deploy the site automat
 | macOS alpha.20 complete Studio naming and legacy updater compatibility | App bundle, OS name and manual downloads use Studio; existing account and encryption identities retained. [Release record](docs/releases/3.0.0-alpha.20.json) |
 | Alpha.18 installers, immersive Android, readable UI and macOS menu bar | Published; [publication/online record](docs/releases/3.0.0-alpha.18-publication.json) |
 | Windows encrypted offline snapshots, current-user EXE updates and verified ZIP saving | Published alpha.21; [packages and verification scope](docs/releases/3.0.0-alpha.21-desktop-candidate.json) |
-| Android encrypted offline snapshots and 121 Skills / 32 original roles | Alpha.22 passed CI; [candidate/artifact receipt](docs/releases/3.0.0-alpha.22-android-candidate.json). Production signing and physical-device acceptance pending; public APK unchanged |
+| Android encrypted offline snapshots and 121 Skills / 32 original roles | Alpha.22 passed CI and has an original-certificate APK; [candidate/artifact receipt](docs/releases/3.0.0-alpha.22-android-candidate.json). Physical-device acceptance and publication pending |
+| macOS account-menu backdrop, coordinated painting and tab force refresh | Alpha.22 candidate; [packages and native acceptance](docs/releases/3.0.0-alpha.22-macos-candidate.json). Real accounts/devices and publication pending |
 | Android per-account locale/timezone engine migration | Separate PoC; regular engine is unchanged |
 | System/Chrome passkeys, signed Touch ID and stable signing | Not integrated or dependent on unavailable certificates/device acceptance |
 | Original agent presets and design-patch Skill | Published in desktop alpha.21: 32 roles, standalone/combined tasks, favorites and task recovery |

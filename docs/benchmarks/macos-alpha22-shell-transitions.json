@@ -1,0 +1,79 @@
+{
+  "schema": 1,
+  "source": "1df1dded1985a35f7fef8f5ba22bf702e10ac6e6",
+  "run": 40477100725,
+  "scope": "Real macOS arm64 Electron, native compositor captures and explicit loopback fixtures; no personal accounts or live ChatGPT",
+  "overlay": {
+    "scope": "Real macOS Electron and loopback fixture; no personal account",
+    "imageDecodeHeldBeforeHide": true,
+    "nativeImageSize": {
+      "preview": {
+        "width": 1100,
+        "height": 748
+      },
+      "live": {
+        "width": 1100,
+        "height": 748
+      }
+    },
+    "maskOpacity": 0.05,
+    "swatchBefore": [
+      225,
+      213,
+      203,
+      255
+    ],
+    "swatchDuring": [
+      214,
+      202,
+      193,
+      255
+    ],
+    "expectedMaskedSwatch": [
+      214,
+      202,
+      193,
+      255
+    ],
+    "swatchAfter": [
+      225,
+      213,
+      203,
+      255
+    ],
+    "samePageInstance": true,
+    "draftRetained": true,
+    "noUnexpectedSend": true
+  },
+  "refresh": {
+    "scope": "Real macOS Electron and cached loopback fixture; no ChatGPT",
+    "cacheBypassMethodInvoked": true,
+    "networkResponseChanged": true,
+    "draftAndReadingRestored": true,
+    "cookieAndLocalStorageRetained": true,
+    "otherTabAndAccountUnchanged": true,
+    "crossAccountRefreshRejected": true,
+    "noUnexpectedSend": true
+  },
+  "uiStats": {
+    "startTime": "2026-10-27T08:57:45.421Z",
+    "duration": 202990.97,
+    "expected": 23,
+    "skipped": 1,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "additionalPassedChecks": [
+    "late image decode acknowledgment ignored after closing",
+    "clicking backdrop and Escape both close menu",
+    "crashed page recreated in original session with checkpoint restored"
+  ],
+  "screenshotsInspected": [
+    "mac-account-menu-no-blank.png",
+    "mac-tab-force-refresh.png"
+  ],
+  "limitations": [
+    "virtual hosted macOS display, not a physical Retina Mac",
+    "not real ChatGPT compatibility acceptance"
+  ]
+}

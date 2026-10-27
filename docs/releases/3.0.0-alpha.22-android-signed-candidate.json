@@ -1,0 +1,77 @@
+{
+  "schema": 1,
+  "version": "3.0.0-alpha.22",
+  "versionCode": 3000022,
+  "product": "ChatGPT Studio",
+  "status": "signed-local-candidate-not-public",
+  "source": "85ff89ff973f730dbe3792eb0778aced81741411",
+  "package": "com.forcemind.chatgpt.profiles",
+  "debuggable": false,
+  "artifact": {
+    "file": "ChatGPT-Studio-3.0.0-alpha.22-android.apk",
+    "bytes": 7376521,
+    "sha256": "39a06004608162884c5d2a11277eee840f5311438376bd7541adc638b1e55e53",
+    "localDeliveryDirectory": "android/release",
+    "published": false
+  },
+  "certificateSha256": "8b6eef928fded91f291ad954e20976b2cc6011b55e8cbec0152695fe1f05cf19",
+  "signatureSchemeVerified": "v3",
+  "baseline": {
+    "version": "3.0.0-alpha.19",
+    "certificateSha256": "8b6eef928fded91f291ad954e20976b2cc6011b55e8cbec0152695fe1f05cf19",
+    "publishedApkSha256": "0e65cd85162b6cbab005e5d571e9856f91fc7dae1d2b4437426cebd85bc9e47f",
+    "publishedAssetDigestReadBack": true
+  },
+  "ci": {
+    "run": 40468096647,
+    "artifact": 12717940198,
+    "archiveSha256": "1752848680667750a41c5f685fff4b9d109313a33087a2c33f05b2f58ab63d49",
+    "unsignedApkSha256": "dbfeaa8ad312e89c3c9ce48edd049822c8f5aa51dc29e0d2a8a160ac0c295232",
+    "acceptanceReceipt": "docs/releases/3.0.0-alpha.22-android-candidate.json"
+  },
+  "checks": {
+    "officialApksignerVerify": true,
+    "stablePackageLabelAndVersion": true,
+    "sameCertificateAsPublishedBaseline": true,
+    "sameBadgingBeforeAndAfterSigning": true,
+    "allExistingZipEntriesUnchanged": 218,
+    "addedSigningMetadata": [
+      "META-INF/CHATGPT-.RSA",
+      "META-INF/CHATGPT-.SF",
+      "META-INF/MANIFEST.MF"
+    ],
+    "apkRebuiltLocally": false,
+    "privateKeyUploaded": false,
+    "personalInstallationPerformed": false
+  },
+  "temporaryTools": {
+    "sdk": {
+      "url": "https://dl.google.com/android/repository/build-tools_r35_macosx.zip",
+      "size": 76857898,
+      "sha1": "93ab8ce91230e067b5add4bfa79919c52b27f072",
+      "fullArchiveStreamVerified": true,
+      "extractedTools": {
+        "aapt2": {
+          "bytes": 10469248,
+          "sha256": "729a6a8deba828992c50cb448d4ef3947003ec5a0d1deead7534897c8fc3486f"
+        },
+        "apksigner.jar": {
+          "bytes": 1074241,
+          "sha256": "00ef9948f843fe395d2440ae3ef41405b8040a6d5d46493bd1902ac0ee6deae7"
+        }
+      }
+    },
+    "jre": {
+      "url": "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.21%2B9/OpenJDK17U-jre_aarch64_mac_hotspot_17.0.21_9.tar.gz",
+      "sha256": "a5ab5bacd6e719d5a5570580ed14dceb2ed532208a39af927906b9742da1745e",
+      "size": 42822064,
+      "version": "17.0.21+9",
+      "archiveVerified": true,
+      "downloadVia": "https://gh-proxy.org/"
+    }
+  },
+  "limitations": [
+    "Physical-device upgrade, personal account data, live ChatGPT and vendor battery behavior remain deferred",
+    "APK is delivered locally through the task; public GitHub Release and website remain unchanged"
+  ]
+}

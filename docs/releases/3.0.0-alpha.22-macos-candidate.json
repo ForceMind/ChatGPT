@@ -1,0 +1,264 @@
+{
+  "schema": 1,
+  "product": "ChatGPT Studio",
+  "version": "3.0.0-alpha.22",
+  "platform": "macos-arm64",
+  "status": "ci-verified-candidate-not-public",
+  "sourceCommit": "1df1dded1985a35f7fef8f5ba22bf702e10ac6e6",
+  "branch": "codex/macos-assets-workbench",
+  "baselinePublicVersion": "3.0.0-alpha.21",
+  "ciRun": "https://github.com/ForceMind/ChatGPT/actions/runs/40477100725",
+  "signing": "ad-hoc, not notarized",
+  "artifacts": [
+    {
+      "file": "ChatGPT-Studio-3.0.0-alpha.22-mac-arm64.dmg",
+      "platform": "macos",
+      "purpose": "installer",
+      "bytes": 155097791,
+      "sha256": "7ce109d159929b2e9ca687d8b2d5abfb90211af04917e71f255f45b567d774a0"
+    },
+    {
+      "file": "ChatGPT-Studio-3.0.0-alpha.22-mac-arm64.zip",
+      "platform": "macos",
+      "purpose": "installer",
+      "bytes": 155044652,
+      "sha256": "2d606849d66f8b27d640a22b3d29a0a6916e1ec1c1b110b63bc01e8efc2ce12e"
+    },
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.22-mac-arm64.zip",
+      "platform": "macos",
+      "purpose": "legacy-updater",
+      "bytes": 155160576,
+      "sha256": "fc2c8607ad8fbd521b4450017d983e61958cfed514c5318062a4ff0563b5704e"
+    }
+  ],
+  "downloads": {
+    "dmg": "https://github.com/ForceMind/ChatGPT/actions/runs/40477100725/artifacts/12720429629",
+    "zip": "https://github.com/ForceMind/ChatGPT/actions/runs/40477100725/artifacts/12720618740",
+    "note": "Actions downloads are ZIP containers and require GitHub access. The ZIP artifact contains the Studio manual ZIP and the legacy-updater compatibility ZIP."
+  },
+  "ciArtifacts": [
+    {
+      "id": 12721233808,
+      "name": "mac-release-info",
+      "bytes": 17221,
+      "sha256": "6dbc5e8ca5105c7cf28ec255443421a5b7fefb3490795ea3cb6edd21eb0b6482",
+      "archiveVerifiedLocally": true
+    },
+    {
+      "id": 12720314258,
+      "name": "mac-ui-evidence",
+      "bytes": 3008215,
+      "sha256": "d7537d49090f07743283e9ec8fdaf309428db7880be1b652d245a2124daa3b18",
+      "archiveVerifiedLocally": true
+    },
+    {
+      "id": 12720429629,
+      "name": "mac-arm64-dmg",
+      "bytes": 155097991,
+      "sha256": "8fcea7b250339f3c522e6280fe7d911c2719146f00fc6d3910bc0d8872b8aa6c",
+      "expiresAt": "2026-11-26T09:03:27Z",
+      "downloadedLocally": false
+    },
+    {
+      "id": 12720618740,
+      "name": "mac-arm64-zip",
+      "bytes": 310205610,
+      "sha256": "bfc232a9898161dd56061fd5b27c979c62a65e962c709053dc06f35544b67971",
+      "expiresAt": "2026-11-26T09:03:30Z",
+      "downloadedLocally": false
+    }
+  ],
+  "checks": {
+    "typecheck": true,
+    "unitTests": {
+      "tests": 78,
+      "passed": 78,
+      "failed": 0,
+      "skipped": 0
+    },
+    "ui": {
+      "version": "3.0.0-alpha.22",
+      "commit": "1df1dded1985a35f7fef8f5ba22bf702e10ac6e6",
+      "scope": "isolated Electron with real ProseMirror and loopback fixtures; no live ChatGPT or personal accounts",
+      "stats": {
+        "startTime": "2026-10-27T08:57:45.421Z",
+        "duration": 202990.97,
+        "expected": 23,
+        "skipped": 1,
+        "unexpected": 0,
+        "flaky": 0
+      }
+    },
+    "nativeMenuAndRefresh": "docs/benchmarks/macos-alpha22-shell-transitions.json",
+    "packagedUpdater": {
+      "version": "3.0.0-alpha.22",
+      "verifiedAt": "2026-10-27T09:03:16.347Z",
+      "scope": "shipping ZIPs, pinned alpha.18 helper and disposable old bundles; fixture account data only, no personal Keychain or live ChatGPT acceptance",
+      "asarSHA256": "bd68e0fe8f35073bf0c441e87fde2ae24b3786e17c774497aca7999f00018179",
+      "helperSHA256": "6d76ffeab1a3de9fed9625389cba1380ba45a245ea8571f0ea69b6a0c1b81421",
+      "legacyAlpha18HelperSHA256": "06f93c1c549a18a28f65a9d96f361fb5491d3c37db620de89007bf19b47e62aa",
+      "elapsedMs": 35268,
+      "cases": [
+        {
+          "archive": "ChatGPT-Studio-3.0.0-alpha.22-mac-arm64.zip",
+          "zipSHA256": "2d606849d66f8b27d640a22b3d29a0a6916e1ec1c1b110b63bc01e8efc2ce12e",
+          "legacyAlpha18Installer": false,
+          "installedBundle": "ChatGPT Studio.app",
+          "systemName": "ChatGPT Studio",
+          "executable": "ChatGPT Studio",
+          "previousBundlePreserved": true,
+          "accountDataUnchanged": true
+        },
+        {
+          "archive": "ChatGPT-Profiles-3.0.0-alpha.22-mac-arm64.zip",
+          "zipSHA256": "fc2c8607ad8fbd521b4450017d983e61958cfed514c5318062a4ff0563b5704e",
+          "legacyAlpha18Installer": true,
+          "installedBundle": "ChatGPT Studio.app",
+          "systemName": "ChatGPT Studio",
+          "executable": "ChatGPT Studio",
+          "previousBundlePreserved": true,
+          "accountDataUnchanged": true
+        }
+      ],
+      "checks": [
+        "canonical and legacy ZIP digests and signatures",
+        "legacy alpha.18 fixed archive root",
+        "actual published alpha.18 native installer",
+        "parent exit wait and atomic swap",
+        "signed no-overwrite rename to Studio.app",
+        "installed payload byte identity",
+        "system name and executable",
+        "previous app and account fixture preserved"
+      ]
+    },
+    "packagedRecovery": {
+      "version": "3.0.0-alpha.22",
+      "verifiedAt": "2026-10-27T09:03:20.391Z",
+      "scope": "isolated Electron, actual packaged ASAR/native module; no personal profiles or Keychain items; signed Touch ID key creation not verified",
+      "branding": {
+        "displayName": "ChatGPT Studio",
+        "internalName": "ChatGPT Studio",
+        "bundleId": "com.forcemind.chatgpt.profiles",
+        "applicationBundle": "ChatGPT Studio.app",
+        "legacyUpdateRoot": "ChatGPT Profiles.app",
+        "storageIdentity": "ChatGPT Profiles"
+      },
+      "payloadFiles": 236,
+      "asarSHA256": "bd68e0fe8f35073bf0c441e87fde2ae24b3786e17c774497aca7999f00018179",
+      "capabilities": {
+        "touchID": false,
+        "signed": false
+      },
+      "unsignedKeyRefused": true,
+      "checks": [
+        "all dist payload bytes match",
+        "deep strict code signature",
+        "packaged native module loads from ASAR",
+        "ad-hoc key creation refused before SecItem access"
+      ]
+    },
+    "packagedMenuBar": {
+      "version": "3.0.0-alpha.22",
+      "commit": "1df1dded1985a35f7fef8f5ba22bf702e10ac6e6",
+      "verifiedAt": "2026-10-27T09:03:21.723Z",
+      "scope": "Actual shipping ASAR images loaded by isolated Electron on macOS with one local fixture window, real native Tray in the visible menu bar; full packaged main-process startup and physical-user dark-mode appearance are not verified here. No account spaces or personal Keychain items.",
+      "asarSHA256": "bd68e0fe8f35073bf0c441e87fde2ae24b3786e17c774497aca7999f00018179",
+      "resources": [
+        {
+          "path": "dist/main/menuBarTemplate.png",
+          "width": 18,
+          "height": 18,
+          "sha256": "6bf511ea1e207d79eb446c25735591c066373732f0c33ee246c49c2f66096f19"
+        },
+        {
+          "path": "dist/main/menuBarTemplate@2x.png",
+          "width": 36,
+          "height": 36,
+          "sha256": "0b1242c594de958c6de38349365d90a0bfc097e2b5c4658971a4e0435b38ce29"
+        }
+      ],
+      "native": {
+        "imageSize": {
+          "width": 18,
+          "height": 18
+        },
+        "scaleFactors": [
+          1,
+          2
+        ],
+        "template": true,
+        "transparentPixels": 142,
+        "glyphPixels": 182,
+        "bounds": {
+          "x": 1350,
+          "y": 0,
+          "width": 34,
+          "height": 24
+        },
+        "displays": [
+          {
+            "bounds": {
+              "x": 0,
+              "y": 0,
+              "width": 1600,
+              "height": 1200
+            },
+            "workArea": {
+              "x": 0,
+              "y": 25,
+              "width": 1600,
+              "height": 1175
+            }
+          }
+        ],
+        "onVisibleMenuBar": true,
+        "destroyedOnExit": true,
+        "fixtureWindowCount": 1
+      },
+      "checks": [
+        "packaged image bytes match build",
+        "18px and 36px PNGs",
+        "ASAR native-image loading",
+        "template and Retina representations",
+        "black glyph with transparent background",
+        "native status item within the visible menu bar",
+        "native Tray disposal"
+      ]
+    },
+    "allDistPayloadBytesCompared": true
+  },
+  "failedAttempts": [
+    {
+      "run": 40474308376,
+      "source": "c9454773a807c1c0a62bbd63aba8f226866f58eb",
+      "cause": "The color probe captured only the shell surface, the old overlay-release assertion was synchronous, and refresh rejected the explicit HTTP loopback fixture as an uninitialized page. Twenty tests passed, three failed.",
+      "fixes": [
+        "45ec359",
+        "43fe3ed"
+      ]
+    },
+    {
+      "run": 40475343296,
+      "source": "45ec359",
+      "cause": "Refresh loopback fixture still took the recreation branch because the new guard used HTTPS-only isWebURL. Native composition, late acknowledgment and existing workspace checks passed.",
+      "fix": "43fe3ed"
+    },
+    {
+      "run": 40476095662,
+      "source": "43fe3ed",
+      "cause": "The new-tab test recorded an identity before the asynchronous UI action had actually created the new tab; the retained-page assertion was kept, and setup now waits for the new tab and its native view.",
+      "fix": "3eeaf71"
+    }
+  ],
+  "supersededRun": {
+    "run": 40476751011,
+    "reason": "Cancelled after the user requested a dim backdrop; final UI rebuilt and verified in 40477100725"
+  },
+  "limitations": [
+    "Official hosted macOS arm64, isolated accounts and loopback fixtures; no personal data or real ChatGPT acceptance",
+    "Physical Retina appearance and real-service page behavior require installation acceptance",
+    "Ad-hoc signature; no Developer ID or notarization",
+    "Public Release, website feeds, main and local installed app unchanged"
+  ]
+}

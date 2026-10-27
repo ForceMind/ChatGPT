@@ -20,7 +20,9 @@
 
 本批通过 72 项单元测试，Lint 为 0 错误 / 49 条警告；手机 / 平板分别通过离线 7 项、能力流程 3 项、大字号 3 项，并通过实际 force-stop、新 PID、断网只读和重连检查。大字号覆盖 100% / 130% / 200% 系统设置，新增界面截图已检查。原生角色单用测试曾复现输入连接未就绪即写入的问题：现先等待焦点与文本输入连接，只调用一次写入；无法确认时停止。完整要求、附件摘要、目标账号与一次发送由实际离线网页回执核对。
 
-原始证据见[进程重启记录](../docs/benchmarks/android-alpha22-process-restart.json)、[字号记录](../docs/benchmarks/android-alpha22-native-readability.json)与根目录 [迭代记录](../MACOS_MIGRATION_PLAN.md)。模拟网页与官方模拟器不替代真实 ChatGPT、厂商设备和原有个人数据升级验收。原签名材料保留本机，不上传到 CI；未签名 Release 不能直接安装，debug 工件使用独立包名和测试签名，不覆盖原 App 或复用正式登录。原证书签名升级包尚未交付。
+原始证据见[进程重启记录](../docs/benchmarks/android-alpha22-process-restart.json)、[字号记录](../docs/benchmarks/android-alpha22-native-readability.json)与根目录 [迭代记录](../MACOS_MIGRATION_PLAN.md)。模拟网页与官方模拟器不替代真实 ChatGPT、厂商设备和原有个人数据升级验收。原签名材料保留本机，不上传到 CI；未签名 Release 不能直接安装，debug 工件使用独立包名和测试签名，不覆盖原 App 或复用正式登录。
+
+本轮对话已提供原证书签名 APK，详情见[签名候选记录](../docs/releases/3.0.0-alpha.22-android-signed-candidate.json)。签名复用已通过 CI 的原始未签名包，218 个原包文件逐字节保持，仅新增标准签名元数据；包名与公开 alpha.19 证书一致，版本号递增。临时 Java / 签名环境已清理，未在本机重新编译或上传私钥。该文件尚未上传公开 Release；真实手机覆盖升级和个人账号验收仍待完成。
 
 ## alpha.17 标签管理与后台任务
 
