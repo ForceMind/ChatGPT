@@ -21,7 +21,7 @@ from grouped_environment_validation import expected,validate,shared_markers,prof
 PACKAGE = "com.forcemind.chatgpt.environmentpoc"
 COMPONENT = PACKAGE + "/" + PACKAGE + ".GroupedAActivity"
 OUT = Path(sys.argv[1]); OUT.mkdir(parents=True, exist_ok=True)
-events, requests, heartbeats, lock = [], [], [], threading.Lock()
+events, requests, heartbeats, popup_attempts, lock = [], [], [], [], threading.Lock()
 phase = "isolation"
 
 def adb(*args, check=True, timeout=25):
@@ -198,9 +198,15 @@ def same_account_tokens(case):
     return shared_markers(a0,a1,c)
 
 def popup(case,account):
-    launch(account);geo=wait(lambda:native(account,"grouped") if native(account,"grouped").get("viewHeight",0)>0 else None,15)
-    row=main_row(case,account);point=row and row.get("popupButton")
-    if not geo or not point:return False
+    previous=native(account,"grouped").get("elapsedMs",-1);started=time.monotonic();launch(account)
+    def focused_view():
+        value=native(account,"grouped")
+        return value if value.get("elapsedMs",-1)>previous and value.get("viewHeight",0)>0 and value.get("viewShown") and value.get("windowFocused") else None
+    geo=wait(focused_view,20)
+    row=wait(lambda:(lambda value:value if value and value.get("received",0)>started and value.get("popupButton") else None)(main_row(case,account)),20)
+    point=row and row.get("popupButton");attempt={"account":account,"focusedView":geo,"point":point,"freshPageReport":bool(row)};popup_attempts.append(attempt)
+    screenshot("popup-"+account.lower()+"-before")
+    if not geo or not point:attempt["reason"]="foreground view or fresh page coordinates unavailable";return False
     before={r["instance"] for r in records(case) if r.get("account")==account and r.get("kind")=="popup"}
     adb("shell","input","tap",str(round(geo["viewX"]+point["x"]*point["ratio"])),str(round(geo["viewY"]+point["y"]*point["ratio"])))
     def shared_popup():
@@ -209,7 +215,9 @@ def popup(case,account):
             if row.get("account")!=account or row.get("kind")!="popup" or row.get("instance") in before or validate(row) or not main:continue
             if row.get("cookie")==main.get("cookie") and all(row.get(k)==main.get(k) for k in ("local","idb","cache")):return row
         return None
-    return bool(wait(shared_popup,35))
+    matched=wait(shared_popup,35);attempt["passed"]=bool(matched)
+    if not matched:attempt["reason"]="no popup with the same first-party storage identity";screenshot("popup-"+account.lower()+"-missing")
+    return bool(matched)
 
 def popup_contexts_ready(case):
     rows=records(case)
@@ -239,12 +247,12 @@ failure=None
 try:
     phase="isolation";isolation=start_workload(phase,"grouped");isolation["sameAccountStorageTokens"]=same_account_tokens(phase)
     isolation["popups"]={a:popup(phase,a) for a in ("A","C","B")}
-    if not wait(lambda:popup_contexts_ready("isolation"),40):raise RuntimeError("Missing popup/frame/worker evidence")
+    isolation["popupContextsReported"]=bool(wait(lambda:popup_contexts_ready("isolation"),40))
     time.sleep(3);before=set(latest("isolation"))
     for account in ("A","C","B"):launch(account,recreate=True)
     launch("A");time.sleep(5);after=set(latest("isolation"));isolation["recreationNewDocuments"]=len(after-before)
     isolation["environmentErrors"]=[{"account":r["account"],"kind":r["kind"],"tab":r["tab"],"errors":validate(r)} for r in records("isolation") if validate(r)]
-    isolation["passed"]=isolation["processRelationCorrect"] and isolation["sameAccountStorageTokens"] and all(isolation["popups"].values()) and isolation["recreationNewDocuments"]==0 and not isolation["environmentErrors"]
+    isolation["passed"]=isolation["processRelationCorrect"] and isolation["sameAccountStorageTokens"] and all(isolation["popups"].values()) and isolation["popupContextsReported"] and isolation["recreationNewDocuments"]==0 and not isolation["environmentErrors"]
     report["isolation"]=isolation;screenshot("grouped-isolation")
 
     original={a:main_row("isolation",a) for a in ("A","B","C")};old_pids={isolation["native"][a]["pid"] for a in ("A","B","C")}
@@ -300,6 +308,7 @@ finally:
     keep=resources[0].get("keepAlive",{}) if resources else {};report["keepAlivePassed"]=keep.get("originalContexts")==12 and keep.get("continuingContexts")==12 and keep.get("newDocuments")==0 and keep.get("newDocumentsAfterSwitch")==0
     restart=resources[0].get("processRestart",{}) if resources else {};report["reopenPassed"]=restart.get("newProcesses",False) and len(restart.get("accountsRetained",{}))==3 and all(restart["accountsRetained"].values())
     report["apks"]=[{"file":apk.name,"bytes":apk.stat().st_size,"sha256":hashlib.sha256(apk.read_bytes()).hexdigest()} for apk in Path("environment-poc/build/outputs/apk/debug").glob("*.apk")]
+    report["popupAttempts"]=popup_attempts
     for name,data in (("report.json",report),("events.json",records()),("requests.json",requests),("heartbeats.json",heartbeats)):(OUT/name).write_text(json.dumps(data,ensure_ascii=False,indent=2))
     (OUT/"runtime.log").write_text(adb("logcat","-d",check=False,timeout=30));(OUT/"processes.txt").write_text(adb("shell","ps","-A","-o","PID,PPID,NAME,ARGS"))
     for apk in report["apks"]:print(apk["file"],apk["bytes"],apk["sha256"],flush=True)

@@ -46,6 +46,8 @@ public abstract class GroupedActivity extends Activity {
     private static List<GeckoSession> tabsFor(String id){return sessions.computeIfAbsent(id,key->new ArrayList<>());}
     private List<GeckoSession> tabs(){return tabsFor(account());}
     private static boolean allowed(String address){Uri u=Uri.parse(address);return "http".equals(u.getScheme())&&u.getPort()==8765&&("127.0.0.1".equals(u.getHost())||"localhost".equals(u.getHost()));}
+    private static void retainSessions(){for(List<GeckoSession> group:sessions.values())for(GeckoSession session:group)if(session.isOpen())session.setActive(true);}
+    private void releaseView(){if(view!=null&&view.getSession()!=null){GeckoSession previous=view.releaseSession();if(previous!=null&&previous.isOpen())previous.setActive(true);}}
     @Override public void onCreate(Bundle state){
         super.onCreate(state);
         LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setBackgroundColor(Color.WHITE);
@@ -79,6 +81,8 @@ public abstract class GroupedActivity extends Activity {
         if(count>0)next.putExtra("tabs",count);if(probe)next.putExtra("probe",true);if(clear)next.putExtra("clear",true);if(nextTab)next.putExtra("next",true);if(recreate)next.putExtra("recreate",true);startActivity(next);
     }
     @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);setIntent(intent);handle(intent);}
+    @Override protected void onResume(){super.onResume();new Handler(Looper.getMainLooper()).postDelayed(()->{if(view!=null)record("resumed","");},600);}
+    @Override protected void onStop(){super.onStop();retainSessions();Handler handler=new Handler(Looper.getMainLooper());handler.postDelayed(GroupedActivity::retainSessions,500);handler.postDelayed(GroupedActivity::retainSessions,1500);}
     private void handle(Intent intent){
         String target=intent.getStringExtra("account");int count=intent.getIntExtra("tabs",0);boolean probe=intent.getBooleanExtra("probe",false),clear=intent.getBooleanExtra("clear",false);
         if(target!=null&&!target.equals("A")&&!target.equals("B")&&!target.equals("C")){record("invalid-target","");return;}
@@ -101,7 +105,7 @@ public abstract class GroupedActivity extends Activity {
         });return session;
     }
     private void resize(int count,boolean probe){
-        if(runtime==null)return;if(view.getSession()!=null)view.releaseSession();
+        if(runtime==null)return;releaseView();
         while(tabs().size()>count)tabs().remove(tabs().size()-1).close();
         while(tabs().size()<count){int index=tabs().size();GeckoSession s=newSession(account(),context());s.open(runtime);s.setActive(true);tabs().add(s);
             s.loadUri("http://127.0.0.1:8765/page?account="+account()+"&tab="+index+"&mode="+mode()+"&probe="+probe+"&pid="+android.os.Process.myPid());}
@@ -111,16 +115,16 @@ public abstract class GroupedActivity extends Activity {
         resize(0,false);runtime.getStorageController().clearDataForSessionContext(context());record("clear-requested",context());
     }
     private void showTab(){
-        if(view.getSession()!=null)view.releaseSession();view.setSession(tabs().get(selected.getOrDefault(account(),0)));tabs().get(selected.getOrDefault(account(),0)).setActive(true);
+        releaseView();view.setSession(tabs().get(selected.getOrDefault(account(),0)));tabs().get(selected.getOrDefault(account(),0)).setActive(true);
         status.setText("账号 "+account()+" · "+language()+" · "+zone()+"\n标签 "+(selected.getOrDefault(account(),0)+1)+" / "+tabs().size()+" · "+mode());record("visible","");
         new Handler(Looper.getMainLooper()).postDelayed(()->record("layout",""),1000);
     }
     private void record(String event,String detail){
-        try{JSONObject data=new JSONObject().put("account",account()).put("mode",mode()).put("pid",android.os.Process.myPid()).put("language",language()).put("timeZone",zone()).put("tabs",tabs().size()).put("context",context()).put("event",event).put("detail",detail).put("remoteDebugging",false);
-            int[] xy=new int[2];if(view!=null){view.getLocationOnScreen(xy);data.put("viewX",xy[0]).put("viewY",xy[1]).put("viewWidth",view.getWidth()).put("viewHeight",view.getHeight());}
+        try{JSONObject data=new JSONObject().put("account",account()).put("mode",mode()).put("pid",android.os.Process.myPid()).put("language",language()).put("timeZone",zone()).put("tabs",tabs().size()).put("context",context()).put("event",event).put("detail",detail).put("elapsedMs",android.os.SystemClock.elapsedRealtime()).put("remoteDebugging",false);
+            int[] xy=new int[2];if(view!=null){view.getLocationOnScreen(xy);data.put("viewX",xy[0]).put("viewY",xy[1]).put("viewWidth",view.getWidth()).put("viewHeight",view.getHeight()).put("viewShown",view.isShown()).put("windowFocused",view.hasWindowFocus());}
             byte[] bytes=data.toString().getBytes(StandardCharsets.UTF_8);Files.write(new File(getFilesDir(),"grouped-native-"+mode()+"-"+account()+".json").toPath(),bytes);
             if(event.equals("clear-requested"))Files.write(new File(getFilesDir(),"grouped-clear-"+mode()+"-"+account()+".json").toPath(),bytes);
         }catch(Exception e){android.util.Log.e("GroupedEnvironmentPoC","Evidence write failed",e);}
     }
-    @Override protected void onDestroy(){if(view!=null&&view.getSession()!=null)view.releaseSession();super.onDestroy();}
+    @Override protected void onDestroy(){releaseView();super.onDestroy();}
 }
