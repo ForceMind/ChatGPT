@@ -199,7 +199,7 @@ jobs:
           fi
           if [ "${{ inputs.process_restart_only }}" = true ]; then
             ./gradlew --no-daemon installDebug
-            timeout 180 python3 -u scripts/verify-process-restart.py app/build/device-evidence
+            timeout 240 python3 -u scripts/verify-process-restart.py app/build/device-evidence
             echo 'Actual process restart with offline fixtures only; no real ChatGPT acceptance.' > app/build/device-evidence/scope.txt
             exit 0
           fi

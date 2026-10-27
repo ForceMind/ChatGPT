@@ -8,10 +8,12 @@
 <div id="reading"></div>
 <textarea id="prompt-textarea"></textarea>
 <p id="draft-echo" role="status"></p>
+<button id="fixture-send" type="button">测试发送</button><p id="sent-status" role="status">发送次数：0</p>
 <script>
 (function(config){
   var reading=document.querySelector('#reading'),editor=document.querySelector('#prompt-textarea');
-  for(var i=0;i<24;i++){var section=document.createElement('section');section.setAttribute('data-message-id','restart-message-'+i);section.textContent='离线阅读素材 '+i;reading.appendChild(section);}
+  for(var i=0;i<24;i++){var section=document.createElement('section');section.setAttribute('data-message-id','restart-message-'+i);section.textContent=i===8&&config.snapshotText?config.snapshotText:'离线阅读素材 '+i;reading.appendChild(section);}
+  var sent=0;document.querySelector('#fixture-send').onclick=function(){document.querySelector('#sent-status').textContent='发送次数：'+(++sent);};
   document.querySelector('#phase').textContent='验证阶段：'+config.phase+(config.phase==='verify'?'（无预置草稿）':'');
   function update(){document.querySelector('#reading-status').textContent='阅读位置：'+Math.round(reading.scrollTop);document.querySelector('#draft-echo').textContent='网页草稿：'+(editor.value||'（空）');}
   reading.addEventListener('scroll',update);editor.addEventListener('input',update);update();

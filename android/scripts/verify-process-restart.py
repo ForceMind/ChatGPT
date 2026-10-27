@@ -4,6 +4,7 @@ from pathlib import Path
 import hashlib
 import json
 import os
+import re
 import shlex
 import subprocess
 import sys
@@ -29,6 +30,14 @@ def private_read(name, required=True):
 def private_write(name, value):
     command = "run-as " + shlex.quote(PACKAGE) + " sh -c " + shlex.quote("cat > files/" + name)
     adb("shell", command, data=json.dumps(value, ensure_ascii=False).encode())
+
+def snapshot_ready():
+    try:
+        raw = private_read("process-snapshot-ready.json", required=False)
+        value = json.loads(raw) if raw else None
+        return value if value and value.get("saved") and value.get("image") else None
+    except (ValueError, TypeError):
+        return None
 
 def process():
     result = adb("shell", "pidof", PACKAGE, check=False)
@@ -57,9 +66,31 @@ def visible_page(phase, marker):
     labels = " ".join(n.get("text", "") + " " + n.get("content-desc", "") for n in root.iter("node"))
     if "验证阶段：" + phase not in labels or marker not in labels or "阅读位置：1400" not in labels:
         return None
-    if phase == "verify" and "无预置草稿" not in labels:
+    if phase == "verify" and ("无预置草稿" not in labels or "发送次数：0" not in labels):
         return None
     return root
+
+def visible_snapshot(marker):
+    root = tree()
+    if root is None:
+        return None
+    labels = " ".join(n.get("text", "") + " " + n.get("content-desc", "") for n in root.iter("node"))
+    return root if "上次保存的对话" in labels and marker in labels and "重新连接" in labels else None
+
+def tap(label):
+    root = tree()
+    if root is None:
+        return False
+    for node in root.iter("node"):
+        if node.get("text") != label:
+            continue
+        bounds = re.fullmatch(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]", node.get("bounds", ""))
+        if bounds:
+            x1,y1,x2,y2 = map(int, bounds.groups())
+            if x2>x1 and y2>y1:
+                adb("shell", "input", "tap", str((x1+x2)//2), str((y1+y2)//2))
+                return True
+    return False
 
 def capture(name, root):
     (OUT / (name + ".xml")).write_bytes(ET.tostring(root, encoding="utf-8"))
@@ -78,32 +109,44 @@ if existing.returncode == 0 or process():
 
 account, storage, tab, token = [str(uuid.uuid4()) for _ in range(4)]
 marker = "process-restore-" + str(uuid.uuid4())
+snapshot_marker = "saved-conversation-" + str(uuid.uuid4())
 address = "https://chatgpt.com/c/process-restart-fixture"
 workspace = {"schema": 1, "activeAccount": account, "pendingDeletes": [], "accounts": [{
     "id": account, "storageId": storage, "name": "进程重启验收", "email": "restart@example.test", "color": "#797979",
     "activeTab": tab, "tabs": [{"id": tab, "url": address, "title": "离线进程重启验收", "pinned": False}], "closedTabs": []}]}
 adb("shell", "run-as", PACKAGE, "mkdir", "-p", "files")
 private_write("workspace.json", workspace)
-private_write(CONFIG, {"token": token, "accountId": account, "phase": "seed", "draft": marker})
+private_write(CONFIG, {"token": token, "accountId": account, "storageId": storage, "tabId": tab, "phase": "seed", "draft": marker, "snapshotText": snapshot_marker})
 started = False
 try:
     adb("shell", "am", "start", "-W", "-n", ACTIVITY); started = True
     before_pid = wait_until(process, 20)
     seed = wait_until(lambda: visible_page("seed", marker))
     capture("process-restart-seed", seed)
+    signal = wait_until(snapshot_ready)
+    assert signal.get("saved") and signal.get("image")
     relative = "page-recovery/" + account + "/" + storage + "/" + tab + ".bin"
     encrypted = wait_until(lambda: private_read(relative, required=False))
-    assert encrypted.startswith(b"HP01") and marker.encode() not in encrypted
+    assert encrypted.startswith(b"HP01") and marker.encode() not in encrypted and snapshot_marker.encode() not in encrypted
     cipher_sha = hashlib.sha256(encrypted).hexdigest()
     # The next Application has no copy of the original text in its fixture config.
-    private_write(CONFIG, {"token": token, "accountId": account, "phase": "verify"})
-    assert marker.encode() not in private_read(CONFIG)
+    private_write(CONFIG, {"token": token, "accountId": account, "phase": "offline"})
+    assert marker.encode() not in private_read(CONFIG) and snapshot_marker.encode() not in private_read(CONFIG)
     adb("shell", "am", "force-stop", PACKAGE)
     wait_until(lambda: not process(), 20)
     assert hashlib.sha256(private_read(relative)).hexdigest() == cipher_sha
     adb("shell", "am", "start", "-W", "-n", ACTIVITY)
     after_pid = wait_until(process, 20)
     assert before_pid != after_pid, "Expected a newly created application process"
+    snapshot = wait_until(lambda: visible_snapshot(snapshot_marker))
+    capture("process-restart-offline-text", snapshot)
+    wait_until(lambda: tap("查看画面"))
+    image = wait_until(lambda: (lambda r: r if r is not None and any(n.get("content-desc")=="上次保存的页面画面，只读" for n in r.iter("node")) else None)(tree()))
+    capture("process-restart-offline-picture", image)
+    wait_until(lambda: tap("查看文字"))
+    assert hashlib.sha256(private_read(relative)).hexdigest() == cipher_sha
+    private_write("process-restart-online.json", {"enabled": True})
+    wait_until(lambda: tap("重新连接"))
     restored = wait_until(lambda: visible_page("verify", marker))
     capture("process-restart-restored", restored)
     saved = json.loads(private_read("workspace.json"))
@@ -112,11 +155,11 @@ try:
     report = {"passed": True, "scope": "Android CI emulator; actual force-stop and new process; offline fixture, not real ChatGPT",
               "source": os.environ.get("GITHUB_SHA"), "pidBefore": before_pid, "pidAfter": after_pid,
               "checks": ["saved encrypted checkpoint", "checkpoint contains no plaintext marker", "marker removed from next-launch fixture config",
-                         "old process absent", "new application PID", "unchanged account/storage/tab identity", "draft restored into initially empty page", "reading position 1400 restored"],
+                         "old process absent", "new application PID", "offline native transcript from encrypted checkpoint", "bounded saved picture available offline", "offline viewing leaves checkpoint unchanged", "unchanged account/storage/tab identity", "draft restored into initially empty page", "reading position 1400 restored", "no automatic send"],
               "checkpointSha256BeforeStop": cipher_sha, "limitations": ["not real ChatGPT", "not physical device", "not personal data upgrade", "does not cover unsaved edits after the checkpoint"]}
     (OUT / "process-restart-verification.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
-    print("Actual process-stop/relaunch recovery passed; new process, same account/tab, saved draft and reading position.")
+    print("Actual force-stop/offline reopen/reconnect passed; encrypted text and picture, same account/tab, restored draft and reading position, no send.")
 finally:
     if started:
         adb("shell", "am", "force-stop", PACKAGE, check=False)
-    adb("shell", "run-as", PACKAGE, "rm", "-f", "files/" + CONFIG, check=False)
+    adb("shell", "run-as", PACKAGE, "rm", "-f", "files/" + CONFIG, "files/process-restart-online.json", "files/process-snapshot-ready.json", check=False)
