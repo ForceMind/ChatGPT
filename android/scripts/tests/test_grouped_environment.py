@@ -3,7 +3,7 @@ import sys
 import unittest
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
-from grouped_environment_validation import expected,validate,shared_markers,profile_present
+from grouped_environment_validation import expected,validate,shared_markers,profile_present,clear_receipt_matches
 
 def sample(account="A",kind="main"):
     lang,zone,winter,summer,noon,gap,maximized=expected(account)
@@ -21,6 +21,14 @@ class GroupedValidationTests(unittest.TestCase):
         for text in ('','ls: missing','POC_ABSENT\npermission denied','POC_PRESENT\nPOC_ABSENT'):
             with self.subTest(text=text):
                 with self.assertRaises(ValueError):profile_present(text)
+
+    def test_clear_requires_the_correct_account_context_process_and_closed_sessions(self):
+        row={"account":"C","mode":"grouped","event":"clear-requested","context":"grouped-poc-grouped-C","tabs":0,"pid":42}
+        self.assertTrue(clear_receipt_matches(row,42))
+        for key,value in (("account","A"),("mode","control"),("event","visible"),("context","grouped-poc-grouped-A"),("tabs",1),("tabs",False),("pid",43)):
+            bad=dict(row);bad[key]=value
+            with self.subTest(key=key,value=value):self.assertFalse(clear_receipt_matches(bad,42))
+        self.assertFalse(clear_receipt_matches('cat: missing',42));self.assertFalse(clear_receipt_matches({},42))
 
     def test_expected_environments_and_valid_observations(self):
         for account in ("A","B","C"):

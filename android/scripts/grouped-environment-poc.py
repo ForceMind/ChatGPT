@@ -17,7 +17,7 @@ import threading
 import time
 import uuid
 import zlib
-from grouped_environment_validation import expected,validate,shared_markers,profile_present
+from grouped_environment_validation import expected,validate,shared_markers,profile_present,clear_receipt_matches
 
 PACKAGE = "com.forcemind.chatgpt.environmentpoc"
 COMPONENT = PACKAGE + "/" + PACKAGE + ".GroupedAActivity"
@@ -133,8 +133,10 @@ def latest(case):
     for row in records(case):result[(row.get("account"),row.get("tab"),row.get("kind"),row.get("instance"))]=row
     return result
 
-def main_row(case,account,tab="0",probe=False):
-    return next((r for r in reversed(records(case)) if r.get("account")==account and r.get("tab")==tab and r.get("kind")=="main" and r.get("probe")==probe),None)
+def context_row(case,account,tab="0",kind="main",probe=False):
+    return next((r for r in reversed(records(case)) if r.get("account")==account and r.get("tab")==tab and r.get("kind")==kind and r.get("probe")==probe),None)
+
+def main_row(case,account,tab="0",probe=False):return context_row(case,account,tab,"main",probe)
 
 def ready_main(case,account,tab="0"):
     row=main_row(case,account,tab)
@@ -307,23 +309,41 @@ try:
     time.sleep(5);grouped["keepAlive"]["newDocumentsAfterSwitch"]=len({r["instance"] for r in latest(phase).values()}-set(end));report["resources"].append(grouped)
 
     print("Stage 4/5: clear C and verify A/B continue",flush=True)
-    before_clear={a:main_row(phase,a) for a in ("A","B","C")};clear_started=time.monotonic();phase="selective-clear";launch("C",clear=True)
+    before_clear={a:{kind:context_row(phase,a,kind=kind) for kind in ("main","frame","worker")} for a in ("A","B","C")}
+    def had_c_data():
+        for kind in ("main","frame"):
+            row=before_clear["C"][kind]
+            if not row or any(row.get(k+"State")!="ready" or (row.get(k) or {}).get("owner")!="C" for k in ("local","idb","cache")):return False
+        main=before_clear["C"]["main"]
+        return "poc-owner=C" in main.get("cookie","") and main.get("service",{}).get("owner")=="C"
+    had_data=had_c_data();clear_started=time.monotonic();phase="selective-clear";launch("C",clear=True)
     clear_file="files/grouped-clear-grouped-C.json"
-    if not wait(lambda:adb("exec-out","run-as",PACKAGE,"cat",clear_file,check=False),20):raise RuntimeError("C clear was not requested")
-    launch("C",probe=True)
+    def clear_receipt():
+        try:
+            row=json.loads(adb("exec-out","run-as",PACKAGE,"cat",clear_file,check=False))
+            return row if clear_receipt_matches(row,grouped["native"]["C"]["pid"]) else None
+        except (ValueError,subprocess.SubprocessError):return None
+    clear_ack=wait(clear_receipt,25)
+    if clear_ack:launch("C",probe=True)
     def cleared():
-        row=main_row("selective-clear","C",probe=True)
-        if not row or row.get("cookieState")!="ready" or row.get("cookie") or row.get("previousCookie") or row.get("requestCookie"):return None
-        if any(row.get(k+"State")!="ready" or row.get(k) is not None or row.get(k+"Previous") is not None for k in ("local","idb","cache")):return None
-        if row.get("service",{}).get("state")!="ready" or row.get("service",{}).get("owner") is not None:return None
-        return row
-    clean=wait(cleared,45)
+        found={kind:context_row("selective-clear","C",kind=kind,probe=True) for kind in ("main","frame")}
+        for row in found.values():
+            if not row or row.get("cookieState")!="ready" or row.get("cookie") or row.get("previousCookie") or row.get("requestCookie"):return None
+            if any(row.get(k+"State")!="ready" or row.get(k) is not None or row.get(k+"Previous") is not None for k in ("local","idb","cache")):return None
+        if found["main"].get("service",{}).get("state")!="ready" or found["main"].get("service",{}).get("owner") is not None:return None
+        return found
+    clean=wait(cleared,45) if clear_ack else None
     def unaffected(account):
-        after=main_row("grouped-resource",account);before=before_clear[account]
-        service=after.get("service",{}) if after else {}
-        return bool(after and before and after.get("received",0)>clear_started and after.get("ticks",0)>before.get("ticks",0) and all(after.get(k)==before.get(k) for k in ("local","idb","cache","cookie")) and service.get("owner")==account and (service.get("response") or {}).get("owner")==account and after.get("instance")==before.get("instance"))
+        for kind in ("main","frame","worker"):
+            after=context_row("grouped-resource",account,kind=kind);before=before_clear[account][kind]
+            if not after or not before or after.get("received",0)<=clear_started or after.get("ticks",0)<=before.get("ticks",0) or after.get("instance")!=before.get("instance"):return False
+            if kind!="worker" and not all(after.get(k)==before.get(k) for k in ("local","idb","cache","cookie")):return False
+            if kind=="main":
+                service=after.get("service",{})
+                if service.get("owner")!=account or (service.get("response") or {}).get("owner")!=account:return False
+        return True
     wait(lambda:all(unaffected(a) for a in ("A","B")),20);unchanged={a:unaffected(a) for a in ("A","B")}
-    report["selectiveClear"]={"clearedCMarkers":bool(clean),"unaffectedAccounts":unchanged,"passed":bool(clean) and all(unchanged.values()),"probe":clean}
+    report["selectiveClear"]={"cHadMainAndFrameMarkers":had_data,"clearRequest":clear_ack,"clearedCMarkers":bool(clean),"unaffectedAccounts":unchanged,"passed":had_data and bool(clear_ack) and bool(clean) and all(unchanged.values()),"probe":clean}
 
     print("Stage 5/5: measure the equally warmed separate-process control",flush=True)
     adb("shell","am","force-stop",PACKAGE);time.sleep(2);phase="control-resource"

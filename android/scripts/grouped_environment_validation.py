@@ -6,6 +6,11 @@ def profile_present(marker):
     if marker=="POC_ABSENT":return False
     raise ValueError("Experiment profile state could not be verified")
 
+def clear_receipt_matches(row,pid):
+    return (isinstance(row,dict) and row.get("account")=="C" and row.get("mode")=="grouped"
+            and row.get("event")=="clear-requested" and row.get("context")=="grouped-poc-grouped-C"
+            and type(row.get("tabs")) is int and row["tabs"]==0 and type(row.get("pid")) is int and row["pid"]==pid)
+
 def expected(account):
     return (("en-US","America/New_York",300,240,"2026-01-15T17:00:00.000Z","2026-03-08T07:30:00.000Z","en-Latn-US") if account=="B"
             else ("zh-CN","Asia/Shanghai",-480,-480,"2026-01-15T04:00:00.000Z","2026-03-07T18:30:00.000Z","zh-Hans-CN"))
