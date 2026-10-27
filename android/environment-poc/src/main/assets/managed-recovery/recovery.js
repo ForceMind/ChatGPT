@@ -32,6 +32,7 @@
     if (message.type === "focus") {
       const element = message.editor === "standard" ? standard : message.editor === "rich" ? rich : null;
       if (!element) return;
+      if (document.activeElement === element) element.blur();
       element.focus({preventScroll:true});
       requestAnimationFrame(() => {const value=snapshot();if(value)send("focused", {editor:message.editor, active:document.activeElement === element, snapshot:value});});
     } else if (message.type === "scroll") {

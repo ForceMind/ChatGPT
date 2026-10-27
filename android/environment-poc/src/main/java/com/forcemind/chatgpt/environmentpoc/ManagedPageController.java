@@ -91,7 +91,7 @@ final class ManagedPageController {
             @Override public void onCrash(GeckoSession s){fail(e,"content-process-crashed");}
             @Override public void onKill(GeckoSession s){fail(e,"content-process-killed");}
         });
-        e.session.open(runtime);e.session.setActive(true);if(extension!=null)attach(e);changed(e);return e;
+        e.session.open(runtime);e.session.setActive(true);e.session.setFocused(false);if(extension!=null)attach(e);changed(e);return e;
     }
     private JSONObject page(Entry e,String url)throws Exception{JSONArray pages=e.record.getJSONArray("pages");for(int i=0;i<pages.length();i++){JSONObject p=pages.getJSONObject(i);if(url.equals(p.getString("url")))return copy(p);}return null;}
     private void attach(Entry e){
@@ -184,6 +184,9 @@ final class ManagedPageController {
             if(!live.equals(goal)){
                 if(!live.equals(e.approved.getString(key))){showConflict(e,current);return;}
                 if(!e.visible){e.state="restoring";changed(e);return;}
+                View target=inputViews.view(e);if(target==null||!target.hasWindowFocus())return;
+                if(e.session.getTextInput().getView()!=target)e.session.getTextInput().setView(target);
+                target.requestFocus();focus(e);
                 if(!e.pendingEditor.isEmpty())return;e.pendingEditor=key;send(e,new JSONObject().put("type","focus").put("editor",key));changed(e);return;
             }
         }
@@ -199,10 +202,13 @@ final class ManagedPageController {
             View view=inputViews.view(e);
             if(view!=null&&e.session.getTextInput().getView()!=view)e.session.getTextInput().setView(view);
             if(view!=null&&!view.hasFocus()){view.requestFocus();ui.postDelayed(this,100);return;}
-            if(view!=null&&view.hasWindowFocus())e.session.setFocused(true);
+            if(view!=null&&view.hasWindowFocus())focus(e);
             InputConnection input=view==null?null:view.onCreateInputConnection(new EditorInfo());
             if(view==null||!view.hasWindowFocus()||input==null){
-                if(view!=null&&view.hasWindowFocus()&&!restarted){((android.view.inputmethod.InputMethodManager)view.getContext().getSystemService(android.content.Context.INPUT_METHOD_SERVICE)).restartInput(view);restarted=true;}
+                if(view!=null&&view.hasWindowFocus()&&!restarted){
+                    ((android.view.inputmethod.InputMethodManager)view.getContext().getSystemService(android.content.Context.INPUT_METHOD_SERVICE)).restartInput(view);restarted=true;
+                    try{send(e,new JSONObject().put("type","focus").put("editor",editor));}catch(Exception error){fail(e,"editor-refocus-failed");return;}
+                }
                 if(android.os.SystemClock.elapsedRealtime()-started<5000){ui.postDelayed(this,100);return;}
                 fail(e,"editor-input-unavailable:view="+(view!=null)+",window="+(view!=null&&view.hasWindowFocus())+",connection="+(input!=null));return;
             }
@@ -236,7 +242,8 @@ final class ManagedPageController {
         JSONArray pages=e.record.getJSONArray("pages"),updated=new JSONArray();for(int i=0;i<pages.length();i++)if(!e.url.equals(pages.getJSONObject(i).getString("url")))updated.put(pages.getJSONObject(i));updated.put(copy(snapshot));while(updated.length()>4)updated.remove(0);e.record.put("pages",updated).put("url",e.url);persist(e);e.preview=copy(snapshot);e.fingerprint=fingerprint;changed(e);
     }
     private void persist(Entry e)throws Exception{long next=e.revision+1;e.record.put("revision",next);if(e.record.toString().getBytes(StandardCharsets.UTF_8).length>900000)throw new java.io.IOException("Recovery quota exceeded; original retained");store.write(e.account,"page-"+e.id,e.record);e.revision=next;}
-    void visible(Entry e,boolean visible){synchronized(e.inputLock){e.visible=visible;}if(!visible&&!e.writing)e.pendingEditor="";if(visible&&"restoring".equals(e.state)&&e.current!=null)try{advance(e,e.current);}catch(Exception error){fail(e,"resume-restore-failed");}}
+    private void focus(Entry e){for(Entry other:entries.values())if(other!=e&&other.session.isOpen())other.session.setFocused(false);if(e.session.isOpen())e.session.setFocused(true);}
+    void visible(Entry e,boolean visible){synchronized(e.inputLock){e.visible=visible;}if(visible)focus(e);else if(e.session.isOpen())e.session.setFocused(false);if(!visible&&!e.writing)e.pendingEditor="";if(visible&&"restoring".equals(e.state)&&e.current!=null)try{advance(e,e.current);}catch(Exception error){fail(e,"resume-restore-failed");}}
     void retry(Entry e){if(!e.blocked&&!e.closed)e.session.loadUri(e.url);}
     void checkpoint(Entry e,String request)throws Exception{
         if(e.error.startsWith("save-failed"))throw new IllegalStateException("Unsaved current data");
