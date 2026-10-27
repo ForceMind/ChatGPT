@@ -17,9 +17,9 @@
 
 在独立账号空间中使用 ChatGPT，管理标签与会话，把下载、预览、格式转换和文件处理集中在一个应用里。启动直接进入网页，采用白灰黑界面，没有地址栏；各设备独立登录，无需配置 OpenAI API Key。
 
-> 项目已从 ChatGPT Profiles 更名为 **ChatGPT Studio**。当前 macOS 公开版为 **3.0.0-alpha.20**，Windows 为 **3.0.0-alpha.18**，Android 为 **3.0.0-alpha.19**；各平台按下表独立更新。历史文件名、应用标识和数据目录保留，用于兼容既有登录、加密记录与更新流程。
+> 项目已从 ChatGPT Profiles 更名为 **ChatGPT Studio**。当前 macOS 公开版为 **3.0.0-alpha.21**，Windows 为 **3.0.0-alpha.21**，Android 为 **3.0.0-alpha.19**；各平台按下表独立更新。历史文件名、应用标识和数据目录保留，用于兼容既有登录、加密记录与更新流程。
 
-**开发候选 alpha.21** 加入自有角色、设计补丁 Skill，以及 Windows 更新与加密离线快照。安装包与验证范围见[桌面候选收据](docs/releases/3.0.0-alpha.21-desktop-candidate.json)；尚未替换下表的公开下载或已安装版本。
+**桌面 alpha.21 已公开**：自有角色、设计补丁 Skill，以及 Windows 更新与加密离线快照。安装包与验收范围见[发布记录](docs/releases/3.0.0-alpha.21.json)，原包与独立验收来源见[候选收据](docs/releases/3.0.0-alpha.21-desktop-candidate.json)。
 
 ![macOS 公开版实际窗口（更名前）](docs/images/macos-immersive.png)
 
@@ -30,7 +30,7 @@
 - **资产工作台**：按账号归档下载与导入文件，支持搜索、分类、收藏、标签、派生关系和可恢复回收站。
 - **预览与转换**：查看图片、PDF、HTML、Markdown、文本、CSV 及支持的音视频；更多专用格式可交给系统应用。转换生成新副本，保留原文件。
 - **任务流**：选择文件、目标账号与 Skill，通过网页发起处理任务；保留进度、失败位置及结果不确定状态，不自动重复发送。
-- **能力库**：公开版内置 120 个项目任务 Skill，包含步骤、交付结构与质量检查；alpha.21 桌面候选扩展为 121 个 Skill、32 个自有角色，其中 24 个互联网相关角色优先展示。
+- **能力库**：桌面内置 121 个 Skill、32 个自有角色，其中 24 个互联网相关角色优先展示；Android 保持 120 个任务 Skill。包含步骤、交付结构与检查，角色可单用或与 Skill、附件组合。
 - **本地恢复**：保存账号、标签、草稿、阅读位置与工作台状态；macOS 另提供加密的只读对话快照及确认更新。
 
 ChatGPT Studio 是独立维护的非官方客户端，不附带 ChatGPT 订阅权益。模型和网页功能由当前登录账号及 ChatGPT 服务决定；浏览器空间隔离不等于网络代理或完整指纹隔离。
@@ -66,8 +66,8 @@ flowchart LR
 
 | 平台 | 版本 | 下载 | 要求 |
 | --- | --- | --- | --- |
-| macOS · Apple Silicon | 3.0.0-alpha.20 | [DMG](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.20/ChatGPT-Studio-3.0.0-alpha.20-mac-arm64.dmg) · [ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.20/ChatGPT-Studio-3.0.0-alpha.20-mac-arm64.zip) | macOS 13+ |
-| Windows · x64 | 3.0.0-alpha.18 | [EXE](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.18/ChatGPT-Profiles-3.0.0-alpha.18-windows-x64-setup.exe) · [免安装 ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.18/ChatGPT-Profiles-3.0.0-alpha.18-windows-x64.zip) | Windows 10 / 11 · 64 位 |
+| macOS · Apple Silicon | 3.0.0-alpha.21 | [DMG](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.21/ChatGPT-Studio-3.0.0-alpha.21-mac-arm64.dmg) · [ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.21/ChatGPT-Studio-3.0.0-alpha.21-mac-arm64.zip) | macOS 13+ |
+| Windows · x64 | 3.0.0-alpha.21 | [EXE](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.21/ChatGPT-Studio-3.0.0-alpha.21-windows-x64-setup.exe) · [免安装 ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.21/ChatGPT-Studio-3.0.0-alpha.21-windows-x64.zip) | Windows 10 / 11 · 64 位 |
 | Android · 手机 / 平板 | 3.0.0-alpha.19 | [APK](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.19/ChatGPT-Studio-3.0.0-alpha.19-android.apk) | Android 9+，WebView 支持多档案 |
 
 **macOS**：打开 DMG，将应用拖入“应用程序”。当前为 ad-hoc 签名，尚未经过 Apple 公证；首次启动被系统阻止时，核对来源和摘要后参阅 [Apple 安装说明](https://support.apple.com/zh-cn/102445)。
@@ -90,7 +90,7 @@ Android 的 Studio 文件名对应 [SHA256SUMS-studio.txt](https://github.com/Fo
 
 Android 默认进入网页，顶部仅保留账号、标签和更多；按需展开可搜索的标签清单，支持重命名、固定、排序、关闭和最近关闭恢复。主页移除浏览器式底栏，普通菜单移除开发诊断。App 前台切换已载入页面会复用同一网页、草稿、滚动和生成上下文，无需开启后台服务；窗口重建保留原页面，进程终止后需加载一次再恢复已保存草稿与阅读位置。Mac 安装包、兼容更新与签名见[alpha.20 发布索引](docs/releases/3.0.0-alpha.20.json)，Windows 见[alpha.18 发布索引](docs/releases/3.0.0-alpha.18.json)，Android 见[alpha.19 记录](docs/releases/3.0.0-alpha.19-android.json)。
 
-Mac 从 alpha.12 起支持启动与每天上海时间 12:00 检查更新，确认后后台下载、校验完整 ZIP，可选择立即、下次退出或应用空闲时安装。原生程序更新需要重启，暂不支持增量更新；Windows / Android 当前手动升级。
+Mac 从 alpha.12 起支持启动与每天上海时间 12:00 检查更新，确认后后台下载、校验完整 ZIP，可选择立即、下次退出或应用空闲时安装。Windows alpha.21 当前用户 EXE 安装同样支持启动与上海中午检查、确认后台下载、退出安装或立即重启；ZIP、共享安装和无法确认的位置提供校验与另存。Windows 空闲安装、差量更新尚未实现，Android 继续手动更新。原生程序更新需要重启。
 
 ## 开始使用
 
@@ -115,8 +115,8 @@ Android 点击底部标签数量打开总览。“更多 → 保活与诊断”�
 | 图片、文档与数据转换 | 支持 | 支持 | 支持，范围见移动端说明 |
 | Skill 与带文件任务 | 支持 | 支持 | 支持，实站兼容仍待验收 |
 | 草稿与阅读位置恢复 | 支持 | 支持 | 支持 |
-| 加密对话快照、离线阅读 | 已公开 | 后续 | 后续 |
-| 确认下载与退出 / 空闲安装 | 已公开 | 后续 | 后续 |
+| 加密对话快照、离线阅读 | 已公开 | alpha.21 已公开 | 后续 |
+| 确认下载与退出 / 空闲安装 | 已公开 | alpha.21 当前用户 EXE；无空闲安装 | 后续 |
 | 每账号语言 / 时区选择 | 支持 | 支持 | 独立 PoC，尚未迁入普通 APK |
 
 图片支持 PNG / JPEG / WebP、SVG 转图片；文档支持 HTML / Markdown 导出 PDF、PDF 选页转图片；数据支持 CSV 与 JSON 互转。具体选项和格式差异见[桌面说明](desktop/README.md)与[Android 说明](android/README.md)。
@@ -204,11 +204,11 @@ cd android
 | 已发布 | Android alpha.19 最小文案统一 | 布局与功能沿用；[发布与线上记录](docs/releases/3.0.0-alpha.19-publication.json) |
 | 已发布 | macOS alpha.20 完整更名与旧版兼容更新 | 应用、系统名称与手动下载统一 Studio，账号目录与加密身份保留；[发布记录](docs/releases/3.0.0-alpha.20.json) |
 | 已发布 | alpha.18 三端包、沉浸式 Android、清晰字号与 Mac 菜单栏 | 下载、官网与 Mac 更新清单同步；[发布与线上验证记录](docs/releases/3.0.0-alpha.18-publication.json) |
-| 开发候选 | Windows 加密离线快照、当前用户 EXE 更新，ZIP 校验与另存 | alpha.21 候选；[验证范围与包](docs/releases/3.0.0-alpha.21-desktop-candidate.json) |
+| 已发布 | Windows 加密离线快照、当前用户 EXE 更新，ZIP 校验与另存 | alpha.21；[验证范围与包](docs/releases/3.0.0-alpha.21-desktop-candidate.json) |
 | 平台迭代 | Android 完整离线快照 | 后续批次 |
 | 环境隔离 | Android 每账号语言 / 时区从独立 PoC 迁入日常客户端 | 路线验证完成，尚未替换普通内核 |
 | 系统集成 | 系统 / Chrome 通行密钥、真实 Touch ID 恢复与稳定签名 | 通行密钥未接入；Touch ID 受证书与实机验收条件限制 |
-| 能力内容 | 自有智能体与设计补丁 Skill | alpha.21 桌面候选含 32 个角色，支持单独使用、组合 Skill、收藏与任务恢复；公开版预置角色仍为 0 |
+| 已发布 | 自有智能体与设计补丁 Skill | alpha.21 桌面含 32 个角色，支持单独使用、组合 Skill、收藏与任务恢复 |
 | 移动网络 | 应用内代理与 VLESS 配置 | 方案阶段，未交付，不提供免费节点 |
 | 新平台 | iPhone / iPad 后续开发；Intel Mac、Linux 与商店发行 | 未纳入当前迭代，暂无对应安装包 |
 | 更新能力 | 差量下载与更细的更新体验 | 未实现；完整原生程序更新仍需重启 |

@@ -124,6 +124,14 @@ test('Studio website renders canonical pages and preserves legacy update feeds',
   await app.evaluate(({BrowserWindow},ua)=>{const w=BrowserWindow.getAllWindows()[0];w.webContents.setUserAgent(ua);w.setContentSize(1440,1000);},userAgent);await page.goto(routedOrigin+'/');
   const remoteFeed=await app.evaluate(async({session},origin)=>{const response=await session.fromPartition('studio-feed-public-check').fetch(origin+'/updates/macos.json',{credentials:'omit',redirect:'error',headers:{Accept:'application/json'}});return{status:response.status,contentType:response.headers.get('content-type'),text:await response.text()};},origin);
   expect(remoteFeed.status).toBe(200);expect(remoteFeed.contentType).toContain('application/json');expect(JSON.parse(remoteFeed.text)).toEqual(feed);
+  const windowsFeed=JSON.parse(readFileSync(path.join(site,'updates/windows/alpha.yml'),'utf8'));
+  expect(windowsFeed.version).toBe(platformVersions.windows);expect(windowsFeed.files).toHaveLength(2);
+  for(const file of windowsFeed.files){const artifact=release.artifacts.find((a:{url:string})=>a.url===file.url);expect(artifact).toBeTruthy();expect(file.sha256).toBe(artifact.sha256);expect(file.size).toBe(artifact.bytes);expect(file.sha512).toBe(artifact.sha512);}
+  const windowsOrigin=new URL(page.url()).origin;
+  const fetchedWindows=await app.evaluate(async({session},base)=>{const response=await session.fromPartition('studio-windows-feed-check').fetch(base+'/updates/windows/alpha.yml',{credentials:'omit',redirect:'error'});return{status:response.status,text:await response.text()};},windowsOrigin);
+  expect(fetchedWindows.status).toBe(200);expect(JSON.parse(fetchedWindows.text)).toEqual(windowsFeed);
+  await expect(page.locator('[data-milestone="desktop-alpha21"]')).toContainText('121');
+  await expect(page.locator('[data-milestone="desktop-alpha21"]')).toContainText('32');
   const licenseOrigin=new URL(page.url()).origin;
   const remoteLicense=await app.evaluate(async({session},base)=>{const response=await session.fromPartition('studio-license-check').fetch(base+'/license.txt',{credentials:'omit',redirect:'error'});return{status:response.status,text:await response.text()};},licenseOrigin);
   expect(remoteLicense.status).toBe(200);expect(remoteLicense.text).toBe(readFileSync(path.join(desktop,'../LICENSE'),'utf8'));

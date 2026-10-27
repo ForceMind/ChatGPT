@@ -34,8 +34,11 @@ jobs:
           import fs from 'node:fs';
           import assert from 'node:assert/strict';
           const p=JSON.parse(fs.readFileSync('desktop/package.json','utf8'));
-          const c=JSON.parse(fs.readFileSync('docs/releases/'+p.version+'-ci.json','utf8'));
-          for(const [key,value] of [['mac_run',c.macos.package.runId],['windows_run',c.windows.runId]]){assert(Number.isSafeInteger(value)&&value>0);fs.appendFileSync(process.env.GITHUB_OUTPUT,key+'='+value+'\n');}
+          const modern=fs.existsSync('docs/releases/'+p.version+'-desktop-candidate.json');
+          const c=JSON.parse(fs.readFileSync('docs/releases/'+p.version+(modern?'-desktop-candidate.json':'-ci.json'),'utf8'));
+          const values=modern?[['mac_run',c.macos.runId],['windows_run',c.windows.packagingRunId],['acceptance_run',c.windows.acceptance.runId]]:[['mac_run',c.macos.package.runId],['windows_run',c.windows.runId]];
+          fs.appendFileSync(process.env.GITHUB_OUTPUT,'desktop_candidate='+modern+'\n');
+          for(const [key,value] of values){assert(Number.isSafeInteger(value)&&value>0);fs.appendFileSync(process.env.GITHUB_OUTPUT,key+'='+value+'\n');}
           NODE
       - uses: actions/download-artifact@v4
         with:
@@ -68,11 +71,23 @@ jobs:
           github-token: ${{ github.token }}
           path: promotion/windows-zip
       - name: Verify frozen inputs and promote without overwriting assets
-        if: ${{ !inputs.inspect_only }}
+        if: ${{ !inputs.inspect_only && steps.settings.outputs.desktop_candidate != 'true' }}
         run: node desktop/scripts/promote-validated-release.mjs
       - name: Inspect existing desktop binaries without Release writes
-        if: inputs.inspect_only
+        if: ${{ inputs.inspect_only && steps.settings.outputs.desktop_candidate != 'true' }}
         run: node desktop/scripts/inspect-release-artifacts.mjs
+      - uses: actions/download-artifact@v4
+        if: steps.settings.outputs.desktop_candidate == 'true'
+        with:
+          name: windows-upgrade-acceptance
+          run-id: ${{ steps.settings.outputs.acceptance_run }}
+          github-token: ${{ github.token }}
+          path: promotion/windows-acceptance
+      - name: Verify desktop-only candidate and promote unchanged bytes
+        if: steps.settings.outputs.desktop_candidate == 'true'
+        env:
+          INSPECT_ONLY: ${{ inputs.inspect_only }}
+        run: node desktop/scripts/publish-desktop-candidate.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

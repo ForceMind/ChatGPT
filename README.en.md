@@ -15,9 +15,9 @@
 
 ChatGPT Studio brings independent ChatGPT account spaces, tabs, downloaded assets, previews, conversions and reviewed file tasks into one application. Launch directly into the website with a white, gray and black interface and no address bar. Each device signs in independently; no OpenAI API key is required.
 
-> Previously named **ChatGPT Profiles**. The current public prereleases are **3.0.0-alpha.20** for macOS, **3.0.0-alpha.18** for Windows and **3.0.0-alpha.19** for Android. Platforms update independently. Legacy filenames, internal identifiers and data locations are retained for upgrade compatibility.
+> Previously named **ChatGPT Profiles**. The current public prereleases are **3.0.0-alpha.21** for macOS, **3.0.0-alpha.21** for Windows and **3.0.0-alpha.19** for Android. Platforms update independently. Legacy filenames, internal identifiers and data locations are retained for upgrade compatibility.
 
-**Development candidate alpha.21** adds original agent roles, a design-patch Skill, Windows updates and encrypted offline snapshots. See the [desktop candidate receipt](docs/releases/3.0.0-alpha.21-desktop-candidate.json) for packages and verification limits. Public downloads and installed applications have not been replaced.
+**Desktop alpha.21 is published:** original agent roles, a design-patch Skill, Windows updates and encrypted offline snapshots. See the [release manifest](docs/releases/3.0.0-alpha.21.json) and [original candidate/acceptance receipt](docs/releases/3.0.0-alpha.21-desktop-candidate.json).
 
 ![Actual historical macOS window, before the rename](docs/images/macos-immersive.png)
 
@@ -28,7 +28,7 @@ ChatGPT Studio brings independent ChatGPT account spaces, tabs, downloaded asset
 - **Local asset library:** account ownership, imports and downloads, categories, search, favorites, tags, derived files and a recoverable trash.
 - **Preview and conversion:** images, PDF, HTML, Markdown, text, CSV and supported media. Specialized formats can open in associated system applications. Conversions create new files and preserve originals.
 - **Reviewed tasks:** select files, a target account and a Skill, then follow preparation, upload, instruction entry, readiness, a single send and confirmation. An uncertain result is not retried automatically.
-- **Capabilities:** public builds include 120 project-authored task Skills with instructions, steps, deliverables and checks. The alpha.21 desktop candidate contains 121 Skills and 32 original roles, with 24 internet-related roles shown first.
+- **Capabilities:** desktop builds include 121 Skills and 32 original roles, with 24 internet-related roles first. Android retains 120 task Skills. Roles support standalone or combined Skill/file tasks, with steps, deliverables and checks.
 - **Local recovery:** saved account/tab state, drafts and reading positions. macOS also provides encrypted read-only conversation snapshots and confirmed updates.
 
 This is an independently maintained, unofficial client. It does not include a ChatGPT subscription. Models and website features depend on the signed-in account and the ChatGPT service. Browser-space isolation does not provide a network proxy or complete fingerprint isolation.
@@ -62,8 +62,8 @@ Devices do not synchronize sign-in credentials. Alternative Android engines rema
 
 | Platform | Version | Downloads | Requirements |
 | --- | --- | --- | --- |
-| macOS · Apple Silicon | 3.0.0-alpha.20 | [DMG](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.20/ChatGPT-Studio-3.0.0-alpha.20-mac-arm64.dmg) · [ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.20/ChatGPT-Studio-3.0.0-alpha.20-mac-arm64.zip) | macOS 13+ |
-| Windows · x64 | 3.0.0-alpha.18 | [EXE](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.18/ChatGPT-Profiles-3.0.0-alpha.18-windows-x64-setup.exe) · [Portable ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.18/ChatGPT-Profiles-3.0.0-alpha.18-windows-x64.zip) | Windows 10/11, 64-bit |
+| macOS · Apple Silicon | 3.0.0-alpha.21 | [DMG](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.21/ChatGPT-Studio-3.0.0-alpha.21-mac-arm64.dmg) · [ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.21/ChatGPT-Studio-3.0.0-alpha.21-mac-arm64.zip) | macOS 13+ |
+| Windows · x64 | 3.0.0-alpha.21 | [EXE](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.21/ChatGPT-Studio-3.0.0-alpha.21-windows-x64-setup.exe) · [Portable ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.21/ChatGPT-Studio-3.0.0-alpha.21-windows-x64.zip) | Windows 10/11, 64-bit |
 | Android · Phone/tablet | 3.0.0-alpha.19 | [APK](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.19/ChatGPT-Studio-3.0.0-alpha.19-android.apk) | Android 9+, WebView with multi-profile support |
 
 **macOS:** open the DMG and drag the app into Applications. Current packages are ad-hoc signed and not notarized. If macOS blocks the first launch, verify the source/checksum and consult [Apple's installation guidance](https://support.apple.com/en-us/102445).
@@ -86,7 +86,7 @@ App-owned desktop UI now uses clearer type and contrast, with 15px body text, 14
 
 Android opens directly into the webpage with account, tabs and more controls. A searchable tab sheet supports pinning, renaming, sorting, closing and restoring recent tabs. Browser-style bottom controls and developer diagnostics are removed from normal menus. Foreground switches reuse the original webpage, draft, scroll and generation context without a background service. Window recreation reuses pages; process termination requires reloading before restoring saved drafts and positions. See the [macOS alpha.20 release manifest](docs/releases/3.0.0-alpha.20.json), [Windows alpha.18 manifest](docs/releases/3.0.0-alpha.18.json) and [Android alpha.19 record](docs/releases/3.0.0-alpha.19-android.json) for exact binaries, sources and signatures.
 
-macOS checks for updates at launch and at noon in Shanghai time. After confirmation it downloads and verifies a complete ZIP. Installation can run immediately, on exit or after the app has been idle under the configured safeguards. Native application updates require a restart; delta updates are not implemented. Windows and Android currently update manually.
+macOS checks for updates at launch and at noon in Shanghai time. After confirmation it downloads and verifies a complete ZIP. Installation can run immediately, on exit or after the app has been idle under the configured safeguards. Native application updates require a restart; delta updates are not implemented. Windows alpha.21 current-user EXE installations check at launch and Shanghai noon, download after confirmation, then install on exit or explicit restart. ZIP/shared/unrecognized installations provide verified saving for manual replacement. Windows idle and delta updates are not implemented. Android still updates manually.
 
 ## Getting started
 
@@ -111,8 +111,8 @@ Closing a macOS window retains pages in the background. A full process exit requ
 | Image, document and data conversion | Available | Available | Available, with platform-specific limits |
 | Skills and file tasks | Available | Available | Available; real-service acceptance pending |
 | Draft and reading-position recovery | Available | Available | Available |
-| Encrypted conversation snapshots/offline reading | Available | Planned | Planned |
-| Confirmed download and exit/idle installation | Available | Planned | Planned |
+| Encrypted conversation snapshots/offline reading | Available | Available in alpha.21 | Planned |
+| Confirmed download and exit/idle installation | Available | alpha.21 current-user EXE; no idle installation | Planned |
 | Per-account language/timezone | Available | Available | Separate PoC; not in the regular APK |
 
 Conversion options include PNG/JPEG/WebP, SVG rasterization, HTML/Markdown to PDF, selected PDF pages to images, and CSV/JSON conversion. Details and limits are documented in the [desktop](desktop/README.md) and [Android](android/README.md) guides.
@@ -189,11 +189,11 @@ Cloudflare Pages uses Direct Upload; a Git push does not deploy the site automat
 | Android alpha.19 tab terminology | Published; layout/runtime retained; [publication/online record](docs/releases/3.0.0-alpha.19-publication.json) |
 | macOS alpha.20 complete Studio naming and legacy updater compatibility | App bundle, OS name and manual downloads use Studio; existing account and encryption identities retained. [Release record](docs/releases/3.0.0-alpha.20.json) |
 | Alpha.18 installers, immersive Android, readable UI and macOS menu bar | Published; [publication/online record](docs/releases/3.0.0-alpha.18-publication.json) |
-| Windows encrypted offline snapshots, current-user EXE updates and verified ZIP saving | alpha.21 candidate; [packages and verification scope](docs/releases/3.0.0-alpha.21-desktop-candidate.json) |
+| Windows encrypted offline snapshots, current-user EXE updates and verified ZIP saving | Published alpha.21; [packages and verification scope](docs/releases/3.0.0-alpha.21-desktop-candidate.json) |
 | Complete Android offline snapshots | Future batch |
 | Android per-account locale/timezone engine migration | Separate PoC; regular engine is unchanged |
 | System/Chrome passkeys, signed Touch ID and stable signing | Not integrated or dependent on unavailable certificates/device acceptance |
-| Original agent presets and design-patch Skill | alpha.21 desktop candidate: 32 roles, role-only or combined Skill tasks, favorites and task recovery. Public builds still have zero presets |
+| Original agent presets and design-patch Skill | Published in desktop alpha.21: 32 roles, standalone/combined tasks, favorites and task recovery |
 | In-app proxy/VLESS | Planning only; no free nodes supplied |
 | iPhone/iPad, Intel Mac, Linux and store distribution | Outside the current iteration; no packages |
 | Delta updates | Not implemented; native updates require restart |

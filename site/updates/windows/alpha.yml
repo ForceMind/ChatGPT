@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "appId": "com.forcemind.chatgpt.profiles",
+  "platform": "win32",
+  "architecture": "x64",
+  "version": "3.0.0-alpha.21",
+  "releaseDate": "2026-10-27T04:07:36Z",
+  "releaseNotes": "alpha.21：121 个 Skill、32 个自有角色（24 个互联网相关优先），加入设计补丁任务；Windows 加密离线快照、确认后台下载与退出安装。当前用户 EXE 可自动更新，免安装 ZIP 提供校验与另存；保留登录和恢复数据。完整 App 更新需要重启，不支持差量或 Windows 空闲安装。",
+  "files": [
+    {
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.21/ChatGPT-Studio-3.0.0-alpha.21-windows-x64-setup.exe",
+      "size": 131340242,
+      "sha256": "6e2a433bc3ff3a61981c5173ce4a1a5b96c1a4263b7e6cbac80682c653fb2999",
+      "sha512": "uW4K8HfY7njeqSIkl8g9i9a05I4GTZwk8KdCu5CNEssmnGR5JC14KXUNz45qot3d6BllGT6cPHkii92NkMDrKQ=="
+    },
+    {
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.21/ChatGPT-Studio-3.0.0-alpha.21-windows-x64.zip",
+      "size": 181273668,
+      "sha256": "f0748d8683a0431f49d32cd2d2c9a95cdfbda95bdb273c20efdfd0ce2e22854d",
+      "sha512": "ChhcgJNgbOQMk/8Khx5aJQRqNP80KB3Im7LXK5vGzdlfqO7ca7CXEtPvdRTLCJUpaomFwVvUFqGKJ01DfSB1Yw=="
+    }
+  ]
+}

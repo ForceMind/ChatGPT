@@ -1,13 +1,13 @@
 {
   "schema": 1,
-  "version": "3.0.0-alpha.20",
-  "publishedAt": "2026-10-26T09:53:58Z",
-  "notes": "macOS alpha.20：应用文件、系统显示名与可执行文件统一 ChatGPT Studio；兼容旧版自动更新并在首次启动迁移应用名称，已有同名应用不覆盖。保留账号目录、登录与加密身份。完整更新仍需重启，当前为临时签名、尚未公证。",
+  "version": "3.0.0-alpha.21",
+  "publishedAt": "2026-10-27T04:07:36Z",
+  "notes": "alpha.21：桌面能力库升级为 121 个 Skill、32 个自有角色，24 个互联网相关优先；新增设计补丁任务，完善角色单用、组合附件、收藏与工作区恢复。保留账号、登录、加密身份及现有退出/空闲安装逻辑；完整更新仍需重启。",
   "files": {
     "arm64": {
-      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.20/ChatGPT-Profiles-3.0.0-alpha.20-mac-arm64.zip",
-      "size": 154597920,
-      "sha256": "416c3b40303f2145e1a4852d0474d7ac99255d10c08b85d1d8dc9ffdb1d6f3cb"
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.21/ChatGPT-Profiles-3.0.0-alpha.21-mac-arm64.zip",
+      "size": 155157008,
+      "sha256": "ce19529eb9d40fe55a6e02bdcced7e40ba20a997ba89226e251b4c84b918d4fa"
     }
   }
 }

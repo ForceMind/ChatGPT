@@ -5,3 +5,10 @@
   Permissions-Policy: camera=(), microphone=(), geolocation=()
   Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'; upgrade-insecure-requests
   Cache-Control: public, max-age=0, must-revalidate
+
+/updates/windows/alpha.yml
+  Content-Type: application/yaml; charset=utf-8
+  Cache-Control: no-store
+
+/updates/macos.json
+  Cache-Control: no-store

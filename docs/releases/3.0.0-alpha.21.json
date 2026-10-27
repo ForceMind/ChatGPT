@@ -1,0 +1,74 @@
+{
+  "version": "3.0.0-alpha.21",
+  "name": "ChatGPT Studio",
+  "sourceCommit": "a5d2169157c5ba241b5a93eb465d61e69bf2cf04",
+  "sourceCommitMeaning": "Validated common implementation snapshot; Release tag and publisher commit include publication-only metadata and unchanged shipping inputs.",
+  "prerelease": true,
+  "publishedAt": "2026-10-27T04:07:36Z",
+  "platforms": [
+    "macOS arm64",
+    "Windows x64"
+  ],
+  "artifacts": [
+    {
+      "file": "ChatGPT-Studio-3.0.0-alpha.21-mac-arm64.dmg",
+      "platform": "macos",
+      "purpose": "installer",
+      "bytes": 155092924,
+      "sha256": "fe8c17d6e91d98e2cc29d2ced6e54ca6e582292bf98395d733ddf9105672dc9c",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.21/ChatGPT-Studio-3.0.0-alpha.21-mac-arm64.dmg"
+    },
+    {
+      "file": "ChatGPT-Studio-3.0.0-alpha.21-mac-arm64.zip",
+      "platform": "macos",
+      "purpose": "installer",
+      "bytes": 155040004,
+      "sha256": "34e0e3b2003038b85d7a834657e4a0e4dbcf42cfd36190350b5b0b182cfac99a",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.21/ChatGPT-Studio-3.0.0-alpha.21-mac-arm64.zip"
+    },
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.21-mac-arm64.zip",
+      "platform": "macos",
+      "purpose": "legacy-updater",
+      "bytes": 155157008,
+      "sha256": "ce19529eb9d40fe55a6e02bdcced7e40ba20a997ba89226e251b4c84b918d4fa",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.21/ChatGPT-Profiles-3.0.0-alpha.21-mac-arm64.zip"
+    },
+    {
+      "file": "ChatGPT-Studio-3.0.0-alpha.21-windows-x64-setup.exe",
+      "bytes": 131340242,
+      "sha256": "6e2a433bc3ff3a61981c5173ce4a1a5b96c1a4263b7e6cbac80682c653fb2999",
+      "sha512": "uW4K8HfY7njeqSIkl8g9i9a05I4GTZwk8KdCu5CNEssmnGR5JC14KXUNz45qot3d6BllGT6cPHkii92NkMDrKQ==",
+      "platform": "windows",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.21/ChatGPT-Studio-3.0.0-alpha.21-windows-x64-setup.exe"
+    },
+    {
+      "file": "ChatGPT-Studio-3.0.0-alpha.21-windows-x64.zip",
+      "bytes": 181273668,
+      "sha256": "f0748d8683a0431f49d32cd2d2c9a95cdfbda95bdb273c20efdfd0ce2e22854d",
+      "sha512": "ChhcgJNgbOQMk/8Khx5aJQRqNP80KB3Im7LXK5vGzdlfqO7ca7CXEtPvdRTLCJUpaomFwVvUFqGKJ01DfSB1Yw==",
+      "platform": "windows",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.21/ChatGPT-Studio-3.0.0-alpha.21-windows-x64.zip"
+    }
+  ],
+  "binarySourceCommits": {
+    "macos": "f6081c3ba71d614c713aa97b8dfbbbed8cda401c",
+    "windows": "4448cc54695f42a71e7da3c695494242a3932d08"
+  },
+  "runs": {
+    "macos": 40369794145,
+    "windowsPackaging": 40368174471,
+    "windowsAcceptance": 40372832792
+  },
+  "windowsNotes": "alpha.21：121 个 Skill、32 个自有角色（24 个互联网相关优先），加入设计补丁任务；Windows 加密离线快照、确认后台下载与退出安装。当前用户 EXE 可自动更新，免安装 ZIP 提供校验与另存；保留登录和恢复数据。完整 App 更新需要重启，不支持差量或 Windows 空闲安装。",
+  "macosNotes": "alpha.21：桌面能力库升级为 121 个 Skill、32 个自有角色，24 个互联网相关优先；新增设计补丁任务，完善角色单用、组合附件、收藏与工作区恢复。保留账号、登录、加密身份及现有退出/空闲安装逻辑；完整更新仍需重启。",
+  "candidateReceipt": "docs/releases/3.0.0-alpha.21-desktop-candidate.json",
+  "validation": "Original Actions binaries, separate successful Windows unchanged-byte/native acceptance, no rebuild or personal data.",
+  "manualAcceptancePending": [
+    "Isolated Electron/loopback handoff acceptance, not live authenticated ChatGPT sending.",
+    "Windows native CI is Windows 2025 x64; physical Windows 10/11 and personal account upgrades are not verified.",
+    "Windows uses complete installer downloads; no idle installation, portable auto-replacement or delta updates.",
+    "macOS ad-hoc signing and Windows unsigned packages remain; signed Touch ID/passkey acceptance is outside this batch."
+  ],
+  "androidUnchanged": "3.0.0-alpha.19"
+}

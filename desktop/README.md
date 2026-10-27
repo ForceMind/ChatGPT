@@ -2,7 +2,7 @@
 
 项目已更名为 **ChatGPT Studio**。macOS alpha.20 统一应用文件、系统名称和可执行文件；旧版专用更新 ZIP 保留兼容根目录，升级首次启动时迁移为 Studio.app，同名冲突不覆盖。内部存储名、应用标识、加密身份和数据目录保持不变。
 
-当前公开预发布版：macOS `3.0.0-alpha.20`，Windows `3.0.0-alpha.18`。提供 macOS Apple Silicon 的 DMG / ZIP、Windows x64 的 EXE / ZIP；历史安装包保留。Electron `44.9.1`、React `19.3.1`、TypeScript。各设备独立使用，本版不需要自建服务。
+当前公开预发布版：macOS / Windows `3.0.0-alpha.21`。提供 macOS Apple Silicon 的 DMG / ZIP、Windows x64 的 EXE / ZIP；历史安装包保留。Electron `44.9.1`、React `19.3.1`、TypeScript。各设备独立使用，本版不需要自建服务。
 
 下载见[GitHub Release](https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.17)。当前 `main` 包含工作台、恢复、新图标与跨平台源码。真正退出后需要重新加载网页并恢复保存状态；macOS alpha.12 先显示本地只读快照，具体范围见下文。
 
@@ -100,7 +100,7 @@ npm start
 
 - 下载归档：当前账号的网页下载直接进入资产库，保存来源标签/对话、大小和 SHA-256。通过「导入」或拖入本机文件添加已有素材，导入保留原文件。
 - 整理与预览：按类别/名称查找，网格或列表查看；支持重命名、标签、收藏、可恢复回收站、Finder 定位、另存为。图片、HTML、PDF、Markdown、文本、CSV 可在 App 内预览。HTML 脚本在独立沙箱运行，不能访问账号存储、管理接口或外部网络；依赖在线 CDN 的网页可能缺少资源。
-- 能力库：120 个项目任务 Skill，包含完整步骤、交付结构、检查与示例。智能体库界面保留，当前没有预置角色。
+- 能力库：alpha.21 桌面包含 121 个项目任务 Skill、32 个自有角色，其中 24 个互联网相关角色优先。角色可单用或组合 Skill / 文件，定义包含步骤、交付结构与检查。
 - 本地转换：PNG/JPEG/WebP、SVG→图片、HTML→PDF/PNG、Markdown→HTML/PDF、CSV↔JSON、PDF 选页→图片。转换生成原账号的新副本，保留原件和派生关系；部分格式有宽度、质量与页码选项。CSV 保留文本值，JSON→CSV 转义公式前缀。
 - 交给 GPT：选中文件，选择目标账号、Skill、可选角色与要求，点击「新建对话并发送」。跨账号带文件需要明确勾选确认；本版最多 20 个文件，单文件 100 MB、合计 200 MB。HTML/SVG/代码使用 `.txt` 附件名保留内容，界面展示名称映射。通过正常网页上传和发送，不使用私有接口，也无需 API Key。
 - 任务记录：来源与目标账号固定，等待网页确认附件后才填入要求、发送一次。已发送表示网页出现本次用户消息，不代表模型已完成；模型产物仍在对应对话下载。发送结果不确定或应用中断后不会自动重试，可打开目标对话检查。
@@ -187,15 +187,15 @@ alpha.6 的 [Windows 构建与安装验收](https://github.com/ForceMind/ChatGPT
 
 上述为历史验收记录；本地构建缓存已清理。当前 Windows 公开包及摘要见 [alpha.18 Release](https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.18)，历史附件保留。
 
-## alpha.21 开发候选
+## alpha.21 桌面版
 
-此批尚未替换官网公开版本，候选安装包在 GitHub Actions 中验证与保留。
+本批原包已发布到 [alpha.21 Release](https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.21)，由 Actions 构建与验证，未重打包。
 
 - 桌面能力库包含 121 个 Skill、32 个自有专业角色，其中 24 个互联网相关角色优先展示。角色可单独使用或搭配 Skill 与附件，仍由用户确认目标账号与发送；恢复任务记录不会重发状态不明的消息。设计补丁 Skill 根据实际项目、当前哈希及节点生成最小补丁，回原工作台审核后应用。
 - Windows 支持加密的只读对话快照；退出后离线重开可阅读已保存内容，重连后再恢复草稿与阅读位置。登录、验证码与临时聊天不采集，上传与模型生成不能跨进程继续。
 - Windows x64 当前用户的 EXE 安装版启动及上海时间中午检查更新；确认后后台下载，校验 SHA-512、SHA-256、大小、产品及版本。准备完成后可保存并立即重启安装，或下次退出时安装；系统关机 / 注销时延后。此批未加入 Windows 空闲安装与差量更新。
 - 免安装 ZIP、共享安装及无法确认当前用户安装位置的程序提供检查、下载、校验和另存入口；退出后手动替换程序文件，不自动改写解压目录。两种更新均保留 `%APPDATA%\ChatGPT Profiles\`，不会迁移登录与加密身份。
-- 更新清单使用官网独立的 `/updates/windows/alpha.yml`，由 CI 的同一组 EXE / ZIP 字节生成两种摘要；公开版本晋级前不部署候选清单。历史 alpha.18 没有该更新器，需先手动安装包含此功能的新版本。
+- 更新清单使用官网独立的 `/updates/windows/alpha.yml`，由 CI 的同一组 EXE / ZIP 字节生成两种摘要；公开发布后同步官网版本清单。历史 alpha.18 没有该更新器，需先手动安装包含此功能的新版本。
 
 候选下载保留在 Actions，可能需要登录 GitHub：[Mac DMG](https://github.com/ForceMind/ChatGPT/actions/runs/40369794145/artifacts/12671414395) · [Mac ZIP 工件](https://github.com/ForceMind/ChatGPT/actions/runs/40369794145/artifacts/12671494023) · [Windows EXE](https://github.com/ForceMind/ChatGPT/actions/runs/40368174471/artifacts/12672260789) · [Windows ZIP](https://github.com/ForceMind/ChatGPT/actions/runs/40368174471/artifacts/12671966554)。Mac ZIP 工件同时保留兼容更新包，手动安装选择名称为 ChatGPT-Studio 的 ZIP。
 
