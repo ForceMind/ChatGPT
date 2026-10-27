@@ -2,6 +2,7 @@ package com.forcemind.chatgpt.profiles;
 
 import android.net.Uri;
 import android.os.SystemClock;
+import android.view.inputmethod.InputConnection;
 import android.webkit.*;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -65,7 +66,18 @@ final class HandoffController {
     }
     private boolean filesReady(JSONObject state){if(state.optBoolean("busy")||state.optBoolean("error")||state.optInt("removers")!=names.size())return false;JSONArray actual=state.optJSONArray("attachments");for(String name:names){boolean found=false;if(actual!=null)for(int i=0;i<actual.length();i++)if(actual.optString(i).contains(name))found=true;if(!found)return false;}return true;}
     private void attachments(){if(SystemClock.elapsedRealtime()>deadline){fail("未能确认全部附件上传完成，请检查目标标签页");return;}evaluate("state",false,state->{if(state.optBoolean("error")){fail("网页提示附件错误，未发送消息");return;}stable=chooserUsed&&filesReady(state)?stable+1:0;if(stable>=3)evaluate("restore",null,ignored->draft());else later(this::attachments);});}
-    private void draft(){update("drafting","附件已确认，正在准备处理要求",()->evaluate("focus",null,ignored->{if(!WebInputs.insert(page.web,prompt)){fail("未能写入网页输入框，未发送消息");return;}deadline=SystemClock.elapsedRealtime()+15000;draftReady();}));}
+    private void draft(){update("drafting",names.isEmpty()?"正在准备处理要求":"附件已确认，正在准备处理要求",()->evaluate("focus",null,ignored->{deadline=SystemClock.elapsedRealtime()+5000;later(this::insertPrompt);}));}
+    private void insertPrompt(){
+        if(SystemClock.elapsedRealtime()>deadline){fail("网页输入框尚未就绪，未发送消息");return;}
+        evaluate("state",false,state->{
+            if(!state.optBoolean("fresh")||!state.optBoolean("focused")||!normal(state.optString("text")).isEmpty()||state.optInt("messages")!=0||state.optBoolean("generating")||!filesReady(state)){fail("目标输入框或网页内容已改变，未发送消息");return;}
+            InputConnection input=WebInputs.readyEditor(page.web);if(input==null){later(this::insertPrompt);return;}
+            // A missing connection can be polled safely; once commitText is called,
+            // do not repeat it even if the platform cannot confirm acceptance.
+            if(!input.commitText(prompt,1)){fail("无法确认输入框接收处理要求，已停止，未发送消息");return;}
+            deadline=SystemClock.elapsedRealtime()+15000;draftReady();
+        });
+    }
     private void draftReady(){if(SystemClock.elapsedRealtime()>deadline){fail("网页未完整接收任务要求，未发送消息");return;}evaluate("state",false,state->{if(state.optBoolean("error")){fail("网页提示附件或输入错误，未发送消息");return;}if(normal(state.optString("text")).equals(normal(prompt))&&state.optBoolean("send")&&filesReady(state)){send();}else later(this::draftReady);});}
     private void send(){if(sendIssued)return;sendIssued=true;runtime.io.execute(()->{try{HandoffRequest.accounts(runtime.context.getFilesDir(),payload.getJSONObject("request"));AssetLedger source=new AssetLedger(runtime.context.getFilesDir(),job.getString("sourceAccountId"));JSONArray files=job.getJSONArray("files");for(int i=0;i<files.length();i++){JSONObject file=files.getJSONObject(i),current=source.get(file.getString("assetId"));if(current.getBoolean("trashed")||!current.getString("status").equals("ready")||!current.getString("sha256").equals(file.getString("sha256")))throw new IOException();}if(!control.get())throw new IOException();runtime.store.beginSend(id);JSONObject result=runtime.store.get(id);
             runtime.handler.post(()->{if(closed)return;job=result;host.changed(job);if(!valid()){fail("目标账号或页签已改变");return;}try{evaluate("send",new JSONObject().put("prompt",prompt),ignored->{deadline=SystemClock.elapsedRealtime()+25000;acknowledge();});}catch(Exception e){fail("发送结果待确认，请检查目标对话");}});

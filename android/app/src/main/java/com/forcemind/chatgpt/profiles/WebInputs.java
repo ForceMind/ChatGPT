@@ -22,4 +22,9 @@ final class WebInputs {
         if(!web.isShown()||web.getWindowToken()==null)return false;web.requestFocus();
         InputConnection input=web.onCreateInputConnection(new EditorInfo());return input!=null&&input.commitText(text,1);
     }
+    static InputConnection readyEditor(WebView web){
+        if(!web.isShown()||web.getWindowToken()==null||!web.hasWindowFocus())return null;web.requestFocus();
+        EditorInfo editor=new EditorInfo();InputConnection input=web.onCreateInputConnection(editor);
+        return input!=null&&(editor.inputType&android.text.InputType.TYPE_MASK_CLASS)==android.text.InputType.TYPE_CLASS_TEXT?input:null;
+    }
 }
