@@ -46,7 +46,7 @@ jobs:
         working-directory: desktop
         env:
           PLAYWRIGHT_JSON_OUTPUT_FILE: test-results/ui-results.json
-        run: npx playwright test tests/handoff.e2e.ts tests/handoff-richtext.e2e.ts tests/asset-interactions.e2e.ts tests/branding.e2e.ts tests/capability-library.e2e.ts tests/updates.e2e.ts --reporter=list,json
+        run: npx playwright test tests/handoff.e2e.ts tests/handoff-richtext.e2e.ts tests/asset-interactions.e2e.ts tests/branding.e2e.ts tests/capability-library.e2e.ts tests/updates.e2e.ts tests/shell-transitions.e2e.ts tests/workspace.e2e.ts tests/recovery.e2e.ts tests/offline.e2e.ts tests/menu-bar.e2e.ts tests/readability.e2e.ts --reporter=list,json
       - name: Fetch pinned alpha.18 package for real legacy installer acceptance
         env:
           GH_TOKEN: ${{ github.token }}

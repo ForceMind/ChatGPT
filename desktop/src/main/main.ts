@@ -74,6 +74,10 @@ let assetConversions: AssetConversions | undefined;
 const assetDownloads = new Map<string,AssetDownloads>();
 let overlayOpen = false;
 let overlayImage: string | undefined;
+let overlayReady=false,overlaySerial=0;
+let overlayTransition:Snapshot['overlayTransition'];
+const reloadRecoveries=new Map<string,{cancel:()=>void}>();
+function resetOverlay():void{overlayOpen=false;overlayReady=false;overlayImage=undefined;overlayTransition=undefined;overlaySerial++;}
 let quitting = false;
 let commandQueue: Promise<unknown> = Promise.resolve();
 let boundsTimer: ReturnType<typeof setTimeout> | undefined;
@@ -99,7 +103,7 @@ const permissionGrants = new Map<string, Set<string>>();
 const pendingProfiles = new Set<string>();
 const homepage = () => homeURL(fixtureOrigin);
 const activeProfile = () => { const s = store.read(); return s.profiles.find(p => p.id === s.activeProfileId)!; };
-const snapshot = (): Snapshot => ({ ...store.read(), version: APP_VERSION, platform: process.platform, fullScreen: win?.isFullScreen() ?? false, tabStatus: Object.fromEntries(status), testMode, recoveryAccess:recoveryAccess?{...recoveryAccess.status,blocking:!pagesStarted}:undefined, offline:offlinePages.get(activeProfile().activeTabId), update:updates?.status, notice: store.recoveryNotice || assetStore?.recoveryNotice || recoveryError, overlayImage, panel, assetError });
+const snapshot = (): Snapshot => ({ ...store.read(), version: APP_VERSION, platform: process.platform, fullScreen: win?.isFullScreen() ?? false, tabStatus: Object.fromEntries(status), testMode, recoveryAccess:recoveryAccess?{...recoveryAccess.status,blocking:!pagesStarted}:undefined, offline:offlinePages.get(activeProfile().activeTabId), update:updates?.status, notice: store.recoveryNotice || assetStore?.recoveryNotice || recoveryError, overlayImage, overlayTransition, panel, assetError });
 function publish():void{if(publishTimer)return;publishTimer=setTimeout(()=>{publishTimer=undefined;menuBar?.refresh();if(win&&!win.isDestroyed())win.webContents.send('profiles:state',snapshot());},25);publishTimer.unref();}
 function notice(message: string): void { if (win && !win.isDestroyed()) win.webContents.send('profiles:shortcut', `notice:${message}`); }
 function report(error: unknown): void { notice(error instanceof Error ? error.message : '操作失败，请重试。'); }
@@ -131,7 +135,7 @@ function activeContents(): WebContents | undefined { return views.get(activeProf
 function layout():void {
  if(!win||win.isDestroyed())return;const[width,height]=win.getContentSize(),s=store.read(),p=s.profiles.find(p=>p.id===s.activeProfileId)!;
  const viewHeight=Math.max(1,height-SHELL_HEIGHT),viewWidth=Math.max(1,width);
- for(const[id,view]of views){const nextVisible=!overlayOpen&&!panel&&id===p.activeTabId&&!offlinePages.has(id)&&!status.get(id)?.error,previous=viewLayout.get(id);
+ for(const[id,view]of views){const nextVisible=!(overlayOpen&&overlayReady)&&!panel&&id===p.activeTabId&&!offlinePages.has(id)&&!status.get(id)?.error,previous=viewLayout.get(id);
   if(!previous||previous.width!==viewWidth||previous.height!==viewHeight)view.setBounds({x:0,y:SHELL_HEIGHT,width:viewWidth,height:viewHeight});
   if(!previous||previous.visible!==nextVisible)view.setVisible(nextVisible);
   viewLayout.set(id,{width:viewWidth,height:viewHeight,visible:nextVisible});
@@ -167,11 +171,11 @@ async function checkpointWorkspace():Promise<void>{
  if(win&&!win.isDestroyed())await deadline(win.webContents.executeJavaScript(`(async()=>{const detail={pending:[]};window.dispatchEvent(new CustomEvent('profiles:checkpoint',{detail}));await Promise.all(detail.pending);})()`),2000);
  const ids=[...views.keys()];for(let i=0;i<ids.length;i+=2)await Promise.all(ids.slice(i,i+2).map(id=>checkpointTab(id,true)));await recovery?.idle();
 }
-async function restoreTab(tab:Tab,contents:WebContents):Promise<void>{
- if(!recovery)return;let saved:PageResume|undefined;
- try{const record=await recovery.load(tab.profileId,tab.id,contents.getURL());if(!record||pendingProfiles.has(tab.profileId))return;saved=record;
+async function restoreTab(tab:Tab,contents:WebContents,available:()=>boolean=()=>true):Promise<void>{
+ if(!recovery||!available())return;let saved:PageResume|undefined;
+ try{const record=await recovery.load(tab.profileId,tab.id,contents.getURL());if(!record||!available()||pendingProfiles.has(tab.profileId))return;saved=record;
   if(record.alternativeDraft)localDrafts.set(tab.id,{...record,draft:record.alternativeDraft,alternativeDraft:undefined});
-  for(let i=0;i<60;i++){if(contents.isDestroyed()||resumeURL(contents.getURL(),fixtureOrigin)!==record.url)return;const outcome=await applyResume(contents,record,fixtureOrigin,i===59);
+  for(let i=0;i<60;i++){if(!available()||contents.isDestroyed()||resumeURL(contents.getURL(),fixtureOrigin)!==record.url)return;const outcome=await applyResume(contents,record,fixtureOrigin,i===59);if(!available())return;
    if(outcome==='cancelled'){if(record.draft)localDrafts.set(tab.id,record);return;}
    if(outcome==='conflict'){localDrafts.set(tab.id,record);notice('网页已有草稿，已保留。可从「文件 → 查看本地恢复草稿」取回本地版本。');return;}
    if(outcome!=='waiting')return;await new Promise(r=>setTimeout(r,250));
@@ -349,6 +353,7 @@ function showActive(focus = true): void {
   const view = ensureView(t); layout(); if (focus && !overlayOpen && !panel) view.webContents.focus(); publish();
 }
 function destroyView(id: string): void {
+  reloadRecoveries.get(id)?.cancel();
   const view = views.get(id);recentClosed.forget(id);views.delete(id);status.delete(id);viewLayout.delete(id);pageReady.delete(id);offlinePages.delete(id);restoringPages.delete(id);
   if (view) { if (win && !win.isDestroyed()) win.contentView.removeChildView(view); if (!view.webContents.isDestroyed()) view.webContents.close({ waitForBeforeUnload: false }); }
 }
@@ -359,7 +364,7 @@ function createHandoffTab(profileId:string):{tabId:string;contents:WebContents}{
 function revealHandoff(job:HandoffJob):void {
   const p=profileById(job.request.targetProfileId);const tab=store.read().tabs.find(t=>t.id===job.tabId&&t.profileId===p.id);
   if(!tab)throw Error('目标标签页已关闭。可从该账号的 ChatGPT 历史记录查找已发送的对话。');
-  assetRuntime?.revoke();panel=undefined;overlayOpen=false;overlayImage=undefined;store.commit(s=>{s.activeProfileId=p.id;s.profiles.find(x=>x.id===p.id)!.activeTabId=tab.id;});showActive();
+  assetRuntime?.revoke();panel=undefined;resetOverlay();store.commit(s=>{s.activeProfileId=p.id;s.profiles.find(x=>x.id===p.id)!.activeTabId=tab.id;});showActive();
 }
 function createTab(profileId: string, url = homepage()): void {
   profileById(profileId);
@@ -392,14 +397,34 @@ async function clearProfile(id: string, remove: boolean): Promise<void> {
     notice(remove ? `已移除 ${p.name}` : `${p.name} 的本机登录数据已清除`);
   } finally {pendingProfiles.delete(id);if(id===store.read().activeProfileId){panel=undefined;savePanel();}showActive(false);}
 }
+async function forceReloadTab(id:string):Promise<void>{
+ const tab=store.read().tabs.find(t=>t.id===id&&t.profileId===activeProfile().id);if(!tab)throw Error('标签不属于当前账号');
+ await checkpointTab(id);reloadRecoveries.get(id)?.cancel();
+ const contents=views.get(id)?.webContents;
+ if(!contents||contents.isDestroyed()||contents.isCrashed()||!isWebURL(contents.getURL())){destroyView(id);ensureView(tab);layout();return;}
+ const current=():boolean=>reloadRecoveries.get(id)===task&&views.get(id)?.webContents===contents&&!pendingProfiles.has(tab.profileId)&&store.read().tabs.some(t=>t.id===id&&t.profileId===tab.profileId);
+ const cleanup=():void=>{clearTimeout(timer);contents.removeListener('did-finish-load',finished);contents.removeListener('did-fail-load',failed);contents.removeListener('destroyed',cleanup);contents.removeListener('render-process-gone',cleanup);if(reloadRecoveries.get(id)===task){reloadRecoveries.delete(id);restoringPages.delete(id);}};
+ const task={cancel:cleanup};
+ const finished=():void=>{void(async()=>{
+  try{if(!current())return;await restoreTab(tab,contents,current);if(!current())return;
+   const usable=await contents.executeJavaScript(`!!document.querySelector('[data-message-id],[data-message-author-role],#prompt-textarea,input[type="password"]')`);
+   if(current()&&(usable||resumeURL(contents.getURL(),fixtureOrigin)!==resumeURL(tab.url,fixtureOrigin))){offlinePages.delete(id);layout();publish();}
+   if(current()&&id===activeProfile().activeTabId&&!overlayOpen&&!panel)contents.focus();
+  }catch(error){if(current())report(error);}finally{cleanup();}
+ })();};
+ const failed=(_event:unknown,code:number,_description:string,_url:string,mainFrame:boolean)=>{if(mainFrame&&code!==-3)cleanup();};
+ const timer=setTimeout(cleanup,20000);timer.unref();reloadRecoveries.set(id,task);restoringPages.add(id);
+ contents.once('did-finish-load',finished);contents.on('did-fail-load',failed);contents.once('destroyed',cleanup);contents.once('render-process-gone',cleanup);
+ try{contents.reloadIgnoringCache();}catch(error){cleanup();throw error;}
+}
 function validateCommand(value: unknown): asserts value is Command {
   if (!value || typeof value !== 'object') throw new Error('无效操作');
   const c = value as Record<string, unknown>;
   if (typeof c.type !== 'string') throw new Error('无效操作');
   if(['recovery:authorize','recovery:defer','recovery:settings'].includes(c.type)){if(process.platform!=='darwin')throw Error('此恢复授权入口仅用于 macOS');return;}
-  const known = ['profile:add','profile:edit','profile:activate','profile:remove','profile:clear','profile:move','tab:new','tab:activate','tab:close','tab:pin','tab:menu','tab:reorder','tab:restore','back','forward','reload','home','fullscreen','maximize','external','overlay','panel','offline:live','offline:retry','update:check','update:save','update:idle'];
+  const known = ['profile:add','profile:edit','profile:activate','profile:remove','profile:clear','profile:move','tab:new','tab:activate','tab:close','tab:pin','tab:menu','tab:reload','tab:reorder','tab:restore','back','forward','reload','home','fullscreen','maximize','external','overlay','overlay:ready','panel','offline:live','offline:retry','update:check','update:save','update:idle'];
   if (!known.includes(c.type)) throw new Error('未知操作');
-  if (['profile:edit','profile:activate','profile:remove','profile:clear','profile:move','tab:activate','tab:close','tab:pin','tab:menu'].includes(c.type) && (typeof c.id !== 'string' || !/^[a-f0-9-]{36}$/.test(c.id))) throw new Error('无效标识');
+  if (['profile:edit','profile:activate','profile:remove','profile:clear','profile:move','tab:activate','tab:close','tab:pin','tab:menu','tab:reload'].includes(c.type) && (typeof c.id !== 'string' || !/^[a-f0-9-]{36}$/.test(c.id))) throw new Error('无效标识');
   if (['profile:add','profile:edit'].includes(c.type) && (!validLabel(c.name,40,true) || !validLabel(c.email,120) || !(COLORS as readonly unknown[]).includes(c.color))) throw new Error('请填写 1–40 字账号名称、有效备注与颜色。');
   if(['profile:add','profile:edit'].includes(c.type)&&((c.language!==undefined&&!validBrowserLanguage(c.language))||(c.timeZone!==undefined&&!validTimeZone(c.timeZone))))throw Error('请选择有效浏览器语言与 IANA 时区。');
   if (c.type === 'profile:move' && c.direction !== -1 && c.direction !== 1) throw new Error('无效排序');
@@ -407,10 +432,11 @@ function validateCommand(value: unknown): asserts value is Command {
   if (c.type === 'tab:reorder' && (!Array.isArray(c.ids) || c.ids.length > MAX_TABS || !c.ids.every(v => typeof v === 'string'))) throw new Error('无效排序');
   if(c.type==='update:idle'&&typeof c.enabled!=='boolean')throw Error('无效更新设置');
   if (c.type === 'overlay' && typeof c.open !== 'boolean') throw new Error('无效窗口状态');
+  if(c.type==='overlay:ready'&&(!Number.isSafeInteger(c.id)||Number(c.id)<1))throw Error('无效绘制序号');
   if (c.type === 'panel' && (!desktopWorkspace||(c.panel!==undefined&&!['assets','skills','agents'].includes(c.panel as string)))) throw new Error('工作台入口无效');
 }
 async function dispatch(c: Command): Promise<void> {
-  recordAppActivity();
+  if(c.type!=='overlay:ready')recordAppActivity();
   if(c.type==='recovery:authorize'){await authorizeRecovery(true);return;}
   if(c.type==='recovery:defer'){if(recoveryChanging)throw Error('授权正在进行，请先完成或取消系统验证');recoveryAccess?.defer();startPages();publish();return;}
   if(c.type==='recovery:settings'){await recoverySettings();return;}
@@ -434,7 +460,7 @@ async function dispatch(c: Command): Promise<void> {
       const tab=store.read().tabs.find(t=>t.id===c.id&&t.profileId===store.read().activeProfileId);
       if(!tab)throw new Error('标签不属于当前账号');
       const run=(command:Command)=>()=>queueCommandInternal(()=>dispatch(command));
-      Menu.buildFromTemplate([{label:tab.pinned?'取消固定标签':'固定标签',click:run({type:'tab:pin',id:tab.id})},{label:'关闭标签页',click:run({type:'tab:close',id:tab.id})},{type:'separator'},{label:'恢复关闭的标签页',click:run({type:'tab:restore'})}]).popup({window:win});break;
+      Menu.buildFromTemplate([{label:'强制刷新标签页',click:run({type:'tab:reload',id:tab.id})},{type:'separator'},{label:tab.pinned?'取消固定标签':'固定标签',click:run({type:'tab:pin',id:tab.id})},{label:'关闭标签页',click:run({type:'tab:close',id:tab.id})},{type:'separator'},{label:'恢复关闭的标签页',click:run({type:'tab:restore'})}]).popup({window:win});break;
     }
     case 'tab:activate': {
       const t = store.read().tabs.find(t => t.id === c.id); if (!t || t.profileId !== activeProfile().id) throw new Error('标签不属于当前账号');
@@ -474,24 +500,34 @@ async function dispatch(c: Command): Promise<void> {
     case 'back': if (activeContents()?.navigationHistory.canGoBack()) activeContents()!.navigationHistory.goBack(); break;
     case 'forward': if (activeContents()?.navigationHistory.canGoForward()) activeContents()!.navigationHistory.goForward(); break;
     case 'reload': { const t = store.read().tabs.find(t => t.id === activeProfile().activeTabId)!; const c = views.get(t.id)?.webContents; if (!c || c.isDestroyed() || c.isCrashed()) { destroyView(t.id); ensureView(t); } else c.reload(); break; }
+    case 'tab:reload': await forceReloadTab(c.id);break;
     case 'home': void activeContents()?.loadURL(homepage()).catch(report); break;
     case 'fullscreen': win?.setFullScreen(!win.isFullScreen()); break;
     case 'maximize': if (win?.isMaximized()) win.unmaximize(); else win?.maximize(); break;
     case 'external': { const url = activeContents()?.getURL(); if (url && isWebURL(url)) await shell.openExternal(url); else notice('当前页面不能在系统浏览器打开'); break; }
-    case 'panel': panel=c.panel;savePanel();overlayOpen=false;overlayImage=undefined;layout();if(panel)win?.webContents.focus();else activeContents()?.focus();break;
+    case 'panel': panel=c.panel;savePanel();resetOverlay();layout();if(panel)win?.webContents.focus();else activeContents()?.focus();break;
     case 'overlay': {
       if(c.open&&!overlayOpen){
-        // Keep the page visible behind local menus. This image stays in memory
-        // and is only sent to the trusted toolbar; it is never saved to disk.
-        const contents=activeContents();overlayImage=undefined;
-        if(contents&&!contents.isDestroyed()&&!contents.isCrashed()){
+        const id=++overlaySerial,owner=win;overlayOpen=true;overlayReady=false;overlayImage=undefined;overlayTransition=undefined;
+        const contents=activeContents();
+        if(viewLayout.get(activeProfile().activeTabId)?.visible&&contents&&!contents.isDestroyed()&&!contents.isCrashed()){
           let timer:ReturnType<typeof setTimeout>|undefined;
           try{const image=await Promise.race([contents.capturePage(),new Promise<undefined>(resolve=>{timer=setTimeout(()=>resolve(undefined),800);})]);
-            if(image&&!image.isEmpty())overlayImage=image.resize({width:Math.min(1600,image.getSize().width)}).toDataURL();
+            if(id===overlaySerial&&image&&!image.isEmpty())overlayImage=image.toDataURL();
           }catch{/* a failed page can still use the account menu */}finally{clearTimeout(timer);}
         }
+        if(id!==overlaySerial||win!==owner||!win||win.isDestroyed())break;
+        overlayTransition={id,phase:'prepare'};
+      }else if(!c.open){
+        overlayOpen=false;overlayReady=false;overlayTransition=overlayImage?{id:++overlaySerial,phase:'release'}:undefined;
       }
-      overlayOpen=c.open;if(!c.open)overlayImage=undefined;layout();if(c.open||panel)win?.webContents.focus();else activeContents()?.focus();break;
+      layout();if(!c.open){if(panel)win?.webContents.focus();else activeContents()?.focus();}break;
+    }
+    case 'overlay:ready': {
+      if(c.id!==overlayTransition?.id)break;
+      if(overlayOpen&&overlayTransition.phase==='prepare'){overlayReady=true;overlayTransition={id:c.id,phase:'visible'};layout();win?.webContents.focus();}
+      else if(!overlayOpen&&overlayTransition.phase==='release'){overlayImage=undefined;overlayTransition=undefined;}
+      break;
     }
   }
   publish();
@@ -612,6 +648,7 @@ function installMenu(): void {
     { label: '编辑', submenu: [{role:'undo',label:'撤销'},{role:'redo',label:'重做'},{type:'separator'},{role:'cut',label:'剪切'},{role:'copy',label:'复制'},{role:'paste',label:'粘贴'},{role:'selectAll',label:'全选'}] },
     { label: '显示', submenu: [
       {id:'reload-page',label:'重新加载网页',accelerator:'CmdOrCtrl+R',click:action({type:'reload'})},
+      {id:'force-reload-page',label:'强制刷新网页（忽略缓存）',accelerator:'CmdOrCtrl+Shift+R',click:()=>action({type:'tab:reload',id:activeProfile().activeTabId})()},
       {label:'后退',accelerator:'CmdOrCtrl+[',click:action({type:'back'})},{label:'前进',accelerator:'CmdOrCtrl+]',click:action({type:'forward'})},
       {label:'返回 ChatGPT 首页',click:action({type:'home'})},{label:'在系统浏览器打开',click:action({type:'external'})},{type:'separator'},
       {id:'toggle-accounts',label:'切换账号',accelerator:'CmdOrCtrl+B',click:()=>win?.webContents.send('profiles:shortcut','toggle-accounts')},
@@ -659,7 +696,7 @@ function createWindow(): void {
   win.on('move',()=>{recordAppActivity();clearTimeout(boundsTimer);boundsTimer=setTimeout(()=>{try{saveBounds();}catch(error){report(error);}},250);});
   win.on('enter-full-screen',()=>{layout();publish();});win.on('leave-full-screen',()=>{layout();publish();});
   win.on('close',event=>{if(desktopWorkspace&&!quitting){recordAppActivity();event.preventDefault();if(process.platform==='win32'){app.quit();return;}try{saveBounds();}catch(error){report(error);}void checkpointWorkspace().catch(report);for(const popup of popups.keys())if(!popup.isDestroyed()&&popup.isVisible()){hiddenPopups.add(popup);popup.hide();}win?.hide();return;}clearTimeout(boundsTimer);try{saveBounds();}catch(error){report(error);} for(const id of [...views.keys()])destroyView(id);for(const popup of popups.keys())if(!popup.isDestroyed())popup.destroy();});
-  win.on('closed',()=>{win=undefined;lastWindowTitle='';clearTimeout(publishTimer);publishTimer=undefined;overlayOpen=false;overlayImage=undefined;panel=undefined;assetRuntime?.revoke();});
+  win.on('closed',()=>{win=undefined;lastWindowTitle='';clearTimeout(publishTimer);publishTimer=undefined;resetOverlay();panel=undefined;assetRuntime?.revoke();});
   win.once('ready-to-show',()=>{if(!backgroundModePending){win?.show();win?.focus();}if(!recoveryAccess)startPages(!backgroundModePending);else if(!backgroundModePending){if(recoveryAccess.status.phase==='ready')startPages();else if(!recoveryAccess.needsConsent)void authorizeRecovery();}const mode=desktopWorkspace&&!backgroundModePending?store.read().windowMode:undefined;if(mode?.maximized)win?.maximize();if(mode?.fullscreen)win?.setFullScreen(true);});
   void win.loadURL('app://shell/index.html').catch(error=>dialog.showErrorBox('界面加载失败',error.message));
 }

@@ -13,19 +13,20 @@ export type Profile = { id: string; name: string; email: string; color: string; 
 export type Tab = { id: string; profileId: string; url: string; title: string; pinned: boolean; loaded?:boolean; closedPosition?:number };
 export type SavedState = { schema: 1; profiles: Profile[]; tabs: Tab[]; activeProfileId: string; sidebarOpen: boolean; windowMode?:{maximized:boolean;fullscreen:boolean}; closedTabs: Tab[]; capabilityFavorites?: string[]; bounds: { width: number; height: number; x?: number; y?: number } };
 export type TabStatus = { loading: boolean; error?: string; canGoBack: boolean; canGoForward: boolean; crashed?: boolean; url?: string };
-export type Snapshot = SavedState & { version: string; platform: string; tabStatus: Record<string, TabStatus>; fullScreen: boolean; testMode: boolean; notice?: string; recoveryAccess?:RecoveryAccessStatus; offline?:PageSnapshot; update?:UpdateStatus; overlayImage?: string; panel?: WorkbenchPanel; assetError?: string };
+export type Snapshot = SavedState & { version: string; platform: string; tabStatus: Record<string, TabStatus>; fullScreen: boolean; testMode: boolean; notice?: string; recoveryAccess?:RecoveryAccessStatus; offline?:PageSnapshot; update?:UpdateStatus; overlayImage?: string; overlayTransition?:{id:number;phase:'prepare'|'visible'|'release'}; panel?: WorkbenchPanel; assetError?: string };
 export type Command =
   | { type: 'profile:add'; name: string; email: string; color: string; language?:string; timeZone?:string }
   | { type: 'profile:edit'; id: string; name: string; email: string; color: string; language?:string; timeZone?:string }
   | { type: 'profile:activate' | 'profile:remove' | 'profile:clear'; id: string }
   | { type: 'profile:move'; id: string; direction: -1 | 1 }
   | { type: 'tab:new'; url?: string }
-  | { type: 'tab:activate' | 'tab:close' | 'tab:pin' | 'tab:menu'; id: string }
+  | { type: 'tab:activate' | 'tab:close' | 'tab:pin' | 'tab:menu' | 'tab:reload'; id: string }
   | { type: 'tab:reorder'; ids: string[] }
   | { type: 'update:check' | 'update:save' | 'offline:live' | 'offline:retry' | 'tab:restore' | 'back' | 'forward' | 'reload' | 'home' | 'fullscreen' | 'maximize' | 'external' }
   | { type:'update:idle';enabled:boolean }
   | { type:'recovery:authorize'|'recovery:defer'|'recovery:settings' }
   | { type: 'overlay'; open: boolean }
+  | { type: 'overlay:ready'; id:number }
   | { type: 'panel'; panel?: WorkbenchPanel };
 export type Reply = { ok: true } | { ok: false; error: string };
 export type Bridge = { snapshot: () => Promise<Snapshot>; command: (command: Command) => Promise<Reply>; subscribe: (handler: (state: Snapshot) => void) => () => void; onShortcut: (handler: (key: string) => void) => () => void; saveWorkbench:(profileId:string,state:WorkbenchViewState,epoch?:number)=>Promise<void>; workbench: WorkbenchAPI; diagnostics: LoginDiagnosticsAPI };

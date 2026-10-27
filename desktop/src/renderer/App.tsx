@@ -19,6 +19,8 @@ function App() {
   const [editor,setEditor] = useState<Editor>();
   const [menuOpen,setMenuOpen] = useState(false);
   const menuRef = useRef(false);
+  const menuRequest=useRef(0);
+  const pagePreview=useRef<HTMLImageElement>(null);
   const accountButton = useRef<HTMLButtonElement>(null);
   const accountMenu = useRef<HTMLDivElement>(null);
   const [toast,setToast] = useState('');
@@ -33,12 +35,22 @@ function App() {
     try { const reply=await window.profiles.command(command);if(!reply.ok){showToast(reply.error);return false;}return true; }
     catch {showToast('无法连接客户端，请重新打开窗口。');return false;}
   },[showToast]);
-  const openEditor = useCallback(async(value:Editor)=>{if(await send({type:'overlay',open:true})){menuRef.current=false;setMenuOpen(false);setFormError('');setEditor(value);}},[send]);
+  const openEditor = useCallback(async(value:Editor)=>{menuRequest.current++;if(await send({type:'overlay',open:true})){menuRef.current=false;setMenuOpen(false);setFormError('');setEditor(value);}},[send]);
   const closeEditor = useCallback(async()=>{setEditor(undefined);setFormError('');await send({type:'overlay',open:false});},[send]);
   const closeDiagnostics=useCallback(async()=>{setDiagnosticsOpen(false);await send({type:'overlay',open:false});},[send]);
-  const openDiagnostics=useCallback(async()=>{if(await send({type:'overlay',open:true})){menuRef.current=false;setMenuOpen(false);setEditor(undefined);setDiagnosticsOpen(true);}},[send]);
-  const closeAccounts = useCallback(async()=>{menuRef.current=false;setMenuOpen(false);await send({type:'overlay',open:false});},[send]);
-  const toggleAccounts = useCallback(async()=>{if(menuRef.current){await closeAccounts();return;}if(await send({type:'overlay',open:true})){setEditor(undefined);menuRef.current=true;setMenuOpen(true);}},[send,closeAccounts]);
+  const openDiagnostics=useCallback(async()=>{menuRequest.current++;if(await send({type:'overlay',open:true})){menuRef.current=false;setMenuOpen(false);setEditor(undefined);setDiagnosticsOpen(true);}},[send]);
+  const closeAccounts = useCallback(async()=>{menuRequest.current++;menuRef.current=false;setMenuOpen(false);await send({type:'overlay',open:false});},[send]);
+  const toggleAccounts = useCallback(async()=>{if(menuRef.current){await closeAccounts();return;}const request=++menuRequest.current;menuRef.current=true;const ok=await send({type:'overlay',open:true});if(request!==menuRequest.current)return;if(ok){setEditor(undefined);setMenuOpen(true);}else menuRef.current=false;},[send,closeAccounts]);
+  useEffect(()=>{
+    const transition=state?.overlayTransition;if(!transition||transition.phase==='visible')return;
+    let cancelled=false,first=0,second=0;
+    void(async()=>{
+      if(transition.phase==='prepare'&&pagePreview.current)await pagePreview.current.decode().catch(()=>{});
+      if(cancelled)return;
+      first=requestAnimationFrame(()=>{second=requestAnimationFrame(()=>{if(!cancelled)void send({type:'overlay:ready',id:transition.id});});});
+    })();
+    return()=>{cancelled=true;cancelAnimationFrame(first);cancelAnimationFrame(second);};
+  },[state?.overlayTransition?.id,state?.overlayTransition?.phase,state?.overlayImage,send]);
   useEffect(()=>{
     if(!menuOpen)return;
     accountMenu.current?.querySelector<HTMLElement>('[aria-checked="true"]')?.focus();
@@ -101,6 +113,7 @@ function App() {
         {tabs.map(t=><div key={t.id} className={`tab ${t.id===tab.id?'active':''} ${t.pinned?'pinned':''}`} draggable onContextMenu={e=>{e.preventDefault();void send({type:'tab:menu',id:t.id});}} onDragStart={()=>{dragged.current=t.id;}} onDragEnd={()=>{dragged.current=undefined;}} onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();const from=dragged.current;if(!from||from===t.id)return;const ids=tabs.map(x=>x.id),index=ids.indexOf(from),target=ids.indexOf(t.id);if(index<0||target<0)return;ids.splice(index,1);ids.splice(target,0,from);void send({type:'tab:reorder',ids});}}>
           <button className="tab-select" role="tab" aria-selected={t.id===tab.id} title={`${profile.name} · ${t.title}`} onClick={()=>void send({type:'tab:activate',id:t.id})}>
             {state.tabStatus[t.id]?.loading?<span className="spinner"/>:<Icon name="chat" size={13}/>}<span>{t.title||'ChatGPT'}</span>{t.pinned&&<Icon name="pin" size={12}/>}</button>
+          {t.id===tab.id&&<button className="tab-refresh" title="强制刷新网页（忽略缓存）" aria-label={`强制刷新标签 ${t.title}`} onClick={()=>void send({type:'tab:reload',id:t.id})}><Icon name="refresh" size={13}/></button>}
           <button className="tab-close" title="关闭标签页" aria-label={`关闭标签 ${t.title}`} onClick={()=>void send({type:'tab:close',id:t.id})}><Icon name="close" size={13}/></button>
         </div>)}
       </div>
@@ -118,7 +131,7 @@ function App() {
           <p className="offline-note">这是本机加密保存的副本。图片保留在最后可见画面中；链接、附件和消息操作需连接原网页后使用。不会自动发送消息。</p>
         </div>
       </div>:status?.error?<div className="page-state" role="alert"><span className="page-state-icon"><Icon name="alert" size={28}/></span><h1>网页暂时无法打开</h1><p>{profile.name} 的账号空间已保留，可以重新加载。</p><code>{status.error}</code><button className="primary" onClick={()=>void send({type:'reload'})}><Icon name="refresh" size={16}/>重新加载</button></div>:<div className="page-state loading-state"><Mark size={38}/><h1>正在打开 ChatGPT</h1><p>{profile.name} · 独立账号空间</p><span className="spinner"/></div>}
-      {(editor||menuOpen||diagnosticsOpen)&&state.overlayImage&&<img className="page-preview" src={state.overlayImage} alt="" aria-hidden="true"/>}
+      {state.overlayTransition&&state.overlayImage&&<img ref={pagePreview} className="page-preview" src={state.overlayImage} alt="" aria-hidden="true"/>}
     </section>
     {desktopWorkspaceEnabled(state.platform)&&!state.recoveryAccess?.blocking&&state.panel&&<Suspense fallback={<div className="workbench-loading" role="status">正在打开工作台…</div>}><Workbench state={state} close={()=>void send({type:'panel'})} panel={panel=>void send({type:'panel',panel})} notice={showToast}/></Suspense>}
     {!state.recoveryAccess?.blocking&&['deferred','error'].includes(state.recoveryAccess?.phase||'')&&<div className="recovery-banner" role="status">旧恢复原件保留，本次草稿暂未保存。<button onClick={()=>void send({type:'recovery:authorize'})}>重新授权</button></div>}
