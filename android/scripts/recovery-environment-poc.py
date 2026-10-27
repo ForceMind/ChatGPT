@@ -49,6 +49,11 @@ def native_events(a):
         except ValueError:pass
     return rows
 
+def saved_account():
+    value=text('exec-out','run-as',PACKAGE,'cat','files/recovery-last-account')
+    if value not in ('A','B','C'):raise RuntimeError('Invalid saved launcher account')
+    return value
+
 def launch(a=None,action=None,index=0,tabs=0,sample=None):
     args=['shell','am','start','-W','-n',COMPONENT]
     if a:args+=['--es','account',a]
@@ -168,8 +173,8 @@ def private_write(name,data):
 
 def observe_restore(case,before):
     global phase
-    phase=case;started=time.monotonic();launch()
-    initial=wait(lambda:(lambda n:n if n.get('tabs') and all(t['restored'] for t in n['tabs']) else None)(native('A')),label='saved launcher account A')
+    phase=case;expected_account=saved_account();started=time.monotonic();launch()
+    initial=wait(lambda:(lambda n:n if n.get('tabs') and all(t['restored'] for t in n['tabs']) else None)(native(expected_account)),label='saved launcher account '+expected_account)
     rows={};readings={}
     for a,t in TABS:
         row=select(a,t);row=wait(lambda:fresh(a,t,case,started,before[a+':'+t]['document']),label=case+' new restored document')
@@ -179,7 +184,7 @@ def observe_restore(case,before):
         readings[a+':'+t]={'standardDraft':row['standard']==markers[a+':'+t],'richDraft':row['rich']==markers[a+':'+t],
                           'readingPosition':abs(row['scrollY']-before[a+':'+t]['scrollY'])<80,'scrollBefore':before[a+':'+t]['scrollY'],'scrollAfter':row['scrollY'],
                           'sameOwnerStorage':row['owner']==before[a+':'+t]['owner'],'newDocument':row['document']!=before[a+':'+t]['document']}
-    return {'launcherSelected':initial['selected'],'expectedSelected':1,'restored':readings,'native':{a:native(a) for a in ('A','B','C')}},rows
+    return {'launcherAccount':initial['account'],'expectedAccount':expected_account,'launcherSelected':initial['selected'],'expectedSelected':1 if expected_account=='A' else 0,'restored':readings,'native':{a:native(a) for a in ('A','B','C')}},rows
 
 def guard():
     devices=[x.split()[0] for x in text('devices').splitlines()[1:] if x.endswith('\tdevice')]
@@ -229,14 +234,14 @@ try:
     report['cases']['forceStop']=restart
 
     print('5/7 Disconnect loopback transport, restore offline, then reconnect',flush=True)
-    stop();phase='offline';text('reverse','--remove','tcp:8765');started=time.monotonic();launch();time.sleep(8)
-    report['cases']['offline']={'native':native('A'),'pageEvents':sum(e['phase']=='offline' for e in events),'httpRequests':sum(e['phase']=='offline' for e in requests),'contentRecovered':any(e['phase']=='offline' and e['page']=='detail' for e in events),'transportRemoved':True}
+    offline_account=saved_account();offline_tab='1' if offline_account=='A' else '0';stop();phase='offline';text('reverse','--remove','tcp:8765');started=time.monotonic();launch();time.sleep(8)
+    report['cases']['offline']={'account':offline_account,'tab':offline_tab,'native':native(offline_account),'pageEvents':sum(e['phase']=='offline' for e in events),'httpRequests':sum(e['phase']=='offline' for e in requests),'contentRecovered':any(e['phase']=='offline' and e['page']=='detail' for e in events),'transportRemoved':True}
     capture('native-offline-restoration')
     root=ET.fromstring((OUT/'native-offline-restoration.xml').read_bytes());labels=' '.join(n.get('text','')+' '+n.get('content-desc','') for n in root.iter('node'))
     report['cases']['offline']['contentRecovered']='合成对话' in labels
     report['cases']['offline']['contentEvidence']='Android accessibility tree plus native-offline-restoration.png; lack of offline network reports alone is not treated as proof.'
-    text('reverse','tcp:8765','tcp:8765');phase='reconnected';launch('A','retry')
-    reconnected=wait(lambda:latest('A','1','reconnected'),label='explicit retry after reconnect');report['cases']['offline']['reconnectedPage']=reconnected['page']
+    text('reverse','tcp:8765','tcp:8765');phase='reconnected';launch(offline_account,'retry')
+    reconnected=wait(lambda:latest(offline_account,offline_tab,'reconnected'),label='explicit retry after reconnect');report['cases']['offline']['reconnectedPage']=reconnected['page']
 
     print('6/7 Existing webpage draft conflict; observe whether native restore overwrites it',flush=True)
     stop();phase='draft-conflict';conflict=True;started=time.monotonic();launch('A')
@@ -246,7 +251,7 @@ try:
     report['cases']['draftConflict']={'serverDraft':current_draft,'previousDraft':markers['A:0'],'observedStandard':row['standard'],'observedRich':row['rich'],
         'standardCurrentPreserved':row['standard']==current_draft,'richCurrentPreserved':row['rich']==current_draft,
         'standardOverwroteCurrent':row['standard']==markers['A:0'],'richOverwroteCurrent':row['rich']==markers['A:0']}
-    capture('native-draft-conflict')
+    select('A','0');capture('native-draft-conflict')
 
     print('7/7 Reject damaged or account-swapped encrypted records; preserve originals',flush=True)
     stop();phase='damaged-record';conflict=False;damaged=bytearray(originals['A-0.bin']);damaged[-1]^=1;private_write('A-0.bin',bytes(damaged));launch('A')
@@ -279,7 +284,8 @@ finally:
     cases=report['cases'];baseline=report.get('baseline',{})
     report['migrationGates']={'measurementsComplete':bool(report.get('experimentComplete')),'sameAccountStorageShared':bool(baseline.get('sameAccountSharedStorage')),'differentAccountStorage':bool(baseline.get('differentAccountStorage')),
         'allCheckpointRequestsAcknowledged':len(checkpoint_receipts)==4 and all(v['flushAcknowledged'] and not v['flushTimedOut'] for v in checkpoint_receipts),'allSwipeSamplesObserved':len(scroll_samples)==4 and all(v['gestureObserved'] for v in scroll_samples.values()),'activityDocumentsRetained':bool(cases.get('activityRecreation',{}).get('sameDocuments')),'activityDraftsRetained':bool(cases.get('activityRecreation',{}).get('draftsUnchanged')),
-        'eightRestoreObservations':len(restored)==8,'savedActiveTabRestored':all(cases.get(k,{}).get('launcherSelected')==1 for k in ('normalClose','forceStop')),
+        'eightRestoreObservations':len(restored)==8,'savedActiveTabRestored':all(cases.get(k,{}).get('launcherSelected')==cases.get(k,{}).get('expectedSelected') and 'expectedSelected' in cases.get(k,{}) for k in ('normalClose','forceStop')),
+        'savedActiveAccountRestored':all(cases.get(k,{}).get('launcherAccount')==cases.get(k,{}).get('expectedAccount') and 'expectedAccount' in cases.get(k,{}) for k in ('normalClose','forceStop')),
         'backAndForwardHistory':cases.get('history',{}).get('backPage')=='start' and cases.get('history',{}).get('forwardPage')=='detail',
         'newProcessAfterForceStop':bool(cases.get('forceStop',{}).get('newProcess')),'standardDraftsRestored':len(restored)==8 and all(r['standardDraft'] for r in restored),
         'dynamicDraftsRestored':len(restored)==8 and all(r['richDraft'] for r in restored),'readingPositionsRestored':len(restored)==8 and all(r['readingPosition'] for r in restored),

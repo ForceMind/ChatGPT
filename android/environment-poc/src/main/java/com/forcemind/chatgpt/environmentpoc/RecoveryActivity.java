@@ -158,11 +158,19 @@ public abstract class RecoveryActivity extends Activity {
         if("back".equals(action))tabs().get(selected.getOrDefault(account(),0)).session.goBack();
         if("forward".equals(action))tabs().get(selected.getOrDefault(account(),0)).session.goForward();
         if("retry".equals(action))tabs().get(selected.getOrDefault(account(),0)).session.reload();
-        if("scrollSample".equals(action))tabs().get(selected.getOrDefault(account(),0)).session.getPanZoomController().scrollTo(ScreenLength.fromPixels(0),ScreenLength.fromPixels(1400));
+        if("scrollSample".equals(action)){Tab targetTab=tabs().get(selected.getOrDefault(account(),0));long started=SystemClock.elapsedRealtime();handler.post(new Runnable(){public void run(){
+            if(!view.hasWindowFocus()){if(SystemClock.elapsedRealtime()-started<10000){handler.postDelayed(this,200);return;}record("scroll-error","Window focus unavailable");return;}
+            if(view.getSession()!=targetTab.session){record("scroll-error","Target session changed");return;}
+            handler.postDelayed(()->{if(view.getSession()==targetTab.session&&view.hasWindowFocus()){targetTab.session.getPanZoomController().scrollTo(ScreenLength.fromPixels(0),ScreenLength.fromPixels(1400));record("scroll-sample-request",targetTab.id);}},500);
+        }});}
         if("input".equals(action)){String sample=intent.getStringExtra("sampleText");String prefix="draft-"+account()+"-"+selected.getOrDefault(account(),0)+"-";if(sample==null||!sample.matches(java.util.regex.Pattern.quote(prefix)+"[a-f0-9]{32}"))throw new IllegalArgumentException("Invalid synthetic input");
-            handler.postDelayed(()->{try{if(!view.hasWindowFocus())throw new IllegalStateException("Editor window is not focused");InputConnection input=view.onCreateInputConnection(new EditorInfo());if(input==null)throw new IllegalStateException("Editor unavailable");Handler inputHandler=input.getHandler();if(inputHandler==null)inputHandler=handler;
+            Tab targetTab=tabs().get(selected.getOrDefault(account(),0));long started=SystemClock.elapsedRealtime();handler.post(new Runnable(){public void run(){try{
+                if(view.getSession()!=targetTab.session)throw new IllegalStateException("Target session changed");
+                if(!view.hasWindowFocus()){if(SystemClock.elapsedRealtime()-started<10000){handler.postDelayed(this,200);return;}throw new IllegalStateException("Editor window focus unavailable");}
+                InputConnection input=view.onCreateInputConnection(new EditorInfo());if(input==null){if(SystemClock.elapsedRealtime()-started<10000){handler.postDelayed(this,200);return;}throw new IllegalStateException("Editor unavailable");}
+                Handler inputHandler=input.getHandler();if(inputHandler==null)inputHandler=handler;
                 inputHandler.post(()->{try{boolean accepted=input.commitText(sample,1);handler.post(()->{try{record(accepted?"input-committed":"input-rejected",digest(sample));}catch(Exception error){record("input-error",error.toString());}});}catch(Exception error){handler.post(()->record("input-error",error.toString()));}});
-            }catch(Exception error){record("input-error",error.toString());}},500);}
+            }catch(Exception error){record("input-error",error.toString());}}});}
         if("hideKeyboard".equals(action))((InputMethodManager)getSystemService(INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(view.getWindowToken(),0);
         handler.postDelayed(()->record("inspected",""),800);
     }catch(Exception error){record("command-error",error.toString());}}
