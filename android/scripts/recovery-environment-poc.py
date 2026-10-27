@@ -21,7 +21,7 @@ COMPONENT=PACKAGE+'/'+PACKAGE+'.RecoveryAActivity'
 OUT=Path(sys.argv[1]);OUT.mkdir(parents=True,exist_ok=True)
 TABS=(('A','0'),('A','1'),('B','0'),('C','0'))
 phase='seed';conflict=False
-events=[];requests=[];submissions=[];gestures=[];lock=threading.Lock()
+events=[];requests=[];submissions=[];gestures=[];scroll_samples={};checkpoint_receipts=[];lock=threading.Lock()
 markers={a+':'+t:'draft-'+a+'-'+t+'-'+uuid.uuid4().hex for a,t in TABS}
 current_draft='server-current-'+uuid.uuid4().hex
 
@@ -137,16 +137,19 @@ def seed(a,t):
     wait(lambda:bool(re.search(r'mInputShown\s*=\s*false',text('shell','dumpsys','input_method',check=False))),10,label='software keyboard hidden before scroll')
     geo=native(a);x=geo['viewX']+geo['viewWidth']//2
     text('shell','input','swipe',str(x),str(geo['viewY']+int(geo['viewHeight']*.82)),str(x),str(geo['viewY']+int(geo['viewHeight']*.25)),'550')
-    row=wait(lambda:(lambda r:r if r and r['scrollY']>250 else None)(latest(a,t,phase)),label='actual page scroll');time.sleep(2);row=latest(a,t,phase)
+    time.sleep(2);row=latest(a,t,phase);gesture_ok=row['scrollY']>250
+    scroll_samples[a+':'+t]={'gestureObserved':gesture_ok,'gestureScrollY':row['scrollY'],'source':'ADB swipe' if gesture_ok else 'Gecko public PanZoomController.scrollTo; gesture gate remains failed'}
+    if not gesture_ok:launch(a,'scrollSample')
+    row=wait(lambda:(lambda r:r if r and r['scrollY']>250 else None)(latest(a,t,phase)),label='actual browser reading position');time.sleep(2);row=latest(a,t,phase)
     return row
 
 def checkpoint(a,close=False):
     old=native(a).get('elapsedMs',-1);launch(a,'quit' if close else 'checkpoint')
     def done():
         rows=[r for r in native_events(a) if r.get('elapsedMs',0)>old]
-        if any(r.get('event')=='checkpoint-timeout' for r in rows):raise RuntimeError('Native session flush did not acknowledge')
-        return next((r for r in reversed(rows) if r.get('event')==('closed' if close else 'checkpoint-ack')),None)
-    return wait(done,20,label='native state flush/close acknowledgement')
+        result=next((r for r in reversed(rows) if r.get('event') in (('closed',) if close else ('checkpoint-ack','checkpoint-timeout'))),None)
+        if result:return {**result,'flushAcknowledged':any(r.get('event')=='checkpoint-ack' for r in rows),'flushTimedOut':any(r.get('event')=='checkpoint-timeout' for r in rows)}
+    receipt=wait(done,20,label='native state flush/close result');checkpoint_receipts.append(receipt);return receipt
 
 def capture(name):
     (OUT/(name+'.png')).write_bytes(adb('exec-out','screencap','-p'))
@@ -222,7 +225,7 @@ try:
     capture('normal-native-restoration')
 
     print('4/7 Real force-stop, no shutdown callback or script-provided restore URL',flush=True)
-    old_pids=stop();restart,restart_rows=observe_restore('force-stop',normal_rows);restart['oldPids']=old_pids;restart['newPid']=str(native('A').get('pid'));restart['newProcess']=restart['newPid'] not in old_pids
+    old_pids=stop();force_reference={key:{**baseline[key],'document':normal_rows[key]['document']} for key in baseline};restart,restart_rows=observe_restore('force-stop',force_reference);restart['oldPids']=old_pids;restart['newPid']=str(native('A').get('pid'));restart['newProcess']=restart['newPid'] not in old_pids
     report['cases']['forceStop']=restart
 
     print('5/7 Disconnect loopback transport, restore offline, then reconnect',flush=True)
@@ -261,6 +264,8 @@ except Exception as error:
     except (OSError,subprocess.SubprocessError) as diagnostic:report['diagnosticFailure']=str(diagnostic)
 finally:
     report['submissions']=submissions;report['noAutomaticSubmission']=not submissions
+    report['scrollSamples']=scroll_samples
+    report['checkpointReceipts']=checkpoint_receipts
     report['systemAfter']={'locale':text('shell','getprop','persist.sys.locale'),'timeZone':text('shell','getprop','persist.sys.timezone')};report['systemUnchanged']=report['systemAfter']==report['systemBefore']
     isolation_errors=[]
     for row in events:
@@ -273,7 +278,7 @@ finally:
     conflicts=report['cases'].get('draftConflict',{});offline=report['cases'].get('offline',{})
     cases=report['cases'];baseline=report.get('baseline',{})
     report['migrationGates']={'measurementsComplete':bool(report.get('experimentComplete')),'sameAccountStorageShared':bool(baseline.get('sameAccountSharedStorage')),'differentAccountStorage':bool(baseline.get('differentAccountStorage')),
-        'activityDocumentsRetained':bool(cases.get('activityRecreation',{}).get('sameDocuments')),'activityDraftsRetained':bool(cases.get('activityRecreation',{}).get('draftsUnchanged')),
+        'allCheckpointRequestsAcknowledged':len(checkpoint_receipts)==4 and all(v['flushAcknowledged'] and not v['flushTimedOut'] for v in checkpoint_receipts),'allSwipeSamplesObserved':len(scroll_samples)==4 and all(v['gestureObserved'] for v in scroll_samples.values()),'activityDocumentsRetained':bool(cases.get('activityRecreation',{}).get('sameDocuments')),'activityDraftsRetained':bool(cases.get('activityRecreation',{}).get('draftsUnchanged')),
         'eightRestoreObservations':len(restored)==8,'savedActiveTabRestored':all(cases.get(k,{}).get('launcherSelected')==1 for k in ('normalClose','forceStop')),
         'backAndForwardHistory':cases.get('history',{}).get('backPage')=='start' and cases.get('history',{}).get('forwardPage')=='detail',
         'newProcessAfterForceStop':bool(cases.get('forceStop',{}).get('newProcess')),'standardDraftsRestored':len(restored)==8 and all(r['standardDraft'] for r in restored),

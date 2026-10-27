@@ -37,6 +37,7 @@ import org.mozilla.geckoview.GeckoRuntimeSettings;
 import org.mozilla.geckoview.GeckoSession;
 import org.mozilla.geckoview.GeckoSessionSettings;
 import org.mozilla.geckoview.GeckoView;
+import org.mozilla.geckoview.ScreenLength;
 
 /** Native-session recovery measurement only; no page script injection or real URLs. */
 public abstract class RecoveryActivity extends Activity {
@@ -45,6 +46,7 @@ public abstract class RecoveryActivity extends Activity {
     private static RecoveryStore store;
     private static final Map<String,List<Tab>> sessions=new HashMap<>();
     private static final Map<String,Integer> selected=new HashMap<>();
+    private static final Map<String,RecoveryActivity> hosts=new HashMap<>();
     private final Handler handler=new Handler(Looper.getMainLooper());
     private GeckoView view;
     private TextView status;
@@ -62,7 +64,7 @@ public abstract class RecoveryActivity extends Activity {
             &&owner.equals(u.getQueryParameter("account"))&&tab.equals(u.getQueryParameter("tab"))&&("start".equals(u.getQueryParameter("page"))||"detail".equals(u.getQueryParameter("page")));
     }
     @Override public void onCreate(Bundle saved){
-        super.onCreate(saved);
+        super.onCreate(saved);hosts.put(account(),this);
         LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setBackgroundColor(Color.WHITE);
         TextView heading=new TextView(this);heading.setText("独立页面恢复验证 · 仅合成数据");heading.setTextColor(Color.BLACK);heading.setPadding(12,24,12,4);root.addView(heading);
         LinearLayout controls=new LinearLayout(this);root.addView(controls);
@@ -95,7 +97,7 @@ public abstract class RecoveryActivity extends Activity {
             JSONObject workspace=store.read(account(),"workspace");int count=workspace==null?getIntent().getIntExtra("tabs",1):workspace.getInt("count");
             if(count<1||count>2)throw new IllegalStateException("Invalid tab count");
             selected.put(account(),workspace==null?0:workspace.getInt("selected"));if(selected.get(account())<0||selected.get(account())>=count)throw new IllegalStateException("Invalid active tab");
-            for(int i=0;i<count;i++){Tab tab=make(i);tabs().add(tab);tab.session.open(runtime);tab.session.setActive(true);
+            for(int i=0;i<count;i++){Tab tab=make(account(),i);tabs().add(tab);tab.session.open(runtime);tab.session.setActive(true);
                 try{
                     JSONObject saved=store.read(account(),tab.id);
                     if(saved!=null){
@@ -111,17 +113,18 @@ public abstract class RecoveryActivity extends Activity {
         }
         show();
     }
-    private Tab make(int index){
-        Tab tab=new Tab(account(),index);
+    private static void recordFor(String owner,String event,String detail){RecoveryActivity host=hosts.get(owner);if(host!=null)host.record(event,detail);}
+    private static Tab make(String owner,int index){
+        Tab tab=new Tab(owner,index);
         tab.session.setNavigationDelegate(new GeckoSession.NavigationDelegate(){
-            @Override public GeckoResult<AllowOrDeny> onLoadRequest(GeckoSession s,LoadRequest r){boolean ok=allowed(r.uri,tab.owner,tab.id);record(ok?"load-allowed":"load-denied",r.uri);return GeckoResult.fromValue(ok?AllowOrDeny.ALLOW:AllowOrDeny.DENY);}
+            @Override public GeckoResult<AllowOrDeny> onLoadRequest(GeckoSession s,LoadRequest r){boolean ok=allowed(r.uri,tab.owner,tab.id);recordFor(tab.owner,ok?"load-allowed":"load-denied",r.uri);return GeckoResult.fromValue(ok?AllowOrDeny.ALLOW:AllowOrDeny.DENY);}
             @Override public GeckoResult<AllowOrDeny> onSubframeLoadRequest(GeckoSession s,LoadRequest r){return GeckoResult.fromValue(AllowOrDeny.DENY);}
-            @Override public void onLocationChange(GeckoSession s,String uri,List<GeckoSession.PermissionDelegate.ContentPermission> permissions,Boolean gesture){tab.location=uri==null?"":uri;record("location",tab.id);}
+            @Override public void onLocationChange(GeckoSession s,String uri,List<GeckoSession.PermissionDelegate.ContentPermission> permissions,Boolean gesture){tab.location=uri==null?"":uri;recordFor(tab.owner,"location",tab.id);}
         });
         tab.session.setContentDelegate(new GeckoSession.ContentDelegate(){
-            @Override public void onTitleChange(GeckoSession s,String title){tab.title=title;record("title",tab.id);}
-            @Override public void onCrash(GeckoSession s){tab.error="content-crash";record("content-crash",tab.id);}
-            @Override public void onKill(GeckoSession s){tab.error="content-kill";record("content-kill",tab.id);}
+            @Override public void onTitleChange(GeckoSession s,String title){tab.title=title;recordFor(tab.owner,"title",tab.id);}
+            @Override public void onCrash(GeckoSession s){tab.error="content-crash";recordFor(tab.owner,"content-crash",tab.id);}
+            @Override public void onKill(GeckoSession s){tab.error="content-kill";recordFor(tab.owner,"content-kill",tab.id);}
         });
         tab.session.setProgressDelegate(new GeckoSession.ProgressDelegate(){
             @Override public void onSessionStateChange(GeckoSession s,GeckoSession.SessionState state){
@@ -131,7 +134,7 @@ public abstract class RecoveryActivity extends Activity {
                     if(state.isEmpty())return;for(GeckoSession.HistoryDelegate.HistoryItem item:state)if(!allowed(item.getUri(),tab.owner,tab.id))return;
                     String serialized=state.toString();store.write(tab.owner,tab.id,new JSONObject().put("state",serialized).put("engine","158.0.20261021001945"));tab.hash=digest(serialized);tab.savedAt=SystemClock.elapsedRealtime();
                 }catch(Exception error){tab.error="save-failed:"+error.getClass().getSimpleName();}
-                record("session-state",tab.id);
+                recordFor(tab.owner,"session-state",tab.id);
             }
         });return tab;
     }
@@ -155,6 +158,7 @@ public abstract class RecoveryActivity extends Activity {
         if("back".equals(action))tabs().get(selected.getOrDefault(account(),0)).session.goBack();
         if("forward".equals(action))tabs().get(selected.getOrDefault(account(),0)).session.goForward();
         if("retry".equals(action))tabs().get(selected.getOrDefault(account(),0)).session.reload();
+        if("scrollSample".equals(action))tabs().get(selected.getOrDefault(account(),0)).session.getPanZoomController().scrollTo(ScreenLength.fromPixels(0),ScreenLength.fromPixels(1400));
         if("input".equals(action)){String sample=intent.getStringExtra("sampleText");String prefix="draft-"+account()+"-"+selected.getOrDefault(account(),0)+"-";if(sample==null||!sample.matches(java.util.regex.Pattern.quote(prefix)+"[a-f0-9]{32}"))throw new IllegalArgumentException("Invalid synthetic input");
             handler.postDelayed(()->{try{if(!view.hasWindowFocus())throw new IllegalStateException("Editor window is not focused");InputConnection input=view.onCreateInputConnection(new EditorInfo());if(input==null)throw new IllegalStateException("Editor unavailable");Handler inputHandler=input.getHandler();if(inputHandler==null)inputHandler=handler;
                 inputHandler.post(()->{try{boolean accepted=input.commitText(sample,1);handler.post(()->{try{record(accepted?"input-committed":"input-rejected",digest(sample));}catch(Exception error){record("input-error",error.toString());}});}catch(Exception error){handler.post(()->record("input-error",error.toString()));}});
@@ -169,7 +173,7 @@ public abstract class RecoveryActivity extends Activity {
         try{AtomicFile last=new AtomicFile(new File(getFilesDir(),"recovery-last-account"));FileOutputStream out=last.startWrite();out.write(account().getBytes(StandardCharsets.US_ASCII));last.finishWrite(out);}catch(Exception error){record("last-account-error",error.toString());}
         record("visible","");handler.postDelayed(()->record("layout",""),500);
     }
-    private void record(String event,String detail){try{
+    private void record(String event,String detail){if(hosts.get(account())!=this)return;try{
         JSONArray tabs=new JSONArray();for(Tab tab:tabs())tabs.put(new JSONObject().put("index",tab.id).put("open",tab.session.isOpen()).put("restored",tab.restored).put("blocked",tab.blocked).put("error",tab.error).put("location",tab.location).put("title",tab.title).put("callbacks",tab.callbacks).put("lastCallback",tab.lastCallback).put("flushRequested",tab.flushRequested).put("savedAt",tab.savedAt).put("stateSha256",tab.hash).put("historyCount",tab.historyCount).put("historyIndex",tab.historyIndex));
         JSONObject row=new JSONObject().put("account",account()).put("pid",android.os.Process.myPid()).put("selected",selected.getOrDefault(account(),0)).put("event",event).put("detail",detail).put("tabs",tabs).put("elapsedMs",SystemClock.elapsedRealtime());
         if(view!=null){int[] xy=new int[2];view.getLocationOnScreen(xy);row.put("viewX",xy[0]).put("viewY",xy[1]).put("viewWidth",view.getWidth()).put("viewHeight",view.getHeight()).put("viewShown",view.isShown()).put("windowFocused",view.hasWindowFocus()).put("viewFocused",view.hasFocus());}
@@ -178,5 +182,6 @@ public abstract class RecoveryActivity extends Activity {
     }catch(Exception error){android.util.Log.e("RecoveryEnvironmentPoC","Evidence failed",error);}}
     @Override protected void onStop(){super.onStop();retain();handler.postDelayed(RecoveryActivity::retain,500);handler.postDelayed(RecoveryActivity::retain,1500);}
     @Override protected void onResume(){super.onResume();if(view!=null){view.requestFocus();if(view.getSession()!=null)view.getSession().setFocused(true);handler.postDelayed(()->record("resumed",""),600);}}
-    @Override protected void onDestroy(){release();super.onDestroy();}
+    @Override public void onWindowFocusChanged(boolean focused){super.onWindowFocusChanged(focused);if(view!=null){if(focused){view.requestFocus();if(view.getSession()!=null)view.getSession().setFocused(true);}record("window-focus",Boolean.toString(focused));}}
+    @Override protected void onDestroy(){release();if(hosts.get(account())==this)hosts.remove(account());super.onDestroy();}
 }
