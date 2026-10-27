@@ -70,6 +70,16 @@ jobs:
           adb kill-server || true
           adb start-server
           avdmanager create avd --force --name recovery-poc --device pixel_6 --package "system-images;android-${RECOVERY_API};google_apis;x86_64"
+          # A real hardware-keyboard configuration keeps software-IME gesture
+          # typing from intercepting the page-scroll acceptance gesture.
+          python3 - <<'PY'
+          from pathlib import Path
+          import os,re
+          p=Path(os.environ['ANDROID_AVD_HOME'])/'recovery-poc.avd/config.ini'
+          text=p.read_text();text=re.sub(r'^hw\.keyboard\s*=.*$', 'hw.keyboard=yes', text, flags=re.M)
+          if not re.search(r'^hw\.keyboard=yes$',text,re.M):text+='\nhw.keyboard=yes\n'
+          p.write_text(text);assert re.search(r'^hw\.keyboard=yes$',p.read_text(),re.M)
+          PY
           "$ANDROID_HOME/emulator/emulator" -avd recovery-poc -memory 4096 -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader -feature -Vulkan > environment-poc/build/recovery-evidence/emulator.log 2>&1 &
           trap 'adb emu kill || true' EXIT
           timeout 180 adb wait-for-device
@@ -81,6 +91,7 @@ jobs:
           assert subprocess.check_output(['adb','shell','getprop','ro.kernel.qemu'],text=True).strip()=='1'
           PY
           adb shell input keyevent 82
+          adb shell settings put secure show_ime_with_hard_keyboard 0
           if [ "$RECOVERY_API" = 28 ]; then
             adb shell am force-stop com.google.android.apps.nexuslauncher
           else

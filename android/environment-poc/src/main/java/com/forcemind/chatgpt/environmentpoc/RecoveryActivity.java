@@ -99,6 +99,7 @@ public abstract class RecoveryActivity extends Activity {
                 try{
                     JSONObject saved=store.read(account(),tab.id);
                     if(saved!=null){
+                        if(!"158.0.20261021001945".equals(saved.optString("engine")))throw new IllegalStateException("Saved engine version mismatch");
                         GeckoSession.SessionState state=GeckoSession.SessionState.fromString(saved.getString("state"));
                         if(state==null||state.isEmpty())throw new IllegalStateException("Empty saved state");
                         for(GeckoSession.HistoryDelegate.HistoryItem item:state)if(!allowed(item.getUri(),account(),tab.id))throw new IllegalStateException("Foreign session history");
@@ -155,7 +156,9 @@ public abstract class RecoveryActivity extends Activity {
         if("forward".equals(action))tabs().get(selected.getOrDefault(account(),0)).session.goForward();
         if("retry".equals(action))tabs().get(selected.getOrDefault(account(),0)).session.reload();
         if("input".equals(action)){String sample=intent.getStringExtra("sampleText");String prefix="draft-"+account()+"-"+selected.getOrDefault(account(),0)+"-";if(sample==null||!sample.matches(java.util.regex.Pattern.quote(prefix)+"[a-f0-9]{32}"))throw new IllegalArgumentException("Invalid synthetic input");
-            handler.postDelayed(()->{try{if(!view.hasWindowFocus())throw new IllegalStateException("Editor window is not focused");InputConnection input=view.onCreateInputConnection(new EditorInfo());if(input==null||!input.commitText(sample,1))throw new IllegalStateException("Editor input rejected");record("input-committed",digest(sample));}catch(Exception error){record("input-error",error.toString());}},500);}
+            handler.postDelayed(()->{try{if(!view.hasWindowFocus())throw new IllegalStateException("Editor window is not focused");InputConnection input=view.onCreateInputConnection(new EditorInfo());if(input==null)throw new IllegalStateException("Editor unavailable");Handler inputHandler=input.getHandler();if(inputHandler==null)inputHandler=handler;
+                inputHandler.post(()->{try{boolean accepted=input.commitText(sample,1);handler.post(()->{try{record(accepted?"input-committed":"input-rejected",digest(sample));}catch(Exception error){record("input-error",error.toString());}});}catch(Exception error){handler.post(()->record("input-error",error.toString()));}});
+            }catch(Exception error){record("input-error",error.toString());}},500);}
         if("hideKeyboard".equals(action))((InputMethodManager)getSystemService(INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(view.getWindowToken(),0);
         handler.postDelayed(()->record("inspected",""),800);
     }catch(Exception error){record("command-error",error.toString());}}
@@ -173,7 +176,7 @@ public abstract class RecoveryActivity extends Activity {
         byte[] bytes=row.toString().getBytes(StandardCharsets.UTF_8);Files.write(new File(getFilesDir(),"recovery-native-"+account()+".json").toPath(),bytes);
         try(FileOutputStream log=new FileOutputStream(new File(getFilesDir(),"recovery-events-"+account()+".jsonl"),true)){log.write(bytes);log.write('\n');}
     }catch(Exception error){android.util.Log.e("RecoveryEnvironmentPoC","Evidence failed",error);}}
-    @Override protected void onStop(){super.onStop();retain();handler.postDelayed(RecoveryActivity::retain,500);}
+    @Override protected void onStop(){super.onStop();retain();handler.postDelayed(RecoveryActivity::retain,500);handler.postDelayed(RecoveryActivity::retain,1500);}
     @Override protected void onResume(){super.onResume();if(view!=null){view.requestFocus();if(view.getSession()!=null)view.getSession().setFocused(true);handler.postDelayed(()->record("resumed",""),600);}}
     @Override protected void onDestroy(){release();super.onDestroy();}
 }
