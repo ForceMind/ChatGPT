@@ -81,7 +81,11 @@ jobs:
           assert subprocess.check_output(['adb','shell','getprop','ro.kernel.qemu'],text=True).strip()=='1'
           PY
           adb shell input keyevent 82
-          adb shell pm disable-user --user 0 com.google.android.apps.nexuslauncher
+          if [ "$RECOVERY_API" = 28 ]; then
+            adb shell am force-stop com.google.android.apps.nexuslauncher
+          else
+            adb shell pm disable-user --user 0 com.google.android.apps.nexuslauncher
+          fi
           adb install environment-poc/build/outputs/apk/debug/environment-poc-x86_64-debug.apk
           timeout 900 python3 -u scripts/recovery-environment-poc.py environment-poc/build/recovery-evidence
       - name: Record measurement status

@@ -21,7 +21,7 @@ COMPONENT=PACKAGE+'/'+PACKAGE+'.RecoveryAActivity'
 OUT=Path(sys.argv[1]);OUT.mkdir(parents=True,exist_ok=True)
 TABS=(('A','0'),('A','1'),('B','0'),('C','0'))
 phase='seed';conflict=False
-events=[];requests=[];submissions=[];lock=threading.Lock()
+events=[];requests=[];submissions=[];gestures=[];lock=threading.Lock()
 markers={a+':'+t:'draft-'+a+'-'+t+'-'+uuid.uuid4().hex for a,t in TABS}
 current_draft='server-current-'+uuid.uuid4().hex
 
@@ -49,11 +49,12 @@ def native_events(a):
         except ValueError:pass
     return rows
 
-def launch(a=None,action=None,index=0,tabs=0):
+def launch(a=None,action=None,index=0,tabs=0,sample=None):
     args=['shell','am','start','-W','-n',COMPONENT]
     if a:args+=['--es','account',a]
     if action:args+=['--es','action',action,'--ei','index',str(index)]
     if tabs:args+=['--ei','tabs',str(tabs)]
+    if sample:args+=['--es','sampleText',sample]
     text(*args)
 
 def latest(a,t,case=None):
@@ -95,22 +96,31 @@ class Handler(BaseHTTPRequestHandler):
 <form id="form"><label>标准表单草稿<textarea id="standard" name="draft">'''+html.escape(prefill)+'''</textarea></label>
 <label>动态编辑器草稿<div id="rich" contenteditable="true" role="textbox">'''+html.escape(prefill)+'''</div></label><button type="submit">发送测试消息</button></form>
 <div id="summary"></div><article>'''+content+'''</article><script>
-const base='''+config+''';const documentId=base.document;let ticks=0;
+const base='''+config+''';const documentId=base.document;let ticks=0,lastClick='',lastClickTrusted=false;
 const previous=localStorage.getItem('recovery-owner');if(!previous)localStorage.setItem('recovery-owner',JSON.stringify({owner:base.account,token:crypto.randomUUID()}));
 if(!document.cookie)document.cookie='recovery-owner='+base.account+'; SameSite=Lax; path=/';
 function rect(id){const r=document.getElementById(id).getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2,ratio:devicePixelRatio};}
-function observation(){return {...base,document:documentId,ticks:++ticks,url:location.href,standard:document.getElementById('standard').value,rich:document.getElementById('rich').textContent,scrollY,scrollHeight:document.documentElement.scrollHeight,viewportHeight:innerHeight,language:navigator.language,timeZone:new Intl.DateTimeFormat().resolvedOptions().timeZone,cookie:document.cookie,owner:JSON.parse(localStorage.getItem('recovery-owner')),points:{detail:rect('detail'),standard:rect('standard'),rich:rect('rich')}};}
+function observation(){return {...base,document:documentId,ticks:++ticks,url:location.href,standard:document.getElementById('standard').value,rich:document.getElementById('rich').textContent,activeElement:document.activeElement?.id,lastClick,lastClickTrusted,scrollY,scrollHeight:document.documentElement.scrollHeight,viewportHeight:innerHeight,language:navigator.language,timeZone:new Intl.DateTimeFormat().resolvedOptions().timeZone,cookie:document.cookie,owner:JSON.parse(localStorage.getItem('recovery-owner')),points:{detail:rect('detail'),standard:rect('standard'),rich:rect('rich')}};}
 async function report(){try{await fetch('/observe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(observation())});}catch(e){}}
 document.getElementById('form').onsubmit=async e=>{e.preventDefault();await fetch('/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(observation())});};
-addEventListener('input',report);addEventListener('scroll',report);setInterval(report,500);report();
+addEventListener('click',e=>{lastClick=e.target.id;lastClickTrusted=e.isTrusted;report();});addEventListener('input',report);addEventListener('scroll',report);setInterval(report,500);report();
 </script>''')
 
 def point_tap(a,t,name):
     started=time.monotonic();old=native(a).get('elapsedMs',-1);launch(a,'inspect')
-    geo=wait(lambda:next((n for n in reversed(native_events(a)) if n.get('elapsedMs',0)>old and n.get('event')=='inspected'),None),label='fresh native geometry')
+    def focused():
+        n=native(a)
+        if n.get('elapsedMs',0)<=old:n=None
+        dump=text('shell','dumpsys','activity','activities',check=False)
+        lines=[line.strip() for line in dump.splitlines() if 'topResumedActivity' in line]
+        if not lines:lines=[line.strip() for line in dump.splitlines() if 'mResumedActivity' in line]
+        return n if n and n.get('windowFocused') and any('Recovery'+a+'Activity' in line for line in lines) else None
+    geo=wait(focused,label='focused current-account native geometry')
     row=wait(lambda:fresh(a,t,phase,started),label='fresh page coordinates');p=row['points'][name]
     x=round(geo['viewX']+p['x']*p['ratio']);y=round(geo['viewY']+p['y']*p['ratio'])
     if not geo['viewY']<y<geo['viewY']+geo['viewHeight']:raise RuntimeError('Target outside visible native webpage: '+name)
+    gestures.append({'account':a,'tab':t,'target':name,'x':x,'y':y,'native':geo,'page':row})
+    if name=='detail':capture('before-navigation-'+a+'-'+t)
     text('shell','input','tap',str(x),str(y))
 
 def select(a,t):
@@ -120,11 +130,12 @@ def select(a,t):
 def seed(a,t):
     row=select(a,t);point_tap(a,t,'detail');wait(lambda:(lambda r:r if r and r['page']=='detail' and r['document']!=row['document'] else None)(latest(a,t,phase)),label='actual detail navigation')
     for field in ('standard','rich'):
-        point_tap(a,t,field);text('shell','input','text',markers[a+':'+t]);text('shell','input','keyevent','4')
+        point_tap(a,t,field);wait(lambda:(lambda r:r if r and r.get('activeElement')==field else None)(latest(a,t,phase)),label='focused editor '+field)
+        launch(a,'input',sample=markers[a+':'+t]);launch(a,'hideKeyboard')
         wait(lambda:(lambda r:r if r and r[field]==markers[a+':'+t] else None)(latest(a,t,phase)),label=field+' real keyboard draft')
     geo=native(a);x=geo['viewX']+geo['viewWidth']//2
     text('shell','input','swipe',str(x),str(geo['viewY']+int(geo['viewHeight']*.82)),str(x),str(geo['viewY']+int(geo['viewHeight']*.25)),'550')
-    row=wait(lambda:(lambda r:r if r and r['scrollY']>250 else None)(latest(a,t,phase)),label='actual page scroll')
+    row=wait(lambda:(lambda r:r if r and r['scrollY']>250 else None)(latest(a,t,phase)),label='actual page scroll');time.sleep(2);row=latest(a,t,phase)
     return row
 
 def checkpoint(a,close=False):
@@ -236,6 +247,10 @@ try:
     report['experimentComplete']=True
 except Exception as error:
     failure=str(error);report['failure']=failure;print('Recovery experiment failed:',failure,flush=True)
+    try:
+        capture('failure')
+        (OUT/'failure-activities.txt').write_text(text('shell','dumpsys','activity','activities',check=False))
+    except (OSError,subprocess.SubprocessError) as diagnostic:report['diagnosticFailure']=str(diagnostic)
 finally:
     report['submissions']=submissions;report['noAutomaticSubmission']=not submissions
     report['systemAfter']={'locale':text('shell','getprop','persist.sys.locale'),'timeZone':text('shell','getprop','persist.sys.timezone')};report['systemUnchanged']=report['systemAfter']==report['systemBefore']
@@ -250,7 +265,7 @@ finally:
     conflicts=report['cases'].get('draftConflict',{});offline=report['cases'].get('offline',{})
     report['nativeRecoveryReady']=bool(report.get('experimentComplete')) and len(restored)==8 and all(all(r[k] for k in ('standardDraft','richDraft','readingPosition','sameOwnerStorage','newDocument')) for r in restored) and bool(conflicts.get('standardCurrentPreserved')) and bool(conflicts.get('richCurrentPreserved')) and bool(offline.get('contentRecovered')) and report['noAutomaticSubmission'] and not isolation_errors
     report['limitations']=['Synthetic textarea and contenteditable fixtures are not the real ChatGPT editor.','Native-only restoration has no custom offline snapshot, draft conflict guard or page-specific adapter.','A restored session may reload the network document; retaining a running JS heap after process death is not tested or promised.','Saved baseline records remain read-only during repeated restore measurements so a failed restore cannot replace the reference record.','API level and ABI are recorded; emulator results do not establish OEM phone or Android low-memory survival guarantees.']
-    for name,data in (('recovery-report.json',report),('recovery-events.json',events),('recovery-requests.json',requests)):(OUT/name).write_text(json.dumps(data,ensure_ascii=False,indent=2))
+    for name,data in (('recovery-report.json',report),('recovery-events.json',events),('recovery-requests.json',requests),('gestures.json',gestures)):(OUT/name).write_text(json.dumps(data,ensure_ascii=False,indent=2))
     for a in ('A','B','C'):
         (OUT/('native-'+a+'.jsonl')).write_bytes(adb('exec-out','run-as',PACKAGE,'cat','files/recovery-events-'+a+'.jsonl',check=False))
     text('shell','am','force-stop',PACKAGE,check=False);text('reverse','--remove','tcp:8765',check=False);server.shutdown()

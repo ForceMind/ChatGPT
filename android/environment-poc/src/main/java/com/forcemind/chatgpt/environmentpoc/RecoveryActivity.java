@@ -14,6 +14,9 @@ import android.util.AtomicFile;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputConnection;
+import android.view.inputmethod.InputMethodManager;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.charset.StandardCharsets;
@@ -110,7 +113,7 @@ public abstract class RecoveryActivity extends Activity {
     private Tab make(int index){
         Tab tab=new Tab(account(),index);
         tab.session.setNavigationDelegate(new GeckoSession.NavigationDelegate(){
-            @Override public GeckoResult<AllowOrDeny> onLoadRequest(GeckoSession s,LoadRequest r){return GeckoResult.fromValue(allowed(r.uri,tab.owner,tab.id)?AllowOrDeny.ALLOW:AllowOrDeny.DENY);}
+            @Override public GeckoResult<AllowOrDeny> onLoadRequest(GeckoSession s,LoadRequest r){boolean ok=allowed(r.uri,tab.owner,tab.id);record(ok?"load-allowed":"load-denied",r.uri);return GeckoResult.fromValue(ok?AllowOrDeny.ALLOW:AllowOrDeny.DENY);}
             @Override public GeckoResult<AllowOrDeny> onSubframeLoadRequest(GeckoSession s,LoadRequest r){return GeckoResult.fromValue(AllowOrDeny.DENY);}
             @Override public void onLocationChange(GeckoSession s,String uri,List<GeckoSession.PermissionDelegate.ContentPermission> permissions,Boolean gesture){tab.location=uri==null?"":uri;record("location",tab.id);}
         });
@@ -142,7 +145,7 @@ public abstract class RecoveryActivity extends Activity {
         }};handler.postDelayed(ready,200);
     }
     private void button(LinearLayout row,String title,Runnable action){Button b=new Button(this);b.setText(title);b.setTextColor(Color.BLACK);row.addView(b,new LinearLayout.LayoutParams(0,-2,1));b.setOnClickListener(v->action.run());}
-    private void route(String target,String action,int index){Class<?> cls=target.equals("B")?RecoveryBActivity.class:target.equals("C")?RecoveryCActivity.class:RecoveryAActivity.class;Intent next=new Intent(this,cls).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT).putExtra("account",target);if(action!=null)next.putExtra("action",action);next.putExtra("index",index);startActivity(next);}
+    private void route(String target,String action,int index){Class<?> cls=target.equals("B")?RecoveryBActivity.class:target.equals("C")?RecoveryCActivity.class:RecoveryAActivity.class;Intent next=new Intent(this,cls).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT).putExtra("account",target);if(action!=null)next.putExtra("action",action);if(getIntent().hasExtra("sampleText"))next.putExtra("sampleText",getIntent().getStringExtra("sampleText"));next.putExtra("index",index);startActivity(next);}
     private void handle(Intent intent){try{String target=intent.getStringExtra("account"),action=intent.getStringExtra("action");if(target!=null&&!target.matches("[ABC]"))throw new IllegalArgumentException("Invalid account");if(target!=null&&!target.equals(account())){route(target,action,intent.getIntExtra("index",0));return;}
         if(runtime==null)return;if(tabs().isEmpty())initialise();
         if("select".equals(action)){int index=intent.getIntExtra("index",0);if(index<0||index>=tabs().size())throw new IllegalArgumentException("Invalid tab");selected.put(account(),index);show();saveWorkspace();}
@@ -151,6 +154,9 @@ public abstract class RecoveryActivity extends Activity {
         if("back".equals(action))tabs().get(selected.getOrDefault(account(),0)).session.goBack();
         if("forward".equals(action))tabs().get(selected.getOrDefault(account(),0)).session.goForward();
         if("retry".equals(action))tabs().get(selected.getOrDefault(account(),0)).session.reload();
+        if("input".equals(action)){String sample=intent.getStringExtra("sampleText");String prefix="draft-"+account()+"-"+selected.getOrDefault(account(),0)+"-";if(sample==null||!sample.matches(java.util.regex.Pattern.quote(prefix)+"[a-f0-9]{32}"))throw new IllegalArgumentException("Invalid synthetic input");
+            handler.postDelayed(()->{try{if(!view.hasWindowFocus())throw new IllegalStateException("Editor window is not focused");InputConnection input=view.onCreateInputConnection(new EditorInfo());if(input==null||!input.commitText(sample,1))throw new IllegalStateException("Editor input rejected");record("input-committed",digest(sample));}catch(Exception error){record("input-error",error.toString());}},500);}
+        if("hideKeyboard".equals(action))((InputMethodManager)getSystemService(INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(view.getWindowToken(),0);
         handler.postDelayed(()->record("inspected",""),800);
     }catch(Exception error){record("command-error",error.toString());}}
     @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);setIntent(intent);handle(intent);}
@@ -163,10 +169,11 @@ public abstract class RecoveryActivity extends Activity {
     private void record(String event,String detail){try{
         JSONArray tabs=new JSONArray();for(Tab tab:tabs())tabs.put(new JSONObject().put("index",tab.id).put("open",tab.session.isOpen()).put("restored",tab.restored).put("blocked",tab.blocked).put("error",tab.error).put("location",tab.location).put("title",tab.title).put("callbacks",tab.callbacks).put("lastCallback",tab.lastCallback).put("flushRequested",tab.flushRequested).put("savedAt",tab.savedAt).put("stateSha256",tab.hash).put("historyCount",tab.historyCount).put("historyIndex",tab.historyIndex));
         JSONObject row=new JSONObject().put("account",account()).put("pid",android.os.Process.myPid()).put("selected",selected.getOrDefault(account(),0)).put("event",event).put("detail",detail).put("tabs",tabs).put("elapsedMs",SystemClock.elapsedRealtime());
-        if(view!=null){int[] xy=new int[2];view.getLocationOnScreen(xy);row.put("viewX",xy[0]).put("viewY",xy[1]).put("viewWidth",view.getWidth()).put("viewHeight",view.getHeight());}
+        if(view!=null){int[] xy=new int[2];view.getLocationOnScreen(xy);row.put("viewX",xy[0]).put("viewY",xy[1]).put("viewWidth",view.getWidth()).put("viewHeight",view.getHeight()).put("viewShown",view.isShown()).put("windowFocused",view.hasWindowFocus()).put("viewFocused",view.hasFocus());}
         byte[] bytes=row.toString().getBytes(StandardCharsets.UTF_8);Files.write(new File(getFilesDir(),"recovery-native-"+account()+".json").toPath(),bytes);
         try(FileOutputStream log=new FileOutputStream(new File(getFilesDir(),"recovery-events-"+account()+".jsonl"),true)){log.write(bytes);log.write('\n');}
     }catch(Exception error){android.util.Log.e("RecoveryEnvironmentPoC","Evidence failed",error);}}
     @Override protected void onStop(){super.onStop();retain();handler.postDelayed(RecoveryActivity::retain,500);}
+    @Override protected void onResume(){super.onResume();if(view!=null){view.requestFocus();if(view.getSession()!=null)view.getSession().setFocused(true);handler.postDelayed(()->record("resumed",""),600);}}
     @Override protected void onDestroy(){release();super.onDestroy();}
 }
