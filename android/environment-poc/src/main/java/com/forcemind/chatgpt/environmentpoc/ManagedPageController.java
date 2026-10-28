@@ -246,7 +246,12 @@ final class ManagedPageController {
                 try{synchronized(e.inputLock){
                     if(e.closed||e.epoch!=epoch||!token.equals(e.token)||!e.visible)throw new IllegalStateException("Target changed");
                     ExtractedText text=input.getExtractedText(new ExtractedTextRequest(),0);
-                    if(text==null||text.text==null||!expected.equals(text.text.toString())){pending=true;throw new IllegalStateException("Editor binding not confirmed");}
+                    // An uninitialised Gecko shadow editor can report empty text
+                    // and accept commitText before its real editor is bound.
+                    // Do not confuse that buffer with a genuinely empty field.
+                    if(text==null||text.text==null||text.startOffset!=0||text.selectionStart<0||text.selectionEnd<0||text.selectionStart>text.text.length()||text.selectionEnd>text.text.length()||!expected.equals(text.text.toString())){
+                        if(inputDiagnostics)inputTrace(e,"binding-pending",extractedEvidence(input));pending=true;throw new IllegalStateException("Editor text and selection binding not confirmed");
+                    }
                     if(inputDiagnostics)inputTrace(e,"before-commit",extractedEvidence(input).put("expectedSha256",digest(expected)).put("goalSha256",digest(goal)));
                     input.beginBatchEdit();try{if(!input.setSelection(0,expected.length()))throw new IllegalStateException("Selection refused");accepted=input.commitText(goal,1);}finally{input.endBatchEdit();}
                     if(inputDiagnostics){inputTrace(e,"after-commit",extractedEvidence(input).put("accepted",accepted));connectionHandler.postDelayed(()->{try{inputTrace(e,"after-250ms",extractedEvidence(input));}catch(Exception error){inputTrace(e,"after-250ms-error",new JSONObject());}},250);}

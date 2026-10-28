@@ -220,5 +220,231 @@
     "Latest API 35 matrix stopped at a second-tab write acknowledgement after initial capture.",
     "A write accepted by an input interface is not treated as success without actual page/editor-model equality.",
     "No real ChatGPT, OEM or physical-device acceptance, production migration or package-size optimization."
+  ],
+  "inputDiagnostics": [
+    {
+      "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40627819707",
+      "api": 28,
+      "sourceSha": "d58cdc81b4bf5cab2ff29192c488086dec9d4957",
+      "artifactSha256": "7b9df0c95dd4d986d53fbf4e0837cfd87a227bad1799cc4342b416193e62ca45",
+      "scope": "Two-page native input diagnostic",
+      "cases": {
+        "initialTwoPageCapture": true,
+        "switchWithoutReload": true
+      },
+      "inputDiagnosticComplete": false,
+      "managedControllerReady": false,
+      "formalMigrationReady": false,
+      "submissions": 0,
+      "screenshots": 0,
+      "failure": "Managed page failed: {'id': '0', 'url': 'http://127.0.0.1:8765/recovery?account=A&tab=0&page=detail', 'state': 'failed', 'error': 'editor-value-not-confirmed', 'blocked': False, 'revision': 10, 'document': '91281953-c91c-4413-89ec-7df8da2504dc', 'epoch': 1, 'rejected': 0, 'visible': True, 'bridgeConnected': True, 'hasSnapshot': True, 'standardSha256': 'a8fa3e4101de2ecc00ac8f81ffd359cbffe53eff8f8ee71d064b2a76c48290b7', 'richSha256': 'a8fa3e4101de2ecc00ac8f81ffd359cbffe53eff8f8ee71d064b2a76c48290b7', 'transcriptLength': 4528, 'alternativeCount': 0, 'alternativeHashes': [], 'pendingConflict': False, 'pendingConflictCount': 0, 'historyCount': 2, 'checkpoint': '', 'checkpointSource': '', 'inputEvidence': [{'viewId': 43141038, 'sessionId': 64937394, 'inputViewMatches': True, 'connectionId': 145996111, 'inputType': 311457, 'imeOptions': 301989889, 'initialSelStart': 0, 'initialSelEnd': 0, 'handlerThread': 'main', 'stage': 'connection', 'elapsedMs': 69498, 'document': '91281953-c91c-4413-89ec-7df8da2504dc', 'epoch': 1, 'editor': 'standard', 'visible': True, 'state': 'restoring'}, {'thread': 'main', 'connectionId': 145996111, 'available': True, 'length': 0, 'sha256': 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', 'startOffset': 0, 'selectionStart': -1, 'selectionEnd': -1, 'expectedSha256': 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', 'goalSha256': 'a8fa3e4101de2ecc00ac8f81ffd359cbffe53eff8f8ee71d064b2a76c48290b7', 'stage': 'before-commit', 'elapsedMs': 69591, 'document': '91281953-c91c-4413-89ec-7df8da2504dc', 'epoch': 1, 'editor': 'standard', 'visible': True, 'state': 'restoring'}, {'thread': 'main', 'connectionId': 145996111, 'available': True, 'length': 41, 'sha256': 'a8fa3e4101de2ecc00ac8f81ffd359cbffe53eff8f8ee71d064b2a76c48290b7', 'startOffset': 0, 'selectionStart': 41, 'selectionEnd': 41, 'accepted': True, 'stage': 'after-commit', 'elapsedMs': 69593, 'document': '91281953-c91c-4413-89ec-7df8da2504dc', 'epoch': 1, 'editor': 'standard', 'visible': True, 'state': 'restoring'}, {'thread': 'main', 'connectionId': 145996111, 'available': True, 'length': 0, 'sha256': 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', 'startOffset': 0, 'selectionStart': 0, 'selectionEnd': 0, 'stage': 'after-250ms', 'elapsedMs': 69804, 'document': '91281953-c91c-4413-89ec-7df8da2504dc', 'epoch': 1, 'editor': 'standard', 'visible': True, 'state': 'restoring'}]}",
+      "nativeInput": [
+        {
+          "viewId": 43141038,
+          "sessionId": 64937394,
+          "inputViewMatches": true,
+          "connectionId": 145996111,
+          "inputType": 311457,
+          "imeOptions": 301989889,
+          "initialSelStart": 0,
+          "initialSelEnd": 0,
+          "handlerThread": "main",
+          "stage": "connection",
+          "elapsedMs": 69498,
+          "document": "91281953-c91c-4413-89ec-7df8da2504dc",
+          "epoch": 1,
+          "editor": "standard",
+          "visible": true,
+          "state": "restoring"
+        },
+        {
+          "thread": "main",
+          "connectionId": 145996111,
+          "available": true,
+          "length": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "startOffset": 0,
+          "selectionStart": -1,
+          "selectionEnd": -1,
+          "expectedSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "goalSha256": "a8fa3e4101de2ecc00ac8f81ffd359cbffe53eff8f8ee71d064b2a76c48290b7",
+          "stage": "before-commit",
+          "elapsedMs": 69591,
+          "document": "91281953-c91c-4413-89ec-7df8da2504dc",
+          "epoch": 1,
+          "editor": "standard",
+          "visible": true,
+          "state": "restoring"
+        },
+        {
+          "thread": "main",
+          "connectionId": 145996111,
+          "available": true,
+          "length": 41,
+          "sha256": "a8fa3e4101de2ecc00ac8f81ffd359cbffe53eff8f8ee71d064b2a76c48290b7",
+          "startOffset": 0,
+          "selectionStart": 41,
+          "selectionEnd": 41,
+          "accepted": true,
+          "stage": "after-commit",
+          "elapsedMs": 69593,
+          "document": "91281953-c91c-4413-89ec-7df8da2504dc",
+          "epoch": 1,
+          "editor": "standard",
+          "visible": true,
+          "state": "restoring"
+        },
+        {
+          "thread": "main",
+          "connectionId": 145996111,
+          "available": true,
+          "length": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "startOffset": 0,
+          "selectionStart": 0,
+          "selectionEnd": 0,
+          "stage": "after-250ms",
+          "elapsedMs": 69804,
+          "document": "91281953-c91c-4413-89ec-7df8da2504dc",
+          "epoch": 1,
+          "editor": "standard",
+          "visible": true,
+          "state": "restoring"
+        }
+      ],
+      "lastIndependentObservation": {
+        "tab": "0",
+        "activeElement": "standard",
+        "documentFocused": true,
+        "visibility": "visible",
+        "standard": "",
+        "rich": "",
+        "standardModel": "",
+        "richModel": "",
+        "inputEvents": [
+          {
+            "type": "focusin",
+            "target": "standard",
+            "trusted": true,
+            "inputType": "",
+            "dataLength": 0,
+            "activeElement": "standard",
+            "at": 2351
+          }
+        ]
+      }
+    },
+    {
+      "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40627819707",
+      "api": 35,
+      "sourceSha": "d58cdc81b4bf5cab2ff29192c488086dec9d4957",
+      "artifactSha256": "854a1a0c9f694953928aafe2eb3146b1835daa09010cbc130e291f2837e9a554",
+      "scope": "Two-page native input diagnostic",
+      "cases": {
+        "initialTwoPageCapture": true,
+        "switchWithoutReload": true
+      },
+      "inputDiagnosticComplete": false,
+      "managedControllerReady": false,
+      "formalMigrationReady": false,
+      "submissions": 0,
+      "screenshots": 0,
+      "failure": "Managed page failed: {'id': '0', 'url': 'http://127.0.0.1:8765/recovery?account=A&tab=0&page=detail', 'state': 'failed', 'error': 'editor-value-not-confirmed', 'blocked': False, 'revision': 9, 'document': 'b5dc844b-543d-4f46-8f04-8864430e60ca', 'epoch': 1, 'rejected': 0, 'visible': True, 'bridgeConnected': True, 'hasSnapshot': True, 'standardSha256': '486e5937cdab2d8b439d502b190ed4289cd352080e8f00bd3938f97a7d5658dc', 'richSha256': '486e5937cdab2d8b439d502b190ed4289cd352080e8f00bd3938f97a7d5658dc', 'transcriptLength': 4528, 'alternativeCount': 0, 'alternativeHashes': [], 'pendingConflict': False, 'pendingConflictCount': 0, 'historyCount': 2, 'checkpoint': '', 'checkpointSource': '', 'inputEvidence': [{'viewId': 68205509, 'sessionId': 74746978, 'inputViewMatches': True, 'connectionId': 144097650, 'inputType': 311457, 'imeOptions': 301989889, 'initialSelStart': 0, 'initialSelEnd': 0, 'handlerThread': 'main', 'stage': 'connection', 'elapsedMs': 124356, 'document': 'b5dc844b-543d-4f46-8f04-8864430e60ca', 'epoch': 1, 'editor': 'standard', 'visible': True, 'state': 'restoring'}, {'thread': 'main', 'connectionId': 144097650, 'available': True, 'length': 0, 'sha256': 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', 'startOffset': 0, 'selectionStart': -1, 'selectionEnd': -1, 'expectedSha256': 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', 'goalSha256': '486e5937cdab2d8b439d502b190ed4289cd352080e8f00bd3938f97a7d5658dc', 'stage': 'before-commit', 'elapsedMs': 124467, 'document': 'b5dc844b-543d-4f46-8f04-8864430e60ca', 'epoch': 1, 'editor': 'standard', 'visible': True, 'state': 'restoring'}, {'thread': 'main', 'connectionId': 144097650, 'available': True, 'length': 41, 'sha256': '486e5937cdab2d8b439d502b190ed4289cd352080e8f00bd3938f97a7d5658dc', 'startOffset': 0, 'selectionStart': 41, 'selectionEnd': 41, 'accepted': True, 'stage': 'after-commit', 'elapsedMs': 124487, 'document': 'b5dc844b-543d-4f46-8f04-8864430e60ca', 'epoch': 1, 'editor': 'standard', 'visible': True, 'state': 'restoring'}, {'thread': 'main', 'connectionId': 144097650, 'available': True, 'length': 0, 'sha256': 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', 'startOffset': 0, 'selectionStart': 0, 'selectionEnd': 0, 'stage': 'after-250ms', 'elapsedMs': 124751, 'document': 'b5dc844b-543d-4f46-8f04-8864430e60ca', 'epoch': 1, 'editor': 'standard', 'visible': True, 'state': 'restoring'}]}",
+      "nativeInput": [
+        {
+          "viewId": 68205509,
+          "sessionId": 74746978,
+          "inputViewMatches": true,
+          "connectionId": 144097650,
+          "inputType": 311457,
+          "imeOptions": 301989889,
+          "initialSelStart": 0,
+          "initialSelEnd": 0,
+          "handlerThread": "main",
+          "stage": "connection",
+          "elapsedMs": 124356,
+          "document": "b5dc844b-543d-4f46-8f04-8864430e60ca",
+          "epoch": 1,
+          "editor": "standard",
+          "visible": true,
+          "state": "restoring"
+        },
+        {
+          "thread": "main",
+          "connectionId": 144097650,
+          "available": true,
+          "length": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "startOffset": 0,
+          "selectionStart": -1,
+          "selectionEnd": -1,
+          "expectedSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "goalSha256": "486e5937cdab2d8b439d502b190ed4289cd352080e8f00bd3938f97a7d5658dc",
+          "stage": "before-commit",
+          "elapsedMs": 124467,
+          "document": "b5dc844b-543d-4f46-8f04-8864430e60ca",
+          "epoch": 1,
+          "editor": "standard",
+          "visible": true,
+          "state": "restoring"
+        },
+        {
+          "thread": "main",
+          "connectionId": 144097650,
+          "available": true,
+          "length": 41,
+          "sha256": "486e5937cdab2d8b439d502b190ed4289cd352080e8f00bd3938f97a7d5658dc",
+          "startOffset": 0,
+          "selectionStart": 41,
+          "selectionEnd": 41,
+          "accepted": true,
+          "stage": "after-commit",
+          "elapsedMs": 124487,
+          "document": "b5dc844b-543d-4f46-8f04-8864430e60ca",
+          "epoch": 1,
+          "editor": "standard",
+          "visible": true,
+          "state": "restoring"
+        },
+        {
+          "thread": "main",
+          "connectionId": 144097650,
+          "available": true,
+          "length": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "startOffset": 0,
+          "selectionStart": 0,
+          "selectionEnd": 0,
+          "stage": "after-250ms",
+          "elapsedMs": 124751,
+          "document": "b5dc844b-543d-4f46-8f04-8864430e60ca",
+          "epoch": 1,
+          "editor": "standard",
+          "visible": true,
+          "state": "restoring"
+        }
+      ],
+      "lastIndependentObservation": {
+        "tab": "0",
+        "activeElement": "standard",
+        "documentFocused": true,
+        "visibility": "visible",
+        "standard": "",
+        "rich": "",
+        "standardModel": "",
+        "richModel": "",
+        "inputEvents": [
+          {
+            "type": "focusin",
+            "target": "standard",
+            "trusted": true,
+            "inputType": "",
+            "dataLength": 0,
+            "activeElement": "standard",
+            "at": 4496
+          }
+        ]
+      }
+    }
   ]
 }
