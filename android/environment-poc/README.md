@@ -74,13 +74,15 @@ gh workflow run android.yml --ref codex/macos-assets-workbench \
 
 ## 应用恢复控制器：当前进度
 
+第二阶段已完成：同一独立 App 源树在 API 28 / 35 各通过 17 项（原 14 项恢复加真实触摸、Home 前后台与 Activity 重建），并完成三种 unsigned arm64 release 体积对照。准确来源与限制见下方“发布包与触摸 / 生命周期”，原始失败保留在统一证据中。
+
 新增的 `Managed*Activity` 使用独立浏览器 profile、独立加密目录和受限内置页面桥接，不读取正式 App 的账号、登录或恢复文件。`ManagedPageController` 保存按账号 / 标签 / URL 绑定的文本、动态草稿、阅读位置和历史；恢复不调用会覆盖现有表单的整包原生状态恢复。离线显示只读原生文本，遇到不同草稿时保留两份并等待选择。
 
-[最新三账号四页完整矩阵](https://github.com/ForceMind/ChatGPT/actions/runs/40631441716)在同一源码 `04644b1` 上通过 Android 9 / API 28 和 Android 15 / API 35 的编译、lint 与各 14 项合成用例。覆盖正常退出、继续编辑后的最新草稿、强停断网重连、只读离线内容、历史 URL 隔离、未处理冲突跨重启保留、两种冲突选择与备份查看、原子写恢复、损坏 / 跨账号记录拒绝，以及三账号的语言、时区、Cookie / localStorage 隔离。多行中文 / emoji、真实 DOM 与仅接受可信输入事件的编辑器模型均已核对；发送和截图为零。本轮未观察到异常进程重启，之前失败与异常记录仍保留。
+[第一阶段三账号四页完整矩阵](https://github.com/ForceMind/ChatGPT/actions/runs/40631441716)在同一源码 `04644b1` 上通过 Android 9 / API 28 和 Android 15 / API 35 的编译、lint 与各 14 项合成用例。覆盖正常退出、继续编辑后的最新草稿、强停断网重连、只读离线内容、历史 URL 隔离、未处理冲突跨重启保留、两种冲突选择与备份查看、原子写恢复、损坏 / 跨账号记录拒绝，以及三账号的语言、时区、Cookie / localStorage 隔离。多行中文 / emoji、真实 DOM 与仅接受可信输入事件的编辑器模型均已核对；发送和截图为零。本轮未观察到异常进程重启，之前失败与异常记录仍保留。
 
-所有已核对的有效来源、摘要、完成范围和失败见[应用恢复证据](../../docs/benchmarks/android-managed-recovery-poc.json)。本阶段仍只访问合成 loopback 网页，真实 ChatGPT、真机、正式 UI / 生命周期集成和包体积工作没有通过该验收。新版工作约定下，新增浏览器诊断须明确授权；管理恢复驱动默认不截图，`--capture-ui` 仅在具体截图任务获准后使用。
+所有已核对的有效来源、摘要、完成范围和失败见[应用恢复证据](../../docs/benchmarks/android-managed-recovery-poc.json)。本实验仍只访问合成 loopback 网页，真实 ChatGPT、真机、正式 UI / 生命周期集成仍未验收；包体积只完成下方 unsigned release 文件测量。新版工作约定下，新增浏览器诊断须明确授权；管理恢复驱动默认不截图，`--capture-ui` 仅在具体截图任务获准后使用。
 
-[两页输入诊断](https://github.com/ForceMind/ChatGPT/actions/runs/40628520740)此前已验证切换保留原文档，并定位到未初始化输入缓存可能返回提交成功的问题。完整矩阵进一步覆盖错误页重连：控制器现同时等待当前导航的新原生 IME 焦点回调、完整文本与有效选区，提交后仍等真实页面 / 模型确认，不重复提交已接受的写入；桥接使用有上限的握手恢复。**正式迁移门槛仍未通过**：本阶段只验证独立合成页面，真实 ChatGPT、真机 / OEM、正式 UI 与生命周期集成、发布体积尚待后续阶段。触摸滚动没有由原生 PanZoom 阅读样本证明；本轮 `No editable parent` 警告仍有 API 28 一次、API 35 十次，未声称修好该警告。
+[两页输入诊断](https://github.com/ForceMind/ChatGPT/actions/runs/40628520740)此前已验证切换保留原文档，并定位到未初始化输入缓存可能返回提交成功的问题。完整矩阵进一步覆盖错误页重连：控制器现同时等待当前导航的新原生 IME 焦点回调、完整文本与有效选区，提交后仍等真实页面 / 模型确认，不重复提交已接受的写入；桥接使用有上限的握手恢复。**正式迁移门槛仍未通过**：本阶段只验证独立合成页面，真实 ChatGPT、真机 / OEM、正式 UI 与生命周期集成、发布体积尚待后续阶段。第一阶段的 PanZoom 阅读样本未证明触摸滚动；该轮 `No editable parent` 警告有 API 28 一次、API 35 十次，未声称修好该警告。
 
 已获本轮明确授权的完整矩阵入口如下，默认不截图：
 
@@ -98,3 +100,23 @@ gh workflow run android.yml --ref codex/macos-assets-workbench \
   -f managed_recovery_poc=true -f device_only=true \
   -f managed_recovery_input_diagnostic=true -f 'recovery_poc_apis=[28,35]'
 ```
+
+## 发布包与触摸 / 生命周期：第二阶段
+
+[体积与 Android 9 定向复验](https://github.com/ForceMind/ChatGPT/actions/runs/40651548074)对应 `ba61f19`；[Android 15 的通过任务](https://github.com/ForceMind/ChatGPT/actions/runs/40649194866/job/122685034834)对应 `2e42ff5`。两轮独立 App 源树完全一致，后续只修正测量解析器与 CI 输入工具，因此复用 API 35 的有效结果；不合称同一提交的全量通过。来源、摘要、全部首轮失败和警告分布见[第二阶段报告](../../docs/benchmarks/android-phase2-package-touch-lifecycle.json)。
+
+固定 GeckoView `158.0.20261021001945`、AGP `9.1.1`、minSdk 28，按[Android 官方配置](https://developer.android.com/topic/performance/app-optimization/enable-app-optimization)对照同一 arm64 unsigned release：
+
+| 配置 | APK 文件大小 | 相对基线减少 |
+| --- | ---: | ---: |
+| 原始 release | 196.075 MiB | — |
+| R8 代码压缩 | 185.168 MiB | 5.5625% |
+| R8 + 资源压缩 | 185.078 MiB | 5.6087% |
+
+共减少 11,531,479 字节，约 10.997 MiB。13 份原生库仍为 176,500,344 字节，占优化包约 90.95%；三种配置的原生库和恢复桥接内容摘要一致，内核内容保持不变。资源压缩相对仅 R8 额外减少 94,896 字节。APK 文件大小不等于商店压缩下载、安装占用、内存或 CPU；这些 unsigned release 没有安装或运行验收，设备回归仍使用独立 debug 包。
+
+两套系统各 17 项通过，原 14 项恢复断言保持：增加同一文档的可信触摸上 / 下滑、真实 Home 前后台、Activity 重建；四页草稿与文档身份保持。Home 按键发起到重新打开前的观测窗口为 API 28 约 7.025 秒、API 35 约 5.205 秒，包含系统切换开销，并在确认失焦后至少等待 5 秒；不代表长时间后台、Doze 或 OEM 真机保证。
+
+Android 9 的 stock `input swipe` 为每个移动事件重置 downTime，固定 Gecko 会正确丢弃该无效后续流；首轮失败日志与 [AOSP 原实现](https://raw.githubusercontent.com/aosp-mirror/platform_frameworks_base/android-9.0.0_r61/cmds/input/src/com/android/commands/input/Input.java)一致。仅 CI 的旧系统改用经 Android InputManager 注入的同一 downTime / FINGER / TOUCHSCREEN 事件流，33 个事件回执及独立网页的可信触摸、实际滚动均已核对。该工具拒绝非 API 28、非 shell、非模拟器，不进入 App。API 35 沿用 stock adb；触摸门槛不使用 PanZoom / JS 来通过，既有阅读恢复另行使用原 1400px 样本。
+
+完整设备日志连续采集并按阶段定位：API 28 / 35 的 `No editable parent` 分别为 4 / 9 条，出现在初始加载、重开、重连和冲突恢复附近；触摸、Home 和 Activity 重建阶段未记录该警告。两端 `win is null` / `FATAL EXCEPTION` 为零，发送与截图为零。时间邻近不是因果，未宣称根因已证实或警告已修复，正式迁移门槛仍为 false。

@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "scope": "Independent second-stage release-size and native touch/lifecycle validation; no formal app or login data",
-  "status": "in_progress",
+  "status": "complete",
   "formalMigrationReady": false,
   "appTreeAtFirstRun": "f02f4783aa7fbbb249f84be2e0774d17d3122f5d",
   "attempts": [
@@ -31,7 +31,9 @@
           "APK file size is not installed disk usage, RAM, CPU or store-compressed download size.",
           "No engine update, native stripping, formal signing key, user data, real ChatGPT or public release."
         ]
-      }
+      },
+      "workflowConclusion": "failure",
+      "jobConclusion": "failure"
     },
     {
       "kind": "touch-lifecycle",
@@ -102,7 +104,9 @@
           }
         ]
       },
-      "screenshots": 0
+      "screenshots": 0,
+      "workflowConclusion": "failure",
+      "jobConclusion": "failure"
     },
     {
       "kind": "touch-lifecycle",
@@ -188,7 +192,8 @@
           "sessionStoreWinNull": 0,
           "fatalException": 0
         },
-        "warningCausalAttribution": false
+        "warningCausalAttribution": false,
+        "validatedScope": "17 synthetic recovery/touch/lifecycle cases on a fresh x86_64 emulator, independent debug APK."
       },
       "warningLocalization": {
         "schema": 1,
@@ -310,6 +315,1122 @@
           }
         ]
       },
+      "screenshots": 0,
+      "workflowConclusion": "failure",
+      "jobConclusion": "success"
+    },
+    {
+      "kind": "release-size",
+      "api": null,
+      "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40651548074",
+      "workflowConclusion": "success",
+      "jobConclusion": "success",
+      "sourceSha": "ba61f1930f94294414a221de3f47fffc6e098ced",
+      "artifactId": 12800046381,
+      "artifactSha256": "d8fa00b7b2b39095dcfa570577be9f4386493ab8ec3c24c7f80b327a0b1ab623",
+      "result": {
+        "schema": 1,
+        "sourceSha": "ba61f1930f94294414a221de3f47fffc6e098ced",
+        "runId": "40651548074",
+        "scope": "Unsigned arm64 isolated release APK composition",
+        "engineVersion": "158.0.20261021001945",
+        "agpVersion": "9.1.1",
+        "minSdk": 28,
+        "formalAppOrDataUsed": false,
+        "releaseRuntimeValidated": false,
+        "installedBytesMeasured": false,
+        "results": [
+          {
+            "apkBytes": 205599762,
+            "apkSha256": "22d2a937fab56f6afbb978c76a7e44e89bd0bb7fc760563d79dc5d0ce5f574ab",
+            "manifest": {
+              "package": "com.forcemind.chatgpt.environmentpoc",
+              "minSdk": 28,
+              "abis": [
+                "arm64-v8a"
+              ],
+              "debuggable": false
+            },
+            "categories": {
+              "other": {
+                "entries": 44,
+                "rawBytes": 86984,
+                "zipPayloadBytes": 24496
+              },
+              "assets": {
+                "entries": 5,
+                "rawBytes": 15164710,
+                "zipPayloadBytes": 14539497
+              },
+              "dex": {
+                "entries": 2,
+                "rawBytes": 14121220,
+                "zipPayloadBytes": 14121220
+              },
+              "nativeLibraries": {
+                "entries": 13,
+                "rawBytes": 176500344,
+                "zipPayloadBytes": 176500344
+              },
+              "manifest": {
+                "entries": 1,
+                "rawBytes": 43756,
+                "zipPayloadBytes": 5909
+              },
+              "resources": {
+                "entries": 84,
+                "rawBytes": 61599,
+                "zipPayloadBytes": 41751
+              },
+              "compiledResources": {
+                "entries": 1,
+                "rawBytes": 229240,
+                "zipPayloadBytes": 229240
+              }
+            },
+            "nativeLibraries": {
+              "lib/arm64-v8a/libclearkey.so": {
+                "rawBytes": 135400,
+                "zipPayloadBytes": 135400,
+                "compression": 0,
+                "sha256": "d1f9dbf9199c3c2a027097dc9aa77de12ff78be0b34ba3ef45e51ff9fa3c464e"
+              },
+              "lib/arm64-v8a/libcrashhelper.so": {
+                "rawBytes": 3435168,
+                "zipPayloadBytes": 3435168,
+                "compression": 0,
+                "sha256": "5f8578ea10db1859bdbbc18e0caef2be9587dbb67e5a2927b9ff7fb878d7eeef"
+              },
+              "lib/arm64-v8a/libcrashtools.so": {
+                "rawBytes": 5949176,
+                "zipPayloadBytes": 5949176,
+                "compression": 0,
+                "sha256": "0e603319567f9683220bff6fc5e206010465cf5fa7d00734cfc1377b958c6aa5"
+              },
+              "lib/arm64-v8a/libfreebl3.so": {
+                "rawBytes": 854368,
+                "zipPayloadBytes": 854368,
+                "compression": 0,
+                "sha256": "208e640ef091aef6cdd119561a21a9524baeaf929ddd61ac9686c54d477b9767"
+              },
+              "lib/arm64-v8a/libgkcodecs.so": {
+                "rawBytes": 5136272,
+                "zipPayloadBytes": 5136272,
+                "compression": 0,
+                "sha256": "9a6fa4de593258bc4b1412f594e76ce8e41b968eba3dc15eadad72c4f2c024b4"
+              },
+              "lib/arm64-v8a/liblgpllibs.so": {
+                "rawBytes": 167272,
+                "zipPayloadBytes": 167272,
+                "compression": 0,
+                "sha256": "907cd4fab6e6b52a2e66e32225099a597fbef8052f75a5d6c9b972aca1099f8d"
+              },
+              "lib/arm64-v8a/libmozavcodec.so": {
+                "rawBytes": 2121336,
+                "zipPayloadBytes": 2121336,
+                "compression": 0,
+                "sha256": "4f0db549cb8a74c9daac86f8277ac944ed33dd05661b746c5a34ec8cbaa84a2c"
+              },
+              "lib/arm64-v8a/libmozavutil.so": {
+                "rawBytes": 460936,
+                "zipPayloadBytes": 460936,
+                "compression": 0,
+                "sha256": "db83577f550d2a51636c5095e07f5a988f0e620685b6409733883ac5c0e7b4cb"
+              },
+              "lib/arm64-v8a/libmozglue.so": {
+                "rawBytes": 1201696,
+                "zipPayloadBytes": 1201696,
+                "compression": 0,
+                "sha256": "3d0d0a69612ccdd1f37175bb14ad5b5c041c8e7a30d50ffb9eaa547280b57f30"
+              },
+              "lib/arm64-v8a/libnss3.so": {
+                "rawBytes": 2878856,
+                "zipPayloadBytes": 2878856,
+                "compression": 0,
+                "sha256": "59d010ffa67bddeaae94945506f23f5b794b9761c3e918eda8d69e2ce31aa0fb"
+              },
+              "lib/arm64-v8a/libplugin-container.so": {
+                "rawBytes": 4800,
+                "zipPayloadBytes": 4800,
+                "compression": 0,
+                "sha256": "946d1558ed7978051366ae83433a29d9b5a63b6d167e9b2e2a1509a48368c0f1"
+              },
+              "lib/arm64-v8a/libsoftokn3.so": {
+                "rawBytes": 326320,
+                "zipPayloadBytes": 326320,
+                "compression": 0,
+                "sha256": "98b955d54934de84cc57c6d64dc983455f91fd5a413889daa128edde1cc26044"
+              },
+              "lib/arm64-v8a/libxul.so": {
+                "rawBytes": 153828744,
+                "zipPayloadBytes": 153828744,
+                "compression": 0,
+                "sha256": "91b64a3e857b3aa1a739be3894d0330e705b1b6d563f8eb367cafe96fb4977af"
+              }
+            },
+            "managedBridge": {
+              "assets/managed-recovery/manifest.json": {
+                "rawBytes": 429,
+                "zipPayloadBytes": 266,
+                "compression": 8,
+                "sha256": "1fb226439c24df83094d5f94bee0a9c71d18d2c96b65e443bb74afd9cce023c6"
+              },
+              "assets/managed-recovery/recovery.js": {
+                "rawBytes": 5418,
+                "zipPayloadBytes": 2002,
+                "compression": 8,
+                "sha256": "90a0feeb064830661228088393e533bdccfa2328ac9b9e5b8ef1e4cf2ea20e83"
+              }
+            },
+            "zipHeadersAlignmentAndSigningBytes": 137305,
+            "mode": "baseline",
+            "nativeEngineBytesPreserved": true,
+            "managedBridgeBytesPreserved": true,
+            "savedBytesVsBaseline": 0,
+            "savedPercentVsBaseline": 0.0
+          },
+          {
+            "apkBytes": 194163179,
+            "apkSha256": "0d333be49fdd477fb5952a54a57622ee78521463c27031ad540d6cd8f5d47a5e",
+            "manifest": {
+              "package": "com.forcemind.chatgpt.environmentpoc",
+              "minSdk": 28,
+              "abis": [
+                "arm64-v8a"
+              ],
+              "debuggable": false
+            },
+            "categories": {
+              "other": {
+                "entries": 42,
+                "rawBytes": 86878,
+                "zipPayloadBytes": 24443
+              },
+              "assets": {
+                "entries": 5,
+                "rawBytes": 15164677,
+                "zipPayloadBytes": 14539464
+              },
+              "dex": {
+                "entries": 1,
+                "rawBytes": 2670348,
+                "zipPayloadBytes": 2670348
+              },
+              "nativeLibraries": {
+                "entries": 13,
+                "rawBytes": 176500344,
+                "zipPayloadBytes": 176500344
+              },
+              "manifest": {
+                "entries": 1,
+                "rawBytes": 43756,
+                "zipPayloadBytes": 5909
+              },
+              "resources": {
+                "entries": 84,
+                "rawBytes": 61599,
+                "zipPayloadBytes": 41751
+              },
+              "compiledResources": {
+                "entries": 1,
+                "rawBytes": 229240,
+                "zipPayloadBytes": 229240
+              }
+            },
+            "nativeLibraries": {
+              "lib/arm64-v8a/libclearkey.so": {
+                "rawBytes": 135400,
+                "zipPayloadBytes": 135400,
+                "compression": 0,
+                "sha256": "d1f9dbf9199c3c2a027097dc9aa77de12ff78be0b34ba3ef45e51ff9fa3c464e"
+              },
+              "lib/arm64-v8a/libcrashhelper.so": {
+                "rawBytes": 3435168,
+                "zipPayloadBytes": 3435168,
+                "compression": 0,
+                "sha256": "5f8578ea10db1859bdbbc18e0caef2be9587dbb67e5a2927b9ff7fb878d7eeef"
+              },
+              "lib/arm64-v8a/libcrashtools.so": {
+                "rawBytes": 5949176,
+                "zipPayloadBytes": 5949176,
+                "compression": 0,
+                "sha256": "0e603319567f9683220bff6fc5e206010465cf5fa7d00734cfc1377b958c6aa5"
+              },
+              "lib/arm64-v8a/libfreebl3.so": {
+                "rawBytes": 854368,
+                "zipPayloadBytes": 854368,
+                "compression": 0,
+                "sha256": "208e640ef091aef6cdd119561a21a9524baeaf929ddd61ac9686c54d477b9767"
+              },
+              "lib/arm64-v8a/libgkcodecs.so": {
+                "rawBytes": 5136272,
+                "zipPayloadBytes": 5136272,
+                "compression": 0,
+                "sha256": "9a6fa4de593258bc4b1412f594e76ce8e41b968eba3dc15eadad72c4f2c024b4"
+              },
+              "lib/arm64-v8a/liblgpllibs.so": {
+                "rawBytes": 167272,
+                "zipPayloadBytes": 167272,
+                "compression": 0,
+                "sha256": "907cd4fab6e6b52a2e66e32225099a597fbef8052f75a5d6c9b972aca1099f8d"
+              },
+              "lib/arm64-v8a/libmozavcodec.so": {
+                "rawBytes": 2121336,
+                "zipPayloadBytes": 2121336,
+                "compression": 0,
+                "sha256": "4f0db549cb8a74c9daac86f8277ac944ed33dd05661b746c5a34ec8cbaa84a2c"
+              },
+              "lib/arm64-v8a/libmozavutil.so": {
+                "rawBytes": 460936,
+                "zipPayloadBytes": 460936,
+                "compression": 0,
+                "sha256": "db83577f550d2a51636c5095e07f5a988f0e620685b6409733883ac5c0e7b4cb"
+              },
+              "lib/arm64-v8a/libmozglue.so": {
+                "rawBytes": 1201696,
+                "zipPayloadBytes": 1201696,
+                "compression": 0,
+                "sha256": "3d0d0a69612ccdd1f37175bb14ad5b5c041c8e7a30d50ffb9eaa547280b57f30"
+              },
+              "lib/arm64-v8a/libnss3.so": {
+                "rawBytes": 2878856,
+                "zipPayloadBytes": 2878856,
+                "compression": 0,
+                "sha256": "59d010ffa67bddeaae94945506f23f5b794b9761c3e918eda8d69e2ce31aa0fb"
+              },
+              "lib/arm64-v8a/libplugin-container.so": {
+                "rawBytes": 4800,
+                "zipPayloadBytes": 4800,
+                "compression": 0,
+                "sha256": "946d1558ed7978051366ae83433a29d9b5a63b6d167e9b2e2a1509a48368c0f1"
+              },
+              "lib/arm64-v8a/libsoftokn3.so": {
+                "rawBytes": 326320,
+                "zipPayloadBytes": 326320,
+                "compression": 0,
+                "sha256": "98b955d54934de84cc57c6d64dc983455f91fd5a413889daa128edde1cc26044"
+              },
+              "lib/arm64-v8a/libxul.so": {
+                "rawBytes": 153828744,
+                "zipPayloadBytes": 153828744,
+                "compression": 0,
+                "sha256": "91b64a3e857b3aa1a739be3894d0330e705b1b6d563f8eb367cafe96fb4977af"
+              }
+            },
+            "managedBridge": {
+              "assets/managed-recovery/manifest.json": {
+                "rawBytes": 429,
+                "zipPayloadBytes": 266,
+                "compression": 8,
+                "sha256": "1fb226439c24df83094d5f94bee0a9c71d18d2c96b65e443bb74afd9cce023c6"
+              },
+              "assets/managed-recovery/recovery.js": {
+                "rawBytes": 5418,
+                "zipPayloadBytes": 2002,
+                "compression": 8,
+                "sha256": "90a0feeb064830661228088393e533bdccfa2328ac9b9e5b8ef1e4cf2ea20e83"
+              }
+            },
+            "zipHeadersAlignmentAndSigningBytes": 151680,
+            "mode": "r8",
+            "nativeEngineBytesPreserved": true,
+            "managedBridgeBytesPreserved": true,
+            "savedBytesVsBaseline": 11436583,
+            "savedPercentVsBaseline": 5.5625
+          },
+          {
+            "apkBytes": 194068283,
+            "apkSha256": "85b8d135ac5d99030ef0fbe9993bca0f866e26512ffc70616a4010f42c2f993d",
+            "manifest": {
+              "package": "com.forcemind.chatgpt.environmentpoc",
+              "minSdk": 28,
+              "abis": [
+                "arm64-v8a"
+              ],
+              "debuggable": false
+            },
+            "categories": {
+              "other": {
+                "entries": 42,
+                "rawBytes": 86878,
+                "zipPayloadBytes": 24443
+              },
+              "assets": {
+                "entries": 5,
+                "rawBytes": 15164724,
+                "zipPayloadBytes": 14539511
+              },
+              "dex": {
+                "entries": 1,
+                "rawBytes": 2670344,
+                "zipPayloadBytes": 2670344
+              },
+              "nativeLibraries": {
+                "entries": 13,
+                "rawBytes": 176500344,
+                "zipPayloadBytes": 176500344
+              },
+              "manifest": {
+                "entries": 1,
+                "rawBytes": 43756,
+                "zipPayloadBytes": 5909
+              },
+              "resources": {
+                "entries": 48,
+                "rawBytes": 39076,
+                "zipPayloadBytes": 29224
+              },
+              "compiledResources": {
+                "entries": 1,
+                "rawBytes": 150396,
+                "zipPayloadBytes": 150396
+              }
+            },
+            "nativeLibraries": {
+              "lib/arm64-v8a/libclearkey.so": {
+                "rawBytes": 135400,
+                "zipPayloadBytes": 135400,
+                "compression": 0,
+                "sha256": "d1f9dbf9199c3c2a027097dc9aa77de12ff78be0b34ba3ef45e51ff9fa3c464e"
+              },
+              "lib/arm64-v8a/libcrashhelper.so": {
+                "rawBytes": 3435168,
+                "zipPayloadBytes": 3435168,
+                "compression": 0,
+                "sha256": "5f8578ea10db1859bdbbc18e0caef2be9587dbb67e5a2927b9ff7fb878d7eeef"
+              },
+              "lib/arm64-v8a/libcrashtools.so": {
+                "rawBytes": 5949176,
+                "zipPayloadBytes": 5949176,
+                "compression": 0,
+                "sha256": "0e603319567f9683220bff6fc5e206010465cf5fa7d00734cfc1377b958c6aa5"
+              },
+              "lib/arm64-v8a/libfreebl3.so": {
+                "rawBytes": 854368,
+                "zipPayloadBytes": 854368,
+                "compression": 0,
+                "sha256": "208e640ef091aef6cdd119561a21a9524baeaf929ddd61ac9686c54d477b9767"
+              },
+              "lib/arm64-v8a/libgkcodecs.so": {
+                "rawBytes": 5136272,
+                "zipPayloadBytes": 5136272,
+                "compression": 0,
+                "sha256": "9a6fa4de593258bc4b1412f594e76ce8e41b968eba3dc15eadad72c4f2c024b4"
+              },
+              "lib/arm64-v8a/liblgpllibs.so": {
+                "rawBytes": 167272,
+                "zipPayloadBytes": 167272,
+                "compression": 0,
+                "sha256": "907cd4fab6e6b52a2e66e32225099a597fbef8052f75a5d6c9b972aca1099f8d"
+              },
+              "lib/arm64-v8a/libmozavcodec.so": {
+                "rawBytes": 2121336,
+                "zipPayloadBytes": 2121336,
+                "compression": 0,
+                "sha256": "4f0db549cb8a74c9daac86f8277ac944ed33dd05661b746c5a34ec8cbaa84a2c"
+              },
+              "lib/arm64-v8a/libmozavutil.so": {
+                "rawBytes": 460936,
+                "zipPayloadBytes": 460936,
+                "compression": 0,
+                "sha256": "db83577f550d2a51636c5095e07f5a988f0e620685b6409733883ac5c0e7b4cb"
+              },
+              "lib/arm64-v8a/libmozglue.so": {
+                "rawBytes": 1201696,
+                "zipPayloadBytes": 1201696,
+                "compression": 0,
+                "sha256": "3d0d0a69612ccdd1f37175bb14ad5b5c041c8e7a30d50ffb9eaa547280b57f30"
+              },
+              "lib/arm64-v8a/libnss3.so": {
+                "rawBytes": 2878856,
+                "zipPayloadBytes": 2878856,
+                "compression": 0,
+                "sha256": "59d010ffa67bddeaae94945506f23f5b794b9761c3e918eda8d69e2ce31aa0fb"
+              },
+              "lib/arm64-v8a/libplugin-container.so": {
+                "rawBytes": 4800,
+                "zipPayloadBytes": 4800,
+                "compression": 0,
+                "sha256": "946d1558ed7978051366ae83433a29d9b5a63b6d167e9b2e2a1509a48368c0f1"
+              },
+              "lib/arm64-v8a/libsoftokn3.so": {
+                "rawBytes": 326320,
+                "zipPayloadBytes": 326320,
+                "compression": 0,
+                "sha256": "98b955d54934de84cc57c6d64dc983455f91fd5a413889daa128edde1cc26044"
+              },
+              "lib/arm64-v8a/libxul.so": {
+                "rawBytes": 153828744,
+                "zipPayloadBytes": 153828744,
+                "compression": 0,
+                "sha256": "91b64a3e857b3aa1a739be3894d0330e705b1b6d563f8eb367cafe96fb4977af"
+              }
+            },
+            "managedBridge": {
+              "assets/managed-recovery/manifest.json": {
+                "rawBytes": 429,
+                "zipPayloadBytes": 266,
+                "compression": 8,
+                "sha256": "1fb226439c24df83094d5f94bee0a9c71d18d2c96b65e443bb74afd9cce023c6"
+              },
+              "assets/managed-recovery/recovery.js": {
+                "rawBytes": 5418,
+                "zipPayloadBytes": 2002,
+                "compression": 8,
+                "sha256": "90a0feeb064830661228088393e533bdccfa2328ac9b9e5b8ef1e4cf2ea20e83"
+              }
+            },
+            "zipHeadersAlignmentAndSigningBytes": 148112,
+            "mode": "resources",
+            "nativeEngineBytesPreserved": true,
+            "managedBridgeBytesPreserved": true,
+            "savedBytesVsBaseline": 11531479,
+            "savedPercentVsBaseline": 5.6087
+          }
+        ],
+        "complete": true,
+        "limits": [
+          "Release APKs are unsigned, not installed, and not runtime-validated. Device lifecycle/recovery tests use the independent debug build.",
+          "APK file size is not installed disk usage, RAM, CPU or store-compressed download size.",
+          "No engine update, native stripping, formal signing key, user data, real ChatGPT or public release."
+        ]
+      }
+    },
+    {
+      "kind": "touch-lifecycle",
+      "api": 28,
+      "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40651548074",
+      "workflowConclusion": "success",
+      "jobConclusion": "success",
+      "sourceSha": "ba61f1930f94294414a221de3f47fffc6e098ced",
+      "artifactId": 12799862409,
+      "artifactSha256": "1ec724ebe8c83a652a460651a2c9c28c2a78de046ada88d0196d3b376154fd47",
+      "result": {
+        "sourceSha": "ba61f1930f94294414a221de3f47fffc6e098ced",
+        "runId": "40651548074",
+        "scope": "Three-account four-tab managed recovery",
+        "api": "28",
+        "fixtureOnly": true,
+        "productionDataUsed": false,
+        "cases": {
+          "initialCapture": true,
+          "trustedTouchScrollUpDown": true,
+          "homeForegroundRetainsDocuments": true,
+          "activityRecreationRetainsDocuments": true,
+          "normalClose": true,
+          "historyAndURLIsolation": true,
+          "saveAfterRestore": true,
+          "offlineReadOnlySnapshot": true,
+          "forceStopAndReconnect": true,
+          "unresolvedConflictRestartAndURLBinding": true,
+          "keepCurrentConflict": true,
+          "restoreSavedConflictAndBackupAccess": true,
+          "interruptedAtomicRecordRecovery": true,
+          "corruptRecordPreserved": true,
+          "crossAccountRecordPreserved": true,
+          "accountEnvironmentAndStorageIsolation": true,
+          "noAutomaticSendAndNoWebNativeAccess": true
+        },
+        "touchInputReceipts": [
+          {
+            "provider": "ci-android9-shell-touchscreen",
+            "events": [
+              {
+                "action": 0,
+                "downTime": 147270,
+                "eventTime": 147270,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 147270,
+                "eventTime": 147287,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 147270,
+                "eventTime": 147304,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 147270,
+                "eventTime": 147340,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 147270,
+                "eventTime": 147352,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 147270,
+                "eventTime": 147366,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 147270,
+                "eventTime": 147408,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 147270,
+                "eventTime": 147431,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 147270,
+                "eventTime": 147463,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 147270,
+                "eventTime": 147501,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 147270,
+                "eventTime": 147518,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 147270,
+                "eventTime": 147593,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 147270,
+                "eventTime": 147611,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 147270,
+                "eventTime": 147621,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 147270,
+                "eventTime": 147666,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 147270,
+                "eventTime": 147690,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 147270,
+                "eventTime": 147734,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 147270,
+                "eventTime": 147754,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 147270,
+                "eventTime": 147799,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 147270,
+                "eventTime": 147829,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 147270,
+                "eventTime": 147872,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 147270,
+                "eventTime": 147892,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 147270,
+                "eventTime": 147906,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 147270,
+                "eventTime": 147949,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 147270,
+                "eventTime": 147957,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 147270,
+                "eventTime": 147974,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 147270,
+                "eventTime": 147990,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 147270,
+                "eventTime": 148013,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 147270,
+                "eventTime": 148060,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 147270,
+                "eventTime": 148097,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 147270,
+                "eventTime": 148108,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 147270,
+                "eventTime": 148126,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 1,
+                "downTime": 147270,
+                "eventTime": 148142,
+                "source": 4098,
+                "toolType": 1
+              }
+            ]
+          },
+          {
+            "provider": "ci-android9-shell-touchscreen",
+            "events": [
+              {
+                "action": 0,
+                "downTime": 150487,
+                "eventTime": 150487,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 150487,
+                "eventTime": 150510,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 150487,
+                "eventTime": 150540,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 150487,
+                "eventTime": 150564,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 150487,
+                "eventTime": 150815,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 150487,
+                "eventTime": 150834,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 150487,
+                "eventTime": 150842,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 150487,
+                "eventTime": 150889,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 150487,
+                "eventTime": 150953,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 150487,
+                "eventTime": 150975,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 150487,
+                "eventTime": 151046,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 150487,
+                "eventTime": 151401,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 150487,
+                "eventTime": 151479,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 150487,
+                "eventTime": 151513,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 150487,
+                "eventTime": 151572,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 150487,
+                "eventTime": 151614,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 150487,
+                "eventTime": 151635,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 150487,
+                "eventTime": 151653,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 150487,
+                "eventTime": 151668,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 150487,
+                "eventTime": 151698,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 150487,
+                "eventTime": 151743,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 150487,
+                "eventTime": 151752,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 150487,
+                "eventTime": 151782,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 150487,
+                "eventTime": 151813,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 150487,
+                "eventTime": 151820,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 150487,
+                "eventTime": 151837,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 150487,
+                "eventTime": 151854,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 150487,
+                "eventTime": 151879,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 150487,
+                "eventTime": 151965,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 150487,
+                "eventTime": 151990,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 150487,
+                "eventTime": 152006,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 150487,
+                "eventTime": 152022,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 1,
+                "downTime": 150487,
+                "eventTime": 152039,
+                "source": 4098,
+                "toolType": 1
+              }
+            ]
+          }
+        ],
+        "touchGestures": [
+          {
+            "direction": "up",
+            "inputProvider": "ci-android9-shell-touchscreen",
+            "before": 1400,
+            "after": 1867.7166748046875,
+            "touchStartsAdded": 1,
+            "touchTerminalsAdded": 1,
+            "documentUnchanged": true
+          },
+          {
+            "direction": "down",
+            "inputProvider": "ci-android9-shell-touchscreen",
+            "before": 1867.7166748046875,
+            "after": 1398.2667236328125,
+            "touchStartsAdded": 1,
+            "touchTerminalsAdded": 1,
+            "documentUnchanged": true
+          }
+        ],
+        "backgroundSample": {
+          "backgroundSeconds": 7.025,
+          "totalRoundTripSeconds": 16.598,
+          "tickDeltas": {
+            "A:0": 14,
+            "A:1": 15,
+            "B:0": 11,
+            "C:0": 14
+          },
+          "mainPidUnchanged": true
+        },
+        "experimentComplete": true,
+        "submissions": [],
+        "inputDiagnosticComplete": false,
+        "managedControllerReady": true,
+        "formalMigrationReady": false,
+        "platformFindings": {
+          "unexpectedProcessRestartObserved": false,
+          "extraForceStopRequests": 0,
+          "touchScrollAcceptance": "Real trusted touch starts/terminals and bidirectional scroll measured."
+        },
+        "limits": [
+          "Synthetic textarea/contenteditable editor models only; no real ChatGPT.",
+          "Fresh x86_64 CI emulators, short background sample only; no physical/OEM, prolonged OS-pressure, optimized-release runtime or production lifecycle guarantee.",
+          "The existing reading recovery sample still uses native PanZoom separately from the genuine touch gate.",
+          "Warning phases show temporal correlation, not proof of cause or repair."
+        ],
+        "logCaptureComplete": true,
+        "warningCounts": {
+          "noEditableParent": 4,
+          "sessionStoreWinNull": 0,
+          "fatalException": 0
+        },
+        "warningCausalAttribution": false,
+        "validatedScope": "17 synthetic recovery/touch/lifecycle cases on a fresh x86_64 emulator, independent debug APK."
+      },
+      "warningLocalization": {
+        "schema": 1,
+        "causalAttribution": false,
+        "scope": "Whole fresh-emulator log, correlated by the last preceding marker; proximity is not causality.",
+        "counts": {
+          "noEditableParent": 4,
+          "sessionStoreWinNull": 0,
+          "fatalException": 0
+        },
+        "byPhase": {
+          "seed": {
+            "noEditableParent": 1,
+            "sessionStoreWinNull": 0,
+            "fatalException": 0
+          },
+          "normal-close": {
+            "noEditableParent": 1,
+            "sessionStoreWinNull": 0,
+            "fatalException": 0
+          },
+          "reconnected": {
+            "noEditableParent": 1,
+            "sessionStoreWinNull": 0,
+            "fatalException": 0
+          },
+          "conflict-keep": {
+            "noEditableParent": 1,
+            "sessionStoreWinNull": 0,
+            "fatalException": 0
+          }
+        },
+        "entries": [
+          {
+            "kind": "noEditableParent",
+            "lineNumber": 5847,
+            "pid": 4833,
+            "phase": "seed",
+            "step": "begin",
+            "nearestPriorLifecycleMarker": "10-28 07:43:55.167  4248  4248 I ManagedRecoveryPoC: event=resumed account=A selected=0",
+            "line": "10-28 07:43:55.712  4833  4858 W GeckoEditableChild: No editable parent"
+          },
+          {
+            "kind": "noEditableParent",
+            "lineNumber": 17363,
+            "pid": 7935,
+            "phase": "normal-close",
+            "step": "begin",
+            "nearestPriorLifecycleMarker": "10-28 07:45:27.605  7708  7708 I ManagedRecoveryPoC: event=resumed account=A selected=0",
+            "line": "10-28 07:45:35.335  7935  7964 W GeckoEditableChild: No editable parent"
+          },
+          {
+            "kind": "noEditableParent",
+            "lineNumber": 23005,
+            "pid": 9487,
+            "phase": "reconnected",
+            "step": "begin",
+            "nearestPriorLifecycleMarker": "10-28 07:46:44.883  9279  9279 I ManagedRecoveryPoC: event=resumed account=A selected=0",
+            "line": "10-28 07:46:49.770  9487  9502 W GeckoEditableChild: No editable parent"
+          },
+          {
+            "kind": "noEditableParent",
+            "lineNumber": 25448,
+            "pid": 10456,
+            "phase": "conflict-keep",
+            "step": "begin",
+            "nearestPriorLifecycleMarker": "10-28 07:47:12.319 10276 10276 I ManagedRecoveryPoC: event=resumed account=A selected=0",
+            "line": "10-28 07:47:13.722 10456 10474 W GeckoEditableChild: No editable parent"
+          }
+        ]
+      },
       "screenshots": 0
     }
   ],
@@ -322,5 +1443,730 @@
     "Unsigned arm64 release size is independent of debug x86_64 device acceptance; optimized release runtime and installed disk usage remain unverified.",
     "Phase proximity of warnings is not causality or evidence of repair.",
     "No screenshots, real ChatGPT, physical/OEM device, formal data migration or public release."
-  ]
+  ],
+  "releaseSize": {
+    "kind": "release-size",
+    "api": null,
+    "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40651548074",
+    "workflowConclusion": "success",
+    "jobConclusion": "success",
+    "sourceSha": "ba61f1930f94294414a221de3f47fffc6e098ced",
+    "artifactId": 12800046381,
+    "artifactSha256": "d8fa00b7b2b39095dcfa570577be9f4386493ab8ec3c24c7f80b327a0b1ab623",
+    "measurements": {
+      "schema": 1,
+      "sourceSha": "ba61f1930f94294414a221de3f47fffc6e098ced",
+      "runId": "40651548074",
+      "scope": "Unsigned arm64 isolated release APK composition",
+      "engineVersion": "158.0.20261021001945",
+      "agpVersion": "9.1.1",
+      "minSdk": 28,
+      "formalAppOrDataUsed": false,
+      "releaseRuntimeValidated": false,
+      "installedBytesMeasured": false,
+      "results": [
+        {
+          "apkBytes": 205599762,
+          "apkSha256": "22d2a937fab56f6afbb978c76a7e44e89bd0bb7fc760563d79dc5d0ce5f574ab",
+          "manifest": {
+            "package": "com.forcemind.chatgpt.environmentpoc",
+            "minSdk": 28,
+            "abis": [
+              "arm64-v8a"
+            ],
+            "debuggable": false
+          },
+          "categories": {
+            "other": {
+              "entries": 44,
+              "rawBytes": 86984,
+              "zipPayloadBytes": 24496
+            },
+            "assets": {
+              "entries": 5,
+              "rawBytes": 15164710,
+              "zipPayloadBytes": 14539497
+            },
+            "dex": {
+              "entries": 2,
+              "rawBytes": 14121220,
+              "zipPayloadBytes": 14121220
+            },
+            "nativeLibraries": {
+              "entries": 13,
+              "rawBytes": 176500344,
+              "zipPayloadBytes": 176500344
+            },
+            "manifest": {
+              "entries": 1,
+              "rawBytes": 43756,
+              "zipPayloadBytes": 5909
+            },
+            "resources": {
+              "entries": 84,
+              "rawBytes": 61599,
+              "zipPayloadBytes": 41751
+            },
+            "compiledResources": {
+              "entries": 1,
+              "rawBytes": 229240,
+              "zipPayloadBytes": 229240
+            }
+          },
+          "nativeLibraries": {
+            "lib/arm64-v8a/libclearkey.so": {
+              "rawBytes": 135400,
+              "zipPayloadBytes": 135400,
+              "compression": 0,
+              "sha256": "d1f9dbf9199c3c2a027097dc9aa77de12ff78be0b34ba3ef45e51ff9fa3c464e"
+            },
+            "lib/arm64-v8a/libcrashhelper.so": {
+              "rawBytes": 3435168,
+              "zipPayloadBytes": 3435168,
+              "compression": 0,
+              "sha256": "5f8578ea10db1859bdbbc18e0caef2be9587dbb67e5a2927b9ff7fb878d7eeef"
+            },
+            "lib/arm64-v8a/libcrashtools.so": {
+              "rawBytes": 5949176,
+              "zipPayloadBytes": 5949176,
+              "compression": 0,
+              "sha256": "0e603319567f9683220bff6fc5e206010465cf5fa7d00734cfc1377b958c6aa5"
+            },
+            "lib/arm64-v8a/libfreebl3.so": {
+              "rawBytes": 854368,
+              "zipPayloadBytes": 854368,
+              "compression": 0,
+              "sha256": "208e640ef091aef6cdd119561a21a9524baeaf929ddd61ac9686c54d477b9767"
+            },
+            "lib/arm64-v8a/libgkcodecs.so": {
+              "rawBytes": 5136272,
+              "zipPayloadBytes": 5136272,
+              "compression": 0,
+              "sha256": "9a6fa4de593258bc4b1412f594e76ce8e41b968eba3dc15eadad72c4f2c024b4"
+            },
+            "lib/arm64-v8a/liblgpllibs.so": {
+              "rawBytes": 167272,
+              "zipPayloadBytes": 167272,
+              "compression": 0,
+              "sha256": "907cd4fab6e6b52a2e66e32225099a597fbef8052f75a5d6c9b972aca1099f8d"
+            },
+            "lib/arm64-v8a/libmozavcodec.so": {
+              "rawBytes": 2121336,
+              "zipPayloadBytes": 2121336,
+              "compression": 0,
+              "sha256": "4f0db549cb8a74c9daac86f8277ac944ed33dd05661b746c5a34ec8cbaa84a2c"
+            },
+            "lib/arm64-v8a/libmozavutil.so": {
+              "rawBytes": 460936,
+              "zipPayloadBytes": 460936,
+              "compression": 0,
+              "sha256": "db83577f550d2a51636c5095e07f5a988f0e620685b6409733883ac5c0e7b4cb"
+            },
+            "lib/arm64-v8a/libmozglue.so": {
+              "rawBytes": 1201696,
+              "zipPayloadBytes": 1201696,
+              "compression": 0,
+              "sha256": "3d0d0a69612ccdd1f37175bb14ad5b5c041c8e7a30d50ffb9eaa547280b57f30"
+            },
+            "lib/arm64-v8a/libnss3.so": {
+              "rawBytes": 2878856,
+              "zipPayloadBytes": 2878856,
+              "compression": 0,
+              "sha256": "59d010ffa67bddeaae94945506f23f5b794b9761c3e918eda8d69e2ce31aa0fb"
+            },
+            "lib/arm64-v8a/libplugin-container.so": {
+              "rawBytes": 4800,
+              "zipPayloadBytes": 4800,
+              "compression": 0,
+              "sha256": "946d1558ed7978051366ae83433a29d9b5a63b6d167e9b2e2a1509a48368c0f1"
+            },
+            "lib/arm64-v8a/libsoftokn3.so": {
+              "rawBytes": 326320,
+              "zipPayloadBytes": 326320,
+              "compression": 0,
+              "sha256": "98b955d54934de84cc57c6d64dc983455f91fd5a413889daa128edde1cc26044"
+            },
+            "lib/arm64-v8a/libxul.so": {
+              "rawBytes": 153828744,
+              "zipPayloadBytes": 153828744,
+              "compression": 0,
+              "sha256": "91b64a3e857b3aa1a739be3894d0330e705b1b6d563f8eb367cafe96fb4977af"
+            }
+          },
+          "managedBridge": {
+            "assets/managed-recovery/manifest.json": {
+              "rawBytes": 429,
+              "zipPayloadBytes": 266,
+              "compression": 8,
+              "sha256": "1fb226439c24df83094d5f94bee0a9c71d18d2c96b65e443bb74afd9cce023c6"
+            },
+            "assets/managed-recovery/recovery.js": {
+              "rawBytes": 5418,
+              "zipPayloadBytes": 2002,
+              "compression": 8,
+              "sha256": "90a0feeb064830661228088393e533bdccfa2328ac9b9e5b8ef1e4cf2ea20e83"
+            }
+          },
+          "zipHeadersAlignmentAndSigningBytes": 137305,
+          "mode": "baseline",
+          "nativeEngineBytesPreserved": true,
+          "managedBridgeBytesPreserved": true,
+          "savedBytesVsBaseline": 0,
+          "savedPercentVsBaseline": 0.0
+        },
+        {
+          "apkBytes": 194163179,
+          "apkSha256": "0d333be49fdd477fb5952a54a57622ee78521463c27031ad540d6cd8f5d47a5e",
+          "manifest": {
+            "package": "com.forcemind.chatgpt.environmentpoc",
+            "minSdk": 28,
+            "abis": [
+              "arm64-v8a"
+            ],
+            "debuggable": false
+          },
+          "categories": {
+            "other": {
+              "entries": 42,
+              "rawBytes": 86878,
+              "zipPayloadBytes": 24443
+            },
+            "assets": {
+              "entries": 5,
+              "rawBytes": 15164677,
+              "zipPayloadBytes": 14539464
+            },
+            "dex": {
+              "entries": 1,
+              "rawBytes": 2670348,
+              "zipPayloadBytes": 2670348
+            },
+            "nativeLibraries": {
+              "entries": 13,
+              "rawBytes": 176500344,
+              "zipPayloadBytes": 176500344
+            },
+            "manifest": {
+              "entries": 1,
+              "rawBytes": 43756,
+              "zipPayloadBytes": 5909
+            },
+            "resources": {
+              "entries": 84,
+              "rawBytes": 61599,
+              "zipPayloadBytes": 41751
+            },
+            "compiledResources": {
+              "entries": 1,
+              "rawBytes": 229240,
+              "zipPayloadBytes": 229240
+            }
+          },
+          "nativeLibraries": {
+            "lib/arm64-v8a/libclearkey.so": {
+              "rawBytes": 135400,
+              "zipPayloadBytes": 135400,
+              "compression": 0,
+              "sha256": "d1f9dbf9199c3c2a027097dc9aa77de12ff78be0b34ba3ef45e51ff9fa3c464e"
+            },
+            "lib/arm64-v8a/libcrashhelper.so": {
+              "rawBytes": 3435168,
+              "zipPayloadBytes": 3435168,
+              "compression": 0,
+              "sha256": "5f8578ea10db1859bdbbc18e0caef2be9587dbb67e5a2927b9ff7fb878d7eeef"
+            },
+            "lib/arm64-v8a/libcrashtools.so": {
+              "rawBytes": 5949176,
+              "zipPayloadBytes": 5949176,
+              "compression": 0,
+              "sha256": "0e603319567f9683220bff6fc5e206010465cf5fa7d00734cfc1377b958c6aa5"
+            },
+            "lib/arm64-v8a/libfreebl3.so": {
+              "rawBytes": 854368,
+              "zipPayloadBytes": 854368,
+              "compression": 0,
+              "sha256": "208e640ef091aef6cdd119561a21a9524baeaf929ddd61ac9686c54d477b9767"
+            },
+            "lib/arm64-v8a/libgkcodecs.so": {
+              "rawBytes": 5136272,
+              "zipPayloadBytes": 5136272,
+              "compression": 0,
+              "sha256": "9a6fa4de593258bc4b1412f594e76ce8e41b968eba3dc15eadad72c4f2c024b4"
+            },
+            "lib/arm64-v8a/liblgpllibs.so": {
+              "rawBytes": 167272,
+              "zipPayloadBytes": 167272,
+              "compression": 0,
+              "sha256": "907cd4fab6e6b52a2e66e32225099a597fbef8052f75a5d6c9b972aca1099f8d"
+            },
+            "lib/arm64-v8a/libmozavcodec.so": {
+              "rawBytes": 2121336,
+              "zipPayloadBytes": 2121336,
+              "compression": 0,
+              "sha256": "4f0db549cb8a74c9daac86f8277ac944ed33dd05661b746c5a34ec8cbaa84a2c"
+            },
+            "lib/arm64-v8a/libmozavutil.so": {
+              "rawBytes": 460936,
+              "zipPayloadBytes": 460936,
+              "compression": 0,
+              "sha256": "db83577f550d2a51636c5095e07f5a988f0e620685b6409733883ac5c0e7b4cb"
+            },
+            "lib/arm64-v8a/libmozglue.so": {
+              "rawBytes": 1201696,
+              "zipPayloadBytes": 1201696,
+              "compression": 0,
+              "sha256": "3d0d0a69612ccdd1f37175bb14ad5b5c041c8e7a30d50ffb9eaa547280b57f30"
+            },
+            "lib/arm64-v8a/libnss3.so": {
+              "rawBytes": 2878856,
+              "zipPayloadBytes": 2878856,
+              "compression": 0,
+              "sha256": "59d010ffa67bddeaae94945506f23f5b794b9761c3e918eda8d69e2ce31aa0fb"
+            },
+            "lib/arm64-v8a/libplugin-container.so": {
+              "rawBytes": 4800,
+              "zipPayloadBytes": 4800,
+              "compression": 0,
+              "sha256": "946d1558ed7978051366ae83433a29d9b5a63b6d167e9b2e2a1509a48368c0f1"
+            },
+            "lib/arm64-v8a/libsoftokn3.so": {
+              "rawBytes": 326320,
+              "zipPayloadBytes": 326320,
+              "compression": 0,
+              "sha256": "98b955d54934de84cc57c6d64dc983455f91fd5a413889daa128edde1cc26044"
+            },
+            "lib/arm64-v8a/libxul.so": {
+              "rawBytes": 153828744,
+              "zipPayloadBytes": 153828744,
+              "compression": 0,
+              "sha256": "91b64a3e857b3aa1a739be3894d0330e705b1b6d563f8eb367cafe96fb4977af"
+            }
+          },
+          "managedBridge": {
+            "assets/managed-recovery/manifest.json": {
+              "rawBytes": 429,
+              "zipPayloadBytes": 266,
+              "compression": 8,
+              "sha256": "1fb226439c24df83094d5f94bee0a9c71d18d2c96b65e443bb74afd9cce023c6"
+            },
+            "assets/managed-recovery/recovery.js": {
+              "rawBytes": 5418,
+              "zipPayloadBytes": 2002,
+              "compression": 8,
+              "sha256": "90a0feeb064830661228088393e533bdccfa2328ac9b9e5b8ef1e4cf2ea20e83"
+            }
+          },
+          "zipHeadersAlignmentAndSigningBytes": 151680,
+          "mode": "r8",
+          "nativeEngineBytesPreserved": true,
+          "managedBridgeBytesPreserved": true,
+          "savedBytesVsBaseline": 11436583,
+          "savedPercentVsBaseline": 5.5625
+        },
+        {
+          "apkBytes": 194068283,
+          "apkSha256": "85b8d135ac5d99030ef0fbe9993bca0f866e26512ffc70616a4010f42c2f993d",
+          "manifest": {
+            "package": "com.forcemind.chatgpt.environmentpoc",
+            "minSdk": 28,
+            "abis": [
+              "arm64-v8a"
+            ],
+            "debuggable": false
+          },
+          "categories": {
+            "other": {
+              "entries": 42,
+              "rawBytes": 86878,
+              "zipPayloadBytes": 24443
+            },
+            "assets": {
+              "entries": 5,
+              "rawBytes": 15164724,
+              "zipPayloadBytes": 14539511
+            },
+            "dex": {
+              "entries": 1,
+              "rawBytes": 2670344,
+              "zipPayloadBytes": 2670344
+            },
+            "nativeLibraries": {
+              "entries": 13,
+              "rawBytes": 176500344,
+              "zipPayloadBytes": 176500344
+            },
+            "manifest": {
+              "entries": 1,
+              "rawBytes": 43756,
+              "zipPayloadBytes": 5909
+            },
+            "resources": {
+              "entries": 48,
+              "rawBytes": 39076,
+              "zipPayloadBytes": 29224
+            },
+            "compiledResources": {
+              "entries": 1,
+              "rawBytes": 150396,
+              "zipPayloadBytes": 150396
+            }
+          },
+          "nativeLibraries": {
+            "lib/arm64-v8a/libclearkey.so": {
+              "rawBytes": 135400,
+              "zipPayloadBytes": 135400,
+              "compression": 0,
+              "sha256": "d1f9dbf9199c3c2a027097dc9aa77de12ff78be0b34ba3ef45e51ff9fa3c464e"
+            },
+            "lib/arm64-v8a/libcrashhelper.so": {
+              "rawBytes": 3435168,
+              "zipPayloadBytes": 3435168,
+              "compression": 0,
+              "sha256": "5f8578ea10db1859bdbbc18e0caef2be9587dbb67e5a2927b9ff7fb878d7eeef"
+            },
+            "lib/arm64-v8a/libcrashtools.so": {
+              "rawBytes": 5949176,
+              "zipPayloadBytes": 5949176,
+              "compression": 0,
+              "sha256": "0e603319567f9683220bff6fc5e206010465cf5fa7d00734cfc1377b958c6aa5"
+            },
+            "lib/arm64-v8a/libfreebl3.so": {
+              "rawBytes": 854368,
+              "zipPayloadBytes": 854368,
+              "compression": 0,
+              "sha256": "208e640ef091aef6cdd119561a21a9524baeaf929ddd61ac9686c54d477b9767"
+            },
+            "lib/arm64-v8a/libgkcodecs.so": {
+              "rawBytes": 5136272,
+              "zipPayloadBytes": 5136272,
+              "compression": 0,
+              "sha256": "9a6fa4de593258bc4b1412f594e76ce8e41b968eba3dc15eadad72c4f2c024b4"
+            },
+            "lib/arm64-v8a/liblgpllibs.so": {
+              "rawBytes": 167272,
+              "zipPayloadBytes": 167272,
+              "compression": 0,
+              "sha256": "907cd4fab6e6b52a2e66e32225099a597fbef8052f75a5d6c9b972aca1099f8d"
+            },
+            "lib/arm64-v8a/libmozavcodec.so": {
+              "rawBytes": 2121336,
+              "zipPayloadBytes": 2121336,
+              "compression": 0,
+              "sha256": "4f0db549cb8a74c9daac86f8277ac944ed33dd05661b746c5a34ec8cbaa84a2c"
+            },
+            "lib/arm64-v8a/libmozavutil.so": {
+              "rawBytes": 460936,
+              "zipPayloadBytes": 460936,
+              "compression": 0,
+              "sha256": "db83577f550d2a51636c5095e07f5a988f0e620685b6409733883ac5c0e7b4cb"
+            },
+            "lib/arm64-v8a/libmozglue.so": {
+              "rawBytes": 1201696,
+              "zipPayloadBytes": 1201696,
+              "compression": 0,
+              "sha256": "3d0d0a69612ccdd1f37175bb14ad5b5c041c8e7a30d50ffb9eaa547280b57f30"
+            },
+            "lib/arm64-v8a/libnss3.so": {
+              "rawBytes": 2878856,
+              "zipPayloadBytes": 2878856,
+              "compression": 0,
+              "sha256": "59d010ffa67bddeaae94945506f23f5b794b9761c3e918eda8d69e2ce31aa0fb"
+            },
+            "lib/arm64-v8a/libplugin-container.so": {
+              "rawBytes": 4800,
+              "zipPayloadBytes": 4800,
+              "compression": 0,
+              "sha256": "946d1558ed7978051366ae83433a29d9b5a63b6d167e9b2e2a1509a48368c0f1"
+            },
+            "lib/arm64-v8a/libsoftokn3.so": {
+              "rawBytes": 326320,
+              "zipPayloadBytes": 326320,
+              "compression": 0,
+              "sha256": "98b955d54934de84cc57c6d64dc983455f91fd5a413889daa128edde1cc26044"
+            },
+            "lib/arm64-v8a/libxul.so": {
+              "rawBytes": 153828744,
+              "zipPayloadBytes": 153828744,
+              "compression": 0,
+              "sha256": "91b64a3e857b3aa1a739be3894d0330e705b1b6d563f8eb367cafe96fb4977af"
+            }
+          },
+          "managedBridge": {
+            "assets/managed-recovery/manifest.json": {
+              "rawBytes": 429,
+              "zipPayloadBytes": 266,
+              "compression": 8,
+              "sha256": "1fb226439c24df83094d5f94bee0a9c71d18d2c96b65e443bb74afd9cce023c6"
+            },
+            "assets/managed-recovery/recovery.js": {
+              "rawBytes": 5418,
+              "zipPayloadBytes": 2002,
+              "compression": 8,
+              "sha256": "90a0feeb064830661228088393e533bdccfa2328ac9b9e5b8ef1e4cf2ea20e83"
+            }
+          },
+          "zipHeadersAlignmentAndSigningBytes": 148112,
+          "mode": "resources",
+          "nativeEngineBytesPreserved": true,
+          "managedBridgeBytesPreserved": true,
+          "savedBytesVsBaseline": 11531479,
+          "savedPercentVsBaseline": 5.6087
+        }
+      ],
+      "complete": true,
+      "limits": [
+        "Release APKs are unsigned, not installed, and not runtime-validated. Device lifecycle/recovery tests use the independent debug build.",
+        "APK file size is not installed disk usage, RAM, CPU or store-compressed download size.",
+        "No engine update, native stripping, formal signing key, user data, real ChatGPT or public release."
+      ]
+    }
+  },
+  "deviceAcceptance": [
+    {
+      "kind": "touch-lifecycle",
+      "api": 28,
+      "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40651548074",
+      "workflowConclusion": "success",
+      "jobConclusion": "success",
+      "sourceSha": "ba61f1930f94294414a221de3f47fffc6e098ced",
+      "artifactId": 12799862409,
+      "artifactSha256": "1ec724ebe8c83a652a460651a2c9c28c2a78de046ada88d0196d3b376154fd47",
+      "screenshots": 0,
+      "cases": {
+        "initialCapture": true,
+        "trustedTouchScrollUpDown": true,
+        "homeForegroundRetainsDocuments": true,
+        "activityRecreationRetainsDocuments": true,
+        "normalClose": true,
+        "historyAndURLIsolation": true,
+        "saveAfterRestore": true,
+        "offlineReadOnlySnapshot": true,
+        "forceStopAndReconnect": true,
+        "unresolvedConflictRestartAndURLBinding": true,
+        "keepCurrentConflict": true,
+        "restoreSavedConflictAndBackupAccess": true,
+        "interruptedAtomicRecordRecovery": true,
+        "corruptRecordPreserved": true,
+        "crossAccountRecordPreserved": true,
+        "accountEnvironmentAndStorageIsolation": true,
+        "noAutomaticSendAndNoWebNativeAccess": true
+      },
+      "touchGestures": [
+        {
+          "direction": "up",
+          "inputProvider": "ci-android9-shell-touchscreen",
+          "before": 1400,
+          "after": 1867.7166748046875,
+          "touchStartsAdded": 1,
+          "touchTerminalsAdded": 1,
+          "documentUnchanged": true
+        },
+        {
+          "direction": "down",
+          "inputProvider": "ci-android9-shell-touchscreen",
+          "before": 1867.7166748046875,
+          "after": 1398.2667236328125,
+          "touchStartsAdded": 1,
+          "touchTerminalsAdded": 1,
+          "documentUnchanged": true
+        }
+      ],
+      "backgroundSample": {
+        "backgroundSeconds": 7.025,
+        "totalRoundTripSeconds": 16.598,
+        "tickDeltas": {
+          "A:0": 14,
+          "A:1": 15,
+          "B:0": 11,
+          "C:0": 14
+        },
+        "mainPidUnchanged": true
+      },
+      "warningCounts": {
+        "noEditableParent": 4,
+        "sessionStoreWinNull": 0,
+        "fatalException": 0
+      },
+      "warningsByPhase": {
+        "seed": {
+          "noEditableParent": 1,
+          "sessionStoreWinNull": 0,
+          "fatalException": 0
+        },
+        "normal-close": {
+          "noEditableParent": 1,
+          "sessionStoreWinNull": 0,
+          "fatalException": 0
+        },
+        "reconnected": {
+          "noEditableParent": 1,
+          "sessionStoreWinNull": 0,
+          "fatalException": 0
+        },
+        "conflict-keep": {
+          "noEditableParent": 1,
+          "sessionStoreWinNull": 0,
+          "fatalException": 0
+        }
+      },
+      "causalAttribution": false,
+      "compatibility": {
+        "sourceSha": "ba61f1930f94294414a221de3f47fffc6e098ced",
+        "requestedMinSdk": 28,
+        "testApi": 28,
+        "buildOutcome": "success",
+        "version": "158.0.20261021001945"
+      }
+    },
+    {
+      "kind": "touch-lifecycle",
+      "api": 35,
+      "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40649194866",
+      "sourceSha": "2e42ff5f5da7706d5d43c495473df1295c327602",
+      "artifactId": 12798823319,
+      "artifactSha256": "bee75efb78a76fc3f697b3ffaa9222f37e3b6b8a944d5ea89b3402c3f05bb535",
+      "screenshots": 0,
+      "workflowConclusion": "failure",
+      "jobConclusion": "success",
+      "cases": {
+        "initialCapture": true,
+        "trustedTouchScrollUpDown": true,
+        "homeForegroundRetainsDocuments": true,
+        "activityRecreationRetainsDocuments": true,
+        "normalClose": true,
+        "historyAndURLIsolation": true,
+        "saveAfterRestore": true,
+        "offlineReadOnlySnapshot": true,
+        "forceStopAndReconnect": true,
+        "unresolvedConflictRestartAndURLBinding": true,
+        "keepCurrentConflict": true,
+        "restoreSavedConflictAndBackupAccess": true,
+        "interruptedAtomicRecordRecovery": true,
+        "corruptRecordPreserved": true,
+        "crossAccountRecordPreserved": true,
+        "accountEnvironmentAndStorageIsolation": true,
+        "noAutomaticSendAndNoWebNativeAccess": true
+      },
+      "touchGestures": [
+        {
+          "direction": "up",
+          "before": 1400,
+          "after": 1752.6666259765625,
+          "touchStartsAdded": 1,
+          "touchTerminalsAdded": 1,
+          "documentUnchanged": true
+        },
+        {
+          "direction": "down",
+          "before": 1752.6666259765625,
+          "after": 1291.2332763671875,
+          "touchStartsAdded": 1,
+          "touchTerminalsAdded": 1,
+          "documentUnchanged": true
+        }
+      ],
+      "backgroundSample": {
+        "backgroundSeconds": 5.205,
+        "totalRoundTripSeconds": 14.493,
+        "tickDeltas": {
+          "A:0": 10,
+          "A:1": 9,
+          "B:0": 10,
+          "C:0": 10
+        },
+        "mainPidUnchanged": true
+      },
+      "warningCounts": {
+        "noEditableParent": 9,
+        "sessionStoreWinNull": 0,
+        "fatalException": 0
+      },
+      "warningsByPhase": {
+        "seed": {
+          "noEditableParent": 2,
+          "sessionStoreWinNull": 0,
+          "fatalException": 0
+        },
+        "normal-close": {
+          "noEditableParent": 2,
+          "sessionStoreWinNull": 0,
+          "fatalException": 0
+        },
+        "reconnected": {
+          "noEditableParent": 3,
+          "sessionStoreWinNull": 0,
+          "fatalException": 0
+        },
+        "unresolved-conflict-restart": {
+          "noEditableParent": 1,
+          "sessionStoreWinNull": 0,
+          "fatalException": 0
+        },
+        "atomic-backup": {
+          "noEditableParent": 1,
+          "sessionStoreWinNull": 0,
+          "fatalException": 0
+        }
+      },
+      "causalAttribution": false,
+      "compatibility": {
+        "sourceSha": "2e42ff5f5da7706d5d43c495473df1295c327602",
+        "requestedMinSdk": 29,
+        "testApi": 35,
+        "buildOutcome": "success",
+        "version": "158.0.20261021001945"
+      }
+    }
+  ],
+  "sourceComparison": {
+    "deviceAppSourceTree": "f02f4783aa7fbbb249f84be2e0774d17d3122f5d",
+    "matchesBothDeviceRuns": true,
+    "api35Source": "2e42ff5f5da7706d5d43c495473df1295c327602",
+    "api28AndSizeSource": "ba61f1930f94294414a221de3f47fffc6e098ced",
+    "note": "Different workflow/test-driver revisions are explicit. Independent App source tree is identical; API35 results are reused, not presented as a single-HEAD combined run.",
+    "identicalRuntimeInputs": {
+      "android/environment-poc/src": "3da71eb215adb99020839c8cb7101d40d3e42539",
+      "android/environment-poc/build.gradle": "9dfa72bed58cb337dfc4215b4a0bee27cd543d3f",
+      "android/environment-poc/settings.gradle": "f8ad3d23d20bb6982027a1f1911410522139ae8d",
+      "android/environment-poc/gradle.properties": "18825f968c6a47c3e86e7dea7949d0f3f842bab2",
+      "android/environment-poc/gradle": "e313cfee861c795764757a42d87efc66287c7eed"
+    },
+    "finalDocumentationOnlyChanges": "Final delivery supplements documentation and evidence; runtime inputs remain identical to the measured source."
+  },
+  "summary": {
+    "baselineApkBytes": 205599762,
+    "r8ApkBytes": 194163179,
+    "r8AndResourcesApkBytes": 194068283,
+    "savedBytes": 11531479,
+    "savedPercent": 5.6087,
+    "nativeLibraryBytes": 176500344,
+    "nativeShareOfOptimizedApkPercent": 90.9475,
+    "deviceCasesPerApi": 17,
+    "submissions": 0,
+    "screenshots": 0,
+    "optimizedReleaseRuntimeValidated": false,
+    "installedBytesMeasured": false,
+    "warningRootCauseProven": false,
+    "warningRepairClaimed": false
+  },
+  "legacyTouchDiagnosis": {
+    "firstFailureArtifactId": 12799426768,
+    "stockInputEvidence": [
+      "10-28 07:23:52.724  6951  6951 I Input   : injectMotionEvent: MotionEvent { action=ACTION_DOWN, actionButton=0, id[0]=0, x[0]=540.0, y[0]=1507.0, toolType[0]=TOOL_TYPE_UNKNOWN, buttonState=0, metaState=0, flags=0x0, edgeFlags=0x0, pointerCount=1, historySize=0, eventTime=177606, downTime=177606, deviceId=0, source=0x1002 }",
+      "10-28 07:23:52.764  6951  6951 I Input   : injectMotionEvent: MotionEvent { action=ACTION_UP, actionButton=0, id[0]=0, x[0]=540.0, y[0]=1507.0, toolType[0]=TOOL_TYPE_UNKNOWN, buttonState=0, metaState=0, flags=0x0, edgeFlags=0x0, pointerCount=1, historySize=0, eventTime=177606, downTime=177606, deviceId=0, source=0x1002 }",
+      "10-28 07:23:53.673  6980  6980 I Input   : injectMotionEvent: MotionEvent { action=ACTION_DOWN, actionButton=0, id[0]=0, x[0]=540.0, y[0]=1852.0, toolType[0]=TOOL_TYPE_UNKNOWN, buttonState=0, metaState=0, flags=0x0, edgeFlags=0x0, pointerCount=1, historySize=0, eventTime=178583, downTime=178583, deviceId=0, source=0x1002 }",
+      "10-28 07:23:53.677  6980  6980 I Input   : injectMotionEvent: MotionEvent { action=ACTION_MOVE, actionButton=0, id[0]=0, x[0]=540.0, y[0]=1852.0, toolType[0]=TOOL_TYPE_UNKNOWN, buttonState=0, metaState=0, flags=0x0, edgeFlags=0x0, pointerCount=1, historySize=0, eventTime=178583, downTime=178583, deviceId=0, source=0x1002 }",
+      "10-28 07:23:53.694  6980  6980 I Input   : injectMotionEvent: MotionEvent { action=ACTION_MOVE, actionButton=0, id[0]=0, x[0]=540.0, y[0]=1815.2, toolType[0]=TOOL_TYPE_UNKNOWN, buttonState=0, metaState=0, flags=0x0, edgeFlags=0x0, pointerCount=1, historySize=0, eventTime=178605, downTime=178605, deviceId=0, source=0x1002 }"
+    ],
+    "aospSource": "https://raw.githubusercontent.com/aosp-mirror/platform_frameworks_base/android-9.0.0_r61/cmds/input/src/com/android/commands/input/Input.java",
+    "pinnedGeckoSources": "https://maven.mozilla.org/maven2/org/mozilla/geckoview/geckoview/158.0.20261021001945/geckoview-158.0.20261021001945-sources.jar",
+    "pinnedGeckoSourceSha256": "f78fd393bd774f46dbf55ea8e868b7607d5c4c133d9906eab000c339bbee02ac",
+    "finding": "Legacy Android9 input swipe changes downTime on successive moves. The pinned PanZoomController drops continuations whose downTime differs from ACTION_DOWN. Corrected CI shell tool retains one downTime and injects via Android InputManager; no product input acceptance rule or scroll assertion was relaxed."
+  },
+  "unitValidation": {
+    "packageManifestBoundaryCases": 4,
+    "warningLocalizationBoundaryCases": 4,
+    "executedInGitHubActions": true
+  },
+  "backgroundTimingDefinition": "From immediately before Home injection until before foreground relaunch, includes OS transition overhead; >=5 seconds are waited after confirming foreground loss."
 }
