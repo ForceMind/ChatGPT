@@ -145,7 +145,8 @@ final class ManagedPageController {
                 View view=inputViews.view(e);JSONObject point=msg.getJSONObject("point");double ratio=point.getDouble("ratio"),x=point.getDouble("x")*ratio,y=point.getDouble("y")*ratio;
                 if(view==null||!view.hasWindowFocus()||!Double.isFinite(x)||!Double.isFinite(y)||ratio<=0||ratio>10||x<0||y<0||x>=view.getWidth()||y>=view.getHeight())throw new IllegalArgumentException("Invalid editor target");
                 long now=android.os.SystemClock.uptimeMillis();android.view.MotionEvent down=android.view.MotionEvent.obtain(now,now,android.view.MotionEvent.ACTION_DOWN,(float)x,(float)y,0),up=android.view.MotionEvent.obtain(now,now+60,android.view.MotionEvent.ACTION_UP,(float)x,(float)y,0);
-                try{view.dispatchTouchEvent(down);view.dispatchTouchEvent(up);}finally{down.recycle();up.recycle();}return;
+                down.setSource(android.view.InputDevice.SOURCE_TOUCHSCREEN);up.setSource(android.view.InputDevice.SOURCE_TOUCHSCREEN);
+                try{if(!view.dispatchTouchEvent(down)||!view.dispatchTouchEvent(up))throw new IllegalStateException("Editor touch refused");}finally{down.recycle();up.recycle();}return;
             }
             if("focused".equals(type)){
                 if(!e.pendingEditor.equals(msg.getString("editor"))||!msg.getBoolean("active")||!e.visible)throw new IllegalArgumentException("Unexpected editor focus");commit(e,current,e.pendingEditor);return;
