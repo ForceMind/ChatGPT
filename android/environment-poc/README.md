@@ -76,11 +76,20 @@ gh workflow run android.yml --ref codex/macos-assets-workbench \
 
 新增的 `Managed*Activity` 使用独立浏览器 profile、独立加密目录和受限内置页面桥接，不读取正式 App 的账号、登录或恢复文件。`ManagedPageController` 保存按账号 / 标签 / URL 绑定的文本、动态草稿、阅读位置和历史；恢复不调用会覆盖现有表单的整包原生状态恢复。离线显示只读原生文本，遇到不同草稿时保留两份并等待选择。
 
-[API 35 单账号核心](https://github.com/ForceMind/ChatGPT/actions/runs/40545612063)已通过 11 项合成用例，包括动态草稿、继续编辑后的最新缓存、正常关闭 / 强停重连、离线内容、冲突两种选择、备份查看、损坏记录及零发送。**三账号四页矩阵尚未通过**：最新测试在部分页面收到接口写入接受后，实际网页 / 编辑器模型仍未确认值，控制器停止并保留缓存。不能据单账号结果宣称多账号、Android 9 或正式迁移完成。
+[最新三账号四页完整矩阵](https://github.com/ForceMind/ChatGPT/actions/runs/40631441716)在同一源码 `04644b1` 上通过 Android 9 / API 28 和 Android 15 / API 35 的编译、lint 与各 14 项合成用例。覆盖正常退出、继续编辑后的最新草稿、强停断网重连、只读离线内容、历史 URL 隔离、未处理冲突跨重启保留、两种冲突选择与备份查看、原子写恢复、损坏 / 跨账号记录拒绝，以及三账号的语言、时区、Cookie / localStorage 隔离。多行中文 / emoji、真实 DOM 与仅接受可信输入事件的编辑器模型均已核对；发送和截图为零。本轮未观察到异常进程重启，之前失败与异常记录仍保留。
 
 所有已核对的有效来源、摘要、完成范围和失败见[应用恢复证据](../../docs/benchmarks/android-managed-recovery-poc.json)。本阶段仍只访问合成 loopback 网页，真实 ChatGPT、真机、正式 UI / 生命周期集成和包体积工作没有通过该验收。新版工作约定下，新增浏览器诊断须明确授权；管理恢复驱动默认不截图，`--capture-ui` 仅在具体截图任务获准后使用。
 
-[已授权的两页输入诊断](https://github.com/ForceMind/ChatGPT/actions/runs/40628520740)在 API 28 / 35 均通过：切换保留原文档、完整退出后两页的 textarea / contenteditable 内容及独立编辑器模型恢复一致，发送与截图均为零。诊断发现未初始化的输入缓存可能在选区为 -1 时仍返回提交成功；控制器现等待完整文本和有效选区就绪后才提交，仍以真实页面回执确认，不重复发送已接受的提交。完整三账号矩阵需要在新修正上复验，正式迁移门槛仍未通过。
+[两页输入诊断](https://github.com/ForceMind/ChatGPT/actions/runs/40628520740)此前已验证切换保留原文档，并定位到未初始化输入缓存可能返回提交成功的问题。完整矩阵进一步覆盖错误页重连：控制器现同时等待当前导航的新原生 IME 焦点回调、完整文本与有效选区，提交后仍等真实页面 / 模型确认，不重复提交已接受的写入；桥接使用有上限的握手恢复。**正式迁移门槛仍未通过**：本阶段只验证独立合成页面，真实 ChatGPT、真机 / OEM、正式 UI 与生命周期集成、发布体积尚待后续阶段。触摸滚动没有由原生 PanZoom 阅读样本证明；本轮 `No editable parent` 警告仍有 API 28 一次、API 35 十次，未声称修好该警告。
+
+已获本轮明确授权的完整矩阵入口如下，默认不截图：
+
+```sh
+gh workflow run android.yml --ref codex/macos-assets-workbench \
+  -f managed_recovery_poc=true -f device_only=true \
+  -f managed_recovery_core=false -f managed_recovery_input_diagnostic=false \
+  -f 'recovery_poc_apis=[28,35]'
+```
 
 以下入口只运行该最小诊断；浏览器交互须先取得当前任务的明确授权：
 

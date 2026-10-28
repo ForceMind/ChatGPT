@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "scope": "Independent managed Android recovery controller; synthetic loopback pages only. No production login or recovery data.",
-  "status": "single_account_core_passed_multispace_not_passed",
+  "status": "three_account_four_tab_recovery_passed_api28_api35",
   "formalMigrationReady": false,
   "core": {
     "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40545612063",
@@ -260,15 +260,117 @@
         "extraForceStopRequests": 0,
         "touchScrollAcceptance": "Not established here; reading samples use native PanZoom API."
       }
+    },
+    {
+      "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40631441716",
+      "api": 28,
+      "sourceSha": "04644b17363cadaf879659c6d64f78c05b221716",
+      "artifactId": 12791579301,
+      "artifactSha256": "0a5a2329b9216b06eff7e46436ccee03499ee361bc6f6642d4b2d8dc5dd8f793",
+      "experimentComplete": true,
+      "managedControllerReady": true,
+      "formalMigrationReady": false,
+      "cases": {
+        "initialCapture": true,
+        "normalClose": true,
+        "historyAndURLIsolation": true,
+        "saveAfterRestore": true,
+        "offlineReadOnlySnapshot": true,
+        "forceStopAndReconnect": true,
+        "unresolvedConflictRestartAndURLBinding": true,
+        "keepCurrentConflict": true,
+        "restoreSavedConflictAndBackupAccess": true,
+        "interruptedAtomicRecordRecovery": true,
+        "corruptRecordPreserved": true,
+        "crossAccountRecordPreserved": true,
+        "accountEnvironmentAndStorageIsolation": true,
+        "noAutomaticSendAndNoWebNativeAccess": true
+      },
+      "submissions": 0,
+      "screenshots": 0,
+      "observationCount": 1268,
+      "accountsAndTabs": [
+        "A/0",
+        "A/1",
+        "B/0",
+        "C/0"
+      ],
+      "platformFindings": {
+        "unexpectedProcessRestartObserved": false,
+        "extraForceStopRequests": 0,
+        "touchScrollAcceptance": "Not established here; reading samples use native PanZoom API."
+      },
+      "runtimeWarnings": {
+        "noEditableParent": 1,
+        "closeSessionStoreWinNull": 0,
+        "fatalException": 0
+      },
+      "limits": [
+        "Synthetic textarea/contenteditable editor models only; no real ChatGPT.",
+        "Touch scrolling, OEM/physical devices, production lifecycle integration and package-size work remain separate gates.",
+        "This controller intentionally avoids blanket native form restoration; browser history is tracked in app-owned records."
+      ]
+    },
+    {
+      "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40631441716",
+      "api": 35,
+      "sourceSha": "04644b17363cadaf879659c6d64f78c05b221716",
+      "artifactId": 12791594355,
+      "artifactSha256": "117e77259eb9fa9c6417082fc051e91050b9f29265ef9240ec759dbdd3a5f4b9",
+      "experimentComplete": true,
+      "managedControllerReady": true,
+      "formalMigrationReady": false,
+      "cases": {
+        "initialCapture": true,
+        "normalClose": true,
+        "historyAndURLIsolation": true,
+        "saveAfterRestore": true,
+        "offlineReadOnlySnapshot": true,
+        "forceStopAndReconnect": true,
+        "unresolvedConflictRestartAndURLBinding": true,
+        "keepCurrentConflict": true,
+        "restoreSavedConflictAndBackupAccess": true,
+        "interruptedAtomicRecordRecovery": true,
+        "corruptRecordPreserved": true,
+        "crossAccountRecordPreserved": true,
+        "accountEnvironmentAndStorageIsolation": true,
+        "noAutomaticSendAndNoWebNativeAccess": true
+      },
+      "submissions": 0,
+      "screenshots": 0,
+      "observationCount": 1164,
+      "accountsAndTabs": [
+        "A/0",
+        "A/1",
+        "B/0",
+        "C/0"
+      ],
+      "platformFindings": {
+        "unexpectedProcessRestartObserved": false,
+        "extraForceStopRequests": 0,
+        "touchScrollAcceptance": "Not established here; reading samples use native PanZoom API."
+      },
+      "runtimeWarnings": {
+        "noEditableParent": 10,
+        "closeSessionStoreWinNull": 0,
+        "fatalException": 0
+      },
+      "limits": [
+        "Synthetic textarea/contenteditable editor models only; no real ChatGPT.",
+        "Touch scrolling, OEM/physical devices, production lifecycle integration and package-size work remain separate gates.",
+        "This controller intentionally avoids blanket native form restoration; browser history is tracked in app-owned records."
+      ]
     }
   ],
-  "next": "Await explicit permission for a new minimal two-page native-input diagnostic under the updated AGENTS browser-test rule.",
+  "next": "The authorized independent recovery matrix is complete. Production integration, physical/OEM and real ChatGPT validation, touch/lifecycle warning investigation and package-size evaluation remain later stages; preserve production login/recovery data.",
   "findings": [
-    "Single-account API 35 core passed 11 cases with real DOM and trusted editor-model observations.",
-    "Latest API 28 matrix passed capture, normal exit, latest editing, history URL separation and offline snapshot; reconnect write acknowledgement failed.",
-    "Latest API 35 matrix stopped at a second-tab write acknowledgement after initial capture.",
-    "A write accepted by an input interface is not treated as success without actual page/editor-model equality.",
-    "No real ChatGPT, OEM or physical-device acceptance, production migration or package-size optimization."
+    "API 28 and API 35 each passed all 14 three-account/four-tab synthetic recovery cases against the same source 04644b17363cadaf879659c6d64f78c05b221716.",
+    "Normal exit and real force-stop/offline reconnect restored textarea and contenteditable DOM plus trusted-input editor models on all four pages; multiline Chinese/emoji drafts were preserved.",
+    "Pending conflicts survived restart and URL navigation; both user choices, backup access, atomic-write backup recovery, corrupt and cross-account record rejection passed.",
+    "Both runs recorded zero submissions, zero screenshots, no observed unexpected process restarts and no extra force-stop requests. Historical failures and restart findings remain in their original reports.",
+    "Native editor focus confirmation is required in addition to valid extracted text/selection; bridge startup uses bounded handshake recovery. An accepted input call alone never passes the gate.",
+    "No-editable-parent warnings remain (API 28: 1; API 35: 10); these were not proven repaired. This run recorded no win-is-null or FATAL EXCEPTION.",
+    "Touch scrolling remains unverified because reading samples use native PanZoom. No real ChatGPT, OEM/physical-device acceptance, production migration or package-size optimization."
   ],
   "inputDiagnostics": [
     {
@@ -1230,5 +1332,117 @@
       ]
     }
   ],
-  "nextGate": "The full three-account four-tab API 28/35 matrix is explicitly authorized. Repeat after native IME focus confirmation and bounded bridge handshake changes; full migration remains unproven."
+  "nextGate": "The authorized independent recovery matrix is complete. Production integration, physical/OEM and real ChatGPT validation, touch/lifecycle warning investigation and package-size evaluation remain later stages; preserve production login/recovery data.",
+  "fullMatrix": {
+    "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40631441716",
+    "sourceSha": "04644b17363cadaf879659c6d64f78c05b221716",
+    "apis": [
+      28,
+      35
+    ],
+    "allMeasuredRecoveryGatesPassed": true,
+    "formalMigrationReady": false,
+    "results": [
+      {
+        "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40631441716",
+        "api": 28,
+        "sourceSha": "04644b17363cadaf879659c6d64f78c05b221716",
+        "artifactId": 12791579301,
+        "artifactSha256": "0a5a2329b9216b06eff7e46436ccee03499ee361bc6f6642d4b2d8dc5dd8f793",
+        "experimentComplete": true,
+        "managedControllerReady": true,
+        "formalMigrationReady": false,
+        "cases": {
+          "initialCapture": true,
+          "normalClose": true,
+          "historyAndURLIsolation": true,
+          "saveAfterRestore": true,
+          "offlineReadOnlySnapshot": true,
+          "forceStopAndReconnect": true,
+          "unresolvedConflictRestartAndURLBinding": true,
+          "keepCurrentConflict": true,
+          "restoreSavedConflictAndBackupAccess": true,
+          "interruptedAtomicRecordRecovery": true,
+          "corruptRecordPreserved": true,
+          "crossAccountRecordPreserved": true,
+          "accountEnvironmentAndStorageIsolation": true,
+          "noAutomaticSendAndNoWebNativeAccess": true
+        },
+        "submissions": 0,
+        "screenshots": 0,
+        "observationCount": 1268,
+        "accountsAndTabs": [
+          "A/0",
+          "A/1",
+          "B/0",
+          "C/0"
+        ],
+        "platformFindings": {
+          "unexpectedProcessRestartObserved": false,
+          "extraForceStopRequests": 0,
+          "touchScrollAcceptance": "Not established here; reading samples use native PanZoom API."
+        },
+        "runtimeWarnings": {
+          "noEditableParent": 1,
+          "closeSessionStoreWinNull": 0,
+          "fatalException": 0
+        },
+        "limits": [
+          "Synthetic textarea/contenteditable editor models only; no real ChatGPT.",
+          "Touch scrolling, OEM/physical devices, production lifecycle integration and package-size work remain separate gates.",
+          "This controller intentionally avoids blanket native form restoration; browser history is tracked in app-owned records."
+        ]
+      },
+      {
+        "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40631441716",
+        "api": 35,
+        "sourceSha": "04644b17363cadaf879659c6d64f78c05b221716",
+        "artifactId": 12791594355,
+        "artifactSha256": "117e77259eb9fa9c6417082fc051e91050b9f29265ef9240ec759dbdd3a5f4b9",
+        "experimentComplete": true,
+        "managedControllerReady": true,
+        "formalMigrationReady": false,
+        "cases": {
+          "initialCapture": true,
+          "normalClose": true,
+          "historyAndURLIsolation": true,
+          "saveAfterRestore": true,
+          "offlineReadOnlySnapshot": true,
+          "forceStopAndReconnect": true,
+          "unresolvedConflictRestartAndURLBinding": true,
+          "keepCurrentConflict": true,
+          "restoreSavedConflictAndBackupAccess": true,
+          "interruptedAtomicRecordRecovery": true,
+          "corruptRecordPreserved": true,
+          "crossAccountRecordPreserved": true,
+          "accountEnvironmentAndStorageIsolation": true,
+          "noAutomaticSendAndNoWebNativeAccess": true
+        },
+        "submissions": 0,
+        "screenshots": 0,
+        "observationCount": 1164,
+        "accountsAndTabs": [
+          "A/0",
+          "A/1",
+          "B/0",
+          "C/0"
+        ],
+        "platformFindings": {
+          "unexpectedProcessRestartObserved": false,
+          "extraForceStopRequests": 0,
+          "touchScrollAcceptance": "Not established here; reading samples use native PanZoom API."
+        },
+        "runtimeWarnings": {
+          "noEditableParent": 10,
+          "closeSessionStoreWinNull": 0,
+          "fatalException": 0
+        },
+        "limits": [
+          "Synthetic textarea/contenteditable editor models only; no real ChatGPT.",
+          "Touch scrolling, OEM/physical devices, production lifecycle integration and package-size work remain separate gates.",
+          "This controller intentionally avoids blanket native form restoration; browser history is tracked in app-owned records."
+        ]
+      }
+    ]
+  }
 }
