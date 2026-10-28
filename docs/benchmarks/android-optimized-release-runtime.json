@@ -1,0 +1,51 @@
+{
+  "schema": 1,
+  "scope": "Optimized non-debuggable independent release runtime on fresh API28/35 x86_64 CI emulators; no personal device or login data",
+  "status": "in_progress",
+  "formalMigrationReady": false,
+  "attempts": [
+    {
+      "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40676126385",
+      "sourceSha": "a571dfbb9218bd8b2f8bd9f1aa22418b450a5f93",
+      "api": 28,
+      "artifactId": 12810881868,
+      "artifactSha256": "500163dc60be2950d42d6caa4231484361be98fa873a47e4ca4fcf5a688e58a6",
+      "optimizedCompilationAndLintPassed": true,
+      "buildStageOutcome": "failure",
+      "runtimeExecuted": false,
+      "reason": "apksigner exit 2; detailed stderr was not recorded",
+      "buildOnlyDiagnostic": false
+    },
+    {
+      "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40676126385",
+      "sourceSha": "a571dfbb9218bd8b2f8bd9f1aa22418b450a5f93",
+      "api": 35,
+      "artifactId": 12810083759,
+      "artifactSha256": "9baf7b5ebcf46ab49a9373d0957afbd9d95f82da37394cf60d407d99f77ea17e",
+      "optimizedCompilationAndLintPassed": true,
+      "buildStageOutcome": "failure",
+      "runtimeExecuted": false,
+      "reason": "apksigner exit 2; detailed stderr was not recorded",
+      "buildOnlyDiagnostic": false
+    },
+    {
+      "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40677360658",
+      "sourceSha": "1f389d00414a0afa3eed089dadc6b7a1e14c1afa",
+      "api": 28,
+      "artifactId": 12811615978,
+      "artifactSha256": "c723af076a409db9f4cf2f0fbc12fdb6a9b94aced8c8620ed5085df94d3ad307",
+      "optimizedCompilationAndLintPassed": true,
+      "buildStageOutcome": "failure",
+      "runtimeExecuted": false,
+      "reason": "SDK password reader reached EOF while reusing one single-line file for both store and private-key passwords",
+      "buildOnlyDiagnostic": true,
+      "signingDiagnostic": "keytool exit=0\nGenerating 2,048 bit RSA key pair and self-signed certificate (SHA256withRSA) with a validity of 2 days\n\tfor: CN=Independent CI PoC\n\napksigner exit=2\nFailed to load signer \"signer #1\"\njava.io.IOException: Failed to read Key \"poc-runtime\" password for signer #1 : end of file reached in /home/runner/work/_temp/studio-ci-key-3ltvrdg2/password\n\tat com.android.apksigner.PasswordRetriever.getPasswords(PasswordRetriever.java:175)\n\tat com.android.apksigner.SignerParams.loadPrivateKeyAndCertsFromKeyStore(SignerParams.java:363)\n\tat com.android.apksigner.SignerParams.loadPrivateKeyAndCerts(SignerParams.java:246)\n\tat com.android.apksigner.ApkSignerTool.getSignerConfig(ApkSignerTool.java:455)\n\tat com.android.apksigner.ApkSignerTool.sign(ApkSignerTool.java:368)\n\tat com.android.apksigner.ApkSignerTool.main(ApkSignerTool.java:94)\n\n"
+    }
+  ],
+  "productionKeyUsed": false,
+  "realChatGPTUsed": false,
+  "screenshotsRequested": false,
+  "methodologySources": [
+    "https://developer.android.com/tools/apksigner"
+  ]
+}

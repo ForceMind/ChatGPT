@@ -27,6 +27,17 @@ def payload(path):
 def validate_badging(badging,minimum):
     if minimum not in (28,29) or not re.search(r"^package: name='"+re.escape(PACKAGE)+"'",badging,re.M) or re.findall(r"^(?:minSdkVersion|sdkVersion):'(\d+)'$",badging,re.M)!=[str(minimum)] or not re.search(r"^native-code: 'x86_64'\s*$",badging,re.M) or re.search(r'^application-debuggable\b',badging,re.M):raise RuntimeError('Not the expected non-debuggable release')
 
+def password_files(directory):
+    # apksigner consumes successive password lines when the same file is reused.
+    # Separate one-line sources keep both PKCS12 passwords identical without
+    # depending on a shared reader cursor or exposing them in CLI arguments.
+    value=secrets.token_urlsafe(32)+'\n';files=[]
+    for name in ('store-password','key-password'):
+        path=directory/name;fd=os.open(path,os.O_CREAT|os.O_EXCL|os.O_WRONLY,0o600)
+        with os.fdopen(fd,'w') as stream:stream.write(value)
+        files.append(path)
+    return files
+
 def main():
     if os.environ.get('GITHUB_ACTIONS')!='true':raise SystemExit('Signing is CI-only')
     root=Path(__file__).resolve().parents[1]/'environment-poc';evidence=root/'build/recovery-evidence';evidence.mkdir(parents=True,exist_ok=True)
@@ -50,11 +61,10 @@ def main():
         if result.returncode:raise RuntimeError(Path(command[0]).name+' failed: '+(result.stderr or result.stdout)[-2500:])
         return result.stdout
     try:
-        password=temporary/'password';fd=os.open(password,os.O_CREAT|os.O_EXCL|os.O_WRONLY,0o600)
-        with os.fdopen(fd,'w') as stream:stream.write(secrets.token_urlsafe(32)+'\n')
+        store_password,key_password=password_files(temporary)
         key=temporary/'temporary.p12'
-        tool(['keytool','-genkeypair','-noprompt','-storetype','PKCS12','-keystore',str(key),'-storepass:file',str(password),'-keypass:file',str(password),'-alias','poc-runtime','-keyalg','RSA','-keysize','2048','-validity','2','-dname','CN=Independent CI PoC'])
-        tool([str(tools/'apksigner'),'sign','--ks',str(key),'--ks-key-alias','poc-runtime','--ks-pass','file:'+str(password),'--key-pass','file:'+str(password),'--out',str(target),str(apk)])
+        tool(['keytool','-genkeypair','-noprompt','-storetype','PKCS12','-keystore',str(key),'-storepass:file',str(store_password),'-keypass:file',str(key_password),'-alias','poc-runtime','-keyalg','RSA','-keysize','2048','-validity','2','-dname','CN=Independent CI PoC'])
+        tool([str(tools/'apksigner'),'sign','--ks',str(key),'--ks-key-alias','poc-runtime','--ks-pass','file:'+str(store_password),'--key-pass','file:'+str(key_password),'--out',str(target),str(apk)])
         verification=tool([str(tools/'apksigner'),'verify','--verbose','--print-certs',str(target)])
         cert=re.findall(r'Signer #1 certificate SHA-256 digest: ([a-fA-F0-9]{64})',verification)
         if len(cert)!=1 or payload(apk)!=payload(target):raise RuntimeError('Signing altered payload or certificate not verified')

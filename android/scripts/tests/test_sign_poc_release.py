@@ -1,12 +1,24 @@
 import importlib.util
 from pathlib import Path
 import tempfile
+import stat
 import unittest
 import zipfile
 spec=importlib.util.spec_from_file_location('sign_poc_release',Path(__file__).resolve().parents[1]/'sign-poc-release.py')
 module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
 
 class ReleaseSigningBoundaryTests(unittest.TestCase):
+    def test_password_sources_are_independent_single_lines(self):
+        with tempfile.TemporaryDirectory() as directory:
+            store,key=module.password_files(Path(directory));self.assertNotEqual(store,key)
+            # Emulate the SDK's cached per-file input streams, not two fresh opens.
+            streams={p:p.open() for p in (store,key)}
+            try:
+                values=[streams[p].readline() for p in (store,key)]
+                self.assertTrue(values[0].strip());self.assertEqual(values[0],values[1]);self.assertTrue(all(streams[p].readline()=='' for p in streams))
+                self.assertTrue(all(stat.S_IMODE(p.stat().st_mode)==0o600 for p in streams))
+            finally:
+                for stream in streams.values():stream.close()
     def text(self,minimum=28,debug=False,package=module.PACKAGE,abi='x86_64'):
         return f"package: name='{package}' versionCode='1'\nminSdkVersion:'{minimum}'\nnative-code: '{abi}'\n"+('application-debuggable\n' if debug else '')
     def test_two_declared_minimums(self):
