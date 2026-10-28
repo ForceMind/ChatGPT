@@ -13,6 +13,7 @@ import subprocess
 import sys
 import threading
 import time
+import traceback
 import uuid
 import xml.etree.ElementTree as ET
 from poc_warning_report import localize
@@ -61,6 +62,8 @@ def native_events(a):
     return rows
 
 def entry(a,t):return next((e for e in native(a).get('entries',[]) if e['id']==t),None)
+def state_entry(a,t,state):
+    value=entry(a,t);return value if value and value.get('state')==state else None
 def latest(a,t):return base.latest(a,t,base.phase)
 def mark_phase(phase,step='begin'):
     if not re.fullmatch('[a-z0-9-]+',phase) or not re.fullmatch('[a-z0-9-]+',step):raise ValueError('Invalid fixture marker')
@@ -283,20 +286,20 @@ def full_experiment(report):
 
     print('5/8 Conflict preserves both versions before user choice',flush=True)
     select('A','0');stop();mark_phase('conflict-keep');base.conflict=True;base.current_draft='current-web-'+uuid.uuid4().hex;first_current=base.current_draft;launch('A')
-    wait(lambda:entry('A','0') and entry('A','0')['state']=='conflict',label='native conflict prompt');r=current_values('A','0',first_current);assert entry('A','0')['pendingConflict'];capture('conflict')
+    conflict_snapshot=wait(lambda:state_entry('A','0','conflict'),label='native conflict prompt');r=current_values('A','0',first_current);assert conflict_snapshot['pendingConflict'];capture('conflict')
     if not CORE:
-        stop();mark_phase('unresolved-conflict-restart');launch('A');wait(lambda:entry('A','0') and entry('A','0')['state']=='conflict',label='unresolved conflict survives restart')
-        r=current_values('A','0',first_current);assert entry('A','0')['richSha256']==hashlib.sha256(latest_markers['A:0'].encode()).hexdigest()
+        stop();mark_phase('unresolved-conflict-restart');launch('A');conflict_snapshot=wait(lambda:state_entry('A','0','conflict'),label='unresolved conflict survives restart')
+        r=current_values('A','0',first_current);assert conflict_snapshot['richSha256']==hashlib.sha256(latest_markers['A:0'].encode()).hexdigest()
         launch('A','back');healthy('A','0');wait(lambda:(lambda r:r if r and r['page']=='start' and r.get('richModel')=='' and r.get('standardModel')=='' else None)(latest('A','0')),label='pending conflict cannot leak into another URL')
-        assert not entry('A','0')['pendingConflict'] and entry('A','0')['pendingConflictCount']==1
-        launch('A','forward');wait(lambda:entry('A','0') and entry('A','0')['state']=='conflict',label='original URL retains pending conflict')
+        history_snapshot=entry('A','0');assert not history_snapshot['pendingConflict'] and history_snapshot['pendingConflictCount']==1
+        launch('A','forward');wait(lambda:state_entry('A','0','conflict'),label='original URL retains pending conflict')
         r=wait(lambda:(lambda r:r if r and r['page']=='detail' and r.get('richModel')==first_current else None)(latest('A','0')),label='original current draft preserved')
         report['cases']['unresolvedConflictRestartAndURLBinding']=True
     tap_label('保留网页草稿');healthy('A','0');same_values('A','0',first_current);assert entry('A','0')['alternativeCount']>=1;report['cases']['keepCurrentConflict']=True
 
     print('6/8 Explicit restore uses native editor input and preserves other draft',flush=True)
     stop();mark_phase('conflict-restore');base.current_draft='current-web-'+uuid.uuid4().hex;second_current=base.current_draft;launch('A')
-    wait(lambda:entry('A','0') and entry('A','0')['state']=='conflict',label='second conflict prompt');r=current_values('A','0',second_current)
+    wait(lambda:state_entry('A','0','conflict'),label='second conflict prompt');r=current_values('A','0',second_current)
     tap_label('恢复上次草稿');healthy('A','0');same_values('A','0',first_current);assert entry('A','0')['alternativeCount']>=2
     hashes=entry('A','0')['alternativeHashes'];assert any(p['currentRichSha256']==hashlib.sha256(second_current.encode()).hexdigest() and p['savedRichSha256']==hashlib.sha256(first_current.encode()).hexdigest() for p in hashes)
     launch('A','backups');root=tree();labels=' '.join(n.get('text','') for n in root.iter('node'));assert first_current in labels and second_current in labels;tap_label('关闭');report['cases']['restoreSavedConflictAndBackupAccess']=True
@@ -307,10 +310,10 @@ def full_experiment(report):
         text('shell','run-as',PACKAGE,'rm','files/managed-recovery-records/A-page-0.bin');launch('A');healthy('A','0');same_values('A','0',first_current)
         report['cases']['interruptedAtomicRecordRecovery']=True
     stop();mark_phase('corrupt-record');base.conflict=False;original=private('A-page-0.bin');damaged=bytearray(original);damaged[-1]^=1;private_write('A-page-0.bin',bytes(damaged));launch('A')
-    wait(lambda:entry('A','0') and entry('A','0')['blocked'],label='corrupt record blocked');assert entry('A','0')['error']=='saved-record-rejected:AEADBadTagException';assert private('A-page-0.bin')==bytes(damaged);report['cases']['corruptRecordPreserved']=True
+    blocked_snapshot=wait(lambda:state_entry('A','0','blocked'),label='corrupt record blocked');assert blocked_snapshot['error']=='saved-record-rejected:AEADBadTagException';assert private('A-page-0.bin')==bytes(damaged);report['cases']['corruptRecordPreserved']=True
     if not CORE:
         stop();mark_phase('foreign-record');private_write('C-page-0.bin',original);launch('C')
-        wait(lambda:entry('C','0') and entry('C','0')['blocked'],label='cross-account encrypted record blocked');assert entry('C','0')['error']=='saved-record-rejected:AEADBadTagException';assert private('C-page-0.bin')==original;report['cases']['crossAccountRecordPreserved']=True
+        blocked_snapshot=wait(lambda:state_entry('C','0','blocked'),label='cross-account encrypted record blocked');assert blocked_snapshot['error']=='saved-record-rejected:AEADBadTagException';assert private('C-page-0.bin')==original;report['cases']['crossAccountRecordPreserved']=True
 
     print('8/8 Verify no sends, forged webpage access or foreign cookies',flush=True)
     model_rows=[r for r in base.events if 'pageNativeAPI' in r]
@@ -350,6 +353,7 @@ try:
     else:full_experiment(report)
 except Exception as error:
     failure=str(error);report['failure']=failure;print('Managed recovery failure:',failure,flush=True)
+    (OUT/'managed-failure-traceback.txt').write_text(traceback.format_exc())
     try:capture('failure')
     except Exception as diagnostic:report['diagnosticFailure']=str(diagnostic)
 finally:

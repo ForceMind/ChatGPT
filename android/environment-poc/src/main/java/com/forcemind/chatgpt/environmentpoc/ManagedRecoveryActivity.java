@@ -172,6 +172,11 @@ public abstract class ManagedRecoveryActivity extends Activity {
         if(event.equals("resumed")||event.equals("stopped")||event.equals("window-focus")||event.equals("checkpoint-saved")||event.equals("closed")||event.equals("startup-error"))android.util.Log.i("ManagedRecoveryPoC","event="+event+" account="+account()+" selected="+selected.getOrDefault(account(),0));
         JSONArray entries=new JSONArray();if(controller!=null)for(ManagedPageController.Entry e:tabs())entries.put(controller.metadata(e));JSONObject row=new JSONObject().put("event",event).put("account",account()).put("pid",android.os.Process.myPid()).put("selected",selected.getOrDefault(account(),0)).put("entries",entries).put("startupError",startupError).put("bridgeError",controller==null?"":controller.startupError).put("elapsedMs",SystemClock.elapsedRealtime());
         if(web!=null){int[] xy=new int[2];web.getLocationOnScreen(xy);row.put("viewX",xy[0]).put("viewY",xy[1]).put("viewWidth",web.getWidth()).put("viewHeight",web.getHeight()).put("windowFocused",web.hasWindowFocus()).put("viewShown",web.isShown());}
-        byte[] bytes=row.toString().getBytes(StandardCharsets.UTF_8);Files.write(new File(getFilesDir(),"managed-native-"+account()+".json").toPath(),bytes);try(FileOutputStream log=new FileOutputStream(new File(getFilesDir(),"managed-events-"+account()+".jsonl"),true)){log.write(bytes);log.write('\n');}
+        byte[] bytes=row.toString().getBytes(StandardCharsets.UTF_8);
+        // This is lab observation metadata, not product state. Publish a complete
+        // snapshot so an external reader cannot see a truncated JSON mid-write.
+        File latest=new File(getFilesDir(),"managed-native-"+account()+".json"),temporary=new File(getFilesDir(),"managed-native-"+account()+".json.tmp");
+        Files.write(temporary.toPath(),bytes);Os.rename(temporary.getAbsolutePath(),latest.getAbsolutePath());
+        try(FileOutputStream log=new FileOutputStream(new File(getFilesDir(),"managed-events-"+account()+".jsonl"),true)){log.write(bytes);log.write('\n');}
     }catch(Exception error){android.util.Log.e("ManagedRecoveryPoC","Evidence failed",error);}}
 }

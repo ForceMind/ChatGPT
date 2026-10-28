@@ -262,6 +262,950 @@
         },
         "warningCausalAttribution": false
       }
+    },
+    {
+      "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40679704206",
+      "sourceSha": "f0142e283a95579321de0ea5354e2536348853e9",
+      "api": 28,
+      "artifactId": 12813235134,
+      "artifactSha256": "1b98487f2fe7fe1b3c0191afb94f1dcf149dce2949c8950cec19f4837ce86d7c",
+      "runtimePassed": true,
+      "runtimeReport": {
+        "sourceSha": "f0142e283a95579321de0ea5354e2536348853e9",
+        "runId": "40679704206",
+        "scope": "Three-account four-tab managed recovery",
+        "api": "28",
+        "fixtureOnly": true,
+        "productionDataUsed": false,
+        "cases": {
+          "initialCapture": true,
+          "trustedTouchScrollUpDown": true,
+          "homeForegroundRetainsDocuments": true,
+          "activityRecreationRetainsDocuments": true,
+          "normalClose": true,
+          "historyAndURLIsolation": true,
+          "saveAfterRestore": true,
+          "offlineReadOnlySnapshot": true,
+          "forceStopAndReconnect": true,
+          "unresolvedConflictRestartAndURLBinding": true,
+          "keepCurrentConflict": true,
+          "restoreSavedConflictAndBackupAccess": true,
+          "interruptedAtomicRecordRecovery": true,
+          "corruptRecordPreserved": true,
+          "crossAccountRecordPreserved": true,
+          "accountEnvironmentAndStorageIsolation": true,
+          "noAutomaticSendAndNoWebNativeAccess": true
+        },
+        "runtimeVariant": "optimized-release",
+        "runtimeIdentity": {
+          "schema": 1,
+          "sourceSha": "f0142e283a95579321de0ea5354e2536348853e9",
+          "runId": "40679704206",
+          "package": "com.forcemind.chatgpt.environmentpoc",
+          "runtimeVariant": "optimized-release",
+          "optimization": "resources",
+          "abi": "x86_64",
+          "minSdk": 28,
+          "debuggable": false,
+          "unsignedApkSha256": "3d6ce975b6fa979e314fd714d4fb9ac80c7d12e23e173fa9cb7f2f18fe612a90",
+          "signedApkSha256": "a5be4b0458f1496ec4905433d4b77cc427479196bf8879649d58122158bd3f3f",
+          "signedApkBytes": 213610675,
+          "certificateSha256": "df8032ef9a534a9d64171ec76a43ed8639d960b5847cfc388ab4a3ef1648dab4",
+          "temporaryCiCertificate": true,
+          "productionKeyUsed": false,
+          "payloadUnchangedBySigning": true,
+          "r8MappingSha256": "7223eb9169f295d3f8ec120129146df1d21429fe63509d0929dc8a1b32bd9493"
+        },
+        "installedReleaseAttestation": {
+          "schema": 1,
+          "runId": "40679704206",
+          "package": "com.forcemind.chatgpt.environmentpoc",
+          "serial": "emulator-5554",
+          "qemu": "1",
+          "sdk": 28,
+          "adbUid": 0,
+          "appUid": 10086,
+          "su": "/system/xbin/su",
+          "chcon": "/system/bin/chcon",
+          "nonDebuggableRunAsRefused": true,
+          "installedApkSha256": "a5be4b0458f1496ec4905433d4b77cc427479196bf8879649d58122158bd3f3f",
+          "signedApkSha256": "a5be4b0458f1496ec4905433d4b77cc427479196bf8879649d58122158bd3f3f"
+        },
+        "touchInputReceipts": [
+          {
+            "provider": "ci-android9-shell-touchscreen",
+            "events": [
+              {
+                "action": 0,
+                "downTime": 170753,
+                "eventTime": 170753,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 170753,
+                "eventTime": 170770,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 170753,
+                "eventTime": 170787,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 170753,
+                "eventTime": 170805,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 170753,
+                "eventTime": 170833,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 170753,
+                "eventTime": 170851,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 170753,
+                "eventTime": 170868,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 170753,
+                "eventTime": 170886,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 170753,
+                "eventTime": 170902,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 170753,
+                "eventTime": 170932,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 170753,
+                "eventTime": 170987,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 170753,
+                "eventTime": 171003,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 170753,
+                "eventTime": 171021,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 170753,
+                "eventTime": 171038,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 170753,
+                "eventTime": 171078,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 170753,
+                "eventTime": 171134,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 170753,
+                "eventTime": 171198,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 170753,
+                "eventTime": 171207,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 170753,
+                "eventTime": 171240,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 170753,
+                "eventTime": 171270,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 170753,
+                "eventTime": 171314,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 170753,
+                "eventTime": 171328,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 170753,
+                "eventTime": 171343,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 170753,
+                "eventTime": 171376,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 170753,
+                "eventTime": 171410,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 170753,
+                "eventTime": 171428,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 170753,
+                "eventTime": 171446,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 170753,
+                "eventTime": 171461,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 170753,
+                "eventTime": 171501,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 170753,
+                "eventTime": 171512,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 170753,
+                "eventTime": 171529,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 170753,
+                "eventTime": 171551,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 1,
+                "downTime": 170753,
+                "eventTime": 171562,
+                "source": 4098,
+                "toolType": 1
+              }
+            ]
+          },
+          {
+            "provider": "ci-android9-shell-touchscreen",
+            "events": [
+              {
+                "action": 0,
+                "downTime": 173420,
+                "eventTime": 173420,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 173420,
+                "eventTime": 173437,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 173420,
+                "eventTime": 173469,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 173420,
+                "eventTime": 173477,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 173420,
+                "eventTime": 173528,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 173420,
+                "eventTime": 173572,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 173420,
+                "eventTime": 173595,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 173420,
+                "eventTime": 173644,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 173420,
+                "eventTime": 173699,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 173420,
+                "eventTime": 173718,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 173420,
+                "eventTime": 173762,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 173420,
+                "eventTime": 173787,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 173420,
+                "eventTime": 173831,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 173420,
+                "eventTime": 173852,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 173420,
+                "eventTime": 173883,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 173420,
+                "eventTime": 173905,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 173420,
+                "eventTime": 173923,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 173420,
+                "eventTime": 173985,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 173420,
+                "eventTime": 174046,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 173420,
+                "eventTime": 174052,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 173420,
+                "eventTime": 174096,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 173420,
+                "eventTime": 174104,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 173420,
+                "eventTime": 174121,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 173420,
+                "eventTime": 174181,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 173420,
+                "eventTime": 174221,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 173420,
+                "eventTime": 174243,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 173420,
+                "eventTime": 174259,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 173420,
+                "eventTime": 174309,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 173420,
+                "eventTime": 174323,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 173420,
+                "eventTime": 174340,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 173420,
+                "eventTime": 174389,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 2,
+                "downTime": 173420,
+                "eventTime": 174441,
+                "source": 4098,
+                "toolType": 1
+              },
+              {
+                "action": 1,
+                "downTime": 173420,
+                "eventTime": 174459,
+                "source": 4098,
+                "toolType": 1
+              }
+            ]
+          }
+        ],
+        "touchGestures": [
+          {
+            "direction": "up",
+            "inputProvider": "ci-android9-shell-touchscreen",
+            "before": 1400,
+            "after": 1825.7166748046875,
+            "touchStartsAdded": 1,
+            "touchTerminalsAdded": 1,
+            "documentUnchanged": true
+          },
+          {
+            "direction": "down",
+            "inputProvider": "ci-android9-shell-touchscreen",
+            "before": 1825.7166748046875,
+            "after": 1493.75,
+            "touchStartsAdded": 1,
+            "touchTerminalsAdded": 1,
+            "documentUnchanged": true
+          }
+        ],
+        "backgroundSample": {
+          "backgroundSeconds": 6.054,
+          "totalRoundTripSeconds": 17.404,
+          "tickDeltas": {
+            "A:0": 12,
+            "A:1": 11,
+            "B:0": 11,
+            "C:0": 11
+          },
+          "mainPidUnchanged": true
+        },
+        "experimentComplete": true,
+        "submissions": [],
+        "inputDiagnosticComplete": false,
+        "managedControllerReady": true,
+        "formalMigrationReady": false,
+        "platformFindings": {
+          "unexpectedProcessRestartObserved": false,
+          "extraForceStopRequests": 0,
+          "touchScrollAcceptance": "Real trusted touch starts/terminals and bidirectional scroll measured."
+        },
+        "limits": [
+          "Synthetic textarea/contenteditable editor models only; no real ChatGPT.",
+          "Fresh x86_64 CI emulators and a short background sample; no arm64/physical/OEM, prolonged OS-pressure or production lifecycle guarantee.",
+          "Optimized release uses a disposable CI certificate; root is limited to emulator fixture evidence, while browser processes run as the normal app UID.",
+          "The existing reading recovery sample still uses native PanZoom separately from the genuine touch gate.",
+          "Warning phases show temporal correlation, not proof of cause or repair."
+        ],
+        "logCaptureComplete": true,
+        "warningCounts": {
+          "noEditableParent": 8,
+          "sessionStoreWinNull": 0,
+          "fatalException": 0
+        },
+        "warningCausalAttribution": false
+      },
+      "warningLocalization": {
+        "schema": 1,
+        "causalAttribution": false,
+        "scope": "Whole fresh-emulator log, correlated by the last preceding marker; proximity is not causality.",
+        "counts": {
+          "noEditableParent": 8,
+          "sessionStoreWinNull": 0,
+          "fatalException": 0
+        },
+        "byPhase": {
+          "seed": {
+            "noEditableParent": 1,
+            "sessionStoreWinNull": 0,
+            "fatalException": 0
+          },
+          "normal-close": {
+            "noEditableParent": 2,
+            "sessionStoreWinNull": 0,
+            "fatalException": 0
+          },
+          "reconnected": {
+            "noEditableParent": 3,
+            "sessionStoreWinNull": 0,
+            "fatalException": 0
+          },
+          "unresolved-conflict-restart": {
+            "noEditableParent": 1,
+            "sessionStoreWinNull": 0,
+            "fatalException": 0
+          },
+          "conflict-restore": {
+            "noEditableParent": 1,
+            "sessionStoreWinNull": 0,
+            "fatalException": 0
+          }
+        },
+        "entries": [
+          {
+            "kind": "noEditableParent",
+            "lineNumber": 2075,
+            "pid": 5504,
+            "phase": "seed",
+            "step": "begin",
+            "nearestPriorLifecycleMarker": "10-28 11:29:26.021  5179  5179 I ManagedRecoveryPoC: event=resumed account=A selected=0",
+            "line": "10-28 11:29:26.609  5504  5519 W GeckoEditableChild: No editable parent"
+          },
+          {
+            "kind": "noEditableParent",
+            "lineNumber": 8738,
+            "pid": 7704,
+            "phase": "normal-close",
+            "step": "begin",
+            "nearestPriorLifecycleMarker": "10-28 11:30:57.510  7479  7479 I ManagedRecoveryPoC: event=resumed account=A selected=0",
+            "line": "10-28 11:31:05.227  7704  7723 W GeckoEditableChild: No editable parent"
+          },
+          {
+            "kind": "noEditableParent",
+            "lineNumber": 9851,
+            "pid": 8189,
+            "phase": "normal-close",
+            "step": "begin",
+            "nearestPriorLifecycleMarker": "10-28 11:31:17.366  7892  7892 I ManagedRecoveryPoC: event=stopped account=B selected=0",
+            "line": "10-28 11:31:17.987  8189  8204 W GeckoEditableChild: No editable parent"
+          },
+          {
+            "kind": "noEditableParent",
+            "lineNumber": 14365,
+            "pid": 9197,
+            "phase": "reconnected",
+            "step": "begin",
+            "nearestPriorLifecycleMarker": "10-28 11:32:16.321  8985  8985 I ManagedRecoveryPoC: event=resumed account=A selected=0",
+            "line": "10-28 11:32:22.274  9197  9213 W GeckoEditableChild: No editable parent"
+          },
+          {
+            "kind": "noEditableParent",
+            "lineNumber": 14387,
+            "pid": 9155,
+            "phase": "reconnected",
+            "step": "begin",
+            "nearestPriorLifecycleMarker": "10-28 11:32:16.321  8985  8985 I ManagedRecoveryPoC: event=resumed account=A selected=0",
+            "line": "10-28 11:32:22.453  9155  9173 W GeckoEditableChild: No editable parent"
+          },
+          {
+            "kind": "noEditableParent",
+            "lineNumber": 15074,
+            "pid": 9590,
+            "phase": "reconnected",
+            "step": "begin",
+            "nearestPriorLifecycleMarker": "10-28 11:32:29.094  8985  8985 I ManagedRecoveryPoC: event=stopped account=A selected=1",
+            "line": "10-28 11:32:29.713  9590  9609 W GeckoEditableChild: No editable parent"
+          },
+          {
+            "kind": "noEditableParent",
+            "lineNumber": 17137,
+            "pid": 10349,
+            "phase": "unresolved-conflict-restart",
+            "step": "begin",
+            "nearestPriorLifecycleMarker": "10-28 11:32:52.071 10254 10254 I ManagedRecoveryPoC: event=resumed account=A selected=0",
+            "line": "10-28 11:32:52.372 10349 10364 W GeckoEditableChild: No editable parent"
+          },
+          {
+            "kind": "noEditableParent",
+            "lineNumber": 18230,
+            "pid": 10757,
+            "phase": "conflict-restore",
+            "step": "begin",
+            "nearestPriorLifecycleMarker": "10-28 11:33:03.471 10662 10662 I ManagedRecoveryPoC: event=resumed account=A selected=0",
+            "line": "10-28 11:33:03.996 10757 10776 W GeckoEditableChild: No editable parent"
+          }
+        ]
+      },
+      "screenshots": 0
+    },
+    {
+      "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40679704206",
+      "sourceSha": "f0142e283a95579321de0ea5354e2536348853e9",
+      "api": 35,
+      "artifactId": 12813220149,
+      "artifactSha256": "437620700c72883a34cf40b685bbfaeb6706491589ff2f003b9c4a64d5ce7a26",
+      "runtimePassed": false,
+      "runtimeReport": {
+        "sourceSha": "f0142e283a95579321de0ea5354e2536348853e9",
+        "runId": "40679704206",
+        "scope": "Three-account four-tab managed recovery",
+        "api": "35",
+        "fixtureOnly": true,
+        "productionDataUsed": false,
+        "cases": {
+          "initialCapture": true,
+          "trustedTouchScrollUpDown": true,
+          "homeForegroundRetainsDocuments": true,
+          "activityRecreationRetainsDocuments": true,
+          "normalClose": true,
+          "historyAndURLIsolation": true,
+          "saveAfterRestore": true,
+          "offlineReadOnlySnapshot": true,
+          "forceStopAndReconnect": true
+        },
+        "runtimeVariant": "optimized-release",
+        "runtimeIdentity": {
+          "schema": 1,
+          "sourceSha": "f0142e283a95579321de0ea5354e2536348853e9",
+          "runId": "40679704206",
+          "package": "com.forcemind.chatgpt.environmentpoc",
+          "runtimeVariant": "optimized-release",
+          "optimization": "resources",
+          "abi": "x86_64",
+          "minSdk": 29,
+          "debuggable": false,
+          "unsignedApkSha256": "5f52065709676f3df614b8865293578d5d2981d87159a244212173f5408667c4",
+          "signedApkSha256": "5476f2ed4fdc03ad75111d191d408e3ef9be757f35dbf4c005014729fee5931b",
+          "signedApkBytes": 213594291,
+          "certificateSha256": "0341f0adc00c6e73d2f4d7dffd7bc3455d1894b37a509023b75f7cae3a4f0760",
+          "temporaryCiCertificate": true,
+          "productionKeyUsed": false,
+          "payloadUnchangedBySigning": true,
+          "r8MappingSha256": "434c510032627576120c73af262381b2d9b689e696d9ccba857b5ae32ff8f930"
+        },
+        "installedReleaseAttestation": {
+          "schema": 1,
+          "runId": "40679704206",
+          "package": "com.forcemind.chatgpt.environmentpoc",
+          "serial": "emulator-5554",
+          "qemu": "1",
+          "sdk": 35,
+          "adbUid": 0,
+          "appUid": 10209,
+          "su": "/system/xbin/su",
+          "chcon": "/system/bin/chcon",
+          "nonDebuggableRunAsRefused": true,
+          "installedApkSha256": "5476f2ed4fdc03ad75111d191d408e3ef9be757f35dbf4c005014729fee5931b",
+          "signedApkSha256": "5476f2ed4fdc03ad75111d191d408e3ef9be757f35dbf4c005014729fee5931b"
+        },
+        "touchGestures": [
+          {
+            "direction": "up",
+            "inputProvider": "stock-adb-input",
+            "before": 1400,
+            "after": 1871.63330078125,
+            "touchStartsAdded": 1,
+            "touchTerminalsAdded": 1,
+            "documentUnchanged": true
+          },
+          {
+            "direction": "down",
+            "inputProvider": "stock-adb-input",
+            "before": 1871.63330078125,
+            "after": 1399.5333251953125,
+            "touchStartsAdded": 1,
+            "touchTerminalsAdded": 1,
+            "documentUnchanged": true
+          }
+        ],
+        "backgroundSample": {
+          "backgroundSeconds": 5.735,
+          "totalRoundTripSeconds": 18.739,
+          "tickDeltas": {
+            "A:0": 11,
+            "A:1": 11,
+            "B:0": 11,
+            "C:0": 11
+          },
+          "mainPidUnchanged": true
+        },
+        "failure": "'NoneType' object is not subscriptable",
+        "submissions": [],
+        "inputDiagnosticComplete": false,
+        "managedControllerReady": false,
+        "formalMigrationReady": false,
+        "platformFindings": {
+          "unexpectedProcessRestartObserved": false,
+          "extraForceStopRequests": 0,
+          "touchScrollAcceptance": "Real trusted touch starts/terminals and bidirectional scroll measured."
+        },
+        "limits": [
+          "Synthetic textarea/contenteditable editor models only; no real ChatGPT.",
+          "Fresh x86_64 CI emulators and a short background sample; no arm64/physical/OEM, prolonged OS-pressure or production lifecycle guarantee.",
+          "Optimized release uses a disposable CI certificate; root is limited to emulator fixture evidence, while browser processes run as the normal app UID.",
+          "The existing reading recovery sample still uses native PanZoom separately from the genuine touch gate.",
+          "Warning phases show temporal correlation, not proof of cause or repair."
+        ],
+        "logCaptureComplete": true,
+        "warningCounts": {
+          "noEditableParent": 9,
+          "sessionStoreWinNull": 0,
+          "fatalException": 0
+        },
+        "warningCausalAttribution": false
+      },
+      "warningLocalization": {
+        "schema": 1,
+        "causalAttribution": false,
+        "scope": "Whole fresh-emulator log, correlated by the last preceding marker; proximity is not causality.",
+        "counts": {
+          "noEditableParent": 9,
+          "sessionStoreWinNull": 0,
+          "fatalException": 0
+        },
+        "byPhase": {
+          "seed": {
+            "noEditableParent": 1,
+            "sessionStoreWinNull": 0,
+            "fatalException": 0
+          },
+          "normal-close": {
+            "noEditableParent": 4,
+            "sessionStoreWinNull": 0,
+            "fatalException": 0
+          },
+          "reconnected": {
+            "noEditableParent": 3,
+            "sessionStoreWinNull": 0,
+            "fatalException": 0
+          },
+          "unresolved-conflict-restart": {
+            "noEditableParent": 1,
+            "sessionStoreWinNull": 0,
+            "fatalException": 0
+          }
+        },
+        "entries": [
+          {
+            "kind": "noEditableParent",
+            "lineNumber": 25268,
+            "pid": 4537,
+            "phase": "seed",
+            "step": "begin",
+            "nearestPriorLifecycleMarker": "10-28 11:29:27.941  2618  2618 I ManagedRecoveryPoC: event=stopped account=A selected=1",
+            "line": "10-28 11:29:30.569  4537  4579 W GeckoEditableChild: No editable parent"
+          },
+          {
+            "kind": "noEditableParent",
+            "lineNumber": 42998,
+            "pid": 6604,
+            "phase": "normal-close",
+            "step": "begin",
+            "nearestPriorLifecycleMarker": "10-28 11:30:54.359  6375  6375 I ManagedRecoveryPoC: event=window-focus account=A selected=0",
+            "line": "10-28 11:31:08.089  6604  6642 W GeckoEditableChild: No editable parent"
+          },
+          {
+            "kind": "noEditableParent",
+            "lineNumber": 43124,
+            "pid": 6580,
+            "phase": "normal-close",
+            "step": "begin",
+            "nearestPriorLifecycleMarker": "10-28 11:30:54.359  6375  6375 I ManagedRecoveryPoC: event=window-focus account=A selected=0",
+            "line": "10-28 11:31:08.164  6580  6601 W GeckoEditableChild: No editable parent"
+          },
+          {
+            "kind": "noEditableParent",
+            "lineNumber": 45915,
+            "pid": 6962,
+            "phase": "normal-close",
+            "step": "begin",
+            "nearestPriorLifecycleMarker": "10-28 11:31:16.283  6375  6375 I ManagedRecoveryPoC: event=stopped account=A selected=1",
+            "line": "10-28 11:31:17.072  6962  6977 W GeckoEditableChild: No editable parent"
+          },
+          {
+            "kind": "noEditableParent",
+            "lineNumber": 46241,
+            "pid": 7027,
+            "phase": "normal-close",
+            "step": "begin",
+            "nearestPriorLifecycleMarker": "10-28 11:31:16.283  6375  6375 I ManagedRecoveryPoC: event=stopped account=A selected=1",
+            "line": "10-28 11:31:17.760  7027  7060 W GeckoEditableChild: No editable parent"
+          },
+          {
+            "kind": "noEditableParent",
+            "lineNumber": 53711,
+            "pid": 8149,
+            "phase": "reconnected",
+            "step": "begin",
+            "nearestPriorLifecycleMarker": "10-28 11:32:27.308  7945  7945 I ManagedRecoveryPoC: event=resumed account=A selected=0",
+            "line": "10-28 11:32:33.726  8149  8162 W GeckoEditableChild: No editable parent"
+          },
+          {
+            "kind": "noEditableParent",
+            "lineNumber": 54824,
+            "pid": 8473,
+            "phase": "reconnected",
+            "step": "begin",
+            "nearestPriorLifecycleMarker": "10-28 11:32:40.820  7945  7945 I ManagedRecoveryPoC: event=stopped account=A selected=1",
+            "line": "10-28 11:32:41.504  8473  8490 W GeckoEditableChild: No editable parent"
+          },
+          {
+            "kind": "noEditableParent",
+            "lineNumber": 54977,
+            "pid": 8533,
+            "phase": "reconnected",
+            "step": "begin",
+            "nearestPriorLifecycleMarker": "10-28 11:32:40.820  7945  7945 I ManagedRecoveryPoC: event=stopped account=A selected=1",
+            "line": "10-28 11:32:42.007  8533  8578 W GeckoEditableChild: No editable parent"
+          },
+          {
+            "kind": "noEditableParent",
+            "lineNumber": 58197,
+            "pid": 9362,
+            "phase": "unresolved-conflict-restart",
+            "step": "begin",
+            "nearestPriorLifecycleMarker": "10-28 11:33:04.935  9185  9185 I ManagedRecoveryPoC: event=window-focus account=A selected=0",
+            "line": "10-28 11:33:06.692  9362  9378 W GeckoEditableChild: No editable parent"
+          }
+        ]
+      },
+      "screenshots": 0
     }
   ],
   "productionKeyUsed": false,
