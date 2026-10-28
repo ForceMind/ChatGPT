@@ -472,5 +472,47 @@
   "scopeNotes": [
     "Existing alpha.22 candidate source and completed independent PoC evidence are now in main. No alpha.22 Release, new updater feed, local installer update or data migration was performed.",
     "Next iteration is optimized non-debuggable independent release runtime on fresh API28/35 CI emulators with a temporary CI certificate and fixture-only evidence; no screenshots, real ChatGPT, personal device or login data."
-  ]
+  ],
+  "followupAfterRuntimeAcceptance": {
+    "sourceSha": "e6519291f034176ee3fd14d9a77096565a52a40d",
+    "deploymentUrl": "https://5b210770.chatgpt-studio.pages.dev",
+    "indexResults": [
+      {
+        "origin": "https://chatgpt-studio.pages.dev",
+        "status": 200,
+        "rawSha256": "803cdba6525fcb5c812dedb48cd261ae28308c3f72b68d8533693a6168b5ecff",
+        "normalizedSha256": "803cdba6525fcb5c812dedb48cd261ae28308c3f72b68d8533693a6168b5ecff",
+        "edgeEmailNormalization": null
+      },
+      {
+        "origin": "https://chatgpt.xincreates.com",
+        "status": 200,
+        "rawSha256": "39ccb15c7d3a0e0e429970bcaeae250c2a4d934b012d1dad4cfe7d22281029af",
+        "normalizedSha256": "803cdba6525fcb5c812dedb48cd261ae28308c3f72b68d8533693a6168b5ecff",
+        "edgeEmailNormalization": {
+          "mailtoHrefs": 3,
+          "emailSpans": 1,
+          "decoderScripts": 1
+        }
+      }
+    ],
+    "unchangedPublicFilesReusedFromPriorVerification": 15,
+    "unchangedHeaderConfigReused": true,
+    "legacyRoot": {
+      "status": 308,
+      "location": "https://chatgpt-studio.pages.dev/"
+    },
+    "legacyMacFeed": {
+      "status": 200,
+      "sha256": "331a61b002409b9ad8845e4f6c0d35aa15f4b5db20c8aae62a6ce915647224e3",
+      "version": "3.0.0-alpha.21"
+    },
+    "browserRenderingVerified": false,
+    "newReleasePublished": false,
+    "deploymentId": "5b210770-f7f8-4c6f-bfb3-85bf70e137f2",
+    "productionBranch": "main",
+    "runtimeAcceptanceSource": "210e6d549efa3deef221bc770e4381b220299ca9",
+    "runtimeAcceptanceRun": "https://github.com/ForceMind/ChatGPT/actions/runs/40682073691"
+  },
+  "nextRuntimeBrowserTestsExecutedAndAccepted": true
 }
