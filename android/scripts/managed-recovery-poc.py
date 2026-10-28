@@ -19,6 +19,7 @@ import xml.etree.ElementTree as ET
 spec=importlib.util.spec_from_file_location('native_fixture',Path(__file__).with_name('recovery-environment-poc.py'))
 base=importlib.util.module_from_spec(spec);spec.loader.exec_module(base)
 CORE='--core' in sys.argv
+CAPTURE_UI='--capture-ui' in sys.argv
 TABS=(('A','0'),) if CORE else (('A','0'),('A','1'),('B','0'),('C','0'))
 base.TABS=TABS
 OUT=base.OUT;PACKAGE=base.PACKAGE
@@ -118,7 +119,9 @@ def checkpoint(a,close=False):
     if close:wait(lambda:not any(r['pid']==str(receipt['pid']) and r['state']!='Z' for r in base.process_rows()[1]),20,label='explicit complete app exit')
     return receipt
 
-def capture(name):base.capture('managed-'+name)
+def capture(name):
+    # Screenshot capture requires explicit task authorization; never enabled by CI defaults.
+    if CAPTURE_UI:base.capture('managed-'+name)
 def stop():return base.stop()
 def restored(case,expected,old_documents,open_app=True):
     base.phase=case

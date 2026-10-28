@@ -1,0 +1,224 @@
+{
+  "schema": 1,
+  "scope": "Independent managed Android recovery controller; synthetic loopback pages only. No production login or recovery data.",
+  "status": "single_account_core_passed_multispace_not_passed",
+  "formalMigrationReady": false,
+  "core": {
+    "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40545612063",
+    "sourceSha": "f704d9bb86b9d62e1b217a5b52d57de3fcbcd970",
+    "artifactSha256": "d99d2c24bf692de5f8b3b34302713f484730336f6ee2e06403df2704cde10fe6",
+    "scope": "Single-account core",
+    "experimentComplete": true,
+    "managedControllerReady": true,
+    "cases": {
+      "initialCapture": true,
+      "normalClose": true,
+      "historyAndURLIsolation": true,
+      "saveAfterRestore": true,
+      "offlineReadOnlySnapshot": true,
+      "forceStopAndReconnect": true,
+      "keepCurrentConflict": true,
+      "restoreSavedConflictAndBackupAccess": true,
+      "corruptRecordPreserved": true,
+      "accountEnvironmentAndStorageIsolation": true,
+      "noAutomaticSendAndNoWebNativeAccess": true
+    },
+    "submissions": 0,
+    "platformFindings": {
+      "unexpectedProcessRestartObserved": false,
+      "extraForceStopRequests": 0,
+      "touchScrollAcceptance": "Not established here; reading samples use native PanZoom API."
+    }
+  },
+  "matrixAttempts": [
+    {
+      "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40547006830",
+      "api": 28,
+      "sourceSha": "f704d9bb86b9d62e1b217a5b52d57de3fcbcd970",
+      "artifactSha256": "ab729b13affdecfc1ad2cb0fdc7fe6e9749020f0c24bb0e926d40528bd991b85",
+      "casesCompleted": {},
+      "failure": "Timed out: managed ready A/1",
+      "experimentComplete": false,
+      "managedControllerReady": false
+    },
+    {
+      "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40547006830",
+      "api": 35,
+      "sourceSha": "f704d9bb86b9d62e1b217a5b52d57de3fcbcd970",
+      "artifactSha256": "68ad1b0f112a2e48ebc3b9bc476a864dbe90fa346920eafba436a0efc6080bbf",
+      "casesCompleted": {},
+      "failure": "Timed out: managed ready A/1",
+      "experimentComplete": false,
+      "managedControllerReady": false
+    },
+    {
+      "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40550176499",
+      "api": 28,
+      "sourceSha": "cacca9f7940c84756ae5a475982e53a8d7a2be56",
+      "artifactSha256": "21af8c4d34f95cd90944d917c225a4d6635dfa354e70073e77159d3088f93020",
+      "casesCompleted": {
+        "initialCapture": true
+      },
+      "failure": "Managed page failed: {'id': '0', 'url': 'http://127.0.0.1:8765/recovery?account=A&tab=0&page=detail', 'state': 'failed', 'error': 'editor-input-unavailable', 'blocked': False, 'revision': 8, 'document': '13e8f7de-0bd1-4a22-a0bc-e71ca987b40e', 'epoch': 1, 'rejected': 0, 'visible': True, 'bridgeConnected': True, 'hasSnapshot': True, 'standardSha256': '183dd171b56f70117caf4c35a211cb573c5ae9cc292d469b35c4e3541396fe95', 'richSha256': '183dd171b56f70117caf4c35a211cb573c5ae9cc292d469b35c4e3541396fe95', 'transcriptLength': 4528, 'alternativeCount': 0, 'alternativeHashes': [], 'pendingConflict': False, 'pendingConflictCount': 0, 'historyCount': 2, 'checkpoint': '', 'checkpointSource': ''}",
+      "experimentComplete": false,
+      "managedControllerReady": false
+    },
+    {
+      "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40550176499",
+      "api": 35,
+      "sourceSha": "cacca9f7940c84756ae5a475982e53a8d7a2be56",
+      "artifactSha256": "d829e9b54907c8d7f14ec2a175fb91cb00dfc0dfcfb1024880d3f4b19e4d418c",
+      "casesCompleted": {
+        "initialCapture": true
+      },
+      "failure": "Managed page failed: {'id': '0', 'url': 'http://127.0.0.1:8765/recovery?account=A&tab=0&page=detail', 'state': 'failed', 'error': 'editor-input-unavailable', 'blocked': False, 'revision': 9, 'document': 'b4bef960-0912-4efd-8ca5-52a28270bd18', 'epoch': 1, 'rejected': 0, 'visible': True, 'bridgeConnected': True, 'hasSnapshot': True, 'standardSha256': '8931f831476a4a6ea9c6636b27b0398c5765d655299fddbe1d102c210e377239', 'richSha256': '8931f831476a4a6ea9c6636b27b0398c5765d655299fddbe1d102c210e377239', 'transcriptLength': 4528, 'alternativeCount': 0, 'alternativeHashes': [], 'pendingConflict': False, 'pendingConflictCount': 0, 'historyCount': 2, 'checkpoint': '', 'checkpointSource': ''}",
+      "experimentComplete": false,
+      "managedControllerReady": false
+    },
+    {
+      "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40553087305",
+      "api": 28,
+      "sourceSha": "52654f23da39c18c29486ca5ff60913173c52286",
+      "artifactSha256": "2ba5eb9842124a45ea5437fefe733989fce01443bd367de01bc672bef0ad8044",
+      "casesCompleted": {
+        "initialCapture": true
+      },
+      "failure": "Managed page failed: {'id': '0', 'url': 'http://127.0.0.1:8765/recovery?account=A&tab=0&page=detail', 'state': 'failed', 'error': 'editor-input-unavailable:view=true,window=true,connection=false', 'blocked': False, 'revision': 10, 'document': 'cffd796c-e94d-46d2-9b45-2de0a23e74dd', 'epoch': 1, 'rejected': 0, 'visible': True, 'bridgeConnected': True, 'hasSnapshot': True, 'standardSha256': '0f0cb0ae315f1f764a1bc5d5a349b72d9ee9b4936a309106c5713aac9d4c58db', 'richSha256': '0f0cb0ae315f1f764a1bc5d5a349b72d9ee9b4936a309106c5713aac9d4c58db', 'transcriptLength': 4528, 'alternativeCount': 0, 'alternativeHashes': [], 'pendingConflict': False, 'pendingConflictCount': 0, 'historyCount': 2, 'checkpoint': '', 'checkpointSource': ''}",
+      "experimentComplete": false,
+      "managedControllerReady": false
+    },
+    {
+      "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40553087305",
+      "api": 35,
+      "sourceSha": "52654f23da39c18c29486ca5ff60913173c52286",
+      "artifactSha256": "40b8808c7e626a443120871e4b15fc7e41abbc9b39dfc7c64f963b874d3fb9ac",
+      "casesCompleted": {
+        "initialCapture": true
+      },
+      "failure": "Managed page failed: {'id': '0', 'url': 'http://127.0.0.1:8765/recovery?account=A&tab=0&page=detail', 'state': 'failed', 'error': 'editor-input-unavailable:view=true,window=true,connection=false', 'blocked': False, 'revision': 9, 'document': '5cddce88-e421-441c-898d-3f7246c2f8d5', 'epoch': 1, 'rejected': 0, 'visible': True, 'bridgeConnected': True, 'hasSnapshot': True, 'standardSha256': 'a30b1a60fbcec74eb189ef117e5e9749a6dfa8f6666f5e63a8f7538e254b602e', 'richSha256': 'a30b1a60fbcec74eb189ef117e5e9749a6dfa8f6666f5e63a8f7538e254b602e', 'transcriptLength': 4528, 'alternativeCount': 0, 'alternativeHashes': [], 'pendingConflict': False, 'pendingConflictCount': 0, 'historyCount': 2, 'checkpoint': '', 'checkpointSource': ''}",
+      "experimentComplete": false,
+      "managedControllerReady": false
+    },
+    {
+      "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40554926921",
+      "api": 28,
+      "sourceSha": "978eddb972296d604c7eb9a1e39422fbb4263faa",
+      "artifactSha256": "f9f43b9bc32230dca353aa805b3f86209735d5e9e6e644c29a4bbee76d331f89",
+      "casesCompleted": {
+        "initialCapture": true
+      },
+      "failure": "Managed page failed: {'id': '0', 'url': 'http://127.0.0.1:8765/recovery?account=A&tab=0&page=detail', 'state': 'failed', 'error': 'editor-input-unavailable:view=true,window=true,connection=false', 'blocked': False, 'revision': 9, 'document': 'e97199b3-ace7-4ca1-8d70-40270b33bba7', 'epoch': 1, 'rejected': 0, 'visible': True, 'bridgeConnected': True, 'hasSnapshot': True, 'standardSha256': 'b25be14e5552381a00d8e167531e81d15df45f7979af9a6fd02a8e1ed6fbf0bc', 'richSha256': 'b25be14e5552381a00d8e167531e81d15df45f7979af9a6fd02a8e1ed6fbf0bc', 'transcriptLength': 4528, 'alternativeCount': 0, 'alternativeHashes': [], 'pendingConflict': False, 'pendingConflictCount': 0, 'historyCount': 2, 'checkpoint': '', 'checkpointSource': ''}",
+      "experimentComplete": false,
+      "managedControllerReady": false
+    },
+    {
+      "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40554926921",
+      "api": 35,
+      "sourceSha": "978eddb972296d604c7eb9a1e39422fbb4263faa",
+      "artifactSha256": "f645e4b520764a05178090e6b808ca9b1e1fd97428b8022e557889a5528316c9",
+      "casesCompleted": {
+        "initialCapture": true
+      },
+      "failure": "Managed page failed: {'id': '0', 'url': 'http://127.0.0.1:8765/recovery?account=A&tab=0&page=detail', 'state': 'failed', 'error': 'editor-input-unavailable:view=true,window=true,connection=false', 'blocked': False, 'revision': 9, 'document': 'c4a784de-e1fb-4e9a-81d7-775da5af7860', 'epoch': 1, 'rejected': 0, 'visible': True, 'bridgeConnected': True, 'hasSnapshot': True, 'standardSha256': '4901e04a47815f255301aae7d42d53e1ea582822fbded16a8d78e44ee6621094', 'richSha256': '4901e04a47815f255301aae7d42d53e1ea582822fbded16a8d78e44ee6621094', 'transcriptLength': 4528, 'alternativeCount': 0, 'alternativeHashes': [], 'pendingConflict': False, 'pendingConflictCount': 0, 'historyCount': 2, 'checkpoint': '', 'checkpointSource': ''}",
+      "experimentComplete": false,
+      "managedControllerReady": false
+    },
+    {
+      "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40557135589",
+      "api": 28,
+      "sourceSha": "655721ec2c60ba1a8c8deccacc0167124026f2d7",
+      "artifactSha256": "c193bf1aae1d9eeae2252e94b0c8849fcae0e5798b1c9f0ad9305956e60c61a5",
+      "casesCompleted": {
+        "initialCapture": true
+      },
+      "failure": "Managed page failed: {'id': '0', 'url': 'http://127.0.0.1:8765/recovery?account=A&tab=0&page=detail', 'state': 'failed', 'error': 'editor-input-unavailable:view=true,window=true,connection=false', 'blocked': False, 'revision': 9, 'document': '1165cd1f-c975-401e-bd78-e3f0bc951360', 'epoch': 1, 'rejected': 0, 'visible': True, 'bridgeConnected': True, 'hasSnapshot': True, 'standardSha256': '25dd1cf3fb90bd8c80e0a7c0824c42423767a666d7e4bc05fa1472ae35d19de1', 'richSha256': '25dd1cf3fb90bd8c80e0a7c0824c42423767a666d7e4bc05fa1472ae35d19de1', 'transcriptLength': 4528, 'alternativeCount': 0, 'alternativeHashes': [], 'pendingConflict': False, 'pendingConflictCount': 0, 'historyCount': 2, 'checkpoint': '', 'checkpointSource': ''}",
+      "experimentComplete": false,
+      "managedControllerReady": false
+    },
+    {
+      "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40557135589",
+      "api": 35,
+      "sourceSha": "655721ec2c60ba1a8c8deccacc0167124026f2d7",
+      "artifactSha256": "e2c5b5f9ac7924d15f2dc7ff6c6bc4573b732cbbc7be01db04c9e5eef94862d8",
+      "casesCompleted": {
+        "initialCapture": true
+      },
+      "failure": "Managed page failed: {'id': '0', 'url': 'http://127.0.0.1:8765/recovery?account=A&tab=0&page=detail', 'state': 'failed', 'error': 'editor-input-unavailable:view=true,window=true,connection=false', 'blocked': False, 'revision': 9, 'document': '794e3858-6e86-4102-8e19-8d1a6f152f17', 'epoch': 1, 'rejected': 0, 'visible': True, 'bridgeConnected': True, 'hasSnapshot': True, 'standardSha256': '982e2daf9baf9e95a901a9c021c0e0cdeb954797a72221676881cbc30da073a4', 'richSha256': '982e2daf9baf9e95a901a9c021c0e0cdeb954797a72221676881cbc30da073a4', 'transcriptLength': 4528, 'alternativeCount': 0, 'alternativeHashes': [], 'pendingConflict': False, 'pendingConflictCount': 0, 'historyCount': 2, 'checkpoint': '', 'checkpointSource': ''}",
+      "experimentComplete": false,
+      "managedControllerReady": false
+    },
+    {
+      "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40560009718",
+      "api": 28,
+      "sourceSha": "6e894fec16720ed928493291f0e85b88149b2dc9",
+      "artifactSha256": "1852f3a6a3b531e6c7e26480c89b68b7da03fd8fa53dcb0abb08ff79f589ca69",
+      "casesCompleted": {
+        "initialCapture": true
+      },
+      "failure": "Managed page failed: {'id': '0', 'url': 'http://127.0.0.1:8765/recovery?account=A&tab=0&page=detail', 'state': 'failed', 'error': 'editor-input-unavailable:view=true,window=true,connection=false', 'blocked': False, 'revision': 10, 'document': 'ffe529cc-1906-448d-80dd-1d010e8ace5f', 'epoch': 1, 'rejected': 0, 'visible': True, 'bridgeConnected': True, 'hasSnapshot': True, 'standardSha256': '884059849ce9a9a32e784475d39233706a9e72f227b271585364e92a46c5f5ce', 'richSha256': '884059849ce9a9a32e784475d39233706a9e72f227b271585364e92a46c5f5ce', 'transcriptLength': 4528, 'alternativeCount': 0, 'alternativeHashes': [], 'pendingConflict': False, 'pendingConflictCount': 0, 'historyCount': 2, 'checkpoint': '', 'checkpointSource': ''}",
+      "experimentComplete": false,
+      "managedControllerReady": false
+    },
+    {
+      "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40623154820",
+      "api": 28,
+      "sourceSha": "64b5740d744df393179d811e7b2cde13e307ef5e",
+      "artifactSha256": "c1823b29b2d97ace785c2500da5a303aff6976e2f5252d20b146fdc30151d7c7",
+      "casesCompleted": {
+        "initialCapture": true
+      },
+      "failure": "Managed page failed: {'id': '1', 'url': 'http://127.0.0.1:8765/recovery?account=A&tab=1&page=detail', 'state': 'failed', 'error': 'editor-value-not-confirmed', 'blocked': False, 'revision': 9, 'document': '80080ac5-980e-49d0-a09e-574f91ab6d1f', 'epoch': 1, 'rejected': 0, 'visible': True, 'bridgeConnected': True, 'hasSnapshot': True, 'standardSha256': '756679a029d5cf979498b774c27b0ad3a072b67a5394e1276f38ad56185df25b', 'richSha256': '756679a029d5cf979498b774c27b0ad3a072b67a5394e1276f38ad56185df25b', 'transcriptLength': 4528, 'alternativeCount': 0, 'alternativeHashes': [], 'pendingConflict': False, 'pendingConflictCount': 0, 'historyCount': 2, 'checkpoint': '', 'checkpointSource': ''}",
+      "experimentComplete": false,
+      "managedControllerReady": false
+    },
+    {
+      "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40623154820",
+      "api": 35,
+      "sourceSha": "64b5740d744df393179d811e7b2cde13e307ef5e",
+      "artifactSha256": "fda86f32c5fe1021e4c59127dc482317a540520a7b0b34243f054440f2dd8f2e",
+      "casesCompleted": {
+        "initialCapture": true,
+        "normalClose": true
+      },
+      "failure": "Timed out: trusted input and rich model",
+      "experimentComplete": false,
+      "managedControllerReady": false
+    },
+    {
+      "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40625637512",
+      "api": 28,
+      "sourceSha": "4bd69e65b1e175637efb09be72499e77fee8d5c8",
+      "artifactSha256": "33506cbb23832b60cc84abd20aeae33f85316cabdd30ac3af3d375a4bc82313b",
+      "casesCompleted": {
+        "initialCapture": true,
+        "normalClose": true,
+        "historyAndURLIsolation": true,
+        "saveAfterRestore": true,
+        "offlineReadOnlySnapshot": true
+      },
+      "failure": "Managed page failed: {'id': '0', 'url': 'http://127.0.0.1:8765/recovery?account=A&tab=0&page=detail', 'state': 'failed', 'error': 'editor-value-not-confirmed', 'blocked': False, 'revision': 26, 'document': '87a09027-cfa4-4d02-95d5-60040fb8c2aa', 'epoch': 2, 'rejected': 0, 'visible': True, 'bridgeConnected': True, 'hasSnapshot': True, 'standardSha256': '051457dee1b76898b3a4de1e6e87d515638fadcc63b51edc1ce76a6d00efb7ee', 'richSha256': '051457dee1b76898b3a4de1e6e87d515638fadcc63b51edc1ce76a6d00efb7ee', 'transcriptLength': 4528, 'alternativeCount': 0, 'alternativeHashes': [], 'pendingConflict': False, 'pendingConflictCount': 0, 'historyCount': 2, 'checkpoint': '', 'checkpointSource': ''}",
+      "experimentComplete": false,
+      "managedControllerReady": false
+    },
+    {
+      "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40625637512",
+      "api": 35,
+      "sourceSha": "4bd69e65b1e175637efb09be72499e77fee8d5c8",
+      "artifactSha256": "58f64996eaa19f5df2b55dcab281b5b252f68113e9dc724778e260052e301262",
+      "casesCompleted": {
+        "initialCapture": true
+      },
+      "failure": "Managed page failed: {'id': '1', 'url': 'http://127.0.0.1:8765/recovery?account=A&tab=1&page=detail', 'state': 'failed', 'error': 'editor-value-not-confirmed', 'blocked': False, 'revision': 9, 'document': 'd1abfede-8f62-4571-8f79-518b67c24b5b', 'epoch': 1, 'rejected': 0, 'visible': True, 'bridgeConnected': True, 'hasSnapshot': True, 'standardSha256': 'a61f2fa79645d6fce3bc9ed68b12d9a0dc778dd18c872d8f22f8c9af018ad827', 'richSha256': 'a61f2fa79645d6fce3bc9ed68b12d9a0dc778dd18c872d8f22f8c9af018ad827', 'transcriptLength': 4528, 'alternativeCount': 0, 'alternativeHashes': [], 'pendingConflict': False, 'pendingConflictCount': 0, 'historyCount': 2, 'checkpoint': '', 'checkpointSource': ''}",
+      "experimentComplete": false,
+      "managedControllerReady": false
+    }
+  ],
+  "next": "Await explicit permission for a new minimal two-page native-input diagnostic under the updated AGENTS browser-test rule.",
+  "findings": [
+    "Single-account API 35 core passed 11 cases with real DOM and trusted editor-model observations.",
+    "Latest API 28 matrix passed capture, normal exit, latest editing, history URL separation and offline snapshot; reconnect write acknowledgement failed.",
+    "Latest API 35 matrix stopped at a second-tab write acknowledgement after initial capture.",
+    "A write accepted by an input interface is not treated as success without actual page/editor-model equality.",
+    "No real ChatGPT, OEM or physical-device acceptance, production migration or package-size optimization."
+  ]
+}
