@@ -74,7 +74,7 @@ gh workflow run android.yml --ref codex/macos-assets-workbench \
 
 ## 应用恢复控制器：当前进度
 
-第二阶段已完成：同一独立 App 源树在 API 28 / 35 各通过 17 项（原 14 项恢复加真实触摸、Home 前后台与 Activity 重建），并完成三种 unsigned arm64 release 体积对照。准确来源与限制见下方“发布包与触摸 / 生命周期”，原始失败保留在统一证据中。
+第二阶段已完成：同一独立 App 源树在 API 28 / 35 各通过 17 项（原 14 项恢复加真实触摸、Home 前后台与 Activity 重建），并完成三种 unsigned arm64 release 体积对照。第三阶段的非调试优化 release 也已通过两端各 17 项，见文末。准确来源与限制分别记录，原始失败保留在统一证据中。
 
 新增的 `Managed*Activity` 使用独立浏览器 profile、独立加密目录和受限内置页面桥接，不读取正式 App 的账号、登录或恢复文件。`ManagedPageController` 保存按账号 / 标签 / URL 绑定的文本、动态草稿、阅读位置和历史；恢复不调用会覆盖现有表单的整包原生状态恢复。离线显示只读原生文本，遇到不同草稿时保留两份并等待选择。
 
@@ -120,3 +120,21 @@ gh workflow run android.yml --ref codex/macos-assets-workbench \
 Android 9 的 stock `input swipe` 为每个移动事件重置 downTime，固定 Gecko 会正确丢弃该无效后续流；首轮失败日志与 [AOSP 原实现](https://raw.githubusercontent.com/aosp-mirror/platform_frameworks_base/android-9.0.0_r61/cmds/input/src/com/android/commands/input/Input.java)一致。仅 CI 的旧系统改用经 Android InputManager 注入的同一 downTime / FINGER / TOUCHSCREEN 事件流，33 个事件回执及独立网页的可信触摸、实际滚动均已核对。该工具拒绝非 API 28、非 shell、非模拟器，不进入 App。API 35 沿用 stock adb；触摸门槛不使用 PanZoom / JS 来通过，既有阅读恢复另行使用原 1400px 样本。
 
 完整设备日志连续采集并按阶段定位：API 28 / 35 的 `No editable parent` 分别为 4 / 9 条，出现在初始加载、重开、重连和冲突恢复附近；触摸、Home 和 Activity 重建阶段未记录该警告。两端 `win is null` / `FATAL EXCEPTION` 为零，发送与截图为零。时间邻近不是因果，未宣称根因已证实或警告已修复，正式迁移门槛仍为 false。
+
+## 非调试优化 release：第三阶段
+
+[同一源码两系统运行验收](https://github.com/ForceMind/ChatGPT/actions/runs/40682073691)对应 `210e6d5`。API 28 / 35 的 x86_64 APK 实际启用 R8 与资源压缩、保持 debuggable=false，经临时 CI 证书签名；签名前后非签名 ZIP 负载一致，设备 base.apk SHA 与签名包一致，并实测普通 run-as 因非调试标志拒绝。两端分别通过 17 项，含真实触摸、Home / Activity 重建、正常退出与强停断网重连、冲突跨重启 / URL 保留、两种选择 / 查看备份、原子写备份恢复、AEAD 完整性负例与原密文保留、账号环境 / 存储隔离和零发送。
+
+release 不使用调试开关取证。仅在已验证的全新 qemu CI 模拟器中，用受限桥接以实验 App UID 访问白名单文件，保持写入文件的原 SELinux 上下文；数据读取使用无 PTY 的 shell-v2 通道，未知包 / 路径 / 操作 / 截图拒绝。浏览器 App 由标准 ActivityManager 启动，取证权限不作为生产沙箱安全保证。实际两次发现的是签名密码来源顺序与测试读协议问题；另修正实验观测 JSON 的原子发布、单次快照判断，不缓存旧数据或放宽恢复断言。
+
+边界检查共 20 项（警告解析 4、取证桥接 11、签名 5），编译 / lint / 临时签名 / 设备运行全部在 Actions。两端发送、截图、win-is-null、FATAL 和意外进程重启均为零；No editable parent 各 9 条，仍按阶段记录，未宣称根因或警告修复。正常 App UID 分别为 10086 / 10209，临时密钥与密码文件由签名 finally 清理且不进入工件。
+
+完整原始来源、失败历史、包身份与各项边界见[优化 release 运行证据](../../docs/benchmarks/android-optimized-release-runtime.json)。这是 x86_64、短后台、合成网页的独立实验结果，不代表 arm64 / 真机、真实 ChatGPT / 登录 / 通行密钥、长时间后台或正式迁移通过；第二阶段 arm64 文件大小不是本轮 x86_64 安装 / 内存 / CPU 数据。
+
+独立手动工作流默认仅构建，真正运行需先取得具体交互授权，再显式关闭 build_only：
+
+```sh
+gh workflow run android-recovery-poc.yml --ref codex/macos-assets-workbench \
+  -f runtime=optimized-release -f managed=true -f build_only=false \
+  -f core_only=false -f input_diagnostic=false -f 'apis=[28,35]'
+```
