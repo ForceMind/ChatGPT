@@ -25,6 +25,8 @@
 
 **Android alpha.22 已完成 CI 候选验收并提供原证书 APK**：加密只读对话 / 画面快照、断网重开，以及 121 个 Skill、32 个自有角色。公开 APK 仍为 alpha.19；[候选记录](docs/releases/3.0.0-alpha.22-android-candidate.json)包含 Actions 工件与验收范围，[签名记录](docs/releases/3.0.0-alpha.22-android-signed-candidate.json)核对原证书及包内容。详见 [Android 说明](android/README.md#alpha22-候选离线阅读与能力库)。
 
+**Android 内核迁移验证进展**：独立 PoC 在 Android 9 / 15 模拟器分别通过 17 项恢复、触摸与生命周期验证；arm64 实验 release 从 196.08 MiB 降至 185.08 MiB。结果尚未接入正式客户端，优化 release 实际运行、真实 ChatGPT 与真机仍待验收。[完整证据与边界](docs/benchmarks/android-phase2-package-touch-lifecycle.json)。
+
 ![macOS 公开版实际窗口（更名前）](docs/images/macos-immersive.png)
 
 ## 产品能力
@@ -211,7 +213,7 @@ cd android
 | 已发布 | Windows 加密离线快照、当前用户 EXE 更新，ZIP 校验与另存 | alpha.21；[验证范围与包](docs/releases/3.0.0-alpha.21-desktop-candidate.json) |
 | 已验收候选 | Android 加密离线快照与 121 Skill / 32 自有角色 | alpha.22 已提供原证书 APK；[CI 与工件记录](docs/releases/3.0.0-alpha.22-android-candidate.json)，待实机验收与公开发布 |
 | 已验收候选 | Mac 账号菜单淡遮罩、平滑交接与标签强制刷新 | alpha.22；[候选与原生验证](docs/releases/3.0.0-alpha.22-macos-candidate.json)，待实际账号 / 设备验收与公开发布 |
-| 环境隔离 | Android 每账号语言 / 时区从独立 PoC 迁入日常客户端 | 路线验证完成，尚未替换普通内核 |
+| 环境隔离 | Android 每账号语言 / 时区从独立 PoC 迁入日常客户端 | 独立三账号 / 四页恢复与触摸验证完成；优化 release 运行及正式接入待验，[证据](docs/benchmarks/android-phase2-package-touch-lifecycle.json) |
 | 系统集成 | 系统 / Chrome 通行密钥、真实 Touch ID 恢复与稳定签名 | 通行密钥未接入；Touch ID 受证书与实机验收条件限制 |
 | 已发布 | 自有智能体与设计补丁 Skill | alpha.21 桌面含 32 个角色，支持单独使用、组合 Skill、收藏与任务恢复 |
 | 移动网络 | 应用内代理与 VLESS 配置 | 方案阶段，未交付，不提供免费节点 |

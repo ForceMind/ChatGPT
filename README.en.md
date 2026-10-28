@@ -23,6 +23,8 @@ ChatGPT Studio brings independent ChatGPT account spaces, tabs, downloaded asset
 
 **Android alpha.22 passed CI candidate acceptance and has a production-certificate APK:** encrypted read-only conversation/image snapshots, offline reopening, 121 Skills and 32 original roles. The public APK remains alpha.19. The [candidate receipt](docs/releases/3.0.0-alpha.22-android-candidate.json) lists Actions artifacts and verification limits; the [signing receipt](docs/releases/3.0.0-alpha.22-android-signed-candidate.json) confirms the existing certificate and unchanged application files. See the [Android candidate notes](android/README.md#alpha22-候选离线阅读与能力库).
 
+**Android engine migration research:** the independent PoC passed 17 recovery, touch and lifecycle cases on each Android 9/15 emulator. The arm64 experimental release APK decreased from 196.08 MiB to 185.08 MiB. This has not entered the regular client; optimized-release runtime, real ChatGPT and physical-device acceptance remain pending. [Evidence and limits](docs/benchmarks/android-phase2-package-touch-lifecycle.json).
+
 ![Actual historical macOS window, before the rename](docs/images/macos-immersive.png)
 
 ## Features
@@ -196,7 +198,7 @@ Cloudflare Pages uses Direct Upload; a Git push does not deploy the site automat
 | Windows encrypted offline snapshots, current-user EXE updates and verified ZIP saving | Published alpha.21; [packages and verification scope](docs/releases/3.0.0-alpha.21-desktop-candidate.json) |
 | Android encrypted offline snapshots and 121 Skills / 32 original roles | Alpha.22 passed CI and has an original-certificate APK; [candidate/artifact receipt](docs/releases/3.0.0-alpha.22-android-candidate.json). Physical-device acceptance and publication pending |
 | macOS account-menu backdrop, coordinated painting and tab force refresh | Alpha.22 candidate; [packages and native acceptance](docs/releases/3.0.0-alpha.22-macos-candidate.json). Real accounts/devices and publication pending |
-| Android per-account locale/timezone engine migration | Separate PoC; regular engine is unchanged |
+| Android per-account locale/timezone engine migration | Independent three-account/four-tab recovery and touch validation complete; optimized-release runtime and regular-client integration pending. [Evidence](docs/benchmarks/android-phase2-package-touch-lifecycle.json) |
 | System/Chrome passkeys, signed Touch ID and stable signing | Not integrated or dependent on unavailable certificates/device acceptance |
 | Original agent presets and design-patch Skill | Published in desktop alpha.21: 32 roles, standalone/combined tasks, favorites and task recovery |
 | In-app proxy/VLESS | Planning only; no free nodes supplied |
