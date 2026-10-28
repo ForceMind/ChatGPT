@@ -307,10 +307,10 @@ def full_experiment(report):
         text('shell','run-as',PACKAGE,'rm','files/managed-recovery-records/A-page-0.bin');launch('A');healthy('A','0');same_values('A','0',first_current)
         report['cases']['interruptedAtomicRecordRecovery']=True
     stop();mark_phase('corrupt-record');base.conflict=False;original=private('A-page-0.bin');damaged=bytearray(original);damaged[-1]^=1;private_write('A-page-0.bin',bytes(damaged));launch('A')
-    wait(lambda:entry('A','0') and entry('A','0')['blocked'],label='corrupt record blocked');assert private('A-page-0.bin')==bytes(damaged);report['cases']['corruptRecordPreserved']=True
+    wait(lambda:entry('A','0') and entry('A','0')['blocked'],label='corrupt record blocked');assert entry('A','0')['error']=='saved-record-rejected:AEADBadTagException';assert private('A-page-0.bin')==bytes(damaged);report['cases']['corruptRecordPreserved']=True
     if not CORE:
         stop();mark_phase('foreign-record');private_write('C-page-0.bin',original);launch('C')
-        wait(lambda:entry('C','0') and entry('C','0')['blocked'],label='cross-account encrypted record blocked');assert private('C-page-0.bin')==original;report['cases']['crossAccountRecordPreserved']=True
+        wait(lambda:entry('C','0') and entry('C','0')['blocked'],label='cross-account encrypted record blocked');assert entry('C','0')['error']=='saved-record-rejected:AEADBadTagException';assert private('C-page-0.bin')==original;report['cases']['crossAccountRecordPreserved']=True
 
     print('8/8 Verify no sends, forged webpage access or foreign cookies',flush=True)
     model_rows=[r for r in base.events if 'pageNativeAPI' in r]
@@ -332,6 +332,11 @@ def full_experiment(report):
     report['experimentComplete']=True
 
 guard();report={'sourceSha':os.environ.get('GITHUB_SHA'),'runId':os.environ.get('GITHUB_RUN_ID'),'scope':'Two-page native input diagnostic' if INPUT_DIAGNOSTIC else 'Single-account core' if CORE else 'Three-account four-tab managed recovery','api':text('shell','getprop','ro.build.version.sdk'),'fixtureOnly':True,'productionDataUsed':False,'cases':{}}
+report['runtimeVariant']=os.environ.get('POC_RUNTIME_VARIANT','debug')
+if report['runtimeVariant']=='optimized-release':
+    identity=json.loads((OUT/'runtime-release-identity.json').read_text());device=json.loads((OUT/'release-device-attestation.json').read_text())
+    assert identity['debuggable'] is False and identity['payloadUnchangedBySigning'] and identity['temporaryCiCertificate'] and device['nonDebuggableRunAsRefused'] and identity['signedApkSha256']==device['installedApkSha256']
+    report['runtimeIdentity']=identity;report['installedReleaseAttestation']=device
 server=ThreadingHTTPServer(('127.0.0.1',8765),Handler);threading.Thread(target=server.serve_forever,daemon=True).start();text('reverse','tcp:8765','tcp:8765')
 log_output=(OUT/'managed-runtime.log').open('wb');log_errors=(OUT/'managed-logcat-stderr.log').open('wb')
 # Stream throughout the experiment: a final logcat dump can silently lose the
@@ -355,7 +360,7 @@ finally:
     report['managedControllerReady']=not INPUT_DIAGNOSTIC and bool(report.get('experimentComplete')) and all(report['cases'].get(name,False) for name in required)
     report['formalMigrationReady']=False
     report['platformFindings']={'unexpectedProcessRestartObserved':any(s['unexpectedNewProcesses'] for s in base.process_stops),'extraForceStopRequests':sum(s['forceStopRequests']-1 for s in base.process_stops),'touchScrollAcceptance':'Real trusted touch starts/terminals and bidirectional scroll measured.' if report['cases'].get('trustedTouchScrollUpDown') else 'Not passed in this run; reading samples use native PanZoom API.'}
-    report['limits']=['Synthetic textarea/contenteditable editor models only; no real ChatGPT.','Fresh x86_64 CI emulators, short background sample only; no physical/OEM, prolonged OS-pressure, optimized-release runtime or production lifecycle guarantee.','The existing reading recovery sample still uses native PanZoom separately from the genuine touch gate.','Warning phases show temporal correlation, not proof of cause or repair.']
+    report['limits']=['Synthetic textarea/contenteditable editor models only; no real ChatGPT.','Fresh x86_64 CI emulators and a short background sample; no arm64/physical/OEM, prolonged OS-pressure or production lifecycle guarantee.','Optimized release uses a disposable CI certificate; root is limited to emulator fixture evidence, while browser processes run as the normal app UID.' if report['runtimeVariant']=='optimized-release' else 'Debug runtime does not establish optimized-release acceptance.','The existing reading recovery sample still uses native PanZoom separately from the genuine touch gate.','Warning phases show temporal correlation, not proof of cause or repair.']
     for a in ('A','B','C'):(OUT/('managed-native-'+a+'.jsonl')).write_bytes(adb('exec-out','run-as',PACKAGE,'cat','files/managed-events-'+a+'.jsonl',check=False))
     report['logCaptureComplete']=log_process.poll() is None
     log_process.terminate()

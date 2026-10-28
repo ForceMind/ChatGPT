@@ -1,0 +1,60 @@
+#!/usr/bin/env python3
+"""Sign only the independent, non-debuggable CI release with a disposable key."""
+from pathlib import Path
+import hashlib,json,os,re,secrets,shutil,subprocess,tempfile,zipfile
+
+PACKAGE='com.forcemind.chatgpt.environmentpoc'
+
+def digest(path):
+    h=hashlib.sha256()
+    with path.open('rb') as stream:
+        for chunk in iter(lambda:stream.read(1024*1024),b''):h.update(chunk)
+    return h.hexdigest()
+
+def payload(path):
+    result={}
+    with zipfile.ZipFile(path) as z:
+        names=z.namelist()
+        if len(names)!=len(set(names)):raise RuntimeError('Duplicate APK entries')
+        for name in names:
+            if re.fullmatch(r'META-INF/(?:MANIFEST\.MF|[^/]+\.(?:SF|RSA|DSA|EC))',name):continue
+            h=hashlib.sha256()
+            with z.open(name) as stream:
+                for chunk in iter(lambda:stream.read(1024*1024),b''):h.update(chunk)
+            result[name]=h.hexdigest()
+    return result
+
+def validate_badging(badging,minimum):
+    if minimum not in (28,29) or not re.search(r"^package: name='"+re.escape(PACKAGE)+"'",badging,re.M) or re.findall(r"^(?:minSdkVersion|sdkVersion):'(\d+)'$",badging,re.M)!=[str(minimum)] or not re.search(r"^native-code: 'x86_64'\s*$",badging,re.M) or re.search(r'^application-debuggable\b',badging,re.M):raise RuntimeError('Not the expected non-debuggable release')
+
+def main():
+    if os.environ.get('GITHUB_ACTIONS')!='true':raise SystemExit('Signing is CI-only')
+    root=Path(__file__).resolve().parents[1]/'environment-poc';evidence=root/'build/recovery-evidence';evidence.mkdir(parents=True,exist_ok=True)
+    minimum=int(os.environ['POC_MIN_API'])
+    if minimum not in (28,29):raise SystemExit('Unexpected isolated minimum')
+    files=list((root/'build/outputs/apk/release').glob('*x86_64*unsigned.apk'))
+    if len(files)!=1:raise RuntimeError('Expected one independent x86_64 release')
+    apk=files[0];tools=Path(os.environ['ANDROID_HOME'])/'build-tools/36.0.0'
+    badging=subprocess.check_output([str(tools/'aapt2'),'dump','badging',str(apk)],text=True)
+    validate_badging(badging,minimum)
+    mapping=root/'build/outputs/mapping/release/mapping.txt'
+    if not mapping.is_file() or not mapping.stat().st_size:raise RuntimeError('R8 mapping missing')
+    target=root/'build/runtime-release/environment-poc-x86_64-ci-release.apk';target.parent.mkdir(parents=True,exist_ok=True)
+    temporary=Path(tempfile.mkdtemp(prefix='studio-ci-key-',dir=os.environ['RUNNER_TEMP']))
+    try:
+        password=temporary/'password';fd=os.open(password,os.O_CREAT|os.O_EXCL|os.O_WRONLY,0o600)
+        with os.fdopen(fd,'w') as stream:stream.write(secrets.token_urlsafe(32)+'\n')
+        key=temporary/'temporary.p12'
+        subprocess.run(['keytool','-genkeypair','-noprompt','-storetype','PKCS12','-keystore',str(key),'-storepass:file',str(password),'-keypass:file',str(password),'-alias','poc-runtime','-keyalg','RSA','-keysize','2048','-validity','2','-dname','CN=Independent CI PoC'],check=True,capture_output=True)
+        subprocess.run([str(tools/'apksigner'),'sign','--ks',str(key),'--ks-key-alias','poc-runtime','--ks-pass','file:'+str(password),'--key-pass','file:'+str(password),'--out',str(target),str(apk)],check=True,capture_output=True)
+        verification=subprocess.check_output([str(tools/'apksigner'),'verify','--verbose','--print-certs',str(target)],text=True)
+        cert=re.findall(r'Signer #1 certificate SHA-256 digest: ([a-fA-F0-9]{64})',verification)
+        if len(cert)!=1 or payload(apk)!=payload(target):raise RuntimeError('Signing altered payload or certificate not verified')
+        identity={'schema':1,'sourceSha':os.environ['GITHUB_SHA'],'runId':os.environ['GITHUB_RUN_ID'],'package':PACKAGE,'runtimeVariant':'optimized-release','optimization':'resources','abi':'x86_64','minSdk':minimum,'debuggable':False,'unsignedApkSha256':digest(apk),'signedApkSha256':digest(target),'signedApkBytes':target.stat().st_size,'certificateSha256':cert[0].lower(),'temporaryCiCertificate':True,'productionKeyUsed':False,'payloadUnchangedBySigning':True,'r8MappingSha256':digest(mapping)}
+        (evidence/'runtime-release-badging.txt').write_text(badging)
+        (evidence/'runtime-release-signature.txt').write_text(verification)
+        (evidence/'runtime-release-identity.json').write_text(json.dumps(identity,indent=2)+'\n')
+        print('Non-debuggable optimized independent release signed with temporary CI certificate; original payload preserved')
+    finally:shutil.rmtree(temporary)
+
+if __name__=='__main__':main()
