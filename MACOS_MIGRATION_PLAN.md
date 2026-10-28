@@ -993,3 +993,4 @@
 - 本阶段已获明确授权：API 28 / 35 仅使用合成网页、真实触摸与原 17 项恢复 / 生命周期检查，不截图、不访问真实 ChatGPT。继续固定内核和 R8+资源压缩，构建 x86_64 非调试 release；只使用临时 CI 证书，逐 ZIP 负载核对签名未改代码 / 资源，验证签名后即清理密钥和密码文件，不上传生产私钥或实验私钥。
 - 不把 release 改回 debuggable。全新 CI 模拟器经单设备 / qemu / API / adb UID 校验后，仅用受限桥接读取夹具：数据命令以独立 App UID 执行，写入保持原文件 SELinux 上下文；拒绝其他包、路径穿越、未知命令与截图。核对设备已安装 APK 的 SHA 等于临时签名包，并实测普通 run-as 被“not debuggable”拒绝。CI 模拟器 root 只用于取证，浏览器仍由正常应用 UID 运行，不推及真机 / 生产沙箱验收。
 - 新增独立工作流手动入口，默认 build_only=true，避免只想构建时启动浏览器；旧 workflow_call 的 debug 路径保持默认行为。当前明确授权的 release 验收会显式关闭 build_only。编译、签名边界和桥接边界检查全部在 Actions；完整性负例进一步要求 AEADBadTagException，避免把夹具权限错误误计为加密拒绝。原 17 项不删除、不弱化，故障均保留。
+- 首轮 [40676126385](https://github.com/ForceMind/ChatGPT/actions/runs/40676126385) / a571dfb：API 28 / 35 均通过边界检查、R8 release 编译与 lint，随后 apksigner sign 以状态2退出，设备流程未执行，不能记运行通过。临时私钥由 finally 清理；首轮脚本捕获但未输出详细 stderr，原因尚未确认。本次只补签名工具的非秘密诊断输出，继续保留密码文件传参和清理，不打印密码 / 私钥，不先猜测原因或改低签名 / 包身份校验门槛。

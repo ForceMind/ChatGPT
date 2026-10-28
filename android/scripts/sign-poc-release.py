@@ -41,13 +41,21 @@ def main():
     if not mapping.is_file() or not mapping.stat().st_size:raise RuntimeError('R8 mapping missing')
     target=root/'build/runtime-release/environment-poc-x86_64-ci-release.apk';target.parent.mkdir(parents=True,exist_ok=True)
     temporary=Path(tempfile.mkdtemp(prefix='studio-ci-key-',dir=os.environ['RUNNER_TEMP']))
+    def tool(command):
+        result=subprocess.run(command,capture_output=True,text=True)
+        # Commands contain only password-file paths. The tools' diagnostic
+        # output is needed on failure; no password or private-key bytes are logged.
+        with (evidence/'runtime-release-signing-tools.txt').open('a') as log:
+            log.write(Path(command[0]).name+' exit='+str(result.returncode)+'\n'+result.stdout+result.stderr+'\n')
+        if result.returncode:raise RuntimeError(Path(command[0]).name+' failed: '+(result.stderr or result.stdout)[-2500:])
+        return result.stdout
     try:
         password=temporary/'password';fd=os.open(password,os.O_CREAT|os.O_EXCL|os.O_WRONLY,0o600)
         with os.fdopen(fd,'w') as stream:stream.write(secrets.token_urlsafe(32)+'\n')
         key=temporary/'temporary.p12'
-        subprocess.run(['keytool','-genkeypair','-noprompt','-storetype','PKCS12','-keystore',str(key),'-storepass:file',str(password),'-keypass:file',str(password),'-alias','poc-runtime','-keyalg','RSA','-keysize','2048','-validity','2','-dname','CN=Independent CI PoC'],check=True,capture_output=True)
-        subprocess.run([str(tools/'apksigner'),'sign','--ks',str(key),'--ks-key-alias','poc-runtime','--ks-pass','file:'+str(password),'--key-pass','file:'+str(password),'--out',str(target),str(apk)],check=True,capture_output=True)
-        verification=subprocess.check_output([str(tools/'apksigner'),'verify','--verbose','--print-certs',str(target)],text=True)
+        tool(['keytool','-genkeypair','-noprompt','-storetype','PKCS12','-keystore',str(key),'-storepass:file',str(password),'-keypass:file',str(password),'-alias','poc-runtime','-keyalg','RSA','-keysize','2048','-validity','2','-dname','CN=Independent CI PoC'])
+        tool([str(tools/'apksigner'),'sign','--ks',str(key),'--ks-key-alias','poc-runtime','--ks-pass','file:'+str(password),'--key-pass','file:'+str(password),'--out',str(target),str(apk)])
+        verification=tool([str(tools/'apksigner'),'verify','--verbose','--print-certs',str(target)])
         cert=re.findall(r'Signer #1 certificate SHA-256 digest: ([a-fA-F0-9]{64})',verification)
         if len(cert)!=1 or payload(apk)!=payload(target):raise RuntimeError('Signing altered payload or certificate not verified')
         identity={'schema':1,'sourceSha':os.environ['GITHUB_SHA'],'runId':os.environ['GITHUB_RUN_ID'],'package':PACKAGE,'runtimeVariant':'optimized-release','optimization':'resources','abi':'x86_64','minSdk':minimum,'debuggable':False,'unsignedApkSha256':digest(apk),'signedApkSha256':digest(target),'signedApkBytes':target.stat().st_size,'certificateSha256':cert[0].lower(),'temporaryCiCertificate':True,'productionKeyUsed':False,'payloadUnchangedBySigning':True,'r8MappingSha256':digest(mapping)}
