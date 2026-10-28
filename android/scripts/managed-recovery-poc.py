@@ -15,6 +15,7 @@ import threading
 import time
 import uuid
 import xml.etree.ElementTree as ET
+from poc_warning_report import localize
 
 spec=importlib.util.spec_from_file_location('native_fixture',Path(__file__).with_name('recovery-environment-poc.py'))
 base=importlib.util.module_from_spec(spec);spec.loader.exec_module(base)
@@ -36,10 +37,12 @@ class Handler(base.Handler):
         if isinstance(body,str) and '<script>' in body and 'function observation()' in body:
             body+='''<style>#rich{white-space:pre-wrap;overflow-wrap:anywhere}</style><script>
 const studioInputEvents=[];
+const studioTouch={starts:0,terminals:0,untrusted:0};
+for(const type of ['touchstart','touchend','touchcancel'])document.addEventListener(type,event=>{if(type==='touchstart')studioTouch.starts++;else studioTouch.terminals++;if(!event.isTrusted)studioTouch.untrusted++;},{passive:true,capture:true});
 for(const type of ['beforeinput','input','focusin','focusout'])document.addEventListener(type,event=>{studioInputEvents.push({type,target:event.target.id,trusted:event.isTrusted,inputType:event.inputType||'',dataLength:event.data?.length||0,activeElement:document.activeElement?.id,at:performance.now()});if(studioInputEvents.length>24)studioInputEvents.shift();});
 const studioModels={standard:document.getElementById('standard').value,rich:document.getElementById('rich').innerText};
 const nativeObservation=observation;
-observation=()=>({...nativeObservation(),rich:document.getElementById('rich').innerText,standardModel:studioModels.standard,richModel:studioModels.rich,inputEvents:studioInputEvents,documentFocused:document.hasFocus(),visibility:document.visibilityState,pageNativeAPI:typeof browser!=='undefined'&&!!browser.runtime?.connectNative});
+observation=()=>({...nativeObservation(),rich:document.getElementById('rich').innerText,standardModel:studioModels.standard,richModel:studioModels.rich,inputEvents:studioInputEvents,touch:studioTouch,documentFocused:document.hasFocus(),visibility:document.visibilityState,pageNativeAPI:typeof browser!=='undefined'&&!!browser.runtime?.connectNative});
 document.addEventListener('input',event=>{if(event.isTrusted){studioModels.standard=document.getElementById('standard').value;studioModels.rich=document.getElementById('rich').innerText;}});
 window.postMessage({type:'capture',token:'forged-web-token',snapshot:{rich:'UNTRUSTED-FORGED-DRAFT'}},'*');
 report();
@@ -59,6 +62,9 @@ def native_events(a):
 
 def entry(a,t):return next((e for e in native(a).get('entries',[]) if e['id']==t),None)
 def latest(a,t):return base.latest(a,t,base.phase)
+def mark_phase(phase,step='begin'):
+    if not re.fullmatch('[a-z0-9-]+',phase) or not re.fullmatch('[a-z0-9-]+',step):raise ValueError('Invalid fixture marker')
+    base.phase=phase;text('shell','log','-t','StudioPocPhase','-p','i','phase='+phase,'step='+step)
 def component(a):return PACKAGE+'/'+PACKAGE+'.Managed'+a+'Activity'
 def launch(a=None,action=None,index=0,tabs=0,sample=None,replace=False):
     args=['shell','am','start','-W','-n',component(a or 'A')]
@@ -116,6 +122,7 @@ def type_values(a,t,value,replace=False):
     launch(a,'scrollSample');wait(lambda:(lambda r:r if r and abs(r['scrollY']-1400)<80 else None)(latest(a,t)),label='real reading position')
 
 def checkpoint(a,close=False):
+    if close:mark_phase(base.phase,'complete-exit-request')
     old=native(a).get('elapsedMs',-1);launch(a,'quit' if close else 'checkpoint')
     def result():
         rows=[r for r in native_events(a) if r['elapsedMs']>old]
@@ -128,9 +135,10 @@ def checkpoint(a,close=False):
 def capture(name):
     # Screenshot capture requires explicit task authorization; never enabled by CI defaults.
     if CAPTURE_UI:base.capture('managed-'+name)
-def stop():return base.stop()
+def stop():
+    mark_phase(base.phase,'force-stop-request');return base.stop()
 def restored(case,expected,old_documents,open_app=True):
-    base.phase=case
+    mark_phase(case)
     if open_app:launch()
     wait(lambda:foreground('A'),label='saved launcher account A');assert native('A')['selected']==0
     rows={}
@@ -164,7 +172,7 @@ def guard():
 
 def input_diagnostic(report):
     print('1/3 Seed two real editors in two same-account pages',flush=True)
-    base.phase='input-diagnostic-seed';launch('A',tabs=2)
+    mark_phase('input-diagnostic-seed');launch('A',tabs=2)
     for a,t in TABS:
         select(a,t);wait(lambda:latest(a,t),label='initial diagnostic page')
         point(a,t,'detail');wait(lambda:(lambda r:r if r and r['page']=='detail' else None)(latest(a,t)),label='detail page')
@@ -185,8 +193,47 @@ def input_diagnostic(report):
     report['experimentComplete']=True
 
 
+def touch_and_lifecycle(report):
+    print('Additional scope: trusted touch, Home/foreground and Activity recreation',flush=True)
+    mark_phase('touch-scroll');select('A','0');launch('A','hideKeyboard')
+    n=native('A');x=round(n['viewX']+n['viewWidth']*.5);top=round(n['viewY']+n['viewHeight']*.30);bottom=round(n['viewY']+n['viewHeight']*.78)
+    text('shell','input','tap',str(x),str(round(n['viewY']+n['viewHeight']*.6)))
+    started=time.monotonic();before=wait(lambda:(lambda r:r if r and r['received']>started and r['activeElement'] not in ('standard','rich') and 'touch' in r else None)(latest('A','0')),label='article touch clears editor focus')
+    gestures=[]
+    for direction,y1,y2 in (('up',bottom,top),('down',top,bottom)):
+        started=time.monotonic();text('shell','input','swipe',str(x),str(y1),str(x),str(y2),'550')
+        def changed():
+            row=latest('A','0')
+            if not row or row['received']<=started or row['document']!=before['document']:return None
+            touch=row.get('touch',{});delta=row['scrollY']-before['scrollY']
+            return row if touch.get('starts',0)>before['touch']['starts'] and touch.get('terminals',0)>before['touch']['terminals'] and not touch.get('untrusted') and (delta>100 if direction=='up' else delta<-100) else None
+        row=wait(changed,15,label='trusted '+direction+' swipe changes actual scroll')
+        time.sleep(1);row=latest('A','0');delta=row['scrollY']-before['scrollY'];assert delta>100 if direction=='up' else delta<-100
+        gestures.append({'direction':direction,'before':before['scrollY'],'after':row['scrollY'],'touchStartsAdded':row['touch']['starts']-before['touch']['starts'],'touchTerminalsAdded':row['touch']['terminals']-before['touch']['terminals'],'documentUnchanged':row['document']==before['document']});before=row
+    report['touchGestures']=gestures;report['cases']['trustedTouchScrollUpDown']=True
+
+    mark_phase('lifecycle-background');references={a+':'+t:base.latest(a,t) for a,t in TABS};pid=native('A')['pid'];started=time.monotonic()
+    text('shell','input','keyevent','KEYCODE_HOME');wait(lambda:not foreground('A'),label='real Home backgrounds app');time.sleep(5)
+    background={}
+    for a,t in TABS:
+        row=wait(lambda:(lambda r:r if r and r['received']>started+2 and r['document']==references[a+':'+t]['document'] else None)(latest(a,t)),12,label='same background document '+a+'/'+t);background[a+':'+t]=row['ticks']-references[a+':'+t]['ticks'];assert background[a+':'+t]>0
+    background_seconds=round(time.monotonic()-started,3)
+    launch('A','select',0);select('A','0');assert native('A')['pid']==pid
+    for a,t in TABS:
+        select(a,t);row=same_values(a,t,markers[a+':'+t]);assert row['document']==references[a+':'+t]['document']
+    report['backgroundSample']={'backgroundSeconds':background_seconds,'totalRoundTripSeconds':round(time.monotonic()-started,3),'tickDeltas':background,'mainPidUnchanged':True};report['cases']['homeForegroundRetainsDocuments']=True
+
+    mark_phase('lifecycle-recreate');select('A','0');old=native('A')['elapsedMs'];launch('A','recreate')
+    wait(lambda:native('A').get('elapsedMs',0)>old and foreground('A'),label='recreated Activity foreground');healthy('A','0');assert native('A')['pid']==pid
+    for a,t in TABS:
+        select(a,t);row=same_values(a,t,markers[a+':'+t]);assert row['document']==references[a+':'+t]['document']
+    report['cases']['activityRecreationRetainsDocuments']=True
+    # Separate reset for the existing exact reading-recovery sample. The touch
+    # gate above observes only actual input gestures, with no programmatic scroll.
+    mark_phase('reading-sample-reset');select('A','0');launch('A','scrollSample');wait(lambda:(lambda r:r if r and abs(r['scrollY']-1400)<80 else None)(latest('A','0')),label='original recovery reading sample');checkpoint('A')
+
 def full_experiment(report):
-    print('1/8 Capture actual editor models, text and reading position',flush=True);base.phase='seed'
+    print('1/8 Capture actual editor models, text and reading position',flush=True);mark_phase('seed')
     launch('A',tabs=1 if CORE else 2)
     for a,t in TABS:
         select(a,t);r=wait(lambda:latest(a,t),label='initial page');point(a,t,'detail');wait(lambda:(lambda r:r if r and r['page']=='detail' else None)(latest(a,t)),label='real detail navigation');healthy(a,t)
@@ -194,13 +241,15 @@ def full_experiment(report):
     baseline={a+':'+t:latest(a,t) for a,t in TABS};baseline_time=time.monotonic();reference_tokens={a:baseline[a+':0']['owner']['token'] for a in {a for a,t in TABS}}
     if not CORE:assert baseline['A:0']['owner']==baseline['A:1']['owner']
     report['cases']['initialCapture']=True;capture('captured')
+    if not CORE:touch_and_lifecycle(report)
 
     print('2/8 Normal close restores through app-owned state and trusted input',flush=True)
+    mark_phase('normal-exit')
     if not CORE:checkpoint('B',True)
     select('A','0');checkpoint('A',True)
     rows=restored('normal-close',markers,{k:r['document'] for k,r in baseline.items()});report['cases']['normalClose']=True;capture('normal-restored')
 
-    print('3/8 Updates after restoration must replace the saved cache',flush=True);base.phase='latest-input'
+    print('3/8 Updates after restoration must replace the saved cache',flush=True);mark_phase('latest-input')
     for a,t in TABS:type_values(a,t,latest_markers[a+':'+t],replace=True);checkpoint(a)
     select('A','0');launch('A','back');healthy('A','0')
     wait(lambda:(lambda r:r if r and r['page']=='start' and r.get('standardModel')=='' and r.get('richModel')=='' else None)(latest('A','0')),label='history URL does not inherit another page draft')
@@ -208,20 +257,20 @@ def full_experiment(report):
     select('A','0');checkpoint('A');latest_rows={a+':'+t:latest(a,t) for a,t in TABS};report['cases']['saveAfterRestore']=True
 
     print('4/8 True process stop, offline read-only native snapshot, reconnect',flush=True)
-    old_pids=stop();text('reverse','--remove','tcp:8765');base.phase='offline';launch();time.sleep(8);root=tree();labels=' '.join(n.get('text','')+' '+n.get('content-desc','') for n in root.iter('node'))
+    old_pids=stop();text('reverse','--remove','tcp:8765');mark_phase('offline');launch();time.sleep(8);root=tree();labels=' '.join(n.get('text','')+' '+n.get('content-desc','') for n in root.iter('node'))
     assert '上次保存的对话（只读）' in labels and '合成对话' in labels
     assert not any(n.get('editable')=='true' for n in root.iter('node'))
     assert entry('A','0')['richSha256']==hashlib.sha256(latest_markers['A:0'].encode()).hexdigest()
     assert not any(r['phase']=='offline' for r in base.events)
     report['cases']['offlineReadOnlySnapshot']=True;capture('offline')
-    text('reverse','tcp:8765','tcp:8765');base.phase='reconnected';launch('A','retry')
+    text('reverse','tcp:8765','tcp:8765');mark_phase('reconnected');launch('A','retry')
     rows=restored('reconnected',latest_markers,{k:r['document'] for k,r in latest_rows.items()},open_app=False);assert str(native('A')['pid']) not in old_pids;report['cases']['forceStopAndReconnect']=True
 
     print('5/8 Conflict preserves both versions before user choice',flush=True)
-    select('A','0');stop();base.phase='conflict-keep';base.conflict=True;base.current_draft='current-web-'+uuid.uuid4().hex;first_current=base.current_draft;launch('A')
+    select('A','0');stop();mark_phase('conflict-keep');base.conflict=True;base.current_draft='current-web-'+uuid.uuid4().hex;first_current=base.current_draft;launch('A')
     wait(lambda:entry('A','0') and entry('A','0')['state']=='conflict',label='native conflict prompt');r=current_values('A','0',first_current);assert entry('A','0')['pendingConflict'];capture('conflict')
     if not CORE:
-        stop();base.phase='unresolved-conflict-restart';launch('A');wait(lambda:entry('A','0') and entry('A','0')['state']=='conflict',label='unresolved conflict survives restart')
+        stop();mark_phase('unresolved-conflict-restart');launch('A');wait(lambda:entry('A','0') and entry('A','0')['state']=='conflict',label='unresolved conflict survives restart')
         r=current_values('A','0',first_current);assert entry('A','0')['richSha256']==hashlib.sha256(latest_markers['A:0'].encode()).hexdigest()
         launch('A','back');healthy('A','0');wait(lambda:(lambda r:r if r and r['page']=='start' and r.get('richModel')=='' and r.get('standardModel')=='' else None)(latest('A','0')),label='pending conflict cannot leak into another URL')
         assert not entry('A','0')['pendingConflict'] and entry('A','0')['pendingConflictCount']==1
@@ -231,7 +280,7 @@ def full_experiment(report):
     tap_label('保留网页草稿');healthy('A','0');same_values('A','0',first_current);assert entry('A','0')['alternativeCount']>=1;report['cases']['keepCurrentConflict']=True
 
     print('6/8 Explicit restore uses native editor input and preserves other draft',flush=True)
-    stop();base.phase='conflict-restore';base.current_draft='current-web-'+uuid.uuid4().hex;second_current=base.current_draft;launch('A')
+    stop();mark_phase('conflict-restore');base.current_draft='current-web-'+uuid.uuid4().hex;second_current=base.current_draft;launch('A')
     wait(lambda:entry('A','0') and entry('A','0')['state']=='conflict',label='second conflict prompt');r=current_values('A','0',second_current)
     tap_label('恢复上次草稿');healthy('A','0');same_values('A','0',first_current);assert entry('A','0')['alternativeCount']>=2
     hashes=entry('A','0')['alternativeHashes'];assert any(p['currentRichSha256']==hashlib.sha256(second_current.encode()).hexdigest() and p['savedRichSha256']==hashlib.sha256(first_current.encode()).hexdigest() for p in hashes)
@@ -239,13 +288,13 @@ def full_experiment(report):
 
     print('7/8 Reject damaged encrypted record and retain original bytes',flush=True)
     if not CORE:
-        stop();base.phase='atomic-backup';base.conflict=False;original=private('A-page-0.bin');private_write('A-page-0.bin.bak',original)
+        stop();mark_phase('atomic-backup');base.conflict=False;original=private('A-page-0.bin');private_write('A-page-0.bin.bak',original)
         text('shell','run-as',PACKAGE,'rm','files/managed-recovery-records/A-page-0.bin');launch('A');healthy('A','0');same_values('A','0',first_current)
         report['cases']['interruptedAtomicRecordRecovery']=True
-    stop();base.phase='corrupt-record';base.conflict=False;original=private('A-page-0.bin');damaged=bytearray(original);damaged[-1]^=1;private_write('A-page-0.bin',bytes(damaged));launch('A')
+    stop();mark_phase('corrupt-record');base.conflict=False;original=private('A-page-0.bin');damaged=bytearray(original);damaged[-1]^=1;private_write('A-page-0.bin',bytes(damaged));launch('A')
     wait(lambda:entry('A','0') and entry('A','0')['blocked'],label='corrupt record blocked');assert private('A-page-0.bin')==bytes(damaged);report['cases']['corruptRecordPreserved']=True
     if not CORE:
-        stop();base.phase='foreign-record';private_write('C-page-0.bin',original);launch('C')
+        stop();mark_phase('foreign-record');private_write('C-page-0.bin',original);launch('C')
         wait(lambda:entry('C','0') and entry('C','0')['blocked'],label='cross-account encrypted record blocked');assert private('C-page-0.bin')==original;report['cases']['crossAccountRecordPreserved']=True
 
     print('8/8 Verify no sends, forged webpage access or foreign cookies',flush=True)
@@ -269,6 +318,10 @@ def full_experiment(report):
 
 guard();report={'sourceSha':os.environ.get('GITHUB_SHA'),'runId':os.environ.get('GITHUB_RUN_ID'),'scope':'Two-page native input diagnostic' if INPUT_DIAGNOSTIC else 'Single-account core' if CORE else 'Three-account four-tab managed recovery','api':text('shell','getprop','ro.build.version.sdk'),'fixtureOnly':True,'productionDataUsed':False,'cases':{}}
 server=ThreadingHTTPServer(('127.0.0.1',8765),Handler);threading.Thread(target=server.serve_forever,daemon=True).start();text('reverse','tcp:8765','tcp:8765')
+log_output=(OUT/'managed-runtime.log').open('wb');log_errors=(OUT/'managed-logcat-stderr.log').open('wb')
+# Stream throughout the experiment: a final logcat dump can silently lose the
+# early touch/lifecycle phases when Android's ring buffer wraps.
+log_process=subprocess.Popen(['adb','logcat','-v','threadtime','-T','1'],stdout=log_output,stderr=log_errors)
 def timeout(_signal,_frame):raise TimeoutError('Managed recovery experiment timed out')
 signal.signal(signal.SIGTERM,timeout)
 failure=None
@@ -282,13 +335,22 @@ except Exception as error:
 finally:
     report['native']={a:native(a) for a in ('A','B','C')};report['submissions']=base.submissions;report['processStops']=base.process_stops
     required={'initialCapture','normalClose','saveAfterRestore','historyAndURLIsolation','offlineReadOnlySnapshot','forceStopAndReconnect','keepCurrentConflict','restoreSavedConflictAndBackupAccess','corruptRecordPreserved','noAutomaticSendAndNoWebNativeAccess','accountEnvironmentAndStorageIsolation'}
-    if not CORE:required.update(('crossAccountRecordPreserved','unresolvedConflictRestartAndURLBinding','interruptedAtomicRecordRecovery'))
+    if not CORE:required.update(('crossAccountRecordPreserved','unresolvedConflictRestartAndURLBinding','interruptedAtomicRecordRecovery','trustedTouchScrollUpDown','homeForegroundRetainsDocuments','activityRecreationRetainsDocuments'))
     report['inputDiagnosticComplete']=INPUT_DIAGNOSTIC and bool(report.get('experimentComplete'))
     report['managedControllerReady']=not INPUT_DIAGNOSTIC and bool(report.get('experimentComplete')) and all(report['cases'].get(name,False) for name in required)
     report['formalMigrationReady']=False
-    report['platformFindings']={'unexpectedProcessRestartObserved':any(s['unexpectedNewProcesses'] for s in base.process_stops),'extraForceStopRequests':sum(s['forceStopRequests']-1 for s in base.process_stops),'touchScrollAcceptance':'Not established here; reading samples use native PanZoom API.'}
-    report['limits']=['Synthetic textarea/contenteditable editor models only; no real ChatGPT.','Touch scrolling, OEM/physical devices, production lifecycle integration and package-size work remain separate gates.','This controller intentionally avoids blanket native form restoration; browser history is tracked in app-owned records.']
-    for name,value in (('managed-report.json',report),('managed-events.json',base.events),('managed-requests.json',base.requests)):(OUT/name).write_text(json.dumps(value,ensure_ascii=False,indent=2))
+    report['platformFindings']={'unexpectedProcessRestartObserved':any(s['unexpectedNewProcesses'] for s in base.process_stops),'extraForceStopRequests':sum(s['forceStopRequests']-1 for s in base.process_stops),'touchScrollAcceptance':'Real trusted touch starts/terminals and bidirectional scroll measured.' if report['cases'].get('trustedTouchScrollUpDown') else 'Not passed in this run; reading samples use native PanZoom API.'}
+    report['limits']=['Synthetic textarea/contenteditable editor models only; no real ChatGPT.','Fresh x86_64 CI emulators, short background sample only; no physical/OEM, prolonged OS-pressure, optimized-release runtime or production lifecycle guarantee.','The existing reading recovery sample still uses native PanZoom separately from the genuine touch gate.','Warning phases show temporal correlation, not proof of cause or repair.']
     for a in ('A','B','C'):(OUT/('managed-native-'+a+'.jsonl')).write_bytes(adb('exec-out','run-as',PACKAGE,'cat','files/managed-events-'+a+'.jsonl',check=False))
-    (OUT/'managed-runtime.log').write_text(text('logcat','-d',check=False,timeout=30));text('shell','am','force-stop',PACKAGE,check=False);text('reverse','--remove','tcp:8765',check=False);server.shutdown()
+    report['logCaptureComplete']=log_process.poll() is None
+    log_process.terminate()
+    try:log_process.wait(timeout=5)
+    except subprocess.TimeoutExpired:log_process.kill();log_process.wait(timeout=5)
+    log_output.close();log_errors.close()
+    runtime_log=(OUT/'managed-runtime.log').read_text(errors='replace')
+    warnings=localize(runtime_log);(OUT/'managed-warning-localization.json').write_text(json.dumps(warnings,ensure_ascii=False,indent=2))
+    report['warningCounts']=warnings['counts'];report['warningCausalAttribution']=False
+    if not report['logCaptureComplete']:failure=failure or 'Continuous device log capture ended unexpectedly';report['failure']=failure;report['managedControllerReady']=False
+    for name,value in (('managed-report.json',report),('managed-events.json',base.events),('managed-requests.json',base.requests)):(OUT/name).write_text(json.dumps(value,ensure_ascii=False,indent=2))
+    text('shell','am','force-stop',PACKAGE,check=False);text('reverse','--remove','tcp:8765',check=False);server.shutdown()
 if failure or not (report['inputDiagnosticComplete'] if INPUT_DIAGNOSTIC else report['managedControllerReady']):raise SystemExit(1)

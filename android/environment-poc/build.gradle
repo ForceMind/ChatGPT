@@ -1,4 +1,8 @@
 plugins { id 'com.android.application' version '9.1.1' }
+def pocOptimization = providers.gradleProperty('pocOptimization').getOrElse('baseline')
+if (!(pocOptimization in ['baseline', 'r8', 'resources'])) throw new GradleException('Unknown isolated release optimization mode')
+def pocAbis = providers.gradleProperty('pocAbis').getOrElse('arm64-v8a,x86_64').split(',') as List
+if (pocAbis.isEmpty() || pocAbis.toSet().size() != pocAbis.size() || !pocAbis.every { it in ['arm64-v8a', 'x86_64'] }) throw new GradleException('Unknown isolated ABI')
 android {
     namespace 'com.forcemind.chatgpt.environmentpoc'
     compileSdk { version = release(37) { minorApiLevel = 0 } }
@@ -11,9 +15,15 @@ android {
         versionCode 1
         versionName '0.1-poc'
     }
-    buildTypes { release { minifyEnabled false } }
+    buildTypes {
+        release {
+            minifyEnabled = pocOptimization != 'baseline'
+            shrinkResources = pocOptimization == 'resources'
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt')
+        }
+    }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
-    splits { abi { enable true; reset(); include 'arm64-v8a', 'x86_64'; universalApk false } }
+    splits { abi { enable true; reset(); include(*pocAbis); universalApk false } }
 }
 dependencies { implementation 'org.mozilla.geckoview:geckoview:158.0.20261021001945' }
 tasks.register('copyPocIcon', Copy) {

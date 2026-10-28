@@ -21,6 +21,33 @@ on:
 permissions:
   contents: read
 jobs:
+  package-size:
+    if: inputs.managed && !inputs.core_only && !inputs.input_diagnostic
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - name: Measure fixed-engine unsigned release modes
+        working-directory: android
+        run: |
+          sdkmanager 'platforms;android-37.0' 'build-tools;36.0.0'
+          python3 -m py_compile scripts/package-size-poc.py
+          python3 -u scripts/package-size-poc.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-isolated-release-size
+          retention-days: 14
+          path: |
+            android/environment-poc/build/package-size-evidence/
+            android/environment-poc/build/reports/lint-results-release.*
   recovery:
     runs-on: ubuntu-latest
     timeout-minutes: 25
@@ -47,6 +74,7 @@ jobs:
           mkdir -p environment-poc/build/recovery-evidence
           python3 -c 'import ast; ast.parse(open("scripts/recovery-environment-poc.py").read())'
           python3 -c 'import ast; ast.parse(open("scripts/managed-recovery-poc.py").read())'
+          python3 -m unittest discover -s scripts/tests -p 'test_poc_warning_report.py' -v
           sdkmanager 'platforms;android-37.0' 'build-tools;36.0.0' emulator "system-images;android-${RECOVERY_API};google_apis;x86_64"
       - name: Build without overriding library minimum requirements
         id: build
@@ -111,7 +139,8 @@ jobs:
           PY
           adb shell input keyevent 82
           adb shell settings put secure show_ime_with_hard_keyboard 0
-          if [ "$RECOVERY_API" = 28 ]; then
+          # The full managed suite exercises the real Home/foreground path.
+          if [ "$RECOVERY_API" = 28 ] || [ "${{ inputs.managed && !inputs.core_only && !inputs.input_diagnostic }}" = true ]; then
             adb shell am force-stop com.google.android.apps.nexuslauncher
           else
             adb shell pm disable-user --user 0 com.google.android.apps.nexuslauncher
