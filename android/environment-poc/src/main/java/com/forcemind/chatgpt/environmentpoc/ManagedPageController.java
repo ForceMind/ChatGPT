@@ -30,7 +30,7 @@ final class ManagedPageController {
     static final String EXTENSION="studio-recovery-poc@local.invalid",APP="studioRecovery";
     static final class Entry {
         final String account,id;final GeckoSession session;final Object inputLock=new Object();
-        JSONObject record,preview,current,desired,approved,conflict;
+        JSONObject record,preview,current,desired,approved,conflict;final JSONArray inputEvidence=new JSONArray();
         WebExtension.Port port;String url,document="",pendingEditor="",state="loading",error="",fingerprint="",checkpoint="",checkpointSource="";
         volatile String token="";volatile long epoch;volatile boolean visible,closed;
         long sequence,revision;int rejected;boolean blocked,writing,awaitingScroll,loading=true,bridgeBound,loadStarted;
@@ -40,7 +40,15 @@ final class ManagedPageController {
     interface InputViewProvider {View view(Entry entry);}
     private final Handler ui=new Handler(Looper.getMainLooper());
     private final GeckoRuntime runtime;final RecoveryStore store;private final Listener listener;private final InputViewProvider inputViews;
-    private final Map<String,Entry> entries=new HashMap<>();private WebExtension extension;String startupError="";
+    private final Map<String,Entry> entries=new HashMap<>();private WebExtension extension;String startupError="";boolean inputDiagnostics;
+    void inputTrace(Entry e,String stage,JSONObject detail){
+        if(!inputDiagnostics)return;
+        ui.post(()->{try{detail.put("stage",stage).put("elapsedMs",android.os.SystemClock.elapsedRealtime()).put("document",e.document).put("epoch",e.epoch).put("editor",e.pendingEditor).put("visible",e.visible).put("state",e.state);e.inputEvidence.put(detail);while(e.inputEvidence.length()>32)e.inputEvidence.remove(0);changed(e);}catch(Exception error){android.util.Log.e("ManagedRecoveryPoC","Input diagnostic failed",error);}});
+    }
+    private JSONObject extractedEvidence(InputConnection input)throws Exception{
+        ExtractedText value=input.getExtractedText(new ExtractedTextRequest(),0);JSONObject out=new JSONObject().put("thread",Thread.currentThread().getName()).put("connectionId",System.identityHashCode(input));
+        return value==null||value.text==null?out.put("available",false):out.put("available",true).put("length",value.text.length()).put("sha256",digest(value.text.toString())).put("startOffset",value.startOffset).put("selectionStart",value.selectionStart).put("selectionEnd",value.selectionEnd);
+    }
     ManagedPageController(GeckoRuntime runtime,RecoveryStore store,Listener listener,InputViewProvider inputViews){
         this.runtime=runtime;this.store=store;this.listener=listener;this.inputViews=inputViews;
         runtime.getWebExtensionController().ensureBuiltIn("resource://android/assets/managed-recovery/",EXTENSION).accept(ext->{extension=ext;for(Entry e:entries.values())if(!e.blocked)attach(e);},error->{startupError=error.toString();for(Entry e:entries.values())fail(e,"bridge-install-failed");});
@@ -221,7 +229,7 @@ final class ManagedPageController {
             if(view!=null&&e.session.getTextInput().getView()!=view)e.session.getTextInput().setView(view);
             if(view!=null&&!view.hasFocus()){view.requestFocus();ui.postDelayed(this,100);return;}
             if(view!=null&&view.hasWindowFocus())focus(e);
-            InputConnection input=view==null?null:view.onCreateInputConnection(new EditorInfo());
+            EditorInfo info=new EditorInfo();InputConnection input=view==null?null:view.onCreateInputConnection(info);
             if(view==null||!view.hasWindowFocus()||input==null){
                 if(view!=null&&view.hasWindowFocus()&&!restarted){
                     ((android.view.inputmethod.InputMethodManager)view.getContext().getSystemService(android.content.Context.INPUT_METHOD_SERVICE)).restartInput(view);restarted=true;
@@ -231,14 +239,17 @@ final class ManagedPageController {
                 fail(e,"editor-input-unavailable:view="+(view!=null)+",window="+(view!=null&&view.hasWindowFocus())+",connection="+(input!=null));return;
             }
             Handler target=input.getHandler();if(target==null)target=ui;
-            Runnable retry=this;
+            if(inputDiagnostics)try{inputTrace(e,"connection",new JSONObject().put("viewId",System.identityHashCode(view)).put("sessionId",System.identityHashCode(e.session)).put("inputViewMatches",e.session.getTextInput().getView()==view).put("connectionId",System.identityHashCode(input)).put("inputType",info.inputType).put("imeOptions",info.imeOptions).put("initialSelStart",info.initialSelStart).put("initialSelEnd",info.initialSelEnd).put("handlerThread",target.getLooper().getThread().getName()));}catch(Exception error){android.util.Log.e("ManagedRecoveryPoC","Connection diagnostic failed",error);}
+            Runnable retry=this;final Handler connectionHandler=target;
             target.post(()->{
                 boolean accepted=false;String failure="";boolean pending=false;
                 try{synchronized(e.inputLock){
                     if(e.closed||e.epoch!=epoch||!token.equals(e.token)||!e.visible)throw new IllegalStateException("Target changed");
                     ExtractedText text=input.getExtractedText(new ExtractedTextRequest(),0);
                     if(text==null||text.text==null||!expected.equals(text.text.toString())){pending=true;throw new IllegalStateException("Editor binding not confirmed");}
+                    if(inputDiagnostics)inputTrace(e,"before-commit",extractedEvidence(input).put("expectedSha256",digest(expected)).put("goalSha256",digest(goal)));
                     input.beginBatchEdit();try{if(!input.setSelection(0,expected.length()))throw new IllegalStateException("Selection refused");accepted=input.commitText(goal,1);}finally{input.endBatchEdit();}
+                    if(inputDiagnostics){inputTrace(e,"after-commit",extractedEvidence(input).put("accepted",accepted));connectionHandler.postDelayed(()->{try{inputTrace(e,"after-250ms",extractedEvidence(input));}catch(Exception error){inputTrace(e,"after-250ms-error",new JSONObject());}},250);}
                 }}catch(Exception error){failure=error.toString();}
                 boolean result=accepted;String reason=failure;boolean notReady=pending;
                 ui.post(()->{if(e.closed||e.epoch!=epoch||!token.equals(e.token))return;e.writing=false;
@@ -277,6 +288,6 @@ final class ManagedPageController {
     JSONObject metadata(Entry e)throws Exception{
         JSONArray alternatives=new JSONArray(),source=e.record==null?null:e.record.optJSONArray("alternatives");
         if(source!=null)for(int i=0;i<source.length();i++){JSONObject pair=source.getJSONObject(i);alternatives.put(new JSONObject().put("savedRichSha256",digest(pair.getJSONObject("saved").getString("rich"))).put("currentRichSha256",digest(pair.getJSONObject("current").getString("rich"))).put("choice",pair.getString("choice")));}
-        return new JSONObject().put("id",e.id).put("url",e.url==null?"":e.url).put("state",e.state).put("error",e.error).put("blocked",e.blocked).put("revision",e.revision).put("document",e.document).put("epoch",e.epoch).put("rejected",e.rejected).put("visible",e.visible).put("bridgeConnected",e.port!=null).put("hasSnapshot",e.preview!=null).put("standardSha256",digest(e.preview==null?"":e.preview.optString("standard"))).put("richSha256",digest(e.preview==null?"":e.preview.optString("rich"))).put("transcriptLength",e.preview==null?0:e.preview.optString("transcript").length()).put("alternativeCount",source==null?0:source.length()).put("alternativeHashes",alternatives).put("pendingConflict",e.record!=null&&pending(e,e.url)!=null).put("pendingConflictCount",e.record==null||e.record.optJSONArray("pendingConflicts")==null?0:e.record.getJSONArray("pendingConflicts").length()).put("historyCount",e.record==null||e.record.optJSONArray("history")==null?0:e.record.getJSONArray("history").length()).put("checkpoint",e.checkpoint).put("checkpointSource",e.checkpointSource);
+        return new JSONObject().put("id",e.id).put("url",e.url==null?"":e.url).put("state",e.state).put("error",e.error).put("blocked",e.blocked).put("revision",e.revision).put("document",e.document).put("epoch",e.epoch).put("rejected",e.rejected).put("visible",e.visible).put("bridgeConnected",e.port!=null).put("hasSnapshot",e.preview!=null).put("standardSha256",digest(e.preview==null?"":e.preview.optString("standard"))).put("richSha256",digest(e.preview==null?"":e.preview.optString("rich"))).put("transcriptLength",e.preview==null?0:e.preview.optString("transcript").length()).put("alternativeCount",source==null?0:source.length()).put("alternativeHashes",alternatives).put("pendingConflict",e.record!=null&&pending(e,e.url)!=null).put("pendingConflictCount",e.record==null||e.record.optJSONArray("pendingConflicts")==null?0:e.record.getJSONArray("pendingConflicts").length()).put("historyCount",e.record==null||e.record.optJSONArray("history")==null?0:e.record.getJSONArray("history").length()).put("checkpoint",e.checkpoint).put("checkpointSource",e.checkpointSource).put("inputEvidence",e.inputEvidence);
     }
 }

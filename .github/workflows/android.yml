@@ -86,6 +86,10 @@ on:
         description: Run the single-account managed recovery core before the full matrix
         type: boolean
         default: false
+      managed_recovery_input_diagnostic:
+        description: Run only the authorized two-page native input diagnostic without screenshots
+        type: boolean
+        default: false
       recovery_poc_apis:
         description: Standalone recovery emulator APIs; 28 and 35 only
         type: string
@@ -306,6 +310,7 @@ jobs:
       apis: ${{ inputs.recovery_poc_apis || '[28,35]' }}
       managed: ${{ inputs.managed_recovery_poc }}
       core_only: ${{ inputs.managed_recovery_core }}
+      input_diagnostic: ${{ inputs.managed_recovery_input_diagnostic }}
   lifecycle:
     if: github.event_name == 'workflow_dispatch' && inputs.lifecycle_only
     runs-on: ubuntu-latest

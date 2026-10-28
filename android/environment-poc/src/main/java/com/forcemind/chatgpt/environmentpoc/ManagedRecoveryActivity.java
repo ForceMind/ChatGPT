@@ -81,7 +81,7 @@ public abstract class ManagedRecoveryActivity extends Activity {
                 controller=new ManagedPageController(runtime,store,owner->{ManagedRecoveryActivity host=hosts.get(owner);if(host!=null)host.refresh();},entry->{ManagedRecoveryActivity host=hosts.get(entry.account);return host!=null&&host.current()==entry&&host.web.getSession()==entry.session?host.web:null;});
             }
             if(!wanted.equals(environment))throw new IllegalStateException("Environment mismatch");
-            openTabs();
+            controller.inputDiagnostics=getIntent().getBooleanExtra("diagnoseInput",false);openTabs();
             creating=false;show();command(getIntent());
         }catch(Exception error){creating=false;startupError=error.toString();refresh();record("startup-error");}
     }

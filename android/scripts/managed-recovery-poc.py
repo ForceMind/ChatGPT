@@ -19,22 +19,26 @@ import xml.etree.ElementTree as ET
 spec=importlib.util.spec_from_file_location('native_fixture',Path(__file__).with_name('recovery-environment-poc.py'))
 base=importlib.util.module_from_spec(spec);spec.loader.exec_module(base)
 CORE='--core' in sys.argv
+INPUT_DIAGNOSTIC='--input-diagnostic' in sys.argv
+if CORE and INPUT_DIAGNOSTIC:raise SystemExit('Choose core or input diagnostic, not both')
 CAPTURE_UI='--capture-ui' in sys.argv
-TABS=(('A','0'),) if CORE else (('A','0'),('A','1'),('B','0'),('C','0'))
+TABS=(('A','0'),('A','1')) if INPUT_DIAGNOSTIC else (('A','0'),) if CORE else (('A','0'),('A','1'),('B','0'),('C','0'))
 base.TABS=TABS
 OUT=base.OUT;PACKAGE=base.PACKAGE
 markers={a+':'+t:'demo-'+a+'-'+t+'-'+uuid.uuid4().hex for a,t in TABS}
 latest_markers={key:value+'-latest' for key,value in markers.items()}
-if not CORE:latest_markers['A:0']+='\n第二行恢复验证 🙂'
+if not CORE and not INPUT_DIAGNOSTIC:latest_markers['A:0']+='\n第二行恢复验证 🙂'
 wait=base.wait;text=base.text;adb=base.adb
 
 class Handler(base.Handler):
     def reply(self,body,status=200,mime='text/html; charset=utf-8'):
         if isinstance(body,str) and '<script>' in body and 'function observation()' in body:
             body+='''<style>#rich{white-space:pre-wrap;overflow-wrap:anywhere}</style><script>
+const studioInputEvents=[];
+for(const type of ['beforeinput','input','focusin','focusout'])document.addEventListener(type,event=>{studioInputEvents.push({type,target:event.target.id,trusted:event.isTrusted,inputType:event.inputType||'',dataLength:event.data?.length||0,activeElement:document.activeElement?.id,at:performance.now()});if(studioInputEvents.length>24)studioInputEvents.shift();});
 const studioModels={standard:document.getElementById('standard').value,rich:document.getElementById('rich').innerText};
 const nativeObservation=observation;
-observation=()=>({...nativeObservation(),rich:document.getElementById('rich').innerText,standardModel:studioModels.standard,richModel:studioModels.rich,pageNativeAPI:typeof browser!=='undefined'&&!!browser.runtime?.connectNative});
+observation=()=>({...nativeObservation(),rich:document.getElementById('rich').innerText,standardModel:studioModels.standard,richModel:studioModels.rich,inputEvents:studioInputEvents,documentFocused:document.hasFocus(),visibility:document.visibilityState,pageNativeAPI:typeof browser!=='undefined'&&!!browser.runtime?.connectNative});
 document.addEventListener('input',event=>{if(event.isTrusted){studioModels.standard=document.getElementById('standard').value;studioModels.rich=document.getElementById('rich').innerText;}});
 window.postMessage({type:'capture',token:'forged-web-token',snapshot:{rich:'UNTRUSTED-FORGED-DRAFT'}},'*');
 report();
@@ -57,6 +61,7 @@ def latest(a,t):return base.latest(a,t,base.phase)
 def component(a):return PACKAGE+'/'+PACKAGE+'.Managed'+a+'Activity'
 def launch(a=None,action=None,index=0,tabs=0,sample=None,replace=False):
     args=['shell','am','start','-W','-n',component(a or 'A')]
+    if INPUT_DIAGNOSTIC:args+=['--ez','diagnoseInput','true']
     if a:args+=['--es','account',a]
     if action:args+=['--es','action',action,'--ei','index',str(index)]
     if tabs:args+=['--ei','tabs',str(tabs)]
@@ -156,12 +161,30 @@ def guard():
         result=text('shell','run-as',PACKAGE,'sh','-c',"'if [ -e files/"+name+" ]; then echo PRESENT; else echo ABSENT; fi'",check=False)
         if result!='ABSENT':raise SystemExit('Cannot confirm empty independent experiment directory '+name)
 
-guard();report={'sourceSha':os.environ.get('GITHUB_SHA'),'runId':os.environ.get('GITHUB_RUN_ID'),'scope':'Single-account core' if CORE else 'Three-account four-tab managed recovery','api':text('shell','getprop','ro.build.version.sdk'),'fixtureOnly':True,'productionDataUsed':False,'cases':{}}
-server=ThreadingHTTPServer(('127.0.0.1',8765),Handler);threading.Thread(target=server.serve_forever,daemon=True).start();text('reverse','tcp:8765','tcp:8765')
-def timeout(_signal,_frame):raise TimeoutError('Managed recovery experiment timed out')
-signal.signal(signal.SIGTERM,timeout)
-failure=None
-try:
+def input_diagnostic(report):
+    print('1/3 Seed two real editors in two same-account pages',flush=True)
+    base.phase='input-diagnostic-seed';launch('A',tabs=2)
+    for a,t in TABS:
+        select(a,t);wait(lambda:latest(a,t),label='initial diagnostic page')
+        point(a,t,'detail');wait(lambda:(lambda r:r if r and r['page']=='detail' else None)(latest(a,t)),label='detail page')
+        healthy(a,t);type_values(a,t,markers[a+':'+t]);checkpoint(a)
+    before={a+':'+t:latest(a,t) for a,t in TABS}
+    report['cases']['initialTwoPageCapture']=True
+    print('2/3 Switch to each retained page and verify its document and models',flush=True)
+    for a,t in TABS:
+        select(a,t);row=same_values(a,t,markers[a+':'+t]);assert row['document']==before[a+':'+t]['document']
+    report['cases']['switchWithoutReload']=True
+    print('3/3 Complete exit, reopen the two saved pages, compare native writes with DOM/models',flush=True)
+    select('A','0');checkpoint('A',True)
+    restored('input-diagnostic-restored',markers,{key:value['document'] for key,value in before.items()})
+    report['cases']['twoPageExitRestoration']=True
+    observed=[row for row in base.events if 'pageNativeAPI' in row]
+    assert observed and not base.submissions and all(not row['pageNativeAPI'] for row in observed)
+    report['cases']['noSendOrWebNativeAccess']=True
+    report['experimentComplete']=True
+
+
+def full_experiment(report):
     print('1/8 Capture actual editor models, text and reading position',flush=True);base.phase='seed'
     launch('A',tabs=1 if CORE else 2)
     for a,t in TABS:
@@ -242,6 +265,15 @@ try:
     report['cases']['accountEnvironmentAndStorageIsolation']=True
     report['cases']['noAutomaticSendAndNoWebNativeAccess']=True
     report['experimentComplete']=True
+
+guard();report={'sourceSha':os.environ.get('GITHUB_SHA'),'runId':os.environ.get('GITHUB_RUN_ID'),'scope':'Two-page native input diagnostic' if INPUT_DIAGNOSTIC else 'Single-account core' if CORE else 'Three-account four-tab managed recovery','api':text('shell','getprop','ro.build.version.sdk'),'fixtureOnly':True,'productionDataUsed':False,'cases':{}}
+server=ThreadingHTTPServer(('127.0.0.1',8765),Handler);threading.Thread(target=server.serve_forever,daemon=True).start();text('reverse','tcp:8765','tcp:8765')
+def timeout(_signal,_frame):raise TimeoutError('Managed recovery experiment timed out')
+signal.signal(signal.SIGTERM,timeout)
+failure=None
+try:
+    if INPUT_DIAGNOSTIC:input_diagnostic(report)
+    else:full_experiment(report)
 except Exception as error:
     failure=str(error);report['failure']=failure;print('Managed recovery failure:',failure,flush=True)
     try:capture('failure')
@@ -250,11 +282,12 @@ finally:
     report['native']={a:native(a) for a in ('A','B','C')};report['submissions']=base.submissions;report['processStops']=base.process_stops
     required={'initialCapture','normalClose','saveAfterRestore','historyAndURLIsolation','offlineReadOnlySnapshot','forceStopAndReconnect','keepCurrentConflict','restoreSavedConflictAndBackupAccess','corruptRecordPreserved','noAutomaticSendAndNoWebNativeAccess','accountEnvironmentAndStorageIsolation'}
     if not CORE:required.update(('crossAccountRecordPreserved','unresolvedConflictRestartAndURLBinding','interruptedAtomicRecordRecovery'))
-    report['managedControllerReady']=bool(report.get('experimentComplete')) and all(report['cases'].get(name,False) for name in required)
+    report['inputDiagnosticComplete']=INPUT_DIAGNOSTIC and bool(report.get('experimentComplete'))
+    report['managedControllerReady']=not INPUT_DIAGNOSTIC and bool(report.get('experimentComplete')) and all(report['cases'].get(name,False) for name in required)
     report['formalMigrationReady']=False
     report['platformFindings']={'unexpectedProcessRestartObserved':any(s['unexpectedNewProcesses'] for s in base.process_stops),'extraForceStopRequests':sum(s['forceStopRequests']-1 for s in base.process_stops),'touchScrollAcceptance':'Not established here; reading samples use native PanZoom API.'}
     report['limits']=['Synthetic textarea/contenteditable editor models only; no real ChatGPT.','Touch scrolling, OEM/physical devices, production lifecycle integration and package-size work remain separate gates.','This controller intentionally avoids blanket native form restoration; browser history is tracked in app-owned records.']
     for name,value in (('managed-report.json',report),('managed-events.json',base.events),('managed-requests.json',base.requests)):(OUT/name).write_text(json.dumps(value,ensure_ascii=False,indent=2))
     for a in ('A','B','C'):(OUT/('managed-native-'+a+'.jsonl')).write_bytes(adb('exec-out','run-as',PACKAGE,'cat','files/managed-events-'+a+'.jsonl',check=False))
     (OUT/'managed-runtime.log').write_text(text('logcat','-d',check=False,timeout=30));text('shell','am','force-stop',PACKAGE,check=False);text('reverse','--remove','tcp:8765',check=False);server.shutdown()
-if failure or not report['managedControllerReady']:raise SystemExit(1)
+if failure or not (report['inputDiagnosticComplete'] if INPUT_DIAGNOSTIC else report['managedControllerReady']):raise SystemExit(1)

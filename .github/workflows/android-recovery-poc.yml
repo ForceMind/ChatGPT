@@ -14,6 +14,10 @@ on:
         type: boolean
         required: false
         default: false
+      input_diagnostic:
+        type: boolean
+        required: false
+        default: false
 permissions:
   contents: read
 jobs:
@@ -42,6 +46,7 @@ jobs:
           python3 -c 'import os; assert int(os.environ["RECOVERY_API"]) in (28,35)'
           mkdir -p environment-poc/build/recovery-evidence
           python3 -c 'import ast; ast.parse(open("scripts/recovery-environment-poc.py").read())'
+          python3 -c 'import ast; ast.parse(open("scripts/managed-recovery-poc.py").read())'
           sdkmanager 'platforms;android-37.0' 'build-tools;36.0.0' emulator "system-images;android-${RECOVERY_API};google_apis;x86_64"
       - name: Build without overriding library minimum requirements
         id: build
@@ -113,7 +118,9 @@ jobs:
           fi
           adb install environment-poc/build/outputs/apk/debug/environment-poc-x86_64-debug.apk
           if [ "${{ inputs.managed }}" = true ]; then
-            if [ "${{ inputs.core_only }}" = true ]; then
+            if [ "${{ inputs.input_diagnostic }}" = true ]; then
+              timeout 420 python3 -u scripts/managed-recovery-poc.py environment-poc/build/recovery-evidence --input-diagnostic
+            elif [ "${{ inputs.core_only }}" = true ]; then
               timeout 900 python3 -u scripts/managed-recovery-poc.py environment-poc/build/recovery-evidence --core
             else
               timeout 1200 python3 -u scripts/managed-recovery-poc.py environment-poc/build/recovery-evidence
@@ -134,6 +141,7 @@ jobs:
               out.write('## Independent recovery PoC, API '+os.environ['RECOVERY_API']+'\n\n')
               out.write('Managed scope: '+str(r.get('scope','native baseline'))+'\n\n')
               out.write('Measurements complete: '+str(r.get('experimentComplete',False))+'\n\nMeasured recovery gates passed: '+str(r.get('managedControllerReady',r.get('nativeRecoveryReady',False)))+'\n\n')
+              out.write('Two-page input diagnostic complete: '+str(r.get('inputDiagnosticComplete',False))+'\n\n')
               out.write('Formal migration ready: '+str(r.get('formalMigrationReady',False))+'\n\n')
               out.write('No production app, login data, signing key or public release was used. Native capability gaps fail the migration gate; see the report.\n')
           PY
