@@ -20,6 +20,7 @@ spec=importlib.util.spec_from_file_location('native_fixture',Path(__file__).with
 base=importlib.util.module_from_spec(spec);spec.loader.exec_module(base)
 CORE='--core' in sys.argv
 INPUT_DIAGNOSTIC='--input-diagnostic' in sys.argv
+TRACE_INPUT=INPUT_DIAGNOSTIC or '--trace-input' in sys.argv
 if CORE and INPUT_DIAGNOSTIC:raise SystemExit('Choose core or input diagnostic, not both')
 CAPTURE_UI='--capture-ui' in sys.argv
 TABS=(('A','0'),('A','1')) if INPUT_DIAGNOSTIC else (('A','0'),) if CORE else (('A','0'),('A','1'),('B','0'),('C','0'))
@@ -61,7 +62,7 @@ def latest(a,t):return base.latest(a,t,base.phase)
 def component(a):return PACKAGE+'/'+PACKAGE+'.Managed'+a+'Activity'
 def launch(a=None,action=None,index=0,tabs=0,sample=None,replace=False):
     args=['shell','am','start','-W','-n',component(a or 'A')]
-    if INPUT_DIAGNOSTIC:args+=['--ez','diagnoseInput','true']
+    if TRACE_INPUT:args+=['--ez','diagnoseInput','true']
     if a:args+=['--es','account',a]
     if action:args+=['--es','action',action,'--ei','index',str(index)]
     if tabs:args+=['--ei','tabs',str(tabs)]

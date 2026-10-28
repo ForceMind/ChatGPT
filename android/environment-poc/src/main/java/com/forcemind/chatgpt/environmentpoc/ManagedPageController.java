@@ -33,6 +33,8 @@ final class ManagedPageController {
         JSONObject record,preview,current,desired,approved,conflict;final JSONArray inputEvidence=new JSONArray();
         WebExtension.Port port;String url,document="",pendingEditor="",state="loading",error="",fingerprint="",checkpoint="",checkpointSource="";
         volatile String token="";volatile long epoch;volatile boolean visible,closed;
+        volatile long imeGeneration,imeEpoch=-1;volatile boolean imeFocused;long requestedImeGeneration;
+        int bridgeAttempts;String lastBridgeEvent="";
         long sequence,revision;int rejected;boolean blocked,writing,awaitingScroll,loading=true,bridgeBound,loadStarted;
         Entry(String account,int index){this.account=account;id=Integer.toString(index);session=new GeckoSession(new GeckoSessionSettings.Builder().contextId("managed-recovery-"+account).build());}
     }
@@ -43,7 +45,7 @@ final class ManagedPageController {
     private final Map<String,Entry> entries=new HashMap<>();private WebExtension extension;String startupError="";boolean inputDiagnostics;
     void inputTrace(Entry e,String stage,JSONObject detail){
         if(!inputDiagnostics)return;
-        ui.post(()->{try{detail.put("stage",stage).put("elapsedMs",android.os.SystemClock.elapsedRealtime()).put("document",e.document).put("epoch",e.epoch).put("editor",e.pendingEditor).put("visible",e.visible).put("state",e.state);e.inputEvidence.put(detail);while(e.inputEvidence.length()>32)e.inputEvidence.remove(0);changed(e);}catch(Exception error){android.util.Log.e("ManagedRecoveryPoC","Input diagnostic failed",error);}});
+        ui.post(()->{try{detail.put("stage",stage).put("elapsedMs",android.os.SystemClock.elapsedRealtime()).put("document",e.document).put("epoch",e.epoch).put("editor",e.pendingEditor).put("visible",e.visible).put("state",e.state).put("imeGeneration",e.imeGeneration).put("imeEpoch",e.imeEpoch).put("imeFocused",e.imeFocused).put("requestedImeGeneration",e.requestedImeGeneration);e.inputEvidence.put(detail);while(e.inputEvidence.length()>32)e.inputEvidence.remove(0);changed(e);}catch(Exception error){android.util.Log.e("ManagedRecoveryPoC","Input diagnostic failed",error);}});
     }
     private JSONObject extractedEvidence(InputConnection input)throws Exception{
         ExtractedText value=input.getExtractedText(new ExtractedTextRequest(),0);JSONObject out=new JSONObject().put("thread",Thread.currentThread().getName()).put("connectionId",System.identityHashCode(input));
@@ -85,6 +87,7 @@ final class ManagedPageController {
             e.url=e.record.optString("url","http://127.0.0.1:8765/recovery?account="+account+"&tab="+index+"&page=start");
             if(!allowed(e.url,account,e.id))throw new IllegalArgumentException("Invalid saved URL");e.preview=page(e,e.url);e.revision=e.record.optLong("revision",0);
         }catch(Exception error){e.blocked=true;e.state="blocked";e.error="saved-record-rejected:"+error.getClass().getSimpleName();return e;}
+        observeInputLifecycle(e);
         e.session.setNavigationDelegate(new GeckoSession.NavigationDelegate(){
             @Override public GeckoResult<AllowOrDeny> onLoadRequest(GeckoSession session,LoadRequest request){
                 if(!allowed(request.uri,e.account,e.id)){e.rejected++;changed(e);return GeckoResult.fromValue(AllowOrDeny.DENY);}
@@ -102,6 +105,22 @@ final class ManagedPageController {
         if(extension!=null)attach(e);changed(e);return e;
     }
     void openWindow(Entry e){if(!e.closed&&!e.blocked&&!e.session.isOpen()){e.session.open(runtime);e.session.setActive(true);e.session.setFocused(false);}}
+    private void observeInputLifecycle(Entry e){
+        GeckoSession.TextInputDelegate original=e.session.getTextInput().getDelegate();
+        e.session.getTextInput().setDelegate(new GeckoSession.TextInputDelegate(){
+            @Override public void restartInput(GeckoSession s,int reason){
+                if(reason==RESTART_REASON_FOCUS){e.imeGeneration++;e.imeFocused=true;e.imeEpoch=e.epoch;}
+                else if(reason==RESTART_REASON_BLUR){e.imeFocused=false;e.imeEpoch=-1;}
+                original.restartInput(s,reason);
+                if(inputDiagnostics)try{inputTrace(e,"ime-restart",new JSONObject().put("reason",reason));}catch(Exception error){android.util.Log.e("ManagedRecoveryPoC","IME diagnostic failed",error);}
+            }
+            @Override public void showSoftInput(GeckoSession s){original.showSoftInput(s);}
+            @Override public void hideSoftInput(GeckoSession s){original.hideSoftInput(s);}
+            @Override public void updateSelection(GeckoSession s,int a,int b,int c,int d){original.updateSelection(s,a,b,c,d);}
+            @Override public void updateExtractedText(GeckoSession s,ExtractedTextRequest request,ExtractedText text){original.updateExtractedText(s,request,text);}
+            @Override public void updateCursorAnchorInfo(GeckoSession s,android.view.inputmethod.CursorAnchorInfo info){original.updateCursorAnchorInfo(s,info);}
+        });
+    }
     private JSONObject page(Entry e,String url)throws Exception{JSONArray pages=e.record.getJSONArray("pages");for(int i=0;i<pages.length();i++){JSONObject p=pages.getJSONObject(i);if(url.equals(p.getString("url")))return copy(p);}return null;}
     private void attach(Entry e){
         if(e.bridgeBound){viewReady(e);return;}
@@ -110,14 +129,21 @@ final class ManagedPageController {
                 if(e.closed||e.blocked||port.sender.session!=e.session||!port.sender.isTopLevel()||port.sender.environmentType!=WebExtension.MessageSender.ENV_TYPE_CONTENT_SCRIPT||!EXTENSION.equals(port.sender.webExtension.id)||!e.url.equals(port.sender.url)){
                     e.rejected++;port.setDelegate(new WebExtension.PortDelegate(){});port.disconnect();changed(e);return;
                 }
-                if(e.port!=null)e.port.disconnect();e.port=port;e.token=UUID.randomUUID().toString();e.sequence=0;e.document="";
+                if(e.port!=null)e.port.disconnect();e.port=port;e.token=UUID.randomUUID().toString();e.sequence=0;e.document="";e.bridgeAttempts=0;e.lastBridgeEvent="connected";
                 port.setDelegate(new WebExtension.PortDelegate(){
                     @Override public void onPortMessage(Object raw,WebExtension.Port source){message(e,source,raw);}
-                    @Override public void onDisconnect(WebExtension.Port source){if(e.port==source){e.port=null;if(!e.closed&&!e.loading){e.state="offline";changed(e);}}}
+                    @Override public void onDisconnect(WebExtension.Port source){if(e.port==source){e.port=null;if(!e.closed){e.lastBridgeEvent="disconnected";e.state="offline";changed(e);}}}
                 });
+                changed(e);requestHandshake(e,port,e.token,0);
             }
         },APP);
-        e.bridgeBound=true;viewReady(e);
+        e.bridgeBound=true;e.lastBridgeEvent="delegate-bound";viewReady(e);
+    }
+    private void requestHandshake(Entry e,WebExtension.Port port,String token,int attempt){
+        if(e.closed||e.port!=port||!token.equals(e.token)||!e.loading)return;
+        try{e.bridgeAttempts++;send(e,new JSONObject().put("type","hello-request"));changed(e);}catch(Exception error){fail(e,"bridge-handshake-send-failed");return;}
+        if(attempt<19)ui.postDelayed(()->requestHandshake(e,port,token,attempt+1),250);
+        else fail(e,"bridge-handshake-not-confirmed");
     }
     void viewReady(Entry e){
         if(e.closed||e.blocked||e.loadStarted||!e.bridgeBound||!e.session.isOpen())return;
@@ -128,7 +154,7 @@ final class ManagedPageController {
     }
     private void navigation(Entry e,String url){
         try{
-            synchronized(e.inputLock){e.epoch++;e.token="";}if(e.port!=null){WebExtension.Port old=e.port;e.port=null;old.disconnect();}
+            synchronized(e.inputLock){e.epoch++;e.token="";e.imeFocused=false;e.imeEpoch=-1;}if(e.port!=null){WebExtension.Port old=e.port;e.port=null;old.disconnect();}
             e.url=url;e.preview=page(e,url);e.current=null;e.desired=null;e.approved=null;e.conflict=null;e.pendingEditor="";e.writing=false;e.awaitingScroll=false;e.loading=true;e.state="loading";e.error="";e.checkpoint="";changed(e);
             JSONArray history=e.record.getJSONArray("history");int index=e.record.getInt("historyIndex");
             if(index<0||index>=history.length()||!url.equals(history.getString(index))){JSONArray next=new JSONArray();for(int i=0;i<=index&&i<history.length();i++)next.put(history.getString(i));next.put(url);while(next.length()>16)next.remove(0);e.record.put("history",next).put("historyIndex",next.length()-1);}
@@ -142,11 +168,11 @@ final class ManagedPageController {
             Object sequence=msg.get("sequence");if(!(sequence instanceof Number)||((Number)sequence).longValue()<=e.sequence)throw new IllegalArgumentException("Stale sequence");e.sequence=((Number)sequence).longValue();
             String type=string(msg,"type",32),document=string(msg,"document",64);UUID.fromString(document);
             if("hello".equals(type)){
-                if(!e.document.isEmpty())throw new IllegalArgumentException("Duplicate handshake");e.document=document;send(e,new JSONObject().put("type","auth"));return;
+                if(!e.document.isEmpty()&&!e.document.equals(document))throw new IllegalArgumentException("Foreign handshake document");e.document=document;e.lastBridgeEvent="hello";send(e,new JSONObject().put("type","auth"));changed(e);return;
             }
             if(!e.document.equals(document)||!e.token.equals(msg.getString("token"))||e.epoch!=msg.getLong("epoch"))throw new IllegalArgumentException("Stale document");
             JSONObject current=normalize(e,msg.getJSONObject("snapshot"));if(!e.url.equals(current.getString("url")))throw new IllegalArgumentException("Wrong page snapshot");e.current=current;
-            if("ready".equals(type)){e.loading=false;reconcile(e,current);return;}
+            if(e.loading&&("ready".equals(type)||"capture".equals(type))){e.loading=false;e.lastBridgeEvent="ready";reconcile(e,current);return;}
             if("focus-target".equals(type)){
                 String editor=msg.getString("editor");if(!e.pendingEditor.equals(editor)||!e.visible||!msg.getBoolean("unobscured"))throw new IllegalArgumentException("Editor target not visible");
                 if(e.approved==null||!current.getString(editor).equals(e.approved.getString(editor))){showConflict(e,current);return;}
@@ -165,7 +191,7 @@ final class ManagedPageController {
                 if(Math.abs(current.getDouble("scroll")-expected)>80){fail(e,"reading-position-not-confirmed:"+expected+"/"+current.getDouble("scroll"));return;}
                 e.awaitingScroll=false;complete(e,current);return;
             }
-            if("capture".equals(type)||"checkpoint".equals(type)){
+            if("ready".equals(type)||"capture".equals(type)||"checkpoint".equals(type)){
                 if("restoring".equals(e.state)){advance(e,current);}
                 else if("ready".equals(e.state)){save(e,current);}
                 else if("conflict".equals(e.state)&&e.conflict!=null&&!drafts(e.conflict.getJSONObject("current")).toString().equals(drafts(current).toString())){showConflict(e,current);}
@@ -213,7 +239,7 @@ final class ManagedPageController {
                 View target=inputViews.view(e);if(target==null||!target.hasWindowFocus())return;
                 if(e.session.getTextInput().getView()!=target)e.session.getTextInput().setView(target);
                 target.requestFocus();focus(e);
-                if(!e.pendingEditor.isEmpty())return;e.pendingEditor=key;send(e,new JSONObject().put("type","focus").put("editor",key));changed(e);return;
+                if(!e.pendingEditor.isEmpty())return;e.pendingEditor=key;e.requestedImeGeneration=e.imeGeneration;send(e,new JSONObject().put("type","focus").put("editor",key));changed(e);return;
             }
         }
         e.pendingEditor="";e.awaitingScroll=true;send(e,new JSONObject().put("type","scroll").put("top",e.preview==null?0:e.preview.getDouble("scroll")));
@@ -227,8 +253,12 @@ final class ManagedPageController {
             if(!e.visible){e.writing=false;e.pendingEditor="";return;}
             View view=inputViews.view(e);
             if(view!=null&&e.session.getTextInput().getView()!=view)e.session.getTextInput().setView(view);
-            if(view!=null&&!view.hasFocus()){view.requestFocus();ui.postDelayed(this,100);return;}
+            if(view!=null&&!view.hasFocus()){view.requestFocus();if(android.os.SystemClock.elapsedRealtime()-started<5000){ui.postDelayed(this,100);return;}fail(e,"editor-view-focus-not-confirmed");return;}
             if(view!=null&&view.hasWindowFocus())focus(e);
+            if(!e.imeFocused||e.imeEpoch!=epoch||e.imeGeneration<=e.requestedImeGeneration){
+                if(android.os.SystemClock.elapsedRealtime()-started<5000){ui.postDelayed(this,50);return;}
+                fail(e,"editor-native-focus-not-confirmed");return;
+            }
             EditorInfo info=new EditorInfo();InputConnection input=view==null?null:view.onCreateInputConnection(info);
             if(view==null||!view.hasWindowFocus()||input==null){
                 if(view!=null&&view.hasWindowFocus()&&!restarted){
@@ -245,6 +275,7 @@ final class ManagedPageController {
                 boolean accepted=false;String failure="";boolean pending=false;
                 try{synchronized(e.inputLock){
                     if(e.closed||e.epoch!=epoch||!token.equals(e.token)||!e.visible)throw new IllegalStateException("Target changed");
+                    if(!e.imeFocused||e.imeEpoch!=epoch||e.imeGeneration<=e.requestedImeGeneration){pending=true;throw new IllegalStateException("Native editor focus changed");}
                     ExtractedText text=input.getExtractedText(new ExtractedTextRequest(),0);
                     // An uninitialised Gecko shadow editor can report empty text
                     // and accept commitText before its real editor is bound.
@@ -293,6 +324,6 @@ final class ManagedPageController {
     JSONObject metadata(Entry e)throws Exception{
         JSONArray alternatives=new JSONArray(),source=e.record==null?null:e.record.optJSONArray("alternatives");
         if(source!=null)for(int i=0;i<source.length();i++){JSONObject pair=source.getJSONObject(i);alternatives.put(new JSONObject().put("savedRichSha256",digest(pair.getJSONObject("saved").getString("rich"))).put("currentRichSha256",digest(pair.getJSONObject("current").getString("rich"))).put("choice",pair.getString("choice")));}
-        return new JSONObject().put("id",e.id).put("url",e.url==null?"":e.url).put("state",e.state).put("error",e.error).put("blocked",e.blocked).put("revision",e.revision).put("document",e.document).put("epoch",e.epoch).put("rejected",e.rejected).put("visible",e.visible).put("bridgeConnected",e.port!=null).put("hasSnapshot",e.preview!=null).put("standardSha256",digest(e.preview==null?"":e.preview.optString("standard"))).put("richSha256",digest(e.preview==null?"":e.preview.optString("rich"))).put("transcriptLength",e.preview==null?0:e.preview.optString("transcript").length()).put("alternativeCount",source==null?0:source.length()).put("alternativeHashes",alternatives).put("pendingConflict",e.record!=null&&pending(e,e.url)!=null).put("pendingConflictCount",e.record==null||e.record.optJSONArray("pendingConflicts")==null?0:e.record.getJSONArray("pendingConflicts").length()).put("historyCount",e.record==null||e.record.optJSONArray("history")==null?0:e.record.getJSONArray("history").length()).put("checkpoint",e.checkpoint).put("checkpointSource",e.checkpointSource).put("inputEvidence",e.inputEvidence);
+        return new JSONObject().put("id",e.id).put("url",e.url==null?"":e.url).put("state",e.state).put("error",e.error).put("blocked",e.blocked).put("revision",e.revision).put("document",e.document).put("epoch",e.epoch).put("rejected",e.rejected).put("visible",e.visible).put("bridgeConnected",e.port!=null).put("hasSnapshot",e.preview!=null).put("standardSha256",digest(e.preview==null?"":e.preview.optString("standard"))).put("richSha256",digest(e.preview==null?"":e.preview.optString("rich"))).put("transcriptLength",e.preview==null?0:e.preview.optString("transcript").length()).put("alternativeCount",source==null?0:source.length()).put("alternativeHashes",alternatives).put("pendingConflict",e.record!=null&&pending(e,e.url)!=null).put("pendingConflictCount",e.record==null||e.record.optJSONArray("pendingConflicts")==null?0:e.record.getJSONArray("pendingConflicts").length()).put("historyCount",e.record==null||e.record.optJSONArray("history")==null?0:e.record.getJSONArray("history").length()).put("checkpoint",e.checkpoint).put("checkpointSource",e.checkpointSource).put("inputEvidence",e.inputEvidence).put("bridgeAttempts",e.bridgeAttempts).put("lastBridgeEvent",e.lastBridgeEvent).put("messageDelegatePresent",extension!=null&&e.session.getWebExtensionController().getMessageDelegate(extension,APP)!=null).put("imeFocused",e.imeFocused).put("imeEpoch",e.imeEpoch).put("imeGeneration",e.imeGeneration);
     }
 }

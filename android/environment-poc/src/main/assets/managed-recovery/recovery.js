@@ -23,6 +23,7 @@
   function later() { clearTimeout(scheduled); scheduled = setTimeout(capture, 160); }
   function receive(message) {
     if (disconnected || !message || location.href !== initialURL) return;
+    if (message.type === "hello-request") { if(token)capture();else send("hello");return; }
     if (message.type === "auth") {
       token = message.token; epoch = message.epoch;
       capture();
@@ -33,6 +34,9 @@
       const element = message.editor === "standard" ? standard : message.editor === "rich" ? rich : null;
       if (!element) return;
       expectedFocus = element;
+      // Require a fresh native IME focus notification for each restore target,
+      // including a field that retained DOM focus across an error-page retry.
+      if (document.activeElement === standard || document.activeElement === rich) document.activeElement.blur();
       element.scrollIntoView({block:"center",behavior:"instant"});
       requestAnimationFrame(() => requestAnimationFrame(() => {
         const value=snapshot(),r=element.getBoundingClientRect(),x=r.x+r.width/2,y=r.y+r.height/2,hit=document.elementFromPoint(x,y);

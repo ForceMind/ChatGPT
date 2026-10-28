@@ -211,6 +211,55 @@
       "failure": "Managed page failed: {'id': '1', 'url': 'http://127.0.0.1:8765/recovery?account=A&tab=1&page=detail', 'state': 'failed', 'error': 'editor-value-not-confirmed', 'blocked': False, 'revision': 9, 'document': 'd1abfede-8f62-4571-8f79-518b67c24b5b', 'epoch': 1, 'rejected': 0, 'visible': True, 'bridgeConnected': True, 'hasSnapshot': True, 'standardSha256': 'a61f2fa79645d6fce3bc9ed68b12d9a0dc778dd18c872d8f22f8c9af018ad827', 'richSha256': 'a61f2fa79645d6fce3bc9ed68b12d9a0dc778dd18c872d8f22f8c9af018ad827', 'transcriptLength': 4528, 'alternativeCount': 0, 'alternativeHashes': [], 'pendingConflict': False, 'pendingConflictCount': 0, 'historyCount': 2, 'checkpoint': '', 'checkpointSource': ''}",
       "experimentComplete": false,
       "managedControllerReady": false
+    },
+    {
+      "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40629947995",
+      "api": 28,
+      "sourceSha": "6f233ae814ceff21c4ce74b3980e619335752f03",
+      "artifactSha256": "ccd0edf19870aa4b3a4c709ecd7c3efc37090b9115d6e6f3d76a3670c3450b76",
+      "experimentComplete": false,
+      "managedControllerReady": false,
+      "formalMigrationReady": false,
+      "cases": {
+        "initialCapture": true,
+        "normalClose": true,
+        "historyAndURLIsolation": true,
+        "saveAfterRestore": true,
+        "offlineReadOnlySnapshot": true
+      },
+      "failure": "Managed page failed: {'id': '0', 'url': 'http://127.0.0.1:8765/recovery?account=A&tab=0&page=detail', 'state': 'failed', 'error': 'editor-value-not-confirmed', 'blocked': False, 'revision': 26, 'document': '6d03a3c4-a54f-40cf-9229-ff5de14f0d0f', 'epoch': 2, 'rejected': 0, 'visible': True, 'bridgeConnected': True, 'hasSnapshot': True, 'standardSha256': '470abf220dda071ac948ba8e9fc0e8083f4a90285bde526f0146d852dc289c67', 'richSha256': '470abf220dda071ac948ba8e9fc0e8083f4a90285bde526f0146d852dc289c67', 'transcriptLength': 4528, 'alternativeCount': 0, 'alternativeHashes': [], 'pendingConflict': False, 'pendingConflictCount': 0, 'historyCount': 2, 'checkpoint': '', 'checkpointSource': '', 'inputEvidence': []}",
+      "submissions": 0,
+      "screenshots": 0,
+      "platformFindings": {
+        "unexpectedProcessRestartObserved": false,
+        "extraForceStopRequests": 0,
+        "touchScrollAcceptance": "Not established here; reading samples use native PanZoom API."
+      }
+    },
+    {
+      "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40629947995",
+      "api": 35,
+      "sourceSha": "6f233ae814ceff21c4ce74b3980e619335752f03",
+      "artifactSha256": "026fce79413d315669cc18fc90b786ce787b400633aea50181f26e7f67537fdc",
+      "experimentComplete": false,
+      "managedControllerReady": false,
+      "formalMigrationReady": false,
+      "cases": {
+        "initialCapture": true,
+        "normalClose": true,
+        "historyAndURLIsolation": true,
+        "saveAfterRestore": true,
+        "offlineReadOnlySnapshot": true,
+        "forceStopAndReconnect": true
+      },
+      "failure": "Timed out: unresolved conflict survives restart",
+      "submissions": 0,
+      "screenshots": 0,
+      "platformFindings": {
+        "unexpectedProcessRestartObserved": false,
+        "extraForceStopRequests": 0,
+        "touchScrollAcceptance": "Not established here; reading samples use native PanZoom API."
+      }
     }
   ],
   "next": "Await explicit permission for a new minimal two-page native-input diagnostic under the updated AGENTS browser-test rule.",
@@ -1181,5 +1230,5 @@
       ]
     }
   ],
-  "nextGate": "Run the existing three-account four-tab API 28/35 matrix against the selection-readiness change, without screenshots, after explicit browser-test authorization. Two-page diagnostic success does not establish full migration readiness."
+  "nextGate": "The full three-account four-tab API 28/35 matrix is explicitly authorized. Repeat after native IME focus confirmation and bounded bridge handshake changes; full migration remains unproven."
 }

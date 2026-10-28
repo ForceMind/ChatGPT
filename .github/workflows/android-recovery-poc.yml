@@ -123,7 +123,7 @@ jobs:
             elif [ "${{ inputs.core_only }}" = true ]; then
               timeout 900 python3 -u scripts/managed-recovery-poc.py environment-poc/build/recovery-evidence --core
             else
-              timeout 1200 python3 -u scripts/managed-recovery-poc.py environment-poc/build/recovery-evidence
+              timeout 1200 python3 -u scripts/managed-recovery-poc.py environment-poc/build/recovery-evidence --trace-input
             fi
           else
             timeout 900 python3 -u scripts/recovery-environment-poc.py environment-poc/build/recovery-evidence
