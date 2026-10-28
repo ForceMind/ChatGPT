@@ -24,8 +24,8 @@ class ReleaseFixtureBridgeTests(unittest.TestCase):
             with self.assertRaises(ValueError):paths()
     def test_binary_reader_is_bound_to_app_uid(self):
         args,kind=adapt(['exec-out','run-as',PACKAGE,'cat','files/managed-native-A.json'],self.c)
-        self.assertEqual(kind,'fixture-read');self.assertEqual(args[:3],['exec-out','/system/bin/sh','-c'])
-        command=shlex.split(args[3])[0];self.assertIn(DATA,command);self.assertIn('10077',command);self.assertIn('managed-native-A.json',command)
+        self.assertEqual(kind,'fixture-read');self.assertEqual(args[:2],['shell','-T'])
+        command=args[2];self.assertTrue(command.startswith('cd '+DATA+' && '));self.assertIn('10077',command);self.assertIn('managed-native-A.json',command)
     def test_writer_keeps_stdin_and_original_selinux_context(self):
         args,kind=adapt(['shell',"run-as "+PACKAGE+" sh -c 'cat > files/managed-recovery-records/A-page-0.bin.bak'"],self.c)
         self.assertEqual(args[:2],['shell','-T']);self.assertEqual(kind,'fixture-write');self.assertIn('umask 077',args[2]);self.assertIn('chcon',args[2]);self.assertIn('ls -Zd files/managed-recovery-records/A-page-0.bin ',args[2])

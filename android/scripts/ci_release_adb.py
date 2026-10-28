@@ -36,9 +36,10 @@ def adapt(args,c):
             reference=write[:-4] if write.endswith('.bak') else write
             label='context=$(/system/bin/ls -Zd '+shlex.quote(reference)+" | /system/bin/cut -d ' ' -f1); case \"$context\" in u:object_r:app_data_file:s0*) ;; *) exit 84;; esac; "
             outer='cd '+shlex.quote(DATA)+' && '+label+inner+' && '+shlex.quote(c['chcon'])+' "$context" '+shlex.quote(write)+' && [ "$(/system/bin/ls -Zd '+shlex.quote(write)+" | /system/bin/cut -d ' ' -f1)\" = \"$context\" ]"
-        # shell -T preserves binary stdin for fault injection; exec-out is
-        # deliberately retained only for the caller's read-only operations.
-        return (['exec-out','/system/bin/sh','-c',shlex.quote(outer)] if args[0]=='exec-out' else ['shell','-T',outer]),kind
+        # One non-PTY shell-v2 channel preserves binary input/output and remote
+        # exit status. exec-out separately escapes arguments and must not receive
+        # an already quoted nested sh -c script.
+        return ['shell','-T',outer],kind
     if args[0]=='exec-out':
         if t!=['cat','/sdcard/managed-poc.xml']:raise ValueError('Unapproved exec-out operation')
         return ['exec-out',*t],None
