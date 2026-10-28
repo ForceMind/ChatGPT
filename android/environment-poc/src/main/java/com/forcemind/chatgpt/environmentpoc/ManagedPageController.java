@@ -91,8 +91,9 @@ final class ManagedPageController {
             @Override public void onCrash(GeckoSession s){fail(e,"content-process-crashed");}
             @Override public void onKill(GeckoSession s){fail(e,"content-process-killed");}
         });
-        e.session.open(runtime);e.session.setActive(true);e.session.setFocused(false);if(extension!=null)attach(e);changed(e);return e;
+        if(extension!=null)attach(e);changed(e);return e;
     }
+    void openWindow(Entry e){if(!e.closed&&!e.blocked&&!e.session.isOpen()){e.session.open(runtime);e.session.setActive(true);e.session.setFocused(false);}}
     private JSONObject page(Entry e,String url)throws Exception{JSONArray pages=e.record.getJSONArray("pages");for(int i=0;i<pages.length();i++){JSONObject p=pages.getJSONObject(i);if(url.equals(p.getString("url")))return copy(p);}return null;}
     private void attach(Entry e){
         if(e.bridgeBound){viewReady(e);return;}
@@ -111,7 +112,7 @@ final class ManagedPageController {
         e.bridgeBound=true;viewReady(e);
     }
     void viewReady(Entry e){
-        if(e.closed||e.blocked||e.loadStarted||!e.bridgeBound)return;
+        if(e.closed||e.blocked||e.loadStarted||!e.bridgeBound||!e.session.isOpen())return;
         View view=inputViews.view(e);if(view==null||!view.hasWindowFocus())return;
         if(!view.isAttachedToWindow()||view.getWidth()<=0||view.getHeight()<=0){ui.postDelayed(()->viewReady(e),100);return;}
         if(e.session.getTextInput().getView()!=view)e.session.getTextInput().setView(view);

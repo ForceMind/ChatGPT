@@ -99,7 +99,7 @@ public abstract class ManagedRecoveryActivity extends Activity {
     private void release(){if(web!=null&&web.getSession()!=null){GeckoSession old=web.releaseSession();if(old!=null&&old.isOpen())old.setActive(true);}}
     private void show(){
         ManagedPageController.Entry e=current();if(e==null)return;
-        for(ManagedPageController.Entry old:tabs())controller.visible(old,false);release();if(!e.blocked&&e.session.isOpen()){web.setSession(e.session);e.session.setActive(true);web.requestFocus();}
+        for(ManagedPageController.Entry old:tabs())controller.visible(old,false);release();if(!e.blocked){controller.openWindow(e);web.setSession(e.session);e.session.setActive(true);web.requestFocus();}
         controller.visible(e,web.hasWindowFocus());try{workspace();}catch(Exception error){startupError=error.toString();}refresh();ui.postDelayed(()->record("layout"),500);
     }
     private void select(int index){if(index<0||index>=tabs().size())return;if(selected.getOrDefault(account(),0)==index&&web.getSession()==tabs().get(index).session){controller.visible(tabs().get(index),web.hasWindowFocus());refresh();return;}selected.put(account(),index);show();}
