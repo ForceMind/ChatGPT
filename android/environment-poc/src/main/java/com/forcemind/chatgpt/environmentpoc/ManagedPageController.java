@@ -139,6 +139,14 @@ final class ManagedPageController {
             if(!e.document.equals(document)||!e.token.equals(msg.getString("token"))||e.epoch!=msg.getLong("epoch"))throw new IllegalArgumentException("Stale document");
             JSONObject current=normalize(e,msg.getJSONObject("snapshot"));if(!e.url.equals(current.getString("url")))throw new IllegalArgumentException("Wrong page snapshot");e.current=current;
             if("ready".equals(type)){e.loading=false;reconcile(e,current);return;}
+            if("focus-target".equals(type)){
+                String editor=msg.getString("editor");if(!e.pendingEditor.equals(editor)||!e.visible||!msg.getBoolean("unobscured"))throw new IllegalArgumentException("Editor target not visible");
+                if(e.approved==null||!current.getString(editor).equals(e.approved.getString(editor))){showConflict(e,current);return;}
+                View view=inputViews.view(e);JSONObject point=msg.getJSONObject("point");double ratio=point.getDouble("ratio"),x=point.getDouble("x")*ratio,y=point.getDouble("y")*ratio;
+                if(view==null||!view.hasWindowFocus()||!Double.isFinite(x)||!Double.isFinite(y)||ratio<=0||ratio>10||x<0||y<0||x>=view.getWidth()||y>=view.getHeight())throw new IllegalArgumentException("Invalid editor target");
+                long now=android.os.SystemClock.uptimeMillis();android.view.MotionEvent down=android.view.MotionEvent.obtain(now,now,android.view.MotionEvent.ACTION_DOWN,(float)x,(float)y,0),up=android.view.MotionEvent.obtain(now,now+60,android.view.MotionEvent.ACTION_UP,(float)x,(float)y,0);
+                try{view.dispatchTouchEvent(down);view.dispatchTouchEvent(up);}finally{down.recycle();up.recycle();}return;
+            }
             if("focused".equals(type)){
                 if(!e.pendingEditor.equals(msg.getString("editor"))||!msg.getBoolean("active")||!e.visible)throw new IllegalArgumentException("Unexpected editor focus");commit(e,current,e.pendingEditor);return;
             }

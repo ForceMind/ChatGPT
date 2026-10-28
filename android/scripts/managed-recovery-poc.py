@@ -30,7 +30,7 @@ wait=base.wait;text=base.text;adb=base.adb
 class Handler(base.Handler):
     def reply(self,body,status=200,mime='text/html; charset=utf-8'):
         if isinstance(body,str) and '<script>' in body and 'function observation()' in body:
-            body+='''<script>
+            body+='''<style>#rich{white-space:pre-wrap;overflow-wrap:anywhere}</style><script>
 const studioModels={standard:document.getElementById('standard').value,rich:document.getElementById('rich').innerText};
 const nativeObservation=observation;
 observation=()=>({...nativeObservation(),rich:document.getElementById('rich').innerText,standardModel:studioModels.standard,richModel:studioModels.rich,pageNativeAPI:typeof browser!=='undefined'&&!!browser.runtime?.connectNative});

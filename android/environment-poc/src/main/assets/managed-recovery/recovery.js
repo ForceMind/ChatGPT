@@ -7,7 +7,7 @@
   if (!standard || !rich || !rich.isContentEditable) return;
   const documentId = crypto.randomUUID(), initialURL = location.href;
   const port = browser.runtime.connectNative("studioRecovery");
-  let token = null, epoch = 0, sequence = 0, disconnected = false, scheduled = null, announced = false, metrics = null, resumeScroll = null;
+  let token = null, epoch = 0, sequence = 0, disconnected = false, scheduled = null, announced = false, metrics = null, resumeScroll = null, expectedFocus = null;
   function snapshot() {
     if (window.innerHeight>0 && window.innerWidth>0) metrics={scroll:window.scrollY,height:document.documentElement.scrollHeight,viewport:window.innerHeight};
     if (!metrics) return null;
@@ -32,9 +32,12 @@
     if (message.type === "focus") {
       const element = message.editor === "standard" ? standard : message.editor === "rich" ? rich : null;
       if (!element) return;
-      if (document.activeElement === element) element.blur();
-      element.focus({preventScroll:true});
-      requestAnimationFrame(() => {const value=snapshot();if(value)send("focused", {editor:message.editor, active:document.activeElement === element, snapshot:value});});
+      expectedFocus = element;
+      element.scrollIntoView({block:"center",behavior:"instant"});
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        const value=snapshot(),r=element.getBoundingClientRect(),x=r.x+r.width/2,y=r.y+r.height/2,hit=document.elementFromPoint(x,y);
+        if(value)send("focus-target",{editor:message.editor,point:{x,y,ratio:devicePixelRatio},unobscured:hit===element||element.contains(hit),snapshot:value});
+      }));
     } else if (message.type === "scroll") {
       if (document.activeElement === standard || document.activeElement === rich) document.activeElement.blur();
       // Drop the selection created by our restore input before returning to the
@@ -60,6 +63,12 @@
   port.onMessage.addListener(receive);
   port.onDisconnect.addListener(() => { disconnected = true; clearTimeout(scheduled); });
   addEventListener("input", () => queueMicrotask(capture), true);
+  addEventListener("click", event => {
+    const element=event.target===standard?standard:rich.contains(event.target)?rich:null;
+    if(!element || element!==expectedFocus || !event.isTrusted || document.activeElement!==element) return;
+    expectedFocus=null;
+    requestAnimationFrame(() => {const value=snapshot();if(value)send("focused",{editor:element===standard?"standard":"rich",active:true,snapshot:value});});
+  }, true);
   addEventListener("scroll", later, {passive:true});
   addEventListener("resize", () => {later();if(resumeScroll && window.innerHeight>0 && window.innerWidth>0){const resume=resumeScroll;resumeScroll=null;resume();}});
   const transcript = document.querySelector("article");
