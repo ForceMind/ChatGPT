@@ -79,3 +79,13 @@ gh workflow run android.yml --ref codex/macos-assets-workbench \
 [API 35 单账号核心](https://github.com/ForceMind/ChatGPT/actions/runs/40545612063)已通过 11 项合成用例，包括动态草稿、继续编辑后的最新缓存、正常关闭 / 强停重连、离线内容、冲突两种选择、备份查看、损坏记录及零发送。**三账号四页矩阵尚未通过**：最新测试在部分页面收到接口写入接受后，实际网页 / 编辑器模型仍未确认值，控制器停止并保留缓存。不能据单账号结果宣称多账号、Android 9 或正式迁移完成。
 
 所有已核对的有效来源、摘要、完成范围和失败见[应用恢复证据](../../docs/benchmarks/android-managed-recovery-poc.json)。本阶段仍只访问合成 loopback 网页，真实 ChatGPT、真机、正式 UI / 生命周期集成和包体积工作没有通过该验收。新版工作约定下，新增浏览器诊断须明确授权；管理恢复驱动默认不截图，`--capture-ui` 仅在具体截图任务获准后使用。
+
+[已授权的两页输入诊断](https://github.com/ForceMind/ChatGPT/actions/runs/40628520740)在 API 28 / 35 均通过：切换保留原文档、完整退出后两页的 textarea / contenteditable 内容及独立编辑器模型恢复一致，发送与截图均为零。诊断发现未初始化的输入缓存可能在选区为 -1 时仍返回提交成功；控制器现等待完整文本和有效选区就绪后才提交，仍以真实页面回执确认，不重复发送已接受的提交。完整三账号矩阵需要在新修正上复验，正式迁移门槛仍未通过。
+
+以下入口只运行该最小诊断；浏览器交互须先取得当前任务的明确授权：
+
+```sh
+gh workflow run android.yml --ref codex/macos-assets-workbench \
+  -f managed_recovery_poc=true -f device_only=true \
+  -f managed_recovery_input_diagnostic=true -f 'recovery_poc_apis=[28,35]'
+```
