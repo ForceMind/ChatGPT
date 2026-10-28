@@ -27,9 +27,17 @@ def group(name):
     if name=='AndroidManifest.xml':return 'manifest'
     return 'other'
 
-def measure(apk,badging):
-    if "package: name='com.forcemind.chatgpt.environmentpoc'" not in badging or "native-code: 'arm64-v8a'" not in badging or "sdkVersion:'28'" not in badging or 'application-debuggable' in badging:
+def validate_badging(badging):
+    package=re.search(r"^package: name='([^']+)'",badging,re.M)
+    minimum=re.findall(r"^(?:minSdkVersion|sdkVersion):'(\d+)'$",badging,re.M)
+    native=re.search(r'^native-code:\s*(.*)$',badging,re.M)
+    abis=re.findall(r"'([^']+)'",native.group(1)) if native else []
+    if not package or package.group(1)!='com.forcemind.chatgpt.environmentpoc' or minimum!=['28'] or abis!=['arm64-v8a'] or re.search(r'^application-debuggable\b',badging,re.M):
         raise RuntimeError('Unexpected release manifest or ABI')
+    return {'package':package.group(1),'minSdk':28,'abis':abis,'debuggable':False}
+
+def measure(apk,badging):
+    manifest=validate_badging(badging)
     categories={};libraries={};bridge={}
     with zipfile.ZipFile(apk) as archive:
         for entry in archive.infolist():
@@ -42,7 +50,7 @@ def measure(apk,badging):
                 item={'rawBytes':entry.file_size,'zipPayloadBytes':entry.compress_size,'compression':entry.compress_type,'sha256':h.hexdigest()}
                 (libraries if entry.filename.startswith('lib/') else bridge)[entry.filename]=item
         if not libraries or set(bridge)!=BRIDGE or any(not name.startswith('lib/arm64-v8a/') for name in libraries):raise RuntimeError('Native engine or bridge missing')
-    return {'apkBytes':apk.stat().st_size,'apkSha256':digest_file(apk),'categories':categories,'nativeLibraries':libraries,'managedBridge':bridge,'zipHeadersAlignmentAndSigningBytes':apk.stat().st_size-sum(c['zipPayloadBytes'] for c in categories.values())}
+    return {'apkBytes':apk.stat().st_size,'apkSha256':digest_file(apk),'manifest':manifest,'categories':categories,'nativeLibraries':libraries,'managedBridge':bridge,'zipHeadersAlignmentAndSigningBytes':apk.stat().st_size-sum(c['zipPayloadBytes'] for c in categories.values())}
 
 def main():
     if os.environ.get('GITHUB_ACTIONS')!='true':raise SystemExit('Builds and measurements run in GitHub Actions only')

@@ -1,0 +1,326 @@
+{
+  "schema": 1,
+  "scope": "Independent second-stage release-size and native touch/lifecycle validation; no formal app or login data",
+  "status": "in_progress",
+  "formalMigrationReady": false,
+  "appTreeAtFirstRun": "f02f4783aa7fbbb249f84be2e0774d17d3122f5d",
+  "attempts": [
+    {
+      "kind": "release-size",
+      "api": null,
+      "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40649194866",
+      "sourceSha": "2e42ff5f5da7706d5d43c495473df1295c327602",
+      "artifactId": 12799430990,
+      "artifactSha256": "72d7961a6504f3d6e462755966a524da703c7079db186019e5101c1469f5de4a",
+      "result": {
+        "schema": 1,
+        "sourceSha": "2e42ff5f5da7706d5d43c495473df1295c327602",
+        "runId": "40649194866",
+        "scope": "Unsigned arm64 isolated release APK composition",
+        "engineVersion": "158.0.20261021001945",
+        "agpVersion": "9.1.1",
+        "minSdk": 28,
+        "formalAppOrDataUsed": false,
+        "releaseRuntimeValidated": false,
+        "installedBytesMeasured": false,
+        "results": [],
+        "complete": false,
+        "failure": "Unexpected release manifest or ABI",
+        "limits": [
+          "Release APKs are unsigned, not installed, and not runtime-validated. Device lifecycle/recovery tests use the independent debug build.",
+          "APK file size is not installed disk usage, RAM, CPU or store-compressed download size.",
+          "No engine update, native stripping, formal signing key, user data, real ChatGPT or public release."
+        ]
+      }
+    },
+    {
+      "kind": "touch-lifecycle",
+      "api": 28,
+      "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40649194866",
+      "sourceSha": "2e42ff5f5da7706d5d43c495473df1295c327602",
+      "artifactId": 12799426768,
+      "artifactSha256": "bc72ceb2226bf74f64fbd95ce0ea5f187a716e6e6b848f070f39adc4778bd442",
+      "result": {
+        "sourceSha": "2e42ff5f5da7706d5d43c495473df1295c327602",
+        "runId": "40649194866",
+        "scope": "Three-account four-tab managed recovery",
+        "api": "28",
+        "fixtureOnly": true,
+        "productionDataUsed": false,
+        "cases": {
+          "initialCapture": true
+        },
+        "failure": "Timed out: trusted up swipe changes actual scroll",
+        "submissions": [],
+        "inputDiagnosticComplete": false,
+        "managedControllerReady": false,
+        "formalMigrationReady": false,
+        "platformFindings": {
+          "unexpectedProcessRestartObserved": false,
+          "extraForceStopRequests": 0,
+          "touchScrollAcceptance": "Not passed in this run; reading samples use native PanZoom API."
+        },
+        "limits": [
+          "Synthetic textarea/contenteditable editor models only; no real ChatGPT.",
+          "Fresh x86_64 CI emulators, short background sample only; no physical/OEM, prolonged OS-pressure, optimized-release runtime or production lifecycle guarantee.",
+          "The existing reading recovery sample still uses native PanZoom separately from the genuine touch gate.",
+          "Warning phases show temporal correlation, not proof of cause or repair."
+        ],
+        "logCaptureComplete": true,
+        "warningCounts": {
+          "noEditableParent": 1,
+          "sessionStoreWinNull": 0,
+          "fatalException": 0
+        },
+        "warningCausalAttribution": false
+      },
+      "warningLocalization": {
+        "schema": 1,
+        "causalAttribution": false,
+        "scope": "Whole fresh-emulator log, correlated by the last preceding marker; proximity is not causality.",
+        "counts": {
+          "noEditableParent": 1,
+          "sessionStoreWinNull": 0,
+          "fatalException": 0
+        },
+        "byPhase": {
+          "seed": {
+            "noEditableParent": 1,
+            "sessionStoreWinNull": 0,
+            "fatalException": 0
+          }
+        },
+        "entries": [
+          {
+            "kind": "noEditableParent",
+            "lineNumber": 7517,
+            "pid": 4546,
+            "phase": "seed",
+            "step": "begin",
+            "nearestPriorLifecycleMarker": "10-28 07:22:52.890  3937  3937 I ManagedRecoveryPoC: event=resumed account=A selected=1",
+            "line": "10-28 07:22:53.026  4546  4589 W GeckoEditableChild: No editable parent"
+          }
+        ]
+      },
+      "screenshots": 0
+    },
+    {
+      "kind": "touch-lifecycle",
+      "api": 35,
+      "run": "https://github.com/ForceMind/ChatGPT/actions/runs/40649194866",
+      "sourceSha": "2e42ff5f5da7706d5d43c495473df1295c327602",
+      "artifactId": 12798823319,
+      "artifactSha256": "bee75efb78a76fc3f697b3ffaa9222f37e3b6b8a944d5ea89b3402c3f05bb535",
+      "result": {
+        "sourceSha": "2e42ff5f5da7706d5d43c495473df1295c327602",
+        "runId": "40649194866",
+        "scope": "Three-account four-tab managed recovery",
+        "api": "35",
+        "fixtureOnly": true,
+        "productionDataUsed": false,
+        "cases": {
+          "initialCapture": true,
+          "trustedTouchScrollUpDown": true,
+          "homeForegroundRetainsDocuments": true,
+          "activityRecreationRetainsDocuments": true,
+          "normalClose": true,
+          "historyAndURLIsolation": true,
+          "saveAfterRestore": true,
+          "offlineReadOnlySnapshot": true,
+          "forceStopAndReconnect": true,
+          "unresolvedConflictRestartAndURLBinding": true,
+          "keepCurrentConflict": true,
+          "restoreSavedConflictAndBackupAccess": true,
+          "interruptedAtomicRecordRecovery": true,
+          "corruptRecordPreserved": true,
+          "crossAccountRecordPreserved": true,
+          "accountEnvironmentAndStorageIsolation": true,
+          "noAutomaticSendAndNoWebNativeAccess": true
+        },
+        "touchGestures": [
+          {
+            "direction": "up",
+            "before": 1400,
+            "after": 1752.6666259765625,
+            "touchStartsAdded": 1,
+            "touchTerminalsAdded": 1,
+            "documentUnchanged": true
+          },
+          {
+            "direction": "down",
+            "before": 1752.6666259765625,
+            "after": 1291.2332763671875,
+            "touchStartsAdded": 1,
+            "touchTerminalsAdded": 1,
+            "documentUnchanged": true
+          }
+        ],
+        "backgroundSample": {
+          "backgroundSeconds": 5.205,
+          "totalRoundTripSeconds": 14.493,
+          "tickDeltas": {
+            "A:0": 10,
+            "A:1": 9,
+            "B:0": 10,
+            "C:0": 10
+          },
+          "mainPidUnchanged": true
+        },
+        "experimentComplete": true,
+        "submissions": [],
+        "inputDiagnosticComplete": false,
+        "managedControllerReady": true,
+        "formalMigrationReady": false,
+        "platformFindings": {
+          "unexpectedProcessRestartObserved": false,
+          "extraForceStopRequests": 0,
+          "touchScrollAcceptance": "Real trusted touch starts/terminals and bidirectional scroll measured."
+        },
+        "limits": [
+          "Synthetic textarea/contenteditable editor models only; no real ChatGPT.",
+          "Fresh x86_64 CI emulators, short background sample only; no physical/OEM, prolonged OS-pressure, optimized-release runtime or production lifecycle guarantee.",
+          "The existing reading recovery sample still uses native PanZoom separately from the genuine touch gate.",
+          "Warning phases show temporal correlation, not proof of cause or repair."
+        ],
+        "logCaptureComplete": true,
+        "warningCounts": {
+          "noEditableParent": 9,
+          "sessionStoreWinNull": 0,
+          "fatalException": 0
+        },
+        "warningCausalAttribution": false
+      },
+      "warningLocalization": {
+        "schema": 1,
+        "causalAttribution": false,
+        "scope": "Whole fresh-emulator log, correlated by the last preceding marker; proximity is not causality.",
+        "counts": {
+          "noEditableParent": 9,
+          "sessionStoreWinNull": 0,
+          "fatalException": 0
+        },
+        "byPhase": {
+          "seed": {
+            "noEditableParent": 2,
+            "sessionStoreWinNull": 0,
+            "fatalException": 0
+          },
+          "normal-close": {
+            "noEditableParent": 2,
+            "sessionStoreWinNull": 0,
+            "fatalException": 0
+          },
+          "reconnected": {
+            "noEditableParent": 3,
+            "sessionStoreWinNull": 0,
+            "fatalException": 0
+          },
+          "unresolved-conflict-restart": {
+            "noEditableParent": 1,
+            "sessionStoreWinNull": 0,
+            "fatalException": 0
+          },
+          "atomic-backup": {
+            "noEditableParent": 1,
+            "sessionStoreWinNull": 0,
+            "fatalException": 0
+          }
+        },
+        "entries": [
+          {
+            "kind": "noEditableParent",
+            "lineNumber": 13790,
+            "pid": 3475,
+            "phase": "seed",
+            "step": "begin",
+            "nearestPriorLifecycleMarker": "10-28 07:22:26.214  2878  2878 I ManagedRecoveryPoC: event=resumed account=A selected=0",
+            "line": "10-28 07:22:27.196  3475  3501 W GeckoEditableChild: No editable parent"
+          },
+          {
+            "kind": "noEditableParent",
+            "lineNumber": 18103,
+            "pid": 4510,
+            "phase": "seed",
+            "step": "begin",
+            "nearestPriorLifecycleMarker": "10-28 07:22:42.283  4335  4335 I ManagedRecoveryPoC: event=window-focus account=B selected=0",
+            "line": "10-28 07:22:45.184  4510  4542 W GeckoEditableChild: No editable parent"
+          },
+          {
+            "kind": "noEditableParent",
+            "lineNumber": 33243,
+            "pid": 6525,
+            "phase": "normal-close",
+            "step": "begin",
+            "nearestPriorLifecycleMarker": "10-28 07:23:59.158  6411  6411 I ManagedRecoveryPoC: event=window-focus account=A selected=0",
+            "line": "10-28 07:24:00.469  6525  6558 W GeckoEditableChild: No editable parent"
+          },
+          {
+            "kind": "noEditableParent",
+            "lineNumber": 36988,
+            "pid": 6675,
+            "phase": "normal-close",
+            "step": "begin",
+            "nearestPriorLifecycleMarker": "10-28 07:23:59.158  6411  6411 I ManagedRecoveryPoC: event=window-focus account=A selected=0",
+            "line": "10-28 07:24:11.572  6675  6700 W GeckoEditableChild: No editable parent"
+          },
+          {
+            "kind": "noEditableParent",
+            "lineNumber": 49487,
+            "pid": 8489,
+            "phase": "reconnected",
+            "step": "begin",
+            "nearestPriorLifecycleMarker": "10-28 07:25:34.422  8275  8275 I ManagedRecoveryPoC: event=resumed account=A selected=0",
+            "line": "10-28 07:25:40.797  8489  8503 W GeckoEditableChild: No editable parent"
+          },
+          {
+            "kind": "noEditableParent",
+            "lineNumber": 50657,
+            "pid": 8941,
+            "phase": "reconnected",
+            "step": "begin",
+            "nearestPriorLifecycleMarker": "10-28 07:25:46.921  8275  8275 I ManagedRecoveryPoC: event=stopped account=A selected=1",
+            "line": "10-28 07:25:48.399  8941  8962 W GeckoEditableChild: No editable parent"
+          },
+          {
+            "kind": "noEditableParent",
+            "lineNumber": 51381,
+            "pid": 9108,
+            "phase": "reconnected",
+            "step": "begin",
+            "nearestPriorLifecycleMarker": "10-28 07:25:54.315  8776  8776 I ManagedRecoveryPoC: event=stopped account=B selected=0",
+            "line": "10-28 07:25:55.795  9108  9142 W GeckoEditableChild: No editable parent"
+          },
+          {
+            "kind": "noEditableParent",
+            "lineNumber": 53948,
+            "pid": 9814,
+            "phase": "unresolved-conflict-restart",
+            "step": "begin",
+            "nearestPriorLifecycleMarker": "10-28 07:26:12.674  9616  9616 I ManagedRecoveryPoC: event=window-focus account=A selected=0",
+            "line": "10-28 07:26:14.782  9814  9837 W GeckoEditableChild: No editable parent"
+          },
+          {
+            "kind": "noEditableParent",
+            "lineNumber": 59022,
+            "pid": 10739,
+            "phase": "atomic-backup",
+            "step": "begin",
+            "nearestPriorLifecycleMarker": "10-28 07:26:52.223 10556 10556 I ManagedRecoveryPoC: event=window-focus account=A selected=0",
+            "line": "10-28 07:26:53.777 10739 10783 W GeckoEditableChild: No editable parent"
+          }
+        ]
+      },
+      "screenshots": 0
+    }
+  ],
+  "methodologySources": [
+    "https://developer.android.com/topic/performance/app-optimization/enable-app-optimization",
+    "https://developer.android.com/topic/performance/reduce-apk-size",
+    "https://raw.githubusercontent.com/aosp-mirror/platform_frameworks_base/android-9.0.0_r61/cmds/input/src/com/android/commands/input/Input.java"
+  ],
+  "limits": [
+    "Unsigned arm64 release size is independent of debug x86_64 device acceptance; optimized release runtime and installed disk usage remain unverified.",
+    "Phase proximity of warnings is not causality or evidence of repair.",
+    "No screenshots, real ChatGPT, physical/OEM device, formal data migration or public release."
+  ]
+}

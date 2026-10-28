@@ -38,6 +38,7 @@ jobs:
         working-directory: android
         run: |
           sdkmanager 'platforms;android-37.0' 'build-tools;36.0.0'
+          python3 -m unittest discover -s scripts/tests -p 'test_package_size_poc.py' -v
           python3 -m py_compile scripts/package-size-poc.py
           python3 -u scripts/package-size-poc.py
       - uses: actions/upload-artifact@v4
@@ -146,6 +147,12 @@ jobs:
             adb shell pm disable-user --user 0 com.google.android.apps.nexuslauncher
           fi
           adb install environment-poc/build/outputs/apk/debug/environment-poc-x86_64-debug.apk
+          if [ "$RECOVERY_API" = 28 ] && [ "${{ inputs.managed && !inputs.core_only && !inputs.input_diagnostic }}" = true ]; then
+            mkdir -p environment-poc/build/input-helper/classes
+            javac --release 8 -classpath "$ANDROID_HOME/platforms/android-37.0/android.jar" -d environment-poc/build/input-helper/classes scripts/android/TouchInput.java
+            "$ANDROID_HOME/build-tools/36.0.0/d8" --min-api 28 --lib "$ANDROID_HOME/platforms/android-37.0/android.jar" --output environment-poc/build/input-helper/input.jar environment-poc/build/input-helper/classes/com/forcemind/chatgpt/pocinput/TouchInput.class
+            adb push environment-poc/build/input-helper/input.jar /data/local/tmp/studio-poc-input.jar
+          fi
           if [ "${{ inputs.managed }}" = true ]; then
             if [ "${{ inputs.input_diagnostic }}" = true ]; then
               timeout 420 python3 -u scripts/managed-recovery-poc.py environment-poc/build/recovery-evidence --input-diagnostic

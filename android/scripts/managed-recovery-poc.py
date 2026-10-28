@@ -193,6 +193,21 @@ def input_diagnostic(report):
     report['experimentComplete']=True
 
 
+def swipe(report,direction,x,y1,y2):
+    if text('shell','getprop','ro.build.version.sdk')!='28':
+        text('shell','input','swipe',str(x),str(y1),str(x),str(y2),'550');return 'stock-adb-input'
+    # Android 9's stock input command resets downTime on every move. The fixed
+    # engine correctly drops those invalid continuations; do not relax it.
+    result=subprocess.run(['adb','shell','env','CLASSPATH=/data/local/tmp/studio-poc-input.jar','app_process','/system/bin','com.forcemind.chatgpt.pocinput.TouchInput',str(x),str(y1),str(x),str(y2),'550'],capture_output=True,text=True,timeout=20)
+    (OUT/('touch-input-'+direction+'-stderr.txt')).write_text(result.stderr)
+    if result.returncode:raise RuntimeError('CI touchscreen input failed: '+result.stderr[-1600:])
+    receipt=json.loads(result.stdout.strip().splitlines()[-1]);events=receipt['events']
+    assert len(events)>=3 and events[0]['action']==0 and events[-1]['action']==1 and any(e['action']==2 for e in events)
+    assert len({e['downTime'] for e in events})==1 and all(e['source']==4098 and e['toolType']==1 for e in events)
+    assert all(b['eventTime']>=a['eventTime'] for a,b in zip(events,events[1:]))
+    report.setdefault('touchInputReceipts',[]).append(receipt)
+    return receipt['provider']
+
 def touch_and_lifecycle(report):
     print('Additional scope: trusted touch, Home/foreground and Activity recreation',flush=True)
     mark_phase('touch-scroll');select('A','0');launch('A','hideKeyboard')
@@ -201,7 +216,7 @@ def touch_and_lifecycle(report):
     started=time.monotonic();before=wait(lambda:(lambda r:r if r and r['received']>started and r['activeElement'] not in ('standard','rich') and 'touch' in r else None)(latest('A','0')),label='article touch clears editor focus')
     gestures=[]
     for direction,y1,y2 in (('up',bottom,top),('down',top,bottom)):
-        started=time.monotonic();text('shell','input','swipe',str(x),str(y1),str(x),str(y2),'550')
+        started=time.monotonic();provider=swipe(report,direction,x,y1,y2)
         def changed():
             row=latest('A','0')
             if not row or row['received']<=started or row['document']!=before['document']:return None
@@ -209,7 +224,7 @@ def touch_and_lifecycle(report):
             return row if touch.get('starts',0)>before['touch']['starts'] and touch.get('terminals',0)>before['touch']['terminals'] and not touch.get('untrusted') and (delta>100 if direction=='up' else delta<-100) else None
         row=wait(changed,15,label='trusted '+direction+' swipe changes actual scroll')
         time.sleep(1);row=latest('A','0');delta=row['scrollY']-before['scrollY'];assert delta>100 if direction=='up' else delta<-100
-        gestures.append({'direction':direction,'before':before['scrollY'],'after':row['scrollY'],'touchStartsAdded':row['touch']['starts']-before['touch']['starts'],'touchTerminalsAdded':row['touch']['terminals']-before['touch']['terminals'],'documentUnchanged':row['document']==before['document']});before=row
+        gestures.append({'direction':direction,'inputProvider':provider,'before':before['scrollY'],'after':row['scrollY'],'touchStartsAdded':row['touch']['starts']-before['touch']['starts'],'touchTerminalsAdded':row['touch']['terminals']-before['touch']['terminals'],'documentUnchanged':row['document']==before['document']});before=row
     report['touchGestures']=gestures;report['cases']['trustedTouchScrollUpDown']=True
 
     mark_phase('lifecycle-background');references={a+':'+t:base.latest(a,t) for a,t in TABS};pid=native('A')['pid'];started=time.monotonic()
