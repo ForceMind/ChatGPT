@@ -55,6 +55,9 @@ def adapt(args,c):
     if t[:2]==['env','CLASSPATH=/data/local/tmp/studio-poc-input.jar']:
         allowed=c['sdk']==28 and len(t)==10 and t[2:5]==['app_process','/system/bin','com.forcemind.chatgpt.pocinput.TouchInput'] and all(re.fullmatch(r'\d{1,4}',x) for x in t[5:])
         if allowed:t=[c['su'],'2000',*t]
+    if t[:2]==['env','CLASSPATH=/data/local/tmp/studio-poc-metrics.jar']:
+        allowed=c['sdk']==28 and t==['env','CLASSPATH=/data/local/tmp/studio-poc-metrics.jar','app_process','/system/bin','com.forcemind.chatgpt.pocmetrics.ProcessMetrics']
+        if allowed:t=[c['su'],'2000',*t]
     if not allowed:raise ValueError('Unapproved CI shell operation')
     return ['shell','-T',shlex.join(t)],kind
 

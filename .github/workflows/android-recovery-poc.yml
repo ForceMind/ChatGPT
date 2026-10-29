@@ -224,6 +224,12 @@ jobs:
             "$ANDROID_HOME/build-tools/36.0.0/d8" --min-api 28 --lib "$ANDROID_HOME/platforms/android-37.0/android.jar" --output environment-poc/build/input-helper/input.jar environment-poc/build/input-helper/classes/com/forcemind/chatgpt/pocinput/TouchInput.class
             adb push environment-poc/build/input-helper/input.jar /data/local/tmp/studio-poc-input.jar
           fi
+          if [ "$RECOVERY_API" = 28 ] && [ "$POC_EXPERIMENT" = long-background ]; then
+            mkdir -p environment-poc/build/metrics-helper/classes
+            javac --release 8 -classpath "$ANDROID_HOME/platforms/android-37.0/android.jar" -d environment-poc/build/metrics-helper/classes scripts/android/ProcessMetrics.java
+            "$ANDROID_HOME/build-tools/36.0.0/d8" --min-api 28 --lib "$ANDROID_HOME/platforms/android-37.0/android.jar" --output environment-poc/build/metrics-helper/metrics.jar environment-poc/build/metrics-helper/classes/com/forcemind/chatgpt/pocmetrics/ProcessMetrics.class
+            adb push environment-poc/build/metrics-helper/metrics.jar /data/local/tmp/studio-poc-metrics.jar
+          fi
           if [ "$POC_RUNTIME_VARIANT" = optimized-release ]; then
             export POC_REAL_ADB="$ANDROID_HOME/platform-tools/adb"
             export POC_RELEASE_ATTESTATION="$RUNNER_TEMP/studio-release-${RECOVERY_API}.json"

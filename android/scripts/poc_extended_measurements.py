@@ -97,7 +97,14 @@ def warning_probe(h,report):
 def long_background(h,report):
     """30 minutes: Home, screen off, forced Doze; 10 real minutes each."""
     assert h.report_variant=='optimized-release'
-    hz=int(h.text('shell','getconf','CLK_TCK'));cores=int(h.text('shell','getconf','_NPROCESSORS_ONLN'))
+    if h.text('shell','getprop','ro.build.version.sdk')=='28':
+        clock=json.loads(h.text('shell','env','CLASSPATH=/data/local/tmp/studio-poc-metrics.jar','app_process','/system/bin','com.forcemind.chatgpt.pocmetrics.ProcessMetrics'))
+        assert clock['api']==28 and clock['shellUid']==2000 and clock['qemu'] is True
+        hz=clock['clockTicksPerSecond'];cores=clock['logicalCPUs']
+    else:
+        hz=int(h.text('shell','getconf','CLK_TCK'));cores=int(h.text('shell','getconf','_NPROCESSORS_ONLN'));clock={'provider':'getconf','clockTicksPerSecond':hz,'logicalCPUs':cores}
+    report['resourceClock']=clock
+    (h.OUT/'resource-clock.json').write_text(json.dumps(clock,indent=2)+'\n')
     assert 1<=hz<=10000 and 1<=cores<=128
     samples=[];stages=[]
     destination=h.OUT/'long-background-measurements.json'
