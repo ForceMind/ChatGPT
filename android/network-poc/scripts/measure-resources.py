@@ -12,6 +12,7 @@ from pathlib import Path
 import re
 import shlex
 import statistics
+import struct
 import subprocess
 import time
 
@@ -19,6 +20,31 @@ PACKAGE = "com.forcemind.chatgpt.networkpreview.ci"
 TEST = "com.forcemind.chatgpt.networkpreview.NetworkResourceInstrumentedTest#syntheticResourceProfiles"
 PHASES = ["direct_idle_foreground", "proxy_idle_foreground", "proxy_fixed_workload",
           "proxy_idle_background", "recovery_direct"]
+
+
+def parse_auxv_clktck(raw):
+    """Read the kernel AT_CLKTCK (17), without assuming Android supplies getconf."""
+    candidates = []
+    for width, fmt in [(4, '<II'), (8, '<QQ')]:
+        if not raw or len(raw) % (2 * width):
+            continue
+        entries = {}
+        ended = False
+        for offset in range(0, len(raw), 2 * width):
+            kind, value = struct.unpack_from(fmt, raw, offset)
+            if kind == 0:
+                ended = value == 0
+                break
+            if kind > 64 or kind in entries:
+                break
+            entries[kind] = value
+        page = entries.get(6, 0)
+        ticks = entries.get(17, 0)
+        if ended and page > 0 and page & (page - 1) == 0 and 0 < ticks <= 1000000:
+            candidates.append((ticks, width))
+    if len(candidates) != 1:
+        raise ValueError('Kernel AT_CLKTCK unavailable or auxv ABI ambiguous')
+    return candidates[0]
 
 
 def parse_proc_stat(raw):
@@ -138,12 +164,19 @@ class Sampler:
         result = subprocess.run(["adb", *args], text=True, stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE, timeout=timeout)
         if result.returncode:
-            raise RuntimeError("adb %s failed (%s): %s" % (" ".join(args), result.returncode, result.stderr[-1200:]))
+            failure = {"arguments": args, "returnCode": result.returncode, "stdout": result.stdout, "stderr": result.stderr}
+            (self.output / 'command-failure.json').write_text(json.dumps(failure, indent=2))
+            raise RuntimeError("adb %s failed (%s): %s %s" % (" ".join(args), result.returncode, result.stdout[-2000:], result.stderr[-1200:]))
         return result.stdout
 
     def shell(self, *args, timeout=25):
         # adb shell concatenates its arguments: quote each token for the remote shell.
         return self.adb("shell", " ".join(shlex.quote(str(arg)) for arg in args), timeout=timeout)
+
+    def service(self, *args):
+        # Android diagnostic services use their regular shell identity. Root is
+        # retained only for /proc counters belonging to isolated renderer UIDs.
+        return self.shell('su', '2000', 'dumpsys', *args)
 
     def raw(self, folder, name, data):
         (folder / name).write_text(data)
@@ -160,12 +193,15 @@ class Sampler:
             raise RuntimeError("CI emulator root required to include isolated WebView /proc counters")
         if self.shell("getprop", "ro.kernel.qemu").strip() != "1":
             raise RuntimeError("Emulator identity changed after adb root")
-        self.hz = int(self.shell("getconf", "CLK_TCK").strip())
-        if self.hz <= 0:
-            raise ValueError("Invalid kernel CLK_TCK")
-        provider_dump = self.shell("dumpsys", "webviewupdate")
+        auxv = subprocess.run(['adb', 'exec-out', 'cat', '/proc/self/auxv'],
+                              stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=25, check=True).stdout
+        (self.output/'kernel-auxv.bin').write_bytes(auxv)
+        self.hz, word_bytes = parse_auxv_clktck(auxv)
+        provider_dump = self.service('webviewupdate')
         metadata = {"package": PACKAGE, "test": TEST, "clockTicksPerSecond": self.hz,
                     "sourceSha": os.environ.get("GITHUB_SHA"), "runId": os.environ.get("GITHUB_RUN_ID"),
+                    "clockSource": "kernel /proc/self/auxv AT_CLKTCK", "auxvWordBytes": word_bytes,
+                    "diagnosticServiceUid": 2000, "kernelCounterReaderUid": 0,
                     "proxyTransport": {"protocol": "vless", "network": "raw", "security": "none"},
                     "api": self.shell("getprop", "ro.build.version.sdk").strip(),
                     "fingerprint": self.shell("getprop", "ro.build.fingerprint").strip(),
@@ -200,7 +236,7 @@ class Sampler:
 
     def snapshot(self, folder, index, baseline=False):
         label = "%02d" % index
-        activity = self.raw(folder, label + "-activity-processes.txt", self.shell("dumpsys", "activity", "processes"))
+        activity = self.raw(folder, label + "-activity-processes.txt", self.service("activity", "processes"))
         processes, renderers, excluded = attributable_processes(activity)
         if baseline and processes:
             raise ValueError("Baseline contains app or attributable WebView processes")
@@ -215,7 +251,7 @@ class Sampler:
             process.update(parse_proc_stat(self.raw(folder, prefix + "-stat.txt", self.shell("cat", "/proc/%s/stat" % process["pid"]))))
             process["counterTimeMonotonic"] = time.monotonic()
             process["rssKiB"] = parse_rss(self.raw(folder, prefix + "-status.txt", self.shell("cat", "/proc/%s/status" % process["pid"])))
-            process["pssKiB"] = parse_pss(self.raw(folder, prefix + "-meminfo.txt", self.shell("dumpsys", "meminfo", "-s", str(process["pid"]))))
+            process["pssKiB"] = parse_pss(self.raw(folder, prefix + "-meminfo.txt", self.service("meminfo", "-s", str(process["pid"]))))
         return {"timeMonotonic": time.monotonic(), "processes": processes, "excludedUnrelatedRenderers": excluded,
                 "system": system, "systemMemAvailableKiB": available,
                 "appAndRendererPssKiB": sum(p["pssKiB"] for p in processes),

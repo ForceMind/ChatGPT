@@ -2,6 +2,7 @@
 import importlib.util
 from pathlib import Path
 import unittest
+import struct
 
 SPEC = importlib.util.spec_from_file_location("measure_resources", Path(__file__).resolve().parents[1] / "measure-resources.py")
 RESOURCE = importlib.util.module_from_spec(SPEC)
@@ -9,6 +10,16 @@ SPEC.loader.exec_module(RESOURCE)
 
 
 class ResourceParsingTests(unittest.TestCase):
+    def test_auxv_reads_kernel_clock_for_both_abis(self):
+        for fmt, width in [('<II', 4), ('<QQ', 8)]:
+            raw = b''.join(struct.pack(fmt, *entry) for entry in [(6, 4096), (17, 250), (0, 0)])
+            self.assertEqual((250, width), RESOURCE.parse_auxv_clktck(raw))
+
+    def test_auxv_missing_clock_or_truncated_data_fails(self):
+        for raw in [b'', struct.pack('<QQQQ', 6, 4096, 0, 0), b'invalid']:
+            with self.subTest(raw=raw), self.assertRaises(ValueError):
+                RESOURCE.parse_auxv_clktck(raw)
+
     def test_process_comm_with_spaces_and_parentheses_preserves_field_indices(self):
         fields = ["S"] + ["0"] * 19
         fields[11], fields[12], fields[19] = "123", "45", "900"
