@@ -46,6 +46,8 @@ class ReleaseFixtureBridgeTests(unittest.TestCase):
         args,kind=adapt(command,self.c);self.assertIn('2000 env CLASSPATH=',args[2])
         with self.assertRaises(ValueError):adapt(command,{**self.c,'sdk':35})
     def test_resource_pid_must_belong_to_lab(self):
+        _,kind=adapt(['shell','cat','/proc/123/smaps'],self.c);self.assertEqual(kind,'resource-read')
+        with self.assertRaises(ValueError):adapt(['shell','cat','/proc/123/mem'],self.c)
         table='PID S NAME\n123 S '+PACKAGE+':tab\n456 S com.forcemind.chatgpt.profiles\n'
         validate_resource_pid('123',table)
         for pid in ['456','999','123;id']:

@@ -7,6 +7,8 @@ import re
 import time
 import urllib.request
 import zipfile
+import os
+from poc_smaps import parse_smaps
 
 SOURCE_URL='https://maven.mozilla.org/maven2/org/mozilla/geckoview/geckoview/158.0.20261021001945/geckoview-158.0.20261021001945-sources.jar'
 SOURCE_SHA='f78fd393bd774f46dbf55ea8e868b7607d5c4c133d9906eab000c339bbee02ac'
@@ -139,6 +141,10 @@ def long_background(h,report):
                 m=re.search(r'TOTAL PSS:\s*(\d+)',raw) or re.search(r'^\s*TOTAL\s+(\d+)',raw,re.M)
                 if not m:raise RuntimeError('Missing measured PSS')
                 memory.append({'pid':int(row['pid']),'name':row['name'],'pssKiB':int(m[1]),'summaryPssKiB':parse_pss_categories(raw)})
+                if os.environ.get('POC_MAPPING_ATTRIBUTION')=='true':
+                    mapped=h.text('shell','cat','/proc/'+row['pid']+'/smaps')
+                    (h.OUT/('mapping-'+str(len(samples))+'-'+row['pid']+'.txt')).write_text(mapped)
+                    memory[-1]['mappingSummary']=parse_smaps(mapped)
             result.update(memory=memory,totalPssMiB=round(sum(r['pssKiB'] for r in memory)/1024,3),lastMemoryAt=now)
         else:result['lastMemoryAt']=samples[-1]['lastMemoryAt']
         result['pageObservations']={a+':'+t:({k:r[k] for k in ('document','ticks','received','visibility','standard','rich','standardModel','richModel','observerProbe','streamText') if k in r} if (r:=h.base.latest(a,t)) else None) for a,t in h.TABS}

@@ -41,6 +41,10 @@ on:
         description: Matched idle measurement HTTP cadences; real input/recovery stays unchanged
         type: string
         default: '[500,5000]'
+      mapping_attribution:
+        description: Read lab-process smaps metadata only for a specifically authorized idle profile
+        type: boolean
+        default: false
   workflow_call:
     inputs:
       apis:
@@ -83,6 +87,10 @@ on:
         type: string
         required: false
         default: '[500,5000]'
+      mapping_attribution:
+        type: boolean
+        required: false
+        default: false
 permissions:
   contents: read
 jobs:
@@ -136,6 +144,7 @@ jobs:
       POC_RESOURCE_TUNING: ${{ matrix.resource_case == 'optimized' && 'optimized' || inputs.resource_tuning || 'baseline' }}
       POC_OBSERVER_POLICY: ${{ matrix.resource_case == 'baseline' && 'legacy' || 'bounded' }}
       POC_OBSERVER_CADENCE_MS: ${{ matrix.observer_cadence_ms }}
+      POC_MAPPING_ATTRIBUTION: ${{ inputs.mapping_attribution }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -162,12 +171,14 @@ jobs:
           cadence=int(os.environ['POC_OBSERVER_CADENCE_MS']);assert cadence in (500,5000)
           if experiment=='idle-profile':assert tuning=='optimized' and os.environ['POC_OBSERVER_POLICY']=='bounded'
           else:assert cadence==500
+          if os.environ['POC_MAPPING_ATTRIBUTION']=='true':assert experiment=='idle-profile'
           PY
           mkdir -p environment-poc/build/recovery-evidence
           python3 -c 'import ast; ast.parse(open("scripts/recovery-environment-poc.py").read())'
           python3 -c 'import ast; ast.parse(open("scripts/managed-recovery-poc.py").read())'
           python3 -m unittest discover -s scripts/tests -p 'test_poc_warning_report.py' -v
           python3 -m unittest discover -s scripts/tests -p 'test_poc_extended_measurements.py' -v
+          python3 -m unittest discover -s scripts/tests -p 'test_poc_smaps.py' -v
           node --check scripts/resource-observer.js
           node --test scripts/tests/resource-observer.test.cjs
           mkdir -p environment-poc/build/digest-check
