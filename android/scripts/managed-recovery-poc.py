@@ -143,14 +143,36 @@ def reading_sample(a,t):
 
 def point(a,t,name):
     launch(a,'inspect');wait(lambda:foreground(a),label='native input focus');started=time.monotonic();r=wait(lambda:(lambda r:r if r and r['received']>started else None)(latest(a,t)),label='fresh page point')
+    if name in ('standard','rich'):
+        previous=r
+        def stable():
+            nonlocal previous
+            row=latest(a,t)
+            if not row or row['document']!=previous['document']:raise RuntimeError('Point document changed')
+            if row['received']<=previous['received']:return None
+            old=previous;previous=row
+            return row if row.get('documentFocused') and all(abs(row['points'][name][k]-old['points'][name][k])<=1 for k in ('x','y')) else None
+        r=wait(stable,12,label='stable actual editor coordinates')
     n=native(a);p=r['points'][name];x=round(n['viewX']+p['x']*p['ratio']);y=round(n['viewY']+p['y']*p['ratio'])
     if not n['viewY']<y<n['viewY']+n['viewHeight']:raise RuntimeError('Point outside visible webpage: '+name)
     text('shell','input','tap',str(x),str(y))
 
+def focus_editor(a,t,field):
+    document=latest(a,t)['document']
+    for attempt in range(3):
+        point(a,t,field);started=time.monotonic();deadline=started+3
+        while time.monotonic()<deadline:
+            row=latest(a,t)
+            if row and row['document']!=document:raise RuntimeError('Editor document changed before input')
+            if row and row['received']>started and row.get('documentFocused') and row['activeElement']==field:
+                report.setdefault('focusSetup',[]).append({'account':a,'tab':t,'editor':field,'attempts':attempt+1});return
+            time.sleep(.2)
+    raise RuntimeError('Actual editor focus was not confirmed: '+a+'/'+t+'/'+field)
+
 def type_values(a,t,value,replace=False):
     select(a,t);launch(a,'scrollTop');wait(lambda:(lambda r:r if r and r['scrollY']<5 else None)(latest(a,t)),label='editors at top')
     for field in ('standard','rich'):
-        point(a,t,field);wait(lambda:(lambda r:r if r and r['activeElement']==field else None)(latest(a,t)),label='focused '+field)
+        focus_editor(a,t,field)
         launch(a,'input',sample=value,replace=replace)
         wait(lambda:(lambda r:r if r and r[field]==value and r.get(field+'Model')==value else None)(latest(a,t)),label='trusted input and '+field+' model')
     launch(a,'hideKeyboard');same_values(a,t,value)
