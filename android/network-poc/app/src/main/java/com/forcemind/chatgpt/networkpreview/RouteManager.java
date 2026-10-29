@@ -27,7 +27,9 @@ public final class RouteManager {
         }
     }
     private final Handler main = new Handler(Looper.getMainLooper());
-    private final ExecutorService worker = Executors.newSingleThreadExecutor();
+    // Process-wide serialization also orders old-Activity shutdown before a new Activity starts the core.
+    private static final ExecutorService CORE_WORKER = Executors.newSingleThreadExecutor();
+    private final ExecutorService worker = CORE_WORKER;
     private volatile Snapshot current = new Snapshot(State.CONNECTING, null, 0, 0);
     private volatile String error = "";
     private int transfers;
@@ -99,6 +101,6 @@ public final class RouteManager {
     public synchronized void close() {
         if (closed) return;
         closed = true; current = new Snapshot(State.CLOSED, current.node, current.port, current.generation + 1);
-        worker.execute(() -> { try { Networkcore.stop(); } catch (Exception ignored) {} }); worker.shutdown();
+        worker.execute(() -> { try { Networkcore.stop(); } catch (Exception ignored) {} });
     }
 }

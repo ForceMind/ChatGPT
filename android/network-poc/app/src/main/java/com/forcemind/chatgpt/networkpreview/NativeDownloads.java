@@ -55,7 +55,7 @@ public final class NativeDownloads {
         try {
             synchronized (this) { if (active != null || routes.activeTransfers() != 0) throw new IllegalStateException("已有文件传输进行中"); cancelled = false; route = routes.beginTransfer(); }
         } catch (Exception e) { result.complete(null, e.getMessage()); return null; }
-        return worker.submit(() -> {
+        try { return worker.submit(() -> {
             File target = new File(context.getFilesDir(), "download-" + UUID.randomUUID());
             String error = null;
             try {
@@ -85,7 +85,9 @@ public final class NativeDownloads {
             } catch (Exception e) { error = cancelled ? "下载已取消" : "下载失败；未自动重试"; if (target.exists() && !target.delete()) error += "，临时文件需稍后清理"; }
             finally { if (active != null) active.disconnect(); active = null; routes.endTransfer(); }
             String finalError = error; main.post(() -> result.complete(finalError == null ? target : null, finalError));
-        });
+        }); } catch (java.util.concurrent.RejectedExecutionException e) {
+            routes.endTransfer(); result.complete(null, "下载已停止"); return null;
+        }
     }
     public void cancel() { cancelled = true; HttpURLConnection connection = active; if (connection != null) connection.disconnect(); }
     public void close() { cancel(); worker.shutdownNow(); }

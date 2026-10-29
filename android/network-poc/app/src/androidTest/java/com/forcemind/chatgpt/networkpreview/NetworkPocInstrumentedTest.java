@@ -63,6 +63,19 @@ public final class NetworkPocInstrumentedTest {
             encrypted[encrypted.length - 1] ^= 1; java.nio.file.Files.write(file.toPath(), encrypted);
             try { store.read(); fail("tampered ciphertext accepted"); } catch (javax.crypto.AEADBadTagException expected) { }
             assertArrayEquals(encrypted, java.nio.file.Files.readAllBytes(file.toPath()));
+            assertTrue(BuildConfig.APPLICATION_ID.endsWith(".ci"));
+            try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
+                AtomicReference<MainActivity> ref = new AtomicReference<>(); scenario.onActivity(ref::set); MainActivity activity = ref.get();
+                assertEquals(RouteManager.State.CONNECTING, activity.routeManagerForTests().snapshot().state);
+                main(() -> { assertNull(activity.webViewForTests().getUrl()); assertTrue(activity.webViewForTests().getSettings().getBlockNetworkLoads()); });
+                // An explicit direct choice unlocks navigation without overwriting unreadable credentials.
+                main(() -> activity.changeRoute(null, -1));
+                long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+                while (activity.routeManagerForTests().snapshot().state == RouteManager.State.CONNECTING && System.nanoTime() < deadline) Thread.sleep(50);
+                assertEquals(RouteManager.State.DIRECT, activity.routeManagerForTests().snapshot().state);
+                main(() -> { assertFalse(activity.webViewForTests().getSettings().getBlockNetworkLoads()); assertEquals(BuildConfig.NETWORK_HOME_URL, activity.webViewForTests().getUrl()); });
+                assertArrayEquals(encrypted, java.nio.file.Files.readAllBytes(file.toPath()));
+            }
         } finally { store.write(original); }
     }
     @Test public void syntheticRoutingFilesUploadAndWebViewPreservation() throws Exception {
@@ -77,6 +90,7 @@ public final class NetworkPocInstrumentedTest {
             long waitUntil = System.nanoTime() + TimeUnit.SECONDS.toNanos(15);
             while (routes.snapshot().state == RouteManager.State.CONNECTING && System.nanoTime() < waitUntil) Thread.sleep(50);
             assertEquals(RouteManager.State.DIRECT, routes.snapshot().state);
+            if (android.os.Build.VERSION.SDK_INT >= 35) assertTrue("API35 requires full WebView proxy verification", RouteManager.supportsWebViewProxy());
             if (!RouteManager.supportsWebViewProxy()) {
                 CountDownLatch rejected = new CountDownLatch(1);
                 main(() -> routes.switchTo(node("A"), (success, message) -> { assertFalse(success); rejected.countDown(); }));

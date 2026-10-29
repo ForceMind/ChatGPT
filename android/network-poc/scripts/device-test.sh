@@ -9,8 +9,8 @@ adb shell dumpsys webviewupdate > evidence/webview.txt
 find app/build/outputs/apk/ci/debug -name '*.apk' -print -quit | xargs adb install -r
 find app/build/outputs/apk/androidTest/ci/debug -name '*.apk' -print -quit | xargs adb install -r
 adb shell am instrument -w -r \
-  -e nodeA 'vless://00000000-0000-4000-8000-000000000001@10.0.2.2:18443?encryption=none&type=tcp&security=none#Owned-A' \
-  -e nodeB 'vless://00000000-0000-4000-8000-000000000001@10.0.2.2:18444?encryption=none&type=tcp&security=none#Owned-B' \
+  -e nodeA 'vless://00000000-0000-4000-8000-000000000001@10.0.2.2:18443#Owned-A' \
+  -e nodeB 'vless://00000000-0000-4000-8000-000000000001@10.0.2.2:18444#Owned-B' \
   -e fixtureUrl 'http://network-fixture.test:18080' \
   com.forcemind.chatgpt.networkpreview.ci.test/androidx.test.runner.AndroidJUnitRunner \
   | tee evidence/instrumentation.txt

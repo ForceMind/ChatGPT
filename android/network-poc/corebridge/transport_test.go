@@ -1,6 +1,7 @@
 package networkcore
 
 import (
+    "bytes"
     "crypto/ecdh"
     "crypto/ecdsa"
     "crypto/elliptic"
@@ -111,12 +112,14 @@ func TestOwnedTransportMatrix(t *testing.T) {
                 clientStream["realitySettings"]=map[string]any{"serverName":"network-fixture.test","fingerprint":"chrome",
                     "password":base64.RawURLEncoding.EncodeToString(private.PublicKey().Bytes()),"shortId":"1234","spiderX":"/"}
             }
-            serverJSON:=encode(map[string]any{"log":map[string]any{"loglevel":"none"},"inbounds":[]any{map[string]any{"listen":"127.0.0.1","port":serverPort,"protocol":"vless",
+            serverJSON:=encode(map[string]any{"log":map[string]any{"loglevel":"debug"},"inbounds":[]any{map[string]any{"listen":"127.0.0.1","port":serverPort,"protocol":"vless",
                 "settings":map[string]any{"clients":[]any{map[string]any{"id":fixtureID}},"decryption":"none"},"streamSettings":serverStream}},"outbounds":[]any{map[string]any{"protocol":"freedom"}}})
             server:=exec.Command(os.Args[0],"-test.run=^TestCoreServerProcess$")
+            var serverLog bytes.Buffer
+            server.Stdout=&serverLog;server.Stderr=&serverLog
             server.Env=append(os.Environ(),"NETWORK_SYNTHETIC_SERVER="+serverJSON)
             if err:=server.Start();err!=nil { t.Fatal(err) }
-            defer func(){ _=server.Process.Kill(); _=server.Wait() }()
+            defer func(){ _=server.Process.Kill(); _=server.Wait();if t.Failed(){t.Log("owned server diagnostic:",serverLog.String())} }()
             deadline:=time.Now().Add(5*time.Second)
             for {
                 socket,err:=net.DialTimeout("tcp",net.JoinHostPort("127.0.0.1",strconv.Itoa(serverPort)),100*time.Millisecond)

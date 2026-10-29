@@ -46,9 +46,13 @@ public final class MainActivity extends Activity {
         Button menu = new Button(this); menu.setText("⋯"); menu.setContentDescription("网络与页面菜单"); menu.setOnClickListener(v -> showMenu());
         bar.addView(menu, new LinearLayout.LayoutParams(dp(56), dp(48))); layout.addView(bar);
         web = createWebView(); layout.addView(web, new LinearLayout.LayoutParams(-1, 0, 1)); setContentView(layout);
-        if (!storeReadable) message("线路存储无法解密，原文件已保留。本次只能使用直连。");
-        VlessNode selected = data.selected >= 0 ? data.nodes.get(data.selected) : null;
-        changeRoute(selected, data.selected);
+        if (!storeReadable) {
+            status.setText("配置不可读 · 请选择直连");
+            message("线路存储无法解密，原文件已保留。页面保持离线，请明确选择“使用直连”后再打开页面。");
+        } else {
+            VlessNode selected = data.selected >= 0 ? data.nodes.get(data.selected) : null;
+            changeRoute(selected, data.selected);
+        }
     }
     private int dp(int value) { return Math.round(value * getResources().getDisplayMetrics().density); }
     private WebView createWebView() {

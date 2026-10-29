@@ -41,3 +41,11 @@ dependencies {
     androidTestImplementation 'androidx.test:rules:1.6.1'
     androidTestImplementation 'androidx.test.ext:junit:1.2.1'
 }
+
+tasks.register('copyPreviewIcon', Copy) {
+    from '../../app/src/main/res'
+    include 'drawable/ic_launcher_foreground.xml', 'mipmap-anydpi-v26/ic_launcher.xml', 'mipmap-anydpi-v33/ic_launcher.xml', 'values/launcher.xml'
+    into layout.buildDirectory.dir('generated/preview-res')
+}
+android.sourceSets.main.res.srcDir(layout.buildDirectory.dir('generated/preview-res').get().asFile)
+tasks.named('preBuild').configure { dependsOn 'copyPreviewIcon' }
