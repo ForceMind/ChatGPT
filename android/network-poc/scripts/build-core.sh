@@ -10,6 +10,6 @@ go install golang.org/x/mobile/cmd/gomobile@"$MOBILE_VERSION"
 go install golang.org/x/mobile/cmd/gobind@"$MOBILE_VERSION"
 go get golang.org/x/mobile@"$MOBILE_VERSION"
 mkdir -p ../app/libs bin
-gomobile bind -javapkg=studio -target=android/arm64,android/amd64 -androidapi=28 -o ../app/libs/networkcore.aar .
+gomobile bind -trimpath -ldflags='-checklinkname=0 -s -w -extldflags=-Wl,-z,max-page-size=16384' -javapkg=studio -target=android/arm64,android/amd64 -androidapi=28 -o ../app/libs/networkcore.aar .
 go build -trimpath -o bin/xray github.com/xtls/xray-core/main
 go list -m -json all > ../app/libs/dependencies.json
