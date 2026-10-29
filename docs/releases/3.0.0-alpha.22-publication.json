@@ -1,0 +1,580 @@
+{
+  "schema": 1,
+  "product": "ChatGPT Studio",
+  "version": "3.0.0-alpha.22",
+  "verifiedAt": "2026-10-29T08:43:22.770412+00:00",
+  "release": {
+    "id": 427615403,
+    "url": "https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.22",
+    "tag": "v3.0.0-alpha.22",
+    "publishedAt": "2026-10-29T08:38:03Z",
+    "prerelease": true,
+    "draft": false,
+    "sourceCommit": "b44e564deaed09efea7be3d68349d2198dede46b",
+    "assets": [
+      {
+        "id": 687892708,
+        "name": "android-build-info.json",
+        "size": 2946,
+        "digest": "sha256:6f5c7ffd580344f7aa7e831f2290e37eb8eefcf9b2bd72639f8bea7e7e92b3d6",
+        "state": "uploaded",
+        "browser_download_url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.22/android-build-info.json"
+      },
+      {
+        "id": 687892767,
+        "name": "ChatGPT-Profiles-3.0.0-alpha.22-mac-arm64.zip",
+        "size": 155160576,
+        "digest": "sha256:fc2c8607ad8fbd521b4450017d983e61958cfed514c5318062a4ff0563b5704e",
+        "state": "uploaded",
+        "browser_download_url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.22/ChatGPT-Profiles-3.0.0-alpha.22-mac-arm64.zip"
+      },
+      {
+        "id": 687879738,
+        "name": "ChatGPT-Studio-3.0.0-alpha.22-android.apk",
+        "size": 7376521,
+        "digest": "sha256:39a06004608162884c5d2a11277eee840f5311438376bd7541adc638b1e55e53",
+        "state": "uploaded",
+        "browser_download_url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.22/ChatGPT-Studio-3.0.0-alpha.22-android.apk"
+      },
+      {
+        "id": 687893078,
+        "name": "ChatGPT-Studio-3.0.0-alpha.22-mac-arm64.dmg",
+        "size": 155097791,
+        "digest": "sha256:7ce109d159929b2e9ca687d8b2d5abfb90211af04917e71f255f45b567d774a0",
+        "state": "uploaded",
+        "browser_download_url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.22/ChatGPT-Studio-3.0.0-alpha.22-mac-arm64.dmg"
+      },
+      {
+        "id": 687893333,
+        "name": "ChatGPT-Studio-3.0.0-alpha.22-mac-arm64.zip",
+        "size": 155044652,
+        "digest": "sha256:2d606849d66f8b27d640a22b3d29a0a6916e1ec1c1b110b63bc01e8efc2ce12e",
+        "state": "uploaded",
+        "browser_download_url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.22/ChatGPT-Studio-3.0.0-alpha.22-mac-arm64.zip"
+      },
+      {
+        "id": 687893601,
+        "name": "mac-recovery-verification.json",
+        "size": 907,
+        "digest": "sha256:80616b8a82ba8d9af2de88bb9fe1b77935e8bd16bea521df243ef8dbb51d53be",
+        "state": "uploaded",
+        "browser_download_url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.22/mac-recovery-verification.json"
+      },
+      {
+        "id": 687893668,
+        "name": "mac-release-info.json",
+        "size": 28863,
+        "digest": "sha256:5806380a71f434b357a570bc23c354bbf1f797bb3adef369bbb72e8276e144e1",
+        "state": "uploaded",
+        "browser_download_url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.22/mac-release-info.json"
+      },
+      {
+        "id": 687893735,
+        "name": "mac-ui-verification.json",
+        "size": 368,
+        "digest": "sha256:035526d374735b1b3315f5cca82c23afcd9cea39427850494375b572ca2d60fd",
+        "state": "uploaded",
+        "browser_download_url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.22/mac-ui-verification.json"
+      },
+      {
+        "id": 687893816,
+        "name": "mac-update-verification.json",
+        "size": 1718,
+        "digest": "sha256:9b6834f645829b3b88db2e6af859fba4e1a527d3d303abd629809a85270fb5e2",
+        "state": "uploaded",
+        "browser_download_url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.22/mac-update-verification.json"
+      },
+      {
+        "id": 687893875,
+        "name": "release-info.json",
+        "size": 2746,
+        "digest": "sha256:9d11a49441fea18e5fca17f5e872b6a9b57747967a223146fbb2d7ba1c95e9c1",
+        "state": "uploaded",
+        "browser_download_url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.22/release-info.json"
+      },
+      {
+        "id": 687893919,
+        "name": "release-notes.md",
+        "size": 2917,
+        "digest": "sha256:2941160327e13846c2707d42942eff84cda88a0492faef360214790b7ff88d6c",
+        "state": "uploaded",
+        "browser_download_url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.22/release-notes.md"
+      },
+      {
+        "id": 687893971,
+        "name": "SHA256SUMS.txt",
+        "size": 1068,
+        "digest": "sha256:a8ddf15857c59532c4371b3551af7bd5b4d8a27c3edab6fbbcb37476d8eaf0e8",
+        "state": "uploaded",
+        "browser_download_url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.22/SHA256SUMS.txt"
+      }
+    ]
+  },
+  "promotion": {
+    "run": 40843144506,
+    "url": "https://github.com/ForceMind/ChatGPT/actions/runs/40843144506",
+    "artifact": {
+      "id": 12883387895,
+      "bytes": 3231,
+      "sha256": "a79de539f343967bfca3459e891a808981ea5de6ebb484ceacd3c595598f3d29",
+      "archiveVerified": true
+    },
+    "receipt": {
+      "version": "3.0.0-alpha.22",
+      "sourceCommit": "b44e564deaed09efea7be3d68349d2198dede46b",
+      "publisherCommit": "aded09d83322e2579e05328fd1b531d500a17462",
+      "verifiedAt": "2026-10-29T08:36:13.925Z",
+      "draftVerified": true,
+      "releaseId": 427615403,
+      "verifiedRuns": [
+        {
+          "kind": "macos-package",
+          "id": 40477100725,
+          "sourceCommit": "1df1dded1985a35f7fef8f5ba22bf702e10ac6e6",
+          "conclusion": "success"
+        },
+        {
+          "kind": "android-package",
+          "id": 40468096647,
+          "sourceCommit": "85ff89ff973f730dbe3792eb0778aced81741411",
+          "conclusion": "success"
+        },
+        {
+          "kind": "android-capabilities",
+          "id": 40468099314,
+          "sourceCommit": "85ff89ff973f730dbe3792eb0778aced81741411",
+          "conclusion": "success"
+        },
+        {
+          "kind": "android-readability",
+          "id": 40466592252,
+          "sourceCommit": "f94d51dd9c76b7fe43ebe063f4a0195065b7f425",
+          "conclusion": "success"
+        },
+        {
+          "kind": "android-offline-native",
+          "id": 40463120182,
+          "sourceCommit": "365900d10645cff7cb2a50a81eb1943b03380730",
+          "conclusion": "success"
+        },
+        {
+          "kind": "android-process-restart",
+          "id": 40463530040,
+          "sourceCommit": "fb82e20d38431e2a17bfe6212835471a340c480a",
+          "conclusion": "success"
+        }
+      ],
+      "assets": [
+        {
+          "file": "android-build-info.json",
+          "bytes": 2946,
+          "sha256": "6f5c7ffd580344f7aa7e831f2290e37eb8eefcf9b2bd72639f8bea7e7e92b3d6"
+        },
+        {
+          "file": "ChatGPT-Profiles-3.0.0-alpha.22-mac-arm64.zip",
+          "bytes": 155160576,
+          "sha256": "fc2c8607ad8fbd521b4450017d983e61958cfed514c5318062a4ff0563b5704e"
+        },
+        {
+          "file": "ChatGPT-Studio-3.0.0-alpha.22-android.apk",
+          "bytes": 7376521,
+          "sha256": "39a06004608162884c5d2a11277eee840f5311438376bd7541adc638b1e55e53"
+        },
+        {
+          "file": "ChatGPT-Studio-3.0.0-alpha.22-mac-arm64.dmg",
+          "bytes": 155097791,
+          "sha256": "7ce109d159929b2e9ca687d8b2d5abfb90211af04917e71f255f45b567d774a0"
+        },
+        {
+          "file": "ChatGPT-Studio-3.0.0-alpha.22-mac-arm64.zip",
+          "bytes": 155044652,
+          "sha256": "2d606849d66f8b27d640a22b3d29a0a6916e1ec1c1b110b63bc01e8efc2ce12e"
+        },
+        {
+          "file": "mac-recovery-verification.json",
+          "bytes": 907,
+          "sha256": "80616b8a82ba8d9af2de88bb9fe1b77935e8bd16bea521df243ef8dbb51d53be"
+        },
+        {
+          "file": "mac-release-info.json",
+          "bytes": 28863,
+          "sha256": "5806380a71f434b357a570bc23c354bbf1f797bb3adef369bbb72e8276e144e1"
+        },
+        {
+          "file": "mac-ui-verification.json",
+          "bytes": 368,
+          "sha256": "035526d374735b1b3315f5cca82c23afcd9cea39427850494375b572ca2d60fd"
+        },
+        {
+          "file": "mac-update-verification.json",
+          "bytes": 1718,
+          "sha256": "9b6834f645829b3b88db2e6af859fba4e1a527d3d303abd629809a85270fb5e2"
+        },
+        {
+          "file": "release-info.json",
+          "bytes": 2746,
+          "sha256": "9d11a49441fea18e5fca17f5e872b6a9b57747967a223146fbb2d7ba1c95e9c1"
+        },
+        {
+          "file": "release-notes.md",
+          "bytes": 2917,
+          "sha256": "2941160327e13846c2707d42942eff84cda88a0492faef360214790b7ff88d6c"
+        },
+        {
+          "file": "SHA256SUMS.txt",
+          "bytes": 1068,
+          "sha256": "a8ddf15857c59532c4371b3551af7bd5b4d8a27c3edab6fbbcb37476d8eaf0e8"
+        }
+      ],
+      "android": {
+        "certificateSha256": "8b6eef928fded91f291ad954e20976b2cc6011b55e8cbec0152695fe1f05cf19",
+        "signature": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): false\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: O=ForceMind, OU=Android, CN=ChatGPT Profiles\nV3.0 Signer: certificate SHA-256 digest: 8b6eef928fded91f291ad954e20976b2cc6011b55e8cbec0152695fe1f05cf19\nV3.0 Signer: certificate SHA-1 digest: dcf497a698d810c50b73bf9555d218737e66f3cf\nV3.0 Signer: certificate MD5 digest: 344a0084f525305adc3e3644bd0d6006\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 3072\nV3.0 Signer: public key SHA-256 digest: 5c7ef302bfe63f2ad0b195a79f6e8220b2332e6ae05b2f76e2b165cb829134ed\nV3.0 Signer: public key SHA-1 digest: 47362852d8cf857acf2e96f359f0f95d9474f08b\nV3.0 Signer: public key MD5 digest: bf398d633e9804b1f5a13596d6efba8e\n",
+        "badging": "package: name='com.forcemind.chatgpt.profiles' versionCode='3000022' versionName='3.0.0-alpha.22' platformBuildVersionName='16' platformBuildVersionCode='36' compileSdkVersion='36' compileSdkVersionCodename='16'\nminSdkVersion:'28'\ntargetSdkVersion:'36'\nuses-permission: name='android.permission.INTERNET'\nuses-permission: name='android.permission.RECORD_AUDIO'\nuses-permission: name='android.permission.CAMERA'\nuses-permission: name='android.permission.ACCESS_NETWORK_STATE'\nuses-permission: name='android.permission.POST_NOTIFICATIONS'\nuses-permission: name='android.permission.FOREGROUND_SERVICE'\nuses-permission: name='android.permission.FOREGROUND_SERVICE_SPECIAL_USE'\nuses-permission: name='com.forcemind.chatgpt.profiles.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION'\napplication-label:'ChatGPT Studio'\napplication-label-af:'ChatGPT Studio'\napplication-label-am:'ChatGPT Studio'\napplication-label-ar:'ChatGPT Studio'\napplication-label-as:'ChatGPT Studio'\napplication-label-az:'ChatGPT Studio'\napplication-label-be:'ChatGPT Studio'\napplication-label-bg:'ChatGPT Studio'\napplication-label-bn:'ChatGPT Studio'\napplication-label-bs:'ChatGPT Studio'\napplication-label-ca:'ChatGPT Studio'\napplication-label-cs:'ChatGPT Studio'\napplication-label-da:'ChatGPT Studio'\napplication-label-de:'ChatGPT Studio'\napplication-label-el:'ChatGPT Studio'\napplication-label-en-AU:'ChatGPT Studio'\napplication-label-en-CA:'ChatGPT Studio'\napplication-label-en-GB:'ChatGPT Studio'\napplication-label-en-IN:'ChatGPT Studio'\napplication-label-en-XC:'ChatGPT Studio'\napplication-label-es:'ChatGPT Studio'\napplication-label-es-US:'ChatGPT Studio'\napplication-label-et:'ChatGPT Studio'\napplication-label-eu:'ChatGPT Studio'\napplication-label-fa:'ChatGPT Studio'\napplication-label-fi:'ChatGPT Studio'\napplication-label-fr:'ChatGPT Studio'\napplication-label-fr-CA:'ChatGPT Studio'\napplication-label-gl:'ChatGPT Studio'\napplication-label-gu:'ChatGPT Studio'\napplication-label-hi:'ChatGPT Studio'\napplication-label-hr:'ChatGPT Studio'\napplication-label-hu:'ChatGPT Studio'\napplication-label-hy:'ChatGPT Studio'\napplication-label-in:'ChatGPT Studio'\napplication-label-is:'ChatGPT Studio'\napplication-label-it:'ChatGPT Studio'\napplication-label-iw:'ChatGPT Studio'\napplication-label-ja:'ChatGPT Studio'\napplication-label-ka:'ChatGPT Studio'\napplication-label-kk:'ChatGPT Studio'\napplication-label-km:'ChatGPT Studio'\napplication-label-kn:'ChatGPT Studio'\napplication-label-ko:'ChatGPT Studio'\napplication-label-ky:'ChatGPT Studio'\napplication-label-lo:'ChatGPT Studio'\napplication-label-lt:'ChatGPT Studio'\napplication-label-lv:'ChatGPT Studio'\napplication-label-mk:'ChatGPT Studio'\napplication-label-ml:'ChatGPT Studio'\napplication-label-mn:'ChatGPT Studio'\napplication-label-mr:'ChatGPT Studio'\napplication-label-ms:'ChatGPT Studio'\napplication-label-my:'ChatGPT Studio'\napplication-label-nb:'ChatGPT Studio'\napplication-label-ne:'ChatGPT Studio'\napplication-label-nl:'ChatGPT Studio'\napplication-label-or:'ChatGPT Studio'\napplication-label-pa:'ChatGPT Studio'\napplication-label-pl:'ChatGPT Studio'\napplication-label-pt:'ChatGPT Studio'\napplication-label-pt-BR:'ChatGPT Studio'\napplication-label-pt-PT:'ChatGPT Studio'\napplication-label-ro:'ChatGPT Studio'\napplication-label-ru:'ChatGPT Studio'\napplication-label-si:'ChatGPT Studio'\napplication-label-sk:'ChatGPT Studio'\napplication-label-sl:'ChatGPT Studio'\napplication-label-sq:'ChatGPT Studio'\napplication-label-sr:'ChatGPT Studio'\napplication-label-sr-Latn:'ChatGPT Studio'\napplication-label-sv:'ChatGPT Studio'\napplication-label-sw:'ChatGPT Studio'\napplication-label-ta:'ChatGPT Studio'\napplication-label-te:'ChatGPT Studio'\napplication-label-th:'ChatGPT Studio'\napplication-label-tl:'ChatGPT Studio'\napplication-label-tr:'ChatGPT Studio'\napplication-label-uk:'ChatGPT Studio'\napplication-label-ur:'ChatGPT Studio'\napplication-label-uz:'ChatGPT Studio'\napplication-label-vi:'ChatGPT Studio'\napplication-label-zh-CN:'ChatGPT Studio'\napplication-label-zh-HK:'ChatGPT Studio'\napplication-label-zh-TW:'ChatGPT Studio'\napplication-label-zu:'ChatGPT Studio'\napplication-icon-160:'res/IG.xml'\napplication-icon-240:'res/IG.xml'\napplication-icon-320:'res/IG.xml'\napplication-icon-65534:'res/IG.xml'\napplication: label='ChatGPT Studio' icon='res/IG.xml'\nproperty: name='android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE' value='User-initiated continuous browser tasks in isolated account tabs, with a visible ongoing notification and explicit stop action.' \nlaunchable-activity: name='com.forcemind.chatgpt.profiles.MainActivity'  label='' icon=''\nfeature-group: label=''\n  uses-feature-not-required: name='android.hardware.camera'\n  uses-feature-not-required: name='android.hardware.microphone'\n  uses-feature: name='android.hardware.faketouch'\n  uses-implied-feature: name='android.hardware.faketouch' reason='default feature for all apps'\nmain\nother-activities\nother-receivers\nother-services\nsupports-screens: 'small' 'normal' 'large' 'xlarge'\nsupports-any-density: 'true'\nlocales: '--_--' 'af' 'am' 'ar' 'as' 'az' 'be' 'bg' 'bn' 'bs' 'ca' 'cs' 'da' 'de' 'el' 'en-AU' 'en-CA' 'en-GB' 'en-IN' 'en-XC' 'es' 'es-US' 'et' 'eu' 'fa' 'fi' 'fr' 'fr-CA' 'gl' 'gu' 'hi' 'hr' 'hu' 'hy' 'in' 'is' 'it' 'iw' 'ja' 'ka' 'kk' 'km' 'kn' 'ko' 'ky' 'lo' 'lt' 'lv' 'mk' 'ml' 'mn' 'mr' 'ms' 'my' 'nb' 'ne' 'nl' 'or' 'pa' 'pl' 'pt' 'pt-BR' 'pt-PT' 'ro' 'ru' 'si' 'sk' 'sl' 'sq' 'sr' 'sr-Latn' 'sv' 'sw' 'ta' 'te' 'th' 'tl' 'tr' 'uk' 'ur' 'uz' 'vi' 'zh-CN' 'zh-HK' 'zh-TW' 'zu'\ndensities: '160' '240' '320' '65534'\n",
+        "payloadCheck": {
+          "unchangedOriginalEntries": 218,
+          "addedSigningEntries": [
+            "META-INF/CHATGPT-.RSA",
+            "META-INF/CHATGPT-.SF",
+            "META-INF/MANIFEST.MF"
+          ]
+        }
+      },
+      "desktopInputsUnchanged": true,
+      "androidInputsUnchanged": true,
+      "noRebuild": true,
+      "noSigningKeyUploaded": true,
+      "noBrowserTests": true
+    }
+  },
+  "failedPromotionAttempts": [
+    {
+      "run": 40842694099,
+      "source": "13ab08b",
+      "cause": "apksigner succeeded but the script expected a legacy Signer #N certificate output prefix; upload stopped before Mac Release writes"
+    },
+    {
+      "run": 40842911779,
+      "source": "3280277",
+      "cause": "The first compatibility adjustment still missed the actual V3.0 Signer prefix. Raw public SDK output was retained and the exact prefix was then supported without weakening certificate or signer count assertions."
+    }
+  ],
+  "site": {
+    "deployments": [
+      {
+        "project": "chatgpt-studio",
+        "id": "29ee5a86-612e-4c1f-b38a-54cb18366028",
+        "environment": "Production",
+        "branch": "main",
+        "sourceCommit": "fd94f1fbee5fb706010a5ccbc4bf2ea0dfb03969",
+        "url": "https://29ee5a86.chatgpt-studio.pages.dev"
+      },
+      {
+        "project": "chatgpt-profiles",
+        "id": "42f490eb-cb02-48b0-96ff-f2e8d3ae6d1a",
+        "environment": "Production",
+        "branch": "main",
+        "sourceCommit": "fd94f1fbee5fb706010a5ccbc4bf2ea0dfb03969",
+        "url": "https://42f490eb.chatgpt-profiles.pages.dev"
+      }
+    ],
+    "existingDomainBindingsPreserved": true,
+    "legacyRootRedirectPreserved": true,
+    "unchangedSourceFilesReusingPriorHTTPProof": {
+      "baselineCommit": "e6519291f034176ee3fd14d9a77096565a52a40d",
+      "receipt": "docs/releases/2026-10-28-site-repository-sync.json",
+      "files": [
+        {
+          "file": "site/404.html",
+          "sha256": "7ab17d69c072d2113c836bcd612ef54bcda411b8500dfafe67e5417e3d70ccba"
+        },
+        {
+          "file": "site/_headers",
+          "sha256": "87579955f96fe07b28599c61b6478511dbbc807419ca6f4a1127cd4cc367a1bd"
+        },
+        {
+          "file": "site/app.js",
+          "sha256": "e4e5eecd24322e5f1104f43aacd625d80a5b7f188de4add38520b2246ebbb8d4"
+        },
+        {
+          "file": "site/assets/android-assets.png",
+          "sha256": "cca90311a5db1cab90b5e92a8d8c9fae8d5d09d3a7b7f193bf2ef57d037573a2"
+        },
+        {
+          "file": "site/assets/android-skills.png",
+          "sha256": "fdef510c45f8d0d3d724fea2ba2d67aca8ccf63e5fa88b2e09c1e016d97f0fbb"
+        },
+        {
+          "file": "site/assets/android-tablet-tabs.png",
+          "sha256": "239f1cd608cbcfe514d223264bb89a8858e33d85170077c4ba8362333f2c9f20"
+        },
+        {
+          "file": "site/assets/android-tabs.png",
+          "sha256": "62662cee4fc379c0d4d8c21ccca7d238534e6b63a8e750fdd5b98b0b84243b07"
+        },
+        {
+          "file": "site/assets/icon.svg",
+          "sha256": "c40527d47803acd03080ba814abe214159f3117ff277c36a600ff0ccedac82b0"
+        },
+        {
+          "file": "site/assets/macos-window.png",
+          "sha256": "b562a84cb733ff295a28a6f385ae3a9583dc0d6d5b95ce60cf3edead16ddcc38"
+        },
+        {
+          "file": "site/assets/windows-installed.png",
+          "sha256": "cf9556ec248f33e2ad70231a04231416b3d30fc73008ec1e9e727b023d5d2718"
+        },
+        {
+          "file": "site/license.txt",
+          "sha256": "9d1b471b68ba1bf60015a232b380a075da38f31a74c961247a03e281785cc4a9"
+        },
+        {
+          "file": "site/robots.txt",
+          "sha256": "7f425345d5aa792cc6bf96f6b8f8cf148c87e9404b07a0593073b8322f2b3ca7"
+        },
+        {
+          "file": "site/sitemap.xml",
+          "sha256": "edd6e6b0a8d9d2da3a0c0a8d3b566a16112e79c8fee69206f187de93b7a757db"
+        },
+        {
+          "file": "site/styles.css",
+          "sha256": "df4ee39f9cd53992e7c2e718c83f941afe238fadc1c2c84ae8a7a72a11fcf1a1"
+        },
+        {
+          "file": "site/updates/windows/alpha.yml",
+          "sha256": "7780a97856251f81d689da452ddeef3beeee8c5e404061a6e0ff000e6825fd28"
+        }
+      ]
+    }
+  },
+  "verification": {
+    "verifiedAt": "2026-10-29T08:41:16.782242+00:00",
+    "browserVerified": false,
+    "siteHTTP": [
+      {
+        "label": "pages-index",
+        "url": "https://chatgpt-studio.pages.dev/",
+        "status": 200,
+        "bytes": 43187,
+        "sha256": "4b1ec7737d2a13346ab37dfc54761d499378675af6de152d8f10505daf7ed540",
+        "headers": {
+          "content-type": "text/html; charset=utf-8",
+          "content-length": "43187",
+          "cache-control": "public, max-age=0, must-revalidate",
+          "x-content-type-options": "nosniff"
+        }
+      },
+      {
+        "label": "pages-mac-feed",
+        "url": "https://chatgpt-studio.pages.dev/updates/macos.json",
+        "status": 200,
+        "bytes": 659,
+        "sha256": "68999de82f8ba2e8aad6e9fa4467220370b7d6b994c6c6676fe96cb8571c5065",
+        "headers": {
+          "content-type": "application/json",
+          "content-length": "659",
+          "cache-control": "public, max-age=0, must-revalidate, no-store",
+          "x-content-type-options": "nosniff"
+        }
+      },
+      {
+        "label": "custom-index",
+        "url": "https://chatgpt.xincreates.com/",
+        "status": 200,
+        "bytes": 43650,
+        "sha256": "0755e635e7573b66fd187269666eea915a9a8c08513a01fd3fee1f0f65cce978",
+        "headers": {
+          "content-type": "text/html; charset=utf-8",
+          "cache-control": "public, max-age=0, must-revalidate",
+          "x-content-type-options": "nosniff"
+        },
+        "normalizedSHA256": "4b1ec7737d2a13346ab37dfc54761d499378675af6de152d8f10505daf7ed540",
+        "exactEmailObfuscationTransforms": [
+          3,
+          1,
+          1
+        ]
+      },
+      {
+        "label": "custom-mac-feed",
+        "url": "https://chatgpt.xincreates.com/updates/macos.json",
+        "status": 200,
+        "bytes": 659,
+        "sha256": "68999de82f8ba2e8aad6e9fa4467220370b7d6b994c6c6676fe96cb8571c5065",
+        "headers": {
+          "content-type": "application/json",
+          "content-length": "659",
+          "cache-control": "public, max-age=0, must-revalidate, no-store",
+          "x-content-type-options": "nosniff"
+        }
+      },
+      {
+        "label": "legacy-feed",
+        "url": "https://chatgpt-profiles.pages.dev/updates/macos.json",
+        "status": 200,
+        "bytes": 659,
+        "sha256": "68999de82f8ba2e8aad6e9fa4467220370b7d6b994c6c6676fe96cb8571c5065",
+        "headers": {
+          "content-type": "application/json",
+          "content-length": "659",
+          "cache-control": "public, max-age=0, must-revalidate",
+          "x-content-type-options": "nosniff"
+        }
+      },
+      {
+        "label": "legacy-root",
+        "url": "https://chatgpt-profiles.pages.dev/",
+        "status": 308,
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "headers": {
+          "content-length": "0",
+          "location": "https://chatgpt-studio.pages.dev/"
+        }
+      },
+      {
+        "label": "windows-feed-unchanged",
+        "url": "https://chatgpt-studio.pages.dev/updates/windows/alpha.yml",
+        "status": 200,
+        "bytes": 1302,
+        "sha256": "7780a97856251f81d689da452ddeef3beeee8c5e404061a6e0ff000e6825fd28",
+        "headers": {
+          "content-type": "application/yaml; charset=utf-8",
+          "content-length": "1302",
+          "cache-control": "public, max-age=0, must-revalidate, no-store",
+          "x-content-type-options": "nosniff"
+        }
+      }
+    ],
+    "downloadRangeHTTP": [
+      {
+        "label": "download-0-original",
+        "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.22/ChatGPT-Studio-3.0.0-alpha.22-mac-arm64.dmg",
+        "status": 206,
+        "bytes": 32,
+        "sha256": "27e8bdca1d5cb38382da82e743a505d1f5e51fff10b72ca9e16c6e9a717050de",
+        "headers": {
+          "content-disposition": "attachment; filename=ChatGPT-Studio-3.0.0-alpha.22-mac-arm64.dmg",
+          "content-type": "application/octet-stream",
+          "content-range": "bytes 0-31/155097791",
+          "content-length": "32"
+        }
+      },
+      {
+        "label": "download-0-proxy",
+        "url": "https://gh-proxy.org/https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.22/ChatGPT-Studio-3.0.0-alpha.22-mac-arm64.dmg",
+        "status": 206,
+        "bytes": 32,
+        "sha256": "27e8bdca1d5cb38382da82e743a505d1f5e51fff10b72ca9e16c6e9a717050de",
+        "headers": {
+          "content-type": "application/octet-stream",
+          "content-length": "32",
+          "content-range": "bytes 0-31/155097791",
+          "cache-control": "public, max-age=60, s-maxage=60",
+          "content-disposition": "attachment; filename=ChatGPT-Studio-3.0.0-alpha.22-mac-arm64.dmg"
+        }
+      },
+      {
+        "label": "download-1-original",
+        "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.22/ChatGPT-Studio-3.0.0-alpha.22-mac-arm64.zip",
+        "status": 206,
+        "bytes": 32,
+        "sha256": "1b5eb72c927669e50c242f93cac20b592a1b996edf468d642f522945b60f0db5",
+        "headers": {
+          "content-disposition": "attachment; filename=ChatGPT-Studio-3.0.0-alpha.22-mac-arm64.zip",
+          "content-type": "application/octet-stream",
+          "content-range": "bytes 0-31/155044652",
+          "content-length": "32"
+        }
+      },
+      {
+        "label": "download-1-proxy",
+        "url": "https://gh-proxy.org/https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.22/ChatGPT-Studio-3.0.0-alpha.22-mac-arm64.zip",
+        "status": 206,
+        "bytes": 32,
+        "sha256": "1b5eb72c927669e50c242f93cac20b592a1b996edf468d642f522945b60f0db5",
+        "headers": {
+          "content-type": "application/octet-stream",
+          "content-length": "32",
+          "content-range": "bytes 0-31/155044652",
+          "cache-control": "public, max-age=60, s-maxage=60",
+          "content-disposition": "attachment; filename=ChatGPT-Studio-3.0.0-alpha.22-mac-arm64.zip"
+        }
+      },
+      {
+        "label": "download-2-original",
+        "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.22/ChatGPT-Profiles-3.0.0-alpha.22-mac-arm64.zip",
+        "status": 206,
+        "bytes": 32,
+        "sha256": "cc82e9fdf0b564799925ff1a50979cd968416888e924734284171208251908c1",
+        "headers": {
+          "content-disposition": "attachment; filename=ChatGPT-Profiles-3.0.0-alpha.22-mac-arm64.zip",
+          "content-type": "application/octet-stream",
+          "content-range": "bytes 0-31/155160576",
+          "content-length": "32"
+        }
+      },
+      {
+        "label": "download-2-proxy",
+        "url": "https://gh-proxy.org/https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.22/ChatGPT-Profiles-3.0.0-alpha.22-mac-arm64.zip",
+        "status": 206,
+        "bytes": 32,
+        "sha256": "cc82e9fdf0b564799925ff1a50979cd968416888e924734284171208251908c1",
+        "headers": {
+          "content-type": "application/octet-stream",
+          "content-length": "32",
+          "content-range": "bytes 0-31/155160576",
+          "cache-control": "public, max-age=60, s-maxage=60",
+          "content-disposition": "attachment; filename=ChatGPT-Profiles-3.0.0-alpha.22-mac-arm64.zip"
+        }
+      },
+      {
+        "label": "download-3-original",
+        "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.22/ChatGPT-Studio-3.0.0-alpha.22-android.apk",
+        "status": 206,
+        "bytes": 32,
+        "sha256": "4fb012c9a1e7122447941fcd0a1316db2fe1787092089fa1526fc244db5b6dbc",
+        "headers": {
+          "content-disposition": "attachment; filename=ChatGPT-Studio-3.0.0-alpha.22-android.apk",
+          "content-type": "application/vnd.android.package-archive",
+          "content-range": "bytes 0-31/7376521",
+          "content-length": "32"
+        }
+      },
+      {
+        "label": "download-3-proxy",
+        "url": "https://gh-proxy.org/https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.22/ChatGPT-Studio-3.0.0-alpha.22-android.apk",
+        "status": 206,
+        "bytes": 32,
+        "sha256": "4fb012c9a1e7122447941fcd0a1316db2fe1787092089fa1526fc244db5b6dbc",
+        "headers": {
+          "content-type": "application/vnd.android.package-archive",
+          "content-length": "32",
+          "content-range": "bytes 0-31/7376521",
+          "cache-control": "public, max-age=60, s-maxage=60",
+          "content-disposition": "attachment; filename=ChatGPT-Studio-3.0.0-alpha.22-android.apk"
+        }
+      }
+    ]
+  },
+  "publicVersions": {
+    "macOS": "3.0.0-alpha.22",
+    "android": "3.0.0-alpha.22",
+    "windows": "3.0.0-alpha.21"
+  },
+  "updateFeeds": {
+    "macOS": "3.0.0-alpha.22",
+    "legacyDirectMacOS": "3.0.0-alpha.22",
+    "windows": "3.0.0-alpha.21",
+    "android": "manual updates; no automatic-update endpoint exists"
+  },
+  "scope": {
+    "reusedOriginalCIInstallers": true,
+    "privateSigningKeyUploaded": false,
+    "localAppBuild": false,
+    "localAppOrLoginDataChanged": false,
+    "newBrowserTests": false,
+    "browserVerifiedThisBatch": false,
+    "physicalAndroidAndLiveAccountAcceptance": "pending",
+    "downloadRangeProof": "32-byte HTTP ranges and total-size checks only; full GitHub assets separately verified by server digests and hosted CI, not a full proxy-body hash claim"
+  }
+}
