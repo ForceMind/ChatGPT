@@ -59,6 +59,12 @@ jobs:
               if not path: continue
               source = pathlib.Path(path)
               name = value['Path'].replace('/', '_')
+              if not source.is_dir():
+                  # Exact-input native caches already contain the licenses of
+                  # build-only mobile modules; never silently omit one.
+                  cached=list(pathlib.Path('android/network-poc/app/libs/licenses').glob(name+'_*'))
+                  assert cached, 'Missing cached dependency license: '+value['Path']
+                  continue
               for f in source.iterdir():
                   if f.is_file() and f.name.lower().startswith(('license', 'copying', 'notice')):
                       pathlib.Path('android/network-poc/app/libs/licenses', name+'_'+f.name).write_bytes(f.read_bytes())
