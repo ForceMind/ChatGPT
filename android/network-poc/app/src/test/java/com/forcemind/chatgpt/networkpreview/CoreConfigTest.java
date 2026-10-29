@@ -30,4 +30,9 @@ public final class CoreConfigTest {
         assertFalse(s.has("tlsSettings")); assertEquals("raw", s.getString("network"));
     }
     @Test(expected = IllegalArgumentException.class) public void rejectsInvalidListenerPort() { CoreConfig.build(VlessNode.parse(BASE, "x"), 0); }
+    @Test public void acceptsExplicitNoHeaderWithoutEnablingCamouflage() throws Exception {
+        assertEquals("raw", stream(config("?type=tcp&headerType=none")).getString("network"));
+        try { config("?type=tcp&headerType=http"); fail("unsupported header camouflage accepted"); }
+        catch (IllegalArgumentException expected) { }
+    }
 }

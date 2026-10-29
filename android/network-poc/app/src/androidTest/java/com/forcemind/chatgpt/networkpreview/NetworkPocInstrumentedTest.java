@@ -130,6 +130,9 @@ public final class NetworkPocInstrumentedTest {
             try { activity.downloadsForTests().request(fixture() + "/echo", "GET", null); fail("failed route fell back"); } catch (IllegalStateException expected) { }
             assertEquals("\"keep-draft\"", js(activity, "document.getElementById('draft').value")); assertEquals("1", js(activity, "window.__sent"));
             switchRoute(routes, null); assertEquals(Proxy.NO_PROXY, routes.snapshot().proxy());
+            String directFixture = args.getString("directFixtureUrl", "http://10.0.2.2:18080");
+            assertEquals("direct", activity.downloadsForTests().request(directFixture + "/echo", "GET", null).route);
+            main(() -> activity.webViewForTests().loadUrl(directFixture + "/page")); awaitJs(activity, "document.title", "\"direct\"");
             System.out.println("NETWORK_POC_RESULT native=A,B WebView=A,B draft=PRESERVED upload=B failure=FAIL_CLOSED direct=EXPLICIT");
         }
     }

@@ -39,7 +39,7 @@ public final class NativeDownloads {
         RouteManager.Snapshot route = routes.beginTransfer();
         HttpURLConnection connection = null;
         try {
-            connection = (HttpURLConnection) checkedUrl(address).openConnection(route.proxy());
+            connection = route.openConnection(checkedUrl(address));
             connection.setConnectTimeout(15000); connection.setReadTimeout(20000); connection.setInstanceFollowRedirects(false); connection.setUseCaches(false);
             connection.setRequestMethod(method);
             if (body != null) { connection.setDoOutput(true); connection.setFixedLengthStreamingMode(body.length); connection.setRequestProperty("Content-Type", "application/octet-stream"); try (java.io.OutputStream out = connection.getOutputStream()) { out.write(body); } }
@@ -62,7 +62,7 @@ public final class NativeDownloads {
                 URL url = checkedUrl(address);
                 for (int redirects = 0; ; redirects++) {
                     if (cancelled) throw new java.io.IOException("下载已取消");
-                    active = (HttpURLConnection) url.openConnection(route.proxy());
+                    active = route.openConnection(url);
                     active.setConnectTimeout(15000); active.setReadTimeout(20000); active.setInstanceFollowRedirects(false); active.setUseCaches(false);
                     if (userAgent != null) active.setRequestProperty("User-Agent", userAgent);
                     String cookie = CookieManager.getInstance().getCookie(url.toString());

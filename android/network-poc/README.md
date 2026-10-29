@@ -14,6 +14,8 @@
 
 代理范围为 HTTP/HTTPS 网页与文件请求。WebRTC 语音、UDP 和系统其他应用流量不属于首版已验证的路由范围。
 
+支持网页代理覆盖时，“直连”明确绕过系统 HTTP 代理，网页与文件保持一致；旧 WebView 缺少此能力时，两者均跟随系统网络设置，并拒绝启用 VLESS 线路。
+
 支持范围由 `VlessNode` 严格校验：TCP/raw、WebSocket、TLS，以及 TCP REALITY。未知参数、无效 UUID、端口或不支持的组合会明确拒绝。凭据用 Android Keystore 的 AES-GCM 加密保存在本包私有目录；不提供免费节点、系统 VPN、订阅或 WARP。
 
 ## 构建和验证

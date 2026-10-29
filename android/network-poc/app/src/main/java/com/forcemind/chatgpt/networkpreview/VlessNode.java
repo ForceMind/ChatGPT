@@ -46,7 +46,7 @@ public final class VlessNode {
             if (port < 1 || port > 65535) throw bad("端口必须为 1–65535");
             if (uri.getRawPath() != null && !uri.getRawPath().isEmpty() && !"/".equals(uri.getRawPath())) throw bad("传输路径须使用 path 参数");
             Map<String, String> p = new LinkedHashMap<>();
-            Set<String> allowed = new HashSet<>(Arrays.asList("encryption", "type", "security", "sni", "fp", "pbk", "sid", "spx", "alpn", "flow", "host", "path", "allowInsecure"));
+            Set<String> allowed = new HashSet<>(Arrays.asList("encryption", "type", "security", "sni", "fp", "pbk", "sid", "spx", "alpn", "flow", "host", "path", "allowInsecure", "headerType"));
             if (uri.getRawQuery() != null && !uri.getRawQuery().isEmpty()) for (String part : uri.getRawQuery().split("&", -1)) {
                 String[] pair = part.split("=", 2);
                 String key = decode(pair[0]); String value = pair.length == 2 ? decode(pair[1]) : "";
@@ -55,6 +55,7 @@ public final class VlessNode {
                 if (value.chars().anyMatch(c -> c < 32 || c == 127)) throw bad("参数包含控制字符");
             }
             if (!"none".equals(p.getOrDefault("encryption", "none"))) throw bad("仅支持 encryption=none");
+            if (!"none".equals(p.getOrDefault("headerType", "none"))) throw bad("首版不支持 TCP 头部伪装");
             String transport = p.getOrDefault("type", "tcp");
             if ("tcp".equals(transport)) transport = "raw";
             if (!"raw".equals(transport) && !"ws".equals(transport)) throw bad("仅支持 raw/tcp 和 ws 传输");

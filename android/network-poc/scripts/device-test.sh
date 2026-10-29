@@ -4,6 +4,7 @@ test "${GITHUB_ACTIONS:-}" = true
 test "$(adb shell getprop ro.kernel.qemu | tr -d '\r')" = 1
 cd "$(dirname "$0")/.."
 mkdir -p evidence
+trap 'timeout 15 adb logcat -d -t 5000 > evidence/logcat.txt 2>&1 || true; cp "$RUNNER_TEMP/network-fixture.log" evidence/fixture.log 2>/dev/null || true' EXIT
 adb shell getprop ro.build.version.sdk > evidence/api.txt
 adb shell dumpsys webviewupdate > evidence/webview.txt
 find app/build/outputs/apk/ci/debug -name '*.apk' -print -quit | xargs adb install -r

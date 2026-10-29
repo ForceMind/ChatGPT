@@ -25,6 +25,12 @@ public final class RouteManager {
             if (state != State.DIRECT && state != State.CONNECTED) throw new IllegalStateException("线路尚未就绪");
             return node == null ? Proxy.NO_PROXY : new Proxy(Proxy.Type.HTTP, new InetSocketAddress("127.0.0.1", port));
         }
+        public java.net.HttpURLConnection openConnection(java.net.URL url) throws java.io.IOException {
+            Proxy selected = proxy();
+            // Legacy WebView follows Android's system proxy; native files must do the same.
+            return (java.net.HttpURLConnection) (state == State.DIRECT && !supportsWebViewProxy()
+                    ? url.openConnection() : url.openConnection(selected));
+        }
     }
     private final Handler main = new Handler(Looper.getMainLooper());
     // Process-wide serialization also orders old-Activity shutdown before a new Activity starts the core.
@@ -95,7 +101,7 @@ public final class RouteManager {
         main.postDelayed(timeout, 12000);
         try {
             if (!supportsWebViewProxy()) { if (node == null) done.run(); else fail(generation, listener, "WebView 不支持代理覆盖"); }
-            else if (node == null) ProxyController.getInstance().clearProxyOverride(main::post, done);
+            else if (node == null) ProxyController.getInstance().setProxyOverride(new ProxyConfig.Builder().addDirect().build(), main::post, done);
             else ProxyController.getInstance().setProxyOverride(new ProxyConfig.Builder()
                     .addProxyRule("http://127.0.0.1:" + port).removeImplicitRules().build(), main::post, done);
         } catch (Exception e) { main.removeCallbacks(timeout); worker.execute(() -> { try { Networkcore.stop(); } catch (Exception ignored) {} }); fail(generation, listener, "WebView 代理应用失败"); }
