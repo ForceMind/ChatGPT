@@ -24,6 +24,11 @@ on:
         description: Build only; disable only after explicit browser-interaction authorization
         type: boolean
         default: true
+      experiment:
+        description: Authorized independent measurement; no screenshots or live ChatGPT
+        type: choice
+        options: [recovery, input-warning, long-background]
+        default: recovery
   workflow_call:
     inputs:
       apis:
@@ -50,11 +55,15 @@ on:
         type: boolean
         required: false
         default: false
+      experiment:
+        type: string
+        required: false
+        default: recovery
 permissions:
   contents: read
 jobs:
   package-size:
-    if: inputs.managed && !inputs.core_only && !inputs.input_diagnostic && inputs.runtime != 'optimized-release'
+    if: inputs.managed && !inputs.core_only && !inputs.input_diagnostic && inputs.runtime != 'optimized-release' && (inputs.experiment == 'recovery' || inputs.experiment == '')
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -83,7 +92,7 @@ jobs:
             android/environment-poc/build/reports/lint-results-release.*
   recovery:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: ${{ inputs.experiment == 'long-background' && 65 || 25 }}
     strategy:
       fail-fast: false
       matrix:
@@ -96,6 +105,7 @@ jobs:
       POC_MANAGED: ${{ inputs.managed }}
       POC_CORE: ${{ inputs.core_only }}
       POC_INPUT_DIAGNOSTIC: ${{ inputs.input_diagnostic }}
+      POC_EXPERIMENT: ${{ inputs.experiment || 'recovery' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -113,16 +123,20 @@ jobs:
           import os
           mode=os.environ['POC_RUNTIME_VARIANT'];assert mode in ('debug','optimized-release')
           if mode=='optimized-release':assert os.environ['POC_MANAGED']=='true' and os.environ['POC_CORE']!='true' and os.environ['POC_INPUT_DIAGNOSTIC']!='true'
+          experiment=os.environ['POC_EXPERIMENT'];assert experiment in ('recovery','input-warning','long-background')
+          if experiment!='recovery':assert mode=='optimized-release' and os.environ['POC_MANAGED']=='true' and os.environ['POC_CORE']!='true' and os.environ['POC_INPUT_DIAGNOSTIC']!='true'
           PY
           mkdir -p environment-poc/build/recovery-evidence
           python3 -c 'import ast; ast.parse(open("scripts/recovery-environment-poc.py").read())'
           python3 -c 'import ast; ast.parse(open("scripts/managed-recovery-poc.py").read())'
           python3 -m unittest discover -s scripts/tests -p 'test_poc_warning_report.py' -v
+          python3 -m unittest discover -s scripts/tests -p 'test_poc_extended_measurements.py' -v
           if [ "$POC_RUNTIME_VARIANT" = optimized-release ]; then
             python3 -m unittest discover -s scripts/tests -p 'test_ci_release_adb.py' -v
             python3 -m unittest discover -s scripts/tests -p 'test_sign_poc_release.py' -v
           fi
           sdkmanager 'platforms;android-37.0' 'build-tools;36.0.0'
+          if [ "$POC_EXPERIMENT" = input-warning ]; then python3 scripts/poc_extended_measurements.py --collect-source environment-poc/build/recovery-evidence; fi
           if [ "$POC_BUILD_ONLY" != true ]; then sdkmanager emulator "system-images;android-${RECOVERY_API};google_apis;x86_64"; fi
       - name: Build without overriding library minimum requirements
         id: build
@@ -221,7 +235,11 @@ jobs:
             export PATH="$PWD/scripts/release-adb:$PATH"
           fi
           if [ "${{ inputs.managed }}" = true ]; then
-            if [ "${{ inputs.input_diagnostic }}" = true ]; then
+            if [ "$POC_EXPERIMENT" = input-warning ]; then
+              timeout 900 python3 -u scripts/managed-recovery-poc.py environment-poc/build/recovery-evidence --warning-probe
+            elif [ "$POC_EXPERIMENT" = long-background ]; then
+              timeout 3300 python3 -u scripts/managed-recovery-poc.py environment-poc/build/recovery-evidence --trace-input --long-background
+            elif [ "${{ inputs.input_diagnostic }}" = true ]; then
               timeout 420 python3 -u scripts/managed-recovery-poc.py environment-poc/build/recovery-evidence --input-diagnostic
             elif [ "${{ inputs.core_only }}" = true ]; then
               timeout 900 python3 -u scripts/managed-recovery-poc.py environment-poc/build/recovery-evidence --core
@@ -246,6 +264,7 @@ jobs:
               out.write('Configured runtime: '+os.environ['POC_RUNTIME_VARIANT']+'; build only: '+os.environ['POC_BUILD_ONLY']+'\n\n')
               out.write('Measurements complete: '+str(r.get('experimentComplete',False))+'\n\nMeasured recovery gates passed: '+str(r.get('managedControllerReady',r.get('nativeRecoveryReady',False)))+'\n\n')
               out.write('Two-page input diagnostic complete: '+str(r.get('inputDiagnosticComplete',False))+'\n\n')
+              out.write('Warning controls complete: '+str(r.get('warningProbeComplete',False))+'\n\n')
               out.write('Formal migration ready: '+str(r.get('formalMigrationReady',False))+'\n\n')
               out.write('No production app, login data, signing key or public release was used. Native capability gaps fail the migration gate; see the report.\n')
           PY

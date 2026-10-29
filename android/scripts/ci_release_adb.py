@@ -44,17 +44,24 @@ def adapt(args,c):
         if t!=['cat','/sdcard/managed-poc.xml']:raise ValueError('Unapproved exec-out operation')
         return ['exec-out',*t],None
     allowed=(t in (['getprop','ro.kernel.qemu'],['getprop','ro.build.version.sdk'],['dumpsys','activity','activities'],['ps','-A','-o','PID,S,NAME'],['am','force-stop',PACKAGE],['uiautomator','dump','--compressed','/sdcard/managed-poc.xml']))
+    if t in (['getconf','CLK_TCK'],['getconf','_NPROCESSORS_ONLN'],['cat','/proc/uptime'],['dumpsys','deviceidle','get','deep'],['dumpsys','deviceidle','force-idle'],['dumpsys','deviceidle','unforce'],['dumpsys','battery','unplug'],['dumpsys','battery','reset'],['wm','dismiss-keyguard']):allowed=True
+    if (len(t)==3 and t[:2]==['dumpsys','meminfo'] and re.fullmatch(r'[1-9]\d{0,7}',t[2])) or (len(t)==2 and t[0]=='cat' and re.fullmatch(r'/proc/[1-9]\d{0,7}/stat',t[1])):allowed=True;kind='resource-read'
     if t[:2]==['am','start']:
         allowed=t.count('-n')==1 and t.index('-n')+1<len(t) and re.fullmatch(re.escape(PACKAGE+'/'+PACKAGE)+r'\.Managed[ABC]Activity',t[t.index('-n')+1]) is not None
     if t[:2]==['input','tap']:allowed=len(t)==4 and all(re.fullmatch(r'\d{1,4}',x) for x in t[2:])
     if t[:2]==['input','swipe']:allowed=len(t)==7 and all(re.fullmatch(r'\d{1,4}',x) for x in t[2:])
-    if t[:2]==['input','keyevent']:allowed=t==['input','keyevent','KEYCODE_HOME']
+    if t[:2]==['input','keyevent']:allowed=t in (['input','keyevent','KEYCODE_HOME'],['input','keyevent','KEYCODE_SLEEP'],['input','keyevent','KEYCODE_WAKEUP'])
     if t[:2]==['log','-t']:allowed=len(t)==7 and t[:5]==['log','-t','StudioPocPhase','-p','i'] and all(re.fullmatch(r'(?:phase|step)=[a-z0-9-]+',x) for x in t[5:])
     if t[:2]==['env','CLASSPATH=/data/local/tmp/studio-poc-input.jar']:
         allowed=c['sdk']==28 and len(t)==10 and t[2:5]==['app_process','/system/bin','com.forcemind.chatgpt.pocinput.TouchInput'] and all(re.fullmatch(r'\d{1,4}',x) for x in t[5:])
         if allowed:t=[c['su'],'2000',*t]
     if not allowed:raise ValueError('Unapproved CI shell operation')
-    return ['shell','-T',shlex.join(t)],None
+    return ['shell','-T',shlex.join(t)],kind
+
+def validate_resource_pid(pid,table):
+    if not re.fullmatch(r'[1-9]\d{0,7}',pid):raise ValueError('Invalid resource PID')
+    rows=[line.split(None,2) for line in table.splitlines()[1:]]
+    if not any(len(row)==3 and row[0]==pid and (row[2]==PACKAGE or row[2].startswith(PACKAGE+':')) for row in rows):raise ValueError('Resource read is not attributable to independent PoC')
 
 def paths():
     if os.environ.get('GITHUB_ACTIONS')!='true' or os.environ.get('POC_RUNTIME_VARIANT')!='optimized-release':raise ValueError('Optimized-release CI only')
@@ -100,6 +107,10 @@ def main():
     if not stat.S_ISREG(s.st_mode) or s.st_uid!=os.getuid() or stat.S_IMODE(s.st_mode)!=0o600:raise ValueError('Unsafe CI attestation file')
     c=json.loads(receipt.read_text());validate_receipt(c,os.environ['GITHUB_RUN_ID'])
     args,kind=adapt(sys.argv[1:],c);command=[real,*([] if args==['devices'] else ['-s',c['serial']]),*args]
+    if kind=='resource-read':
+        tokens=shlex.split(' '.join(sys.argv[2:]));pid=tokens[-1] if tokens[:2]==['dumpsys','meminfo'] else tokens[-1].split('/')[2]
+        table=subprocess.check_output([real,'-s',c['serial'],'shell','-T','ps -A -o PID,S,NAME'],text=True)
+        validate_resource_pid(pid,table)
     if kind:
         r=subprocess.run(command,stderr=subprocess.PIPE)
         event={'kind':kind,'hostMonotonic':time.monotonic(),'appUid':c['appUid'],'returncode':r.returncode,'stderr':r.stderr.decode(errors='replace')[:1200]}

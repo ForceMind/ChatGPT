@@ -14,6 +14,7 @@ import sys
 import threading
 import time
 import traceback
+from types import SimpleNamespace
 import uuid
 import xml.etree.ElementTree as ET
 from poc_warning_report import localize
@@ -22,10 +23,13 @@ spec=importlib.util.spec_from_file_location('native_fixture',Path(__file__).with
 base=importlib.util.module_from_spec(spec);spec.loader.exec_module(base)
 CORE='--core' in sys.argv
 INPUT_DIAGNOSTIC='--input-diagnostic' in sys.argv
-TRACE_INPUT=INPUT_DIAGNOSTIC or '--trace-input' in sys.argv
+WARNING_PROBE='--warning-probe' in sys.argv
+LONG_BACKGROUND='--long-background' in sys.argv
+TRACE_INPUT=INPUT_DIAGNOSTIC or WARNING_PROBE or '--trace-input' in sys.argv
 if CORE and INPUT_DIAGNOSTIC:raise SystemExit('Choose core or input diagnostic, not both')
 CAPTURE_UI='--capture-ui' in sys.argv
-TABS=(('A','0'),('A','1')) if INPUT_DIAGNOSTIC else (('A','0'),) if CORE else (('A','0'),('A','1'),('B','0'),('C','0'))
+TABS=(('A','0'),('A','1')) if INPUT_DIAGNOSTIC or WARNING_PROBE else (('A','0'),) if CORE else (('A','0'),('A','1'),('B','0'),('C','0'))
+if sum((CORE,INPUT_DIAGNOSTIC,WARNING_PROBE,LONG_BACKGROUND))>1:raise SystemExit('Choose one independent experiment mode')
 base.TABS=TABS
 OUT=base.OUT;PACKAGE=base.PACKAGE
 markers={a+':'+t:'demo-'+a+'-'+t+'-'+uuid.uuid4().hex for a,t in TABS}
@@ -260,6 +264,9 @@ def full_experiment(report):
     if not CORE:assert baseline['A:0']['owner']==baseline['A:1']['owner']
     report['cases']['initialCapture']=True;capture('captured')
     if not CORE:touch_and_lifecycle(report)
+    if LONG_BACKGROUND:
+        from poc_extended_measurements import long_background
+        long_background(SimpleNamespace(**globals(),report_variant=report['runtimeVariant']),report)
 
     print('2/8 Normal close restores through app-owned state and trusted input',flush=True)
     mark_phase('normal-exit')
@@ -336,6 +343,7 @@ def full_experiment(report):
 
 guard();report={'sourceSha':os.environ.get('GITHUB_SHA'),'runId':os.environ.get('GITHUB_RUN_ID'),'scope':'Two-page native input diagnostic' if INPUT_DIAGNOSTIC else 'Single-account core' if CORE else 'Three-account four-tab managed recovery','api':text('shell','getprop','ro.build.version.sdk'),'fixtureOnly':True,'productionDataUsed':False,'cases':{}}
 report['runtimeVariant']=os.environ.get('POC_RUNTIME_VARIANT','debug')
+if WARNING_PROBE:report['scope']='Controlled two-page input warning probe'
 if report['runtimeVariant']=='optimized-release':
     identity=json.loads((OUT/'runtime-release-identity.json').read_text());device=json.loads((OUT/'release-device-attestation.json').read_text())
     assert identity['debuggable'] is False and identity['payloadUnchangedBySigning'] and identity['temporaryCiCertificate'] and device['nonDebuggableRunAsRefused'] and identity['signedApkSha256']==device['installedApkSha256']
@@ -349,7 +357,10 @@ def timeout(_signal,_frame):raise TimeoutError('Managed recovery experiment time
 signal.signal(signal.SIGTERM,timeout)
 failure=None
 try:
-    if INPUT_DIAGNOSTIC:input_diagnostic(report)
+    if WARNING_PROBE:
+        from poc_extended_measurements import warning_probe
+        warning_probe(SimpleNamespace(**globals()),report)
+    elif INPUT_DIAGNOSTIC:input_diagnostic(report)
     else:full_experiment(report)
 except Exception as error:
     failure=str(error);report['failure']=failure;print('Managed recovery failure:',failure,flush=True)
@@ -361,7 +372,9 @@ finally:
     required={'initialCapture','normalClose','saveAfterRestore','historyAndURLIsolation','offlineReadOnlySnapshot','forceStopAndReconnect','keepCurrentConflict','restoreSavedConflictAndBackupAccess','corruptRecordPreserved','noAutomaticSendAndNoWebNativeAccess','accountEnvironmentAndStorageIsolation'}
     if not CORE:required.update(('crossAccountRecordPreserved','unresolvedConflictRestartAndURLBinding','interruptedAtomicRecordRecovery','trustedTouchScrollUpDown','homeForegroundRetainsDocuments','activityRecreationRetainsDocuments'))
     report['inputDiagnosticComplete']=INPUT_DIAGNOSTIC and bool(report.get('experimentComplete'))
-    report['managedControllerReady']=not INPUT_DIAGNOSTIC and bool(report.get('experimentComplete')) and all(report['cases'].get(name,False) for name in required)
+    if LONG_BACKGROUND:required.update(('prolonged-home','prolonged-screen-off','prolonged-forced-doze'))
+    report['warningProbeComplete']=WARNING_PROBE and bool(report.get('experimentComplete'))
+    report['managedControllerReady']=not (INPUT_DIAGNOSTIC or WARNING_PROBE) and bool(report.get('experimentComplete')) and all(report['cases'].get(name,False) for name in required)
     report['formalMigrationReady']=False
     report['platformFindings']={'unexpectedProcessRestartObserved':any(s['unexpectedNewProcesses'] for s in base.process_stops),'extraForceStopRequests':sum(s['forceStopRequests']-1 for s in base.process_stops),'touchScrollAcceptance':'Real trusted touch starts/terminals and bidirectional scroll measured.' if report['cases'].get('trustedTouchScrollUpDown') else 'Not passed in this run; reading samples use native PanZoom API.'}
     report['limits']=['Synthetic textarea/contenteditable editor models only; no real ChatGPT.','Fresh x86_64 CI emulators and a short background sample; no arm64/physical/OEM, prolonged OS-pressure or production lifecycle guarantee.','Optimized release uses a disposable CI certificate; root is limited to emulator fixture evidence, while browser processes run as the normal app UID.' if report['runtimeVariant']=='optimized-release' else 'Debug runtime does not establish optimized-release acceptance.','The existing reading recovery sample still uses native PanZoom separately from the genuine touch gate.','Warning phases show temporal correlation, not proof of cause or repair.']
@@ -374,7 +387,11 @@ finally:
     runtime_log=(OUT/'managed-runtime.log').read_text(errors='replace')
     warnings=localize(runtime_log);(OUT/'managed-warning-localization.json').write_text(json.dumps(warnings,ensure_ascii=False,indent=2))
     report['warningCounts']=warnings['counts'];report['warningCausalAttribution']=False
+    if WARNING_PROBE and 'warningControls' in report:
+        passive=('warning-passive-open','warning-passive-switch','warning-navigation-without-input','warning-focus-without-commit')
+        report['warningControls']['warningsWithoutAnyCommit']={phase:warnings['byPhase'].get(phase,{}).get('noEditableParent',0) for phase in passive}
+    if LONG_BACKGROUND:report['limits'][1]='Fresh x86_64 CI emulators: Home, screen off and forced Doze measured for 10 minutes each; no arm64/physical/OEM, production OS-pressure or permanent survival guarantee.'
     if not report['logCaptureComplete']:failure=failure or 'Continuous device log capture ended unexpectedly';report['failure']=failure;report['managedControllerReady']=False
     for name,value in (('managed-report.json',report),('managed-events.json',base.events),('managed-requests.json',base.requests)):(OUT/name).write_text(json.dumps(value,ensure_ascii=False,indent=2))
     text('shell','am','force-stop',PACKAGE,check=False);text('reverse','--remove','tcp:8765',check=False);server.shutdown()
-if failure or not (report['inputDiagnosticComplete'] if INPUT_DIAGNOSTIC else report['managedControllerReady']):raise SystemExit(1)
+if failure or not (report['warningProbeComplete'] if WARNING_PROBE else report['inputDiagnosticComplete'] if INPUT_DIAGNOSTIC else report['managedControllerReady']):raise SystemExit(1)

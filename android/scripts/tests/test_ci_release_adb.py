@@ -6,7 +6,7 @@ import sys
 import unittest
 from unittest.mock import patch
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
-from ci_release_adb import PACKAGE,DATA,adapt,paths,validate_receipt
+from ci_release_adb import PACKAGE,DATA,adapt,paths,validate_receipt,validate_resource_pid
 
 class ReleaseFixtureBridgeTests(unittest.TestCase):
     def setUp(self):
@@ -45,5 +45,15 @@ class ReleaseFixtureBridgeTests(unittest.TestCase):
         command=['shell','env','CLASSPATH=/data/local/tmp/studio-poc-input.jar','app_process','/system/bin','com.forcemind.chatgpt.pocinput.TouchInput','540','1500','540','800','550']
         args,kind=adapt(command,self.c);self.assertIn('2000 env CLASSPATH=',args[2])
         with self.assertRaises(ValueError):adapt(command,{**self.c,'sdk':35})
+    def test_resource_pid_must_belong_to_lab(self):
+        table='PID S NAME\n123 S '+PACKAGE+':tab\n456 S com.forcemind.chatgpt.profiles\n'
+        validate_resource_pid('123',table)
+        for pid in ['456','999','123;id']:
+            with self.assertRaises(ValueError):validate_resource_pid(pid,table)
+    def test_only_scoped_resource_and_power_commands(self):
+        _,kind=adapt(['shell','cat','/proc/123/stat'],self.c);self.assertEqual(kind,'resource-read')
+        for command in [['shell','cat','/proc/123/environ'],['shell','dumpsys','meminfo','com.other.app'],['shell','dumpsys','deviceidle','whitelist','+'+PACKAGE],['shell','settings','put','global','stay_on_while_plugged_in','7']]:
+            with self.assertRaises(ValueError):adapt(command,self.c)
+        for command in [['shell','dumpsys','deviceidle','force-idle'],['shell','dumpsys','deviceidle','unforce'],['shell','dumpsys','battery','reset']]:adapt(command,self.c)
 
 if __name__=='__main__':unittest.main()
