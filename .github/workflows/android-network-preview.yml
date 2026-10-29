@@ -30,6 +30,12 @@ jobs:
       - uses: android-actions/setup-android@v3
         with:
           packages: platform-tools
+      - uses: actions/cache@v4
+        with:
+          path: |
+            android/network-poc/app/libs/
+            android/network-poc/corebridge/bin/
+          key: network-core-go1273-ndk282-${{ hashFiles('android/network-poc/corebridge/go.mod', 'android/network-poc/corebridge/networkcore.go', 'android/network-poc/scripts/build-core.sh') }}
       - name: Build fixed proxy core
         run: |
           for attempt in 1 2 3; do
@@ -91,7 +97,7 @@ jobs:
       - name: Prepare independently named candidate
         run: |
           mkdir -p android/network-poc/app/build/candidate
-          cp android/network-poc/app/build/outputs/apk/preview/debug/app-preview-debug.apk android/network-poc/app/build/candidate/ChatGPT-Studio-Network-Preview-0.1.0-android.apk
+          cp android/network-poc/app/build/outputs/apk/preview/debug/app-preview-debug.apk android/network-poc/app/build/candidate/ChatGPT-Studio-Network-Preview-0.1.0-android-arm64.apk
           cp android/network-poc/THIRD_PARTY_NOTICES.md android/network-poc/app/build/candidate/
           cp LICENSE android/network-poc/app/build/candidate/LICENSE-ChatGPT-Studio
           cp android/network-poc/app/libs/dependencies.json android/network-poc/app/build/candidate/
@@ -109,7 +115,7 @@ jobs:
           with zipfile.ZipFile(apk) as z:
               libraries={n:z.getinfo(n).file_size for n in z.namelist() if n.startswith('lib/') and n.endswith('.so')}
           assert any('/arm64-v8a/' in n for n in libraries)
-          assert any('/x86_64/' in n for n in libraries)
+          assert not any('/x86_64/' in n for n in libraries)
           (folder/'candidate.json').write_text(json.dumps({'sourceSha':os.environ['GITHUB_SHA'],
               'apk':apk.name,'bytes':apk.stat().st_size,'sha256':hashlib.sha256(apk.read_bytes()).hexdigest(),
               'libraries':libraries,'productionSigning':False,'formalAppModified':False},indent=2))
@@ -158,6 +164,10 @@ jobs:
         run: |
           chmod +x android/network-poc/corebridge/bin/xray
           python3 android/network-poc/scripts/fixture.py --core android/network-poc/corebridge/bin/xray --output "$RUNNER_TEMP/network-fixture" > "$RUNNER_TEMP/network-fixture.log" 2>&1 &
+      - name: Enable hardware acceleration on disposable runner
+        run: |
+          test -c /dev/kvm
+          sudo chmod a+rw /dev/kvm
       - uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: ${{ matrix.api }}

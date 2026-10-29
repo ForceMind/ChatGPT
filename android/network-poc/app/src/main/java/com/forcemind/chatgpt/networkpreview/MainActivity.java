@@ -132,6 +132,7 @@ public final class MainActivity extends ComponentActivity {
     }
     private boolean mayEdit(int index) {
         if (!storeReadable) { message("加密存储不可读，未覆盖原文件"); return false; }
+        if (routes.snapshot().state == RouteManager.State.CONNECTING) { message("正在连接，请完成后再修改线路列表"); return false; }
         if (index >= 0 && (index == data.selected || routes.snapshot().node == data.nodes.get(index))) { message("请先切换直连，再编辑或删除当前线路"); return false; }
         return true;
     }

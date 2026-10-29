@@ -8,7 +8,7 @@ adb shell getprop ro.build.version.sdk > evidence/api.txt
 adb shell dumpsys webviewupdate > evidence/webview.txt
 find app/build/outputs/apk/ci/debug -name '*.apk' -print -quit | xargs adb install -r
 find app/build/outputs/apk/androidTest/ci/debug -name '*.apk' -print -quit | xargs adb install -r
-adb shell am instrument -w -r \
+timeout 420 adb shell am instrument -w -r \
   -e nodeA 'vless://00000000-0000-4000-8000-000000000001@10.0.2.2:18443#Owned-A' \
   -e nodeB 'vless://00000000-0000-4000-8000-000000000001@10.0.2.2:18444#Owned-B' \
   -e fixtureUrl 'http://network-fixture.test:18080' \
