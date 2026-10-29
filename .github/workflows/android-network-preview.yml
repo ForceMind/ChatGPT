@@ -28,6 +28,8 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
       - name: Build fixed proxy core
         run: |
           sdkmanager 'ndk;28.2.13676358' 'platforms;android-37.0' 'build-tools;36.0.0'
@@ -74,6 +76,8 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
       - name: Compile and check isolated application
         run: |
           sdkmanager 'platforms;android-37.0' 'build-tools;36.0.0'
@@ -112,6 +116,8 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
       - name: Start owned VLESS fixtures
         run: |
           chmod +x android/network-poc/corebridge/bin/xray
