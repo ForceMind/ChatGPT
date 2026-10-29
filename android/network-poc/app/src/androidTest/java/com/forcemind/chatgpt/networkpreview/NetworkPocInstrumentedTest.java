@@ -117,6 +117,8 @@ public final class NetworkPocInstrumentedTest {
             js(activity, "fetch('/echo').then(r=>{window.__route=r.headers.get('X-Fixture-Route')});true"); awaitJs(activity, "window.__route", "\"B\"");
             js(activity, "fetch('/upload',{method:'POST',body:'web-upload-B'}).then(async r=>{window.__uploadRoute=r.headers.get('X-Fixture-Route');window.__upload=await r.text()});true");
             awaitJs(activity, "window.__upload", "\"web-upload-B\""); assertEquals("\"B\"", js(activity, "window.__uploadRoute"));
+            js(activity, "(()=>{const form=new FormData();form.append('file',new File(['owned-file-bytes'],'ci.txt',{type:'text/plain'}));fetch('/upload',{method:'POST',body:form}).then(async r=>{const body=await r.text();window.__fileUploadOk=r.headers.get('X-Fixture-Route')==='B'&&body.includes('filename=\"ci.txt\"')&&body.includes('owned-file-bytes')})})();true");
+            awaitJs(activity, "window.__fileUploadOk", "true");
             assertEquals("B", activity.downloadsForTests().request(fixture() + "/echo", "GET", null).route);
             assertArrayEquals(FILE, activity.downloadsForTests().request(fixture() + "/download", "GET", null).bytes);
             assertNativeDownload(activity);

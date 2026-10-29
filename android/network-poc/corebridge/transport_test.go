@@ -152,6 +152,17 @@ func TestOwnedTransportMatrix(t *testing.T) {
             if err!=nil { t.Fatal(err) }
             body,_=io.ReadAll(res.Body);res.Body.Close()
             if string(body)!="owned-https-fixture" { t.Fatal("HTTPS CONNECT download differs") }
+            if err=Stop();err!=nil { t.Fatal(err) }
+            socket,err:=net.DialTimeout("tcp",net.JoinHostPort("127.0.0.1",strconv.Itoa(proxyPort)),200*time.Millisecond)
+            if err==nil { socket.Close();t.Fatal("proxy listener remained open after stop") }
+            badConfig:=strings.Replace(config,fixtureID,"00000000-0000-4000-8000-000000000002",1)
+            if err=Start(badConfig);err!=nil { t.Fatal(err) }
+            client.Timeout=1500*time.Millisecond
+            res,err=client.Get(origin.URL+"/download")
+            if err==nil {
+                res.Body.Close()
+                if res.StatusCode==http.StatusOK { t.Fatal("invalid credentials reached owned origin") }
+            }
         })
     }
 }

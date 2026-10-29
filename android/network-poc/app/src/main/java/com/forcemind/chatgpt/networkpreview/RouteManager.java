@@ -81,17 +81,24 @@ public final class RouteManager {
     }
     private void applyWebView(VlessNode node, int port, long generation, Listener listener) {
         if (closed || current.generation != generation) return;
+        Runnable timeout = () -> {
+            if (closed || current.generation != generation || current.state != State.CONNECTING) return;
+            worker.execute(() -> { try { Networkcore.stop(); } catch (Exception ignored) {} });
+            fail(generation, listener, "网页线路应用超时");
+        };
         Runnable done = () -> {
-            if (closed || current.generation != generation) return;
+            main.removeCallbacks(timeout);
+            if (closed || current.generation != generation || current.state != State.CONNECTING) return;
             current = new Snapshot(node == null ? State.DIRECT : State.CONNECTED, node, port, generation);
             listener.complete(true, node == null ? "直连" : "已连接；仅已验证当前检查目标");
         };
+        main.postDelayed(timeout, 12000);
         try {
             if (!supportsWebViewProxy()) { if (node == null) done.run(); else fail(generation, listener, "WebView 不支持代理覆盖"); }
             else if (node == null) ProxyController.getInstance().clearProxyOverride(main::post, done);
             else ProxyController.getInstance().setProxyOverride(new ProxyConfig.Builder()
                     .addProxyRule("http://127.0.0.1:" + port).removeImplicitRules().build(), main::post, done);
-        } catch (Exception e) { worker.execute(() -> { try { Networkcore.stop(); } catch (Exception ignored) {} }); fail(generation, listener, "WebView 代理应用失败"); }
+        } catch (Exception e) { main.removeCallbacks(timeout); worker.execute(() -> { try { Networkcore.stop(); } catch (Exception ignored) {} }); fail(generation, listener, "WebView 代理应用失败"); }
     }
     private void fail(long generation, Listener listener, String message) {
         if (closed || current.generation != generation) return;

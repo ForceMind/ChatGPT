@@ -1,6 +1,7 @@
 package com.forcemind.chatgpt.networkpreview;
 
-import android.app.Activity;
+import androidx.activity.ComponentActivity;
+import androidx.activity.OnBackPressedCallback;
 import android.app.AlertDialog;
 import android.content.Intent;
 import android.graphics.Color;
@@ -23,7 +24,7 @@ import android.widget.TextView;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /** Isolated proof-of-concept application; its app ID and WebView directory never share formal login data. */
-public final class MainActivity extends Activity {
+public final class MainActivity extends ComponentActivity {
     private static final AtomicBoolean SPACE_SET = new AtomicBoolean();
     private WebView web;
     private RouteManager routes;
@@ -36,6 +37,9 @@ public final class MainActivity extends Activity {
     private final java.util.List<WebView> popups = new java.util.ArrayList<>();
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override public void handleOnBackPressed() { if (web != null && web.canGoBack()) web.goBack(); else finish(); }
+        });
         if (SPACE_SET.compareAndSet(false, true)) WebView.setDataDirectorySuffix("network-preview");
         routes = new RouteManager(); downloads = new NativeDownloads(this, routes); store = new NodeStore(this);
         try { data = store.read(); } catch (Exception e) { data = new NodeStore.Data(); storeReadable = false; }
@@ -197,7 +201,6 @@ public final class MainActivity extends Activity {
     public RouteManager routeManagerForTests() { return routes; }
     public WebView webViewForTests() { return web; }
     public NativeDownloads downloadsForTests() { return downloads; }
-    @Override public void onBackPressed() { if (web.canGoBack()) web.goBack(); else super.onBackPressed(); }
     @Override protected void onDestroy() {
         if (fileCallback != null) fileCallback.onReceiveValue(null);
         downloads.close(); routes.close(); for (WebView popup : popups) popup.destroy(); popups.clear(); web.destroy(); super.onDestroy();
