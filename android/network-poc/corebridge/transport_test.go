@@ -127,7 +127,7 @@ func TestOwnedTransportMatrix(t *testing.T) {
                 if time.Now().After(deadline) { t.Fatal("fixture server did not start") }
                 time.Sleep(25*time.Millisecond)
             }
-            config:=encode(map[string]any{"log":map[string]any{"loglevel":"none"},"inbounds":[]any{map[string]any{"listen":"127.0.0.1","port":proxyPort,"protocol":"http","settings":map[string]any{}}},
+            config:=encode(map[string]any{"log":map[string]any{"loglevel":"debug"},"inbounds":[]any{map[string]any{"listen":"127.0.0.1","port":proxyPort,"protocol":"http","settings":map[string]any{}}},
                 "outbounds":[]any{map[string]any{"protocol":"vless","settings":map[string]any{"vnext":[]any{map[string]any{"address":"127.0.0.1","port":serverPort,"users":[]any{map[string]any{"id":fixtureID,"encryption":"none"}}}}},"streamSettings":clientStream}}})
             if err=Start(config);err!=nil { t.Fatal(err) }
             if err=Start(config);err==nil { t.Fatal("second start accepted") }
