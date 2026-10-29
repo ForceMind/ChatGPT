@@ -42,6 +42,10 @@ def cpu_delta(before,after,hz):
             'completeProcessCoverage':complete,'missingPids':sorted(old.keys()-new.keys()),'newPids':sorted(new.keys()-old.keys()),
             'oneCorePercent':round(sum(new[k]['cpuTicks']-old[k]['cpuTicks'] for k in old)/hz/elapsed*100,4) if complete else None}
 
+def parse_pss_categories(raw):
+    # App Summary PSS categories, not the raw Java/native heap allocation table.
+    return {name:int(value) for name,value in re.findall(r'^\s*(Java Heap|Native Heap|Code|Stack|Graphics|Private Other|System):\s*(\d+)',raw,re.M)}
+
 def warning_probe(h,report):
     rows=[]
     def snapshot(label):
@@ -117,6 +121,11 @@ def long_background(h,report):
             assert row['workCounters']['resourceTuned']==(h.os.environ.get('POC_RESOURCE_TUNING','baseline')=='optimized')
             result[str(row['pid'])]={'account':account,'workCounters':row['workCounters'],'heapUsage':row['heapUsage']}
         return result
+    def cadence(value):
+        if not h.IDLE_PROFILE:return
+        h.base.observer_cadence_ms=value
+        for a,t in h.TABS:
+            h.wait(lambda:(lambda row:row if row and row.get('observerProbe',{}).get('intervalMs')==value else None)(h.base.latest(a,t)),40,label='actual observer cadence '+a+'/'+t+'/'+str(value))
     def sample(label):
         now=time.monotonic();uptime=float(h.text('shell','cat','/proc/uptime').split()[0]);_,rows=h.base.process_rows();processes=[]
         for row in rows:
@@ -129,7 +138,7 @@ def long_background(h,report):
                 raw=h.text('shell','dumpsys','meminfo',row['pid']);(h.OUT/('resource-'+str(len(samples))+'-'+row['pid']+'.txt')).write_text(raw)
                 m=re.search(r'TOTAL PSS:\s*(\d+)',raw) or re.search(r'^\s*TOTAL\s+(\d+)',raw,re.M)
                 if not m:raise RuntimeError('Missing measured PSS')
-                memory.append({'pid':int(row['pid']),'name':row['name'],'pssKiB':int(m[1])})
+                memory.append({'pid':int(row['pid']),'name':row['name'],'pssKiB':int(m[1]),'summaryPssKiB':parse_pss_categories(raw)})
             result.update(memory=memory,totalPssMiB=round(sum(r['pssKiB'] for r in memory)/1024,3),lastMemoryAt=now)
         else:result['lastMemoryAt']=samples[-1]['lastMemoryAt']
         result['pageObservations']={a+':'+t:({k:r[k] for k in ('document','ticks','received','visibility','standard','rich','standardModel','richModel','observerProbe','streamText') if k in r} if (r:=h.base.latest(a,t)) else None) for a,t in h.TABS}
@@ -147,6 +156,7 @@ def long_background(h,report):
             print('Background measurement '+label+': '+str(round(time.monotonic()-start))+'/'+str(seconds)+' seconds',flush=True)
         return round(time.monotonic()-start,3)
     def resume(label,refs,pids,started):
+        if h.IDLE_PROFILE:h.base.observer_cadence_ms=500
         h.text('shell','dumpsys','deviceidle','unforce');h.text('shell','dumpsys','battery','reset');h.text('shell','input','keyevent','KEYCODE_WAKEUP');h.text('shell','wm','dismiss-keyguard')
         h.mark_phase('prolonged-'+label+'-resume')
         after={}
@@ -156,12 +166,15 @@ def long_background(h,report):
             assert r['received']>started and r['ticks']>refs[a+':'+t]['ticks'];after[a+':'+t]={'sameDocument':True,'tickDelta':r['ticks']-refs[a+':'+t]['ticks'],'scrollY':r['scrollY']}
         assert all(h.native(a)['pid']==pid for a,pid in pids.items()),'Host process replaced'
         assert not [r for r in h.base.requests if r['received']>=started],'Unexpected document request during retention interval'
+        cadence(500)
         return after
     h.select('A','0');window('foreground-baseline',60)
     labels=('mutation-storm','home','forced-doze') if h.RESOURCE_PROFILE else ('forced-doze',) if h.DOZE_ONLY else ('home','screen-off','forced-doze')
     try:
         for label in labels:
             before_work=work_snapshot();h.select('A','0')
+            if h.IDLE_PROFILE:
+                h.mark_phase('idle-cadence-configure');cadence(h.OBSERVER_CADENCE_MS)
             refs={a+':'+t:h.base.latest(a,t) for a,t in h.TABS};pids={a:h.native(a)['pid'] for a in ('A','B','C')};started=time.monotonic()
             if label!='mutation-storm':h.text('shell','input','keyevent','KEYCODE_HOME');h.wait(lambda:not h.foreground('A'),label='real Home before long sample')
             if label in ('screen-off','forced-doze'):h.text('shell','input','keyevent','KEYCODE_SLEEP')
@@ -180,7 +193,7 @@ def long_background(h,report):
                 entry['forceOutput']=h.text('shell','dumpsys','deviceidle','force-idle','deep');save_entry()
                 entry['stateAfterForce']=h.text('shell','dumpsys','deviceidle','get','deep');entry['afterDump']=h.text('shell','dumpsys','deviceidle');save_entry()
                 assert entry['stateAfterForce']=='IDLE','Forced Doze not observed: '+entry['stateAfterForce']
-            requested=90 if label=='mutation-storm' else 180 if h.RESOURCE_PROFILE else 600
+            requested=90 if label=='mutation-storm' else 180 if h.RESOURCE_PROFILE or h.IDLE_PROFILE else 600
             seconds=window(label,requested)
             # Record suspended/stale observations before waking; do not claim
             # heartbeats continued if the OS blocked execution/network access.
@@ -190,7 +203,7 @@ def long_background(h,report):
                 for a,t in h.TABS:
                     h.select(a,t);h.wait(lambda:(lambda r:r if r and r.get('observerProbe',{}).get('stormRevisions',0)>0 and not r.get('observerProbe',{}).get('stormActive',True) else None)(h.latest(a,t)),label='actual streaming DOM mutations settled')
                     h.checkpoint(a);row=h.latest(a,t);entry=h.entry(a,t);assert entry['transcriptPreview'].startswith(row['streamText']),'Final streaming content not preserved'
-            stage={'stage':label,'requestedSeconds':requested,'measuredSeconds':seconds,'retainedPages':after,'backgroundObservationAgeSeconds':{k:round(time.monotonic()-r['received'],3) for k,r in before_resume.items()},'sameHostPids':True,'noNewDocumentRequests':True,'workBefore':before_work,'workAfter':work_snapshot()}
+            stage={'stage':label,'requestedSeconds':requested,'measuredSeconds':seconds,'observerCadenceMs':h.OBSERVER_CADENCE_MS if h.IDLE_PROFILE else 500,'retainedPages':after,'backgroundObservationAgeSeconds':{k:round(time.monotonic()-r['received'],3) for k,r in before_resume.items()},'sameHostPids':True,'noNewDocumentRequests':True,'workBefore':before_work,'workAfter':work_snapshot()}
             stages.append(stage);save();report['cases']['prolonged-'+label]=True
     finally:
         h.text('shell','dumpsys','deviceidle','unforce',check=False);h.text('shell','dumpsys','battery','reset',check=False);h.text('shell','input','keyevent','KEYCODE_WAKEUP',check=False)
@@ -200,7 +213,7 @@ def long_background(h,report):
         intervals=[r['cpuFromPrevious'] for r in rows[1:] if r.get('cpuFromPrevious',{}).get('completeProcessCoverage')];cpu=[r['oneCorePercent'] for r in intervals];duration=sum(r['deviceSeconds'] for r in intervals)
         assert intervals,'No attributable CPU interval for '+label
         summary.append({'stage':label,'samples':len(rows),'memorySamples':len(mem),'pssMiBFirst':mem[0],'pssMiBLast':mem[-1],'pssMiBPeak':max(mem),'cpuValidIntervals':len(cpu),'cpuMeasuredDeviceSeconds':round(duration,3),'cpuMeanOneCorePercent':round(sum(r['oneCorePercent']*r['deviceSeconds'] for r in intervals)/duration,4) if duration else None,'cpuPeakOneCorePercent':max(cpu) if cpu else None})
-    report['longBackground']={'summary':summary,'stages':stages,'cpuClockTicksPerSecond':hz,'logicalCPUs':cores,'resourceProfile':h.RESOURCE_PROFILE,'requestedBackgroundSeconds':360 if h.RESOURCE_PROFILE else 600*len(labels),'scope':'Synthetic four-page workload; explicitly labelled observer policy, duplicate-event streaming workload and recovery bookkeeping included. CPU is aggregate per one logical core. PSS and sampling overhead are not physical-device or real ChatGPT predictions.'}
+    report['longBackground']={'summary':summary,'stages':stages,'cpuClockTicksPerSecond':hz,'logicalCPUs':cores,'resourceProfile':h.RESOURCE_PROFILE,'idleProfile':h.IDLE_PROFILE,'requestedBackgroundSeconds':360 if h.RESOURCE_PROFILE else 180*len(labels) if h.IDLE_PROFILE else 600*len(labels),'scope':'Synthetic four-page workload; explicitly labelled HTTP observer cadence and policy. Underlying500ms timer dispatch remains; quiet cadence gates payload construction only. Functional input/checkpoint/recovery uses500ms and immediate real events. CPU is aggregate per one logical core. PSS and sampling overhead are not physical-device or real ChatGPT predictions.'}
 
 if __name__=='__main__':
     import sys

@@ -27,6 +27,7 @@ WARNING_PROBE='--warning-probe' in sys.argv
 LONG_BACKGROUND='--long-background' in sys.argv
 DOZE_ONLY='--doze-only' in sys.argv
 RESOURCE_PROFILE='--resource-profile' in sys.argv
+IDLE_PROFILE='--idle-profile' in sys.argv
 if DOZE_ONLY and not LONG_BACKGROUND:raise SystemExit('Doze-only requires prolonged measurement mode')
 TRACE_INPUT=INPUT_DIAGNOSTIC or WARNING_PROBE or '--trace-input' in sys.argv
 if CORE and INPUT_DIAGNOSTIC:raise SystemExit('Choose core or input diagnostic, not both')
@@ -34,6 +35,10 @@ CAPTURE_UI='--capture-ui' in sys.argv
 TABS=(('A','0'),('A','1')) if INPUT_DIAGNOSTIC or WARNING_PROBE else (('A','0'),) if CORE else (('A','0'),('A','1'),('B','0'),('C','0'))
 if sum((CORE,INPUT_DIAGNOSTIC,WARNING_PROBE,LONG_BACKGROUND))>1:raise SystemExit('Choose one independent experiment mode')
 if RESOURCE_PROFILE and not LONG_BACKGROUND:raise SystemExit('Resource profile requires measurement mode')
+if IDLE_PROFILE and (not LONG_BACKGROUND or RESOURCE_PROFILE or DOZE_ONLY):raise SystemExit('Choose idle measurement only')
+OBSERVER_CADENCE_MS=int(os.environ.get('POC_OBSERVER_CADENCE_MS','500'))
+if OBSERVER_CADENCE_MS not in (500,5000):raise SystemExit('Unsupported idle observation cadence')
+if not IDLE_PROFILE and OBSERVER_CADENCE_MS!=500:raise SystemExit('Quiet observer requires explicit idle profile')
 OBSERVER_POLICY=os.environ.get('POC_OBSERVER_POLICY','bounded')
 if OBSERVER_POLICY not in ('legacy','bounded'):raise SystemExit('Unknown observation policy')
 base.TABS=TABS
@@ -45,7 +50,7 @@ wait=base.wait;text=base.text;adb=base.adb
 
 class Handler(base.Handler):
     def reply(self,body,status=200,mime='text/html; charset=utf-8'):
-        if body=='{}' and mime=='application/json' and self.path=='/observe':body=json.dumps({'mutationStorm':base.phase=='prolonged-mutation-storm'})
+        if body=='{}' and mime=='application/json' and self.path=='/observe':body=json.dumps({'mutationStorm':base.phase=='prolonged-mutation-storm','observerIntervalMs':getattr(base,'observer_cadence_ms',500)})
         if isinstance(body,str) and '<script>' in body and 'function observation()' in body:
             # Install before the source's first report/interval so an initial
             # unbounded request cannot escape the controlled transport.
@@ -398,6 +403,8 @@ report['runtimeVariant']=os.environ.get('POC_RUNTIME_VARIANT','debug')
 report['observerPolicy']=OBSERVER_POLICY
 report['resourceCase']=os.environ.get('POC_RESOURCE_CASE','standard')
 report['resourceTuning']=os.environ.get('POC_RESOURCE_TUNING','baseline')
+report['observerCadenceMs']=OBSERVER_CADENCE_MS
+report['idleProfile']=IDLE_PROFILE
 if WARNING_PROBE:report['scope']='Controlled two-page input warning probe'
 if report['runtimeVariant']=='optimized-release':
     identity=json.loads((OUT/'runtime-release-identity.json').read_text());device=json.loads((OUT/'release-device-attestation.json').read_text())
@@ -446,6 +453,7 @@ finally:
         passive=('warning-passive-open','warning-passive-switch','warning-navigation-without-input','warning-focus-without-commit')
         report['warningControls']['warningsWithoutAnyCommit']={phase:warnings['byPhase'].get(phase,{}).get('noEditableParent',0) for phase in passive}
     if LONG_BACKGROUND:report['limits'][1]='Fresh x86_64 CI emulator; requested 10-minute forced Doze only; Home/screen evidence is from separate runs.' if DOZE_ONLY else 'Fresh x86_64 CI emulators: Home, screen off and forced Doze measured for 10 minutes each; no arm64/physical/OEM, production OS-pressure or permanent survival guarantee.'
+    if IDLE_PROFILE:report['limits'][1]='Fresh x86_64 CI emulators: three3-minute idle stages; only periodic HTTP payload cadence varies, real events remain immediate and functional recovery resets to500ms. This is a measurement-overhead comparison, not an App optimization or physical-device prediction.'
     if not report['logCaptureComplete']:failure=failure or 'Continuous device log capture ended unexpectedly';report['failure']=failure;report['managedControllerReady']=False
     for name,value in (('managed-report.json',report),('managed-events.json',base.events),('managed-requests.json',base.requests)):(OUT/name).write_text(json.dumps(value,ensure_ascii=False,indent=2))
     text('shell','am','force-stop',PACKAGE,check=False);text('reverse','--remove','tcp:8765',check=False);server.shutdown()

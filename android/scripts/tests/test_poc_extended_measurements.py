@@ -2,7 +2,7 @@ import pathlib
 import sys
 import unittest
 sys.path.insert(0,str(pathlib.Path(__file__).resolve().parents[1]))
-from poc_extended_measurements import parse_proc_stat,cpu_delta
+from poc_extended_measurements import parse_proc_stat,cpu_delta,parse_pss_categories
 
 class ExtendedMeasurementTests(unittest.TestCase):
     def test_stat_with_spaces_and_parentheses_in_command(self):
@@ -24,5 +24,9 @@ class ExtendedMeasurementTests(unittest.TestCase):
     def test_invalid_clock_interval_is_rejected(self):
         s={'hostMonotonic':1,'deviceUptimeSeconds':10,'processes':[]}
         with self.assertRaises(ValueError):cpu_delta(s,s,100)
+    def test_summary_categories_do_not_parse_raw_heap_table_as_pss(self):
+        raw=' Native Heap 999 111 222\n Java Heap: 12\n Native Heap: 34\n Graphics: 56\n TOTAL PSS: 102\n'
+        self.assertEqual(parse_pss_categories(raw),{'Java Heap':12,'Native Heap':34,'Graphics':56})
+        self.assertEqual(parse_pss_categories('No process found'),{})
 
 if __name__=='__main__':unittest.main()

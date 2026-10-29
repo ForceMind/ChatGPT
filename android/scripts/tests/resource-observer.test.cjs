@@ -6,7 +6,7 @@ const path=require('node:path');
 const flush=()=>new Promise(resolve=>setImmediate(resolve));
 function observer(policy){
  const calls=[],timers=new Map(),intervals=[],paragraph={textContent:'original'},events=[];let timer=0;
- const ctx=vm.createContext({observation:()=>({draft:ctx.draft}),draft:'first',report:()=>{},AbortController,queueMicrotask,
+ const ctx=vm.createContext({observation:()=>({draft:ctx.draft}),draft:'first',testNow:0,performance:{now:()=>ctx.testNow},report:()=>{},AbortController,queueMicrotask,
   setTimeout:fn=>{timers.set(++timer,fn);return timer;},clearTimeout:id=>timers.delete(id),setInterval:fn=>intervals.push(fn),
   document:{querySelector:()=>paragraph,dispatchEvent:e=>events.push(e)},Event:class{constructor(type){this.type=type;this.isTrusted=false;}},
   fetch:(_url,options)=>new Promise((resolve,reject)=>{const call={options,resolve:control=>resolve({ok:true,json:async()=>control})};calls.push(call);options.signal?.addEventListener('abort',()=>reject(Object.assign(new Error('aborted'),{name:'AbortError'})));})});
@@ -23,6 +23,13 @@ test('legacy control retains concurrent requests without silently changing workl
 });
 test('streaming fixture mutates real paragraph and labels synthetic notifications',async()=>{
  const o=observer('bounded');const p=o.ctx.report();o.calls[0].resolve({mutationStorm:true});await p;o.intervals[0]();assert.match(o.paragraph.textContent,/Synthetic streaming revision 1/);assert.equal(o.events.length,8);assert(o.events.every(e=>e.type==='input'&&!e.isTrusted));
+});
+test('quiet cadence gates only periodic payloads, not real input or latest state',async()=>{
+ const o=observer('bounded');let p=o.ctx.report();o.calls[0].resolve({observerIntervalMs:5000});await p;
+ o.ctx.testNow=4900;await o.ctx.report();assert.equal(o.calls.length,1);assert.equal(o.stats().cadenceSkipped,1);
+ p=o.ctx.report({type:'input'});assert.equal(o.calls.length,2);o.calls[1].resolve({observerIntervalMs:5000});await p;
+ o.ctx.testNow=10000;p=o.ctx.report();assert.equal(o.calls.length,3);o.calls[2].resolve({observerIntervalMs:500});await p;
+ o.ctx.testNow=10001;p=o.ctx.report();assert.equal(o.calls.length,4);o.calls[3].resolve({});await p;
 });
 function adapter(tuned){
  const messages=[],listeners={},port={postMessage:m=>messages.push(m),onMessage:{addListener:fn=>port.receive=fn},onDisconnect:{addListener:fn=>port.disconnect=fn}};
