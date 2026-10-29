@@ -1,0 +1,72 @@
+name: Promote verified Mac and Android packages
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing draft tag matching the checked publication manifest
+        type: string
+        required: true
+permissions:
+  contents: write
+  actions: read
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_TAG: ${{ inputs.release_tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '26.7.0'
+      - name: Read frozen candidate run identities
+        id: settings
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import assert from 'node:assert/strict';
+          const version=JSON.parse(fs.readFileSync('desktop/package.json')).version;
+          assert.equal(process.env.RELEASE_TAG,'v'+version);
+          const c=JSON.parse(fs.readFileSync('docs/releases/'+version+'.json'));
+          assert.deepEqual(Object.keys(c.binarySourceCommits).sort(),['android','macos']);
+          for(const platform of ['macos','android']){
+            assert(Number.isSafeInteger(c.runs[platform])&&c.runs[platform]>0);
+            fs.appendFileSync(process.env.GITHUB_OUTPUT,platform+'_run='+c.runs[platform]+'\n');
+          }
+          NODE
+      - uses: actions/download-artifact@v4
+        with:
+          name: mac-arm64-dmg
+          run-id: ${{ steps.settings.outputs.macos_run }}
+          github-token: ${{ github.token }}
+          path: promotion/mac-dmg
+      - uses: actions/download-artifact@v4
+        with:
+          name: mac-arm64-zip
+          run-id: ${{ steps.settings.outputs.macos_run }}
+          github-token: ${{ github.token }}
+          path: promotion/mac-zip
+      - uses: actions/download-artifact@v4
+        with:
+          name: mac-release-info
+          run-id: ${{ steps.settings.outputs.macos_run }}
+          github-token: ${{ github.token }}
+          path: promotion/mac-info
+      - uses: actions/download-artifact@v4
+        with:
+          name: android-apks
+          run-id: ${{ steps.settings.outputs.android_run }}
+          github-token: ${{ github.token }}
+          path: promotion/android-original
+      - name: Verify original binaries, Android signature and draft assets
+        run: node desktop/scripts/publish-mac-android-candidate.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mac-android-promotion-verification
+          retention-days: 30
+          path: promotion/promotion-verification.json

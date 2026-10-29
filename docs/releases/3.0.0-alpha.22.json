@@ -1,0 +1,87 @@
+{
+  "schema": 1,
+  "product": "ChatGPT Studio",
+  "version": "3.0.0-alpha.22",
+  "sourceCommit": "b44e564deaed09efea7be3d68349d2198dede46b",
+  "platforms": [
+    "macos-arm64",
+    "android"
+  ],
+  "binarySourceCommits": {
+    "macos": "1df1dded1985a35f7fef8f5ba22bf702e10ac6e6",
+    "android": "85ff89ff973f730dbe3792eb0778aced81741411"
+  },
+  "runs": {
+    "macos": 40477100725,
+    "android": 40468096647
+  },
+  "verificationRuns": [
+    {
+      "kind": "macos-package",
+      "runId": 40477100725,
+      "sourceCommit": "1df1dded1985a35f7fef8f5ba22bf702e10ac6e6"
+    },
+    {
+      "kind": "android-package",
+      "runId": 40468096647,
+      "sourceCommit": "85ff89ff973f730dbe3792eb0778aced81741411"
+    },
+    {
+      "kind": "android-capabilities",
+      "runId": 40468099314,
+      "sourceCommit": "85ff89ff973f730dbe3792eb0778aced81741411"
+    },
+    {
+      "kind": "android-readability",
+      "runId": 40466592252,
+      "sourceCommit": "f94d51dd9c76b7fe43ebe063f4a0195065b7f425"
+    },
+    {
+      "kind": "android-offline-native",
+      "runId": 40463120182,
+      "sourceCommit": "365900d10645cff7cb2a50a81eb1943b03380730"
+    },
+    {
+      "kind": "android-process-restart",
+      "runId": 40463530040,
+      "sourceCommit": "fb82e20d38431e2a17bfe6212835471a340c480a"
+    }
+  ],
+  "artifacts": [
+    {
+      "file": "ChatGPT-Studio-3.0.0-alpha.22-mac-arm64.dmg",
+      "platform": "macos",
+      "purpose": "installer",
+      "bytes": 155097791,
+      "sha256": "7ce109d159929b2e9ca687d8b2d5abfb90211af04917e71f255f45b567d774a0"
+    },
+    {
+      "file": "ChatGPT-Studio-3.0.0-alpha.22-mac-arm64.zip",
+      "platform": "macos",
+      "purpose": "installer",
+      "bytes": 155044652,
+      "sha256": "2d606849d66f8b27d640a22b3d29a0a6916e1ec1c1b110b63bc01e8efc2ce12e"
+    },
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.22-mac-arm64.zip",
+      "platform": "macos",
+      "purpose": "legacy-updater",
+      "bytes": 155160576,
+      "sha256": "fc2c8607ad8fbd521b4450017d983e61958cfed514c5318062a4ff0563b5704e"
+    },
+    {
+      "file": "ChatGPT-Studio-3.0.0-alpha.22-android.apk",
+      "platform": "android",
+      "purpose": "installer",
+      "bytes": 7376521,
+      "sha256": "39a06004608162884c5d2a11277eee840f5311438376bd7541adc638b1e55e53"
+    }
+  ],
+  "windowsVersion": "3.0.0-alpha.21",
+  "limitations": [
+    "macOS ad-hoc signed, not notarized; stable Developer ID/Touch ID key creation unavailable",
+    "Android uses System WebView; multi-profile capability required; independent Gecko PoC is not included",
+    "Physical Android devices, personal account attachment sending and real ChatGPT acceptance remain pending",
+    "Android updates manually; full Mac update requires restart; no delta update"
+  ]
+}
