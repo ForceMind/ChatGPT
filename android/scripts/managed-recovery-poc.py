@@ -124,6 +124,23 @@ def same_values(a,t,value,document=None,seconds=40):
 def current_values(a,t,value):
     return wait(lambda:(lambda r:r if r and all(r.get(k)==value for k in ('standard','rich','standardModel','richModel')) else None)(latest(a,t)),label='complete current editor models')
 
+def reading_sample(a,t):
+    # Native scroll setup is idempotent. A fast input/IME transition may ignore
+    # the first PanZoom command; never retry an accepted text commit instead.
+    attempts=[]
+    for attempt in range(3):
+        issued=time.monotonic();launch(a,'scrollSample');deadline=time.monotonic()+4;first_good=None
+        while time.monotonic()<deadline:
+            row=latest(a,t)
+            if row and row['received']>issued and abs(row['scrollY']-1400)<80:
+                if first_good is None:first_good=row['received']
+                if row['received']-first_good>=.6:
+                    report.setdefault('readingSetup',[]).append({'account':a,'tab':t,'attempts':attempt+1,'observations':attempts,'stableAt':row['scrollY']});return
+            else:first_good=None
+            if row:attempts.append({'attempt':attempt+1,'received':row['received'],'scrollY':row['scrollY']})
+            time.sleep(.2)
+    raise RuntimeError('Native reading setup did not settle at1400: '+a+'/'+t)
+
 def point(a,t,name):
     launch(a,'inspect');wait(lambda:foreground(a),label='native input focus');started=time.monotonic();r=wait(lambda:(lambda r:r if r and r['received']>started else None)(latest(a,t)),label='fresh page point')
     n=native(a);p=r['points'][name];x=round(n['viewX']+p['x']*p['ratio']);y=round(n['viewY']+p['y']*p['ratio'])
@@ -137,7 +154,7 @@ def type_values(a,t,value,replace=False):
         launch(a,'input',sample=value,replace=replace)
         wait(lambda:(lambda r:r if r and r[field]==value and r.get(field+'Model')==value else None)(latest(a,t)),label='trusted input and '+field+' model')
     launch(a,'hideKeyboard');same_values(a,t,value)
-    launch(a,'scrollSample');wait(lambda:(lambda r:r if r and abs(r['scrollY']-1400)<80 else None)(latest(a,t)),label='real reading position')
+    reading_sample(a,t)
 
 def checkpoint(a,close=False):
     if close:mark_phase(base.phase,'complete-exit-request')
