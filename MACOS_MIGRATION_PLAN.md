@@ -1062,3 +1062,6 @@
 
 - 用户对完整计划及“有限内存归因→内置网络首版→真实验收/正式接入准备”的顺序回复开始。当前迭代只对已定位增长的API28做500/5000ms匹配smaps元数据归因与原20项门槛，结论交付后推进内置网络首版准备。仍只在GHA、新VM和合成页面，不截图、不碰正式客户端/main/登录/签名，不读取内存内容。
 - 新增受限/proc/<lab-pid>/smaps读取，继承fresh qemu/唯一设备/非调试安装SHA/进程名归属校验；拒绝/proc/mem和外国PID。仅每次原PSS采样读取映射元数据和计数，汇总reported permissions/name，不将类别名直接当成对象/分配器或泄漏。RSS/PSS覆盖不足必须失败。此额外观测扰动在两臂相同，不能和上轮未读smaps的绝对值作严格效果比较。
+- 有限实验40904089731 / a1495de：5000ms子任务123553977946成功，原20项通过；500ms子任务123553977380在已记录Home保持后，读取实验PID4964/smaps超过25秒，随后普通Native证据读取也超时，最终managed-report未完成。高频组不计全量通过，不据此判App泄漏/崩溃，不增加超时或扩展矩阵。低频/高频unsigned APK SHA相同，原ZIP摘要分别beeac6ae0a6ed7eade9cea15283b6d4d80a0ee4aca8504c9daf22c1f54150232 / 5e535763a46e9f9661887f54f28a4facd82b4ea342dfb8de394bbcd5733b5f3e，均已核验。
+- 已取得的高频Home增长主要在三个内容进程rw-p [anon:jemalloc]，PSS增20476/10404/10040KiB；低频Home最大对应2200KiB。仅属映射标签级定位，无法区分缓存/分配器保留/对象泄漏。有限阶段收尾，证据docs/benchmarks/android-memory-mapping-attribution.json，原始元数据在CI，不读内存内容、不改正式App/登录/生产签名。
+- docs/android-network-plan.md已形成下一阶段具体准备：独立Android包、原生最小界面、用户VLESS线路、本地代理核心候选、网页/原生文件同路由、连接/错误/切换不重发契约、加密配置与CI合成服务验收。只读核对Android官方ProxyController及XTLS官方libXray/core资料；没有拷贝参考项目源码、没有集成核心、没有提供免费节点或声称WARP已接入。随后按独立网络首版顺序推进，不直接覆盖用户客户端。

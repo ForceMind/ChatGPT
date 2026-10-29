@@ -252,3 +252,13 @@ gh workflow run android-recovery-poc.yml --ref codex/macos-assets-workbench \
 ```
 
 此入口仅属于独立CI实验，不配置正式App的标签休眠或采样策略，也不迁移现有登录。后续真机/arm64、真实ChatGPT、过夜与内存压力仍未验证。
+
+## 有限映射归因：第七阶段
+
+[API28匹配映射实验](https://github.com/ForceMind/ChatGPT/actions/runs/40904089731)对应`a1495de`。App未改；只在原PSS采样点读取已验证实验进程的smaps元数据，不读取内存内容，RSS/PSS覆盖不足必须失败。额外读映射有扰动，不能与上一轮未读smaps的绝对值作严格效果比较。
+
+5000ms组通过原20项。500ms组记录了Home保持与映射，随后读取`/proc/4964/smaps`超过25秒，普通ADB证据读取也超时，managed-report未完成；高频组没有通过完整门槛，不能称为一次全量通过，也不能将这次工具/ADB故障解释为已证实App泄漏或崩溃。
+
+高频Home映射增长主要位于三个内容进程的`rw-p [anon:jemalloc]`，PSS分别增加20476、10404、10040KiB；低频Home最大对应增量2200KiB，后续熄屏/Doze较小。这里仅陈述内核报告的映射标签与计数，不能区分分配器保留、缓存、对象存活或泄漏。没有强制GC或内存裁剪。
+
+该次为明确限定的有限归因，不扩展重跑矩阵。完整ZIP摘要、低频功能门槛、高频不通过原因与各进程最大映射增减见[映射证据](../../docs/benchmarks/android-memory-mapping-attribution.json)；原始映射元数据保留在对应CI工件。正式迁移仍未开始，个人登录和签名不操作。下一阶段准备按[应用内网络首版](../../docs/android-network-plan.md)推进独立候选，当前网络功能尚未集成。
