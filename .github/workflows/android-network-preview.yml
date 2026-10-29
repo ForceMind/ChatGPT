@@ -93,16 +93,19 @@ jobs:
           mkdir -p android/network-poc/app/build/candidate
           cp android/network-poc/app/build/outputs/apk/preview/debug/app-preview-debug.apk android/network-poc/app/build/candidate/ChatGPT-Studio-Network-Preview-0.1.0-android.apk
           cp android/network-poc/THIRD_PARTY_NOTICES.md android/network-poc/app/build/candidate/
+          cp LICENSE android/network-poc/app/build/candidate/LICENSE-ChatGPT-Studio
           cp android/network-poc/app/libs/dependencies.json android/network-poc/app/build/candidate/
           cp -R android/network-poc/app/libs/licenses android/network-poc/app/build/candidate/
           "$ANDROID_HOME/build-tools/36.0.0/aapt2" dump badging android/network-poc/app/build/candidate/*.apk > android/network-poc/app/build/candidate/apk-badging.txt
+          cp android/network-poc/app/build/candidate/apk-badging.txt android/network-poc/app/build/reports/
           python3 - <<'PY'
-          import hashlib, json, os, pathlib, zipfile
+          import hashlib, json, os, pathlib, re, zipfile
           folder=pathlib.Path('android/network-poc/app/build/candidate')
           apk=next(folder.glob('*.apk'))
           badging=(folder/'apk-badging.txt').read_text()
           assert "package: name='com.forcemind.chatgpt.networkpreview'" in badging
-          assert "sdkVersion:'28'" in badging
+          sdk=re.search(r"(?:min)?sdkVersion:'([0-9]+)(?:\.([0-9]+))?'",badging,re.IGNORECASE)
+          assert sdk and int(sdk[1])==28 and int(sdk[2] or 0)==0, badging
           with zipfile.ZipFile(apk) as z:
               libraries={n:z.getinfo(n).file_size for n in z.namelist() if n.startswith('lib/') and n.endswith('.so')}
           assert any('/arm64-v8a/' in n for n in libraries)

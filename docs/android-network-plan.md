@@ -16,13 +16,15 @@
 - 线路变更先保存本机草稿与工作区。已有连接并不保证立即切路，不宣称无缝迁移WebSocket；需要重连时由用户明确选择，既有任务保持原路由或显式取消。结果不明的消息、上传不得自动重试。
 - 直连失败可提示选择线路；启用代理后的连接错误不静默改成直连。连通检查只说明检查目标和结果，不能据此保证ChatGPT所有业务可用。
 
-## 核心候选与依赖
+## 已接入的独立核心与依赖
 
-XTLS/libXray提供Android构建与核心启动/停止、分享链接转换入口，仓库说明API不保证稳定且跟随最新core。因此实施前须固定wrapper/core提交与工具链，建立配置测试、Android9/15运行与原生库ABI/体积收据，不能直接追main。
+独立模块位于 `android/network-poc`，使用项目自行维护的 Go 启停接口，直接依赖 Xray-core `v1.260327.1-0.20261029083850-0afec66085a8`。固定 Go 1.27.3、x/mobile `v0.0.0-20261011034528-197770444867`、NDK 28.2.13676358；不追踪上游 main。生成 arm64/x86_64 AAR，使用 16 KB 页对齐；Android 构建需要 `-checklinkname=0` 兼容上游 anet 对 Go 内部符号的引用。
 
-libXray标注MIT；Xray-core当前LICENSE为MPL2.0。依赖保留各自许可、版权和对应源码出处；本项目非商业许可只用于自身代码，不能覆盖第三方文件。分发前须核对实际固定提交及依赖清单。本文件仅记录必要依赖选型，不上传参考项目源码或在主页加入参考项目介绍。
+Xray-core 使用 MPL-2.0，x/mobile 使用 BSD-3-Clause，AndroidX 使用 Apache-2.0。CI 附带 Go 模块版本、依赖许可及安装包摘要；本项目非商业许可只用于自身代码，不能覆盖第三方文件。未复制代理核心源码到本仓库，Go 依赖只在 Actions 下载。
 
-优先尝试应用内本地HTTP/SOCKS入口，HTTP入口也供Java URLConnection显式代理；是否可由同一核心提供对应入口、DNS行为及IPv6均以固定版本实际测试为准。Android9最低要求、TLS/REALITY、传输参数及分享链接支持范围不得仅凭README宣称已通过。
+已实现应用内 loopback HTTP 入口，供 WebView 和 Java URLConnection 显式使用；无直连备用 outbound。TCP、WebSocket、TLS、REALITY 及 HTTPS CONNECT 在自有节点矩阵通过。Android 设备侧验证独立记录，不能把主机 Go 测试等同于 Android 或真实 ChatGPT 验收。IPv6 真机、真实服务与手机厂商差异仍未验证。
+
+合成节点的 freedom 出口在固定核心版本中默认阻止回环目标，首轮四种传输因此超时。CI 服务端仅精确放行自有回显服务的 IP/端口，保持应用配置和失败断言不变；未开放任意私网出口。
 
 ## 配置、凭据与错误处理
 
@@ -40,6 +42,5 @@ VLESS导入需校验协议、UUID、主机/IPv6、端口及受支持参数。明
 ## 官方核对来源
 
 - AndroidX ProxyController：https://developer.android.com/reference/androidx/webkit/ProxyController
-- libXray接口/构建及API稳定性说明：https://github.com/XTLS/libXray
-- libXray许可：https://github.com/XTLS/libXray/blob/main/LICENSE
-- Xray-core许可：https://github.com/XTLS/Xray-core/blob/main/LICENSE
+- Xray-core 固定源码与许可：https://github.com/XTLS/Xray-core/tree/0afec66085a8
+- x/mobile 固定源码与许可：https://go.googlesource.com/mobile/+/197770444867
