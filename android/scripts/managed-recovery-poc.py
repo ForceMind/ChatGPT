@@ -151,7 +151,9 @@ def point(a,t,name):
             if not row or row['document']!=previous['document']:raise RuntimeError('Point document changed')
             if row['received']<=previous['received']:return None
             old=previous;previous=row
-            return row if row.get('documentFocused') and all(abs(row['points'][name][k]-old['points'][name][k])<=1 for k in ('x','y')) else None
+            # Coordinates can be stable before a click gives the document
+            # focus. focus_editor verifies DOM focus after the actual tap.
+            return row if all(abs(row['points'][name][k]-old['points'][name][k])<=1 for k in ('x','y')) else None
         r=wait(stable,12,label='stable actual editor coordinates')
     n=native(a);p=r['points'][name];x=round(n['viewX']+p['x']*p['ratio']);y=round(n['viewY']+p['y']*p['ratio'])
     if not n['viewY']<y<n['viewY']+n['viewHeight']:raise RuntimeError('Point outside visible webpage: '+name)
