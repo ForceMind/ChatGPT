@@ -218,3 +218,37 @@ gh workflow run android-recovery-poc.yml --ref codex/macos-assets-workbench \
 ```
 
 三臂依次为旧观测+旧算法、bounded观测+旧算法、bounded观测+优化算法。长后台使用`experiment=long-background -f resource_tuning=optimized`；手动工作流仍默认仅构建，设备交互须对应批准范围。调优开关只属于独立PoC，未接入正式APK。
+
+## 空闲观测周期校准：第六阶段
+
+[四组同源码对照](https://github.com/ForceMind/ChatGPT/actions/runs/40891733293)对应`4ca8321`，API28/35 × 500ms/5000ms全部成功，各20项（原17恢复+3个180秒资源段）。App的src、build.gradle、settings.gradle与第五阶段`0a268f9`相同；同系统两臂未签名APK和R8映射摘要逐字节相同，临时CI证书不同引起的签名差异按设备安装SHA分别核对。没有App行为或正式客户端改动。
+
+仅周期HTTP载荷采用0.5秒或5秒，底层500ms计时派发仍在，真实输入/点击/滚动和待发最新状态即时发送。资源段开始前需四页回执确认周期，返回后先恢复500ms并确认，再执行功能检查；没有降低输入、checkpoint、账号/文档栅栏、模型一致性或实际Doze要求。此轮是测量开销校准，不能重复算作App优化。
+
+| 系统 | 阶段（180秒） | 500ms载荷CPU均值 | 5000ms载荷CPU均值 | 500ms PSS首/末次采样MiB | 5000ms PSS首/末次采样MiB |
+| --- | --- | ---: | ---: | ---: | ---: |
+| Android9 | Home后台 | 11.43% | 2.30% | 714.8 / 752.9 | 712.5 / 715.5 |
+| Android9 | 熄屏 | 10.61% | 2.18% | 760.9 / 768.6 | 712.5 / 701.6 |
+| Android9 | 强制Doze | 10.45% | 2.06% | 746.8 / 772.6 | 704.4 / 702.1 |
+| Android15 | Home后台 | 2.56% | 0.51% | 657.9 / 639.9 | 673.2 / 616.3 |
+| Android15 | 熄屏 | 2.80% | 0.53% | 651.6 / 638.5 | 619.9 / 603.8 |
+| Android15 | 强制Doze | 0.79% | 0.51% | 627.7 / 631.6 | 603.1 / 608.7 |
+
+CPU按单核100%、设备时间加权。是单次匹配模拟器实验；不能将降低取证负载后的值称为正式App的真实空闲占用或无取证基线。PSS仍约每60秒观察，包含取样扰动；周期请求计数在Doze阻断时可能陈旧，不能当成精确网络吞吐。
+
+12个资源窗口均无新增恢复capture或页面记录写入，原文档、草稿、1400px位置与宿主PID保持，无新文档请求与自动发送。改变周期载荷明显改变本次CPU数据，因此此前高频HTTP结果不能直接外推App空闲成本；5秒载荷并不停止真实事件采样。
+
+Android9高频组的PSS增长主要位于内容进程`Private Other`：Home总PSS增加38.132MiB，其中该类别增加38.008MiB；Java/Native Heap汇总没有相应增长。低频组同段总PSS增加3.040MiB，熄屏/Doze则回落。该粗分类仍不能确定具体对象、JS堆、匿名映射、缓存或泄漏，后续若需进一步归因应检查内容进程映射/堆生命周期，而不是先改恢复写盘。Graphics桶报告0也不在本报告中被解释为相关进程没有图形成本。
+
+原包身份、全部采样点、每进程PSS类别和覆盖、Native/Java堆计数、实际周期与反例门槛集中于[空闲周期证据](../../docs/benchmarks/android-idle-observer-cadence.json)。无强制GC、内存裁剪、App电池白名单、关闭恢复或真实账号；formalMigrationReady仍为false。
+
+已有当前具体交互授权后，可复验：
+
+```sh
+gh workflow run android-recovery-poc.yml --ref codex/macos-assets-workbench \
+  -f runtime=optimized-release -f managed=true -f build_only=false \
+  -f core_only=false -f input_diagnostic=false -f experiment=idle-profile \
+  -f resource_tuning=optimized -f 'observer_cadences_ms=[500,5000]' -f 'apis=[28,35]'
+```
+
+此入口仅属于独立CI实验，不配置正式App的标签休眠或采样策略，也不迁移现有登录。后续真机/arm64、真实ChatGPT、过夜与内存压力仍未验证。
