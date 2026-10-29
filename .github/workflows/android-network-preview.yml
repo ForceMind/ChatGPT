@@ -32,7 +32,11 @@ jobs:
           packages: platform-tools
       - name: Build fixed proxy core
         run: |
-          sdkmanager 'ndk;28.2.13676358' 'platforms;android-37.0' 'build-tools;36.0.0'
+          for attempt in 1 2 3; do
+            if sdkmanager 'ndk;28.2.13676358' 'platforms;android-37.0' 'build-tools;36.0.0'; then break; fi
+            if [ "$attempt" = 3 ]; then exit 1; fi
+            sleep 3
+          done
           export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/28.2.13676358"
           bash android/network-poc/scripts/build-core.sh
       - name: Collect dependency licenses
@@ -84,6 +88,34 @@ jobs:
           bash android/network-poc/gradlew -p android/network-poc --no-daemon :app:testPreviewDebugUnitTest :app:lintPreviewDebug :app:assemblePreviewDebug :app:assembleCiDebug :app:assembleCiDebugAndroidTest
           cp android/network-poc/THIRD_PARTY_NOTICES.md android/network-poc/app/build/reports/
           find android/network-poc/app/build/outputs/apk -name '*.apk' -exec sha256sum {} \; > android/network-poc/app/build/reports/apk-sha256.txt
+      - name: Prepare independently named candidate
+        run: |
+          mkdir -p android/network-poc/app/build/candidate
+          cp android/network-poc/app/build/outputs/apk/preview/debug/app-preview-debug.apk android/network-poc/app/build/candidate/ChatGPT-Studio-Network-Preview-0.1.0-android.apk
+          cp android/network-poc/THIRD_PARTY_NOTICES.md android/network-poc/app/build/candidate/
+          cp android/network-poc/app/libs/dependencies.json android/network-poc/app/build/candidate/
+          cp -R android/network-poc/app/libs/licenses android/network-poc/app/build/candidate/
+          "$ANDROID_HOME/build-tools/36.0.0/aapt2" dump badging android/network-poc/app/build/candidate/*.apk > android/network-poc/app/build/candidate/apk-badging.txt
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, zipfile
+          folder=pathlib.Path('android/network-poc/app/build/candidate')
+          apk=next(folder.glob('*.apk'))
+          badging=(folder/'apk-badging.txt').read_text()
+          assert "package: name='com.forcemind.chatgpt.networkpreview'" in badging
+          assert "sdkVersion:'28'" in badging
+          with zipfile.ZipFile(apk) as z:
+              libraries={n:z.getinfo(n).file_size for n in z.namelist() if n.startswith('lib/') and n.endswith('.so')}
+          assert any('/arm64-v8a/' in n for n in libraries)
+          assert any('/x86_64/' in n for n in libraries)
+          (folder/'candidate.json').write_text(json.dumps({'sourceSha':os.environ['GITHUB_SHA'],
+              'apk':apk.name,'bytes':apk.stat().st_size,'sha256':hashlib.sha256(apk.read_bytes()).hexdigest(),
+              'libraries':libraries,'productionSigning':False,'formalAppModified':False},indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ChatGPT-Studio-Network-Preview-0.1.0-android
+          retention-days: 14
+          path: android/network-poc/app/build/candidate/
       - uses: actions/upload-artifact@v4
         if: always()
         with:
