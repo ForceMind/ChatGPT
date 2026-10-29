@@ -243,7 +243,7 @@ jobs:
             adb shell pm disable-user --user 0 com.google.android.apps.nexuslauncher
           fi
           if [ "$POC_RUNTIME_VARIANT" = optimized-release ]; then
-            adb install environment-poc/build/runtime-release/environment-poc-x86_64-ci-release.apk
+            adb install --no-incremental environment-poc/build/runtime-release/environment-poc-x86_64-ci-release.apk
           else
             adb install environment-poc/build/outputs/apk/debug/environment-poc-x86_64-debug.apk
           fi
@@ -263,7 +263,12 @@ jobs:
             export POC_REAL_ADB="$ANDROID_HOME/platform-tools/adb"
             export POC_RELEASE_ATTESTATION="$RUNNER_TEMP/studio-release-${RECOVERY_API}.json"
             export POC_RELEASE_AUDIT="$GITHUB_WORKSPACE/android/environment-poc/build/recovery-evidence/release-fixture-access.jsonl"
-            "$POC_REAL_ADB" root
+            for attempt in 1 2 3; do
+              "$POC_REAL_ADB" wait-for-device
+              if "$POC_REAL_ADB" root; then break; fi
+              if [ "$attempt" = 3 ]; then exit 1; fi
+              sleep 2
+            done
             "$POC_REAL_ADB" wait-for-device
             python3 -u scripts/ci_release_adb.py --attest
             chmod +x scripts/release-adb/adb
