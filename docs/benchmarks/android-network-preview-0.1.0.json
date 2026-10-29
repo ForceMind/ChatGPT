@@ -1,0 +1,86 @@
+{
+  "schemaVersion": 1,
+  "status": "validated-independent-preview",
+  "date": "2026-10-30",
+  "sourceSha": "badc584e9f99d8c5bb3a69fb5b1c2fdf2acf5488",
+  "workflow": {
+    "runId": 40924727232,
+    "url": "https://github.com/ForceMind/ChatGPT/actions/runs/40924727232",
+    "conclusion": "success"
+  },
+  "candidate": {
+    "sourceSha": "badc584e9f99d8c5bb3a69fb5b1c2fdf2acf5488",
+    "apk": "ChatGPT-Studio-Network-Preview-0.1.0-android-arm64.apk",
+    "bytes": 40668298,
+    "sha256": "215e9fb1b60f3207043425bf6ab607d15b260b6e920249b42886a85ab7e56c78",
+    "libraries": {
+      "lib/arm64-v8a/libgojni.so": 33487800
+    },
+    "productionSigning": false,
+    "formalAppModified": false,
+    "elfLoadAlignments": {
+      "lib/arm64-v8a/libgojni.so": [
+        16384,
+        16384,
+        16384,
+        16384
+      ]
+    },
+    "librarySha256": {
+      "lib/arm64-v8a/libgojni.so": "f4bd7d111bf8cfeadf317fa7f2614562b853fbdbcbb8d4f9eff35f28e7d46d2c"
+    },
+    "artifactId": 12918964909,
+    "downloadUrl": "https://github.com/ForceMind/ChatGPT/actions/runs/40924727232/artifacts/12918964909",
+    "archiveBytes": 14369928,
+    "archiveSha256": "3313c469c402265a6de1409fba46fce36fb3039ef90115af27d6c15876340f52",
+    "retentionDays": 14,
+    "signing": "disposable CI debug certificate",
+    "packageId": "com.forcemind.chatgpt.networkpreview"
+  },
+  "verification": {
+    "host": [
+      "invalid configuration rejected",
+      "second start rejected",
+      "owned raw/WS/TLS/REALITY transports",
+      "HTTP download and upload bytes",
+      "HTTPS CONNECT with test CA validation",
+      "wrong UUID cannot obtain origin response",
+      "listener closed after stop"
+    ],
+    "android28": {
+      "tests": 2,
+      "webView": "Current WebView package (name, version): (com.android.chrome, 69.0.3497.100)",
+      "webViewProxySupported": false,
+      "result": "native=A,B WebView=UNSUPPORTED_EXPLICITLY_REJECTED",
+      "scope": [
+        "encrypted store and tamper preservation",
+        "explicit direct choice after unreadable store",
+        "native VLESS A/B file bytes",
+        "unsupported WebView proxy rejected"
+      ]
+    },
+    "android35": {
+      "tests": 2,
+      "webView": "Current WebView package (name, version): (com.google.android.webview, 124.0.6367.219)",
+      "webViewProxySupported": true,
+      "result": "native=A,B WebView=A,B draft=PRESERVED upload=B failure=FAIL_CLOSED direct=EXPLICIT",
+      "scope": [
+        "encrypted store and tamper preservation",
+        "web and native requests use A/B exits",
+        "native files saved and bytes verified",
+        "native upload and WebView multipart file upload",
+        "draft and document preserved without reload",
+        "active transfer prevents route change",
+        "failed route cannot silently become direct",
+        "explicit direct web and native requests"
+      ]
+    },
+    "local": "Downloaded artifacts inspected for SHA-256 and ELF alignment only; temporary copies removed. No local build, app execution, browser rendering or emulator."
+  },
+  "limits": [
+    "Real ChatGPT, private nodes and arm64 physical devices not tested.",
+    "Android 9 stock WebView 69 lacks proxy override: native core passes, WebView routing is explicitly unavailable until the component is updated.",
+    "IPv6, OEM differences, injected system HTTP proxy/PAC scenarios and WebRTC/UDP routing are not verified.",
+    "No formal client migration, production signing, main merge, public release or site deployment in this batch."
+  ]
+}
