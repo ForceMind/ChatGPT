@@ -68,7 +68,8 @@ const sdk=fs.readdirSync(toolsRoot).sort().reverse().map(v=>path.join(toolsRoot,
 const signature=execFileSync(path.join(sdk,'apksigner'),['verify','--verbose','--print-certs',signed],{encoding:'utf8'});
 console.log('Android SDK signature verification:\n'+signature);
 assert.equal(android.certificateSha256,'8b6eef928fded91f291ad954e20976b2cc6011b55e8cbec0152695fe1f05cf19');
-const certs=[...signature.matchAll(/^Signer (?:#\d+|\(minSdkVersion=\d+, maxSdkVersion=\d+\)) certificate SHA-256 digest: ([a-f0-9]{64})\s*$/gm)].map(m=>m[1]);
+assert.match(signature,/^Number of signers: 1\s*$/m);
+const certs=[...signature.matchAll(/^(?:Signer #\d+|V3\.0 Signer:) certificate SHA-256 digest: ([a-f0-9]{64})\s*$/gm)].map(m=>m[1]);
 assert.deepEqual(certs,[android.certificateSha256]);assert.match(signature,/Verified using v3 scheme[^\n]*: true/);
 const badging=execFileSync(path.join(sdk,'aapt2'),['dump','badging',signed],{encoding:'utf8'});
 assert.match(badging,/package: name='com\.forcemind\.chatgpt\.profiles' versionCode='3000022' versionName='3\.0\.0-alpha\.22'/);
