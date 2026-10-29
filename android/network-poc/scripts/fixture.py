@@ -63,7 +63,8 @@ def main():
                   'inbounds': [{'listen': '0.0.0.0', 'port': port, 'protocol': 'vless',
                                 'settings': {'clients': [{'id': IDENTITY}], 'decryption': 'none'}}],
                   'outbounds': [{'protocol': 'freedom', 'sendThrough': source,
-                                 'settings': {'domainStrategy': 'UseIP'}}]}
+                                 'settings': {'domainStrategy': 'UseIP', 'finalRules': [
+                                     {'action': 'allow', 'ip': ['127.0.0.1/32'], 'port': '18080'}]}}]}
         config_file = folder / (tag + '.json')
         config_file.write_text(json.dumps(config))
         children.append(subprocess.Popen([args.core, 'run', '-config', str(config_file)],

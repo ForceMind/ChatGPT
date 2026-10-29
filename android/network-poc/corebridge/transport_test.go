@@ -113,7 +113,9 @@ func TestOwnedTransportMatrix(t *testing.T) {
                     "password":base64.RawURLEncoding.EncodeToString(private.PublicKey().Bytes()),"shortId":"1234","spiderX":"/"}
             }
             serverJSON:=encode(map[string]any{"log":map[string]any{"loglevel":"debug"},"inbounds":[]any{map[string]any{"listen":"127.0.0.1","port":serverPort,"protocol":"vless",
-                "settings":map[string]any{"clients":[]any{map[string]any{"id":fixtureID}},"decryption":"none"},"streamSettings":serverStream}},"outbounds":[]any{map[string]any{"protocol":"freedom"}}})
+                "settings":map[string]any{"clients":[]any{map[string]any{"id":fixtureID}},"decryption":"none"},"streamSettings":serverStream}},"outbounds":[]any{map[string]any{"protocol":"freedom",
+                    "settings":map[string]any{"finalRules":[]any{map[string]any{"action":"allow","ip":[]string{"127.0.0.1/32"},
+                        "port":strconv.Itoa(origin.Listener.Addr().(*net.TCPAddr).Port)+","+strconv.Itoa(target.Listener.Addr().(*net.TCPAddr).Port)}}}}}})
             server:=exec.Command(os.Args[0],"-test.run=^TestCoreServerProcess$")
             var serverLog bytes.Buffer
             server.Stdout=&serverLog;server.Stderr=&serverLog
