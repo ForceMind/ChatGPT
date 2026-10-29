@@ -118,7 +118,13 @@ def long_background(h,report):
             result.update(memory=memory,totalPssMiB=round(sum(r['pssKiB'] for r in memory)/1024,3),lastMemoryAt=now)
         else:result['lastMemoryAt']=samples[-1]['lastMemoryAt']
         result['pageObservations']={a+':'+t:({k:r[k] for k in ('document','ticks','received','visibility','standard','rich','standardModel','richModel')} if (r:=h.base.latest(a,t)) else None) for a,t in h.TABS}
-        result['deviceIdle']=h.text('shell','dumpsys','deviceidle','get','deep');samples.append(result);save();return result
+        result['deviceIdle']=h.text('shell','dumpsys','deviceidle','get','deep')
+        power=h.text('shell','dumpsys','power');match=re.search(r'\bmWakefulness=(\w+)',power)
+        assert match,'Actual screen power state unavailable'
+        result['wakefulness']=match[1]
+        if label in ('screen-off','forced-doze'):assert match[1] in ('Asleep','Dozing'),'Screen-off condition not observed'
+        if label=='forced-doze':assert result['deviceIdle']=='IDLE','Forced Doze ended before the requested interval'
+        samples.append(result);save();return result
     def window(label,seconds):
         h.mark_phase('prolonged-'+label);start=time.monotonic();sample(label);deadline=start+seconds
         while time.monotonic()<deadline:
@@ -158,6 +164,7 @@ def long_background(h,report):
     for label in ('foreground-baseline','home','screen-off','forced-doze'):
         rows=[r for r in samples if r['stage']==label];mem=[r['totalPssMiB'] for r in rows if 'totalPssMiB' in r]
         intervals=[r['cpuFromPrevious'] for r in rows[1:] if r.get('cpuFromPrevious',{}).get('completeProcessCoverage')];cpu=[r['oneCorePercent'] for r in intervals];duration=sum(r['deviceSeconds'] for r in intervals)
+        assert intervals,'No attributable CPU interval for '+label
         summary.append({'stage':label,'samples':len(rows),'memorySamples':len(mem),'pssMiBFirst':mem[0],'pssMiBLast':mem[-1],'pssMiBPeak':max(mem),'cpuValidIntervals':len(cpu),'cpuMeasuredDeviceSeconds':round(duration,3),'cpuMeanOneCorePercent':round(sum(r['oneCorePercent']*r['deviceSeconds'] for r in intervals)/duration,4) if duration else None,'cpuPeakOneCorePercent':max(cpu) if cpu else None})
     report['longBackground']={'summary':summary,'stages':stages,'cpuClockTicksPerSecond':hz,'logicalCPUs':cores,'requestedBackgroundSeconds':1800,'scope':'Synthetic four-page workload; 500ms HTTP observations and recovery bookkeeping included. CPU is aggregate per one logical core, may exceed 100%. PSS is summed across currently attributable package processes. Sampling overhead included; emulator measurements are not physical-device or real ChatGPT predictions.'}
 

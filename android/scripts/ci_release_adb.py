@@ -44,7 +44,7 @@ def adapt(args,c):
         if t!=['cat','/sdcard/managed-poc.xml']:raise ValueError('Unapproved exec-out operation')
         return ['exec-out',*t],None
     allowed=(t in (['getprop','ro.kernel.qemu'],['getprop','ro.build.version.sdk'],['dumpsys','activity','activities'],['ps','-A','-o','PID,S,NAME'],['am','force-stop',PACKAGE],['uiautomator','dump','--compressed','/sdcard/managed-poc.xml']))
-    if t in (['getconf','CLK_TCK'],['getconf','_NPROCESSORS_ONLN'],['cat','/proc/uptime'],['dumpsys','deviceidle','get','deep'],['dumpsys','deviceidle','force-idle'],['dumpsys','deviceidle','unforce'],['dumpsys','battery','unplug'],['dumpsys','battery','reset'],['wm','dismiss-keyguard']):allowed=True
+    if t in (['getconf','CLK_TCK'],['getconf','_NPROCESSORS_ONLN'],['cat','/proc/uptime'],['dumpsys','power'],['dumpsys','deviceidle','get','deep'],['dumpsys','deviceidle','force-idle'],['dumpsys','deviceidle','unforce'],['dumpsys','battery','unplug'],['dumpsys','battery','reset'],['wm','dismiss-keyguard']):allowed=True
     if (len(t)==3 and t[:2]==['dumpsys','meminfo'] and re.fullmatch(r'[1-9]\d{0,7}',t[2])) or (len(t)==2 and t[0]=='cat' and re.fullmatch(r'/proc/[1-9]\d{0,7}/stat',t[1])):allowed=True;kind='resource-read'
     if t[:2]==['am','start']:
         allowed=t.count('-n')==1 and t.index('-n')+1<len(t) and re.fullmatch(re.escape(PACKAGE+'/'+PACKAGE)+r'\.Managed[ABC]Activity',t[t.index('-n')+1]) is not None
