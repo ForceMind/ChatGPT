@@ -165,6 +165,8 @@ class Sampler:
             raise ValueError("Invalid kernel CLK_TCK")
         provider_dump = self.shell("dumpsys", "webviewupdate")
         metadata = {"package": PACKAGE, "test": TEST, "clockTicksPerSecond": self.hz,
+                    "sourceSha": os.environ.get("GITHUB_SHA"), "runId": os.environ.get("GITHUB_RUN_ID"),
+                    "proxyTransport": {"protocol": "vless", "network": "raw", "security": "none"},
                     "api": self.shell("getprop", "ro.build.version.sdk").strip(),
                     "fingerprint": self.shell("getprop", "ro.build.fingerprint").strip(),
                     "webViewProvider": provider_dump, "webViewIdentity": parse_webview_identity(provider_dump),
@@ -353,6 +355,7 @@ def main():
         "Android API, emulator image and WebView provider/version are recorded per run. Do not infer proxy overhead by comparing different Android versions, images, or WebView versions; use direct/proxy phases within one run.",
         "No-app baseline has no instrumentation or app/renderer process; compare device CPU/MemAvailable in JSON. Do not interpret subtracting this baseline as app PSS.",
         "Proxy fixed workload: 30 evenly scheduled cycles of a 20-byte native disk download, 128 KiB upload + echo, and a 20-byte WebView fetch. HTTP/header/TCP/VLESS overhead is excluded from payload byte counts.",
+        "The owned VLESS benchmark uses raw TCP with security=none. TLS/REALITY CPU overhead is not measured. Phases run sequentially without forced GC; cache and allocation retention affect phase differences, so they are not a causal leak or incremental-cost proof.",
         "Background profile is a stopped Activity (CREATED lifecycle), with proxy retained. Recovery restores direct route and the synthetic direct page before measurement.",
         "Warmups and route transitions are excluded. Seven default memory samples and six CPU intervals cover each >=60s window. Memory peak is sampled, not a continuous high-water mark.",
         "Unknown renderer ownership, unreadable counters, process restart/churn, missing samples, workload overrun, or failed instrumentation invalidates completion; raw evidence remains available."

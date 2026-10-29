@@ -21,22 +21,29 @@ def blob_id(data):
     return hashlib.sha1(b'blob ' + str(len(data)).encode() + b'\0' + data).hexdigest()
 
 
+def parse_badging(badging, expected_package):
+    package = re.search(r"^package: name='([^']+)' versionCode='([^']+)' versionName='([^']+)'", badging, re.M)
+    sdk = re.search(r"^\s*(?:min)?sdkVersion:'(\d+)(?:\.(\d+))?'", badging, re.I | re.M)
+    target = re.search(r"^\s*targetSdkVersion:'(\d+)(?:\.(\d+))?'", badging, re.M)
+    if not package or not sdk or not target or package[1] != expected_package:
+        raise RuntimeError('Unexpected official provider package metadata: ' + '\n'.join(badging.splitlines()[:12]))
+    if int(sdk[2] or 0) != 0 or int(target[2] or 0) != 0:
+        raise RuntimeError('Fractional SDK metadata is not supported by the API28 fixture')
+    return {'package': package[1], 'versionCode': package[2], 'version': package[3],
+            'minSdk': int(sdk[1]), 'targetSdk': int(target[1])}
+
+
 def inspect(apk, catalog, pin, tools):
     data = apk.read_bytes()
     if blob_id(data) != pin['blob']:
         raise RuntimeError('Official provider Git blob verification failed')
     badging = run([str(tools/'aapt2'), 'dump', 'badging', str(apk)])
     signer = run([str(tools/'apksigner'), 'verify', '--verbose', '--print-certs', str(apk)])
-    package = re.search(r"package: name='([^']+)' versionCode='([^']+)' versionName='([^']+)'", badging)
-    sdk = re.search(r"sdkVersion:'(\d+)(?:\.\d+)?'", badging)
-    target = re.search(r"targetSdkVersion:'(\d+)(?:\.\d+)?'", badging)
-    if not package or not sdk or not target or package[1] != catalog['package']:
-        raise RuntimeError('Unexpected official provider package metadata: ' + badging)
+    parsed = parse_badging(badging, catalog['package'])
     with zipfile.ZipFile(apk) as archive:
         abis = sorted({n.split('/')[1] for n in archive.namelist() if n.startswith('lib/') and n.endswith('.so')})
     meta = {**pin, 'repository': catalog['repository'], 'path': catalog['path'],
-            'package': package[1], 'versionCode': package[2], 'version': package[3],
-            'minSdk': int(sdk[1]), 'targetSdk': int(target[1]), 'abis': abis,
+            **parsed, 'abis': abis,
             'bytes': len(data), 'sha256': hashlib.sha256(data).hexdigest(),
             'sourceUrl': catalog['repository'] + '/+/' + pin['commit'] + '/' + catalog['path'],
             'scope': 'CI emulator only; this historical provider is not a production security recommendation'}

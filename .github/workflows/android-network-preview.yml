@@ -33,6 +33,7 @@ jobs:
           key: network-api28-webview-${{ hashFiles('android/network-poc/scripts/webview-providers.json', 'android/network-poc/scripts/prepare-webview.py') }}
       - name: Verify pinned official compatible WebView
         run: |
+          python3 -m unittest discover -s android/network-poc/scripts/tests -p 'test_webview_provider.py'
           sdkmanager 'build-tools;36.0.0'
           python3 android/network-poc/scripts/prepare-webview.py --output android/network-poc/webview-fixture
       - uses: actions/upload-artifact@v4
