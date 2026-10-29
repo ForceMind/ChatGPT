@@ -2,7 +2,27 @@
 
 状态：已交付 Android 独立网络预览 0.1.0，GitHub Actions 合成验证通过。未接入正式客户端。2026-10-30。
 
-当前迭代：仅在全新 Actions 模拟器更新 Android 9 的官方 AOSP WebView，核对 APK 固定来源、签名、最低 SDK、实际 provider 与代理能力，强制补齐网页/文件同路由回归；通过后测量直连、代理、固定文件负载、后台及恢复阶段的进程内存/CPU。资源统计包含可明确归属的 renderer，报告系统/版本与观察开销，不把合成模拟器数值等同真实 ChatGPT 或手机占用。不更换用户设备 WebView，不修改正式 App、生产签名、main 或现有数据。
+本轮验证范围：仅在全新 Actions 模拟器更新 Android 9 的官方 AOSP WebView，核对 APK 固定来源、签名、最低 SDK、实际 provider 与代理能力，强制补齐网页/文件同路由回归；通过后测量直连、代理、固定文件负载、后台及恢复阶段的进程内存/CPU。资源统计包含可明确归属的 renderer，报告系统/版本与观察开销，不把合成模拟器数值等同真实 ChatGPT 或手机占用。不更换用户设备 WebView，不修改正式 App、生产签名、main 或现有数据。
+
+迭代完成：源码 `c699571f4fd9ba95dbfb27fcf14d9226972c759a` 的 [Actions 40932254243](https://github.com/ForceMind/ChatGPT/actions/runs/40932254243) 全部通过。Android 9 AOSP 模拟器已实际切换为官方 AOSP WebView 124.0.6367.219（最低 API26），完整网页/文件回归通过，不再走原生-only 分支。Android 15 的 Google WebView 124 同样完整通过。资源预检曾遇到 API28 缺少 getconf、API35 root 诊断查询返回255，已改为读取内核 AT_CLKTCK、用常规 shell 身份读取服务；两组的时钟频率实读均为100，所有阶段包含 App 和可明确归属的 renderer。
+
+## WebView 124 资源结果
+
+以下为 x86_64 CI 模拟器中的轻量单页合成测试，使用自有 VLESS raw/TCP、security=none。每段约60秒，预热5秒，7个内存样本；CPU按进程内核计数计算。内存为 App（包含Go JNI与测试框架）和所属WebView renderer的平均PSS合计，单位MiB；CPU的100%代表占满一个核。表内两个数分别为PSS / CPU，不跨系统推断性能差异。
+
+| 场景 | Android 9（PSS / CPU） | Android 15（PSS / CPU） |
+|---|---:|---:|
+| 直连空闲 | 204.8 MiB / 0.56% | 178.1 MiB / 0.45% |
+| 代理空闲 | 208.5 MiB / 0.68% | 178.8 MiB / 0.40% |
+| 代理固定负载 | 212.0 MiB / 5.08% | 182.0 MiB / 2.11% |
+| 代理后台空闲 | 212.4 MiB / 0.51% | 182.5 MiB / 0.37% |
+| 恢复直连 | 213.5 MiB / 0.53% | 182.8 MiB / 0.37% |
+
+两组所有阶段的最高采样PSS分别约214.2 / 183.5 MiB。固定负载为30轮20字节原生落盘下载、128 KiB上传及等量回显、20字节网页下载；不含TLS/REALITY性能评估。空闲CPU在本场景中均低于单核1%。恢复直连时PSS比初始约高8.7 / 4.7 MiB，记录为后续观察项，不能用这次短窗口判定泄漏或永久增量。
+
+原始内核计数、进程归属、时间、provider、工作量与样本保存在 [完整处理后记录](benchmarks/android-network-webview124-resources.json)，未只报App-only或把缺失值补零。阶段为顺序执行，不强制GC，存在缓存、分配保留和instrumentation/采样开销；Android15未启动App的系统总CPU窗口高于后续窗口，未用它相减来估算App占用。真实ChatGPT、多标签、真机、长期后台和其他传输成本仍未测。本机仅取回小型报告，临时下载已清理，没有本地构建或运行客户端。
+
+[Android9原始证据](https://github.com/ForceMind/ChatGPT/actions/runs/40932254243/artifacts/12923128284) / [Android15原始证据](https://github.com/ForceMind/ChatGPT/actions/runs/40932254243/artifacts/12924825037) / [本轮独立arm64候选](https://github.com/ForceMind/ChatGPT/actions/runs/40932254243/artifacts/12922403732)，Actions产物保留14天。正式App、main、生产签名及现有登录/恢复数据未修改。
 
 ## 第一批可操作交付
 
@@ -41,7 +61,7 @@ VLESS导入需校验协议、UUID、主机/IPv6、端口及受支持参数。明
 3. 独立WebView手机/平板界面：点击选择线路，确认回调后请求、网页/下载/上传同路由、账号隔离、切换时不重复发送、旧页面/草稿保留。只在明确批准的对应交互范围运行，不默认截图或访问真实ChatGPT。
 4. 交付独立候选及来源/摘要。真实节点与真实ChatGPT、OEM/arm64和正式接入另行验收；完成前不替换现有登录空间、不宣称网络功能已发布。
 
-## 首版交付与实测边界
+## 首次交付记录（升级 WebView 前）
 
 - [最终 Actions](https://github.com/ForceMind/ChatGPT/actions/runs/40924727232) 全部通过，应用源码提交 `badc584e9f99d8c5bb3a69fb5b1c2fdf2acf5488`。构建、JVM 单元测试、Lint 与模拟器运行均在 Actions 完成。
 - [arm64 候选下载](https://github.com/ForceMind/ChatGPT/actions/runs/40924727232/artifacts/12918964909)，ZIP 内含 APK、摘要、许可证与依赖清单，保留 14 天。独立包名 `com.forcemind.chatgpt.networkpreview`，临时 CI 签名，不替换正式 App。

@@ -28,4 +28,19 @@ CI 使用两条自有临时 VLESS 线路和本地回显服务，检查网页、�
 
 预览包与 `.ci` 测试包分开。只有测试包允许访问指定明文回显域名；预览包保持正常 TLS 校验。`network-application` 提供 APK、检查报告及摘要，`network-core` 提供代理库、完整模块版本和依赖许可。
 
+## Android 9 与资源验证
+
+扩展 CI 在全新的 Android 9 AOSP x86_64 模拟器中安装并选中固定的官方 AOSP WebView 124.0.6367.219，校验原始 Git blob、SHA-256、APK 签名、最低 SDK 和实际 provider。此历史构建仅作兼容性测试，不随本 App 分发，不更新用户设备，也不作为生产安全版本推荐。Android 9 和 Android 15 的这组运行均强制要求网页代理覆盖能力，不能以原生-only 分支替代完整网页/文件回归。
+
+路由回归通过后，`scripts/measure-resources.py` 在同一台全新 CI 模拟器采集未启动应用、直连空闲、代理空闲、固定负载、代理后台及恢复直连六个阶段。每段预热 5 秒、测量至少 60 秒，默认每 10 秒采样。固定负载为 30 轮 20 字节原生落盘下载、128 KiB 上传及回显、20 字节网页下载；使用自有 VLESS raw/TCP、`security=none` 线路，不代表 TLS/REALITY 的 CPU 成本。
+
+- 内存主指标是 App（包含 Go JNI 核心）与可明确归属的 WebView renderer 的 PSS 合计；RSS 相加可能重复计算共享页。
+- CPU 使用内核实际 `AT_CLKTCK`，以进程 `utime+stime` 差值计算 core-seconds 和单核百分比；多核合计可超过 100%。系统诊断服务使用 shell 身份，root 仅用于隔离进程的内核计数读取。
+- 报告包含原始进程归属、计数、provider、版本、窗口和文件字节；归属不明、计数不可读、进程重启或阶段缺失都会使资源验收失败，不补零或只报 App 进程。
+- 数值包含 instrumentation 的影响，采样也会扰动运行；按顺序执行且不强制 GC。只比较同次系统/provider 内的阶段，不据此宣称真实 ChatGPT 占用、内存泄漏或真机性能。
+
+设备 artifact 的 `resources/report.json`、`resources/report.md` 是汇总，旁边保留原始快照；`provider-upgrade/` 记录 Android 9 更新前后与来源。内核时钟字段定义见 [Linux auxvec.h](https://github.com/torvalds/linux/blob/master/include/uapi/linux/auxvec.h)。
+
+2026-10-30 的扩展验证已在 [Actions 40932254243](https://github.com/ForceMind/ChatGPT/actions/runs/40932254243) 完整通过。Android9已在CI切换到AOSP WebView124，两组均覆盖网页/原生文件、上传、线路切换、草稿保留与显式直连。代理空闲平均PSS约208.5 / 178.8 MiB，CPU约0.68% / 0.40%（Android9 / Android15，单核口径）；这些是合成模拟器结果，不能当作真实ChatGPT或手机占用上限。详见 [结果与边界](../../docs/android-network-plan.md#webview-124-资源结果) 和 [处理后样本](../../docs/benchmarks/android-network-webview124-resources.json)。
+
 真实节点、ChatGPT 登录、手机厂商系统、arm64 真机和正式 App 接入仍需后续验证。CI 签名不是生产签名，本包不承诺跨批次原地升级。
