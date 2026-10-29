@@ -179,3 +179,42 @@ gh workflow run android-recovery-poc.yml --ref codex/macos-assets-workbench \
 ```
 
 `experiment=input-warning` 为两页输入对照；`experiment=doze-probe` 为四页 Doze 定向段与原恢复回归。手动工作流默认仅构建，运行前仍需对应测试范围的明确授权。
+
+## CPU与内存定位优化：第五阶段
+
+本阶段仅限独立PoC，正式客户端、main、公开版本、个人登录与生产签名材料保持。固定三账号四页和两组Runtime，所有编译、纯逻辑检查与浏览器运行在GitHub Actions；不截图、不访问真实ChatGPT。
+
+新增计数把问题分开：闲置Home/Doze窗口未新增恢复capture或页面记录写入，因此不支持“闲置持续加密写盘是主要CPU来源”的解释。原HTTP取证每500ms产生完整观测，未限定并发；Android15原观测组单页最多收到362个未完成fetch promise的回执。新的观测传输只保留一个在途请求、一个待发标志，超时可取消并在有新状态时发送当前内容。该项属于取证修复，不能算作App性能收益，也不能证明全部PSS增长都来自它。
+
+PoC自身的优化独立比较：固定长度小写hex替代逐字节Formatter，元数据摘要只在文本变化时重算，稳定ready阶段去除完全相同的快照传输。恢复中的相同快照可能仍是进度信号，不能简单丢弃；原生auth/focus/scroll期间保留完整消息，明确ready后才允许合并。checkpoint、握手和退出保存强制获取当前状态，最终流式正文由网页与原生保存内容分别核对。
+
+早期不区分状态的去重候选在前进恢复失败，未采纳；其性能结果不用于交付。另修正了CI安装/ADB连接前置、幂等原生滚动准备，以及取证输入准备中点击前误要求已有焦点的问题；原功能、同一文档、真实DOM/编辑器模型和加密负例门槛保留。完整失败来源与最终采纳关系见[资源定位报告](../../docs/benchmarks/android-resource-tuning.json)。
+
+短对照使用90秒明确标注的正文流式变化+每轮8条重复通知、Home/Doze各180秒，再执行原17项恢复回归。App-only两臂均使用相同bounded观测，唯一调优因素为baseline/optimized；代码、依赖、ABI、R8配置保持，仅显式调优开关不同。Android9两臂来自同轮40875985935，Android15控制组40881524563与优化子任务40875985935的App模块输入一致，后续差异仅测试准备。
+
+| 系统 / 重复通知压力段 | 控制CPU均值 | 优化CPU均值 | 本次相对下降 |
+| --- | ---: | ---: | ---: |
+| Android9 | 51.54% | 16.99% | 67.04% |
+| Android15 | 26.93% | 19.76% | 26.61% |
+
+单核为100%，是单次合成压力负载，不是所有场景的降幅。Android9该段capture6435→716，真实pageWrite715→716，最终正文与恢复通过；页记录没有靠停写减少。Android15普通Home后台CPU3.6654→4.0064%，未显示一致改善。压力段PSS采样峰值下降，但部分回落后端点与Doze内存更高；不能宣称内存泄漏已修复或所有阶段更省。
+
+[优化配置长后台](https://github.com/ForceMind/ChatGPT/actions/runs/40881517638)已在同一源码`0e09473`完成两端单轮三段各10分钟及全部原17项恢复回归，每端20项通过。四页文档、草稿、位置、宿主PID保持，无新文档请求；非调试标志、临时CI签名、安装SHA和App UID均核对。App模块与短对照`0f54a67`完全一致，后续只修正测试输入准备。
+
+| 优化长后台 / PSS采样峰值MiB / CPU均值（单核100%） | Home | 熄屏 | 强制Doze |
+| --- | ---: | ---: | ---: |
+| Android9 | 800.8 / 11.12% | 839.1 / 11.10% | 845.0 / 11.07% |
+| Android15 | 672.3 / 2.72% | 708.3 / 2.47% | 662.9 / 0.72% |
+
+Android9仍存在后台PSS增长，空闲CPU没有短压力段同样的降幅；Android15本轮Doze末次PSS659.6MiB，但Home/熄屏仍增长。两端全部长测采样中观测请求并发均不超过1，不能据此宣称所有PSS增长或泄漏已解决，也不能把不同观测方式的历史长测当成严格百分比基线。此批收益是受控压力路径减少重复处理与临时分配、观测积压受限，并保留完整恢复功能；不是正式客户端或所有负载的性能承诺。实际手机、arm64/OEM、真实ChatGPT、过夜与内存压力验收不在当前证据范围；正式迁移门槛仍为false。
+
+已有本项具体交互授权后，对照入口为：
+
+```sh
+gh workflow run android-recovery-poc.yml --ref codex/macos-assets-workbench \
+  -f runtime=optimized-release -f managed=true -f build_only=false \
+  -f core_only=false -f input_diagnostic=false -f experiment=resource-profile \
+  -f resource_tuning=baseline -f 'resource_cases=["baseline","bounded","optimized"]' -f 'apis=[28,35]'
+```
+
+三臂依次为旧观测+旧算法、bounded观测+旧算法、bounded观测+优化算法。长后台使用`experiment=long-background -f resource_tuning=optimized`；手动工作流仍默认仅构建，设备交互须对应批准范围。调优开关只属于独立PoC，未接入正式APK。
