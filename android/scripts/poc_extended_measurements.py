@@ -150,14 +150,27 @@ def long_background(h,report):
         assert not [r for r in h.base.requests if r['received']>=started],'Unexpected document request during retention interval'
         return after
     h.select('A','0');window('foreground-baseline',60)
+    labels=('forced-doze',) if h.DOZE_ONLY else ('home','screen-off','forced-doze')
     try:
-        for label in ('home','screen-off','forced-doze'):
+        for label in labels:
             refs={a+':'+t:h.base.latest(a,t) for a,t in h.TABS};pids={a:h.native(a)['pid'] for a in ('A','B','C')};started=time.monotonic()
             h.text('shell','input','keyevent','KEYCODE_HOME');h.wait(lambda:not h.foreground('A'),label='real Home before long sample')
             if label in ('screen-off','forced-doze'):h.text('shell','input','keyevent','KEYCODE_SLEEP')
             if label=='forced-doze':
-                h.text('shell','dumpsys','battery','unplug');h.text('shell','dumpsys','deviceidle','force-idle')
-                assert h.text('shell','dumpsys','deviceidle','get','deep')=='IDLE','Forced Doze not observed'
+                entry={'hostStart':time.monotonic(),'enabledBefore':h.text('shell','dumpsys','deviceidle','enabled','deep'),'beforeDump':h.text('shell','dumpsys','deviceidle'),'transitions':[]}
+                report['dozeEntry']=entry
+                def save_entry():
+                    (h.OUT/'doze-entry.json').write_text(json.dumps(entry,indent=2)+'\n')
+                save_entry()
+                if entry['enabledBefore']=='0':entry['enableOutput']=h.text('shell','dumpsys','deviceidle','enable','deep')
+                h.text('shell','dumpsys','battery','unplug')
+                def entry_conditions():
+                    state={key:h.text('shell','dumpsys','deviceidle','get',key) for key in ('screen','charging','deep','force')};entry['transitions'].append(state);save_entry()
+                    return state if state['screen']=='false' and state['charging']=='false' else None
+                h.wait(entry_conditions,20,label='actual screen off and battery unplug before Doze')
+                entry['forceOutput']=h.text('shell','dumpsys','deviceidle','force-idle','deep');save_entry()
+                entry['stateAfterForce']=h.text('shell','dumpsys','deviceidle','get','deep');entry['afterDump']=h.text('shell','dumpsys','deviceidle');save_entry()
+                assert entry['stateAfterForce']=='IDLE','Forced Doze not observed: '+entry['stateAfterForce']
             seconds=window(label,600)
             # Record suspended/stale observations before waking; do not claim
             # heartbeats continued if the OS blocked execution/network access.
@@ -168,12 +181,12 @@ def long_background(h,report):
     finally:
         h.text('shell','dumpsys','deviceidle','unforce',check=False);h.text('shell','dumpsys','battery','reset',check=False);h.text('shell','input','keyevent','KEYCODE_WAKEUP',check=False)
     summary=[]
-    for label in ('foreground-baseline','home','screen-off','forced-doze'):
+    for label in ('foreground-baseline',*labels):
         rows=[r for r in samples if r['stage']==label];mem=[r['totalPssMiB'] for r in rows if 'totalPssMiB' in r]
         intervals=[r['cpuFromPrevious'] for r in rows[1:] if r.get('cpuFromPrevious',{}).get('completeProcessCoverage')];cpu=[r['oneCorePercent'] for r in intervals];duration=sum(r['deviceSeconds'] for r in intervals)
         assert intervals,'No attributable CPU interval for '+label
         summary.append({'stage':label,'samples':len(rows),'memorySamples':len(mem),'pssMiBFirst':mem[0],'pssMiBLast':mem[-1],'pssMiBPeak':max(mem),'cpuValidIntervals':len(cpu),'cpuMeasuredDeviceSeconds':round(duration,3),'cpuMeanOneCorePercent':round(sum(r['oneCorePercent']*r['deviceSeconds'] for r in intervals)/duration,4) if duration else None,'cpuPeakOneCorePercent':max(cpu) if cpu else None})
-    report['longBackground']={'summary':summary,'stages':stages,'cpuClockTicksPerSecond':hz,'logicalCPUs':cores,'requestedBackgroundSeconds':1800,'scope':'Synthetic four-page workload; 500ms HTTP observations and recovery bookkeeping included. CPU is aggregate per one logical core, may exceed 100%. PSS is summed across currently attributable package processes. Sampling overhead included; emulator measurements are not physical-device or real ChatGPT predictions.'}
+    report['longBackground']={'summary':summary,'stages':stages,'cpuClockTicksPerSecond':hz,'logicalCPUs':cores,'requestedBackgroundSeconds':600*len(labels),'scope':'Synthetic four-page workload; 500ms HTTP observations and recovery bookkeeping included. CPU is aggregate per one logical core, may exceed 100%. PSS is summed across currently attributable package processes. Sampling overhead included; emulator measurements are not physical-device or real ChatGPT predictions.'}
 
 if __name__=='__main__':
     import sys

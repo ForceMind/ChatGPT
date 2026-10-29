@@ -27,7 +27,7 @@ on:
       experiment:
         description: Authorized independent measurement; no screenshots or live ChatGPT
         type: choice
-        options: [recovery, input-warning, long-background]
+        options: [recovery, input-warning, long-background, doze-probe]
         default: recovery
   workflow_call:
     inputs:
@@ -92,7 +92,7 @@ jobs:
             android/environment-poc/build/reports/lint-results-release.*
   recovery:
     runs-on: ubuntu-latest
-    timeout-minutes: ${{ inputs.experiment == 'long-background' && 65 || 25 }}
+    timeout-minutes: ${{ inputs.experiment == 'long-background' && 65 || inputs.experiment == 'doze-probe' && 45 || 25 }}
     strategy:
       fail-fast: false
       matrix:
@@ -123,7 +123,7 @@ jobs:
           import os
           mode=os.environ['POC_RUNTIME_VARIANT'];assert mode in ('debug','optimized-release')
           if mode=='optimized-release':assert os.environ['POC_MANAGED']=='true' and os.environ['POC_CORE']!='true' and os.environ['POC_INPUT_DIAGNOSTIC']!='true'
-          experiment=os.environ['POC_EXPERIMENT'];assert experiment in ('recovery','input-warning','long-background')
+          experiment=os.environ['POC_EXPERIMENT'];assert experiment in ('recovery','input-warning','long-background','doze-probe')
           if experiment!='recovery':assert mode=='optimized-release' and os.environ['POC_MANAGED']=='true' and os.environ['POC_CORE']!='true' and os.environ['POC_INPUT_DIAGNOSTIC']!='true'
           PY
           mkdir -p environment-poc/build/recovery-evidence
@@ -224,7 +224,7 @@ jobs:
             "$ANDROID_HOME/build-tools/36.0.0/d8" --min-api 28 --lib "$ANDROID_HOME/platforms/android-37.0/android.jar" --output environment-poc/build/input-helper/input.jar environment-poc/build/input-helper/classes/com/forcemind/chatgpt/pocinput/TouchInput.class
             adb push environment-poc/build/input-helper/input.jar /data/local/tmp/studio-poc-input.jar
           fi
-          if [ "$RECOVERY_API" = 28 ] && [ "$POC_EXPERIMENT" = long-background ]; then
+          if [ "$RECOVERY_API" = 28 ] && { [ "$POC_EXPERIMENT" = long-background ] || [ "$POC_EXPERIMENT" = doze-probe ]; }; then
             mkdir -p environment-poc/build/metrics-helper/classes
             javac --release 8 -classpath "$ANDROID_HOME/platforms/android-37.0/android.jar" -d environment-poc/build/metrics-helper/classes scripts/android/ProcessMetrics.java
             "$ANDROID_HOME/build-tools/36.0.0/d8" --min-api 28 --lib "$ANDROID_HOME/platforms/android-37.0/android.jar" --output environment-poc/build/metrics-helper/metrics.jar environment-poc/build/metrics-helper/classes/com/forcemind/chatgpt/pocmetrics/ProcessMetrics.class
@@ -243,6 +243,8 @@ jobs:
           if [ "${{ inputs.managed }}" = true ]; then
             if [ "$POC_EXPERIMENT" = input-warning ]; then
               timeout 900 python3 -u scripts/managed-recovery-poc.py environment-poc/build/recovery-evidence --warning-probe
+            elif [ "$POC_EXPERIMENT" = doze-probe ]; then
+              timeout 1800 python3 -u scripts/managed-recovery-poc.py environment-poc/build/recovery-evidence --trace-input --long-background --doze-only
             elif [ "$POC_EXPERIMENT" = long-background ]; then
               timeout 3300 python3 -u scripts/managed-recovery-poc.py environment-poc/build/recovery-evidence --trace-input --long-background
             elif [ "${{ inputs.input_diagnostic }}" = true ]; then

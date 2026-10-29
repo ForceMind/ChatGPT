@@ -54,7 +54,7 @@ class ReleaseFixtureBridgeTests(unittest.TestCase):
         _,kind=adapt(['shell','cat','/proc/123/stat'],self.c);self.assertEqual(kind,'resource-read')
         for command in [['shell','cat','/proc/123/environ'],['shell','dumpsys','meminfo','com.other.app'],['shell','dumpsys','deviceidle','whitelist','+'+PACKAGE],['shell','settings','put','global','stay_on_while_plugged_in','7']]:
             with self.assertRaises(ValueError):adapt(command,self.c)
-        for command in [['shell','dumpsys','deviceidle','force-idle'],['shell','dumpsys','deviceidle','unforce'],['shell','dumpsys','battery','reset']]:adapt(command,self.c)
+        for command in [['shell','dumpsys','deviceidle','force-idle'],['shell','dumpsys','deviceidle','unforce'],['shell','dumpsys','battery','reset'],['shell','dumpsys','deviceidle','get','screen'],['shell','dumpsys','deviceidle','enable','deep']]:adapt(command,self.c)
     def test_legacy_clock_probe_is_exact_and_shell_uid(self):
         command=['shell','env','CLASSPATH=/data/local/tmp/studio-poc-metrics.jar','app_process','/system/bin','com.forcemind.chatgpt.pocmetrics.ProcessMetrics']
         args,_=adapt(command,self.c);self.assertIn('2000 env CLASSPATH=',args[2])

@@ -25,6 +25,8 @@ CORE='--core' in sys.argv
 INPUT_DIAGNOSTIC='--input-diagnostic' in sys.argv
 WARNING_PROBE='--warning-probe' in sys.argv
 LONG_BACKGROUND='--long-background' in sys.argv
+DOZE_ONLY='--doze-only' in sys.argv
+if DOZE_ONLY and not LONG_BACKGROUND:raise SystemExit('Doze-only requires prolonged measurement mode')
 TRACE_INPUT=INPUT_DIAGNOSTIC or WARNING_PROBE or '--trace-input' in sys.argv
 if CORE and INPUT_DIAGNOSTIC:raise SystemExit('Choose core or input diagnostic, not both')
 CAPTURE_UI='--capture-ui' in sys.argv
@@ -372,7 +374,7 @@ finally:
     required={'initialCapture','normalClose','saveAfterRestore','historyAndURLIsolation','offlineReadOnlySnapshot','forceStopAndReconnect','keepCurrentConflict','restoreSavedConflictAndBackupAccess','corruptRecordPreserved','noAutomaticSendAndNoWebNativeAccess','accountEnvironmentAndStorageIsolation'}
     if not CORE:required.update(('crossAccountRecordPreserved','unresolvedConflictRestartAndURLBinding','interruptedAtomicRecordRecovery','trustedTouchScrollUpDown','homeForegroundRetainsDocuments','activityRecreationRetainsDocuments'))
     report['inputDiagnosticComplete']=INPUT_DIAGNOSTIC and bool(report.get('experimentComplete'))
-    if LONG_BACKGROUND:required.update(('prolonged-home','prolonged-screen-off','prolonged-forced-doze'))
+    if LONG_BACKGROUND:required.update(('prolonged-forced-doze',) if DOZE_ONLY else ('prolonged-home','prolonged-screen-off','prolonged-forced-doze'))
     report['warningProbeComplete']=WARNING_PROBE and bool(report.get('experimentComplete'))
     report['managedControllerReady']=not (INPUT_DIAGNOSTIC or WARNING_PROBE) and bool(report.get('experimentComplete')) and all(report['cases'].get(name,False) for name in required)
     report['formalMigrationReady']=False
@@ -390,7 +392,7 @@ finally:
     if WARNING_PROBE and 'warningControls' in report:
         passive=('warning-passive-open','warning-passive-switch','warning-navigation-without-input','warning-focus-without-commit')
         report['warningControls']['warningsWithoutAnyCommit']={phase:warnings['byPhase'].get(phase,{}).get('noEditableParent',0) for phase in passive}
-    if LONG_BACKGROUND:report['limits'][1]='Fresh x86_64 CI emulators: Home, screen off and forced Doze measured for 10 minutes each; no arm64/physical/OEM, production OS-pressure or permanent survival guarantee.'
+    if LONG_BACKGROUND:report['limits'][1]='Fresh x86_64 CI emulator; requested 10-minute forced Doze only; Home/screen evidence is from separate runs.' if DOZE_ONLY else 'Fresh x86_64 CI emulators: Home, screen off and forced Doze measured for 10 minutes each; no arm64/physical/OEM, production OS-pressure or permanent survival guarantee.'
     if not report['logCaptureComplete']:failure=failure or 'Continuous device log capture ended unexpectedly';report['failure']=failure;report['managedControllerReady']=False
     for name,value in (('managed-report.json',report),('managed-events.json',base.events),('managed-requests.json',base.requests)):(OUT/name).write_text(json.dumps(value,ensure_ascii=False,indent=2))
     text('shell','am','force-stop',PACKAGE,check=False);text('reverse','--remove','tcp:8765',check=False);server.shutdown()
