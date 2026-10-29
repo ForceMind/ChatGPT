@@ -27,8 +27,16 @@ on:
       experiment:
         description: Authorized independent measurement; no screenshots or live ChatGPT
         type: choice
-        options: [recovery, input-warning, long-background, doze-probe]
+        options: [recovery, input-warning, long-background, doze-probe, resource-profile]
         default: recovery
+      resource_cases:
+        description: Resource profile controlled cases only
+        type: string
+        default: '["baseline","bounded","optimized"]'
+      resource_tuning:
+        type: choice
+        options: [baseline, optimized]
+        default: baseline
   workflow_call:
     inputs:
       apis:
@@ -59,6 +67,14 @@ on:
         type: string
         required: false
         default: recovery
+      resource_cases:
+        type: string
+        required: false
+        default: '["baseline","bounded","optimized"]'
+      resource_tuning:
+        type: string
+        required: false
+        default: baseline
 permissions:
   contents: read
 jobs:
@@ -92,11 +108,12 @@ jobs:
             android/environment-poc/build/reports/lint-results-release.*
   recovery:
     runs-on: ubuntu-latest
-    timeout-minutes: ${{ inputs.experiment == 'long-background' && 65 || inputs.experiment == 'doze-probe' && 45 || 25 }}
+    timeout-minutes: ${{ inputs.experiment == 'long-background' && 65 || (inputs.experiment == 'doze-probe' || inputs.experiment == 'resource-profile') && 45 || 25 }}
     strategy:
       fail-fast: false
       matrix:
         api: ${{ fromJSON(inputs.apis) }}
+        resource_case: ${{ fromJSON(inputs.experiment == 'resource-profile' && inputs.resource_cases || '["standard"]') }}
     env:
       RECOVERY_API: ${{ matrix.api }}
       POC_MIN_API: ${{ matrix.api == 28 && 28 || 29 }}
@@ -106,6 +123,9 @@ jobs:
       POC_CORE: ${{ inputs.core_only }}
       POC_INPUT_DIAGNOSTIC: ${{ inputs.input_diagnostic }}
       POC_EXPERIMENT: ${{ inputs.experiment || 'recovery' }}
+      POC_RESOURCE_CASE: ${{ matrix.resource_case }}
+      POC_RESOURCE_TUNING: ${{ matrix.resource_case == 'optimized' && 'optimized' || inputs.resource_tuning || 'baseline' }}
+      POC_OBSERVER_POLICY: ${{ matrix.resource_case == 'baseline' && 'legacy' || 'bounded' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -123,14 +143,23 @@ jobs:
           import os
           mode=os.environ['POC_RUNTIME_VARIANT'];assert mode in ('debug','optimized-release')
           if mode=='optimized-release':assert os.environ['POC_MANAGED']=='true' and os.environ['POC_CORE']!='true' and os.environ['POC_INPUT_DIAGNOSTIC']!='true'
-          experiment=os.environ['POC_EXPERIMENT'];assert experiment in ('recovery','input-warning','long-background','doze-probe')
+          experiment=os.environ['POC_EXPERIMENT'];assert experiment in ('recovery','input-warning','long-background','doze-probe','resource-profile')
           if experiment!='recovery':assert mode=='optimized-release' and os.environ['POC_MANAGED']=='true' and os.environ['POC_CORE']!='true' and os.environ['POC_INPUT_DIAGNOSTIC']!='true'
+          case=os.environ['POC_RESOURCE_CASE'];tuning=os.environ['POC_RESOURCE_TUNING'];assert tuning in ('baseline','optimized')
+          if mode=='debug':assert tuning=='baseline'
+          if experiment=='resource-profile':assert case in ('baseline','bounded','optimized') and tuning==('optimized' if case=='optimized' else 'baseline')
+          else:assert case=='standard'
           PY
           mkdir -p environment-poc/build/recovery-evidence
           python3 -c 'import ast; ast.parse(open("scripts/recovery-environment-poc.py").read())'
           python3 -c 'import ast; ast.parse(open("scripts/managed-recovery-poc.py").read())'
           python3 -m unittest discover -s scripts/tests -p 'test_poc_warning_report.py' -v
           python3 -m unittest discover -s scripts/tests -p 'test_poc_extended_measurements.py' -v
+          node --check scripts/resource-observer.js
+          node --test scripts/tests/resource-observer.test.cjs
+          mkdir -p environment-poc/build/digest-check
+          javac -d environment-poc/build/digest-check environment-poc/src/main/java/com/forcemind/chatgpt/environmentpoc/DigestEncoding.java scripts/android/DigestEncodingCheck.java
+          java -cp environment-poc/build/digest-check com.forcemind.chatgpt.environmentpoc.DigestEncodingCheck
           if [ "$POC_RUNTIME_VARIANT" = optimized-release ]; then
             python3 -m unittest discover -s scripts/tests -p 'test_ci_release_adb.py' -v
             python3 -m unittest discover -s scripts/tests -p 'test_sign_poc_release.py' -v
@@ -144,7 +173,7 @@ jobs:
         run: |
           set -o pipefail
           if [ "$POC_RUNTIME_VARIANT" = optimized-release ]; then
-            ./environment-poc/gradlew -p environment-poc --no-daemon -PpocMinSdk="$POC_MIN_API" -PpocAbis=x86_64 -PpocOptimization=resources assembleRelease lintRelease 2>&1 | tee environment-poc/build/recovery-evidence/build.txt
+            ./environment-poc/gradlew -p environment-poc --no-daemon -PpocMinSdk="$POC_MIN_API" -PpocAbis=x86_64 -PpocOptimization=resources -PpocResourceTuning="$POC_RESOURCE_TUNING" assembleRelease lintRelease 2>&1 | tee environment-poc/build/recovery-evidence/build.txt
             python3 -u scripts/sign-poc-release.py
           else
             ./environment-poc/gradlew -p environment-poc --no-daemon -PpocMinSdk="$POC_MIN_API" assembleDebug lintDebug 2>&1 | tee environment-poc/build/recovery-evidence/build.txt
@@ -224,7 +253,7 @@ jobs:
             "$ANDROID_HOME/build-tools/36.0.0/d8" --min-api 28 --lib "$ANDROID_HOME/platforms/android-37.0/android.jar" --output environment-poc/build/input-helper/input.jar environment-poc/build/input-helper/classes/com/forcemind/chatgpt/pocinput/TouchInput.class
             adb push environment-poc/build/input-helper/input.jar /data/local/tmp/studio-poc-input.jar
           fi
-          if [ "$RECOVERY_API" = 28 ] && { [ "$POC_EXPERIMENT" = long-background ] || [ "$POC_EXPERIMENT" = doze-probe ]; }; then
+          if [ "$RECOVERY_API" = 28 ] && { [ "$POC_EXPERIMENT" = long-background ] || [ "$POC_EXPERIMENT" = doze-probe ] || [ "$POC_EXPERIMENT" = resource-profile ]; }; then
             mkdir -p environment-poc/build/metrics-helper/classes
             javac --release 8 -classpath "$ANDROID_HOME/platforms/android-37.0/android.jar" -d environment-poc/build/metrics-helper/classes scripts/android/ProcessMetrics.java
             "$ANDROID_HOME/build-tools/36.0.0/d8" --min-api 28 --lib "$ANDROID_HOME/platforms/android-37.0/android.jar" --output environment-poc/build/metrics-helper/metrics.jar environment-poc/build/metrics-helper/classes/com/forcemind/chatgpt/pocmetrics/ProcessMetrics.class
@@ -243,6 +272,8 @@ jobs:
           if [ "${{ inputs.managed }}" = true ]; then
             if [ "$POC_EXPERIMENT" = input-warning ]; then
               timeout 900 python3 -u scripts/managed-recovery-poc.py environment-poc/build/recovery-evidence --warning-probe
+            elif [ "$POC_EXPERIMENT" = resource-profile ]; then
+              timeout 1800 python3 -u scripts/managed-recovery-poc.py environment-poc/build/recovery-evidence --trace-input --long-background --resource-profile
             elif [ "$POC_EXPERIMENT" = doze-probe ]; then
               timeout 1800 python3 -u scripts/managed-recovery-poc.py environment-poc/build/recovery-evidence --trace-input --long-background --doze-only
             elif [ "$POC_EXPERIMENT" = long-background ]; then
@@ -279,7 +310,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: ${{ inputs.runtime == 'optimized-release' && 'android-optimized-release-runtime' || inputs.managed && 'android-managed-recovery' || 'android-recovery-poc' }}-api-${{ matrix.api }}
+          name: ${{ inputs.runtime == 'optimized-release' && 'android-optimized-release-runtime' || inputs.managed && 'android-managed-recovery' || 'android-recovery-poc' }}-api-${{ matrix.api }}${{ matrix.resource_case != 'standard' && format('-{0}', matrix.resource_case) || '' }}
           retention-days: 14
           path: |
             android/environment-poc/build/recovery-evidence/

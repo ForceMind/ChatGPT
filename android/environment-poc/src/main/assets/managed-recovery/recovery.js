@@ -8,6 +8,7 @@
   const documentId = crypto.randomUUID(), initialURL = location.href;
   const port = browser.runtime.connectNative("studioRecovery");
   let token = null, epoch = 0, sequence = 0, disconnected = false, scheduled = null, announced = false, metrics = null, resumeScroll = null, expectedFocus = null;
+  let resourceTuned=false,lastCapture=null;
   function snapshot() {
     if (window.innerHeight>0 && window.innerWidth>0) metrics={scroll:window.scrollY,height:document.documentElement.scrollHeight,viewport:window.innerHeight};
     if (!metrics) return null;
@@ -19,14 +20,19 @@
     if (disconnected || location.href !== initialURL) return;
     port.postMessage({type, url:location.href, document:documentId, token, epoch, sequence:++sequence, ...extra});
   }
-  function capture() { const value=snapshot();if (!token || !value) return;send(announced?"capture":"ready", {snapshot:value});announced=true; }
+  function capture(force=false) {
+    const value=snapshot();if (!token || !value) return;
+    const text=resourceTuned?JSON.stringify(value):null;
+    if(resourceTuned&&announced&&force!==true&&text===lastCapture)return;
+    send(announced?"capture":"ready", {snapshot:value});lastCapture=text;announced=true;
+  }
   function later() { clearTimeout(scheduled); scheduled = setTimeout(capture, 160); }
   function receive(message) {
     if (disconnected || !message || location.href !== initialURL) return;
-    if (message.type === "hello-request") { if(token)capture();else send("hello");return; }
+    if (message.type === "hello-request") { if(token)capture(true);else send("hello");return; }
     if (message.type === "auth") {
       token = message.token; epoch = message.epoch;
-      capture();
+      resourceTuned=message.resourceTuned===true;lastCapture=null;capture(true);
       return;
     }
     if (!token || message.token !== token || message.epoch !== epoch) return;
@@ -77,6 +83,6 @@
   addEventListener("resize", () => {later();if(resumeScroll && window.innerHeight>0 && window.innerWidth>0){const resume=resumeScroll;resumeScroll=null;resume();}});
   const transcript = document.querySelector("article");
   if (transcript) new MutationObserver(later).observe(transcript,{childList:true,subtree:true,characterData:true});
-  addEventListener("pagehide", capture, {once:true});
+  addEventListener("pagehide", () => capture(true), {once:true});
   send("hello");
 })();

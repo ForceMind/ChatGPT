@@ -171,6 +171,8 @@ public abstract class ManagedRecoveryActivity extends Activity {
     private void record(String event){if(hosts.get(account())!=this)return;try{
         if(event.equals("resumed")||event.equals("stopped")||event.equals("window-focus")||event.equals("checkpoint-saved")||event.equals("closed")||event.equals("startup-error"))android.util.Log.i("ManagedRecoveryPoC","event="+event+" account="+account()+" selected="+selected.getOrDefault(account(),0));
         JSONArray entries=new JSONArray();if(controller!=null)for(ManagedPageController.Entry e:tabs())entries.put(controller.metadata(e));JSONObject row=new JSONObject().put("event",event).put("account",account()).put("pid",android.os.Process.myPid()).put("selected",selected.getOrDefault(account(),0)).put("entries",entries).put("startupError",startupError).put("bridgeError",controller==null?"":controller.startupError).put("elapsedMs",SystemClock.elapsedRealtime());
+        if(controller!=null)row.put("workCounters",controller.workCounters());
+        Runtime memory=Runtime.getRuntime();row.put("heapUsage",new JSONObject().put("javaUsedBytes",memory.totalMemory()-memory.freeMemory()).put("javaCommittedBytes",memory.totalMemory()).put("nativeAllocatedBytes",android.os.Debug.getNativeHeapAllocatedSize()));
         if(web!=null){int[] xy=new int[2];web.getLocationOnScreen(xy);row.put("viewX",xy[0]).put("viewY",xy[1]).put("viewWidth",web.getWidth()).put("viewHeight",web.getHeight()).put("windowFocused",web.hasWindowFocus()).put("viewShown",web.isShown());}
         byte[] bytes=row.toString().getBytes(StandardCharsets.UTF_8);
         // This is lab observation metadata, not product state. Publish a complete

@@ -109,6 +109,14 @@ def long_background(h,report):
     samples=[];stages=[]
     destination=h.OUT/'long-background-measurements.json'
     def save():destination.write_text(json.dumps({'cpuClockTicksPerSecond':hz,'logicalCPUs':cores,'samples':samples,'stages':stages},ensure_ascii=False,indent=2)+'\n')
+    def work_snapshot():
+        result={}
+        for account in ('A','B','C'):
+            old=h.native(account).get('elapsedMs',0);h.launch(account,'inspect')
+            row=h.wait(lambda:(lambda r:r if r.get('elapsedMs',0)>old and r.get('windowFocused') else None)(h.native(account)),label='fresh work counters '+account)
+            assert row['workCounters']['resourceTuned']==(h.os.environ.get('POC_RESOURCE_TUNING','baseline')=='optimized')
+            result[str(row['pid'])]={'account':account,'workCounters':row['workCounters'],'heapUsage':row['heapUsage']}
+        return result
     def sample(label):
         now=time.monotonic();uptime=float(h.text('shell','cat','/proc/uptime').split()[0]);_,rows=h.base.process_rows();processes=[]
         for row in rows:
@@ -124,7 +132,7 @@ def long_background(h,report):
                 memory.append({'pid':int(row['pid']),'name':row['name'],'pssKiB':int(m[1])})
             result.update(memory=memory,totalPssMiB=round(sum(r['pssKiB'] for r in memory)/1024,3),lastMemoryAt=now)
         else:result['lastMemoryAt']=samples[-1]['lastMemoryAt']
-        result['pageObservations']={a+':'+t:({k:r[k] for k in ('document','ticks','received','visibility','standard','rich','standardModel','richModel')} if (r:=h.base.latest(a,t)) else None) for a,t in h.TABS}
+        result['pageObservations']={a+':'+t:({k:r[k] for k in ('document','ticks','received','visibility','standard','rich','standardModel','richModel','observerProbe','streamText') if k in r} if (r:=h.base.latest(a,t)) else None) for a,t in h.TABS}
         result['deviceIdle']=h.text('shell','dumpsys','deviceidle','get','deep')
         power=h.text('shell','dumpsys','power');match=re.search(r'\bmWakefulness=(\w+)',power)
         assert match,'Actual screen power state unavailable'
@@ -150,11 +158,12 @@ def long_background(h,report):
         assert not [r for r in h.base.requests if r['received']>=started],'Unexpected document request during retention interval'
         return after
     h.select('A','0');window('foreground-baseline',60)
-    labels=('forced-doze',) if h.DOZE_ONLY else ('home','screen-off','forced-doze')
+    labels=('mutation-storm','home','forced-doze') if h.RESOURCE_PROFILE else ('forced-doze',) if h.DOZE_ONLY else ('home','screen-off','forced-doze')
     try:
         for label in labels:
+            before_work=work_snapshot();h.select('A','0')
             refs={a+':'+t:h.base.latest(a,t) for a,t in h.TABS};pids={a:h.native(a)['pid'] for a in ('A','B','C')};started=time.monotonic()
-            h.text('shell','input','keyevent','KEYCODE_HOME');h.wait(lambda:not h.foreground('A'),label='real Home before long sample')
+            if label!='mutation-storm':h.text('shell','input','keyevent','KEYCODE_HOME');h.wait(lambda:not h.foreground('A'),label='real Home before long sample')
             if label in ('screen-off','forced-doze'):h.text('shell','input','keyevent','KEYCODE_SLEEP')
             if label=='forced-doze':
                 entry={'hostStart':time.monotonic(),'enabledBefore':h.text('shell','dumpsys','deviceidle','enabled','deep'),'beforeDump':h.text('shell','dumpsys','deviceidle'),'transitions':[]}
@@ -171,12 +180,17 @@ def long_background(h,report):
                 entry['forceOutput']=h.text('shell','dumpsys','deviceidle','force-idle','deep');save_entry()
                 entry['stateAfterForce']=h.text('shell','dumpsys','deviceidle','get','deep');entry['afterDump']=h.text('shell','dumpsys','deviceidle');save_entry()
                 assert entry['stateAfterForce']=='IDLE','Forced Doze not observed: '+entry['stateAfterForce']
-            seconds=window(label,600)
+            requested=90 if label=='mutation-storm' else 180 if h.RESOURCE_PROFILE else 600
+            seconds=window(label,requested)
             # Record suspended/stale observations before waking; do not claim
             # heartbeats continued if the OS blocked execution/network access.
             before_resume={a+':'+t:h.base.latest(a,t) for a,t in h.TABS}
             after=resume(label,refs,pids,started)
-            stage={'stage':label,'requestedSeconds':600,'measuredSeconds':seconds,'retainedPages':after,'backgroundObservationAgeSeconds':{k:round(time.monotonic()-r['received'],3) for k,r in before_resume.items()},'sameHostPids':True,'noNewDocumentRequests':True}
+            if label=='mutation-storm':
+                for a,t in h.TABS:
+                    h.select(a,t);h.wait(lambda:(lambda r:r if r and r.get('observerProbe',{}).get('stormRevisions',0)>0 and not r.get('observerProbe',{}).get('stormActive',True) else None)(h.latest(a,t)),label='actual streaming DOM mutations settled')
+                    h.checkpoint(a);row=h.latest(a,t);entry=h.entry(a,t);assert entry['transcriptPreview'].startswith(row['streamText']),'Final streaming content not preserved'
+            stage={'stage':label,'requestedSeconds':requested,'measuredSeconds':seconds,'retainedPages':after,'backgroundObservationAgeSeconds':{k:round(time.monotonic()-r['received'],3) for k,r in before_resume.items()},'sameHostPids':True,'noNewDocumentRequests':True,'workBefore':before_work,'workAfter':work_snapshot()}
             stages.append(stage);save();report['cases']['prolonged-'+label]=True
     finally:
         h.text('shell','dumpsys','deviceidle','unforce',check=False);h.text('shell','dumpsys','battery','reset',check=False);h.text('shell','input','keyevent','KEYCODE_WAKEUP',check=False)
@@ -186,7 +200,7 @@ def long_background(h,report):
         intervals=[r['cpuFromPrevious'] for r in rows[1:] if r.get('cpuFromPrevious',{}).get('completeProcessCoverage')];cpu=[r['oneCorePercent'] for r in intervals];duration=sum(r['deviceSeconds'] for r in intervals)
         assert intervals,'No attributable CPU interval for '+label
         summary.append({'stage':label,'samples':len(rows),'memorySamples':len(mem),'pssMiBFirst':mem[0],'pssMiBLast':mem[-1],'pssMiBPeak':max(mem),'cpuValidIntervals':len(cpu),'cpuMeasuredDeviceSeconds':round(duration,3),'cpuMeanOneCorePercent':round(sum(r['oneCorePercent']*r['deviceSeconds'] for r in intervals)/duration,4) if duration else None,'cpuPeakOneCorePercent':max(cpu) if cpu else None})
-    report['longBackground']={'summary':summary,'stages':stages,'cpuClockTicksPerSecond':hz,'logicalCPUs':cores,'requestedBackgroundSeconds':600*len(labels),'scope':'Synthetic four-page workload; 500ms HTTP observations and recovery bookkeeping included. CPU is aggregate per one logical core, may exceed 100%. PSS is summed across currently attributable package processes. Sampling overhead included; emulator measurements are not physical-device or real ChatGPT predictions.'}
+    report['longBackground']={'summary':summary,'stages':stages,'cpuClockTicksPerSecond':hz,'logicalCPUs':cores,'resourceProfile':h.RESOURCE_PROFILE,'requestedBackgroundSeconds':360 if h.RESOURCE_PROFILE else 600*len(labels),'scope':'Synthetic four-page workload; explicitly labelled observer policy, duplicate-event streaming workload and recovery bookkeeping included. CPU is aggregate per one logical core. PSS and sampling overhead are not physical-device or real ChatGPT predictions.'}
 
 if __name__=='__main__':
     import sys

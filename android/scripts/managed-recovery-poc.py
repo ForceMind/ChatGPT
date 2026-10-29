@@ -26,12 +26,16 @@ INPUT_DIAGNOSTIC='--input-diagnostic' in sys.argv
 WARNING_PROBE='--warning-probe' in sys.argv
 LONG_BACKGROUND='--long-background' in sys.argv
 DOZE_ONLY='--doze-only' in sys.argv
+RESOURCE_PROFILE='--resource-profile' in sys.argv
 if DOZE_ONLY and not LONG_BACKGROUND:raise SystemExit('Doze-only requires prolonged measurement mode')
 TRACE_INPUT=INPUT_DIAGNOSTIC or WARNING_PROBE or '--trace-input' in sys.argv
 if CORE and INPUT_DIAGNOSTIC:raise SystemExit('Choose core or input diagnostic, not both')
 CAPTURE_UI='--capture-ui' in sys.argv
 TABS=(('A','0'),('A','1')) if INPUT_DIAGNOSTIC or WARNING_PROBE else (('A','0'),) if CORE else (('A','0'),('A','1'),('B','0'),('C','0'))
 if sum((CORE,INPUT_DIAGNOSTIC,WARNING_PROBE,LONG_BACKGROUND))>1:raise SystemExit('Choose one independent experiment mode')
+if RESOURCE_PROFILE and not LONG_BACKGROUND:raise SystemExit('Resource profile requires measurement mode')
+OBSERVER_POLICY=os.environ.get('POC_OBSERVER_POLICY','bounded')
+if OBSERVER_POLICY not in ('legacy','bounded'):raise SystemExit('Unknown observation policy')
 base.TABS=TABS
 OUT=base.OUT;PACKAGE=base.PACKAGE
 markers={a+':'+t:'demo-'+a+'-'+t+'-'+uuid.uuid4().hex for a,t in TABS}
@@ -41,7 +45,12 @@ wait=base.wait;text=base.text;adb=base.adb
 
 class Handler(base.Handler):
     def reply(self,body,status=200,mime='text/html; charset=utf-8'):
+        if body=='{}' and mime=='application/json' and self.path=='/observe':body=json.dumps({'mutationStorm':base.phase=='prolonged-mutation-storm'})
         if isinstance(body,str) and '<script>' in body and 'function observation()' in body:
+            # Install before the source's first report/interval so an initial
+            # unbounded request cannot escape the controlled transport.
+            observer=Path(__file__).with_name('resource-observer.js').read_text().replace('STUDIO_OBSERVER_POLICY',json.dumps(OBSERVER_POLICY))
+            body=body.replace("document.getElementById('form').onsubmit=",observer+"\ndocument.getElementById('form').onsubmit=",1)
             body+='''<style>#rich{white-space:pre-wrap;overflow-wrap:anywhere}</style><script>
 const studioInputEvents=[];
 const studioTouch={starts:0,terminals:0,untrusted:0};
@@ -345,6 +354,9 @@ def full_experiment(report):
 
 guard();report={'sourceSha':os.environ.get('GITHUB_SHA'),'runId':os.environ.get('GITHUB_RUN_ID'),'scope':'Two-page native input diagnostic' if INPUT_DIAGNOSTIC else 'Single-account core' if CORE else 'Three-account four-tab managed recovery','api':text('shell','getprop','ro.build.version.sdk'),'fixtureOnly':True,'productionDataUsed':False,'cases':{}}
 report['runtimeVariant']=os.environ.get('POC_RUNTIME_VARIANT','debug')
+report['observerPolicy']=OBSERVER_POLICY
+report['resourceCase']=os.environ.get('POC_RESOURCE_CASE','standard')
+report['resourceTuning']=os.environ.get('POC_RESOURCE_TUNING','baseline')
 if WARNING_PROBE:report['scope']='Controlled two-page input warning probe'
 if report['runtimeVariant']=='optimized-release':
     identity=json.loads((OUT/'runtime-release-identity.json').read_text());device=json.loads((OUT/'release-device-attestation.json').read_text())
@@ -374,7 +386,7 @@ finally:
     required={'initialCapture','normalClose','saveAfterRestore','historyAndURLIsolation','offlineReadOnlySnapshot','forceStopAndReconnect','keepCurrentConflict','restoreSavedConflictAndBackupAccess','corruptRecordPreserved','noAutomaticSendAndNoWebNativeAccess','accountEnvironmentAndStorageIsolation'}
     if not CORE:required.update(('crossAccountRecordPreserved','unresolvedConflictRestartAndURLBinding','interruptedAtomicRecordRecovery','trustedTouchScrollUpDown','homeForegroundRetainsDocuments','activityRecreationRetainsDocuments'))
     report['inputDiagnosticComplete']=INPUT_DIAGNOSTIC and bool(report.get('experimentComplete'))
-    if LONG_BACKGROUND:required.update(('prolonged-forced-doze',) if DOZE_ONLY else ('prolonged-home','prolonged-screen-off','prolonged-forced-doze'))
+    if LONG_BACKGROUND:required.update(('prolonged-mutation-storm','prolonged-home','prolonged-forced-doze') if RESOURCE_PROFILE else ('prolonged-forced-doze',) if DOZE_ONLY else ('prolonged-home','prolonged-screen-off','prolonged-forced-doze'))
     report['warningProbeComplete']=WARNING_PROBE and bool(report.get('experimentComplete'))
     report['managedControllerReady']=not (INPUT_DIAGNOSTIC or WARNING_PROBE) and bool(report.get('experimentComplete')) and all(report['cases'].get(name,False) for name in required)
     report['formalMigrationReady']=False

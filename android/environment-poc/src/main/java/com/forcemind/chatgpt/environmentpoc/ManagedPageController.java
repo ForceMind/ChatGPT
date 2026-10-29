@@ -27,8 +27,11 @@ import org.mozilla.geckoview.WebExtension;
 
 /** App-owned restoration, limited to the independent loopback fixture. */
 final class ManagedPageController {
+    private static final java.util.concurrent.atomic.AtomicLong digestCalls=new java.util.concurrent.atomic.AtomicLong();
+    private long validMessages,captureMessages,saveAttempts,unchangedSaves,metadataBuilds,pageWrites;
     static final String EXTENSION="studio-recovery-poc@local.invalid",APP="studioRecovery";
     static final class Entry {
+        String cachedStandard,cachedRich,cachedStandardHash,cachedRichHash;
         final String account,id;final GeckoSession session;final Object inputLock=new Object();
         JSONObject record,preview,current,desired,approved,conflict;final JSONArray inputEvidence=new JSONArray();
         WebExtension.Port port;String url,document="",pendingEditor="",state="loading",error="",fingerprint="",checkpoint="",checkpointSource="";
@@ -63,7 +66,7 @@ final class ManagedPageController {
     private static String string(JSONObject value,String key,int limit)throws Exception{
         Object raw=value.get(key);if(!(raw instanceof String)||((String)raw).length()>limit)throw new IllegalArgumentException("Invalid "+key);return (String)raw;
     }
-    static String digest(String value)throws Exception{byte[] bytes=MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8));StringBuilder s=new StringBuilder();for(byte b:bytes)s.append(String.format(Locale.ROOT,"%02x",b&255));return s.toString();}
+    static String digest(String value)throws Exception{digestCalls.incrementAndGet();byte[] bytes=MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8));if(BuildConfig.RESOURCE_TUNED)return DigestEncoding.hex(bytes);StringBuilder s=new StringBuilder();for(byte b:bytes)s.append(String.format(Locale.ROOT,"%02x",b&255));return s.toString();}
     private static JSONObject copy(JSONObject value)throws Exception{return new JSONObject(value.toString());}
     private static JSONObject drafts(JSONObject value)throws Exception{return new JSONObject().put("url",value.getString("url")).put("standard",value.getString("standard")).put("rich",value.getString("rich"));}
     private JSONObject normalize(Entry e,JSONObject raw)throws Exception{
@@ -171,6 +174,7 @@ final class ManagedPageController {
                 if(!e.document.isEmpty()&&!e.document.equals(document))throw new IllegalArgumentException("Foreign handshake document");e.document=document;e.lastBridgeEvent="hello";send(e,new JSONObject().put("type","auth"));changed(e);return;
             }
             if(!e.document.equals(document)||!e.token.equals(msg.getString("token"))||e.epoch!=msg.getLong("epoch"))throw new IllegalArgumentException("Stale document");
+            validMessages++;if("capture".equals(type))captureMessages++;
             JSONObject current=normalize(e,msg.getJSONObject("snapshot"));if(!e.url.equals(current.getString("url")))throw new IllegalArgumentException("Wrong page snapshot");e.current=current;
             if(e.loading&&("ready".equals(type)||"capture".equals(type))){e.loading=false;e.lastBridgeEvent="ready";reconcile(e,current);return;}
             if("focus-target".equals(type)){
@@ -303,10 +307,10 @@ final class ManagedPageController {
     private void complete(Entry e,JSONObject snapshot)throws Exception{save(e,snapshot);e.state="ready";e.desired=null;e.approved=null;e.conflict=null;e.pendingEditor="";e.writing=false;e.awaitingScroll=false;changed(e);}
     private void save(Entry e,JSONObject snapshot)throws Exception{
         if(e.blocked||e.closed||!e.url.equals(snapshot.getString("url")))return;
-        String fingerprint=digest(snapshot.toString());if(fingerprint.equals(e.fingerprint))return;
+        saveAttempts++;String fingerprint=digest(snapshot.toString());if(fingerprint.equals(e.fingerprint)){unchangedSaves++;return;}
         JSONArray pages=e.record.getJSONArray("pages"),updated=new JSONArray();for(int i=0;i<pages.length();i++)if(!e.url.equals(pages.getJSONObject(i).getString("url")))updated.put(pages.getJSONObject(i));updated.put(copy(snapshot));while(updated.length()>4)updated.remove(0);e.record.put("pages",updated).put("url",e.url);persist(e);e.preview=copy(snapshot);e.fingerprint=fingerprint;changed(e);
     }
-    private void persist(Entry e)throws Exception{long next=e.revision+1;e.record.put("revision",next);if(e.record.toString().getBytes(StandardCharsets.UTF_8).length>900000)throw new java.io.IOException("Recovery quota exceeded; original retained");store.write(e.account,"page-"+e.id,e.record);e.revision=next;}
+    private void persist(Entry e)throws Exception{long next=e.revision+1;e.record.put("revision",next);if(e.record.toString().getBytes(StandardCharsets.UTF_8).length>900000)throw new java.io.IOException("Recovery quota exceeded; original retained");store.write(e.account,"page-"+e.id,e.record);e.revision=next;pageWrites++;}
     private void focus(Entry e){for(Entry other:entries.values())if(other!=e&&other.session.isOpen())other.session.setFocused(false);if(e.session.isOpen())e.session.setFocused(true);}
     void visible(Entry e,boolean visible){synchronized(e.inputLock){e.visible=visible;}if(visible){focus(e);viewReady(e);}else if(e.session.isOpen())e.session.setFocused(false);if(!visible&&!e.writing)e.pendingEditor="";if(visible&&"restoring".equals(e.state)&&e.current!=null)try{advance(e,e.current);}catch(Exception error){fail(e,"resume-restore-failed");}}
     void retry(Entry e){if(!e.blocked&&!e.closed){if(e.loadStarted)e.session.loadUri(e.url);else viewReady(e);}}
@@ -318,12 +322,20 @@ final class ManagedPageController {
     void history(Entry e,boolean forward)throws Exception{JSONArray list=e.record.getJSONArray("history");int index=e.record.getInt("historyIndex")+(forward?1:-1);if(index<0||index>=list.length())return;e.record.put("historyIndex",index).put("url",list.getString(index));persist(e);e.session.loadUri(list.getString(index));}
     private void changed(Entry e){listener.changed(e.account);}
     private void fail(Entry e,String error){if(e.closed)return;e.error=error;e.state="failed";e.pendingEditor="";e.writing=false;changed(e);}
-    private void send(Entry e,JSONObject message)throws Exception{if(e.port!=null&&!e.closed)e.port.postMessage(message.put("token",e.token).put("epoch",e.epoch));}
+    private void send(Entry e,JSONObject message)throws Exception{if(e.port!=null&&!e.closed)e.port.postMessage(message.put("token",e.token).put("epoch",e.epoch).put("resourceTuned",BuildConfig.RESOURCE_TUNED));}
+    JSONObject workCounters()throws Exception{return new JSONObject().put("resourceTuned",BuildConfig.RESOURCE_TUNED).put("validMessages",validMessages).put("captureMessages",captureMessages).put("saveAttempts",saveAttempts).put("unchangedSaves",unchangedSaves).put("digestCalls",digestCalls.get()).put("metadataBuilds",metadataBuilds).put("pageWrites",pageWrites).put("successfulWrites",store.successfulWrites).put("plainBytesWritten",store.plainBytesWritten);}
     List<Entry> all(){return new ArrayList<>(entries.values());}
     void closeAll(){for(Entry e:all()){synchronized(e.inputLock){e.closed=true;e.visible=false;e.epoch++;}if(e.port!=null){e.port.disconnect();e.port=null;}if(e.session.isOpen())e.session.close();}entries.clear();}
     JSONObject metadata(Entry e)throws Exception{
+        metadataBuilds++;
+        String standard=e.preview==null?"":e.preview.optString("standard"),rich=e.preview==null?"":e.preview.optString("rich"),standardHash,richHash;
+        if(BuildConfig.RESOURCE_TUNED){
+            if(!standard.equals(e.cachedStandard)){e.cachedStandardHash=digest(standard);e.cachedStandard=standard;}
+            if(!rich.equals(e.cachedRich)){e.cachedRichHash=digest(rich);e.cachedRich=rich;}
+            standardHash=e.cachedStandardHash;richHash=e.cachedRichHash;
+        }else{standardHash=digest(standard);richHash=digest(rich);}
         JSONArray alternatives=new JSONArray(),source=e.record==null?null:e.record.optJSONArray("alternatives");
         if(source!=null)for(int i=0;i<source.length();i++){JSONObject pair=source.getJSONObject(i);alternatives.put(new JSONObject().put("savedRichSha256",digest(pair.getJSONObject("saved").getString("rich"))).put("currentRichSha256",digest(pair.getJSONObject("current").getString("rich"))).put("choice",pair.getString("choice")));}
-        return new JSONObject().put("id",e.id).put("url",e.url==null?"":e.url).put("state",e.state).put("error",e.error).put("blocked",e.blocked).put("revision",e.revision).put("document",e.document).put("epoch",e.epoch).put("rejected",e.rejected).put("visible",e.visible).put("bridgeConnected",e.port!=null).put("hasSnapshot",e.preview!=null).put("standardSha256",digest(e.preview==null?"":e.preview.optString("standard"))).put("richSha256",digest(e.preview==null?"":e.preview.optString("rich"))).put("transcriptLength",e.preview==null?0:e.preview.optString("transcript").length()).put("alternativeCount",source==null?0:source.length()).put("alternativeHashes",alternatives).put("pendingConflict",e.record!=null&&pending(e,e.url)!=null).put("pendingConflictCount",e.record==null||e.record.optJSONArray("pendingConflicts")==null?0:e.record.getJSONArray("pendingConflicts").length()).put("historyCount",e.record==null||e.record.optJSONArray("history")==null?0:e.record.getJSONArray("history").length()).put("checkpoint",e.checkpoint).put("checkpointSource",e.checkpointSource).put("inputEvidence",e.inputEvidence).put("bridgeAttempts",e.bridgeAttempts).put("lastBridgeEvent",e.lastBridgeEvent).put("messageDelegatePresent",extension!=null&&e.session.getWebExtensionController().getMessageDelegate(extension,APP)!=null).put("imeFocused",e.imeFocused).put("imeEpoch",e.imeEpoch).put("imeGeneration",e.imeGeneration);
+        return new JSONObject().put("id",e.id).put("url",e.url==null?"":e.url).put("state",e.state).put("error",e.error).put("blocked",e.blocked).put("revision",e.revision).put("document",e.document).put("epoch",e.epoch).put("rejected",e.rejected).put("visible",e.visible).put("bridgeConnected",e.port!=null).put("hasSnapshot",e.preview!=null).put("standardSha256",standardHash).put("richSha256",richHash).put("transcriptLength",e.preview==null?0:e.preview.optString("transcript").length()).put("transcriptPreview",e.preview==null?"":e.preview.optString("transcript").substring(0,Math.min(100,e.preview.optString("transcript").length()))).put("alternativeCount",source==null?0:source.length()).put("alternativeHashes",alternatives).put("pendingConflict",e.record!=null&&pending(e,e.url)!=null).put("pendingConflictCount",e.record==null||e.record.optJSONArray("pendingConflicts")==null?0:e.record.getJSONArray("pendingConflicts").length()).put("historyCount",e.record==null||e.record.optJSONArray("history")==null?0:e.record.getJSONArray("history").length()).put("checkpoint",e.checkpoint).put("checkpointSource",e.checkpointSource).put("inputEvidence",e.inputEvidence).put("bridgeAttempts",e.bridgeAttempts).put("lastBridgeEvent",e.lastBridgeEvent).put("messageDelegatePresent",extension!=null&&e.session.getWebExtensionController().getMessageDelegate(extension,APP)!=null).put("imeFocused",e.imeFocused).put("imeEpoch",e.imeEpoch).put("imeGeneration",e.imeGeneration);
     }
 }

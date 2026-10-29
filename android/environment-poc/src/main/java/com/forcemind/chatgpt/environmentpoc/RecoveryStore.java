@@ -17,6 +17,7 @@ import org.json.JSONObject;
 
 /** Only the independent PoC's synthetic session records. Never accesses app data. */
 final class RecoveryStore {
+    long successfulWrites,plainBytesWritten;
     private final File root;
     private final SecretKey key;
     private final String scope;
@@ -59,7 +60,7 @@ final class RecoveryStore {
         byte[] plain=data.toString().getBytes(StandardCharsets.UTF_8);if(plain.length>1024*1024-28)throw new IllegalArgumentException("Record too large");
         Cipher cipher=Cipher.getInstance("AES/GCM/NoPadding");cipher.init(Cipher.ENCRYPT_MODE,key);cipher.updateAAD((scope+"/"+account+"/"+tab).getBytes(StandardCharsets.UTF_8));
         AtomicFile file=file(account,tab);FileOutputStream out=null;
-        try{out=file.startWrite();out.write(cipher.getIV());out.write(cipher.doFinal(plain));file.finishWrite(out);}
+        try{out=file.startWrite();out.write(cipher.getIV());out.write(cipher.doFinal(plain));file.finishWrite(out);successfulWrites++;plainBytesWritten+=plain.length;}
         catch(Exception error){if(out!=null)file.failWrite(out);throw error;}
     }
 }

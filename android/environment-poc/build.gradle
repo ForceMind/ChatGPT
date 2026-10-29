@@ -1,5 +1,7 @@
 plugins { id 'com.android.application' version '9.1.1' }
 def pocOptimization = providers.gradleProperty('pocOptimization').getOrElse('baseline')
+def resourceTuning = providers.gradleProperty('pocResourceTuning').getOrElse('baseline')
+if (!(resourceTuning in ['baseline','optimized'])) throw new GradleException('Unknown PoC resource tuning')
 if (!(pocOptimization in ['baseline', 'r8', 'resources'])) throw new GradleException('Unknown isolated release optimization mode')
 def pocAbis = providers.gradleProperty('pocAbis').getOrElse('arm64-v8a,x86_64').split(',') as List
 if (pocAbis.isEmpty() || pocAbis.toSet().size() != pocAbis.size() || !pocAbis.every { it in ['arm64-v8a', 'x86_64'] }) throw new GradleException('Unknown isolated ABI')
@@ -7,6 +9,7 @@ android {
     namespace 'com.forcemind.chatgpt.environmentpoc'
     compileSdk { version = release(37) { minorApiLevel = 0 } }
     defaultConfig {
+        buildConfigField 'boolean', 'RESOURCE_TUNED', (resourceTuning == 'optimized').toString()
         applicationId 'com.forcemind.chatgpt.environmentpoc'
         // Compatibility probes may lower only this isolated app's declared API.
         // Library manifest requirements remain enforced by the normal merger.
@@ -15,6 +18,7 @@ android {
         versionCode 1
         versionName '0.1-poc'
     }
+    buildFeatures { buildConfig true }
     buildTypes {
         release {
             minifyEnabled = pocOptimization != 'baseline'
