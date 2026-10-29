@@ -82,6 +82,8 @@ jobs:
         run: |
           sdkmanager 'platforms;android-37.0' 'build-tools;36.0.0'
           bash android/network-poc/gradlew -p android/network-poc --no-daemon :app:testPreviewDebugUnitTest :app:lintPreviewDebug :app:assemblePreviewDebug :app:assembleCiDebug :app:assembleCiDebugAndroidTest
+          cp android/network-poc/THIRD_PARTY_NOTICES.md android/network-poc/app/build/reports/
+          find android/network-poc/app/build/outputs/apk -name '*.apk' -exec sha256sum {} \; > android/network-poc/app/build/reports/apk-sha256.txt
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -91,7 +93,6 @@ jobs:
             android/network-poc/app/build/outputs/apk/
             android/network-poc/app/build/test-results/
             android/network-poc/app/build/reports/
-            android/network-poc/THIRD_PARTY_NOTICES.md
   device:
     if: inputs.run_device_tests
     needs: [core, package]

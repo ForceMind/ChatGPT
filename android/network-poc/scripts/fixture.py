@@ -30,6 +30,7 @@ class Origin(http.server.BaseHTTPRequestHandler):
             data, kind = json.dumps({'route': route}).encode(), 'application/json'
         self.send_response(200)
         self.send_header('Content-Type', kind)
+        self.send_header('X-Fixture-Route', route)
         self.send_header('Content-Length', str(len(data)))
         self.send_header('Cache-Control', 'no-store')
         self.end_headers()

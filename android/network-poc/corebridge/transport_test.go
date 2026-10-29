@@ -17,6 +17,8 @@ import (
     "net/http"
     "net/http/httptest"
     "net/url"
+    "os"
+    "os/exec"
     "strconv"
     "strings"
     "testing"
@@ -26,6 +28,19 @@ import (
 )
 
 const fixtureID = "00000000-0000-4000-8000-000000000001"
+
+// Xray has process-global network hooks. Servers must run in separate processes,
+// exactly as the Android client and CI fixture do in the device matrix.
+func TestCoreServerProcess(t *testing.T) {
+    config:=os.Getenv("NETWORK_SYNTHETIC_SERVER")
+    if config=="" { return }
+    c,err:=core.LoadConfig("json",strings.NewReader(config))
+    if err!=nil { t.Fatal(err) }
+    server,err:=core.New(c)
+    if err!=nil { t.Fatal(err) }
+    if err=server.Start();err!=nil { t.Fatal(err) }
+    select {}
+}
 
 func freePort(t *testing.T) int {
     t.Helper()
@@ -64,7 +79,9 @@ func TestOwnedTransportMatrix(t *testing.T) {
     cert, key := testCertificate(t)
     pair, err := tls.X509KeyPair([]byte(cert),[]byte(key))
     if err != nil { t.Fatal(err) }
-    target := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter,r *http.Request) {}))
+    target := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter,r *http.Request) {
+        _, _ = io.WriteString(w,"owned-https-fixture")
+    }))
     target.TLS = &tls.Config{Certificates:[]tls.Certificate{pair},MinVersion:tls.VersionTLS13,NextProtos:[]string{"h2","http/1.1"}}
     target.StartTLS()
     defer target.Close()
@@ -96,18 +113,26 @@ func TestOwnedTransportMatrix(t *testing.T) {
             }
             serverJSON:=encode(map[string]any{"log":map[string]any{"loglevel":"none"},"inbounds":[]any{map[string]any{"listen":"127.0.0.1","port":serverPort,"protocol":"vless",
                 "settings":map[string]any{"clients":[]any{map[string]any{"id":fixtureID}},"decryption":"none"},"streamSettings":serverStream}},"outbounds":[]any{map[string]any{"protocol":"freedom"}}})
-            c,err:=core.LoadConfig("json",strings.NewReader(serverJSON))
-            if err!=nil { t.Fatal(err) }
-            server,err:=core.New(c)
-            if err!=nil { t.Fatal(err) }
-            defer server.Close()
-            if err=server.Start();err!=nil { t.Fatal(err) }
+            server:=exec.Command(os.Args[0],"-test.run=^TestCoreServerProcess$")
+            server.Env=append(os.Environ(),"NETWORK_SYNTHETIC_SERVER="+serverJSON)
+            if err:=server.Start();err!=nil { t.Fatal(err) }
+            defer func(){ _=server.Process.Kill(); _=server.Wait() }()
+            deadline:=time.Now().Add(5*time.Second)
+            for {
+                socket,err:=net.DialTimeout("tcp",net.JoinHostPort("127.0.0.1",strconv.Itoa(serverPort)),100*time.Millisecond)
+                if err==nil { socket.Close();break }
+                if time.Now().After(deadline) { t.Fatal("fixture server did not start") }
+                time.Sleep(25*time.Millisecond)
+            }
             config:=encode(map[string]any{"log":map[string]any{"loglevel":"none"},"inbounds":[]any{map[string]any{"listen":"127.0.0.1","port":proxyPort,"protocol":"http","settings":map[string]any{}}},
                 "outbounds":[]any{map[string]any{"protocol":"vless","settings":map[string]any{"vnext":[]any{map[string]any{"address":"127.0.0.1","port":serverPort,"users":[]any{map[string]any{"id":fixtureID,"encryption":"none"}}}}},"streamSettings":clientStream}}})
             if err=Start(config);err!=nil { t.Fatal(err) }
             if err=Start(config);err==nil { t.Fatal("second start accepted") }
             proxy,_:=url.Parse("http://127.0.0.1:"+strconv.Itoa(proxyPort))
-            transport:=&http.Transport{Proxy:http.ProxyURL(proxy),DisableKeepAlives:true}
+            roots:=x509.NewCertPool()
+            if !roots.AppendCertsFromPEM([]byte(cert)) { t.Fatal("fixture CA unavailable") }
+            transport:=&http.Transport{Proxy:http.ProxyURL(proxy),DisableKeepAlives:true,
+                TLSClientConfig:&tls.Config{RootCAs:roots,ServerName:"network-fixture.test",MinVersion:tls.VersionTLS12}}
             defer transport.CloseIdleConnections()
             client:=&http.Client{Transport:transport,Timeout:15*time.Second}
             res,err:=client.Get(origin.URL+"/download")
@@ -118,6 +143,10 @@ func TestOwnedTransportMatrix(t *testing.T) {
             if err!=nil { t.Fatal(err) }
             body,_=io.ReadAll(res.Body);res.Body.Close()
             if string(body)!="owned-upload" { t.Fatal("upload differs") }
+            res,err=client.Get(target.URL+"/download")
+            if err!=nil { t.Fatal(err) }
+            body,_=io.ReadAll(res.Body);res.Body.Close()
+            if string(body)!="owned-https-fixture" { t.Fatal("HTTPS CONNECT download differs") }
         })
     }
 }

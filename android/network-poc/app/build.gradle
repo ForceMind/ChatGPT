@@ -1,0 +1,43 @@
+plugins { id 'com.android.application' }
+
+android {
+    namespace 'com.forcemind.chatgpt.networkpreview'
+    compileSdk { version = release(37) { minorApiLevel = 0 } }
+    defaultConfig {
+        applicationId 'com.forcemind.chatgpt.networkpreview'
+        minSdk 28
+        targetSdk 36
+        versionCode 1
+        versionName '0.1.0-network-poc'
+        testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
+        buildConfigField 'String', 'NETWORK_HOME_URL', '"https://chatgpt.com/"'
+        buildConfigField 'String', 'NETWORK_PROBE_URL', '"https://chatgpt.com/"'
+    }
+    flavorDimensions += 'mode'
+    productFlavors {
+        preview { dimension 'mode' }
+        ci {
+            dimension 'mode'
+            applicationIdSuffix '.ci'
+            buildConfigField 'String', 'NETWORK_HOME_URL', '"http://10.0.2.2:18080/page"'
+            buildConfigField 'String', 'NETWORK_PROBE_URL', '"http://network-fixture.test:18080/echo"'
+        }
+    }
+    buildFeatures { buildConfig true }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    testOptions { unitTests.returnDefaultValues = true }
+    lint { abortOnError true }
+}
+
+dependencies {
+    implementation files('libs/networkcore.aar')
+    implementation 'androidx.webkit:webkit:1.17.1'
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.json:json:20240303'
+    androidTestImplementation 'androidx.test:runner:1.6.2'
+    androidTestImplementation 'androidx.test:rules:1.6.1'
+    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
+}
