@@ -90,7 +90,8 @@ public final class NetworkPocInstrumentedTest {
             long waitUntil = System.nanoTime() + TimeUnit.SECONDS.toNanos(15);
             while (routes.snapshot().state == RouteManager.State.CONNECTING && System.nanoTime() < waitUntil) Thread.sleep(50);
             assertEquals(RouteManager.State.DIRECT, routes.snapshot().state);
-            if (android.os.Build.VERSION.SDK_INT >= 35) assertTrue("API35 requires full WebView proxy verification", RouteManager.supportsWebViewProxy());
+            if (android.os.Build.VERSION.SDK_INT >= 35 || "true".equals(args.getString("requireWebViewProxy")))
+                assertTrue("Full WebView proxy verification required", RouteManager.supportsWebViewProxy());
             if (!RouteManager.supportsWebViewProxy()) {
                 CountDownLatch rejected = new CountDownLatch(1);
                 main(() -> routes.switchTo(node("A"), (success, message) -> { assertFalse(success); rejected.countDown(); }));

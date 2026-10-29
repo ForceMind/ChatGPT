@@ -14,6 +14,32 @@ on:
 permissions:
   contents: read
 jobs:
+  webview-provider:
+    if: inputs.run_device_tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - uses: actions/cache@v4
+        with:
+          path: android/network-poc/webview-fixture/
+          key: network-api28-webview-${{ hashFiles('android/network-poc/scripts/webview-providers.json', 'android/network-poc/scripts/prepare-webview.py') }}
+      - name: Verify pinned official compatible WebView
+        run: |
+          sdkmanager 'build-tools;36.0.0'
+          python3 android/network-poc/scripts/prepare-webview.py --output android/network-poc/webview-fixture
+      - uses: actions/upload-artifact@v4
+        with:
+          name: network-webview-api28
+          retention-days: 14
+          path: android/network-poc/webview-fixture/
   core:
     runs-on: ubuntu-latest
     timeout-minutes: 35
@@ -96,6 +122,7 @@ jobs:
           packages: platform-tools
       - name: Compile and check isolated application
         run: |
+          python3 -m unittest discover -s android/network-poc/scripts/tests -p 'test_measure_resources.py'
           sdkmanager 'platforms;android-37.0' 'build-tools;36.0.0'
           bash android/network-poc/gradlew -p android/network-poc --no-daemon :app:testPreviewDebugUnitTest :app:lintPreviewDebug :app:assemblePreviewDebug :app:assembleCiDebug :app:assembleCiDebugAndroidTest
           cp android/network-poc/THIRD_PARTY_NOTICES.md android/network-poc/app/build/reports/
@@ -142,7 +169,7 @@ jobs:
             android/network-poc/app/build/reports/
   device:
     if: inputs.run_device_tests
-    needs: [core, package]
+    needs: [core, package, webview-provider]
     strategy:
       fail-fast: false
       matrix:
@@ -159,6 +186,11 @@ jobs:
         with:
           name: network-application
           path: android/network-poc/app/build
+      - uses: actions/download-artifact@v4
+        if: matrix.api == 28
+        with:
+          name: network-webview-api28
+          path: android/network-poc/webview-fixture
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -177,12 +209,15 @@ jobs:
       - uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: ${{ matrix.api }}
-          target: google_apis
+          target: ${{ matrix.api == 28 && 'default' || 'google_apis' }}
           arch: x86_64
           profile: pixel_2
           disable-animations: true
-          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect
-          script: bash android/network-poc/scripts/device-test.sh
+          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -writable-system
+          script: |
+            if [ '${{ matrix.api }}' = 28 ]; then python3 android/network-poc/scripts/install-webview.py --provider android/network-poc/webview-fixture --output android/network-poc/evidence/provider-upgrade; fi
+            bash android/network-poc/scripts/device-test.sh
+            python3 android/network-poc/scripts/measure-resources.py --output android/network-poc/evidence/resources
       - uses: actions/upload-artifact@v4
         if: always()
         with:

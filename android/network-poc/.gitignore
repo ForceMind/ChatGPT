@@ -5,3 +5,5 @@ app/libs/*.aar
 corebridge/go.sum
 corebridge/bin/
 ci-fixture/
+webview-fixture/
+evidence/

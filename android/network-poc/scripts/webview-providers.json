@@ -1,0 +1,11 @@
+{
+  "purpose": "CI-only Android 9 compatibility fixtures, never bundled or installed on a personal device",
+  "repository": "https://android.googlesource.com/platform/external/chromium-webview",
+  "package": "com.android.webview",
+  "path": "prebuilt/x86_64/webview.apk",
+  "candidates": [
+    {"tag": "android-15.0.0_r1", "commit": "479929d2f7c4e3484903132afa864b1f68dd2705", "blob": "8ff3cf2e8f65b4875a349b7102f0465f7f40d2b6"},
+    {"tag": "android-14.0.0_r1", "commit": "b44f390d379bc993866c918ecc7697e364632d2e", "blob": "6d34d2b2fdf13664caa6a6519695455e96704041"},
+    {"tag": "android-11.0.0_r48", "commit": "7a2388596635621f1c70fc1c7bc288435ba1dcf7", "blob": "324f071636e0428fa5f9632bf5cbfcd9836d9f59"}
+  ]
+}
