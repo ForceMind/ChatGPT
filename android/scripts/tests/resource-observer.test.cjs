@@ -45,3 +45,9 @@ test('optimized adapter skips identical capture but retains changed draft, check
 test('baseline adapter preserves repeated capture control behavior',async()=>{
  const a=adapter(false);const before=a.messages.length;a.listeners.input();a.listeners.input();await flush();assert.equal(a.messages.length,before+2);
 });
+test('native recovery policy retains equal progress snapshots until ready',async()=>{
+ const a=adapter(false);let before=a.messages.length;a.listeners.input();a.listeners.input();await flush();assert.equal(a.messages.length,before+2);
+ a.port.receive({type:'capture-policy',resourceTuned:true,token:'first-token',epoch:1});
+ a.listeners.input();await flush();before=a.messages.length;a.listeners.input();await flush();assert.equal(a.messages.length,before);
+ a.port.receive({type:'capture-policy',resourceTuned:false,token:'first-token',epoch:1});before=a.messages.length;a.listeners.input();a.listeners.input();await flush();assert.equal(a.messages.length,before+2);
+});

@@ -36,6 +36,8 @@
       return;
     }
     if (!token || message.token !== token || message.epoch !== epoch) return;
+    if(typeof message.resourceTuned==='boolean')resourceTuned=message.resourceTuned;
+    if(message.type==='capture-policy'){lastCapture=null;return;}
     if (message.type === "focus") {
       const element = message.editor === "standard" ? standard : message.editor === "rich" ? rich : null;
       if (!element) return;
