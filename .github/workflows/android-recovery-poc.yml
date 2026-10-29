@@ -27,7 +27,7 @@ on:
       experiment:
         description: Authorized independent measurement; no screenshots or live ChatGPT
         type: choice
-        options: [recovery, input-warning, long-background, doze-probe, resource-profile, idle-profile]
+        options: [recovery, input-warning, long-background, doze-probe, resource-profile, idle-profile, network-preview]
         default: recovery
       resource_cases:
         description: Resource profile controlled cases only
@@ -94,6 +94,11 @@ on:
 permissions:
   contents: read
 jobs:
+  network-preview:
+    if: inputs.experiment == 'network-preview'
+    uses: ./.github/workflows/android-network-preview.yml
+    with:
+      run_device_tests: ${{ !inputs.build_only }}
   package-size:
     if: inputs.managed && !inputs.core_only && !inputs.input_diagnostic && inputs.runtime != 'optimized-release' && (inputs.experiment == 'recovery' || inputs.experiment == '')
     runs-on: ubuntu-latest
@@ -123,6 +128,7 @@ jobs:
             android/environment-poc/build/package-size-evidence/
             android/environment-poc/build/reports/lint-results-release.*
   recovery:
+    if: inputs.experiment != 'network-preview'
     runs-on: ubuntu-latest
     timeout-minutes: ${{ inputs.experiment == 'long-background' && 65 || (inputs.experiment == 'doze-probe' || inputs.experiment == 'resource-profile' || inputs.experiment == 'idle-profile') && 45 || 25 }}
     strategy:
