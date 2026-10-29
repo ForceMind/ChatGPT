@@ -1,0 +1,128 @@
+name: Android Independent Network Preview
+on:
+  workflow_dispatch:
+    inputs:
+      run_device_tests:
+        description: Owned synthetic VLESS and WebView/file routing tests (no screenshots or ChatGPT)
+        type: boolean
+        default: false
+permissions:
+  contents: read
+jobs:
+  core:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.3'
+          cache: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: Build fixed proxy core
+        run: |
+          sdkmanager 'ndk;28.2.13676358' 'platforms;android-37.0' 'build-tools;36.0.0'
+          export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/28.2.13676358"
+          bash android/network-poc/scripts/build-core.sh
+      - name: Collect dependency licenses
+        run: |
+          mkdir -p android/network-poc/app/libs/licenses
+          python3 - <<'PY'
+          import json, pathlib, subprocess
+          text = pathlib.Path('android/network-poc/app/libs/dependencies.json').read_text()
+          decoder = json.JSONDecoder()
+          while text.strip():
+              value, n = decoder.raw_decode(text.lstrip())
+              text = text.lstrip()[n:]
+              path = value.get('Dir')
+              if not path: continue
+              source = pathlib.Path(path)
+              name = value['Path'].replace('/', '_')
+              for f in source.iterdir():
+                  if f.is_file() and f.name.lower().startswith(('license', 'copying', 'notice')):
+                      pathlib.Path('android/network-poc/app/libs/licenses', name+'_'+f.name).write_bytes(f.read_bytes())
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: network-core
+          retention-days: 14
+          path: |
+            android/network-poc/app/libs/
+            android/network-poc/corebridge/bin/xray
+            android/network-poc/corebridge/go.sum
+  package:
+    needs: core
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: network-core
+          path: android/network-poc
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: Compile and check isolated application
+        run: |
+          sdkmanager 'platforms;android-37.0' 'build-tools;36.0.0'
+          bash android/network-poc/gradlew -p android/network-poc --no-daemon :app:testPreviewDebugUnitTest :app:lintPreviewDebug :app:assemblePreviewDebug :app:assembleCiDebug :app:assembleCiDebugAndroidTest
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: network-application
+          retention-days: 14
+          path: |
+            android/network-poc/app/build/outputs/apk/
+            android/network-poc/app/build/test-results/
+            android/network-poc/app/build/reports/
+            android/network-poc/THIRD_PARTY_NOTICES.md
+  device:
+    if: inputs.run_device_tests
+    needs: [core, package]
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [28, 35]
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: network-core
+          path: android/network-poc
+      - uses: actions/download-artifact@v4
+        with:
+          name: network-application
+          path: android/network-poc/app/build
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: Start owned VLESS fixtures
+        run: |
+          chmod +x android/network-poc/corebridge/bin/xray
+          python3 android/network-poc/scripts/fixture.py --core android/network-poc/corebridge/bin/xray --output "$RUNNER_TEMP/network-fixture" > "$RUNNER_TEMP/network-fixture.log" 2>&1 &
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect
+          script: bash android/network-poc/scripts/device-test.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: network-device-api-${{ matrix.api }}
+          retention-days: 14
+          path: android/network-poc/evidence/
