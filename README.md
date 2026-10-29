@@ -4,7 +4,7 @@
   <p>独立账号空间 · 沉浸式网页 · 本地文件工作流</p>
   <p><strong>简体中文</strong> · <a href="README.en.md">English</a></p>
   <p>
-    <a href="https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.19"><img alt="Latest prerelease" src="https://img.shields.io/github/v/release/ForceMind/ChatGPT?include_prereleases&amp;sort=semver&amp;label=pre-release&amp;labelColor=171717&amp;color=555555" /></a>
+    <a href="https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.22"><img alt="Latest prerelease" src="https://img.shields.io/github/v/release/ForceMind/ChatGPT?include_prereleases&amp;sort=semver&amp;label=pre-release&amp;labelColor=171717&amp;color=555555" /></a>
     <a href="https://github.com/ForceMind/ChatGPT/actions/workflows/android.yml"><img alt="Android CI" src="https://img.shields.io/github/actions/workflow/status/ForceMind/ChatGPT/android.yml?branch=main&amp;label=Android%20CI&amp;labelColor=171717&amp;color=555555" /></a>
     <img alt="Electron 44.9" src="https://img.shields.io/badge/Electron-44.9-555555?logo=electron&amp;logoColor=white&amp;labelColor=171717" />
     <img alt="Java 17" src="https://img.shields.io/badge/Java-17-555555?labelColor=171717" />
@@ -17,13 +17,13 @@
 
 在独立账号空间中使用 ChatGPT，管理标签与会话，把下载、预览、格式转换和文件处理集中在一个应用里。启动直接进入网页，采用白灰黑界面，没有地址栏；各设备独立登录，无需配置 OpenAI API Key。
 
-> 项目已从 ChatGPT Profiles 更名为 **ChatGPT Studio**。当前 macOS 公开版为 **3.0.0-alpha.21**，Windows 为 **3.0.0-alpha.21**，Android 为 **3.0.0-alpha.19**；各平台按下表独立更新。历史文件名、应用标识和数据目录保留，用于兼容既有登录、加密记录与更新流程。
+> 项目已从 ChatGPT Profiles 更名为 **ChatGPT Studio**。当前 macOS 公开版为 **3.0.0-alpha.22**，Windows 为 **3.0.0-alpha.21**，Android 为 **3.0.0-alpha.22**；各平台按下表独立更新。历史文件名、应用标识和数据目录保留，用于兼容既有登录、加密记录与更新流程。
 
 **桌面 alpha.21 已公开**：自有角色、设计补丁 Skill，以及 Windows 更新与加密离线快照。安装包与验收范围见[发布记录](docs/releases/3.0.0-alpha.21.json)，原包与独立验收来源见[候选收据](docs/releases/3.0.0-alpha.21-desktop-candidate.json)。
 
-**macOS alpha.22 候选已通过 CI**：账号菜单淡遮罩、绘制交接修复和当前标签强制刷新。提供 [DMG 候选工件](https://github.com/ForceMind/ChatGPT/actions/runs/40477100725/artifacts/12720429629)、[ZIP 候选工件](https://github.com/ForceMind/ChatGPT/actions/runs/40477100725/artifacts/12720618740)及[验证记录](docs/releases/3.0.0-alpha.22-macos-candidate.json)；公开版与自动更新接口尚未替换。
+**macOS alpha.22 已公开**：账号菜单淡遮罩、绘制交接修复和当前标签强制刷新。[Release](https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.22) · [原包与验证范围](docs/releases/3.0.0-alpha.22-macos-candidate.json)。下载与自动更新接口已同步。
 
-**Android alpha.22 已完成 CI 候选验收并提供原证书 APK**：加密只读对话 / 画面快照、断网重开，以及 121 个 Skill、32 个自有角色。公开 APK 仍为 alpha.19；[候选记录](docs/releases/3.0.0-alpha.22-android-candidate.json)包含 Actions 工件与验收范围，[签名记录](docs/releases/3.0.0-alpha.22-android-signed-candidate.json)核对原证书及包内容。详见 [Android 说明](android/README.md#alpha22-候选离线阅读与能力库)。
+**Android alpha.22 已公开**：加密只读对话 / 画面快照、断网重开，以及 121 个 Skill、32 个自有角色。沿用原证书与包名，可覆盖安装；[发布说明](docs/releases/3.0.0-alpha.22-notes.md)、[CI 验证](docs/releases/3.0.0-alpha.22-android-candidate.json)与[签名记录](docs/releases/3.0.0-alpha.22-android-signed-candidate.json)保留准确边界。真实账号与设备验收仍待完成。
 
 **Android 内核迁移验证进展**：独立 PoC 在 Android 9 / 15 模拟器分别通过 17 项恢复、触摸与生命周期验证；arm64 实验 release 从 196.08 MiB 降至 185.08 MiB。结果尚未接入正式客户端；非调试优化 release 已在 x86_64 的 Android 9 / 15 模拟器通过各 17 项运行验证，真实 ChatGPT 与真机仍待验收。[体积 / 触摸证据](docs/benchmarks/android-phase2-package-touch-lifecycle.json) · [优化 release 运行记录](docs/benchmarks/android-optimized-release-runtime.json)。
 
@@ -72,9 +72,9 @@ flowchart LR
 
 | 平台 | 版本 | 下载 | 要求 |
 | --- | --- | --- | --- |
-| macOS · Apple Silicon | 3.0.0-alpha.21 | [DMG](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.21/ChatGPT-Studio-3.0.0-alpha.21-mac-arm64.dmg) · [ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.21/ChatGPT-Studio-3.0.0-alpha.21-mac-arm64.zip) | macOS 13+ |
+| macOS · Apple Silicon | 3.0.0-alpha.22 | [DMG](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.22/ChatGPT-Studio-3.0.0-alpha.22-mac-arm64.dmg) · [ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.22/ChatGPT-Studio-3.0.0-alpha.22-mac-arm64.zip) | macOS 13+ |
 | Windows · x64 | 3.0.0-alpha.21 | [EXE](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.21/ChatGPT-Studio-3.0.0-alpha.21-windows-x64-setup.exe) · [免安装 ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.21/ChatGPT-Studio-3.0.0-alpha.21-windows-x64.zip) | Windows 10 / 11 · 64 位 |
-| Android · 手机 / 平板 | 3.0.0-alpha.19 | [APK](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.19/ChatGPT-Studio-3.0.0-alpha.19-android.apk) | Android 9+，WebView 支持多档案 |
+| Android · 手机 / 平板 | 3.0.0-alpha.22 | [APK](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.22/ChatGPT-Studio-3.0.0-alpha.22-android.apk) | Android 9+，WebView 支持多档案 |
 
 **macOS**：打开 DMG，将应用拖入“应用程序”。当前为 ad-hoc 签名，尚未经过 Apple 公证；首次启动被系统阻止时，核对来源和摘要后参阅 [Apple 安装说明](https://support.apple.com/zh-cn/102445)。
 
@@ -84,7 +84,7 @@ flowchart LR
 
 [官网](https://chatgpt-studio.pages.dev/)提供原始 GitHub 下载和可选国内加速入口。第三方加速不可用时可改用原始链接；下载后可与对应 Release 的 SHA256SUMS.txt 核对。
 
-Android 的 Studio 文件名对应 [SHA256SUMS-studio.txt](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.19/SHA256SUMS-studio.txt)；旧文件名及原校验清单保留，包内容与签名相同。
+当前 Mac / Android 安装包摘要见 [alpha.22 SHA256SUMS.txt](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.22/SHA256SUMS.txt)。旧版本及原校验清单保留。
 
 当前版本标记为 **Pre-release**，公开发布包含安装包和校验清单。只查询稳定版的工具可能显示没有 Latest 版本；本页版本徽章包含预发布，下载表直接指向带附件的 Release。
 
@@ -121,7 +121,7 @@ Android 点击底部标签数量打开总览。“更多 → 保活与诊断”�
 | 图片、文档与数据转换 | 支持 | 支持 | 支持，范围见移动端说明 |
 | Skill 与带文件任务 | 支持 | 支持 | 支持，实站兼容仍待验收 |
 | 草稿与阅读位置恢复 | 支持 | 支持 | 支持 |
-| 加密对话快照、离线阅读 | 已公开 | alpha.21 已公开 | 后续 |
+| 加密对话快照、离线阅读 | 已公开 | alpha.21 已公开 | alpha.22 已公开 |
 | 确认下载与退出 / 空闲安装 | 已公开 | alpha.21 当前用户 EXE；无空闲安装 | 后续 |
 | 每账号语言 / 时区选择 | 支持 | 支持 | 独立 PoC，尚未迁入普通 APK |
 
@@ -211,8 +211,8 @@ cd android
 | 已发布 | macOS alpha.20 完整更名与旧版兼容更新 | 应用、系统名称与手动下载统一 Studio，账号目录与加密身份保留；[发布记录](docs/releases/3.0.0-alpha.20.json) |
 | 已发布 | alpha.18 三端包、沉浸式 Android、清晰字号与 Mac 菜单栏 | 下载、官网与 Mac 更新清单同步；[发布与线上验证记录](docs/releases/3.0.0-alpha.18-publication.json) |
 | 已发布 | Windows 加密离线快照、当前用户 EXE 更新，ZIP 校验与另存 | alpha.21；[验证范围与包](docs/releases/3.0.0-alpha.21-desktop-candidate.json) |
-| 已验收候选 | Android 加密离线快照与 121 Skill / 32 自有角色 | alpha.22 已提供原证书 APK；[CI 与工件记录](docs/releases/3.0.0-alpha.22-android-candidate.json)，待实机验收与公开发布 |
-| 已验收候选 | Mac 账号菜单淡遮罩、平滑交接与标签强制刷新 | alpha.22；[候选与原生验证](docs/releases/3.0.0-alpha.22-macos-candidate.json)，待实际账号 / 设备验收与公开发布 |
+| 已发布 | Android 加密离线快照与 121 Skill / 32 自有角色 | alpha.22 原证书 APK；[CI 与工件记录](docs/releases/3.0.0-alpha.22-android-candidate.json)，真实账号与设备待验 |
+| 已发布 | Mac 账号菜单淡遮罩、平滑交接与标签强制刷新 | alpha.22；[原包与原生验证](docs/releases/3.0.0-alpha.22-macos-candidate.json)，真实账号兼容待验 |
 | 环境隔离 | Android 每账号语言 / 时区从独立 PoC 迁入日常客户端 | 独立三账号 / 四页恢复与触摸验证完成；非调试优化 release 的模拟器运行验证完成，实站 / 真机与正式接入待验，[运行证据](docs/benchmarks/android-optimized-release-runtime.json) |
 | 系统集成 | 系统 / Chrome 通行密钥、真实 Touch ID 恢复与稳定签名 | 通行密钥未接入；Touch ID 受证书与实机验收条件限制 |
 | 已发布 | 自有智能体与设计补丁 Skill | alpha.21 桌面含 32 个角色，支持单独使用、组合 Skill、收藏与任务恢复 |

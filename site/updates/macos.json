@@ -1,13 +1,13 @@
 {
   "schema": 1,
-  "version": "3.0.0-alpha.21",
-  "publishedAt": "2026-10-27T04:07:36Z",
-  "notes": "alpha.21：桌面能力库升级为 121 个 Skill、32 个自有角色，24 个互联网相关优先；新增设计补丁任务，完善角色单用、组合附件、收藏与工作区恢复。保留账号、登录、加密身份及现有退出/空闲安装逻辑；完整更新仍需重启。",
+  "version": "3.0.0-alpha.22",
+  "publishedAt": "2026-10-29T08:38:03Z",
+  "notes": "alpha.22：改善账号菜单淡遮罩与网页绘制交接，当前标签新增强制刷新。保留现有账号、登录与加密恢复身份；确认后后台下载，可立即、退出或应用空闲时安装。完整 App 更新仍需重启，暂不支持增量更新。",
   "files": {
     "arm64": {
-      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.21/ChatGPT-Profiles-3.0.0-alpha.21-mac-arm64.zip",
-      "size": 155157008,
-      "sha256": "ce19529eb9d40fe55a6e02bdcced7e40ba20a997ba89226e251b4c84b918d4fa"
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.22/ChatGPT-Profiles-3.0.0-alpha.22-mac-arm64.zip",
+      "size": 155160576,
+      "sha256": "fc2c8607ad8fbd521b4450017d983e61958cfed514c5318062a4ff0563b5704e"
     }
   }
 }

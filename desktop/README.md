@@ -2,13 +2,13 @@
 
 项目已更名为 **ChatGPT Studio**。macOS alpha.20 统一应用文件、系统名称和可执行文件；旧版专用更新 ZIP 保留兼容根目录，升级首次启动时迁移为 Studio.app，同名冲突不覆盖。内部存储名、应用标识、加密身份和数据目录保持不变。
 
-当前公开预发布版：macOS / Windows `3.0.0-alpha.21`。提供 macOS Apple Silicon 的 DMG / ZIP、Windows x64 的 EXE / ZIP；历史安装包保留。Electron `44.9.1`、React `19.3.1`、TypeScript。各设备独立使用，本版不需要自建服务。
+当前公开预发布版：macOS `3.0.0-alpha.22`，Windows `3.0.0-alpha.21`。提供 macOS Apple Silicon 的 DMG / ZIP、Windows x64 的 EXE / ZIP；历史安装包保留。Electron `44.9.1`、React `19.3.1`、TypeScript。各设备独立使用，本版不需要自建服务。
 
-下载见[GitHub Release](https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.21)。当前 `main` 包含工作台、恢复、新图标与跨平台源码。真正退出后需要重新加载网页并恢复保存状态；macOS alpha.12 先显示本地只读快照，具体范围见下文。
+下载见 [Mac alpha.22](https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.22) 与 [Windows alpha.21](https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.21)。当前 `main` 包含工作台、恢复、新图标与跨平台源码。真正退出后需要重新加载网页并恢复保存状态；macOS alpha.12 先显示本地只读快照，具体范围见下文。
 
-## macOS alpha.22 候选：菜单遮罩与标签强制刷新
+## macOS alpha.22：菜单遮罩与标签强制刷新
 
-[DMG 候选工件](https://github.com/ForceMind/ChatGPT/actions/runs/40477100725/artifacts/12720429629) · [ZIP 候选工件](https://github.com/ForceMind/ChatGPT/actions/runs/40477100725/artifacts/12720618740) · [摘要与验证](../docs/releases/3.0.0-alpha.22-macos-candidate.json)。公开下载与更新接口仍为 alpha.21；Actions 下载为 ZIP 容器，需要 GitHub 访问权限，ZIP 工件同时包含 Studio 手动包与旧版更新兼容包。临时签名，未公证。
+[DMG](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.22/ChatGPT-Studio-3.0.0-alpha.22-mac-arm64.dmg) · [ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.22/ChatGPT-Studio-3.0.0-alpha.22-mac-arm64.zip) · [原包摘要与验证](../docs/releases/3.0.0-alpha.22-macos-candidate.json)。公开下载与 Mac 更新接口已同步 alpha.22；保留旧更新器兼容 ZIP。沿用 Actions 原包，临时签名、未公证。
 
 账号菜单沿用原布局，打开时网页区域加 5% 淡遮罩，点击空白处或按 Esc 关闭。旧实现隐藏网页后才绘制截图，可能短暂露出底层画面；候选会等待原分辨率图像解码及绘制，再交接显示，关闭时先恢复原网页、再释放临时图像。图像只用于内存中的界面交接，不写磁盘、不上传；原网页实例继续运行。
 

@@ -1,16 +1,16 @@
 # ChatGPT Studio for Android
 
-项目已更名为 **ChatGPT Studio**，当前公开 APK 为 alpha.19。下载文件名统一为 `ChatGPT-Studio-3.0.0-alpha.19-android.apk`，应用包名和签名身份保持不变；已安装的 App 无需因文件更名而重装。
+项目已更名为 **ChatGPT Studio**，当前公开 APK 为 alpha.22。下载文件名统一为 `ChatGPT-Studio-3.0.0-alpha.22-android.apk`，应用包名和签名身份保持不变；已安装的 App 无需因文件更名而重装。
 
-原生 Java + Android System WebView。当前公开预发布版为 `3.0.0-alpha.19`，默认进入网页，标签清单按需展开；支持窗口保留、工作台与文件任务。APK 沿用既有固定签名，历史安装包保留。没有地址栏，延续白色、浅灰和黑色控件。手机与平板使用同一 APK，各设备分别登录。
+原生 Java + Android System WebView。当前公开预发布版为 `3.0.0-alpha.22`，默认进入网页，标签清单按需展开；支持窗口保留、工作台与文件任务。APK 沿用既有固定签名，历史安装包保留。没有地址栏，延续白色、浅灰和黑色控件。手机与平板使用同一 APK，各设备分别登录。
 
-下载：[Android APK](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.19/ChatGPT-Studio-3.0.0-alpha.19-android.apk) · [Release](https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.19)。普通 APK 的业务内核与数据目录保持，未加入 Gecko；每账号浏览器语言和时区尚未迁入。[独立环境 PoC](environment-poc/README.md)只验证研发路线，不是普通客户端下载版本。alpha.22 候选中的离线快照与能力库见下节，公开下载仍为 alpha.19。
+下载：[Android APK](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.22/ChatGPT-Studio-3.0.0-alpha.22-android.apk) · [Release](https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.22)。普通 APK 的业务内核与数据目录保持，未加入 Gecko；每账号浏览器语言和时区尚未迁入。[独立环境 PoC](environment-poc/README.md)只验证研发路线，不是普通客户端下载版本。alpha.22 的离线快照与能力库见下节。
 
-当前 Studio 文件名的校验清单为 [SHA256SUMS-studio.txt](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.19/SHA256SUMS-studio.txt)。以下保留各批次能力及验证记录。
+当前 Studio 文件名的校验清单为 [SHA256SUMS.txt](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.22/SHA256SUMS.txt)。以下保留各批次能力及验证记录。
 
-## alpha.22 候选：离线阅读与能力库
+## alpha.22：离线阅读与能力库
 
-候选版本为 `3.0.0-alpha.22` / `3000022`，沿用原应用、账号空间和加密身份。GitHub Actions 编译与原生候选验收已完成，[候选记录](../docs/releases/3.0.0-alpha.22-android-candidate.json)保留源码、工件、摘要、失败修正与验证边界。此批不替换公开 Release、官网或已安装版本。
+公开版本为 `3.0.0-alpha.22` / `3000022`，沿用原应用、账号空间和加密身份。GitHub Actions 编译与原生候选验收已完成，[候选记录](../docs/releases/3.0.0-alpha.22-android-candidate.json)保留源码、工件、摘要、失败修正与验证边界。原包已公开到 Release，官网同步下载与摘要；覆盖安装保留既有账号空间，个人设备升级仍待验收。
 
 - App 运行时切换标签与账号继续复用原网页。进程结束后，保存过的持久对话可先显示本机只读文字和最近画面，同时尝试连接；这不保留已结束进程的 JavaScript 或远端生成任务。
 - 快照沿用 Android KeyStore 加密记录，并绑定账号空间、标签和对话 URL。临时聊天、登录与验证页面不保存画面；截图失败仍可保存文字。画面有时间标记、尺寸与字节上限，不能视为完整网页存档。
@@ -22,7 +22,7 @@
 
 原始证据见[进程重启记录](../docs/benchmarks/android-alpha22-process-restart.json)、[字号记录](../docs/benchmarks/android-alpha22-native-readability.json)与根目录 [迭代记录](../MACOS_MIGRATION_PLAN.md)。模拟网页与官方模拟器不替代真实 ChatGPT、厂商设备和原有个人数据升级验收。原签名材料保留本机，不上传到 CI；未签名 Release 不能直接安装，debug 工件使用独立包名和测试签名，不覆盖原 App 或复用正式登录。
 
-本轮对话已提供原证书签名 APK，详情见[签名候选记录](../docs/releases/3.0.0-alpha.22-android-signed-candidate.json)。签名复用已通过 CI 的原始未签名包，218 个原包文件逐字节保持，仅新增标准签名元数据；包名与公开 alpha.19 证书一致，版本号递增。临时 Java / 签名环境已清理，未在本机重新编译或上传私钥。该文件尚未上传公开 Release；真实手机覆盖升级和个人账号验收仍待完成。
+本次已公开原证书签名 APK，详情见[签名候选记录](../docs/releases/3.0.0-alpha.22-android-signed-candidate.json)。签名复用已通过 CI 的原始未签名包，218 个原包文件逐字节保持，仅新增标准签名元数据；包名与公开 alpha.19 证书一致，版本号递增。临时 Java / 签名环境已清理，未在本机重新编译或上传私钥。该文件已上传公开 Release；真实手机覆盖升级和个人账号验收仍待完成。
 
 ## alpha.17 标签管理与后台任务
 
