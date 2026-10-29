@@ -138,3 +138,44 @@ gh workflow run android-recovery-poc.yml --ref codex/macos-assets-workbench \
   -f runtime=optimized-release -f managed=true -f build_only=false \
   -f core_only=false -f input_diagnostic=false -f 'apis=[28,35]'
 ```
+
+## 输入警告对照与长后台：第四阶段
+
+[输入警告对照](https://github.com/ForceMind/ChatGPT/actions/runs/40857125677)对应 `51bef31`，API 28 / 35 两端通过。固定版本官方源码的 `hasEditableParent()` 在 `mEditableParent` 为空时输出 `No editable parent` 并返回 false，多个原生回调会使用此检查；源码 JAR 摘要、行号和直接触发条件见[对照证据](../../docs/benchmarks/android-input-warning-controls.json)。
+
+两页合成对照覆盖无输入打开、空白导航、仅聚焦、原生提交、保留切换、Activity 重建和完整退出恢复。两端在首次打开、尚未聚焦或输入时均已有 1 条警告；余下发生于完整退出后的恢复，总数分别为 2 / 3。原生提交、切换与 Activity 重建阶段本轮没有新增警告，实际 DOM / 编辑器模型及保存位置核对通过；没有发送或截图。该结果说明提交输入不是必要触发条件，具体原生调用方和完整生命周期原因仍未确定，不能据此认定所有场景无害。对照负载只有两页，不能与第三阶段四页的 9 条直接比较为优化收益。
+
+本轮长后台测量使用同一独立 App 源码，非调试优化 release、临时 CI 签名、三个账号四页；Home、熄屏、强制 Doze 分别真实等待 10 分钟，再检查原文档、草稿、阅读位置和宿主 PID。CPU 从进程累计计数及实际系统计时单位计算，按一个逻辑核为 100% 汇总；PSS 按当前归属实验包的进程求和。采样期间存在合成页面报告、恢复记账、ADB / PSS 观察开销，结果不等同完全无取证的后台状态、真实 ChatGPT、arm64 或 OEM 真机。Android 9 缺少 getconf 时，CI 单独编译 shell 工具调用 Os.sysconf 获取实际值；工具不进入 APK，拒绝个人设备或其他系统版本。
+
+### 实测结果与复用范围
+
+[Android 15 成功子任务](https://github.com/ForceMind/ChatGPT/actions/runs/40858390744/job/123395098545)在 `68f1e24` 完成一轮连续三段后台测量及原 17 项恢复回归，共 20 项通过。同轮 Android 9 的 getconf 前置失败保留，因此整个原工作流是红色，不能把它写成整轮成功。
+
+Android 9 在 `3660564` 的 [20 分钟 Home / 熄屏结果](https://github.com/ForceMind/ChatGPT/actions/runs/40859647518)中，两段各约 601 秒的文档、草稿、位置、宿主进程保持检查通过，随后停在 Doze 未生效的前置，不能算整轮验收通过。`47926a0` 的 [Doze 定向复验](https://github.com/ForceMind/ChatGPT/actions/runs/40864267169)完成 10 分钟 Doze 及全部原 17 项恢复回归，共 18 项通过。这里复用已通过的 Home / 熄屏证据，不合称 Android 9 单轮连续 30 分钟通过。各轮 App 源码、构建脚本及依赖配置与 `210e6d5` 完全一致，变化仅在 CI 工具与测量条件。
+
+| 系统 | 阶段（各 10 分钟） | PSS 首次 → 最后采样 / 峰值（MiB） | CPU 加权均值 / 窗口峰值 |
+| --- | --- | ---: | ---: |
+| Android 9 | Home 后台 | 729.9 → 796.9 / 796.9 | 11.00% / 12.47% |
+| Android 9 | 熄屏 | 806.3 → 834.0 / 834.0 | 10.88% / 11.60% |
+| Android 9 | 强制 Doze | 726.7 → 800.5 / 800.5 | 10.78% / 11.83% |
+| Android 15 | Home 后台 | 661.0 → 677.7 / 677.7 | 2.23% / 2.88% |
+| Android 15 | 熄屏 | 684.2 → 709.6 / 709.6 | 2.21% / 2.70% |
+| Android 15 | 强制 Doze | 653.6 → 821.1 / 821.1 | 1.30% / 1.62% |
+
+CPU 以一个逻辑核为 100%，两套模拟器实际均为 2 核、100Hz；均值按设备时间加权，峰值是约 30 秒窗口的最大值。PSS 约每 60 秒采样并汇总实验包的所有关联进程，是采样峰值。固定工作量包含 3 个账号、4 页、2 组语言 / 时区 Runtime，以及每 500ms 的合成 HTTP 观测和恢复记账；不是正式 System WebView 客户端或真实 ChatGPT 的性能结论。
+
+Android 9 原镜像 `enabled deep` 为 0。CI 显式启用深度闲置后，等待控制器报告 `screen=false` / `charging=false`，再按 [Android 官方测试方法](https://developer.android.com/training/monitoring-device-state/doze-standby)强制进入；全部 21 个 Doze 采样点为 `IDLE` 且屏幕休眠。没有添加 App 电池白名单。Android 15 的 Doze 期间，HTTP 观测曾停顿约 600 秒，返回后四页仍是原文档；本批保活口径是恢复后不重载，不能承诺后台 JavaScript 无限持续运行。
+
+两套系统均保存零发送、零截图、`win is null` / `FATAL EXCEPTION` 为零；原 `No editable parent` 在完整负载仍各有 7 条，不宣称警告已修复。部分阶段 PSS 随固定工作量增长，不能直接判定泄漏；下一步需要堆 / 原生分配与周期快照、消息 / 网络排队分析。尚未做资源优化，也没有接入正式内核、迁移登录数据或完成 arm64 / OEM 真机 / 真实 ChatGPT 验收。
+
+来源、每个采样点、原失败、系统状态、包身份、完整摘要与跨轮复用关系集中在[长后台与资源证据](../../docs/benchmarks/android-long-background-resources.json)。当前阶段完成，`formalMigrationReady=false`。
+
+已有具体交互授权后，可按原测量入口复验：
+
+```sh
+gh workflow run android-recovery-poc.yml --ref codex/macos-assets-workbench \
+  -f runtime=optimized-release -f managed=true -f build_only=false \
+  -f core_only=false -f input_diagnostic=false -f experiment=long-background -f 'apis=[28,35]'
+```
+
+`experiment=input-warning` 为两页输入对照；`experiment=doze-probe` 为四页 Doze 定向段与原恢复回归。手动工作流默认仅构建，运行前仍需对应测试范围的明确授权。

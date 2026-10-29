@@ -778,6 +778,17 @@
             "line": "10-29 10:29:56.835  7390  7406 W GeckoEditableChild: No editable parent"
           }
         ]
+      },
+      "firstWarningStartupContext": {
+        "causalAttribution": false,
+        "lines": [
+          "10-29 10:28:29.805  5088  5088 D GeckoSession: handleMessage GeckoView:PageStart uri=about:blank",
+          "10-29 10:28:29.805  5088  5088 D GeckoSession: handleMessage GeckoView:LocationChange uri=about:blank",
+          "10-29 10:28:29.805  5088  5088 D GeckoSession: handleMessage GeckoView:PageStop uri=null",
+          "10-29 10:28:29.816  5088  5110 I GeckoSession: zerdatime 118025 - chrome startup finished",
+          "10-29 10:28:29.820  5363  5379 W GeckoEditableChild: No editable parent"
+        ],
+        "finding": "The first warning follows initial about:blank page events in the log; messages have different PIDs, so proximity alone does not establish the native caller."
       }
     },
     {
@@ -1480,6 +1491,17 @@
             "line": "10-29 10:29:10.261  6047  6060 W GeckoEditableChild: No editable parent"
           }
         ]
+      },
+      "firstWarningStartupContext": {
+        "causalAttribution": false,
+        "lines": [
+          "10-29 10:27:29.967  2677  2735 I GeckoSession: zerdatime 61696 - chrome startup finished",
+          "10-29 10:27:29.971  2677  2677 D GeckoSession: handleMessage GeckoView:PageStart uri=about:blank",
+          "10-29 10:27:29.971  2677  2677 D GeckoSession: handleMessage GeckoView:LocationChange uri=about:blank",
+          "10-29 10:27:29.972  2677  2677 D GeckoSession: handleMessage GeckoView:PageStop uri=null",
+          "10-29 10:27:29.995  2948  2999 W GeckoEditableChild: No editable parent"
+        ],
+        "finding": "The first warning follows initial about:blank page events in the log; messages have different PIDs, so proximity alone does not establish the native caller."
       }
     }
   ],
