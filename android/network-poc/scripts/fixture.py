@@ -28,8 +28,54 @@ SCHEMA_VERSION = 2
 
 
 class Origin(http.server.BaseHTTPRequestHandler):
+    protocol_version = 'HTTP/1.1'
+    _access_count = 0
+    _access_limit = 256
+    _access_lock = threading.Lock()
+
     def log_message(self, *_):
         pass
+
+    def access_diagnostic(self, status, content_length, body_len, written, error=None):
+        # All requests are synthetic. Bound both event count and string lengths;
+        # never print bodies, headers, query strings, certificates, or keys.
+        with Origin._access_lock:
+            if Origin._access_count >= Origin._access_limit:
+                return
+            Origin._access_count += 1
+            entry = {'event': 'owned-origin-access', 'method': self.command[:16],
+                     'path': self.path.partition('?')[0][:96], 'status': status,
+                     'contentLength': content_length, 'bodylen': body_len,
+                     'responseBytesWritten': written, 'port': self.server.server_port,
+                     'connection': 'close'}
+            try:
+                entry['requestContentLength'] = int(self.headers.get('Content-Length', '0'))
+            except (AttributeError, ValueError):
+                entry['requestContentLength'] = None
+            if error is not None:
+                entry['error'] = type(error).__name__
+            print(json.dumps(entry, sort_keys=True), flush=True)
+
+    def finite_response(self, status, data, route, kind=None, body_len=0):
+        self.close_connection = True
+        written, error = 0, None
+        try:
+            self.send_response(status)
+            if kind is not None:
+                self.send_header('Content-Type', kind)
+            self.send_header('X-Fixture-Route', route)
+            self.send_header('Content-Length', str(len(data)))
+            self.send_header('Cache-Control', 'no-store')
+            self.send_header('Connection', 'close')
+            self.end_headers()
+            self.wfile.write(data)
+            self.wfile.flush()
+            written = len(data)
+        except OSError as failure:
+            error = failure
+            raise
+        finally:
+            self.access_diagnostic(status, len(data), body_len, written, error)
 
     def do_GET(self):
         route = {'127.0.0.2': 'A', '127.0.0.3': 'B'}.get(self.client_address[0], 'direct')
@@ -41,23 +87,16 @@ class Origin(http.server.BaseHTTPRequestHandler):
                           '<p id="route">' + route + '</p>').encode(), 'text/html'
         else:
             data, kind = json.dumps({'route': route}).encode(), 'application/json'
-        self.send_response(200)
-        self.send_header('Content-Type', kind)
-        self.send_header('X-Fixture-Route', route)
-        self.send_header('Content-Length', str(len(data)))
-        self.send_header('Cache-Control', 'no-store')
-        self.end_headers()
-        self.wfile.write(data)
+        self.finite_response(200, data, route, kind)
 
     def do_POST(self):
-        data = self.rfile.read(int(self.headers.get('Content-Length', '0')))
+        try:
+            data = self.rfile.read(int(self.headers.get('Content-Length', '0')))
+        except OSError as failure:
+            self.access_diagnostic(0, 0, 0, 0, failure)
+            raise
         route = {'127.0.0.2': 'A', '127.0.0.3': 'B'}.get(self.client_address[0], 'direct')
-        self.send_response(200)
-        self.send_header('X-Fixture-Route', route)
-        self.send_header('Content-Length', str(len(data)))
-        self.send_header('Cache-Control', 'no-store')
-        self.end_headers()
-        self.wfile.write(data)
+        self.finite_response(200, data, route, body_len=len(data))
 
 
 def openssl(*arguments, data=None):

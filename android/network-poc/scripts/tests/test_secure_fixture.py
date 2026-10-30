@@ -106,15 +106,26 @@ class SecureFixtureTests(unittest.TestCase):
                                                 context=context, timeout=3)
             client.connect()
             self.assertEqual(client.sock.selected_alpn_protocol(), 'http/1.1')
-            client.request('GET', '/download')
-            response = client.getresponse()
-            self.assertEqual(response.getheader('X-Fixture-Route'), 'direct')
-            self.assertEqual(response.read(), fixture.PAYLOAD)
-            client.close()
-            client = http.client.HTTPSConnection('127.0.0.1', server.server_port,
-                                                context=context, timeout=3)
-            client.request('POST', '/upload', body=b'owned upload bytes')
-            self.assertEqual(client.getresponse().read(), b'owned upload bytes')
+            # Reuse the client object across alternating requests. Each finite
+            # response must tell the client to establish a fresh TLS connection,
+            # even when the request asks for HTTP/1.1 keep-alive.
+            for attempt in range(3):
+                for method, path, body, expected in (
+                    ('GET', '/echo', None, b'{"route": "direct"}'),
+                    ('GET', '/download', None, fixture.PAYLOAD),
+                    ('POST', '/upload', f'owned upload {attempt}\n'.encode(),
+                     f'owned upload {attempt}\n'.encode()),
+                ):
+                    client.request(method, path, body=body, headers={'Connection': 'keep-alive'})
+                    response = client.getresponse()
+                    self.assertEqual(response.version, 11)
+                    self.assertEqual(response.status, 200)
+                    self.assertEqual(response.getheader('Connection'), 'close')
+                    self.assertTrue(response.will_close)
+                    self.assertEqual(response.getheader('X-Fixture-Route'), 'direct')
+                    self.assertEqual(int(response.getheader('Content-Length')), len(expected))
+                    self.assertEqual(response.read(), expected)
+                    self.assertIsNone(client.sock)
             client.close()
             untrusted = http.client.HTTPSConnection('127.0.0.1', server.server_port, timeout=3)
             with self.assertRaises(ssl.SSLCertVerificationError):
@@ -124,6 +135,26 @@ class SecureFixtureTests(unittest.TestCase):
             server.shutdown()
             server.server_close()
             thread.join(timeout=2)
+
+    def test_access_diagnostics_are_bounded_and_exclude_request_contents(self):
+        handler = fixture.Origin.__new__(fixture.Origin)
+        handler.command = 'POST'
+        handler.path = '/upload?synthetic-private-query=hidden'
+        handler.headers = {'Content-Length': '17'}
+        handler.server = mock.Mock(server_port=18480)
+        with mock.patch.object(fixture.Origin, '_access_count', fixture.Origin._access_limit - 1):
+            with mock.patch('builtins.print') as output:
+                handler.access_diagnostic(200, 17, 17, 17)
+                handler.access_diagnostic(200, 17, 17, 17)
+        self.assertEqual(output.call_count, 1)
+        entry = json.loads(output.call_args.args[0])
+        self.assertEqual(entry['method'], 'POST')
+        self.assertEqual(entry['path'], '/upload')
+        self.assertEqual(entry['contentLength'], 17)
+        self.assertEqual(entry['requestContentLength'], 17)
+        self.assertEqual(entry['bodylen'], 17)
+        self.assertEqual(entry['responseBytesWritten'], 17)
+        self.assertNotIn('hidden', json.dumps(entry))
 
     def test_certificate_rejects_unknown_hostname(self):
         # OpenSSL performs hostname verification against the generated trust root.
