@@ -26,6 +26,12 @@
 
 CI 使用两条自有临时 VLESS 线路和本地回显服务，检查网页、下载和上传出口、文件字节、切换保留、错误状态及关闭清理；不访问真实 ChatGPT、不截图、不使用私人节点。Android 9 的旧 WebView 可能不支持 `PROXY_OVERRIDE`，这种情况下明确拒绝网页代理，只能记录原生核心验证结果，不能算作完整网页路由通过。
 
+扩展协议矩阵提供 raw、TLS、REALITY 各一对自有 A/B 出口，另设不可信CA测试监听器。TLS检查受信任证书、错误主机名和未知CA；REALITY检查正确/错误公钥及short ID。临时证书和密钥每轮在CI生成，REALITY目标也是自有TLS1.3服务，不借用公共网站。CI flavor 单独信任该测试CA；preview flavor 的同名接口为空实现，打包时检查预览资源和Dex没有测试CA或生成的信任类。
+
+2026-10-30 的 [TLS/REALITY扩展CI](https://github.com/ForceMind/ChatGPT/actions/runs/41005311920) 六组完整通过。Android9/15均覆盖加密节点上的HTTPS网页、原生/网页上传、下载、身份拒绝与完整资源窗口。资源统一用HTTPS原站并保留同轮raw对照；本次TLS/REALITY代理空闲平均PSS约176.7–213.2 MiB，CPU约单核0.43%–0.60%，固定文件负载窗口平均CPU约3.27%–4.52%。这是不同新模拟器中的合成数据，不作为通用协议排名或真机/真实ChatGPT保证。见 [最新结果](../../docs/android-network-plan.md#tls--reality-完整链路与资源结果) / [完整计数与样本](../../docs/benchmarks/android-network-tls-reality-resources.json)。
+
+`NETWORK_TEST_TRANSPORT=raw|tls|reality` 选择设备场景；`device-test.sh` 先跑路由断言，raw额外保留HTTP回归。资源命令增加 `--transport` 和 `--fixture`，三种场景统一测自有HTTPS原站，不能拿之前HTTP原站的raw报告当作匹配对照。所有TLS校验保持开启，POST不因结果不明而自动重发。
+
 预览包与 `.ci` 测试包分开。只有测试包允许访问指定明文回显域名；预览包保持正常 TLS 校验。`network-application` 提供 APK、检查报告及摘要，`network-core` 提供代理库、完整模块版本和依赖许可。
 
 ## Android 9 与资源验证

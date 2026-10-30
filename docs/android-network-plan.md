@@ -2,11 +2,32 @@
 
 状态：已交付 Android 独立网络预览 0.1.0，GitHub Actions 合成验证通过。未接入正式客户端。2026-10-30。
 
-当前迭代：保留 raw/HTTP 回归，新增 raw、TLS、REALITY × Android9/15 六组独立 CI。TLS和REALITY分别验证 HTTPS网页、原生/网页上传与下载、A/B出口、身份错误失败不降级；通过后各自采集60秒资源窗口。三种协议的资源对照统一使用自有HTTPS原站。临时CA和密钥仅用于CI合成节点，预览APK不得包含或信任CI CA；不访问真实ChatGPT、不截图，不修改正式App、main、生产签名或登录/恢复数据。
+## TLS / REALITY 完整链路与资源结果
 
-本轮验证范围：仅在全新 Actions 模拟器更新 Android 9 的官方 AOSP WebView，核对 APK 固定来源、签名、最低 SDK、实际 provider 与代理能力，强制补齐网页/文件同路由回归；通过后测量直连、代理、固定文件负载、后台及恢复阶段的进程内存/CPU。资源统计包含可明确归属的 renderer，报告系统/版本与观察开销，不把合成模拟器数值等同真实 ChatGPT 或手机占用。不更换用户设备 WebView，不修改正式 App、生产签名、main 或现有数据。
+源码 `df9486a` 的 [Actions 41005311920](https://github.com/ForceMind/ChatGPT/actions/runs/41005311920) 六组全部通过：Android9 / Android15 × raw / TLS / REALITY。Android9实际使用固定AOSP WebView124，Android15使用Google WebView124。每组先验证链路，再采集全部六个资源阶段，每段至少60秒、7个内存样本；记录进程身份和实际协议，App与所属renderer合计，未使用App-only或半截窗口替代。
 
-迭代完成：源码 `c699571f4fd9ba95dbfb27fcf14d9226972c759a` 的 [Actions 40932254243](https://github.com/ForceMind/ChatGPT/actions/runs/40932254243) 全部通过。Android 9 AOSP 模拟器已实际切换为官方 AOSP WebView 124.0.6367.219（最低 API26），完整网页/文件回归通过，不再走原生-only 分支。Android 15 的 Google WebView 124 同样完整通过。资源预检曾遇到 API28 缺少 getconf、API35 root 诊断查询返回255，已改为读取内核 AT_CLKTCK、用常规 shell 身份读取服务；两组的时钟频率实读均为100，所有阶段包含 App 和可明确归属的 renderer。
+链路验证包括HTTPS网页、A/B线路、原生/网页上传、multipart文件、下载落盘字节、草稿/文档保留、传输时禁止切换、失败不降级和显式直连。TLS同时拒绝错误主机名和未授权CA；REALITY同时拒绝错误公钥和short ID。raw额外保留原HTTP回归。临时CA只存在CI源集与测试资源中；预览APK通过无测试CA资源、无生成信任类的打包检查。
+
+以下均为平均PSS合计（MiB）/ CPU单核百分比。固定负载仍为30轮20字节原生下载、128 KiB上传及回显、20字节网页下载；这次所有资源场景（含raw）统一使用自有HTTPS原站，不直接对比之前HTTP原站的数值。
+
+| 系统 / 协议 | 代理空闲 PSS / CPU | 固定负载 PSS / CPU | 代理后台 PSS / CPU | 恢复直连 PSS / CPU |
+|---|---:|---:|---:|---:|
+| Android9 / RAW | 209.0 MiB / 0.57% | 212.0 MiB / 3.97% | 212.6 MiB / 0.43% | 213.5 MiB / 0.47% |
+| Android9 / TLS | 213.2 MiB / 0.53% | 216.5 MiB / 4.52% | 216.1 MiB / 0.40% | 217.1 MiB / 0.38% |
+| Android9 / REALITY | 212.0 MiB / 0.43% | 215.3 MiB / 3.64% | 215.9 MiB / 0.33% | 216.9 MiB / 0.35% |
+| Android15 / RAW | 177.5 MiB / 0.33% | 180.2 MiB / 2.26% | 180.3 MiB / 0.35% | 181.0 MiB / 0.32% |
+| Android15 / TLS | 176.7 MiB / 0.48% | 179.9 MiB / 3.27% | 179.0 MiB / 0.43% | 179.0 MiB / 0.37% |
+| Android15 / REALITY | 183.7 MiB / 0.60% | 188.0 MiB / 4.09% | 186.2 MiB / 0.48% | 185.7 MiB / 0.48% |
+
+这些是带instrumentation的x86_64模拟器、轻量单页、原生TCP场景，未启用Vision/Mux。各协议运行于不同新模拟器，顺序窗口包含缓存、GC及宿主调度差异，不能将单次差值当作确定增量或通用快慢排名；真实ChatGPT、多标签、真实节点/证书链、HTTP2原站与arm64真机仍未验。
+
+首轮合成原站沿用HTTP1.0默认关闭方式，Android在HTTPS下载后原生POST出现EOF；服务端改为HTTP1.1、明确Content-Length/Connection:close并完整刷新响应，重复HTTPS对照与六组设备验证随后全部通过。这不能据此认定所有HTTP1.0服务或Android客户端都有缺陷。测试未降低TLS校验，也未给结果不明的POST增加自动重发。
+
+[完整处理后记录](benchmarks/android-network-tls-reality-resources.json) 保存全部协议、provider、身份负例、原始计数与样本。原始设备证据保留14天，临时合成私钥材料保留1天，不进入用户安装包。[本轮独立arm64候选](https://github.com/ForceMind/ChatGPT/actions/runs/41005311920/artifacts/12954623848) 仍为实验签名；不替换正式App。main、生产签名和现有登录/恢复数据未改动；本机只读取小型结果，临时下载已清理。
+
+前一批WebView升级验证范围：仅在全新 Actions 模拟器更新 Android 9 的官方 AOSP WebView，核对 APK 固定来源、签名、最低 SDK、实际 provider 与代理能力，强制补齐网页/文件同路由回归；通过后测量直连、代理、固定文件负载、后台及恢复阶段的进程内存/CPU。资源统计包含可明确归属的 renderer，报告系统/版本与观察开销，不把合成模拟器数值等同真实 ChatGPT 或手机占用。不更换用户设备 WebView，不修改正式 App、生产签名、main 或现有数据。
+
+WebView升级批次完成：源码 `c699571f4fd9ba95dbfb27fcf14d9226972c759a` 的 [Actions 40932254243](https://github.com/ForceMind/ChatGPT/actions/runs/40932254243) 全部通过。Android 9 AOSP 模拟器已实际切换为官方 AOSP WebView 124.0.6367.219（最低 API26），完整网页/文件回归通过，不再走原生-only 分支。Android 15 的 Google WebView 124 同样完整通过。资源预检曾遇到 API28 缺少 getconf、API35 root 诊断查询返回255，已改为读取内核 AT_CLKTCK、用常规 shell 身份读取服务；两组的时钟频率实读均为100，所有阶段包含 App 和可明确归属的 renderer。
 
 ## WebView 124 资源结果
 
