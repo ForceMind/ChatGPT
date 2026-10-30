@@ -62,13 +62,17 @@ public final class RouteManager {
         final long generation = current.generation;
         worker.execute(() -> {
             int port = 0;
+            String stage = "stop-previous-core";
             try {
                 Networkcore.stop();
                 if (node != null) {
+                    stage = "start-core";
                     try (ServerSocket socket = new ServerSocket(0, 1, InetAddress.getByName("127.0.0.1"))) { port = socket.getLocalPort(); }
                     Networkcore.start(CoreConfig.build(node, port));
+                    stage = "check-local-listener";
                     try (Socket check = new Socket()) { check.connect(new InetSocketAddress("127.0.0.1", port), 3000); }
                     java.net.HttpURLConnection probe = null;
+                    stage = "probe-owned-target";
                     try {
                         java.net.Proxy explicitProxy = new java.net.Proxy(java.net.Proxy.Type.HTTP, new InetSocketAddress("127.0.0.1", port));
                         probe = (java.net.HttpURLConnection) new java.net.URL(BuildConfig.NETWORK_PROBE_URL).openConnection(explicitProxy);
@@ -80,6 +84,8 @@ public final class RouteManager {
                 final int appliedPort = port;
                 main.post(() -> applyWebView(node, appliedPort, generation, listener));
             } catch (Exception e) {
+                if (BuildConfig.APPLICATION_ID.endsWith(".ci"))
+                    android.util.Log.e("NetworkPreviewCI", "startup stage=" + stage + " exception=" + e.getClass().getName());
                 try { Networkcore.stop(); } catch (Exception ignored) { }
                 main.post(() -> fail(generation, listener, "线路连接或目标检查失败"));
             }

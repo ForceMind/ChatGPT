@@ -144,7 +144,11 @@ public final class NetworkStabilityInstrumentedTest {
             assertTrue(RouteManager.supportsWebViewProxy());
             long deadline = SystemClock.elapsedRealtime() + 20000;
             while (routes.snapshot().state == RouteManager.State.CONNECTING && SystemClock.elapsedRealtime() < deadline) Thread.sleep(50);
-            assertEquals(RouteManager.State.DIRECT, routes.snapshot().state); route(a);
+            assertEquals(RouteManager.State.DIRECT, routes.snapshot().state);
+            // Complete initial WebView/network startup before probing the core.
+            await(activity.webViewForTests(), "document.title", "\"direct\"");
+            assertEquals("direct", activity.downloadsForTests().request("https://10.0.2.2:18480/echo", "GET", null).route);
+            route(a);
             main(() -> {
                 tabs.add(activity.webViewForTests());
                 ViewGroup parent = (ViewGroup) tabs.get(0).getParent();
@@ -166,8 +170,9 @@ public final class NetworkStabilityInstrumentedTest {
                 for (int i = 0; i < 3; i++) { select(i); webUpload(tabs.get(i), "web-tab-" + i, "B"); }
                 nativeUpload("before-background", "B"); nativeFile("before-background", "B");
                 checkpoint("three-tabs-retained-route-B");
-                scenario.moveToState(Lifecycle.State.CREATED); assertEquals(Lifecycle.State.CREATED, scenario.getState());
-                host("background-start"); long started = SystemClock.elapsedRealtime();
+                // Host presses Home and verifies ActivityManager before acknowledging.
+                host("background-start"); assertEquals(Lifecycle.State.CREATED, scenario.getState());
+                long started = SystemClock.elapsedRealtime();
                 while (SystemClock.elapsedRealtime() - started < 1800000L) {
                     Thread.sleep(Math.max(1, Math.min(10000, 1800000L - (SystemClock.elapsedRealtime() - started))));
                     assertEquals("activity remains stopped", Lifecycle.State.CREATED, scenario.getState());
@@ -175,7 +180,8 @@ public final class NetworkStabilityInstrumentedTest {
                 }
                 backgroundMillis = SystemClock.elapsedRealtime() - started; assertTrue(backgroundMillis >= 1800000L);
                 host("background-end");
-                scenario.moveToState(Lifecycle.State.RESUMED); assertEquals(Lifecycle.State.RESUMED, scenario.getState());
+                assertEquals(Lifecycle.State.RESUMED, scenario.getState());
+                scenario.onActivity(current -> assertSame("same Activity after returning from Home", activity, current));
                 assertEquals(RouteManager.State.CONNECTED, routes.snapshot().state); preserved();
                 nativeUpload("after-background", "B"); nativeFile("after-background", "B"); webUpload(tabs.get(0), "web-after-background", "B");
                 checkpoint("thirty-minute-background-restored");

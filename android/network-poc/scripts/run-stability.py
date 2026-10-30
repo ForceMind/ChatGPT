@@ -36,6 +36,26 @@ def acknowledge(phase):
     shell(['run-as', APP, 'sh', '-c', f"printf %s {phase} > files/stability-ack.tmp && mv files/stability-ack.tmp files/stability-ack"])
 
 
+def resumed_activities():
+    args = ['dumpsys', 'activity', 'activities']
+    if shell(['id', '-u']) == '0':
+        args = ['su', '2000', *args]
+    dump = shell(args)
+    lines = [line.strip() for line in dump.splitlines() if re.search(r'(?:mResumedActivity|topResumedActivity)', line)]
+    assert lines, 'Cannot verify foreground Activity'
+    return lines
+
+
+def await_foreground(expected):
+    deadline = time.monotonic() + 20
+    while time.monotonic() < deadline:
+        lines = resumed_activities()
+        if any(APP in line for line in lines) == expected:
+            return lines
+        time.sleep(1)
+    raise AssertionError(f'Foreground mismatch expected={expected}: {lines}')
+
+
 def verify_requests(expected, log):
     counts = Counter()
     for line in log.splitlines():
@@ -130,6 +150,8 @@ def main():
     background_samples = []; pid = None; next_sample = 0; latest = None
     context = ssl.create_default_context(cafile=str(fixture_path.with_name('ca.pem')))
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), urllib.request.HTTPSHandler(context=context))
+    with opener.open('https://127.0.0.1:18480/echo', timeout=5) as response:
+        assert response.status == 200
     try:
         with log_file.open('w') as stream:
             process = subprocess.Popen(['adb', 'shell', ' '.join(shlex.quote(x) for x in invocation)],
@@ -144,12 +166,16 @@ def main():
                         if phase not in seen:
                             print('STABILITY_PHASE ' + phase, flush=True)
                             if phase == 'background-start':
+                                shell(['input', 'keyevent', 'KEYCODE_HOME'])
+                                await_foreground(False)
                                 background_start = time.monotonic(); pid = latest['pid']
                             elif phase == 'background-end':
                                 assert background_start is not None
                                 background_duration = time.monotonic() - background_start
                                 assert background_duration >= 1800, 'Host observed less than 30 minutes'
                                 assert latest['pid'] == pid
+                                shell(['am', 'start', '-W', '-n', APP + '/com.forcemind.chatgpt.networkpreview.MainActivity'])
+                                await_foreground(True)
                             elif phase == 'outage-start':
                                 outage.start()
                                 # Owned HTTPS origin stays healthy while node ports are cut.
@@ -166,12 +192,7 @@ def main():
                         if phase == 'background-start' and time.monotonic() >= next_sample:
                             alive = shell(['pidof', APP])
                             assert str(pid) in alive.split(), 'App process changed in background'
-                            dump_args = ['dumpsys', 'activity', 'activities']
-                            if shell(['id', '-u']) == '0':
-                                dump_args = ['su', '2000', *dump_args]
-                            dump = shell(dump_args)
-                            resumed = [line.strip() for line in dump.splitlines() if re.search(r'(?:mResumedActivity|topResumedActivity)', line)]
-                            assert resumed, 'Cannot verify background activity'
+                            resumed = resumed_activities()
                             assert not any(APP in line for line in resumed), 'CI app unexpectedly resumed'
                             background_samples.append({'hostMonotonic': time.monotonic(), 'pid': pid, 'resumed': resumed})
                             (output / 'background-samples.json').write_text(json.dumps(background_samples, indent=2))
@@ -186,13 +207,13 @@ def main():
                         process.wait(timeout=10)
                     except subprocess.TimeoutExpired:
                         process.kill(); process.wait(timeout=5)
+        text = log_file.read_text()
+        assert re.search(r'OK \(1 test\)', text) and not re.search(r'FAILURES!!!|INSTRUMENTATION_FAILED|shortMsg=', text), text
         result = read_device('stability-result.json')
         assert result and result['complete'] and result['security'] == args.transport
         assert result['tabCount'] == 3 and result['backgroundMillis'] >= 1800000
         assert seen == {'background-start', 'background-end', 'outage-start', 'outage-end', 'complete'}
         assert len(background_samples) >= 29
-        text = log_file.read_text()
-        assert re.search(r'OK \(1 test\)', text) and not re.search(r'FAILURES!!!|INSTRUMENTATION_FAILED|shortMsg=', text), text
         # Server access lines are emitted after complete response flush. Permit
         # the final line to drain; there is no new request while checking counts.
         time.sleep(1)
