@@ -201,7 +201,7 @@ Cloudflare Pages uses Direct Upload; a Git push does not deploy the site automat
 | Android per-account locale/timezone engine migration | Independent three-account/four-tab recovery and touch validation complete; non-debuggable optimized-release emulator acceptance complete; real sites/devices and regular-client integration pending. [Runtime evidence](docs/benchmarks/android-optimized-release-runtime.json) |
 | System/Chrome passkeys, signed Touch ID and stable signing | Not integrated or dependent on unavailable certificates/device acceptance |
 | Original agent presets and design-patch Skill | Published in desktop alpha.21: 32 roles, standalone/combined tasks, favorites and task recovery |
-| In-app proxy/VLESS | Planning only; no free nodes supplied |
+| In-app proxy/VLESS | Independent preview delivered. Android 9/15 TLS and REALITY web/upload/download routing and resource profiles passed; three-page switching, 30-minute background retention and explicit fault recovery passed. Runtime status after an unexpected core stop still needs improvement. Not integrated into the production app; no free nodes supplied. [Scope and evidence](docs/android-network-plan.md) |
 | iPhone/iPad, Intel Mac, Linux and store distribution | Outside the current iteration; no packages |
 | Delta updates | Not implemented; native updates require restart |
 

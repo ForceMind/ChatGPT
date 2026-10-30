@@ -1,0 +1,1884 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-30",
+  "repository": "ForceMind/ChatGPT",
+  "runId": 41068430363,
+  "runUrl": "https://github.com/ForceMind/ChatGPT/actions/runs/41068430363",
+  "sourceSha": "8b963538e61aaab44110e0a8b13855d787b79857",
+  "conclusion": "success",
+  "scope": "Independent CI flavor; Android 9/15 x86_64; synthetic TLS/REALITY; no real ChatGPT or production data.",
+  "cases": [
+    {
+      "complete": true,
+      "security": "reality",
+      "pid": 2863,
+      "tabCount": 3,
+      "backgroundMillis": 1800001,
+      "coreStopInjection": "unexpected binding stop outside RouteManager; not process crash",
+      "stateAfterExternalCoreStop": "CONNECTED",
+      "automaticRestart": false,
+      "expectedRequests": [
+        {
+          "path": "/stability/tab-0/page",
+          "method": "GET",
+          "route": "A"
+        },
+        {
+          "path": "/stability/tab-1/page",
+          "method": "GET",
+          "route": "A"
+        },
+        {
+          "path": "/stability/tab-2/page",
+          "method": "GET",
+          "route": "A"
+        },
+        {
+          "path": "/stability/web-tab-0/upload",
+          "method": "POST",
+          "route": "B"
+        },
+        {
+          "path": "/stability/web-tab-1/upload",
+          "method": "POST",
+          "route": "B"
+        },
+        {
+          "path": "/stability/web-tab-2/upload",
+          "method": "POST",
+          "route": "B"
+        },
+        {
+          "path": "/stability/before-background/upload",
+          "method": "POST",
+          "route": "B"
+        },
+        {
+          "path": "/stability/before-background/download",
+          "method": "GET",
+          "route": "B"
+        },
+        {
+          "path": "/stability/after-outage/upload",
+          "method": "POST",
+          "route": "B"
+        },
+        {
+          "path": "/stability/after-outage/download",
+          "method": "GET",
+          "route": "B"
+        },
+        {
+          "path": "/stability/web-after-outage/upload",
+          "method": "POST",
+          "route": "B"
+        },
+        {
+          "path": "/stability/after-core-restart/upload",
+          "method": "POST",
+          "route": "A"
+        },
+        {
+          "path": "/stability/after-core-restart/download",
+          "method": "GET",
+          "route": "A"
+        },
+        {
+          "path": "/stability/web-after-core-restart/upload",
+          "method": "POST",
+          "route": "A"
+        },
+        {
+          "path": "/stability/after-background/upload",
+          "method": "POST",
+          "route": "B"
+        },
+        {
+          "path": "/stability/after-background/download",
+          "method": "GET",
+          "route": "B"
+        },
+        {
+          "path": "/stability/web-after-background/upload",
+          "method": "POST",
+          "route": "B"
+        }
+      ],
+      "checkpoints": [
+        {
+          "name": "three-tabs-retained-route-B",
+          "elapsedRealtime": 27649
+        },
+        {
+          "name": "network-recovered-explicitly-no-replay",
+          "elapsedRealtime": 38457
+        },
+        {
+          "name": "core-recovered-explicitly-no-replay",
+          "elapsedRealtime": 42013
+        },
+        {
+          "name": "thirty-minute-background-restored",
+          "elapsedRealtime": 1845636
+        }
+      ],
+      "transport": "reality",
+      "sourceSha": "8b963538e61aaab44110e0a8b13855d787b79857",
+      "api": 28,
+      "hostBackgroundSeconds": 1801.226374078,
+      "backgroundSamples": [
+        {
+          "hostMonotonic": 186.134094551,
+          "pid": 2863,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{d58a2c u0 com.android.launcher3/.Launcher t2}"
+          ]
+        },
+        {
+          "hostMonotonic": 246.336830359,
+          "pid": 2863,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{d58a2c u0 com.android.launcher3/.Launcher t2}"
+          ]
+        },
+        {
+          "hostMonotonic": 306.540470159,
+          "pid": 2863,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{d58a2c u0 com.android.launcher3/.Launcher t2}"
+          ]
+        },
+        {
+          "hostMonotonic": 366.736488413,
+          "pid": 2863,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{d58a2c u0 com.android.launcher3/.Launcher t2}"
+          ]
+        },
+        {
+          "hostMonotonic": 426.933229648,
+          "pid": 2863,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{d58a2c u0 com.android.launcher3/.Launcher t2}"
+          ]
+        },
+        {
+          "hostMonotonic": 487.129100457,
+          "pid": 2863,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{d58a2c u0 com.android.launcher3/.Launcher t2}"
+          ]
+        },
+        {
+          "hostMonotonic": 547.329238147,
+          "pid": 2863,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{d58a2c u0 com.android.launcher3/.Launcher t2}"
+          ]
+        },
+        {
+          "hostMonotonic": 607.536393836,
+          "pid": 2863,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{d58a2c u0 com.android.launcher3/.Launcher t2}"
+          ]
+        },
+        {
+          "hostMonotonic": 667.733402201,
+          "pid": 2863,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{d58a2c u0 com.android.launcher3/.Launcher t2}"
+          ]
+        },
+        {
+          "hostMonotonic": 727.92815631,
+          "pid": 2863,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{d58a2c u0 com.android.launcher3/.Launcher t2}"
+          ]
+        },
+        {
+          "hostMonotonic": 788.12528181,
+          "pid": 2863,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{d58a2c u0 com.android.launcher3/.Launcher t2}"
+          ]
+        },
+        {
+          "hostMonotonic": 848.324276444,
+          "pid": 2863,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{d58a2c u0 com.android.launcher3/.Launcher t2}"
+          ]
+        },
+        {
+          "hostMonotonic": 908.525937369,
+          "pid": 2863,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{d58a2c u0 com.android.launcher3/.Launcher t2}"
+          ]
+        },
+        {
+          "hostMonotonic": 968.723938352,
+          "pid": 2863,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{d58a2c u0 com.android.launcher3/.Launcher t2}"
+          ]
+        },
+        {
+          "hostMonotonic": 1028.923502915,
+          "pid": 2863,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{d58a2c u0 com.android.launcher3/.Launcher t2}"
+          ]
+        },
+        {
+          "hostMonotonic": 1089.122538045,
+          "pid": 2863,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{d58a2c u0 com.android.launcher3/.Launcher t2}"
+          ]
+        },
+        {
+          "hostMonotonic": 1149.317593304,
+          "pid": 2863,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{d58a2c u0 com.android.launcher3/.Launcher t2}"
+          ]
+        },
+        {
+          "hostMonotonic": 1209.514603097,
+          "pid": 2863,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{d58a2c u0 com.android.launcher3/.Launcher t2}"
+          ]
+        },
+        {
+          "hostMonotonic": 1269.712168014,
+          "pid": 2863,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{d58a2c u0 com.android.launcher3/.Launcher t2}"
+          ]
+        },
+        {
+          "hostMonotonic": 1329.910410031,
+          "pid": 2863,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{d58a2c u0 com.android.launcher3/.Launcher t2}"
+          ]
+        },
+        {
+          "hostMonotonic": 1390.136598094,
+          "pid": 2863,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{d58a2c u0 com.android.launcher3/.Launcher t2}"
+          ]
+        },
+        {
+          "hostMonotonic": 1450.354716044,
+          "pid": 2863,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{d58a2c u0 com.android.launcher3/.Launcher t2}"
+          ]
+        },
+        {
+          "hostMonotonic": 1510.558902626,
+          "pid": 2863,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{d58a2c u0 com.android.launcher3/.Launcher t2}"
+          ]
+        },
+        {
+          "hostMonotonic": 1570.76223391,
+          "pid": 2863,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{d58a2c u0 com.android.launcher3/.Launcher t2}"
+          ]
+        },
+        {
+          "hostMonotonic": 1630.974663315,
+          "pid": 2863,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{d58a2c u0 com.android.launcher3/.Launcher t2}"
+          ]
+        },
+        {
+          "hostMonotonic": 1691.200600799,
+          "pid": 2863,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{d58a2c u0 com.android.launcher3/.Launcher t2}"
+          ]
+        },
+        {
+          "hostMonotonic": 1751.420479073,
+          "pid": 2863,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{d58a2c u0 com.android.launcher3/.Launcher t2}"
+          ]
+        },
+        {
+          "hostMonotonic": 1811.64013823,
+          "pid": 2863,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{d58a2c u0 com.android.launcher3/.Launcher t2}"
+          ]
+        },
+        {
+          "hostMonotonic": 1871.850814956,
+          "pid": 2863,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{d58a2c u0 com.android.launcher3/.Launcher t2}"
+          ]
+        },
+        {
+          "hostMonotonic": 1932.054809745,
+          "pid": 2863,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{d58a2c u0 com.android.launcher3/.Launcher t2}"
+          ]
+        }
+      ],
+      "originRequests": [
+        {
+          "path": "/stability/after-background/download",
+          "method": "GET",
+          "route": "B",
+          "count": 1
+        },
+        {
+          "path": "/stability/after-background/upload",
+          "method": "POST",
+          "route": "B",
+          "count": 1
+        },
+        {
+          "path": "/stability/after-core-restart/download",
+          "method": "GET",
+          "route": "A",
+          "count": 1
+        },
+        {
+          "path": "/stability/after-core-restart/upload",
+          "method": "POST",
+          "route": "A",
+          "count": 1
+        },
+        {
+          "path": "/stability/after-outage/download",
+          "method": "GET",
+          "route": "B",
+          "count": 1
+        },
+        {
+          "path": "/stability/after-outage/upload",
+          "method": "POST",
+          "route": "B",
+          "count": 1
+        },
+        {
+          "path": "/stability/before-background/download",
+          "method": "GET",
+          "route": "B",
+          "count": 1
+        },
+        {
+          "path": "/stability/before-background/upload",
+          "method": "POST",
+          "route": "B",
+          "count": 1
+        },
+        {
+          "path": "/stability/tab-0/page",
+          "method": "GET",
+          "route": "A",
+          "count": 1
+        },
+        {
+          "path": "/stability/tab-1/page",
+          "method": "GET",
+          "route": "A",
+          "count": 1
+        },
+        {
+          "path": "/stability/tab-2/page",
+          "method": "GET",
+          "route": "A",
+          "count": 1
+        },
+        {
+          "path": "/stability/web-after-background/upload",
+          "method": "POST",
+          "route": "B",
+          "count": 1
+        },
+        {
+          "path": "/stability/web-after-core-restart/upload",
+          "method": "POST",
+          "route": "A",
+          "count": 1
+        },
+        {
+          "path": "/stability/web-after-outage/upload",
+          "method": "POST",
+          "route": "B",
+          "count": 1
+        },
+        {
+          "path": "/stability/web-tab-0/upload",
+          "method": "POST",
+          "route": "B",
+          "count": 1
+        },
+        {
+          "path": "/stability/web-tab-1/upload",
+          "method": "POST",
+          "route": "B",
+          "count": 1
+        },
+        {
+          "path": "/stability/web-tab-2/upload",
+          "method": "POST",
+          "route": "B",
+          "count": 1
+        }
+      ],
+      "externalRequests": false,
+      "screenshots": false,
+      "certificateSha256": "e24c60f65a71096f70bff3101ef084c616afcf7e2d5703b41ddeee70d3b868a0",
+      "limits": [
+        "Three test-harness WebViews share one isolated CI app space; not three account spaces.",
+        "Stopped Activity with a live instrumented process; no OS process kill, Doze, or OEM proof.",
+        "Unexpected core binding stop; native process crash is not simulated.",
+        "No resource benchmark or real ChatGPT acceptance in this batch."
+      ],
+      "artifact": {
+        "id": 12986870768,
+        "name": "network-stability-api-28-reality",
+        "size_in_bytes": 52593,
+        "digest": "sha256:f2668e515439ca37e5ce5540f9dc3fc0b38e03f5f24ceb30efea7804c5fe5f88"
+      },
+      "outageEvidence": {
+        "outage-counters.txt": "Chain CI_STAB_3428 (2 references)\n    pkts      bytes target     prot opt in     out     source               destination         \n     106     5776 REJECT     6    --  *      *       0.0.0.0/0            0.0.0.0/0            multiport dports 20443,20444 reject-with tcp-reset\n",
+        "outage-origin-control.json": "{\"healthy\": true, \"onlyNodePortsBlocked\": [20443, 20444]}",
+        "outage-rules.txt": "-N CI_STAB_3428\n-A CI_STAB_3428 -p tcp -m multiport --dports 20443,20444 -j REJECT --reject-with tcp-reset\n"
+      },
+      "providerSummary": [
+        "Current WebView package (name, version): (com.android.webview, 124.0.6367.219)",
+        "Minimum WebView version code: -1",
+        "Valid package com.android.webview (versionName: 124.0.6367.219, versionCode: 636771907, targetSdkVersion: 34) is  installed/enabled for all users"
+      ]
+    },
+    {
+      "complete": true,
+      "security": "tls",
+      "pid": 2981,
+      "tabCount": 3,
+      "backgroundMillis": 1800001,
+      "coreStopInjection": "unexpected binding stop outside RouteManager; not process crash",
+      "stateAfterExternalCoreStop": "CONNECTED",
+      "automaticRestart": false,
+      "expectedRequests": [
+        {
+          "path": "/stability/tab-0/page",
+          "method": "GET",
+          "route": "A"
+        },
+        {
+          "path": "/stability/tab-1/page",
+          "method": "GET",
+          "route": "A"
+        },
+        {
+          "path": "/stability/tab-2/page",
+          "method": "GET",
+          "route": "A"
+        },
+        {
+          "path": "/stability/web-tab-0/upload",
+          "method": "POST",
+          "route": "B"
+        },
+        {
+          "path": "/stability/web-tab-1/upload",
+          "method": "POST",
+          "route": "B"
+        },
+        {
+          "path": "/stability/web-tab-2/upload",
+          "method": "POST",
+          "route": "B"
+        },
+        {
+          "path": "/stability/before-background/upload",
+          "method": "POST",
+          "route": "B"
+        },
+        {
+          "path": "/stability/before-background/download",
+          "method": "GET",
+          "route": "B"
+        },
+        {
+          "path": "/stability/after-outage/upload",
+          "method": "POST",
+          "route": "B"
+        },
+        {
+          "path": "/stability/after-outage/download",
+          "method": "GET",
+          "route": "B"
+        },
+        {
+          "path": "/stability/web-after-outage/upload",
+          "method": "POST",
+          "route": "B"
+        },
+        {
+          "path": "/stability/after-core-restart/upload",
+          "method": "POST",
+          "route": "A"
+        },
+        {
+          "path": "/stability/after-core-restart/download",
+          "method": "GET",
+          "route": "A"
+        },
+        {
+          "path": "/stability/web-after-core-restart/upload",
+          "method": "POST",
+          "route": "A"
+        },
+        {
+          "path": "/stability/after-background/upload",
+          "method": "POST",
+          "route": "B"
+        },
+        {
+          "path": "/stability/after-background/download",
+          "method": "GET",
+          "route": "B"
+        },
+        {
+          "path": "/stability/web-after-background/upload",
+          "method": "POST",
+          "route": "B"
+        }
+      ],
+      "checkpoints": [
+        {
+          "name": "three-tabs-retained-route-B",
+          "elapsedRealtime": 23234
+        },
+        {
+          "name": "network-recovered-explicitly-no-replay",
+          "elapsedRealtime": 35670
+        },
+        {
+          "name": "core-recovered-explicitly-no-replay",
+          "elapsedRealtime": 39111
+        },
+        {
+          "name": "thirty-minute-background-restored",
+          "elapsedRealtime": 1845181
+        }
+      ],
+      "transport": "tls",
+      "sourceSha": "8b963538e61aaab44110e0a8b13855d787b79857",
+      "api": 28,
+      "hostBackgroundSeconds": 1804.018951601,
+      "backgroundSamples": [
+        {
+          "hostMonotonic": 188.088296945,
+          "pid": 2981,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{1d15a4c u0 com.android.launcher3/.Launcher t4}"
+          ]
+        },
+        {
+          "hostMonotonic": 248.239063533,
+          "pid": 2981,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{1d15a4c u0 com.android.launcher3/.Launcher t4}"
+          ]
+        },
+        {
+          "hostMonotonic": 308.376773821,
+          "pid": 2981,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{1d15a4c u0 com.android.launcher3/.Launcher t4}"
+          ]
+        },
+        {
+          "hostMonotonic": 368.514548217,
+          "pid": 2981,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{1d15a4c u0 com.android.launcher3/.Launcher t4}"
+          ]
+        },
+        {
+          "hostMonotonic": 428.651591521,
+          "pid": 2981,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{1d15a4c u0 com.android.launcher3/.Launcher t4}"
+          ]
+        },
+        {
+          "hostMonotonic": 488.791984497,
+          "pid": 2981,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{1d15a4c u0 com.android.launcher3/.Launcher t4}"
+          ]
+        },
+        {
+          "hostMonotonic": 548.925179449,
+          "pid": 2981,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{1d15a4c u0 com.android.launcher3/.Launcher t4}"
+          ]
+        },
+        {
+          "hostMonotonic": 609.059089294,
+          "pid": 2981,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{1d15a4c u0 com.android.launcher3/.Launcher t4}"
+          ]
+        },
+        {
+          "hostMonotonic": 669.199556167,
+          "pid": 2981,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{1d15a4c u0 com.android.launcher3/.Launcher t4}"
+          ]
+        },
+        {
+          "hostMonotonic": 729.332255061,
+          "pid": 2981,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{1d15a4c u0 com.android.launcher3/.Launcher t4}"
+          ]
+        },
+        {
+          "hostMonotonic": 789.469044249,
+          "pid": 2981,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{1d15a4c u0 com.android.launcher3/.Launcher t4}"
+          ]
+        },
+        {
+          "hostMonotonic": 849.599776109,
+          "pid": 2981,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{1d15a4c u0 com.android.launcher3/.Launcher t4}"
+          ]
+        },
+        {
+          "hostMonotonic": 909.739428895,
+          "pid": 2981,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{1d15a4c u0 com.android.launcher3/.Launcher t4}"
+          ]
+        },
+        {
+          "hostMonotonic": 969.86941749,
+          "pid": 2981,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{1d15a4c u0 com.android.launcher3/.Launcher t4}"
+          ]
+        },
+        {
+          "hostMonotonic": 1029.999663626,
+          "pid": 2981,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{1d15a4c u0 com.android.launcher3/.Launcher t4}"
+          ]
+        },
+        {
+          "hostMonotonic": 1090.127279377,
+          "pid": 2981,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{1d15a4c u0 com.android.launcher3/.Launcher t4}"
+          ]
+        },
+        {
+          "hostMonotonic": 1150.256103811,
+          "pid": 2981,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{1d15a4c u0 com.android.launcher3/.Launcher t4}"
+          ]
+        },
+        {
+          "hostMonotonic": 1210.380488921,
+          "pid": 2981,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{1d15a4c u0 com.android.launcher3/.Launcher t4}"
+          ]
+        },
+        {
+          "hostMonotonic": 1270.503757932,
+          "pid": 2981,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{1d15a4c u0 com.android.launcher3/.Launcher t4}"
+          ]
+        },
+        {
+          "hostMonotonic": 1330.629421364,
+          "pid": 2981,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{1d15a4c u0 com.android.launcher3/.Launcher t4}"
+          ]
+        },
+        {
+          "hostMonotonic": 1390.755192453,
+          "pid": 2981,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{1d15a4c u0 com.android.launcher3/.Launcher t4}"
+          ]
+        },
+        {
+          "hostMonotonic": 1450.886345333,
+          "pid": 2981,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{1d15a4c u0 com.android.launcher3/.Launcher t4}"
+          ]
+        },
+        {
+          "hostMonotonic": 1511.021700837,
+          "pid": 2981,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{1d15a4c u0 com.android.launcher3/.Launcher t4}"
+          ]
+        },
+        {
+          "hostMonotonic": 1571.15652297,
+          "pid": 2981,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{1d15a4c u0 com.android.launcher3/.Launcher t4}"
+          ]
+        },
+        {
+          "hostMonotonic": 1631.281825736,
+          "pid": 2981,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{1d15a4c u0 com.android.launcher3/.Launcher t4}"
+          ]
+        },
+        {
+          "hostMonotonic": 1691.409040702,
+          "pid": 2981,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{1d15a4c u0 com.android.launcher3/.Launcher t4}"
+          ]
+        },
+        {
+          "hostMonotonic": 1751.552151082,
+          "pid": 2981,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{1d15a4c u0 com.android.launcher3/.Launcher t4}"
+          ]
+        },
+        {
+          "hostMonotonic": 1811.682905541,
+          "pid": 2981,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{1d15a4c u0 com.android.launcher3/.Launcher t4}"
+          ]
+        },
+        {
+          "hostMonotonic": 1871.814525527,
+          "pid": 2981,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{1d15a4c u0 com.android.launcher3/.Launcher t4}"
+          ]
+        },
+        {
+          "hostMonotonic": 1931.946215037,
+          "pid": 2981,
+          "resumed": [
+            "mResumedActivity: ActivityRecord{1d15a4c u0 com.android.launcher3/.Launcher t4}"
+          ]
+        }
+      ],
+      "originRequests": [
+        {
+          "path": "/stability/after-background/download",
+          "method": "GET",
+          "route": "B",
+          "count": 1
+        },
+        {
+          "path": "/stability/after-background/upload",
+          "method": "POST",
+          "route": "B",
+          "count": 1
+        },
+        {
+          "path": "/stability/after-core-restart/download",
+          "method": "GET",
+          "route": "A",
+          "count": 1
+        },
+        {
+          "path": "/stability/after-core-restart/upload",
+          "method": "POST",
+          "route": "A",
+          "count": 1
+        },
+        {
+          "path": "/stability/after-outage/download",
+          "method": "GET",
+          "route": "B",
+          "count": 1
+        },
+        {
+          "path": "/stability/after-outage/upload",
+          "method": "POST",
+          "route": "B",
+          "count": 1
+        },
+        {
+          "path": "/stability/before-background/download",
+          "method": "GET",
+          "route": "B",
+          "count": 1
+        },
+        {
+          "path": "/stability/before-background/upload",
+          "method": "POST",
+          "route": "B",
+          "count": 1
+        },
+        {
+          "path": "/stability/tab-0/page",
+          "method": "GET",
+          "route": "A",
+          "count": 1
+        },
+        {
+          "path": "/stability/tab-1/page",
+          "method": "GET",
+          "route": "A",
+          "count": 1
+        },
+        {
+          "path": "/stability/tab-2/page",
+          "method": "GET",
+          "route": "A",
+          "count": 1
+        },
+        {
+          "path": "/stability/web-after-background/upload",
+          "method": "POST",
+          "route": "B",
+          "count": 1
+        },
+        {
+          "path": "/stability/web-after-core-restart/upload",
+          "method": "POST",
+          "route": "A",
+          "count": 1
+        },
+        {
+          "path": "/stability/web-after-outage/upload",
+          "method": "POST",
+          "route": "B",
+          "count": 1
+        },
+        {
+          "path": "/stability/web-tab-0/upload",
+          "method": "POST",
+          "route": "B",
+          "count": 1
+        },
+        {
+          "path": "/stability/web-tab-1/upload",
+          "method": "POST",
+          "route": "B",
+          "count": 1
+        },
+        {
+          "path": "/stability/web-tab-2/upload",
+          "method": "POST",
+          "route": "B",
+          "count": 1
+        }
+      ],
+      "externalRequests": false,
+      "screenshots": false,
+      "certificateSha256": "e24c60f65a71096f70bff3101ef084c616afcf7e2d5703b41ddeee70d3b868a0",
+      "limits": [
+        "Three test-harness WebViews share one isolated CI app space; not three account spaces.",
+        "Stopped Activity with a live instrumented process; no OS process kill, Doze, or OEM proof.",
+        "Unexpected core binding stop; native process crash is not simulated.",
+        "No resource benchmark or real ChatGPT acceptance in this batch."
+      ],
+      "artifact": {
+        "id": 12986945618,
+        "name": "network-stability-api-28-tls",
+        "size_in_bytes": 52453,
+        "digest": "sha256:d36082832fc95934ff3d274fcce4bf15b34245a2c44546a7402938f7f33bd6d3"
+      },
+      "outageEvidence": {
+        "outage-counters.txt": "Chain CI_STAB_3252 (2 references)\n    pkts      bytes target     prot opt in     out     source               destination         \n      64     3872 REJECT     6    --  *      *       0.0.0.0/0            0.0.0.0/0            multiport dports 19443,19444 reject-with tcp-reset\n",
+        "outage-origin-control.json": "{\"healthy\": true, \"onlyNodePortsBlocked\": [19443, 19444]}",
+        "outage-rules.txt": "-N CI_STAB_3252\n-A CI_STAB_3252 -p tcp -m multiport --dports 19443,19444 -j REJECT --reject-with tcp-reset\n"
+      },
+      "providerSummary": [
+        "Current WebView package (name, version): (com.android.webview, 124.0.6367.219)",
+        "Minimum WebView version code: -1",
+        "Valid package com.android.webview (versionName: 124.0.6367.219, versionCode: 636771907, targetSdkVersion: 34) is  installed/enabled for all users"
+      ]
+    },
+    {
+      "complete": true,
+      "security": "reality",
+      "pid": 2451,
+      "tabCount": 3,
+      "backgroundMillis": 1800001,
+      "coreStopInjection": "unexpected binding stop outside RouteManager; not process crash",
+      "stateAfterExternalCoreStop": "CONNECTED",
+      "automaticRestart": false,
+      "expectedRequests": [
+        {
+          "path": "/stability/tab-0/page",
+          "method": "GET",
+          "route": "A"
+        },
+        {
+          "path": "/stability/tab-1/page",
+          "method": "GET",
+          "route": "A"
+        },
+        {
+          "path": "/stability/tab-2/page",
+          "method": "GET",
+          "route": "A"
+        },
+        {
+          "path": "/stability/web-tab-0/upload",
+          "method": "POST",
+          "route": "B"
+        },
+        {
+          "path": "/stability/web-tab-1/upload",
+          "method": "POST",
+          "route": "B"
+        },
+        {
+          "path": "/stability/web-tab-2/upload",
+          "method": "POST",
+          "route": "B"
+        },
+        {
+          "path": "/stability/before-background/upload",
+          "method": "POST",
+          "route": "B"
+        },
+        {
+          "path": "/stability/before-background/download",
+          "method": "GET",
+          "route": "B"
+        },
+        {
+          "path": "/stability/after-outage/upload",
+          "method": "POST",
+          "route": "B"
+        },
+        {
+          "path": "/stability/after-outage/download",
+          "method": "GET",
+          "route": "B"
+        },
+        {
+          "path": "/stability/web-after-outage/upload",
+          "method": "POST",
+          "route": "B"
+        },
+        {
+          "path": "/stability/after-core-restart/upload",
+          "method": "POST",
+          "route": "A"
+        },
+        {
+          "path": "/stability/after-core-restart/download",
+          "method": "GET",
+          "route": "A"
+        },
+        {
+          "path": "/stability/web-after-core-restart/upload",
+          "method": "POST",
+          "route": "A"
+        },
+        {
+          "path": "/stability/after-background/upload",
+          "method": "POST",
+          "route": "B"
+        },
+        {
+          "path": "/stability/after-background/download",
+          "method": "GET",
+          "route": "B"
+        },
+        {
+          "path": "/stability/web-after-background/upload",
+          "method": "POST",
+          "route": "B"
+        }
+      ],
+      "checkpoints": [
+        {
+          "name": "three-tabs-retained-route-B",
+          "elapsedRealtime": 61924
+        },
+        {
+          "name": "network-recovered-explicitly-no-replay",
+          "elapsedRealtime": 78027
+        },
+        {
+          "name": "core-recovered-explicitly-no-replay",
+          "elapsedRealtime": 82060
+        },
+        {
+          "name": "thirty-minute-background-restored",
+          "elapsedRealtime": 1889462
+        }
+      ],
+      "transport": "reality",
+      "sourceSha": "8b963538e61aaab44110e0a8b13855d787b79857",
+      "api": 35,
+      "hostBackgroundSeconds": 1804.20131672,
+      "backgroundSamples": [
+        {
+          "hostMonotonic": 172.653198923,
+          "pid": 2451,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{d009b3c u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 233.241163254,
+          "pid": 2451,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{d009b3c u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 293.522638982,
+          "pid": 2451,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{d009b3c u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 353.80525538,
+          "pid": 2451,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{d009b3c u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 414.097339929,
+          "pid": 2451,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{d009b3c u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 474.384583847,
+          "pid": 2451,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{d009b3c u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 534.665733586,
+          "pid": 2451,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{d009b3c u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 594.960439154,
+          "pid": 2451,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{d009b3c u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 655.241232925,
+          "pid": 2451,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{d009b3c u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 715.513322295,
+          "pid": 2451,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{d009b3c u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 775.78738566,
+          "pid": 2451,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{d009b3c u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 836.061318606,
+          "pid": 2451,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{d009b3c u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 896.336375291,
+          "pid": 2451,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{d009b3c u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 956.610338041,
+          "pid": 2451,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{d009b3c u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 1016.88411083,
+          "pid": 2451,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{d009b3c u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 1077.173161498,
+          "pid": 2451,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{d009b3c u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 1137.465582648,
+          "pid": 2451,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{d009b3c u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 1197.755163418,
+          "pid": 2451,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{d009b3c u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 1258.058846945,
+          "pid": 2451,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{d009b3c u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 1318.350670321,
+          "pid": 2451,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{d009b3c u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 1378.643887738,
+          "pid": 2451,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{d009b3c u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 1438.934697391,
+          "pid": 2451,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{d009b3c u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 1499.217257831,
+          "pid": 2451,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{d009b3c u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 1559.502838463,
+          "pid": 2451,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{d009b3c u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 1619.789099916,
+          "pid": 2451,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{d009b3c u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 1680.089230366,
+          "pid": 2451,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{d009b3c u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 1740.367988389,
+          "pid": 2451,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{d009b3c u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 1800.643498861,
+          "pid": 2451,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{d009b3c u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 1860.928930575,
+          "pid": 2451,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{d009b3c u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 1921.212545406,
+          "pid": 2451,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{d009b3c u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        }
+      ],
+      "originRequests": [
+        {
+          "path": "/stability/after-background/download",
+          "method": "GET",
+          "route": "B",
+          "count": 1
+        },
+        {
+          "path": "/stability/after-background/upload",
+          "method": "POST",
+          "route": "B",
+          "count": 1
+        },
+        {
+          "path": "/stability/after-core-restart/download",
+          "method": "GET",
+          "route": "A",
+          "count": 1
+        },
+        {
+          "path": "/stability/after-core-restart/upload",
+          "method": "POST",
+          "route": "A",
+          "count": 1
+        },
+        {
+          "path": "/stability/after-outage/download",
+          "method": "GET",
+          "route": "B",
+          "count": 1
+        },
+        {
+          "path": "/stability/after-outage/upload",
+          "method": "POST",
+          "route": "B",
+          "count": 1
+        },
+        {
+          "path": "/stability/before-background/download",
+          "method": "GET",
+          "route": "B",
+          "count": 1
+        },
+        {
+          "path": "/stability/before-background/upload",
+          "method": "POST",
+          "route": "B",
+          "count": 1
+        },
+        {
+          "path": "/stability/tab-0/page",
+          "method": "GET",
+          "route": "A",
+          "count": 1
+        },
+        {
+          "path": "/stability/tab-1/page",
+          "method": "GET",
+          "route": "A",
+          "count": 1
+        },
+        {
+          "path": "/stability/tab-2/page",
+          "method": "GET",
+          "route": "A",
+          "count": 1
+        },
+        {
+          "path": "/stability/web-after-background/upload",
+          "method": "POST",
+          "route": "B",
+          "count": 1
+        },
+        {
+          "path": "/stability/web-after-core-restart/upload",
+          "method": "POST",
+          "route": "A",
+          "count": 1
+        },
+        {
+          "path": "/stability/web-after-outage/upload",
+          "method": "POST",
+          "route": "B",
+          "count": 1
+        },
+        {
+          "path": "/stability/web-tab-0/upload",
+          "method": "POST",
+          "route": "B",
+          "count": 1
+        },
+        {
+          "path": "/stability/web-tab-1/upload",
+          "method": "POST",
+          "route": "B",
+          "count": 1
+        },
+        {
+          "path": "/stability/web-tab-2/upload",
+          "method": "POST",
+          "route": "B",
+          "count": 1
+        }
+      ],
+      "externalRequests": false,
+      "screenshots": false,
+      "certificateSha256": "e24c60f65a71096f70bff3101ef084c616afcf7e2d5703b41ddeee70d3b868a0",
+      "limits": [
+        "Three test-harness WebViews share one isolated CI app space; not three account spaces.",
+        "Stopped Activity with a live instrumented process; no OS process kill, Doze, or OEM proof.",
+        "Unexpected core binding stop; native process crash is not simulated.",
+        "No resource benchmark or real ChatGPT acceptance in this batch."
+      ],
+      "artifact": {
+        "id": 12986581082,
+        "name": "network-stability-api-35-reality",
+        "size_in_bytes": 112716,
+        "digest": "sha256:96f7364b778ed6dd789563344d2cc08ba6e787976400ef05d48ce78b76d9abbe"
+      },
+      "outageEvidence": {
+        "outage-counters.txt": "Chain CI_STAB_3156 (2 references)\n    pkts      bytes target     prot opt in     out     source               destination         \n      50     3048 REJECT     6    --  *      *       0.0.0.0/0            0.0.0.0/0            multiport dports 20443,20444 reject-with tcp-reset\n",
+        "outage-origin-control.json": "{\"healthy\": true, \"onlyNodePortsBlocked\": [20443, 20444]}",
+        "outage-rules.txt": "-N CI_STAB_3156\n-A CI_STAB_3156 -p tcp -m multiport --dports 20443,20444 -j REJECT --reject-with tcp-reset\n"
+      },
+      "providerSummary": [
+        "Current WebView package (name, version): (com.google.android.webview, 124.0.6367.219)",
+        "Minimum WebView version code: 636771938",
+        "Valid package com.google.android.webview (versionName: 124.0.6367.219, versionCode: 636771938, targetSdkVersion: 34) is  installed/enabled for all users"
+      ]
+    },
+    {
+      "complete": true,
+      "security": "tls",
+      "pid": 2192,
+      "tabCount": 3,
+      "backgroundMillis": 1800001,
+      "coreStopInjection": "unexpected binding stop outside RouteManager; not process crash",
+      "stateAfterExternalCoreStop": "CONNECTED",
+      "automaticRestart": false,
+      "expectedRequests": [
+        {
+          "path": "/stability/tab-0/page",
+          "method": "GET",
+          "route": "A"
+        },
+        {
+          "path": "/stability/tab-1/page",
+          "method": "GET",
+          "route": "A"
+        },
+        {
+          "path": "/stability/tab-2/page",
+          "method": "GET",
+          "route": "A"
+        },
+        {
+          "path": "/stability/web-tab-0/upload",
+          "method": "POST",
+          "route": "B"
+        },
+        {
+          "path": "/stability/web-tab-1/upload",
+          "method": "POST",
+          "route": "B"
+        },
+        {
+          "path": "/stability/web-tab-2/upload",
+          "method": "POST",
+          "route": "B"
+        },
+        {
+          "path": "/stability/before-background/upload",
+          "method": "POST",
+          "route": "B"
+        },
+        {
+          "path": "/stability/before-background/download",
+          "method": "GET",
+          "route": "B"
+        },
+        {
+          "path": "/stability/after-outage/upload",
+          "method": "POST",
+          "route": "B"
+        },
+        {
+          "path": "/stability/after-outage/download",
+          "method": "GET",
+          "route": "B"
+        },
+        {
+          "path": "/stability/web-after-outage/upload",
+          "method": "POST",
+          "route": "B"
+        },
+        {
+          "path": "/stability/after-core-restart/upload",
+          "method": "POST",
+          "route": "A"
+        },
+        {
+          "path": "/stability/after-core-restart/download",
+          "method": "GET",
+          "route": "A"
+        },
+        {
+          "path": "/stability/web-after-core-restart/upload",
+          "method": "POST",
+          "route": "A"
+        },
+        {
+          "path": "/stability/after-background/upload",
+          "method": "POST",
+          "route": "B"
+        },
+        {
+          "path": "/stability/after-background/download",
+          "method": "GET",
+          "route": "B"
+        },
+        {
+          "path": "/stability/web-after-background/upload",
+          "method": "POST",
+          "route": "B"
+        }
+      ],
+      "checkpoints": [
+        {
+          "name": "three-tabs-retained-route-B",
+          "elapsedRealtime": 52375
+        },
+        {
+          "name": "network-recovered-explicitly-no-replay",
+          "elapsedRealtime": 67198
+        },
+        {
+          "name": "core-recovered-explicitly-no-replay",
+          "elapsedRealtime": 70797
+        },
+        {
+          "name": "thirty-minute-background-restored",
+          "elapsedRealtime": 1880735
+        }
+      ],
+      "transport": "tls",
+      "sourceSha": "8b963538e61aaab44110e0a8b13855d787b79857",
+      "api": 35,
+      "hostBackgroundSeconds": 1805.468356723,
+      "backgroundSamples": [
+        {
+          "hostMonotonic": 190.82380993,
+          "pid": 2192,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{6c8ef3 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 251.651820198,
+          "pid": 2192,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{6c8ef3 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 311.936757773,
+          "pid": 2192,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{6c8ef3 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 372.216752358,
+          "pid": 2192,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{6c8ef3 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 432.493589971,
+          "pid": 2192,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{6c8ef3 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 492.778860986,
+          "pid": 2192,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{6c8ef3 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 553.062686535,
+          "pid": 2192,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{6c8ef3 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 613.34793189,
+          "pid": 2192,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{6c8ef3 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 673.636634664,
+          "pid": 2192,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{6c8ef3 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 733.965564719,
+          "pid": 2192,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{6c8ef3 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 794.260354562,
+          "pid": 2192,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{6c8ef3 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 854.534851196,
+          "pid": 2192,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{6c8ef3 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 914.809271441,
+          "pid": 2192,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{6c8ef3 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 975.083071733,
+          "pid": 2192,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{6c8ef3 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 1035.355227807,
+          "pid": 2192,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{6c8ef3 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 1095.628425205,
+          "pid": 2192,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{6c8ef3 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 1155.903439935,
+          "pid": 2192,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{6c8ef3 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 1216.171220796,
+          "pid": 2192,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{6c8ef3 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 1276.439988354,
+          "pid": 2192,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{6c8ef3 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 1336.71375025,
+          "pid": 2192,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{6c8ef3 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 1396.984186588,
+          "pid": 2192,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{6c8ef3 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 1457.259872966,
+          "pid": 2192,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{6c8ef3 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 1517.534514116,
+          "pid": 2192,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{6c8ef3 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 1577.814483196,
+          "pid": 2192,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{6c8ef3 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 1638.11479017,
+          "pid": 2192,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{6c8ef3 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 1698.390328479,
+          "pid": 2192,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{6c8ef3 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 1758.675835878,
+          "pid": 2192,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{6c8ef3 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 1818.956528464,
+          "pid": 2192,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{6c8ef3 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 1879.234893733,
+          "pid": 2192,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{6c8ef3 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        },
+        {
+          "hostMonotonic": 1939.515269851,
+          "pid": 2192,
+          "resumed": [
+            "topResumedActivity=ActivityRecord{6c8ef3 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+          ]
+        }
+      ],
+      "originRequests": [
+        {
+          "path": "/stability/after-background/download",
+          "method": "GET",
+          "route": "B",
+          "count": 1
+        },
+        {
+          "path": "/stability/after-background/upload",
+          "method": "POST",
+          "route": "B",
+          "count": 1
+        },
+        {
+          "path": "/stability/after-core-restart/download",
+          "method": "GET",
+          "route": "A",
+          "count": 1
+        },
+        {
+          "path": "/stability/after-core-restart/upload",
+          "method": "POST",
+          "route": "A",
+          "count": 1
+        },
+        {
+          "path": "/stability/after-outage/download",
+          "method": "GET",
+          "route": "B",
+          "count": 1
+        },
+        {
+          "path": "/stability/after-outage/upload",
+          "method": "POST",
+          "route": "B",
+          "count": 1
+        },
+        {
+          "path": "/stability/before-background/download",
+          "method": "GET",
+          "route": "B",
+          "count": 1
+        },
+        {
+          "path": "/stability/before-background/upload",
+          "method": "POST",
+          "route": "B",
+          "count": 1
+        },
+        {
+          "path": "/stability/tab-0/page",
+          "method": "GET",
+          "route": "A",
+          "count": 1
+        },
+        {
+          "path": "/stability/tab-1/page",
+          "method": "GET",
+          "route": "A",
+          "count": 1
+        },
+        {
+          "path": "/stability/tab-2/page",
+          "method": "GET",
+          "route": "A",
+          "count": 1
+        },
+        {
+          "path": "/stability/web-after-background/upload",
+          "method": "POST",
+          "route": "B",
+          "count": 1
+        },
+        {
+          "path": "/stability/web-after-core-restart/upload",
+          "method": "POST",
+          "route": "A",
+          "count": 1
+        },
+        {
+          "path": "/stability/web-after-outage/upload",
+          "method": "POST",
+          "route": "B",
+          "count": 1
+        },
+        {
+          "path": "/stability/web-tab-0/upload",
+          "method": "POST",
+          "route": "B",
+          "count": 1
+        },
+        {
+          "path": "/stability/web-tab-1/upload",
+          "method": "POST",
+          "route": "B",
+          "count": 1
+        },
+        {
+          "path": "/stability/web-tab-2/upload",
+          "method": "POST",
+          "route": "B",
+          "count": 1
+        }
+      ],
+      "externalRequests": false,
+      "screenshots": false,
+      "certificateSha256": "e24c60f65a71096f70bff3101ef084c616afcf7e2d5703b41ddeee70d3b868a0",
+      "limits": [
+        "Three test-harness WebViews share one isolated CI app space; not three account spaces.",
+        "Stopped Activity with a live instrumented process; no OS process kill, Doze, or OEM proof.",
+        "Unexpected core binding stop; native process crash is not simulated.",
+        "No resource benchmark or real ChatGPT acceptance in this batch."
+      ],
+      "artifact": {
+        "id": 12985133941,
+        "name": "network-stability-api-35-tls",
+        "size_in_bytes": 99430,
+        "digest": "sha256:e3751da13e8180b282bf155fb1ecbb6995b3b038eb43d6aed5594491d52e4704"
+      },
+      "outageEvidence": {
+        "outage-counters.txt": "Chain CI_STAB_3215 (2 references)\n    pkts      bytes target     prot opt in     out     source               destination         \n      63     3812 REJECT     6    --  *      *       0.0.0.0/0            0.0.0.0/0            multiport dports 19443,19444 reject-with tcp-reset\n",
+        "outage-origin-control.json": "{\"healthy\": true, \"onlyNodePortsBlocked\": [19443, 19444]}",
+        "outage-rules.txt": "-N CI_STAB_3215\n-A CI_STAB_3215 -p tcp -m multiport --dports 19443,19444 -j REJECT --reject-with tcp-reset\n"
+      },
+      "providerSummary": [
+        "Current WebView package (name, version): (com.google.android.webview, 124.0.6367.219)",
+        "Minimum WebView version code: 636771938",
+        "Valid package com.google.android.webview (versionName: 124.0.6367.219, versionCode: 636771938, targetSdkVersion: 34) is  installed/enabled for all users"
+      ]
+    }
+  ],
+  "finding": {
+    "externalCoreStopState": [
+      "CONNECTED"
+    ],
+    "effect": "Listener stops and requests fail closed; explicit reconnect restores service, but RouteManager keeps a configured CONNECTED state after external stop. No background core health observer is implemented.",
+    "status": "Follow-up; not silently represented as automatic fault detection."
+  },
+  "previousAttempts": [
+    {
+      "runId": 41064243495,
+      "result": "failed before instrumentation; emulator runner executes script lines separately"
+    },
+    {
+      "runId": 41065537968,
+      "result": "three cases caught artificial lifecycle change without OS background; one initial probe failed, precise cause undetermined"
+    },
+    {
+      "runId": 41066957467,
+      "result": "API35 caught paused-to-stopped transition; superseded API28 work cancelled. Not counted as a 30-minute pass."
+    }
+  ],
+  "artifactRetentionDays": 14,
+  "temporaryFixtureKeyRetentionDays": 1,
+  "boundaries": {
+    "productionAppModified": false,
+    "productionSigningUsed": false,
+    "loginRecoveryDataModified": false,
+    "mainModified": false,
+    "screenshots": false,
+    "realChatGPT": false,
+    "resourceBenchmark": false
+  }
+}

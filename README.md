@@ -216,7 +216,7 @@ cd android
 | 环境隔离 | Android 每账号语言 / 时区从独立 PoC 迁入日常客户端 | 独立三账号 / 四页恢复与触摸验证完成；非调试优化 release 的模拟器运行验证完成，实站 / 真机与正式接入待验，[运行证据](docs/benchmarks/android-optimized-release-runtime.json) |
 | 系统集成 | 系统 / Chrome 通行密钥、真实 Touch ID 恢复与稳定签名 | 通行密钥未接入；Touch ID 受证书与实机验收条件限制 |
 | 已发布 | 自有智能体与设计补丁 Skill | alpha.21 桌面含 32 个角色，支持单独使用、组合 Skill、收藏与任务恢复 |
-| 移动网络 | 应用内代理与 VLESS 配置 | 独立预览已交付；Android 9 / 15 的 TLS / REALITY 网页、上传、下载同路由及资源测量通过。多标签、30 分钟后台与故障恢复专项验证中；未接入正式版，不提供免费节点。[范围与证据](docs/android-network-plan.md) |
+| 移动网络 | 应用内代理与 VLESS 配置 | 独立预览已交付；Android 9 / 15 的 TLS / REALITY 网页、上传、下载同路由及资源测量通过。三页切换、连续 30 分钟后台与显式故障恢复专项通过；核心异常停止后的状态提示仍待完善。未接入正式版，不提供免费节点。[范围与证据](docs/android-network-plan.md) |
 | 新平台 | iPhone / iPad 后续开发；Intel Mac、Linux 与商店发行 | 未纳入当前迭代，暂无对应安装包 |
 | 更新能力 | 差量下载与更细的更新体验 | 未实现；完整原生程序更新仍需重启 |
 
