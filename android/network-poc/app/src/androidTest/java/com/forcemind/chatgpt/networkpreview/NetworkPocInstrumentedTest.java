@@ -29,7 +29,9 @@ public final class NetworkPocInstrumentedTest {
     private final Bundle args = InstrumentationRegistry.getArguments();
     private String fixture() { return args.getString("fixtureUrl", "http://network-fixture.test:18080"); }
     private VlessNode node(String suffix) {
-        return VlessNode.parse(args.getString("node" + suffix, "vless://00000000-0000-4000-8000-000000000001@10.0.2.2:" + ("A".equals(suffix) ? "18443" : "18444") + "?encryption=none&type=tcp&security=none"), suffix);
+        VlessNode result = VlessNode.parse(args.getString("node" + suffix, "vless://00000000-0000-4000-8000-000000000001@10.0.2.2:" + ("A".equals(suffix) ? "18443" : "18444") + "?encryption=none&type=tcp&security=none"), suffix);
+        assertEquals("fixture protocol must match requested test", args.getString("expectedSecurity", "none"), result.security);
+        return result;
     }
     private void main(Runnable runnable) { InstrumentationRegistry.getInstrumentation().runOnMainSync(runnable); }
     private void switchRoute(RouteManager routes, VlessNode node) throws Exception {
@@ -103,6 +105,18 @@ public final class NetworkPocInstrumentedTest {
             assertEquals("A", activity.downloadsForTests().request(fixture() + "/echo", "GET", null).route);
             assertArrayEquals(FILE, activity.downloadsForTests().request(fixture() + "/download", "GET", null).bytes);
             assertNativeDownload(activity);
+            for (String key : new String[]{"invalidNode", "invalidNode2"}) {
+              String invalid = args.getString(key);
+              if (invalid != null) {
+                CountDownLatch denied = new CountDownLatch(1);
+                main(() -> routes.switchTo(VlessNode.parse(invalid, "invalid-identity"), (success, message) -> { assertFalse("invalid secure identity accepted", success); denied.countDown(); }));
+                assertTrue("secure identity rejection", denied.await(35, TimeUnit.SECONDS));
+                assertEquals(RouteManager.State.FAILED, routes.snapshot().state);
+                try { activity.downloadsForTests().request(fixture() + "/echo", "GET", null); fail("secure failure fell back"); }
+                catch (IllegalStateException expected) { }
+                switchRoute(routes, node("A"));
+              }
+            }
             byte[] upload = "synthetic-upload-A".getBytes(StandardCharsets.UTF_8);
             NativeDownloads.Response sent = activity.downloadsForTests().request(fixture() + "/upload", "POST", upload);
             assertEquals("A", sent.route); assertArrayEquals(upload, sent.bytes);
@@ -134,7 +148,7 @@ public final class NetworkPocInstrumentedTest {
             String directFixture = args.getString("directFixtureUrl", "http://10.0.2.2:18080");
             assertEquals("direct", activity.downloadsForTests().request(directFixture + "/echo", "GET", null).route);
             main(() -> activity.webViewForTests().loadUrl(directFixture + "/page")); awaitJs(activity, "document.title", "\"direct\"");
-            System.out.println("NETWORK_POC_RESULT native=A,B WebView=A,B draft=PRESERVED upload=B failure=FAIL_CLOSED direct=EXPLICIT");
+            System.out.println("NETWORK_POC_RESULT native=A,B WebView=A,B draft=PRESERVED upload=B failure=FAIL_CLOSED direct=EXPLICIT security=" + args.getString("expectedSecurity", "none") + " origin=" + fixture());
         }
     }
     private void assertNativeDownload(MainActivity activity) throws Exception {

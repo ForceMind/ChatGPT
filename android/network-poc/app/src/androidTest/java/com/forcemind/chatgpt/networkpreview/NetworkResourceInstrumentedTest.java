@@ -24,9 +24,10 @@ import static org.junit.Assert.*;
 @RunWith(AndroidJUnit4.class)
 public final class NetworkResourceInstrumentedTest {
     private static final byte[] FILE = "network-poc-fixture\n".getBytes(StandardCharsets.UTF_8);
-    private static final String DIRECT = "http://10.0.2.2:18080";
-    private static final String PROXY = "http://network-fixture.test:18080";
     private final Bundle args = InstrumentationRegistry.getArguments();
+    private final String DIRECT = args.getString("directFixtureUrl", "http://10.0.2.2:18080");
+    private final String PROXY = args.getString("fixtureUrl", "http://network-fixture.test:18080");
+    private final String transport = args.getString("transport", "raw");
     private final JSONArray completed = new JSONArray();
     private Context context;
     private int windowSeconds, warmupSeconds;
@@ -77,6 +78,7 @@ public final class NetworkResourceInstrumentedTest {
         Thread.sleep(warmupSeconds * 1000L);
         write("resource-phase.json", new JSONObject().put("phase", name).put("state", "ready")
                 .put("route", route).put("background", background).put("pid", android.os.Process.myPid())
+                .put("transport", transport)
                 .put("windowSeconds", windowSeconds).put("warmupSeconds", warmupSeconds).toString());
         awaitAck(name + ":start");
         long started = SystemClock.elapsedRealtime();
@@ -117,7 +119,10 @@ public final class NetworkResourceInstrumentedTest {
     }
     @Test public void syntheticResourceProfiles() throws Exception {
         assertTrue("Isolated CI app only", BuildConfig.APPLICATION_ID.endsWith(".ci"));
-        assertEquals("Synthetic homepage only", DIRECT + "/page", BuildConfig.NETWORK_HOME_URL);
+        assertEquals("Synthetic homepage only", "http://10.0.2.2:18080/page", BuildConfig.NETWORK_HOME_URL);
+        assertTrue(Arrays.asList("http://10.0.2.2:18080", "https://10.0.2.2:18480").contains(DIRECT));
+        assertTrue(Arrays.asList("http://network-fixture.test:18080", "https://network-fixture.test:18480").contains(PROXY));
+        assertTrue(Arrays.asList("raw", "tls", "reality").contains(transport));
         assertEquals("Host sampler required", "1", args.getString("resourceSampler"));
         windowSeconds = Integer.parseInt(args.getString("resourceWindowSeconds", "60"));
         warmupSeconds = Integer.parseInt(args.getString("resourceWarmupSeconds", "5"));
@@ -132,7 +137,8 @@ public final class NetworkResourceInstrumentedTest {
             assertEquals(RouteManager.State.DIRECT, activity.routeManagerForTests().snapshot().state);
             page(activity, DIRECT, "direct");
             phase(activity, "direct_idle_foreground", "direct", false, false);
-            VlessNode node = VlessNode.parse("vless://00000000-0000-4000-8000-000000000001@10.0.2.2:18443?encryption=none&type=tcp&security=none", "A");
+            VlessNode node = VlessNode.parse(args.getString("nodeA", "vless://00000000-0000-4000-8000-000000000001@10.0.2.2:18443?encryption=none&type=tcp&security=none"), "A");
+            assertEquals("resource protocol", "raw".equals(transport) ? "none" : transport, node.security);
             switchRoute(activity, node); page(activity, PROXY, "A");
             phase(activity, "proxy_idle_foreground", "A", false, false);
             phase(activity, "proxy_fixed_workload", "A", false, true);
@@ -143,7 +149,7 @@ public final class NetworkResourceInstrumentedTest {
             switchRoute(activity, null); page(activity, DIRECT, "direct");
             phase(activity, "recovery_direct", "direct", false, false);
         }
-        write("resource-result.json", new JSONObject().put("complete", true).put("phases", completed).toString());
+        write("resource-result.json", new JSONObject().put("complete", true).put("transport", transport).put("phases", completed).toString());
         write("resource-phase.json", new JSONObject().put("phase", "complete").put("state", "complete").toString());
         System.out.println("NETWORK_RESOURCE_RESULT profiles=5 synthetic=true complete=true");
     }

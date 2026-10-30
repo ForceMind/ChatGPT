@@ -15,6 +15,7 @@ import statistics
 import struct
 import subprocess
 import time
+from urllib.parse import parse_qs, urlsplit
 
 PACKAGE = "com.forcemind.chatgpt.networkpreview.ci"
 TEST = "com.forcemind.chatgpt.networkpreview.NetworkResourceInstrumentedTest#syntheticResourceProfiles"
@@ -154,8 +155,9 @@ def cpu_interval(before, after, hz):
 
 
 class Sampler:
-    def __init__(self, output, window, warmup, interval):
+    def __init__(self, output, window, warmup, interval, transport='raw', fixture=None):
         self.output, self.window, self.warmup, self.interval = output, window, warmup, interval
+        self.transport, self.fixture = transport, fixture
         self.instrumentation = None
         self.log = None
         self.hz = None
@@ -202,7 +204,9 @@ class Sampler:
                     "sourceSha": os.environ.get("GITHUB_SHA"), "runId": os.environ.get("GITHUB_RUN_ID"),
                     "clockSource": "kernel /proc/self/auxv AT_CLKTCK", "auxvWordBytes": word_bytes,
                     "diagnosticServiceUid": 2000, "kernelCounterReaderUid": 0,
-                    "proxyTransport": {"protocol": "vless", "network": "raw", "security": "none"},
+                    "proxyTransport": {"protocol": "vless", "network": "raw", "security": 'none' if self.transport == 'raw' else self.transport},
+                    "transportCase": self.transport, "originScheme": "https",
+                    "fixtureCertificateSha256": self.fixture['certificateSha256'],
                     "api": self.shell("getprop", "ro.build.version.sdk").strip(),
                     "fingerprint": self.shell("getprop", "ro.build.fingerprint").strip(),
                     "webViewProvider": provider_dump, "webViewIdentity": parse_webview_identity(provider_dump),
@@ -230,6 +234,8 @@ class Sampler:
             if phase.get("phase") == name and phase.get("state") == "ready":
                 if phase.get("windowSeconds") != self.window:
                     raise ValueError("Host and device measurement windows differ")
+                if phase.get('transport') != self.transport:
+                    raise ValueError('Host and device protocols differ')
                 return phase
             time.sleep(1)
         raise TimeoutError("Timed out waiting for resource phase " + name)
@@ -322,6 +328,10 @@ class Sampler:
         arguments = ["am", "instrument", "-w", "-r", "-e", "class", TEST,
                      "-e", "resourceSampler", "1", "-e", "resourceWindowSeconds", str(self.window),
                      "-e", "resourceWarmupSeconds", str(self.warmup), PACKAGE + ".test/androidx.test.runner.AndroidJUnitRunner"]
+        arguments[-1:-1] = ['-e', 'transport', self.transport,
+                            '-e', 'nodeA', self.fixture['transports'][self.transport]['nodeA'],
+                            '-e', 'fixtureUrl', 'https://network-fixture.test:18480',
+                            '-e', 'directFixtureUrl', 'https://10.0.2.2:18480']
         self.instrumentation = subprocess.Popen(["adb", "shell", " ".join(shlex.quote(arg) for arg in arguments)],
                                                 stdout=self.log, stderr=subprocess.STDOUT)
 
@@ -336,6 +346,8 @@ class Sampler:
         (self.output / "device-result.json").write_text(json.dumps(result, indent=2))
         if not result.get("complete") or [p["phase"] for p in result.get("phases", [])] != PHASES:
             raise ValueError("Device did not complete every resource profile")
+        if result.get('transport') != self.transport:
+            raise ValueError('Device measured a different protocol')
         return result
 
     def cleanup(self):
@@ -357,6 +369,7 @@ def markdown_report(report):
              "CI emulator only; synthetic page/files and owned VLESS A. No real ChatGPT session or user node.", "",
              "Android API %s; WebView %s %s. Compare direct/proxy phases only within this emulator run." %
              (environment["api"], provider["package"], provider["version"]), "",
+             "VLESS transport case: %s; all measured pages/files use the owned HTTPS origin." % environment['transportCase'], "",
              "| Phase | Window s | Samples | PSS mean MiB | PSS peak MiB | RSS mean MiB | CPU % one core | CPU core-s |",
              "|---|---:|---:|---:|---:|---:|---:|---:|"]
     for phase in report["phases"]:
@@ -374,6 +387,8 @@ def main():
     parser.add_argument("--window-seconds", type=int, default=60)
     parser.add_argument("--warmup-seconds", type=int, default=5)
     parser.add_argument("--sample-interval-seconds", type=int, default=10)
+    parser.add_argument('--transport', choices=['raw', 'tls', 'reality'], default='raw')
+    parser.add_argument('--fixture', default=str(Path(__file__).resolve().parents[1]/'secure-fixture/fixture.json'))
     args = parser.parse_args()
     if not 60 <= args.window_seconds <= 120 or not 3 <= args.warmup_seconds <= 30:
         parser.error("window must be 60..120s and warmup 3..30s")
@@ -383,7 +398,13 @@ def main():
         raise SystemExit("CI only; no local emulator/device execution")
     output = Path(args.output)
     output.mkdir(parents=True, exist_ok=False)
-    sampler = Sampler(output, args.window_seconds, args.warmup_seconds, args.sample_interval_seconds)
+    fixture = json.loads(Path(args.fixture).read_text())
+    node = fixture['transports'][args.transport]
+    expected = 'none' if args.transport == 'raw' else args.transport
+    parsed = urlsplit(node['nodeA'])
+    if node['expectedSecurity'] != expected or parsed.hostname != '10.0.2.2' or parse_qs(parsed.query).get('security') != [expected]:
+        raise ValueError('Fixture protocol or owned node address mismatch')
+    sampler = Sampler(output, args.window_seconds, args.warmup_seconds, args.sample_interval_seconds, args.transport, fixture)
     report = {"complete": False, "phases": [], "measurementNotes": [
         "CPU core-seconds = delta(utime + stime) / kernel CLK_TCK; CPU % one core = core-seconds / per-process elapsed seconds * 100. Multicore totals may exceed 100%.",
         "PSS sums the app and ActivityManager-client-attributed WebView renderer processes. JNI Go core runs in the app process and is included, not separately estimated. RSS sums may double-count shared pages.",
@@ -391,7 +412,7 @@ def main():
         "Android API, emulator image and WebView provider/version are recorded per run. Do not infer proxy overhead by comparing different Android versions, images, or WebView versions; use direct/proxy phases within one run.",
         "No-app baseline has no instrumentation or app/renderer process; compare device CPU/MemAvailable in JSON. Do not interpret subtracting this baseline as app PSS.",
         "Proxy fixed workload: 30 evenly scheduled cycles of a 20-byte native disk download, 128 KiB upload + echo, and a 20-byte WebView fetch. HTTP/header/TCP/VLESS overhead is excluded from payload byte counts.",
-        "The owned VLESS benchmark uses raw TCP with security=none. TLS/REALITY CPU overhead is not measured. Phases run sequentially without forced GC; cache and allocation retention affect phase differences, so they are not a causal leak or incremental-cost proof.",
+        "The selected VLESS raw/TLS/REALITY case is validated in both host and Android test arguments. All cases use the same HTTPS origins, including the raw transport baseline; the older HTTP-origin report is not a matched baseline. Phases run sequentially without forced GC, so phase differences are not a causal leak or precise incremental-cost proof.",
         "Background profile is a stopped Activity (CREATED lifecycle), with proxy retained. Recovery restores direct route and the synthetic direct page before measurement.",
         "Warmups and route transitions are excluded. Seven default memory samples and six CPU intervals cover each >=60s window. Memory peak is sampled, not a continuous high-water mark.",
         "Unknown renderer ownership, unreadable counters, process restart/churn, missing samples, workload overrun, or failed instrumentation invalidates completion; raw evidence remains available."

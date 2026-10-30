@@ -14,6 +14,20 @@ on:
 permissions:
   contents: read
 jobs:
+  secure-fixture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify and prepare owned ephemeral identities
+        run: |
+          python3 -m unittest discover -s android/network-poc/scripts/tests -p 'test_secure_fixture.py' -v
+          python3 android/network-poc/scripts/fixture.py --prepare-only --output android/network-poc/secure-fixture
+      - uses: actions/upload-artifact@v4
+        with:
+          name: network-secure-fixture
+          retention-days: 1
+          path: android/network-poc/secure-fixture/
   webview-provider:
     if: inputs.run_device_tests
     runs-on: ubuntu-latest
@@ -105,7 +119,7 @@ jobs:
             android/network-poc/corebridge/bin/xray
             android/network-poc/corebridge/go.sum
   package:
-    needs: core
+    needs: [core, secure-fixture]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -114,6 +128,10 @@ jobs:
         with:
           name: network-core
           path: android/network-poc
+      - uses: actions/download-artifact@v4
+        with:
+          name: network-secure-fixture
+          path: android/network-poc/secure-fixture
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -148,6 +166,8 @@ jobs:
           assert sdk and int(sdk[1])==28 and int(sdk[2] or 0)==0, badging
           with zipfile.ZipFile(apk) as z:
               libraries={n:z.getinfo(n).file_size for n in z.namelist() if n.startswith('lib/') and n.endswith('.so')}
+              assert not any('network_fixture_ca' in n for n in z.namelist()), 'CI authority leaked into preview resources'
+              assert not any(b'GeneratedFixtureCa' in z.read(n) for n in z.namelist() if n.endswith('.dex')), 'CI authority code leaked into preview'
           assert any('/arm64-v8a/' in n for n in libraries)
           assert not any('/x86_64/' in n for n in libraries)
           (folder/'candidate.json').write_text(json.dumps({'sourceSha':os.environ['GITHUB_SHA'],
@@ -170,13 +190,16 @@ jobs:
             android/network-poc/app/build/reports/
   device:
     if: inputs.run_device_tests
-    needs: [core, package, webview-provider]
+    needs: [core, package, webview-provider, secure-fixture]
     strategy:
       fail-fast: false
       matrix:
         api: [28, 35]
+        transport: [raw, tls, reality]
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    env:
+      NETWORK_TEST_TRANSPORT: ${{ matrix.transport }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
@@ -187,6 +210,10 @@ jobs:
         with:
           name: network-application
           path: android/network-poc/app/build
+      - uses: actions/download-artifact@v4
+        with:
+          name: network-secure-fixture
+          path: android/network-poc/secure-fixture
       - uses: actions/download-artifact@v4
         if: matrix.api == 28
         with:
@@ -202,7 +229,14 @@ jobs:
       - name: Start owned VLESS fixtures
         run: |
           chmod +x android/network-poc/corebridge/bin/xray
-          python3 android/network-poc/scripts/fixture.py --core android/network-poc/corebridge/bin/xray --output "$RUNNER_TEMP/network-fixture" > "$RUNNER_TEMP/network-fixture.log" 2>&1 &
+          mkdir -p android/network-poc/evidence
+          python3 android/network-poc/scripts/fixture.py --core android/network-poc/corebridge/bin/xray --output android/network-poc/secure-fixture > "$RUNNER_TEMP/network-fixture.log" 2>&1 &
+          for attempt in $(seq 1 40); do
+            if [ -f android/network-poc/secure-fixture/ready.json ]; then break; fi
+            sleep 1
+          done
+          test -f android/network-poc/secure-fixture/ready.json
+          cp android/network-poc/secure-fixture/fixture.json android/network-poc/evidence/fixture.json
       - name: Enable hardware acceleration on disposable runner
         run: |
           test -c /dev/kvm
@@ -218,10 +252,10 @@ jobs:
           script: |
             if [ '${{ matrix.api }}' = 28 ]; then python3 android/network-poc/scripts/install-webview.py --provider android/network-poc/webview-fixture --output android/network-poc/evidence/provider-upgrade; fi
             bash android/network-poc/scripts/device-test.sh
-            python3 android/network-poc/scripts/measure-resources.py --output android/network-poc/evidence/resources
+            python3 android/network-poc/scripts/measure-resources.py --transport '${{ matrix.transport }}' --fixture android/network-poc/secure-fixture/fixture.json --output android/network-poc/evidence/resources
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: network-device-api-${{ matrix.api }}
+          name: network-device-api-${{ matrix.api }}-${{ matrix.transport }}
           retention-days: 14
           path: android/network-poc/evidence/

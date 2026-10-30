@@ -2,6 +2,8 @@
 
 状态：已交付 Android 独立网络预览 0.1.0，GitHub Actions 合成验证通过。未接入正式客户端。2026-10-30。
 
+当前迭代：保留 raw/HTTP 回归，新增 raw、TLS、REALITY × Android9/15 六组独立 CI。TLS和REALITY分别验证 HTTPS网页、原生/网页上传与下载、A/B出口、身份错误失败不降级；通过后各自采集60秒资源窗口。三种协议的资源对照统一使用自有HTTPS原站。临时CA和密钥仅用于CI合成节点，预览APK不得包含或信任CI CA；不访问真实ChatGPT、不截图，不修改正式App、main、生产签名或登录/恢复数据。
+
 本轮验证范围：仅在全新 Actions 模拟器更新 Android 9 的官方 AOSP WebView，核对 APK 固定来源、签名、最低 SDK、实际 provider 与代理能力，强制补齐网页/文件同路由回归；通过后测量直连、代理、固定文件负载、后台及恢复阶段的进程内存/CPU。资源统计包含可明确归属的 renderer，报告系统/版本与观察开销，不把合成模拟器数值等同真实 ChatGPT 或手机占用。不更换用户设备 WebView，不修改正式 App、生产签名、main 或现有数据。
 
 迭代完成：源码 `c699571f4fd9ba95dbfb27fcf14d9226972c759a` 的 [Actions 40932254243](https://github.com/ForceMind/ChatGPT/actions/runs/40932254243) 全部通过。Android 9 AOSP 模拟器已实际切换为官方 AOSP WebView 124.0.6367.219（最低 API26），完整网页/文件回归通过，不再走原生-only 分支。Android 15 的 Google WebView 124 同样完整通过。资源预检曾遇到 API28 缺少 getconf、API35 root 诊断查询返回255，已改为读取内核 AT_CLKTCK、用常规 shell 身份读取服务；两组的时钟频率实读均为100，所有阶段包含 App 和可明确归属的 renderer。

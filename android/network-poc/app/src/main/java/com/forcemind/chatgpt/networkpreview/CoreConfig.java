@@ -22,6 +22,7 @@ public final class CoreConfig {
                 JSONObject tls = new JSONObject().put("allowInsecure", false).put("serverName", n.options.getOrDefault("sni", n.host));
                 if (n.options.containsKey("fp")) tls.put("fingerprint", n.options.get("fp"));
                 if (n.options.containsKey("alpn")) tls.put("alpn", new JSONArray(n.options.get("alpn").split(",")));
+                FixtureTrust.apply(tls, n);
                 stream.put("tlsSettings", tls);
             }
             if ("reality".equals(n.security)) stream.put("realitySettings", new JSONObject()
