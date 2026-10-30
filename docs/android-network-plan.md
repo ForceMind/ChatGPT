@@ -2,6 +2,12 @@
 
 状态：已交付 Android 独立网络预览 0.1.0，GitHub Actions 合成验证通过。未接入正式客户端。2026-10-30。
 
+## 当前批次：多标签与故障恢复稳定性
+
+已批准在 Actions 的 Android9 / Android15 × TLS / REALITY 四组中验证三个合成页面、连续1800秒停止态后台、线路端口断网重连和核心异常停止后的显式恢复。当前处于实现/待CI验证状态，不把既有短窗口资源结果称为30分钟保活证据。
+
+测试不截图、不访问真实ChatGPT、不使用用户节点，不更改正式App、生产签名、main或现有登录/恢复数据。三个页面由测试支架创建，共享独立CI空间，不冒充三个隔离账号；Activity保持停止态且测试进程存活，不模拟系统杀进程、Doze或OEM限制。核心故障注入为绕过RouteManager的核心停止，不模拟JNI崩溃。服务端逐项核对页面与上传请求次数，发现重载、重放或意外直连即失败。下一步仅运行该专项及必要构建/静态检查，不重复资源测量。
+
 ## TLS / REALITY 完整链路与资源结果
 
 源码 `df9486a` 的 [Actions 41005311920](https://github.com/ForceMind/ChatGPT/actions/runs/41005311920) 六组全部通过：Android9 / Android15 × raw / TLS / REALITY。Android9实际使用固定AOSP WebView124，Android15使用Google WebView124。每组先验证链路，再采集全部六个资源阶段，每段至少60秒、7个内存样本；记录进程身份和实际协议，App与所属renderer合计，未使用App-only或半截窗口替代。

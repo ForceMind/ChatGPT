@@ -113,6 +113,7 @@ class SecureFixtureTests(unittest.TestCase):
                 for method, path, body, expected in (
                     ('GET', '/echo', None, b'{"route": "direct"}'),
                     ('GET', '/download', None, fixture.PAYLOAD),
+                    ('GET', '/stability/tab-0/download', None, fixture.PAYLOAD),
                     ('POST', '/upload', f'owned upload {attempt}\n'.encode(),
                      f'owned upload {attempt}\n'.encode()),
                 ):
@@ -142,6 +143,7 @@ class SecureFixtureTests(unittest.TestCase):
         handler.path = '/upload?synthetic-private-query=hidden'
         handler.headers = {'Content-Length': '17'}
         handler.server = mock.Mock(server_port=18480)
+        handler.client_address = ('127.0.0.2', 12345)
         with mock.patch.object(fixture.Origin, '_access_count', fixture.Origin._access_limit - 1):
             with mock.patch('builtins.print') as output:
                 handler.access_diagnostic(200, 17, 17, 17)
@@ -149,6 +151,7 @@ class SecureFixtureTests(unittest.TestCase):
         self.assertEqual(output.call_count, 1)
         entry = json.loads(output.call_args.args[0])
         self.assertEqual(entry['method'], 'POST')
+        self.assertEqual(entry['route'], 'A')
         self.assertEqual(entry['path'], '/upload')
         self.assertEqual(entry['contentLength'], 17)
         self.assertEqual(entry['requestContentLength'], 17)

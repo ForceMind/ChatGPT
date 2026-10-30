@@ -5,10 +5,17 @@ on:
       run_device_tests:
         type: boolean
         default: false
+      run_stability_tests:
+        type: boolean
+        default: false
   workflow_dispatch:
     inputs:
       run_device_tests:
         description: Owned synthetic VLESS and WebView/file routing tests (no screenshots or ChatGPT)
+        type: boolean
+        default: false
+      run_stability_tests:
+        description: With device tests enabled, run 30-minute background and recovery stability on TLS/REALITY only
         type: boolean
         default: false
 permissions:
@@ -142,6 +149,7 @@ jobs:
       - name: Compile and check isolated application
         run: |
           python3 -m unittest discover -s android/network-poc/scripts/tests -p 'test_measure_resources.py'
+          python3 -m unittest discover -s android/network-poc/scripts/tests -p 'test_stability_driver.py'
           sdkmanager 'platforms;android-37.0' 'build-tools;36.0.0'
           bash android/network-poc/gradlew -p android/network-poc --no-daemon :app:testPreviewDebugUnitTest :app:lintPreviewDebug :app:assemblePreviewDebug :app:assembleCiDebug :app:assembleCiDebugAndroidTest
           cp android/network-poc/THIRD_PARTY_NOTICES.md android/network-poc/app/build/reports/
@@ -195,9 +203,9 @@ jobs:
       fail-fast: false
       matrix:
         api: [28, 35]
-        transport: [raw, tls, reality]
+        transport: ${{ fromJSON(inputs.run_stability_tests && '["tls","reality"]' || '["raw","tls","reality"]') }}
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: ${{ inputs.run_stability_tests && 60 || 25 }}
     env:
       NETWORK_TEST_TRANSPORT: ${{ matrix.transport }}
     steps:
@@ -250,12 +258,34 @@ jobs:
           disable-animations: true
           emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -writable-system
           script: |
+            if [ '${{ inputs.run_stability_tests }}' = true ]; then
+              set -eu
+              collect_stability_diagnostics() {
+                timeout 15 adb logcat -d -t 5000 > android/network-poc/evidence/logcat.txt 2>&1 || true
+                timeout 15 adb shell getprop ro.build.version.sdk > android/network-poc/evidence/api.txt 2>&1 || true
+                timeout 15 adb shell dumpsys webviewupdate > android/network-poc/evidence/webview.txt 2>&1 || true
+              }
+              trap collect_stability_diagnostics EXIT
+            fi
             if [ '${{ matrix.api }}' = 28 ]; then python3 android/network-poc/scripts/install-webview.py --provider android/network-poc/webview-fixture --output android/network-poc/evidence/provider-upgrade; fi
-            bash android/network-poc/scripts/device-test.sh
-            python3 android/network-poc/scripts/measure-resources.py --transport '${{ matrix.transport }}' --fixture android/network-poc/secure-fixture/fixture.json --output android/network-poc/evidence/resources
+            if [ '${{ inputs.run_stability_tests }}' = true ]; then
+              test "${GITHUB_ACTIONS:-}" = true
+              test "$(adb shell getprop ro.kernel.qemu | tr -d '\r')" = 1
+              find android/network-poc/app/build/outputs/apk/ci/debug -name '*.apk' -print -quit | xargs adb install -r
+              find android/network-poc/app/build/outputs/apk/androidTest/ci/debug -name '*.apk' -print -quit | xargs adb install -r
+              python3 -u android/network-poc/scripts/run-stability.py --fixture android/network-poc/secure-fixture/fixture.json --transport '${{ matrix.transport }}' --output android/network-poc/evidence/stability
+            else
+              bash android/network-poc/scripts/device-test.sh
+              python3 android/network-poc/scripts/measure-resources.py --transport '${{ matrix.transport }}' --fixture android/network-poc/secure-fixture/fixture.json --output android/network-poc/evidence/resources
+            fi
+      - name: Preserve stability fixture log after success or failure
+        if: always() && inputs.run_stability_tests
+        run: |
+          mkdir -p android/network-poc/evidence
+          cp "$RUNNER_TEMP/network-fixture.log" android/network-poc/evidence/fixture.log 2>/dev/null || true
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: network-device-api-${{ matrix.api }}-${{ matrix.transport }}
+          name: ${{ inputs.run_stability_tests && 'network-stability' || 'network-device' }}-api-${{ matrix.api }}-${{ matrix.transport }}
           retention-days: 14
           path: android/network-poc/evidence/

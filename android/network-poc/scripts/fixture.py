@@ -48,6 +48,8 @@ class Origin(http.server.BaseHTTPRequestHandler):
                      'contentLength': content_length, 'bodylen': body_len,
                      'responseBytesWritten': written, 'port': self.server.server_port,
                      'connection': 'close'}
+            entry['route'] = {'127.0.0.2': 'A', '127.0.0.3': 'B'}.get(
+                self.client_address[0], 'direct')
             try:
                 entry['requestContentLength'] = int(self.headers.get('Content-Length', '0'))
             except (AttributeError, ValueError):
@@ -79,9 +81,14 @@ class Origin(http.server.BaseHTTPRequestHandler):
 
     def do_GET(self):
         route = {'127.0.0.2': 'A', '127.0.0.3': 'B'}.get(self.client_address[0], 'direct')
-        if self.path.startswith('/download'):
+        path = self.path.partition('?')[0]
+        # Unique, synthetic operation paths let CI count reloads and request replay
+        # without recording query strings, headers, credentials, or request bodies.
+        if path.startswith('/stability/'):
+            path = '/' + path.rsplit('/', 1)[-1]
+        if path.startswith('/download'):
             data, kind = PAYLOAD, 'application/octet-stream'
-        elif self.path.startswith('/page'):
+        elif path.startswith('/page'):
             data, kind = ('<!doctype html><meta name="viewport" content="width=device-width">'
                           '<title>' + route + '</title><textarea id="draft"></textarea>'
                           '<p id="route">' + route + '</p>').encode(), 'text/html'
