@@ -125,6 +125,11 @@ public final class NetworkStabilityInstrumentedTest {
         await(web, "window.__failure", "\"error\"");
         assertEquals("native transfer lease released", 0, routes.activeTransfers());
     }
+    private void awaitState(ActivityScenario<MainActivity> scenario, Lifecycle.State state) throws Exception {
+        long deadline = SystemClock.elapsedRealtime() + 20000;
+        while (scenario.getState() != state && SystemClock.elapsedRealtime() < deadline) Thread.sleep(100);
+        assertEquals("actual lifecycle transition", state, scenario.getState());
+    }
     private boolean listenerAlive(int port) {
         try (Socket socket = new Socket()) { socket.connect(new InetSocketAddress("127.0.0.1", port), 1000); return true; }
         catch (Exception absent) { return false; }
@@ -170,21 +175,6 @@ public final class NetworkStabilityInstrumentedTest {
                 for (int i = 0; i < 3; i++) { select(i); webUpload(tabs.get(i), "web-tab-" + i, "B"); }
                 nativeUpload("before-background", "B"); nativeFile("before-background", "B");
                 checkpoint("three-tabs-retained-route-B");
-                // Host presses Home and verifies ActivityManager before acknowledging.
-                host("background-start"); assertEquals(Lifecycle.State.CREATED, scenario.getState());
-                long started = SystemClock.elapsedRealtime();
-                while (SystemClock.elapsedRealtime() - started < 1800000L) {
-                    Thread.sleep(Math.max(1, Math.min(10000, 1800000L - (SystemClock.elapsedRealtime() - started))));
-                    assertEquals("activity remains stopped", Lifecycle.State.CREATED, scenario.getState());
-                    assertEquals(0, routes.activeTransfers());
-                }
-                backgroundMillis = SystemClock.elapsedRealtime() - started; assertTrue(backgroundMillis >= 1800000L);
-                host("background-end");
-                assertEquals(Lifecycle.State.RESUMED, scenario.getState());
-                scenario.onActivity(current -> assertSame("same Activity after returning from Home", activity, current));
-                assertEquals(RouteManager.State.CONNECTED, routes.snapshot().state); preserved();
-                nativeUpload("after-background", "B"); nativeFile("after-background", "B"); webUpload(tabs.get(0), "web-after-background", "B");
-                checkpoint("thirty-minute-background-restored");
                 host("outage-start"); failedRequests("outage"); preserved();
                 host("outage-end"); route(b); preserved();
                 nativeUpload("after-outage", "B"); nativeFile("after-outage", "B"); webUpload(tabs.get(0), "web-after-outage", "B");
@@ -197,6 +187,22 @@ public final class NetworkStabilityInstrumentedTest {
                 route(a); preserved();
                 nativeUpload("after-core-restart", "A"); nativeFile("after-core-restart", "A"); webUpload(tabs.get(0), "web-after-core-restart", "A");
                 checkpoint("core-recovered-explicitly-no-replay");
+                route(b); preserved();
+                // Host presses Home and verifies ActivityManager before acknowledging.
+                host("background-start"); awaitState(scenario, Lifecycle.State.CREATED);
+                long started = SystemClock.elapsedRealtime();
+                while (SystemClock.elapsedRealtime() - started < 1800000L) {
+                    Thread.sleep(Math.max(1, Math.min(10000, 1800000L - (SystemClock.elapsedRealtime() - started))));
+                    assertEquals("activity remains stopped", Lifecycle.State.CREATED, scenario.getState());
+                    assertEquals(0, routes.activeTransfers());
+                }
+                backgroundMillis = SystemClock.elapsedRealtime() - started; assertTrue(backgroundMillis >= 1800000L);
+                host("background-end");
+                awaitState(scenario, Lifecycle.State.RESUMED);
+                scenario.onActivity(current -> assertSame("same Activity after returning from Home", activity, current));
+                assertEquals(RouteManager.State.CONNECTED, routes.snapshot().state); preserved();
+                nativeUpload("after-background", "B"); nativeFile("after-background", "B"); webUpload(tabs.get(0), "web-after-background", "B");
+                checkpoint("thirty-minute-background-restored");
                 write("stability-result.json", new JSONObject().put("complete", true).put("security", security)
                         .put("pid", android.os.Process.myPid()).put("tabCount", 3).put("backgroundMillis", backgroundMillis)
                         .put("coreStopInjection", "unexpected binding stop outside RouteManager; not process crash")
