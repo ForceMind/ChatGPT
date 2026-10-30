@@ -50,3 +50,15 @@ CI 使用两条自有临时 VLESS 线路和本地回显服务，检查网页、�
 2026-10-30 的扩展验证已在 [Actions 40932254243](https://github.com/ForceMind/ChatGPT/actions/runs/40932254243) 完整通过。Android9已在CI切换到AOSP WebView124，两组均覆盖网页/原生文件、上传、线路切换、草稿保留与显式直连。代理空闲平均PSS约208.5 / 178.8 MiB，CPU约0.68% / 0.40%（Android9 / Android15，单核口径）；这些是合成模拟器结果，不能当作真实ChatGPT或手机占用上限。详见 [结果与边界](../../docs/android-network-plan.md#webview-124-资源结果) 和 [处理后样本](../../docs/benchmarks/android-network-webview124-resources.json)。
 
 真实节点、ChatGPT 登录、手机厂商系统、arm64 真机和正式 App 接入仍需后续验证。CI 签名不是生产签名，本包不承诺跨批次原地升级。
+
+## 多标签、30 分钟后台与故障恢复专项
+
+已获对应测试授权后，使用现有 `Android Recovery PoC` 入口，选择 `experiment=network-stability`、`build_only=false`。四组 Android 9 / 15 × TLS / REALITY 复用受限合成节点；跳过原路由和资源测量批次，每组有 60 分钟作业超时。当前运行与结果以 [开发记录](../../docs/android-network-plan.md#当前批次多标签与故障恢复稳定性) 为准。
+
+- 三个测试支架 WebView 切换时保留文档、草稿和内存标记；服务端核对页面仅加载一次。
+- Activity 连续停止至少 1800 秒，主机独立计时、周期检查进程 PID 和前台 Activity；期间不执行页面 JS、网络心跳、唤醒锁或前台服务。
+- 仅拒绝所选合成节点的两个 TCP 端口，确认 HTTPS 原站正常。网页与原生失败请求不能到达原站，恢复后由测试明确重连；失败 POST 不自动重发。
+- 绕过 RouteManager 停止核心，确认本地监听消失、请求失败且不自行重启；显式重新连接后检查页面、上传与落盘下载。该注入不是 JNI 崩溃或系统杀进程测试。
+- 证据包含主机/设备后台时长、前台检查、故障规则、原站请求计数和逐阶段结果，失败也保留诊断；不保存截图、网页内容或用户凭据。
+
+这三个页面共享独立 CI 空间，不代表三个隔离账号。30 分钟测试有 instrumentation 进程存活，不保证 Doze、OEM 强制回收、真实 ChatGPT 或用户手机中的保活结果。本专项没有重新测量内存和 CPU。

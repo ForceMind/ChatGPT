@@ -258,26 +258,9 @@ jobs:
           disable-animations: true
           emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -writable-system
           script: |
-            if [ '${{ inputs.run_stability_tests }}' = true ]; then
-              set -eu
-              collect_stability_diagnostics() {
-                timeout 15 adb logcat -d -t 5000 > android/network-poc/evidence/logcat.txt 2>&1 || true
-                timeout 15 adb shell getprop ro.build.version.sdk > android/network-poc/evidence/api.txt 2>&1 || true
-                timeout 15 adb shell dumpsys webviewupdate > android/network-poc/evidence/webview.txt 2>&1 || true
-              }
-              trap collect_stability_diagnostics EXIT
-            fi
             if [ '${{ matrix.api }}' = 28 ]; then python3 android/network-poc/scripts/install-webview.py --provider android/network-poc/webview-fixture --output android/network-poc/evidence/provider-upgrade; fi
-            if [ '${{ inputs.run_stability_tests }}' = true ]; then
-              test "${GITHUB_ACTIONS:-}" = true
-              test "$(adb shell getprop ro.kernel.qemu | tr -d '\r')" = 1
-              find android/network-poc/app/build/outputs/apk/ci/debug -name '*.apk' -print -quit | xargs adb install -r
-              find android/network-poc/app/build/outputs/apk/androidTest/ci/debug -name '*.apk' -print -quit | xargs adb install -r
-              python3 -u android/network-poc/scripts/run-stability.py --fixture android/network-poc/secure-fixture/fixture.json --transport '${{ matrix.transport }}' --output android/network-poc/evidence/stability
-            else
-              bash android/network-poc/scripts/device-test.sh
-              python3 android/network-poc/scripts/measure-resources.py --transport '${{ matrix.transport }}' --fixture android/network-poc/secure-fixture/fixture.json --output android/network-poc/evidence/resources
-            fi
+            if [ '${{ inputs.run_stability_tests }}' = true ]; then bash android/network-poc/scripts/device-stability.sh; else bash android/network-poc/scripts/device-test.sh; fi
+            if [ '${{ inputs.run_stability_tests }}' != true ]; then python3 android/network-poc/scripts/measure-resources.py --transport '${{ matrix.transport }}' --fixture android/network-poc/secure-fixture/fixture.json --output android/network-poc/evidence/resources; fi
       - name: Preserve stability fixture log after success or failure
         if: always() && inputs.run_stability_tests
         run: |
