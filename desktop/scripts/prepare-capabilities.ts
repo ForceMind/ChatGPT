@@ -8,11 +8,13 @@ const source = path.join(root, 'resources/capabilities');
 const target = path.join(root, 'dist/capabilities');
 const catalog = new CapabilityCatalog(source);
 catalog.verifyAll();
-rmSync(target,{recursive:true,force:true});
+rmSync(target, { recursive: true, force: true });
 for (const file of catalog.packagingFiles()) {
   const destination = path.join(target, ...file.split('/'));
   mkdirSync(path.dirname(destination), { recursive: true });
   writeFileSync(destination, catalog.packagingBytes(file));
 }
 const snapshot = catalog.snapshot();
-console.log(`Built-in capabilities: ${snapshot.skills.length} skills, ${snapshot.agents.length} agents (${snapshot.agents.filter(a => a.internetPriority).length} internet-priority).`);
+console.log(
+  `Built-in capabilities: ${snapshot.skills.length} skills, ${snapshot.agents.length} agents (${snapshot.agents.filter((a) => a.internetPriority).length} internet-priority).`
+);
