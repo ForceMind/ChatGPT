@@ -134,7 +134,7 @@ function hookMain(config) {
               'Fixture not ready: ' +
                 JSON.stringify(
                   await view.webContents.executeJavaScript(
-                    '({url:location.href,error:window.fixtureError,messages:document.querySelectorAll(\"[data-message-id]\").length,images:[...document.images].map(i=>({complete:i.complete,width:i.naturalWidth})),ready:document.readyState})'
+                    '({url:location.href,error:window.fixtureError,messages:document.querySelectorAll("[data-message-id]").length,images:[...document.images].map(i=>({complete:i.complete,width:i.naturalWidth})),ready:document.readyState})'
                   )
                 )
             );

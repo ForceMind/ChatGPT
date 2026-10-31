@@ -73,7 +73,7 @@ app.whenReady().then(async()=>{
       { timeout: 30000, stdio: 'pipe', encoding: 'utf8' }
     );
   } catch (error) {
-    throw Error(error.stderr?.trim() || error.message);
+    throw Error(error.stderr?.trim() || error.message, { cause: error });
   }
   const native = JSON.parse(readFileSync(report, 'utf8'));
   const receipt = {

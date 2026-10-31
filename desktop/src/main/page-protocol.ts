@@ -79,6 +79,8 @@ export class PageProtocol {
     else await this.connect();
     await this.ready;
   }
+  // Chrome DevTools Protocol results are untyped.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async send(method: string, params: Record<string, unknown>): Promise<any> {
     await this.connect();
     if (this.contents.isDestroyed()) throw Error('网页已关闭');

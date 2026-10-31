@@ -1140,7 +1140,8 @@ export class WorkbenchUI {
     const check = element.closest<HTMLElement>('[data-check]');
     if (check) {
       const id = check.dataset.check!;
-      this.checked.has(id) ? this.checked.delete(id) : this.checked.add(id);
+      if (this.checked.has(id)) this.checked.delete(id);
+      else this.checked.add(id);
       this.renderAssets();
       return;
     }
@@ -1155,7 +1156,8 @@ export class WorkbenchUI {
       const id = favoriteCapability.dataset.capabilityFavorite!,
         favorite = !this.capabilityFavorites.has(id);
       await this.api.favoriteCapability(id, favorite);
-      favorite ? this.capabilityFavorites.add(id) : this.capabilityFavorites.delete(id);
+      if (favorite) this.capabilityFavorites.add(id);
+      else this.capabilityFavorites.delete(id);
       this.renderLibrary();
       return;
     }

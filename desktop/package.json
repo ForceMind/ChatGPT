@@ -13,11 +13,12 @@
     "start": "npm run build && electron .",
     "start:built": "electron .",
     "typecheck": "tsc --noEmit",
+    "lint": "eslint src tests scripts playwright.config.ts",
     "format": "prettier --write \"src/**/*.{ts,tsx}\" \"tests/**/*.ts\" \"scripts/**/*.{mjs,ts}\" playwright.config.ts",
     "format:check": "prettier --check \"src/**/*.{ts,tsx}\" \"tests/**/*.ts\" \"scripts/**/*.{mjs,ts}\" playwright.config.ts",
     "test": "node --import tsx --test tests/state.test.ts tests/asset-store.test.ts tests/asset-downloads.test.ts tests/capabilities.test.ts tests/formats.test.ts tests/login-diagnostics.test.ts tests/handoff-store.test.ts tests/recovery-store.test.ts tests/updates.test.ts tests/update-installer.test.ts tests/idle-update.test.ts tests/recovery-access.test.ts tests/windows-updates.test.ts",
     "test:e2e": "npm run build && playwright test",
-    "check": "npm run typecheck && npm test && npm run build",
+    "check": "npm run typecheck && npm run lint && npm run format:check && npm test && npm run build",
     "dist:mac": "npm run check && node scripts/icon.mjs && node scripts/package-mac.mjs",
     "dist:win": "npm run check && node scripts/icon.mjs && node scripts/package-win.mjs"
   },

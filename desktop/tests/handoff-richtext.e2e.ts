@@ -34,12 +34,14 @@ for (const mode of ['normal', 'remount', 'partial', 'blocked', 'disabled', 'manu
       if (req.url === '/sent') {
         sends++;
         for await (const _ of req) {
+          // Drain the request body.
         }
         res.end('ok');
         return;
       }
       if (req.url === '/upload') {
         for await (const _ of req) {
+          // Drain the request body.
         }
         res.end('ok');
         return;

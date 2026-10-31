@@ -95,6 +95,8 @@ export class ChatPage {
   state(): Promise<PageObservation> {
     return this.script('(' + observe.toString() + ')()');
   }
+  // Chrome DevTools Protocol results are untyped.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private async command(method: string, params: Record<string, unknown>): Promise<any> {
     this.guard();
     if (method === 'Page.setInterceptFileChooserDialog') this.usedChooser = true;
@@ -122,7 +124,7 @@ export class ChatPage {
     await this.wait((s) => s.composer, 45000, '未能找到 ChatGPT 输入框，可能需要登录或网页结构已更新。');
   }
   async upload(files: string[], names: string[]): Promise<void> {
-    let state = await this.state();
+    const state = await this.state();
     if (!state.input) {
       await this.command('Page.setInterceptFileChooserDialog', { enabled: true });
       await this.script(
@@ -132,7 +134,7 @@ export class ChatPage {
         await this.script(
           `(()=>{const b=[...document.querySelectorAll('[role="menuitem"],button')].find(e=>/upload (photos|files)|add (photos|files)|上传照片|上传文件|添加照片|添加文件/i.test(e.textContent||''));if(b)b.click();})()`
         );
-      state = await this.wait((s) => s.input, 6000, '当前网页未提供通用文件上传控件，未发送任何消息。');
+      await this.wait((s) => s.input, 6000, '当前网页未提供通用文件上传控件，未发送任何消息。');
     }
     const result = await this.command('Runtime.evaluate', {
       expression: `(()=>[...document.querySelectorAll('input[type="file"]')].find(i=>!i.webkitdirectory&&!i.accept.startsWith('image/')&&!i.disabled))()`,
@@ -164,11 +166,10 @@ export class ChatPage {
     await this.script(
       `(()=>{const old=window.__profilesHandoffInput;old?.cleanup();const state={token:${token},writing:false,edited:false,cleanup:()=>{}};const manual=e=>{if(e.isTrusted&&(e.type!=='input'||!state.writing))state.edited=true;};for(const type of ['pointerdown','keydown','input'])window.addEventListener(type,manual,true);state.cleanup=()=>{for(const type of ['pointerdown','keydown','input'])window.removeEventListener(type,manual,true);};window.__profilesHandoffInput=state;})()`
     );
-    let current = '',
-      attempts = 0;
+    let attempts = 0;
     while (attempts++ < 3) {
       const existing = await this.state();
-      current = normalizedPrompt(existing.text);
+      const current = normalizedPrompt(existing.text);
       if (current === expected) {
         progress(expected.length, expected.length);
         return;
@@ -209,7 +210,7 @@ export class ChatPage {
         await new Promise((r) => setTimeout(r, 200));
       }
     }
-    current = normalizedPrompt((await this.state()).text);
+    const current = normalizedPrompt((await this.state()).text);
     throw Error(`指令写入未完成（${current.length}/${expected.length} 字符），已停止发送；附件和现有文字保留。`);
   }
   async sendOnce(

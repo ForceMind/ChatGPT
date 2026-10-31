@@ -1801,7 +1801,8 @@ function installIPC(): void {
         else capabilityCatalog.agent(id);
         store.commit((s) => {
           const ids = new Set(s.capabilityFavorites || []);
-          favorite ? ids.add(id) : ids.delete(id);
+          if (favorite) ids.add(id);
+          else ids.delete(id);
           s.capabilityFavorites = [...ids];
         });
       },
@@ -2016,7 +2017,7 @@ async function offerUpdate(manual = false): Promise<void> {
     return;
   offeredUpdates.add(manifest.version + ':' + shanghaiDay(Date.now()).day);
   updateDialog = true;
-  let source = 0;
+  let source: number;
   try {
     const choice = await dialog.showMessageBox(win, {
       type: 'question',
@@ -2450,6 +2451,8 @@ if (single) {
           if (process.platform === 'darwin') {
             let native: PresenceKey | undefined;
             try {
+              // Native addon loaded from the bundled CommonJS main process.
+              // eslint-disable-next-line @typescript-eslint/no-require-imports
               native = require(path.join(__dirname, 'recovery-protection.node')) as PresenceKey;
             } catch {
               /* Legacy recovery remains available; protected records cannot bypass the missing native key provider. */

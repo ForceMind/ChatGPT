@@ -161,7 +161,7 @@ export class AssetRuntime {
     if (asset.kind === 'web') {
       const file = this.store.resolveFile(profileId, id),
         fd = openSync(file, constants.O_RDONLY | (constants.O_NOFOLLOW || 0));
-      let head = '';
+      let head: string;
       try {
         const bytes = Buffer.alloc(Math.min(128 * 1024, lstatSync(file).size));
         head = bytes.subarray(0, readSync(fd, bytes, 0, bytes.length, 0)).toString('utf8');
