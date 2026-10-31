@@ -27,7 +27,7 @@ cd android/environment-poc
 完整自动验收通过已有 Android 工作流启动：
 
 ```sh
-gh workflow run android.yml --ref codex/macos-assets-workbench \
+gh workflow run android.yml --ref dev \
   -f standalone_environment_poc=true -f device_only=true
 ```
 
@@ -65,7 +65,7 @@ Android 9 出现过强停后由 Activity 启动创建新进程的情况。测试
 构建与设备测量均在 GitHub Actions。完整矩阵或仅 Android 9 可分别执行：
 
 ```sh
-gh workflow run android.yml --ref codex/macos-assets-workbench \
+gh workflow run android.yml --ref dev \
   -f recovery_environment_poc=true -f device_only=true \
   -f 'recovery_poc_apis=[28,35]'
 ```
@@ -87,7 +87,7 @@ gh workflow run android.yml --ref codex/macos-assets-workbench \
 已获本轮明确授权的完整矩阵入口如下，默认不截图：
 
 ```sh
-gh workflow run android.yml --ref codex/macos-assets-workbench \
+gh workflow run android.yml --ref dev \
   -f managed_recovery_poc=true -f device_only=true \
   -f managed_recovery_core=false -f managed_recovery_input_diagnostic=false \
   -f 'recovery_poc_apis=[28,35]'
@@ -96,7 +96,7 @@ gh workflow run android.yml --ref codex/macos-assets-workbench \
 以下入口只运行该最小诊断；浏览器交互须先取得当前任务的明确授权：
 
 ```sh
-gh workflow run android.yml --ref codex/macos-assets-workbench \
+gh workflow run android.yml --ref dev \
   -f managed_recovery_poc=true -f device_only=true \
   -f managed_recovery_input_diagnostic=true -f 'recovery_poc_apis=[28,35]'
 ```
@@ -134,7 +134,7 @@ release 不使用调试开关取证。仅在已验证的全新 qemu CI 模拟器
 独立手动工作流默认仅构建，真正运行需先取得具体交互授权，再显式关闭 build_only：
 
 ```sh
-gh workflow run android-recovery-poc.yml --ref codex/macos-assets-workbench \
+gh workflow run android-recovery-poc.yml --ref dev \
   -f runtime=optimized-release -f managed=true -f build_only=false \
   -f core_only=false -f input_diagnostic=false -f 'apis=[28,35]'
 ```
@@ -173,7 +173,7 @@ Android 9 原镜像 `enabled deep` 为 0。CI 显式启用深度闲置后，等�
 已有具体交互授权后，可按原测量入口复验：
 
 ```sh
-gh workflow run android-recovery-poc.yml --ref codex/macos-assets-workbench \
+gh workflow run android-recovery-poc.yml --ref dev \
   -f runtime=optimized-release -f managed=true -f build_only=false \
   -f core_only=false -f input_diagnostic=false -f experiment=long-background -f 'apis=[28,35]'
 ```
@@ -211,7 +211,7 @@ Android9仍存在后台PSS增长，空闲CPU没有短压力段同样的降幅；
 已有本项具体交互授权后，对照入口为：
 
 ```sh
-gh workflow run android-recovery-poc.yml --ref codex/macos-assets-workbench \
+gh workflow run android-recovery-poc.yml --ref dev \
   -f runtime=optimized-release -f managed=true -f build_only=false \
   -f core_only=false -f input_diagnostic=false -f experiment=resource-profile \
   -f resource_tuning=baseline -f 'resource_cases=["baseline","bounded","optimized"]' -f 'apis=[28,35]'
@@ -245,7 +245,7 @@ Android9高频组的PSS增长主要位于内容进程`Private Other`：Home总PS
 已有当前具体交互授权后，可复验：
 
 ```sh
-gh workflow run android-recovery-poc.yml --ref codex/macos-assets-workbench \
+gh workflow run android-recovery-poc.yml --ref dev \
   -f runtime=optimized-release -f managed=true -f build_only=false \
   -f core_only=false -f input_diagnostic=false -f experiment=idle-profile \
   -f resource_tuning=optimized -f 'observer_cadences_ms=[500,5000]' -f 'apis=[28,35]'

@@ -2,7 +2,7 @@ name: Publish Android Studio download filename
 on:
   workflow_dispatch:
   push:
-    branches: ['codex/macos-assets-workbench']
+    branches: ['dev']
     paths: ['.github/workflows/android-studio-download.yml']
 permissions:
   contents: write
