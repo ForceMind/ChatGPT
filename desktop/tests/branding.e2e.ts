@@ -124,11 +124,13 @@ test('Studio website renders canonical pages and preserves legacy update feeds',
     JSON.parse(readFileSync(path.join(desktop, '../docs/releases', version + '.json'), 'utf8'));
   const mac = manifest(platformVersions.macos!),
     windows = manifest(platformVersions.windows!);
-  const android = JSON.parse(
-    readFileSync(path.join(desktop, '../docs/releases', platformVersions.android + '-android.json'), 'utf8')
-  );
+  const android = manifest(platformVersions.android!);
   expect(android.version).toBe(platformVersions.android);
-  const androidDownload = android.publicDownload || android.artifact;
+  const androidDownloads = android.artifacts.filter(
+    (item: { platform: string; purpose?: string }) => item.platform === 'android' && item.purpose === 'installer'
+  );
+  expect(androidDownloads).toHaveLength(1);
+  const androidDownload = androidDownloads[0];
   const release = {
     artifacts: [
       ...mac.artifacts.filter(
@@ -142,6 +144,15 @@ test('Studio website renders canonical pages and preserves legacy update feeds',
       }
     ]
   };
+  // Unified release manifests store filenames; derive each platform's public URL from its version.
+  release.artifacts = release.artifacts.map((item: { file: string; platform: string }) => ({
+    ...item,
+    url:
+      'https://github.com/ForceMind/ChatGPT/releases/download/v' +
+      platformVersions[item.platform as keyof typeof platformVersions] +
+      '/' +
+      item.file
+  }));
   expect(release.artifacts).toHaveLength(5);
   const updateFile = mac.artifacts.find((item: { file: string }) => feed.files.arm64?.url.endsWith('/' + item.file));
   expect(updateFile.sha256).toBe(feed.files.arm64?.sha256);
