@@ -374,3 +374,74 @@ test('a completed legacy upgrade remains recognized after moving to Studio.app w
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('a newer local candidate reports the published version without offering a downgrade and can recheck', async () => {
+  const root = mkdtempSync(path.join(realpathSync(os.tmpdir()), 'candidate-update-check-'));
+  let requests = 0;
+  const manager = new UpdateManager(
+    root,
+    '3.0.0-alpha.13',
+    'arm64',
+    async () => {
+      requests++;
+      return new Response(JSON.stringify(manifest()));
+    },
+    () => {}
+  );
+  try {
+    await manager.check();
+    assert.equal(manager.status.phase, 'idle');
+    assert.equal(manager.status.version, version);
+    assert.match(manager.status.message || '', /当前版本较新/);
+    assert.match(manager.status.message || '', new RegExp(version.replaceAll('.', '\\.')));
+    await manager.check();
+    assert.equal(requests, 2);
+    assert.equal(manager.manifest, undefined);
+  } finally {
+    manager.dispose();
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('real streamed download exposes transfer and verification stages without claiming readiness', async () => {
+  const root = mkdtempSync(path.join(realpathSync(os.tmpdir()), 'update-progress-stages-'));
+  const seen: { phase: string; progress?: number; stage?: string }[] = [];
+  const manager = new UpdateManager(
+    root,
+    '3.0.0-alpha.11',
+    'arm64',
+    async (url) => {
+      if (url === UPDATE_FEED) return new Response(JSON.stringify(manifest()));
+      return new Response(
+        new ReadableStream({
+          start(controller) {
+            controller.enqueue(bytes.subarray(0, Math.floor(bytes.length / 2)));
+            controller.enqueue(bytes.subarray(Math.floor(bytes.length / 2)));
+            controller.close();
+          }
+        }),
+        { headers: { 'Content-Length': String(bytes.length) } }
+      );
+    },
+    () => {
+      seen.push({ ...manager.status });
+    }
+  );
+  try {
+    await manager.check();
+    await manager.download();
+    assert(
+      seen.some((s) => s.phase === 'downloading' && s.stage === 'download' && s.progress! > 0 && s.progress! < 100)
+    );
+    assert(seen.some((s) => s.phase === 'downloading' && s.stage === 'verify' && s.progress === 100));
+    assert.equal(
+      seen.some((s) => s.phase === 'ready'),
+      false
+    );
+    assert.equal(manager.status.phase, 'error');
+    assert.match(manager.status.message || '', /开发模式不替换/);
+  } finally {
+    manager.dispose();
+    rmSync(root, { recursive: true, force: true });
+  }
+});

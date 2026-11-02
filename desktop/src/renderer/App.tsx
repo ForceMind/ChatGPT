@@ -13,6 +13,7 @@ import './style.css';
 const Workbench = lazy(() => import('./Workbench').then((module) => ({ default: module.Workbench })));
 import { BROWSER_LANGUAGES, DEFAULT_LANGUAGE } from '../shared/profile-preferences';
 import { LoginDiagnostics } from './LoginDiagnostics';
+import { UpdateStatusButton, UpdateStatusCard } from './UpdateStatus';
 declare global {
   interface Window {
     profiles: Bridge;
@@ -405,6 +406,14 @@ function App() {
             </button>
           </>
         )}
+        {desktopWorkspaceEnabled(state.platform) && (
+          <UpdateStatusButton
+            status={state.update}
+            expanded={menuOpen}
+            disabled={busy}
+            onClick={() => void toggleAccounts()}
+          />
+        )}
         <button
           ref={accountButton}
           className="current-account"
@@ -672,26 +681,14 @@ function App() {
               </button>
             )}
             {desktopWorkspaceEnabled(state.platform) && (
-              <button
-                className="menu-action"
-                role="menuitem"
-                onClick={async () => {
+              <UpdateStatusCard
+                status={state.update}
+                currentVersion={state.version}
+                onCheck={async () => {
                   await closeAccounts();
                   await send({ type: 'update:check' });
                 }}
-              >
-                <Icon name="refresh" size={15} />
-                {state.update?.phase === 'checking'
-                  ? '正在检查更新…'
-                  : state.update?.phase === 'downloading'
-                    ? `后台更新 ${state.update.progress || 0}%`
-                    : state.update?.phase === 'ready' && state.update.installMode === 'manual'
-                      ? `ZIP ${state.update.version} 可保存`
-                      : state.update?.phase === 'ready'
-                        ? `更新 ${state.update.version} 已准备`
-                        : '检查更新'}
-                <span>{state.version}</span>
-              </button>
+              />
             )}
             {state.platform === 'darwin' && state.update?.phase === 'ready' && (
               <button

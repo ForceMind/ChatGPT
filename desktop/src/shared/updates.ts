@@ -10,6 +10,7 @@ export type UpdateStatus = {
   phase: 'idle' | 'checking' | 'available' | 'downloading' | 'ready' | 'error';
   version?: string;
   progress?: number;
+  stage?: 'download' | 'verify' | 'prepare';
   idleEnabled?: boolean;
   idleDeadline?: number;
   message?: string;

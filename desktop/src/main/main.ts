@@ -1993,7 +1993,7 @@ async function offerUpdate(manual = false): Promise<void> {
         message: `${state.version} 已下载并校验`,
         detail:
           process.platform === 'darwin'
-            ? '可以立即保存并重启，或下次退出时安装。勾选空闲安装后，仅在本 App 处于后台且 30 分钟无操作、所有标签确认无生成和文件任务时，提前 60 秒提示；回到应用或取消会延后。其他软件的操作不影响计时。'
+            ? '可以保存草稿和工作区后立即重启，或下次退出时安装。请先完成生成与文件任务；未完成任务不会自动重发。勾选空闲安装后，仅在本 App 处于后台且 30 分钟无操作、所有标签确认无生成和文件任务时，提前 60 秒提示；回到应用或取消会延后。其他软件的操作不影响计时。'
             : '将先保存工作区，再退出并运行更新安装程序。也可等下次真正退出应用时安装。',
         ...(process.platform === 'darwin'
           ? {
@@ -2066,7 +2066,13 @@ async function checkUpdates(manual = false): Promise<void> {
     return;
   }
   if (manual && updates.status.phase === 'downloading') {
-    notice(`更新正在后台下载 ${updates.status.progress || 0}%`);
+    notice(
+      updates.status.stage === 'prepare'
+        ? '更新包已校验，正在准备安装'
+        : updates.status.stage === 'verify'
+          ? '下载已完成，正在校验更新包'
+          : `更新正在后台下载 ${updates.status.progress || 0}%`
+    );
     return;
   }
   await updates.check();

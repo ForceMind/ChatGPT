@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { shellWindow } from './helpers/shell';
 import packageInfo from '../package.json' with { type: 'json' };
 const desktop = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
-for (const mode of ['quit', 'idle'] as const)
+for (const mode of ['quit', 'idle', 'manual'] as const)
   test('confirmed update installs safely via ' + mode, async ({}, info) => {
     test.skip(process.platform !== 'darwin');
     const root = mkdtempSync(path.join(realpathSync(os.tmpdir()), 'profiles-updater-e2e-'));
@@ -17,8 +17,16 @@ for (const mode of ['quit', 'idle'] as const)
     const gate = new Promise<void>((r) => {
       release = r;
     });
+    let nextChunk!: () => void, finishDownload!: () => void;
+    const chunkGate = new Promise<void>((resolve) => {
+      nextChunk = resolve;
+    });
+    const finishGate = new Promise<void>((resolve) => {
+      finishDownload = resolve;
+    });
     let archiveRequests = 0,
-      versionRequests = 0;
+      versionRequests = 0,
+      archiveBytesSent = 0;
     try {
       const current = path.join(root, 'Installed.app'),
         newDir = path.join(root, 'new');
@@ -55,6 +63,38 @@ for (const mode of ['quit', 'idle'] as const)
             }
           }
         };
+      const preparationHook = path.join(root, 'hold-preparation.cjs');
+      // Hold only a real successful extraction callback. Download bytes, digest,
+      // bundle checks and UI status remain real; preserve execFile's promisify shape.
+      if (mode === 'manual')
+        writeFileSync(
+          preparationHook,
+          `
+        const childProcess = require('node:child_process');
+        const { promisify } = require('node:util');
+        const original = childProcess.execFile;
+        let release;
+        const held = new Promise(resolve => { release = resolve; });
+        const gate = { entered: false, release };
+        require('electron').app.__profilesUpdatePreparation = gate;
+        function gated(...args) {
+          const callback = args.at(-1);
+          if (typeof callback !== 'function') return Reflect.apply(original, childProcess, args);
+          const extracting = args[0] === '/usr/bin/ditto' && args[1]?.[0] === '-x';
+          args[args.length - 1] = (...result) => {
+            if (extracting && !result[0]) {
+              gate.entered = true;
+              held.then(() => callback(...result));
+            } else callback(...result);
+          };
+          return Reflect.apply(original, childProcess, args);
+        }
+        gated[promisify.custom] = (...args) => new Promise((resolve, reject) => {
+          gated(...args, (error, stdout, stderr) => error ? reject(error) : resolve({ stdout, stderr }));
+        });
+        childProcess.execFile = gated;
+      `
+        );
       server = createServer(async (req, res) => {
         if (req.url === '/version.json') {
           versionRequests++;
@@ -67,6 +107,22 @@ for (const mode of ['quit', 'idle'] as const)
         if (req.url === '/archive.zip') {
           archiveRequests++;
           res.writeHead(200, { 'Content-Length': bytes.length });
+          if (mode === 'manual') {
+            const first = Math.floor(bytes.length / 3),
+              second = Math.floor((bytes.length * 2) / 3);
+            res.write(bytes.subarray(0, first));
+            archiveBytesSent = first;
+            await chunkGate;
+            if (res.destroyed) return;
+            res.write(bytes.subarray(first, second));
+            archiveBytesSent = second;
+            await finishGate;
+            if (res.destroyed) return;
+            archiveBytesSent = bytes.length;
+            res.end(bytes.subarray(second));
+            return;
+          }
+          archiveBytesSent = bytes.length;
           res.end(bytes);
           return;
         }
@@ -81,7 +137,7 @@ for (const mode of ['quit', 'idle'] as const)
       const origin = 'http://127.0.0.1:' + address.port,
         data = path.join(root, 'data');
       app = await electron.launch({
-        args: [desktop],
+        args: mode === 'manual' ? ['-r', preparationHook, desktop] : [desktop],
         env: {
           ...process.env,
           PROFILES_E2E: '1',
@@ -92,15 +148,27 @@ for (const mode of ['quit', 'idle'] as const)
         }
       });
       const shell = await shellWindow(app);
-      await app.evaluate(({ app, dialog }, idle) => {
-        const host = app as any;
-        host.testUpdateResponse = 0;
-        host.testUpdateDialogs = [];
-        dialog.showMessageBox = (async (_window: any, options: any) => {
-          host.testUpdateDialogs.push(options);
-          return { response: options.title === '更新已准备' ? 0 : host.testUpdateResponse, checkboxChecked: idle };
-        }) as typeof dialog.showMessageBox;
-      }, mode === 'idle');
+      await app.evaluate(
+        ({ app, dialog }, { idle, manual }) => {
+          const host = app as any;
+          host.testUpdateResponse = 0;
+          host.testUpdateDialogs = [];
+          host.testUpdateReadyResponse = 0;
+          dialog.showMessageBox = (async (_window: any, options: any) => {
+            host.testUpdateDialogs.push(options);
+            if (manual && options.title === '更新已准备' && host.testUpdateReadyResponse === 1) {
+              await new Promise<void>((resolve) => {
+                host.testConfirmUpdateInstallation = resolve;
+              });
+            }
+            return {
+              response: options.title === '更新已准备' ? host.testUpdateReadyResponse : host.testUpdateResponse,
+              checkboxChecked: idle
+            };
+          }) as typeof dialog.showMessageBox;
+        },
+        { idle: mode === 'idle', manual: mode === 'manual' }
+      );
       release();
       await expect.poll(() => app!.evaluate(({ app }) => (app as any).testUpdateDialogs.length)).toBe(1);
       expect(archiveRequests).toBe(0);
@@ -127,6 +195,100 @@ for (const mode of ['quit', 'idle'] as const)
         (app as any).testUpdateResponse = 1;
       });
       await shell.evaluate(() => window.profiles.command({ type: 'update:check' }));
+      if (mode === 'manual') {
+        const header = shell.getByRole('button', { name: '查看应用更新', exact: true });
+        await expect(header).toBeVisible();
+        await expect
+          .poll(async () => {
+            const status = (await shell.evaluate(() => window.profiles.snapshot())).update;
+            if (status?.phase === 'error') throw Error(status.message);
+            return status?.progress || 0;
+          })
+          .toBeGreaterThan(0);
+        await header.click();
+        const card = shell.getByRole('group', { name: '应用更新', exact: true });
+        const progress = card.getByRole('progressbar', { name: '更新下载进度' });
+        await expect(card).toHaveAttribute('data-update-phase', 'downloading');
+        await expect(card).toHaveAttribute('data-update-stage', 'download');
+        await expect(progress).toHaveAttribute('max', '100');
+        await expect
+          .poll(() => progress.evaluate((element) => (element as HTMLProgressElement).value))
+          .toBe(Math.floor((archiveBytesSent * 100) / bytes.length));
+        const firstProgress = await progress.evaluate((element) => (element as HTMLProgressElement).value);
+        expect(firstProgress).toBeGreaterThan(0);
+        expect(firstProgress).toBeLessThan(100);
+        expect(firstProgress).toBe(Math.floor((archiveBytesSent * 100) / bytes.length));
+        await expect(shell.locator('.drag-space')).toBeVisible();
+        expect(
+          await shell
+            .locator('.drag-space')
+            .evaluate((element) => getComputedStyle(element).getPropertyValue('-webkit-app-region'))
+        ).toBe('drag');
+        expect((await shell.locator('.drag-space').boundingBox())!.width).toBeGreaterThan(20);
+        const originalSize = await app.evaluate(({ BrowserWindow }) =>
+          BrowserWindow.getAllWindows()
+            .find((window) => window.webContents.getURL() === 'app://shell/index.html')!
+            .getContentSize()
+        );
+        await app.evaluate(({ BrowserWindow }) =>
+          BrowserWindow.getAllWindows()
+            .find((window) => window.webContents.getURL() === 'app://shell/index.html')!
+            .setContentSize(900, 800)
+        );
+        await expect.poll(() => shell.evaluate(() => innerWidth)).toBe(900);
+        await expect(header).toBeVisible();
+        expect(
+          await shell.locator('.titlebar').evaluate((element) => element.scrollWidth <= element.clientWidth + 1)
+        ).toBe(true);
+        expect((await shell.locator('.drag-space').boundingBox())!.width).toBeGreaterThan(0);
+        await app.evaluate(
+          ({ BrowserWindow }, size) =>
+            BrowserWindow.getAllWindows()
+              .find((window) => window.webContents.getURL() === 'app://shell/index.html')!
+              .setContentSize(size[0], size[1]),
+          originalSize
+        );
+        await expect.poll(() => shell.evaluate(() => innerWidth)).toBe(originalSize[0]);
+        await shell.screenshot({ path: info.outputPath('macos-update-real-download-progress.png') });
+        nextChunk();
+        await expect
+          .poll(() => progress.evaluate((element) => (element as HTMLProgressElement).value))
+          .toBeGreaterThan(firstProgress);
+        await expect
+          .poll(() => progress.evaluate((element) => (element as HTMLProgressElement).value))
+          .toBe(Math.floor((archiveBytesSent * 100) / bytes.length));
+        const secondProgress = await progress.evaluate((element) => (element as HTMLProgressElement).value);
+        expect(secondProgress).toBeLessThan(100);
+        expect(secondProgress).toBe(Math.floor((archiveBytesSent * 100) / bytes.length));
+        finishDownload();
+        await expect
+          .poll(async () => {
+            const status = (await shell.evaluate(() => window.profiles.snapshot())).update;
+            if (status?.phase === 'error') throw Error(status.message);
+            return app!.evaluate(({ app }) => (app as any).__profilesUpdatePreparation.entered);
+          })
+          .toBe(true);
+        await expect(card).toHaveAttribute('data-update-stage', 'prepare');
+        await expect(card).toHaveAttribute('data-update-phase', 'downloading');
+        await expect(progress).toHaveAttribute('value', '100');
+        await expect(card).toContainText('正在准备安装');
+        expect(archiveBytesSent).toBe(bytes.length);
+        expect((await shell.evaluate(() => window.profiles.snapshot())).update?.phase).not.toBe('ready');
+        await expect(card.getByRole('menuitem', { name: /立即安装并重启/ })).toHaveCount(0);
+        await info.attach('real-download-progress.json', {
+          contentType: 'application/json',
+          body: JSON.stringify({
+            bytes: bytes.length,
+            firstProgress,
+            secondProgress,
+            completedProgress: 100,
+            phaseWhilePreparationHeld: 'downloading',
+            extractionActuallyCompleted: true
+          })
+        });
+        await app.evaluate(({ app }) => (app as any).__profilesUpdatePreparation.release());
+        await header.click();
+      }
       await expect
         .poll(async () => {
           const status = (await shell.evaluate(() => window.profiles.snapshot())).update;
@@ -146,7 +308,21 @@ for (const mode of ['quit', 'idle'] as const)
       await expect(shell.getByRole('menuitem', { name: /更新 .* 已准备/ })).toBeVisible();
       await shell.screenshot({ path: info.outputPath('macos-update-ready.png') });
       const closed = app.waitForEvent('close');
-      if (mode === 'quit') {
+      if (mode === 'manual') {
+        await app.evaluate(({ app }) => {
+          (app as any).testUpdateReadyResponse = 1;
+        });
+        await shell.getByRole('menuitem', { name: /更新 .* 已准备.*立即安装并重启/ }).click();
+        await expect
+          .poll(() => app!.evaluate(({ app }) => typeof (app as any).testConfirmUpdateInstallation))
+          .toBe('function');
+        const prompt = await app.evaluate(({ app }) => (app as any).testUpdateDialogs.at(-1));
+        expect(prompt.title).toBe('更新已准备');
+        expect(prompt.buttons).toContain('保存并立即重启安装');
+        await app.evaluate(({ app }) => {
+          (app as any).testConfirmUpdateInstallation();
+        });
+      } else if (mode === 'quit') {
         await app.evaluate(({ app }) => app.quit());
       } else {
         await shell.locator('.current-account').click();
@@ -258,6 +434,9 @@ for (const mode of ['quit', 'idle'] as const)
       }
     } finally {
       release();
+      nextChunk();
+      finishDownload();
+      await app?.evaluate(({ app }) => (app as any).__profilesUpdatePreparation?.release()).catch(() => {});
       await app?.close().catch(() => {});
       if (server) {
         server.closeAllConnections();
@@ -266,3 +445,98 @@ for (const mode of ['quit', 'idle'] as const)
       rmSync(root, { recursive: true, force: true });
     }
   });
+
+test('manual update checks expose real failures, retry and distinguish a newer installed candidate from the public version', async ({}, info) => {
+  test.skip(process.platform !== 'darwin');
+  const root = mkdtempSync(path.join(realpathSync(os.tmpdir()), 'profiles-update-check-e2e-'));
+  let app: ElectronApplication | undefined, server: Server | undefined;
+  let versionRequests = 0,
+    archiveRequests = 0;
+  const publicVersion = '3.0.0-alpha.22';
+  const manifest = {
+    schema: 1,
+    version: publicVersion,
+    publishedAt: new Date().toISOString(),
+    notes: 'Owned local manifest only',
+    files: {
+      arm64: {
+        url: `https://github.com/ForceMind/ChatGPT/releases/download/v${publicVersion}/ChatGPT-Profiles-${publicVersion}-mac-arm64.zip`,
+        size: 1,
+        sha256: '0'.repeat(64)
+      }
+    }
+  };
+  try {
+    server = createServer((request, response) => {
+      if (request.url === '/version.json') {
+        versionRequests++;
+        response.writeHead(versionRequests === 1 ? 503 : 200, { 'Content-Type': 'application/json' });
+        response.end(
+          versionRequests === 1 ? JSON.stringify({ error: 'synthetic unavailable' }) : JSON.stringify(manifest)
+        );
+        return;
+      }
+      if (request.url === '/archive.zip') {
+        archiveRequests++;
+        response.writeHead(500);
+        response.end();
+        return;
+      }
+      response.writeHead(200, { 'Content-Type': 'text/html;charset=utf-8' });
+      response.end(
+        '<!doctype html><meta charset="utf-8"><title>Manual check fixture</title><article data-message-id="one">Synthetic local page</article><textarea id="prompt-textarea">Unsent</textarea>'
+      );
+    });
+    await new Promise<void>((resolve) => server!.listen(0, '127.0.0.1', resolve));
+    const address = server.address();
+    if (!address || typeof address === 'string') throw Error('No owned update fixture origin');
+    app = await electron.launch({
+      args: [desktop],
+      env: {
+        ...process.env,
+        PROFILES_E2E: '1',
+        PROFILES_TEST_DATA: path.join(root, 'data'),
+        PROFILES_FIXTURE_ORIGIN: 'http://127.0.0.1:' + address.port,
+        PROFILES_UPDATES_FIXTURE: '1'
+      }
+    });
+    const shell = await shellWindow(app);
+    const status = async () => (await shell.evaluate(() => window.profiles.snapshot())).update;
+    await expect.poll(async () => (await status())?.phase).toBe('error');
+    const failure = await status();
+    expect(failure?.message).toContain('503');
+    await shell.getByRole('button', { name: '查看应用更新', exact: true }).click();
+    const card = shell.getByRole('group', { name: '应用更新', exact: true });
+    await expect(card).toHaveAttribute('data-update-phase', 'error');
+    await expect(card).toContainText(failure!.message!);
+    await expect(card.getByRole('menuitem', { name: '检查更新', exact: true })).toBeEnabled();
+    const beforeRetry = versionRequests;
+    await card.getByRole('menuitem', { name: '检查更新', exact: true }).click();
+    await expect.poll(() => versionRequests).toBeGreaterThan(beforeRetry);
+    await expect.poll(async () => (await status())?.phase).toBe('idle');
+    expect((await status())?.version).toBe(publicVersion);
+    expect((await status())?.message).toBe('当前版本较新，官网最新公开版本为 ' + publicVersion);
+    await shell.getByRole('button', { name: '切换账号', exact: true }).click();
+    await expect(card).toHaveAttribute('data-update-phase', 'idle');
+    await expect(card).toContainText('当前版本 ' + packageInfo.version);
+    await expect(card).toContainText('官网公开版本 ' + publicVersion);
+    await expect(card).toContainText('当前版本较新');
+    await expect(card.getByRole('menuitem', { name: '检查更新', exact: true })).toBeEnabled();
+    const beforeIdleCheck = versionRequests;
+    await card.getByRole('menuitem', { name: '检查更新', exact: true }).click();
+    await expect.poll(() => versionRequests).toBeGreaterThan(beforeIdleCheck);
+    await expect.poll(async () => (await status())?.phase).toBe('idle');
+    expect(archiveRequests).toBe(0);
+    await info.attach('manual-check-retry.json', {
+      contentType: 'application/json',
+      body: JSON.stringify({ firstFailure: failure, final: await status(), versionRequests, archiveRequests })
+    });
+  } finally {
+    await app?.close().catch(() => {});
+    if (server) {
+      server.closeAllConnections();
+      await new Promise<void>((resolve) => server!.close(() => resolve()));
+    }
+    rmSync(root, { recursive: true, force: true });
+  }
+});

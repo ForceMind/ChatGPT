@@ -1,0 +1,152 @@
+.update-status-button {
+  flex: 0 1 156px;
+  min-width: 96px;
+  max-width: 156px;
+  height: 38px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 2px 9px;
+  border: 1px solid #c9c9c9;
+  border-radius: 7px;
+  background: #fff;
+  color: #202020;
+  text-align: left;
+  font-size: var(--studio-type-small);
+  line-height: 1.2;
+}
+.update-status-button-label {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.update-download {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.update-progress {
+  display: block;
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  height: 8px;
+  margin: 0;
+  overflow: hidden;
+  appearance: none;
+  -webkit-appearance: none;
+  border: 1px solid #7a7a7a;
+  border-radius: 8px;
+  background: #ededed;
+  accent-color: #202020;
+}
+.update-progress::-webkit-progress-bar {
+  background: #ededed;
+  border-radius: 8px;
+}
+.update-progress::-webkit-progress-value {
+  background: #202020;
+  border-radius: 8px;
+}
+.update-progress::-moz-progress-bar {
+  background: #202020;
+  border-radius: 8px;
+}
+.update-percent {
+  flex-shrink: 0;
+  color: #454545;
+  font-size: var(--studio-type-small);
+  font-variant-numeric: tabular-nums;
+}
+.update-status-button .update-download {
+  width: 100%;
+  gap: 5px;
+  margin-top: 1px;
+}
+.update-status-button .update-progress {
+  height: 4px;
+}
+.update-status-button .update-percent {
+  font-size: var(--studio-type-meta);
+  line-height: 1;
+}
+.update-status-card {
+  min-width: 0;
+  margin: 8px 2px;
+  padding: 12px;
+  border: 1px solid #d4d4d4;
+  border-radius: 8px;
+  background: #fafafa;
+  color: #202020;
+  overflow-wrap: anywhere;
+}
+.update-status-card-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 8px;
+}
+.update-status-card-heading strong {
+  font-size: var(--studio-type-body);
+  font-weight: 600;
+}
+.update-status-card-heading > span {
+  color: #454545;
+  font-size: var(--studio-type-meta);
+}
+.update-status-card p {
+  margin: 8px 0;
+  font-size: var(--studio-type-small);
+  line-height: 1.5;
+}
+.update-status-phase {
+  font-weight: 600;
+}
+.update-status-version,
+.update-status-message {
+  color: #454545;
+}
+.update-status-card .update-download {
+  margin: 10px 0;
+}
+.update-status-card .update-status-action {
+  margin-top: 10px;
+  padding: 9px 10px;
+  border: 1px solid #bdbdbd;
+  background: #fff;
+  color: #202020;
+  flex-wrap: nowrap;
+}
+.update-status-card .update-status-action > span {
+  min-width: 0;
+  margin: 0;
+  color: inherit;
+  font-size: var(--studio-type-small);
+}
+.update-status-action-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.update-status-action-state {
+  font-size: var(--studio-type-meta);
+}
+.update-status-card .update-status-action.is-ready {
+  border-color: #202020;
+  background: #202020;
+  color: #fff;
+}
+.update-status-card .update-status-action.is-ready:hover:not(:disabled) {
+  background: #393939;
+}
+@media (max-width: 1000px) {
+  .update-status-button {
+    flex-basis: 124px;
+    max-width: 124px;
+    padding-inline: 7px;
+  }
+}

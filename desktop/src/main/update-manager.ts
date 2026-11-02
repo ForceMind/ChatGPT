@@ -161,7 +161,13 @@ export class UpdateManager {
           return data;
         }
         this.manifest = undefined;
-        this.set({ phase: 'idle', message: '已是当前公开版本' });
+        this.set({
+          phase: 'idle',
+          version: data.version,
+          message: newerVersion(this.current, data.version)
+            ? `当前版本较新，官网最新公开版本为 ${data.version}`
+            : '已是最新公开版本'
+        });
       } catch (error) {
         this.set({ phase: 'error', message: error instanceof Error ? error.message : '暂时无法连接更新服务' });
       }
@@ -194,7 +200,13 @@ export class UpdateManager {
     this.controller = new AbortController();
     const timer = setTimeout(() => this.controller?.abort(), 30 * 60 * 1000);
     timer.unref();
-    this.set({ phase: 'downloading', version: manifest.version, progress: 0, message: '后台下载中，可继续使用' });
+    this.set({
+      phase: 'downloading',
+      version: manifest.version,
+      stage: 'download',
+      progress: 0,
+      message: '正在连接下载源，可继续使用'
+    });
     let zip: string | undefined, staged: StagedUpdate | undefined;
     try {
       zip = await downloadUpdate(
@@ -207,11 +219,19 @@ export class UpdateManager {
             phase: 'downloading',
             version: manifest.version,
             progress: p,
+            stage: p === 100 ? 'verify' : 'download',
             message: p === 100 ? '正在校验并准备更新' : '后台下载中，可继续使用'
           }),
         this.controller.signal
       );
       if (!this.bundle) throw Error('更新包已校验。开发模式不替换 App；请在已安装客户端中使用自动更新');
+      this.set({
+        phase: 'downloading',
+        version: manifest.version,
+        stage: 'prepare',
+        progress: 100,
+        message: '更新包已校验，正在准备安装'
+      });
       staged = await stageUpdate(
         zip,
         file,
