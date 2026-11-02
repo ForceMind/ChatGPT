@@ -11,9 +11,21 @@ if (
   baseline.sourceSha !== '7ad0219f169be84293abbc9ba669b51743ba574c' ||
   baseline.scriptSha256 !== candidate.scriptSha256 ||
   JSON.stringify(baseline.host) !== JSON.stringify(candidate.host) ||
-  baseline.versions.electron !== candidate.versions.electron
+  baseline.versions.electron !== candidate.versions.electron ||
+  baseline.fixture.connectionProtocol !== 'websocket' ||
+  candidate.fixture.connectionProtocol !== 'websocket' ||
+  baseline.fixture.connectionPeriodMs !== 500 ||
+  candidate.fixture.connectionPeriodMs !== 500
 )
-  throw Error('Baseline SHA, observer script, runner or Electron version differ');
+  throw Error(
+    'Baseline SHA, observer script, runner, Electron or fixed WebSocket workload differ; old SSE evidence is not comparable'
+  );
+if (
+  candidate.retention.uniqueConnections !== 8 ||
+  candidate.retention.connectionCloses !== 0 ||
+  candidate.retention.connectionErrors !== 0
+)
+  throw Error('Candidate retention requires eight unique WebSocket connections and zero closes/errors');
 const comparisons = [];
 for (const name of ['idle-1', 'idle-4', 'idle-8', 'streaming-8']) {
   const before = baseline.phases.find((phase) => phase.name === name);
@@ -68,6 +80,12 @@ const summary = {
   candidateSHA: candidate.sourceSha,
   host: candidate.host,
   observerSHA256: candidate.scriptSha256,
+  connectionWorkload: {
+    protocol: 'websocket',
+    periodMs: 500,
+    connectionsPerTab: 1,
+    previousProtocol: 'HTTP/1.1 SSE; incomplete earlier reports are excluded from this comparison.'
+  },
   comparisons,
   quietValidation: { passed: quietPassed, phases: quietValidation },
   observationOverhead: {
@@ -96,6 +114,7 @@ const markdown = [
   ...rows,
   '',
   `Candidate hidden retention: ${candidate.retention.hiddenMs} ms; identity/draft/connection/counters/zero-send passed.`,
+  'Both versions use one independent WebSocket per tab with fixed 500ms server pushes; candidate retention has eight unique connections and zero closes/errors. Earlier incomplete SSE evidence is excluded.',
   `Counter observer enabled minus disabled CPU mean: ${summary.observationOverhead.enabledMinusDisabledMeanCPUPercentagePoints.toFixed(3)} pp (sequential control; not a causal estimate).`,
   `Direct idle-8 observer self-time: ${instrumented.observer.selfTimePercentOfWall.toFixed(5)}% of wall time.`,
   `Candidate idle-1/4/8 zero-repeat gate: ${quietPassed ? 'passed' : 'FAILED'}; pageState/readConversation/capturePage/recoveryWrite/recoveryFsync must each be zero after the separately recorded fixed 5-second warmup.`,

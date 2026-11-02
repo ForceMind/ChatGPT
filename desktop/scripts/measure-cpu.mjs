@@ -32,6 +32,10 @@ function fixturePage() {
     events: 0,
     connections: 0,
     connection: '',
+    connectionOpen: false,
+    connectionCloses: 0,
+    connectionErrors: 0,
+    connectionIdentityChanges: 0,
     sent: 0,
     tokens: 0,
     ready: false
@@ -51,9 +55,21 @@ function fixturePage() {
   messages(32);
   document.querySelector('textarea').value += ' ' + state.instance;
   setInterval(() => state.beats++, 1000);
-  new window.EventSource('/events').onmessage = (event) => {
+  const socket = new window.WebSocket('ws://' + window.location.host + '/events');
+  socket.onopen = () => {
+    state.connections++;
+    state.connectionOpen = true;
+  };
+  socket.onclose = () => {
+    state.connectionCloses++;
+    state.connectionOpen = false;
+  };
+  socket.onerror = () => state.connectionErrors++;
+  // Deliberately no send() or reconnect loop: every page keeps one independent
+  // synthetic server-push connection for the entire measurement launch.
+  socket.onmessage = (event) => {
     const value = JSON.parse(event.data);
-    if (state.connection !== value.connection) state.connections++;
+    if (state.connection && state.connection !== value.connection) state.connectionIdentityChanges++;
     state.connection = value.connection;
     state.events++;
   };
@@ -77,14 +93,12 @@ function fixturePage() {
   state.ready = true;
 }
 let connection = 0;
+const upgradedSockets = new Set();
+const connectionAudit = [];
 const server = createServer((request, response) => {
   if (request.url === '/events') {
-    const id = ++connection;
-    response.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-store' });
-    const tick = () => response.write('data: ' + JSON.stringify({ connection: id }) + '\n\n');
-    tick();
-    const timer = setInterval(tick, 500);
-    request.on('close', () => clearInterval(timer));
+    response.writeHead(426, { Upgrade: 'websocket' });
+    response.end();
     return;
   }
   response.writeHead(200, { 'Content-Type': 'text/html;charset=utf-8', 'Cache-Control': 'no-store' });
@@ -96,6 +110,85 @@ const server = createServer((request, response) => {
       fixturePage.toString() +
       ')()</script>'
   );
+});
+// RFC 6455 sections 4.2.2 and 5: minimal server for this owned fixture only.
+// Outgoing text/control payloads are bounded to 125 bytes; client application
+// data is unsupported. No package dependency or Chromium connection-limit flag.
+const websocketFrame = (opcode, payload) => {
+  if (payload.length > 125) throw Error('Synthetic WebSocket frame exceeds its fixed small-payload contract');
+  return Buffer.concat([Buffer.from([0x80 | opcode, payload.length]), payload]);
+};
+server.on('upgrade', (request, socket, head) => {
+  const origin = 'http://127.0.0.1:' + server.address().port;
+  const key = request.headers['sec-websocket-key'];
+  if (
+    request.url !== '/events' ||
+    request.method !== 'GET' ||
+    request.headers.origin !== origin ||
+    request.headers.upgrade?.toLowerCase() !== 'websocket' ||
+    request.headers['sec-websocket-version'] !== '13' ||
+    typeof key !== 'string' ||
+    !/^[A-Za-z0-9+/]{22}==$/.test(key)
+  ) {
+    socket.destroy();
+    return;
+  }
+  const accept = createHash('sha1')
+    .update(key + '258EAFA5-E914-47DA-95CA-C5AB0DC85B11')
+    .digest('base64');
+  socket.write(
+    'HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ' +
+      accept +
+      '\r\n\r\n'
+  );
+  socket.setNoDelay(true);
+  upgradedSockets.add(socket);
+  const audit = { id: ++connection, openedAt: Date.now(), frames: 0, closed: false, errors: 0 };
+  connectionAudit.push(audit);
+  let pending = Buffer.alloc(0);
+  const consume = (bytes) => {
+    pending = Buffer.concat([pending, bytes]);
+    if (pending.length > 1024) return socket.destroy();
+    while (pending.length >= 2) {
+      const opcode = pending[0] & 0x0f;
+      const length = pending[1] & 0x7f;
+      // Browsers mask all client frames. Only final close/ping/pong controls
+      // are valid for this receive-only fixture, including split TCP chunks.
+      if (
+        (pending[0] & 0xf0) !== 0x80 ||
+        !(pending[1] & 0x80) ||
+        length > 125 ||
+        ![8, 9, 10].includes(opcode) ||
+        (opcode === 8 && length === 1)
+      )
+        return socket.destroy();
+      if (pending.length < length + 6) return;
+      const payload = Buffer.from(pending.subarray(6, length + 6));
+      for (let i = 0; i < payload.length; i++) payload[i] ^= pending[2 + (i % 4)];
+      pending = pending.subarray(length + 6);
+      if (opcode === 8) {
+        socket.end(websocketFrame(8, payload));
+        return;
+      }
+      if (opcode === 9) socket.write(websocketFrame(10, payload));
+    }
+  };
+  const tick = () => {
+    if (socket.destroyed || socket.writableEnded) return;
+    socket.write(websocketFrame(1, Buffer.from(JSON.stringify({ connection: audit.id }))));
+    audit.frames++;
+  };
+  const timer = setInterval(tick, 500);
+  socket.on('data', consume);
+  socket.on('error', () => audit.errors++);
+  socket.on('close', () => {
+    audit.closed = true;
+    audit.closedAt = Date.now();
+    upgradedSockets.delete(socket);
+    clearInterval(timer);
+  });
+  if (head.length) consume(head);
+  tick();
 });
 await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
 const config = {
@@ -201,7 +294,8 @@ function startupHook(config) {
       guardedSessions.add(contents.session);
       contents.session.webRequest.onBeforeRequest((details, callback) => {
         const local = details.url.startsWith(config.origin + '/') || details.url === config.origin;
-        callback({ cancel: !local && !/^(app|file|data|blob|devtools):/.test(details.url) });
+        const ownedSocket = details.url === config.origin.replace(/^http:/, 'ws:') + '/events';
+        callback({ cancel: !local && !ownedSocket && !/^(app|file|data|blob|devtools):/.test(details.url) });
       });
     }
     for (const method of ['executeJavaScript', 'executeJavaScriptInIsolatedWorld', 'capturePage']) {
@@ -228,6 +322,10 @@ function startupHook(config) {
     argv: process.argv,
     fixture: {
       origin: config.origin,
+      connectionProtocol: 'websocket',
+      connectionPeriodMs: 500,
+      connectionPolicy: 'One independent receive-only connection per tab; no reconnect and no application send.',
+      previousProtocol: 'HTTP/1.1 SSE; old incomplete SSE evidence is not comparable to this workload.',
       idleMessages: 32,
       streamingMessages: 240,
       tokensPerTab: 1040,
@@ -301,22 +399,43 @@ function startupHook(config) {
       const verify = (pages, expected) => {
         if (
           pages.length !== expected ||
-          pages.some((page) => !page.state.ready || page.throttled || page.state.discarded || page.state.sent !== 0)
+          new Set(pages.map((page) => page.state.connection)).size !== expected ||
+          pages.some(
+            (page) =>
+              !page.state.ready ||
+              page.throttled ||
+              page.state.discarded ||
+              page.state.sent !== 0 ||
+              !page.state.connection ||
+              !page.state.connectionOpen ||
+              page.state.connections !== 1 ||
+              page.state.connectionCloses !== 0 ||
+              page.state.connectionErrors !== 0 ||
+              page.state.connectionIdentityChanges !== 0
+          )
         )
-          throw Error('Native fixture lost a tab, was throttled/discarded, or sent unexpectedly');
+          throw Error(
+            'Native fixture lost a tab or unique open connection, was throttled/discarded, reconnected/closed/errored, or sent unexpectedly'
+          );
       };
       const ready = async (expected) => {
+        let lastPages;
+        let lastError;
         for (let i = 0; i < 200; i++) {
           try {
             const pages = await read();
+            lastPages = pages;
             if (pages.length === expected && pages.every((page) => page.state.ready && page.state.connection)) {
               verify(pages, expected);
               return;
             }
-          } catch {}
+          } catch (error) {
+            lastError = String(error);
+          }
           await sleep(100);
         }
-        throw Error('Local fixture did not initialize all tabs');
+        report.fixtureReadinessFailure = { expected, lastPages, lastError };
+        throw Error('Local fixture did not initialize all tabs and independent WebSocket connections');
       };
       const phase = async (name, durationMs, expected, onLate) => {
         const pagesBefore = await read();
@@ -459,6 +578,11 @@ function startupHook(config) {
         });
         report.retention = {
           hiddenMs: background.elapsedMs,
+          connectionProtocol: 'websocket',
+          connectionPeriodMs: 500,
+          uniqueConnections: new Set(restored.map((page) => page.state.connection)).size,
+          connectionCloses: restored.reduce((sum, page) => sum + page.state.connectionCloses, 0),
+          connectionErrors: restored.reduce((sum, page) => sum + page.state.connectionErrors, 0),
           restored,
           stable,
           passed: stable && background.elapsedMs >= 1800000
@@ -513,6 +637,21 @@ try {
 } finally {
   clearTimeout(timer);
   if (child && child.exitCode === null && child.signalCode === null) child.kill('SIGKILL');
+  writeFileSync(
+    path.join(out, 'fixture-connections.json'),
+    JSON.stringify(
+      {
+        protocol: 'websocket',
+        periodMs: 500,
+        connections: connectionAudit,
+        note: 'Closed timestamps after app teardown are expected; zero-close/error retention assertions use page state before teardown.'
+      },
+      null,
+      2
+    )
+  );
+  // closeAllConnections() does not include upgraded sockets (Node HTTP docs).
+  for (const socket of upgradedSockets) socket.destroy();
   server.closeAllConnections();
   await new Promise((resolve) => server.close(resolve));
   // Only this launch's freshly-created synthetic directory is removed.

@@ -69,6 +69,7 @@ jobs:
       BASELINE_COMMIT: 7ad0219f169be84293abbc9ba669b51743ba574c
     defaults:
       run:
+        shell: bash
         working-directory: desktop
     steps:
       - uses: actions/checkout@v4

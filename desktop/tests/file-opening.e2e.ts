@@ -112,7 +112,23 @@ test('asset files open with isolated interactive HTML, explicit network mode, me
     expect(network).toHaveLength(0);
     await expect(shell.locator('#wb-modal-root')).toContainText('引用了联网资源');
     expect(await shell.locator('#wb-viewer iframe').getAttribute('credentialless')).not.toBeNull();
+    await app!.evaluate(({ app, BrowserWindow }) => {
+      app.focus({ steal: true });
+      const window = BrowserWindow.getAllWindows().find((w) => w.webContents.getURL() === 'app://shell/index.html')!;
+      window.focus();
+      window.webContents.focus();
+    });
+    await expect
+      .poll(() =>
+        app!.evaluate(({ BrowserWindow }) =>
+          BrowserWindow.getAllWindows()
+            .find((w) => w.webContents.getURL() === 'app://shell/index.html')!
+            .isFocused()
+        )
+      )
+      .toBe(true);
     await frame.locator('#counter').focus();
+    await expect.poll(() => frame.locator('body').evaluate(() => document.hasFocus())).toBe(true);
     await frame.locator('#counter').click();
     await expect(frame.locator('#counter')).toHaveText('计数 1');
     expect(
