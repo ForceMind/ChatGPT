@@ -38,6 +38,9 @@ function fixturePage() {
     connectionIdentityChanges: 0,
     sent: 0,
     tokens: 0,
+    streamStarted: null,
+    streamFinished: null,
+    streamDurationMs: null,
     ready: false
   });
   let stream;
@@ -78,16 +81,29 @@ function fixturePage() {
     state.sent++;
   });
   // Exactly 1040 deterministic DOM updates per tab, over 130 seconds. A delayed
-  // renderer must finish this work; it cannot pass by skipping missing tokens.
+  // renderer catches up from the monotonic clock, performing every real append.
+  // A callback does at most 16 appends; slow work still fails the fixed window.
   window.fixtureStartStream = () => {
     messages(240);
     const main = document.querySelector('main');
     main.scrollTop = main.scrollHeight;
     state.tokens = 0;
+    state.streamStarted = window.performance.now();
+    state.streamFinished = null;
+    state.streamDurationMs = null;
     stream = setInterval(() => {
-      document.querySelector('main').lastElementChild.append(' token-' + state.tokens);
-      main.scrollTop = main.scrollHeight;
-      if (++state.tokens === 1040) clearInterval(stream);
+      const due = Math.min(1040, Math.floor((window.performance.now() - state.streamStarted) / 125));
+      const end = Math.min(due, state.tokens + 16);
+      while (state.tokens < end) {
+        main.lastElementChild.append(' token-' + state.tokens);
+        main.scrollTop = main.scrollHeight;
+        state.tokens++;
+      }
+      if (state.tokens === 1040) {
+        state.streamFinished = window.performance.now();
+        state.streamDurationMs = state.streamFinished - state.streamStarted;
+        clearInterval(stream);
+      }
     }, 125);
   };
   state.ready = true;
@@ -330,6 +346,11 @@ function startupHook(config) {
       streamingMessages: 240,
       tokensPerTab: 1040,
       tokenPeriodMs: 125,
+      streamTargetDurationMs: 130000,
+      streamMaximumCatchUpPerCallback: 16,
+      streamScheduler: 'Monotonic desired count; every due token is appended and scrolled individually, never skipped.',
+      previousStreamScheduler:
+        'Callback-count interval; incomplete older streaming reports are excluded by script hash.',
       readingMode:
         'Streaming follows the tail after every token; this is not a manual reading-position performance test.',
       warmupMs: 5000,
@@ -385,15 +406,27 @@ function startupHook(config) {
       report.isolatedTestData = true;
       const views = () =>
         win.contentView.children.filter((view) => view.webContents.getURL().startsWith(config.origin));
+      // Only stage/setup boundaries call this. Validate real tail DOM content
+      // independently of the generator's counter and progress timestamps.
+      function readFixtureBoundary() {
+        const main = document.querySelector('main');
+        const tail = main.lastElementChild?.textContent || '';
+        return {
+          ...window.fixture,
+          draft: document.querySelector('textarea').value,
+          discarded: document.wasDiscarded,
+          visibility: document.visibilityState,
+          tailGap: main.scrollHeight - main.clientHeight - main.scrollTop,
+          tailTokens: [...tail.matchAll(/ token-(\d+)/g)].map((match) => Number(match[1]))
+        };
+      }
       const read = () =>
         Promise.all(
           views().map(async (view) => ({
             id: view.webContents.id,
             pid: view.webContents.getOSProcessId(),
             throttled: view.webContents.getBackgroundThrottling(),
-            state: await view.webContents.executeJavaScript(
-              '({...window.fixture,draft:document.querySelector("textarea").value,discarded:document.wasDiscarded,visibility:document.visibilityState,tailGap:document.querySelector("main").scrollHeight-document.querySelector("main").clientHeight-document.querySelector("main").scrollTop})'
-            )
+            state: await view.webContents.executeJavaScript('(' + readFixtureBoundary.toString() + ')()')
           }))
         );
       const verify = (pages, expected) => {
@@ -546,8 +579,23 @@ function startupHook(config) {
       }
       for (const view of views()) await view.webContents.executeJavaScript('window.fixtureStartStream()');
       const streaming = await phase('streaming-8', config.windowMs + 15000, 8);
-      if (streaming.after.some((page) => page.state.tokens !== 1040 || Math.abs(page.state.tailGap) > 2))
-        throw Error('Fixed streaming workload did not complete at the visible tail');
+      if (
+        streaming.after.some(
+          ({ state }) =>
+            state.tokens !== 1040 ||
+            Math.abs(state.tailGap) > 2 ||
+            state.tailTokens.length !== 1040 ||
+            state.tailTokens.some((token, index) => token !== index) ||
+            !Number.isFinite(state.streamStarted) ||
+            !Number.isFinite(state.streamFinished) ||
+            !Number.isFinite(state.streamDurationMs) ||
+            state.streamDurationMs < 130000 ||
+            state.streamDurationMs > config.windowMs + 15000
+        )
+      )
+        throw Error(
+          'Fixed streaming workload did not complete all 1040 ordered DOM tokens at the visible tail within 135 seconds'
+        );
       if (config.backgroundMs) {
         // Boundary reads only. The single late read checks the last 30 seconds,
         // rather than inferring connection activity from a 30-minute total.
@@ -631,9 +679,32 @@ try {
     child.once('exit', resolve);
   });
   writeFileSync(path.join(out, 'electron.log'), log.join(''));
-  if (code !== 0 || !existsSync(path.join(out, 'report.json'))) throw Error('Native CPU measurement failed: ' + out);
-  const report = JSON.parse(readFileSync(path.join(out, 'report.json'), 'utf8'));
-  if (!report.passed) throw Error('CPU validation did not pass: ' + out);
+  const reportFile = path.join(out, 'report.json');
+  let report;
+  if (existsSync(reportFile)) {
+    try {
+      report = JSON.parse(readFileSync(reportFile, 'utf8'));
+    } catch (error) {
+      console.error('Could not read native report:', String(error));
+    }
+  }
+  if (code !== 0 || !report?.passed) {
+    if (report?.error?.message) console.error('Native report error:', report.error.message);
+    if (report?.error?.stack) console.error(report.error.stack);
+    throw Error(
+      'Native CPU measurement failed (exit ' +
+        code +
+        ', signal ' +
+        (child.signalCode || 'none') +
+        '): ' +
+        out +
+        (report?.error?.message
+          ? '\n' + report.error.message
+          : report
+            ? '\nReport passed flag: ' + report.passed
+            : '\nNo readable report.json')
+    );
+  }
 } finally {
   clearTimeout(timer);
   if (child && child.exitCode === null && child.signalCode === null) child.kill('SIGKILL');
