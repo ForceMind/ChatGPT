@@ -429,7 +429,7 @@ test('real streamed download exposes transfer and verification stages without cl
   );
   try {
     await manager.check();
-    await manager.download();
+    await assert.rejects(manager.download(), /开发模式不替换/);
     assert(
       seen.some((s) => s.phase === 'downloading' && s.stage === 'download' && s.progress! > 0 && s.progress! < 100)
     );
