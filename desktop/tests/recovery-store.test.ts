@@ -5,8 +5,14 @@ import { mkdtempSync, readFileSync, writeFileSync, existsSync, rmSync, symlinkSy
 import os from 'node:os';
 import path from 'node:path';
 import { RecoveryStore, RecentlyClosedPages, resumeURL, type RecoveryCipher } from '../src/main/recovery-store';
-import { validResume, validWorkspace, type PageResume } from '../src/shared/recovery';
-import { RecoveryCheckpoints } from '../src/main/recovery-checkpoint';
+import { validResume, validWorkspace, type PageResume, type PageSnapshot } from '../src/shared/recovery';
+import {
+  RecoveryCheckpoints,
+  commitRecoveryCheckpoint,
+  type PreparedRecoveryCheckpoint
+} from '../src/main/recovery-checkpoint';
+import { collectCheckpoint } from '../src/main/page-checkpoint';
+import type { WebContents } from 'electron';
 function cipher(): RecoveryCipher {
   const key = randomBytes(32);
   return {
@@ -396,3 +402,526 @@ for (const settlement of ['resolve', 'reject'] as const) {
     assert.equal(available(), false);
   });
 }
+
+function preparedCheckpoint(canMerge = true, withPrevious = true) {
+  const source = record();
+  const previous: PageSnapshot = {
+    url: source.url,
+    title: 'Owned checkpoint fixture',
+    messages: [{ role: 'assistant', text: 'Already persisted synthetic reply' }],
+    image: 'data:image/jpeg;base64,YQ==',
+    truncated: false,
+    capturedAt: source.capturedAt
+  };
+  if (withPrevious) source.page = previous;
+  const next: PageSnapshot = {
+    ...previous,
+    messages: [{ role: 'assistant', text: 'New synthetic viewport reply' }],
+    image: 'data:image/jpeg;base64,Yg==',
+    capturedAt: previous.capturedAt + 1
+  };
+  const original = structuredClone(source),
+    originalNext = structuredClone(next);
+  for (const page of [previous, next]) {
+    page.messages.forEach(Object.freeze);
+    Object.freeze(page.messages);
+    Object.freeze(page);
+  }
+  Object.freeze(source);
+  const snapshotGate = deferred(),
+    snapshotStarted = deferred(),
+    saveStarted = deferred(),
+    resumeAcknowledged = deferred();
+  const attempted: PageResume[] = [],
+    persisted: PageResume[] = [],
+    promoted: PageSnapshot[] = [];
+  const events: string[] = [];
+  const state = { available: true, resumeAcks: 0, imageAcks: 0, now: 0 };
+  const hooks: { save?: (value: PageResume, index: number) => Promise<void> } = {};
+  const captured: PreparedRecoveryCheckpoint = {
+    record: source,
+    canMerge: () => canMerge,
+    acknowledge: () => {
+      state.resumeAcks++;
+      events.push('resume-ack');
+      resumeAcknowledged.resolve();
+    },
+    snapshot: async () => {
+      events.push('snapshot');
+      snapshotStarted.resolve();
+      await snapshotGate.promise;
+      return {
+        page: next,
+        acknowledge: () => {
+          state.imageAcks++;
+          events.push('image-ack');
+        }
+      };
+    }
+  };
+  const options = {
+    now: () => state.now,
+    available: () => state.available,
+    save: async (value: PageResume) => {
+      const index = attempted.push(value) - 1;
+      events.push('save:' + index);
+      saveStarted.resolve();
+      await hooks.save?.(value, index);
+      persisted.push(value);
+      events.push('stored:' + index);
+    },
+    promote: (page: PageSnapshot) => {
+      promoted.push(page);
+      events.push('promote');
+    }
+  };
+  const assertUnchanged = () => {
+    assert.deepEqual(source, original);
+    assert.deepEqual(next, originalNext);
+  };
+  return {
+    source,
+    previous,
+    next,
+    captured,
+    options,
+    state,
+    hooks,
+    attempted,
+    persisted,
+    promoted,
+    events,
+    snapshotGate,
+    snapshotStarted,
+    saveStarted,
+    resumeAcknowledged,
+    assertUnchanged
+  };
+}
+
+const checkpointTurn = () => new Promise<void>((resolve) => setImmediate(resolve));
+
+test('mergeable snapshot ready at 199ms makes one write and acknowledges only after that write', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const fixture = preparedCheckpoint();
+  const saveGate = deferred();
+  fixture.hooks.save = () => saveGate.promise;
+  const operation = commitRecoveryCheckpoint(fixture.captured, fixture.options);
+  await fixture.snapshotStarted.promise;
+  fixture.state.now = 199;
+  t.mock.timers.tick(199);
+  assert.equal(fixture.attempted.length, 0);
+  assert.equal(fixture.state.resumeAcks, 0);
+  fixture.snapshotGate.resolve();
+  await fixture.saveStarted.promise;
+  assert.equal(fixture.attempted.length, 1);
+  assert.equal(fixture.attempted[0].page, fixture.next);
+  assert.equal(fixture.state.resumeAcks, 0);
+  assert.equal(fixture.state.imageAcks, 0);
+  assert.deepEqual(fixture.promoted, []);
+  saveGate.resolve();
+  await operation;
+  t.mock.timers.tick(1);
+  assert.equal(fixture.persisted.length, 1);
+  assert.equal(fixture.state.resumeAcks, 1);
+  assert.equal(fixture.state.imageAcks, 1);
+  assert.deepEqual(fixture.promoted, [fixture.next]);
+  assert.deepEqual(fixture.events, ['snapshot', 'save:0', 'stored:0', 'resume-ack', 'promote', 'image-ack']);
+  fixture.assertUnchanged();
+});
+
+test('snapshot still pending at 200ms writes the reading state with the old image before one late image write', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const fixture = preparedCheckpoint();
+  let settled = false;
+  const operation = commitRecoveryCheckpoint(fixture.captured, fixture.options).then(() => {
+    settled = true;
+  });
+  await fixture.snapshotStarted.promise;
+  t.mock.timers.tick(199);
+  assert.equal(fixture.attempted.length, 0);
+  t.mock.timers.tick(1);
+  await fixture.resumeAcknowledged.promise;
+  assert.equal(settled, false);
+  assert.deepEqual(fixture.persisted, [fixture.source]);
+  assert.equal(fixture.persisted[0].page, fixture.previous);
+  assert.equal(fixture.state.resumeAcks, 1);
+  assert.equal(fixture.state.imageAcks, 0);
+  fixture.snapshotGate.resolve();
+  await operation;
+  assert.equal(fixture.persisted.length, 2);
+  assert.equal(fixture.persisted[1].page, fixture.next);
+  assert.equal(fixture.state.resumeAcks, 1);
+  assert.equal(fixture.state.imageAcks, 1);
+  assert.deepEqual(fixture.events, [
+    'snapshot',
+    'save:0',
+    'stored:0',
+    'resume-ack',
+    'save:1',
+    'stored:1',
+    'promote',
+    'image-ack'
+  ]);
+  fixture.assertUnchanged();
+});
+
+for (const reason of ['critical draft or strict checkpoint', 'initial record'] as const) {
+  test(`${reason} is persisted and acknowledged before starting any image work`, async () => {
+    const fixture = preparedCheckpoint(false, reason !== 'initial record');
+    const saveGate = deferred();
+    fixture.hooks.save = async (_value, index) => {
+      if (index === 0) await saveGate.promise;
+    };
+    const operation = commitRecoveryCheckpoint(fixture.captured, fixture.options);
+    await fixture.saveStarted.promise;
+    assert.deepEqual(fixture.events, ['save:0']);
+    assert.equal(fixture.state.resumeAcks, 0);
+    assert.equal(fixture.attempted[0].page, reason === 'initial record' ? undefined : fixture.previous);
+    saveGate.resolve();
+    await fixture.snapshotStarted.promise;
+    assert.deepEqual(fixture.persisted, [fixture.source]);
+    assert.equal(fixture.state.resumeAcks, 1);
+    assert.deepEqual(fixture.events, ['save:0', 'stored:0', 'resume-ack', 'snapshot']);
+    fixture.snapshotGate.resolve();
+    await operation;
+    assert.equal(fixture.persisted.length, 2);
+    assert.equal(fixture.persisted[1].page, fixture.next);
+    assert.equal(fixture.state.imageAcks, 1);
+    fixture.assertUnchanged();
+  });
+}
+
+for (const canMerge of [true, false]) {
+  test(`rejected image capture preserves the current encrypted record and old image (merge=${canMerge})`, async () => {
+    const fixture = preparedCheckpoint(canMerge);
+    const operation = commitRecoveryCheckpoint(fixture.captured, fixture.options);
+    await fixture.snapshotStarted.promise;
+    fixture.snapshotGate.reject(Error('synthetic capture rejection'));
+    await operation;
+    assert.deepEqual(fixture.persisted, [fixture.source]);
+    assert.equal(fixture.persisted[0].page, fixture.previous);
+    assert.equal(fixture.state.resumeAcks, 1);
+    assert.equal(fixture.state.imageAcks, 0);
+    assert.deepEqual(fixture.promoted, []);
+    fixture.assertUnchanged();
+  });
+}
+
+for (const canMerge of [true, false]) {
+  test(`failed first save propagates without acknowledging or promoting (merge=${canMerge})`, async () => {
+    const fixture = preparedCheckpoint(canMerge);
+    const failure = Error('synthetic encrypted save failure');
+    fixture.hooks.save = async () => {
+      throw failure;
+    };
+    const rejected = assert.rejects(
+      commitRecoveryCheckpoint(fixture.captured, fixture.options),
+      (error) => error === failure
+    );
+    if (canMerge) {
+      await fixture.snapshotStarted.promise;
+      fixture.snapshotGate.resolve();
+    }
+    await rejected;
+    assert.equal(fixture.attempted.length, 1);
+    assert.deepEqual(fixture.persisted, []);
+    assert.equal(fixture.state.resumeAcks, 0);
+    assert.equal(fixture.state.imageAcks, 0);
+    assert.deepEqual(fixture.promoted, []);
+    assert.equal(fixture.events.includes('snapshot'), canMerge);
+    fixture.assertUnchanged();
+  });
+}
+
+test('a failed budget write retains the queue slot until the original image settles, then propagates the save error', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const fixture = preparedCheckpoint();
+  const queue = new RecoveryCheckpoints();
+  const failure = Error('synthetic budget save failure');
+  fixture.hooks.save = async () => {
+    throw failure;
+  };
+  let settled = false,
+    replacements = 0;
+  const operation = queue.run('fixture-page', false, () => commitRecoveryCheckpoint(fixture.captured, fixture.options));
+  void operation.then(
+    () => {
+      settled = true;
+    },
+    () => {
+      settled = true;
+    }
+  );
+  const rejected = assert.rejects(operation, (error) => error === failure);
+  await fixture.snapshotStarted.promise;
+  t.mock.timers.tick(200);
+  await checkpointTurn();
+  assert.equal(fixture.attempted.length, 1);
+  assert.equal(settled, false);
+  const follower = queue.run('fixture-page', true, async () => {
+    replacements++;
+  });
+  const followerRejected = assert.rejects(follower, (error) => error === failure);
+  await checkpointTurn();
+  assert.equal(replacements, 0);
+  fixture.snapshotGate.resolve();
+  await Promise.all([rejected, followerRejected]);
+  assert.deepEqual(fixture.persisted, []);
+  assert.equal(fixture.state.resumeAcks, 0);
+  assert.equal(fixture.state.imageAcks, 0);
+  assert.deepEqual(fixture.promoted, []);
+  await queue.run('fixture-page', false, async () => {
+    replacements++;
+  });
+  assert.equal(replacements, 1);
+  fixture.assertUnchanged();
+});
+
+test('a failed late image save preserves the already durable draft acknowledgement but never promotes the image', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const fixture = preparedCheckpoint();
+  const failure = Error('synthetic late save failure');
+  fixture.hooks.save = async (_value, index) => {
+    if (index === 1) throw failure;
+  };
+  const operation = commitRecoveryCheckpoint(fixture.captured, fixture.options);
+  const rejected = assert.rejects(operation, (error) => error === failure);
+  await fixture.snapshotStarted.promise;
+  t.mock.timers.tick(200);
+  await fixture.resumeAcknowledged.promise;
+  fixture.snapshotGate.resolve();
+  await rejected;
+  assert.equal(fixture.attempted.length, 2);
+  assert.deepEqual(fixture.persisted, [fixture.source]);
+  assert.equal(fixture.state.resumeAcks, 1);
+  assert.equal(fixture.state.imageAcks, 0);
+  assert.deepEqual(fixture.promoted, []);
+  fixture.assertUnchanged();
+});
+
+test('an invalid checkpoint never starts capture or persistence', async () => {
+  const fixture = preparedCheckpoint();
+  fixture.state.available = false;
+  await commitRecoveryCheckpoint(fixture.captured, fixture.options);
+  assert.deepEqual(fixture.events, []);
+});
+
+for (const timing of ['before ready image', 'at budget', 'after budget save'] as const) {
+  test(`availability lost ${timing} prevents late writes and confirmations`, async (t) => {
+    t.mock.timers.enable({ apis: ['setTimeout'] });
+    const fixture = preparedCheckpoint();
+    let settled = false;
+    const operation = commitRecoveryCheckpoint(fixture.captured, fixture.options).then(() => {
+      settled = true;
+    });
+    await fixture.snapshotStarted.promise;
+    if (timing === 'after budget save') {
+      t.mock.timers.tick(200);
+      await fixture.resumeAcknowledged.promise;
+    } else t.mock.timers.tick(199);
+    fixture.state.available = false;
+    if (timing === 'at budget') {
+      t.mock.timers.tick(1);
+      await checkpointTurn();
+      assert.equal(settled, false);
+    }
+    const existingWrites = timing === 'after budget save' ? 1 : 0;
+    fixture.snapshotGate.resolve();
+    await operation;
+    assert.equal(fixture.attempted.length, existingWrites);
+    assert.equal(fixture.state.resumeAcks, existingWrites);
+    assert.equal(fixture.state.imageAcks, 0);
+    assert.deepEqual(fixture.promoted, []);
+    fixture.assertUnchanged();
+  });
+}
+
+for (const canMerge of [true, false]) {
+  test(`availability lost during encryption prevents late acknowledgements (merge=${canMerge})`, async () => {
+    const fixture = preparedCheckpoint(canMerge);
+    const saveGate = deferred();
+    fixture.hooks.save = () => saveGate.promise;
+    const operation = commitRecoveryCheckpoint(fixture.captured, fixture.options);
+    if (canMerge) {
+      await fixture.snapshotStarted.promise;
+      fixture.snapshotGate.resolve();
+    }
+    await fixture.saveStarted.promise;
+    fixture.state.available = false;
+    saveGate.resolve();
+    await operation;
+    assert.equal(fixture.attempted.length, 1);
+    assert.equal(fixture.state.resumeAcks, 0);
+    assert.equal(fixture.state.imageAcks, 0);
+    assert.deepEqual(fixture.promoted, []);
+    assert.equal(fixture.events.includes('snapshot'), canMerge);
+    fixture.assertUnchanged();
+  });
+}
+
+for (const elapsed of [200, 250]) {
+  test(`ready snapshot after ${elapsed}ms cannot bypass the monotonic budget when its timer has not fired`, async (t) => {
+    t.mock.timers.enable({ apis: ['setTimeout'] });
+    const fixture = preparedCheckpoint();
+    const operation = commitRecoveryCheckpoint(fixture.captured, fixture.options);
+    await fixture.snapshotStarted.promise;
+    // Model a blocked main thread: monotonic time advances, but the budget
+    // timer's callback has not had an event-loop turn to run.
+    fixture.state.now = elapsed;
+    fixture.snapshotGate.resolve();
+    await operation;
+    assert.equal(fixture.persisted.length, 2);
+    assert.equal(fixture.persisted[0].page, fixture.previous);
+    assert.equal(fixture.persisted[1].page, fixture.next);
+    assert.equal(fixture.state.resumeAcks, 1);
+    assert.equal(fixture.state.imageAcks, 1);
+    t.mock.timers.tick(200);
+    assert.equal(fixture.persisted.length, 2);
+    fixture.assertUnchanged();
+  });
+}
+
+test('checkpoint classification merges only acknowledged viewport changes from the same known document and owner', async () => {
+  const origin = 'http://127.0.0.1:18080';
+  const identity = record();
+  let url = origin + '/c/checkpoint-fixture';
+  const observed = { document: 'owned-document-1', draft: 1, viewport: 1, conversation: 1, known: true };
+  const reading = { draft: 'Already saved synthetic draft', scroll: 0, ratio: 0 };
+  const previous: PageSnapshot = {
+    url,
+    title: 'Owned snapshot',
+    messages: [{ role: 'assistant', text: 'Owned answer' }],
+    image: 'data:image/jpeg;base64,YQ==',
+    truncated: false,
+    capturedAt: Date.now()
+  };
+  const contents = {
+    isDestroyed: () => false,
+    isCrashed: () => false,
+    isLoadingMainFrame: () => false,
+    getURL: () => url,
+    executeJavaScriptInIsolatedWorld: async (world: number) => {
+      assert.equal(world, 1017);
+      return { ...observed };
+    },
+    executeJavaScript: async (code: string) => {
+      if (/\bfunction\s+pageState\s*\(/.test(code)) return { ...reading };
+      assert.match(code, /\bfunction\s+readConversation\s*\(/);
+      return { title: previous.title, messages: previous.messages, truncated: false };
+    },
+    capturePage: async () => {
+      throw Error('Synthetic unavailable viewport; keep the old image');
+    }
+  } as unknown as WebContents;
+  const collect = (strict = false, alternative?: string, profileId = identity.profileId, tabId = identity.tabId) =>
+    collectCheckpoint(contents, profileId, tabId, previous, strict, () => true, origin, alternative);
+  const first = (await collect())!;
+  assert.equal(first.canMerge(), false);
+  // A capture attempt makes the 30s snapshot boundary ineligible. A quiet
+  // alternative-draft change below must therefore trigger collection itself.
+  assert.equal(await first.snapshot(), undefined);
+  observed.viewport++;
+  assert.equal((await collect())!.canMerge(), false);
+  first.acknowledge();
+  const viewport = (await collect())!;
+  assert.equal(viewport.canMerge(), true);
+  viewport.acknowledge();
+  assert.equal(await collect(), undefined);
+
+  reading.draft = 'Programmatically changed synthetic draft';
+  observed.draft++;
+  observed.viewport++;
+  const draft = (await collect())!;
+  assert.equal(draft.canMerge(), false);
+  draft.acknowledge();
+  assert.equal(await collect(), undefined);
+  const alternative = (await collect(false, 'Owned conflicting draft'))!;
+  assert.equal(alternative.record.alternativeDraft, 'Owned conflicting draft');
+  assert.equal(alternative.canMerge(), false);
+  alternative.acknowledge();
+  assert.equal(await collect(false, 'Owned conflicting draft'), undefined);
+  observed.viewport++;
+  assert.equal((await collect(false, 'Owned conflicting draft'))!.canMerge(), true);
+  assert.equal((await collect(true, 'Owned conflicting draft'))!.canMerge(), false);
+  assert.equal((await collect(false, 'Owned conflicting draft', randomUUID()))!.canMerge(), false);
+  assert.equal((await collect(false, 'Owned conflicting draft', identity.profileId, randomUUID()))!.canMerge(), false);
+  assert.equal((await collect())!.canMerge(), false, 'removing a conflicting draft is also critical');
+  observed.known = false;
+  assert.equal((await collect(false, 'Owned conflicting draft'))!.canMerge(), false);
+  observed.known = true;
+  observed.document = 'owned-document-2';
+  assert.equal((await collect(false, 'Owned conflicting draft'))!.canMerge(), false);
+  assert.equal(viewport.canMerge(), false, 'an old document cannot retain merge permission');
+  url = origin + '/c/another-owned-conversation';
+  assert.equal((await collect(false, 'Owned conflicting draft'))!.canMerge(), false);
+});
+
+test('schema-1 encrypted records created before checkpoint coalescing remain readable without new metadata', async () => {
+  const root = mkdtempSync(path.join(os.tmpdir(), 'recovery-legacy-checkpoint-'));
+  try {
+    const crypto = cipher(),
+      store = new RecoveryStore(root, crypto),
+      legacy = record();
+    legacy.alternativeDraft = 'Synthetic older conflicting draft';
+    legacy.page = {
+      url: legacy.url,
+      title: 'Old owned snapshot',
+      messages: [{ role: 'assistant', text: 'Old owned text' }],
+      image: 'data:image/jpeg;base64,YQ==',
+      truncated: false,
+      capturedAt: legacy.capturedAt
+    };
+    assert.equal(await store.load(legacy.profileId, legacy.tabId, legacy.url), undefined);
+    const file = path.join(store.directory, legacy.profileId, legacy.tabId + '.bin');
+    writeFileSync(file, await crypto.encrypt(JSON.stringify(legacy)));
+    assert.deepEqual(await store.load(legacy.profileId, legacy.tabId, legacy.url), legacy);
+    assert.equal(readFileSync(file).includes(Buffer.from(legacy.draft)), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('availability lost during real recovery encryption preserves old ciphertext and permits an identical later retry', async () => {
+  const root = mkdtempSync(path.join(os.tmpdir(), 'recovery-checkpoint-cancel-'));
+  try {
+    const crypto = cipher(),
+      started = deferred(),
+      gate = deferred();
+    let available = true,
+      delay = false,
+      encryptions = 0;
+    const store = new RecoveryStore(root, {
+      ...crypto,
+      encrypt: async (value) => {
+        encryptions++;
+        if (delay) {
+          started.resolve();
+          await gate.promise;
+        }
+        return crypto.encrypt(value);
+      }
+    });
+    const previous = record();
+    await store.save(previous);
+    const file = path.join(store.directory, previous.profileId, previous.tabId + '.bin');
+    const before = readFileSync(file);
+    const next = { ...previous, draft: 'Cancelled synthetic draft', capturedAt: previous.capturedAt + 1 };
+    delay = true;
+    const pending = store.save(next, () => available);
+    await started.promise;
+    available = false;
+    gate.resolve();
+    await pending;
+    assert.deepEqual(readFileSync(file), before);
+    assert.equal(existsSync(file + '.bak'), false);
+    assert.deepEqual(await store.load(previous.profileId, previous.tabId, previous.url), previous);
+    available = true;
+    await store.save(next, () => available);
+    assert.equal(encryptions, 3);
+    assert.deepEqual(await store.load(next.profileId, next.tabId, next.url), next);
+    assert.deepEqual(readFileSync(file + '.bak'), before);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});

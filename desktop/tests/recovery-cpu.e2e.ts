@@ -247,3 +247,195 @@ test('DOM, scrolling and owned image loads refresh eligible snapshots while tab 
     expect(await visible('window.sent')).toBe(0);
   });
 });
+
+type CommitProbe = {
+  baselineImage?: string;
+  hold: boolean;
+  release?: () => void;
+  events: string[];
+  writes: { draft: string; scroll: number; schema: number; sameImage: boolean }[];
+  captures: { started: number; finished?: number; returned?: number }[];
+};
+type CommitMeasuredContents = MeasuredContents & { __checkpointCommitProbe?: CommitProbe };
+
+test('periodic viewport updates respect the write budget and critical drafts persist before a delayed real image', async ({}, info) => {
+  test.skip(process.platform !== 'darwin');
+  test.setTimeout(120000);
+  await withFixture(async ({ app, shell, firstTab, record, visible, file, meter }) => {
+    await expect
+      .poll(
+        async () => {
+          const state = await meter();
+          return state.inFlight === 0 && state.counts.probes >= 3 && Date.now() - state.lastHeavy >= 5500;
+        },
+        { timeout: 25000 }
+      )
+      .toBe(true);
+    let previous = (await record())!;
+    const instance = await visible('window.instance');
+    await app.evaluate(({ BrowserWindow, safeStorage }, initial) => {
+      const window = BrowserWindow.getAllWindows().find(
+        (entry) => entry.webContents.getURL() === 'app://shell/index.html'
+      )!;
+      const contents = (window.contentView.children as Electron.WebContentsView[]).find(
+        (entry) => !!(entry.webContents as MeasuredContents).__recoveryCpuTest
+      )!.webContents as CommitMeasuredContents;
+      const state: CommitProbe = {
+        baselineImage: initial.page?.image,
+        hold: true,
+        events: [],
+        writes: [],
+        captures: []
+      };
+      contents.__checkpointCommitProbe = state;
+      const capture = contents.capturePage.bind(contents);
+      contents.capturePage = async (...args: Parameters<typeof capture>) => {
+        const sample: CommitProbe['captures'][number] = { started: performance.now() };
+        state.captures.push(sample);
+        state.events.push('capture:start');
+        // Invoke the real native capture and retain that exact NativeImage. Only
+        // its promise's delivery is gated; no image bytes or durations are faked.
+        const image = await capture(...args);
+        sample.finished = performance.now();
+        state.events.push('capture:finished');
+        if (state.hold)
+          await new Promise<void>((resolve) => {
+            state.release = resolve;
+          });
+        sample.returned = performance.now();
+        state.events.push('capture:return');
+        return image;
+      };
+      const encrypt = safeStorage.encryptStringAsync.bind(safeStorage);
+      safeStorage.encryptStringAsync = async (text) => {
+        let value: PageResume | undefined;
+        try {
+          value = JSON.parse(text) as PageResume;
+        } catch {
+          /* Other encrypted stores are outside this probe. */
+        }
+        if (value?.profileId === initial.profileId && value.tabId === initial.tabId) {
+          const index = state.writes.length;
+          state.writes.push({
+            draft: value.draft,
+            scroll: value.scroll,
+            schema: value.schema,
+            sameImage: value.page?.image === state.baselineImage
+          });
+          state.events.push('encrypt:' + index);
+        }
+        return encrypt(text);
+      };
+    }, previous);
+    const probe = () =>
+      app.evaluate(({ BrowserWindow }) => {
+        const window = BrowserWindow.getAllWindows().find(
+          (entry) => entry.webContents.getURL() === 'app://shell/index.html'
+        )!;
+        const state = (window.contentView.children as Electron.WebContentsView[])
+          .map((entry) => (entry.webContents as CommitMeasuredContents).__checkpointCommitProbe)
+          .find((entry) => !!entry)!;
+        return {
+          events: [...state.events],
+          writes: [...state.writes],
+          captures: state.captures.map((entry) => ({ ...entry })),
+          waiting: !!state.release
+        };
+      });
+    const release = () =>
+      app.evaluate(({ BrowserWindow }) => {
+        const window = BrowserWindow.getAllWindows().find(
+          (entry) => entry.webContents.getURL() === 'app://shell/index.html'
+        )!;
+        const state = (window.contentView.children as Electron.WebContentsView[])
+          .map((entry) => (entry.webContents as CommitMeasuredContents).__checkpointCommitProbe)
+          .find((entry) => !!entry)!;
+        state.hold = false;
+        const done = state.release;
+        delete state.release;
+        done?.();
+      });
+    const eligible = async () => {
+      // Wait for the actual snapshot eligibility boundary, without requiring
+      // the native screenshot itself to finish within an invented latency cap.
+      await expect
+        .poll(() => Date.now() - previous.page!.capturedAt, { timeout: 35000, intervals: [250, 500, 1000] })
+        .toBeGreaterThan(31000);
+    };
+    try {
+      await eligible();
+      await visible('document.querySelector("main").scrollTop=240');
+      await expect.poll(async () => (await record())?.scroll, { timeout: 4500 }).toBe(240);
+      await expect.poll(async () => (await probe()).waiting, { timeout: 4500 }).toBe(true);
+      const readingOnly = await probe();
+      expect(readingOnly.captures).toHaveLength(1);
+      expect(readingOnly.writes).toEqual([{ draft: previous.draft, scroll: 240, schema: 1, sameImage: true }]);
+      expect(readingOnly.events.indexOf('capture:start')).toBeLessThan(readingOnly.events.indexOf('encrypt:0'));
+      expect((await record())!.page).toEqual(previous.page);
+      await release();
+      await expect.poll(async () => (await record())?.page?.capturedAt).toBeGreaterThan(previous.page!.capturedAt);
+      const viewport = await probe();
+      expect(viewport.writes).toHaveLength(2);
+      expect(viewport.writes[1]).toEqual({ draft: previous.draft, scroll: 240, schema: 1, sameImage: false });
+      await info.attach('viewport-budget-real-capture', {
+        body: Buffer.from(JSON.stringify(viewport)),
+        contentType: 'application/json'
+      });
+
+      previous = (await record())!;
+      await app.evaluate(({ BrowserWindow }, image) => {
+        const window = BrowserWindow.getAllWindows().find(
+          (entry) => entry.webContents.getURL() === 'app://shell/index.html'
+        )!;
+        const state = (window.contentView.children as Electron.WebContentsView[])
+          .map((entry) => (entry.webContents as CommitMeasuredContents).__checkpointCommitProbe)
+          .find((entry) => !!entry)!;
+        state.baselineImage = image;
+        state.hold = true;
+        state.events = [];
+        state.writes = [];
+        state.captures = [];
+      }, previous.page!.image);
+      await eligible();
+      const draft = 'Second-stage synthetic critical draft — never send';
+      const inputs = await visible('window.inputs');
+      await visible(
+        'document.querySelector("#prompt-textarea").value=' +
+          JSON.stringify(draft) +
+          ';document.querySelector("main").scrollTop=480'
+      );
+      await expect.poll(async () => (await record())?.draft, { timeout: 4500 }).toBe(draft);
+      await expect.poll(async () => (await probe()).waiting, { timeout: 4500 }).toBe(true);
+      const critical = await probe();
+      expect(critical.captures).toHaveLength(1);
+      expect(critical.writes).toEqual([{ draft, scroll: 480, schema: 1, sameImage: true }]);
+      expect(critical.events.indexOf('encrypt:0')).toBeLessThan(critical.events.indexOf('capture:start'));
+      expect((await record())!.page).toEqual(previous.page);
+      expect(readFileSync(file).includes(Buffer.from(draft))).toBe(false);
+      expect(await visible('window.inputs')).toBe(inputs);
+      await release();
+      await expect.poll(async () => (await record())?.page?.capturedAt).toBeGreaterThan(previous.page!.capturedAt);
+      const updated = await probe();
+      expect(updated.writes).toHaveLength(2);
+      expect(updated.writes[1]).toEqual({ draft, scroll: 480, schema: 1, sameImage: false });
+      expect((await record())!.schema).toBe(1);
+      await info.attach('critical-draft-before-real-capture', {
+        body: Buffer.from(JSON.stringify(updated)),
+        contentType: 'application/json'
+      });
+      await shell.evaluate(() => window.profiles.command({ type: 'tab:new' }));
+      await expect
+        .poll(async () => {
+          const other = await visible('window.instance');
+          return typeof other === 'string' && other !== instance;
+        })
+        .toBe(true);
+      await shell.evaluate((id) => window.profiles.command({ type: 'tab:activate', id }), firstTab);
+      await expect.poll(() => visible('window.instance')).toBe(instance);
+      expect(await visible('document.querySelector("#prompt-textarea").value')).toBe(draft);
+      expect(await visible('window.sent')).toBe(0);
+    } finally {
+      await release();
+    }
+  });
+});

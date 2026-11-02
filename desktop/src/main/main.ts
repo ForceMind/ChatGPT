@@ -2,8 +2,8 @@ import { protectRemoteInput } from './remote-input';
 import { RecoveryStore, RecentlyClosedPages, resumeURL } from './recovery-store';
 import { RecoveryAccess, type PresenceKey } from './recovery-access';
 import { captureResume, applyResume, finishResume } from './page-resume';
-import { collectCheckpoint } from './page-checkpoint';
-import { RecoveryCheckpoints } from './recovery-checkpoint';
+import { collectCheckpoint, checkpointDocument } from './page-checkpoint';
+import { RecoveryCheckpoints, commitRecoveryCheckpoint } from './recovery-checkpoint';
 import { UpdateManager } from './update-manager';
 import type { UpdateService } from './update-service';
 import { createWindowsUpdates } from './windows-update-platform';
@@ -367,7 +367,7 @@ function savePanel(): void {
     p.workspace = { ...p.workspace, panel };
   });
 }
-async function checkpointTab(id: string, strict = false): Promise<void> {
+async function checkpointTab(id: string, strict = false, allowMerge = false): Promise<void> {
   const contents = views.get(id)?.webContents;
   if (!contents || contents.isDestroyed()) return;
   try {
@@ -376,7 +376,8 @@ async function checkpointTab(id: string, strict = false): Promise<void> {
       const tab = [...store.read().tabs, ...store.read().closedTabs].find((t) => t.id === id);
       if (!tab || pendingProfiles.has(tab.profileId)) return;
       const target = recovery,
-        url = contents.getURL();
+        url = contents.getURL(),
+        documentEpoch = checkpointDocument(contents);
       const available = () =>
         active() &&
         recovery === target &&
@@ -387,6 +388,9 @@ async function checkpointTab(id: string, strict = false): Promise<void> {
         views.get(id)?.webContents === contents &&
         !contents.isDestroyed() &&
         contents.getURL() === url &&
+        !contents.isCrashed() &&
+        !contents.isLoadingMainFrame() &&
+        checkpointDocument(contents) === documentEpoch &&
         [...store.read().tabs, ...store.read().closedTabs].some((t) => t.id === id && t.profileId === tab.profileId);
       const captured = await collectCheckpoint(
         contents,
@@ -395,29 +399,20 @@ async function checkpointTab(id: string, strict = false): Promise<void> {
         savedPages.get(id),
         forced,
         available,
-        fixtureOrigin
+        fixtureOrigin,
+        localDrafts.get(id)?.draft
       );
       if (!captured || !available()) return;
-      const record = captured.record,
-        alternative = localDrafts.get(id)?.draft;
-      if (alternative && alternative !== record.draft) record.alternativeDraft = alternative;
-      // Save the small recovery state before a potentially slow viewport capture.
-      await target.save(record, available);
-      if (!available()) return;
-      captured.acknowledge();
-      let snapshot: Awaited<ReturnType<typeof captured.snapshot>>;
-      try {
-        snapshot = await captured.snapshot();
-      } catch {
-        // Snapshot failure never erases the already-saved draft or the old image.
-      }
-      if (snapshot && available()) {
-        await target.save({ ...record, page: snapshot.page }, available);
-        if (available()) {
-          savedPages.set(id, snapshot.page);
-          snapshot.acknowledge();
+      await commitRecoveryCheckpoint(
+        { ...captured, canMerge: () => allowMerge && captured.canMerge() },
+        {
+          available,
+          save: (value) => target.save(value, available),
+          promote: (page) => {
+            savedPages.set(id, page);
+          }
         }
-      }
+      );
       if (available()) checkpointErrors.delete(id);
     });
   } catch (error) {
@@ -2497,7 +2492,7 @@ if (single) {
         }
         panel = activeProfile().workspace?.panel;
         checkpointTimer = setInterval(() => {
-          if (!quitPending) void checkpointTab(activeProfile().activeTabId);
+          if (!quitPending) void checkpointTab(activeProfile().activeTabId, false, true);
         }, 2500);
         checkpointTimer.unref();
         try {

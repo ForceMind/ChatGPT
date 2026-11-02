@@ -18,7 +18,13 @@ const option = (name, fallback) => {
 };
 const label = option('--label', 'candidate');
 if (!['baseline', 'candidate'].includes(label)) throw Error('Expected baseline or candidate label');
-const out = path.resolve(option('--output', `test-results/cpu/${label}`));
+const profile = option('--profile', 'full');
+const instrumentation = option('--instrumentation', 'on');
+if (!['full', 'stream-only'].includes(profile) || !['on', 'off'].includes(instrumentation))
+  throw Error('Expected --profile full|stream-only and --instrumentation on|off');
+if ((profile === 'full') !== (instrumentation === 'on'))
+  throw Error('Full regression requires instrumentation on; stream-only control requires off');
+const out = path.resolve(option('--output', `test-results/cpu/${profile}-${label}`));
 if (existsSync(out)) throw Error('Refusing to overwrite existing CPU evidence');
 mkdirSync(out, { recursive: true });
 const root = realpathSync(mkdtempSync(path.join(os.tmpdir(), 'studio-cpu-')));
@@ -83,10 +89,16 @@ function fixturePage() {
   // Exactly 1040 deterministic DOM updates per tab, over 130 seconds. A delayed
   // renderer catches up from the monotonic clock, performing every real append.
   // A callback does at most 16 appends; slow work still fails the fixed window.
-  window.fixtureStartStream = () => {
+  window.fixturePrepareStream = () => {
     messages(240);
     const main = document.querySelector('main');
+    const marker = document.createElement('span');
+    marker.textContent = ' Synthetic visible snapshot-phase preparation';
+    main.lastElementChild.append(marker);
     main.scrollTop = main.scrollHeight;
+  };
+  window.fixtureStartStream = () => {
+    const main = document.querySelector('main');
     state.tokens = 0;
     state.streamStarted = window.performance.now();
     state.streamFinished = null;
@@ -209,13 +221,19 @@ server.on('upgrade', (request, socket, head) => {
 await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
 const config = {
   label,
+  profile,
+  instrumentation,
+  launchStartedAt: Date.now(),
   out,
   sourceSha,
   appRoot: path.resolve(option('--app-root', desktop)),
   dataDir: path.join(root, 'data'),
   origin: 'http://127.0.0.1:' + server.address().port,
   windowMs: 120000,
-  backgroundMs: label === 'candidate' ? 1800000 : 0,
+  backgroundMs: profile === 'full' && label === 'candidate' ? 1800000 : 0,
+  dependenciesSHA256: createHash('sha256')
+    .update(readFileSync(path.join(desktop, 'package-lock.json')))
+    .digest('hex'),
   scriptSha256: createHash('sha256')
     .update(readFileSync(fileURLToPath(import.meta.url)))
     .digest('hex'),
@@ -230,6 +248,12 @@ const config = {
     kernel: os.release()
   }
 };
+if (
+  createHash('sha256')
+    .update(readFileSync(path.join(config.appRoot, 'package-lock.json')))
+    .digest('hex') !== config.dependenciesSHA256
+)
+  throw Error('App dependency lock differs from the shared measurement runtime');
 
 function startupHook(config) {
   const { app, BrowserWindow } = require('electron');
@@ -238,13 +262,45 @@ function startupHook(config) {
   const { syncBuiltinESMExports } = require('node:module');
   const originalWrite = fs.writeFileSync.bind(fs);
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-  let enabled = true;
+  let enabled = config.instrumentation === 'on';
+  const hookOrigin = performance.now();
+  const time = () => performance.now() - hookOrigin;
+  let currentPhase = 'startup';
+  const timeline = [];
+  const probes = new Map();
+  const safeProbe = (value) => {
+    if (
+      !value ||
+      typeof value.document !== 'string' ||
+      value.document.length > 100 ||
+      typeof value.known !== 'boolean' ||
+      !['draft', 'viewport', 'conversation'].every((key) => Number.isSafeInteger(value[key]) && value[key] >= 0)
+    )
+      return undefined;
+    return {
+      document: value.document,
+      draft: value.draft,
+      viewport: value.viewport,
+      conversation: value.conversation,
+      known: value.known
+    };
+  };
+  const captures = new Map();
+  const renames = new Map();
+  const pendingCaptures = new Set();
+  let captureSerial = 0;
+  const emit = (type, fields) => {
+    if (enabled) timeline.push({ atMs: time(), phase: currentPhase, type, ...fields });
+  };
   const counts = {
     pageState: 0,
     readConversation: 0,
     readRecoveryChanges: 0,
     capturePage: 0,
+    captureCompleted: 0,
     recoveryWrite: 0,
+    recoveryWriteCompleted: 0,
+    recoveryRename: 0,
     recoveryFsync: 0,
     recoveryBytes: 0,
     hookCalls: 0,
@@ -253,7 +309,10 @@ function startupHook(config) {
   const classify = (code) => {
     if (typeof code !== 'string') return;
     for (const name of ['pageState', 'readConversation', 'readRecoveryChanges']) {
-      if (new RegExp('\\bfunction\\s+' + name + '\\s*\\(').test(code)) counts[name]++;
+      if (new RegExp('\\bfunction\\s+' + name + '\\s*\\(').test(code)) {
+        if (enabled) counts[name]++;
+        return name;
+      }
     }
   };
   // Only the time spent observing is charged here, never business method time
@@ -269,7 +328,7 @@ function startupHook(config) {
     }
   };
   const recoveryRoot = path.join(config.dataDir, 'recovery') + path.sep;
-  const descriptors = new Set();
+  const descriptors = new Map();
   const isRecovery = (file) =>
     typeof file === 'string' &&
     path.resolve(file).startsWith(recoveryRoot) &&
@@ -278,7 +337,7 @@ function startupHook(config) {
   fs.openSync = function (...args) {
     const fd = Reflect.apply(open, this, args);
     observe(() => {
-      if (isRecovery(args[0])) descriptors.add(fd);
+      if (isRecovery(args[0])) descriptors.set(fd, args[0]);
     });
     return fd;
   };
@@ -299,12 +358,51 @@ function startupHook(config) {
         if (method === 'writeFileSync')
           counts.recoveryBytes += Buffer.isBuffer(args[1]) ? args[1].length : Buffer.byteLength(String(args[1]));
       });
-      return Reflect.apply(original, this, args);
+      const value = Reflect.apply(original, this, args);
+      observe(() => {
+        const file = descriptors.get(args[0]) || args[0];
+        if (!isRecovery(file)) return;
+        if (method === 'writeFileSync') counts.recoveryWriteCompleted++;
+        emit(method === 'writeFileSync' ? 'recovery-write-complete' : 'recovery-fsync-complete', {
+          file: path.relative(recoveryRoot, file),
+          bytes:
+            method === 'writeFileSync'
+              ? Buffer.isBuffer(args[1])
+                ? args[1].length
+                : Buffer.byteLength(String(args[1]))
+              : undefined
+        });
+      });
+      return value;
     };
   }
+  const rename = fs.renameSync;
+  fs.renameSync = function (...args) {
+    const value = Reflect.apply(rename, this, args);
+    if (isRecovery(args[0]) && isRecovery(args[1]) && args[1].endsWith('.bin')) {
+      const event = { atMs: time(), file: path.relative(recoveryRoot, args[1]) };
+      // Constant-size completion sentinels also remain in controls. They are
+      // required to prove preparation/final-save completion, not operation logs.
+      renames.set(path.basename(args[1]), event);
+      observe(() => {
+        counts.recoveryRename++;
+        emit('recovery-rename-complete', event);
+      });
+    }
+    return value;
+  };
   syncBuiltinESMExports();
   const guardedSessions = new Set();
   app.on('web-contents-created', (_event, contents) => {
+    const frameIdentity = () => {
+      try {
+        return { processId: contents.mainFrame.processId, routingId: contents.mainFrame.routingId };
+      } catch {
+        return undefined;
+      }
+    };
+    contents.on('did-frame-navigate', () => emit('frame-navigation', { wc: contents.id, frame: frameIdentity() }));
+    contents.on('dom-ready', () => emit('document-ready', { wc: contents.id, frame: frameIdentity() }));
     // Scope the entire performance launch to localhost and bundled resources.
     if (!guardedSessions.has(contents.session)) {
       guardedSessions.add(contents.session);
@@ -317,20 +415,93 @@ function startupHook(config) {
     for (const method of ['executeJavaScript', 'executeJavaScriptInIsolatedWorld', 'capturePage']) {
       const original = contents[method];
       contents[method] = function (...args) {
+        let name;
         observe(() => {
           if (method === 'capturePage') counts.capturePage++;
-          else if (method === 'executeJavaScript') classify(args[0]);
-          else for (const script of args[1] || []) classify(script.code);
+          else if (method === 'executeJavaScript') name = classify(args[0]);
+          else for (const script of args[1] || []) name = classify(script.code) || name;
         });
-        return Reflect.apply(original, this, args);
+        // Controls retain a single latest safe probe result, but do not count
+        // or log the call. No draft/body values from a script result are read.
+        if (
+          !enabled &&
+          method === 'executeJavaScriptInIsolatedWorld' &&
+          args[0] === 1017 &&
+          (args[1] || []).some((script) => /\bfunction\s+readRecoveryChanges\s*\(/.test(script.code))
+        )
+          name = 'readRecoveryChanges';
+        const capture =
+          method === 'capturePage'
+            ? {
+                id: ++captureSerial,
+                wc: contents.id,
+                frame: frameIdentity(),
+                startedAtMs: time(),
+                probe: probes.get(contents.id)
+              }
+            : undefined;
+        if (capture) {
+          pendingCaptures.add(capture.id);
+          emit('capture-start', capture);
+        }
+        let result;
+        try {
+          result = Reflect.apply(original, this, args);
+        } catch (error) {
+          if (capture) {
+            pendingCaptures.delete(capture.id);
+            captures.set(contents.id, { ...capture, completedAtMs: time(), success: false });
+            emit('capture-failed', { id: capture.id, wc: contents.id });
+          }
+          throw error;
+        }
+        if (!capture && name !== 'readRecoveryChanges') return result;
+        return result.then(
+          (value) => {
+            if (capture) {
+              pendingCaptures.delete(capture.id);
+              const completed = { ...capture, completedAtMs: time(), success: !value.isEmpty() };
+              captures.set(contents.id, completed);
+              observe(() => {
+                if (completed.success) counts.captureCompleted++;
+                emit('capture-complete', completed);
+              });
+            } else if (safeProbe(value)) {
+              const safe = safeProbe(value);
+              const previous = probes.get(contents.id);
+              probes.set(contents.id, safe);
+              observe(() =>
+                emit(previous?.document !== safe.document ? 'probe-document-change' : 'probe-counters', {
+                  wc: contents.id,
+                  frame: frameIdentity(),
+                  ...safe
+                })
+              );
+            }
+            return value;
+          },
+          (error) => {
+            if (capture) {
+              pendingCaptures.delete(capture.id);
+              captures.set(contents.id, { ...capture, completedAtMs: time(), success: false });
+              emit('capture-failed', { id: capture.id, wc: contents.id });
+            }
+            throw error;
+          }
+        );
       };
     }
   });
   const report = {
-    schema: 1,
+    schema: 2,
     sourceSha: config.sourceSha,
     scriptSha256: config.scriptSha256,
+    dependenciesSHA256: config.dependenciesSHA256,
     label: config.label,
+    profile: config.profile,
+    instrumentation: config.instrumentation,
+    launchStartedAt: config.launchStartedAt,
+    fullRegression: config.profile === 'full',
     host: config.host,
     versions: process.versions,
     nativeLaunch: true,
@@ -360,23 +531,38 @@ function startupHook(config) {
     counterScope:
       'Calls/attempts, not completions. Recovery writes/fsync only isolated data/recovery/*.bin and *.bin.UUID.tmp; exclude state/keychain and report files.',
     cpuDefinition:
-      'Electron app.getAppMetrics percentCPUUsage, summed across processes without normalization; raw per-process values retained.',
+      'Electron app.getAppMetrics percentCPUUsage summed across processes. Integrals use Electron percentage-seconds, not core-seconds.',
+    controlObservation:
+      'Off disables operation counters and timeline; CPU/delay sampling and thin completion/probe/egress wrappers remain. Preparation/final-save sentinels retain only latest identifiers, monotonic times and safe document/counters.',
     phases: [],
     passed: false
   };
   let activePhase;
   const persist = () => {
     if (activePhase) {
-      activePhase.operations = Object.fromEntries(
-        Object.keys(counts).map((key) => [key, counts[key] - activePhase.counterBefore[key]])
-      );
+      activePhase.operations = activePhase.countsEnabled
+        ? Object.fromEntries(Object.keys(counts).map((key) => [key, counts[key] - activePhase.counterBefore[key]]))
+        : null;
       originalWrite(path.join(config.out, activePhase.name + '.json'), JSON.stringify(activePhase, null, 2));
       report.incompletePhase = activePhase.name;
     }
+    if (config.instrumentation === 'on')
+      originalWrite(
+        path.join(config.out, 'timeline.json'),
+        JSON.stringify(
+          {
+            clock: 'Milliseconds since startup hook; shared with phase startedAtMs/endedAtMs and alignment sentinels.',
+            events: timeline
+          },
+          null,
+          2
+        )
+      );
     originalWrite(path.join(config.out, 'report.json'), JSON.stringify(report, null, 2));
   };
   persist();
-  const diff = (before) => Object.fromEntries(Object.keys(counts).map((key) => [key, counts[key] - before[key]]));
+  const difference = (after, before) =>
+    enabled ? Object.fromEntries(Object.keys(counts).map((key) => [key, after[key] - before[key]])) : null;
   const stats = (values) => {
     const sorted = [...values].sort((a, b) => a - b);
     return {
@@ -470,15 +656,26 @@ function startupHook(config) {
         report.fixtureReadinessFailure = { expected, lastPages, lastError };
         throw Error('Local fixture did not initialize all tabs and independent WebSocket connections');
       };
-      const phase = async (name, durationMs, expected, onLate) => {
+      const phase = async (name, durationMs, expected, options = {}) => {
         const pagesBefore = await read();
         verify(pagesBefore, expected);
         app.getAppMetrics();
         const before = { ...counts };
         const start = performance.now();
+        const startedAtMs = time();
+        currentPhase = name;
         const samples = [];
         const delay = [];
-        activePhase = { name, expected, durationMs, before: pagesBefore, counterBefore: before, samples, delay };
+        activePhase = {
+          name,
+          expected,
+          durationMs,
+          countsEnabled: enabled,
+          before: pagesBefore,
+          counterBefore: enabled ? before : null,
+          samples,
+          delay
+        };
         let observerNanoseconds = 0;
         let nextTick = performance.now() + 100;
         const loop = setInterval(() => {
@@ -489,8 +686,10 @@ function startupHook(config) {
           observerNanoseconds += Number(process.hrtime.bigint() - begin);
         }, 100);
         let late;
+        let split;
         try {
-          while (performance.now() - start < durationMs) {
+          if (options.begin) await options.begin();
+          while (performance.now() - start < (split ? split.elapsedMs + options.settleMs : durationMs)) {
             await sleep(1000);
             const begin = process.hrtime.bigint();
             samples.push({
@@ -507,15 +706,28 @@ function startupHook(config) {
               }))
             });
             observerNanoseconds += Number(process.hrtime.bigint() - begin);
-            if (onLate && !late && performance.now() - start >= durationMs - 30000) late = await read();
+            if (options.splitMs && !split && performance.now() - start >= options.splitMs) {
+              split = { elapsedMs: performance.now() - start, counts: { ...counts }, pages: await read() };
+              verify(split.pages, expected);
+              if (options.onSplit) options.onSplit(split.pages);
+              currentPhase = 'settle-8';
+              emit('settle-start', { lifecycleStartedAtMs: startedAtMs });
+            }
+            if (options.late && !late && performance.now() - start >= durationMs - 30000) late = await read();
+            if (options.until?.()) break;
             if (samples.length % 60 === 0)
               console.log(JSON.stringify({ phase: name, elapsedMs: performance.now() - start }));
           }
         } finally {
           clearInterval(loop);
         }
+        if (options.until && !options.until()) {
+          report.preparationFailure = options.failureEvidence?.();
+          throw Error('Preparation did not observe fresh capture success and matching recovery replacement');
+        }
         const elapsedMs = performance.now() - start;
-        const operations = diff(before);
+        const endedCounts = { ...counts };
+        const operations = difference(endedCounts, before);
         const pagesAfter = await read();
         verify(pagesAfter, expected);
         const processes = new Map();
@@ -528,6 +740,8 @@ function startupHook(config) {
         const rawFile = name + '.json';
         const result = {
           name,
+          startedAtMs,
+          endedAtMs: startedAtMs + elapsedMs,
           elapsedMs,
           tabs: expected,
           countsEnabled: enabled,
@@ -543,8 +757,9 @@ function startupHook(config) {
           mainProcessDelayMs: stats(delay.map((sample) => sample.delayMs)),
           observer: {
             samplingNanoseconds: observerNanoseconds,
-            hookNanoseconds: operations.hookNanoseconds,
-            selfTimePercentOfWall: ((observerNanoseconds + operations.hookNanoseconds) / (elapsedMs * 1000000)) * 100,
+            hookNanoseconds: operations?.hookNanoseconds ?? null,
+            selfTimePercentOfWall:
+              ((observerNanoseconds + (operations?.hookNanoseconds || 0)) / (elapsedMs * 1000000)) * 100,
             note: 'Direct observer self-time is a lower bound; excludes renderer-side effects. Counter-disabled control retains CPU/delay sampling.'
           },
           rawFile,
@@ -552,6 +767,71 @@ function startupHook(config) {
           late,
           after: pagesAfter
         };
+        const aggregate = (from, to) => {
+          let previous = 0;
+          let integral = 0;
+          const cpu = [];
+          const perProcess = new Map();
+          for (const sample of samples) {
+            const overlap = Math.max(0, Math.min(to, sample.elapsedMs) - Math.max(from, previous));
+            const total = sample.processes.reduce((sum, item) => sum + item.percentCPUUsage, 0);
+            if (overlap) {
+              integral += (total * overlap) / 1000;
+              cpu.push(total);
+              for (const metric of sample.processes) {
+                if (!perProcess.has(metric.pid))
+                  perProcess.set(metric.pid, { pid: metric.pid, type: metric.type, values: [], integral: 0 });
+                const item = perProcess.get(metric.pid);
+                item.values.push(metric.percentCPUUsage);
+                item.integral += (metric.percentCPUUsage * overlap) / 1000;
+              }
+            }
+            previous = sample.elapsedMs;
+          }
+          return {
+            cpuPercent: stats(cpu),
+            cpuPercentageSeconds: integral,
+            cpuTimeWeightedMeanPercent: integral / ((to - from) / 1000),
+            perProcessCPU: [...perProcess.values()].map((item) => ({
+              pid: item.pid,
+              type: item.type,
+              samples: item.values.length,
+              percentCPUUsage: stats(item.values),
+              cpuPercentageSeconds: item.integral,
+              cpuTimeWeightedMeanPercent: item.integral / ((to - from) / 1000)
+            })),
+            mainProcessDelayMs: stats(
+              delay
+                .filter((sample) => sample.elapsedMs >= from && sample.elapsedMs <= to)
+                .map((sample) => sample.delayMs)
+            )
+          };
+        };
+        Object.assign(result, aggregate(0, elapsedMs));
+        if (split) {
+          result.segments = [
+            {
+              name: 'streaming-8',
+              elapsedMs: split.elapsedMs,
+              startedAtMs,
+              endedAtMs: startedAtMs + split.elapsedMs,
+              ...aggregate(0, split.elapsedMs),
+              operations: difference(split.counts, before),
+              before: pagesBefore,
+              after: split.pages
+            },
+            {
+              name: 'settle-8',
+              elapsedMs: elapsedMs - split.elapsedMs,
+              startedAtMs: startedAtMs + split.elapsedMs,
+              endedAtMs: startedAtMs + elapsedMs,
+              ...aggregate(split.elapsedMs, elapsedMs),
+              operations: difference(endedCounts, split.counts),
+              before: split.pages,
+              after: pagesAfter
+            }
+          ];
+        }
         originalWrite(path.join(config.out, rawFile), JSON.stringify({ ...result, samples, delay }, null, 2));
         activePhase = undefined;
         report.phases.push(result);
@@ -559,7 +839,7 @@ function startupHook(config) {
         return result;
       };
       await ready(1);
-      for (const count of [1, 4, 8]) {
+      for (const count of config.profile === 'full' ? [1, 4, 8] : [8]) {
         let state = await run('window.profiles.snapshot()');
         while (state.tabs.length < count) {
           await run('window.profiles.command({type:"tab:new"})');
@@ -567,9 +847,9 @@ function startupHook(config) {
           await ready(state.tabs.length);
         }
         await phase('warmup-' + count, 5000, count);
-        await phase('idle-' + count, config.windowMs, count);
+        if (config.profile === 'full') await phase('idle-' + count, config.windowMs, count);
       }
-      if (config.label === 'candidate') {
+      if (config.profile === 'full' && config.label === 'candidate') {
         enabled = false;
         try {
           await phase('idle-8-counters-disabled', config.windowMs, 8);
@@ -577,31 +857,121 @@ function startupHook(config) {
           enabled = true;
         }
       }
-      for (const view of views()) await view.webContents.executeJavaScript('window.fixtureStartStream()');
-      const streaming = await phase('streaming-8', config.windowMs + 15000, 8);
+      const assertStream = (pages) => {
+        if (
+          pages.some(
+            ({ state }) =>
+              state.tokens !== 1040 ||
+              Math.abs(state.tailGap) > 2 ||
+              state.tailTokens.length !== 1040 ||
+              state.tailTokens.some((token, index) => token !== index) ||
+              !Number.isFinite(state.streamStarted) ||
+              !Number.isFinite(state.streamFinished) ||
+              !Number.isFinite(state.streamDurationMs) ||
+              state.streamDurationMs < 130000 ||
+              state.streamDurationMs > config.windowMs + 15000
+          )
+        )
+          throw Error(
+            'Fixed streaming workload did not complete all 1040 ordered DOM tokens at the visible tail within 135 seconds'
+          );
+      };
+      const workspace = await run('window.profiles.snapshot()');
+      const activeTabId = workspace.profiles.find((item) => item.id === workspace.activeProfileId).activeTabId;
+      const activeView = views().find((view) => view.getVisible());
+      if (!activeView) throw Error('No visible active page for snapshot alignment');
+      const activeId = activeView.webContents.id;
+      const targetFile = activeTabId + '.bin';
+      const identityBefore = await read();
+      let markerCompletedAtMs;
+      let alignedAtMs;
+      const preparation = await phase('prepare-stream', 45000, 8, {
+        failureEvidence: () => ({
+          markerCompletedAtMs,
+          activeWC: activeId,
+          targetFile,
+          latestCapture: captures.get(activeId),
+          latestReplacement: renames.get(targetFile),
+          pendingCaptures: pendingCaptures.size
+        }),
+        begin: async () => {
+          for (const view of views()) await view.webContents.executeJavaScript('window.fixturePrepareStream()');
+          markerCompletedAtMs = time();
+          emit('preparation-marker-complete', { wc: activeId });
+        },
+        until: () => {
+          const capture = captures.get(activeId),
+            replacement = renames.get(targetFile);
+          if (
+            !alignedAtMs &&
+            capture?.success &&
+            capture.startedAtMs >= markerCompletedAtMs &&
+            replacement?.atMs >= capture.completedAtMs
+          )
+            alignedAtMs = replacement.atMs;
+          return alignedAtMs !== undefined && time() - alignedAtMs >= 1000;
+        }
+      });
+      report.preparation = {
+        phase: preparation.name,
+        markerCompletedAtMs,
+        alignedAtMs,
+        shortWaitMs: 1000,
+        activeWC: activeId,
+        targetFile,
+        capture: captures.get(activeId),
+        replacement: renames.get(targetFile)
+      };
+      const identityPrepared = await read();
       if (
-        streaming.after.some(
-          ({ state }) =>
-            state.tokens !== 1040 ||
-            Math.abs(state.tailGap) > 2 ||
-            state.tailTokens.length !== 1040 ||
-            state.tailTokens.some((token, index) => token !== index) ||
-            !Number.isFinite(state.streamStarted) ||
-            !Number.isFinite(state.streamFinished) ||
-            !Number.isFinite(state.streamDurationMs) ||
-            state.streamDurationMs < 130000 ||
-            state.streamDurationMs > config.windowMs + 15000
+        identityBefore.some(
+          (item) => identityPrepared.find((page) => page.id === item.id)?.state.instance !== item.state.instance
         )
       )
+        throw Error('Preparation reloaded a page');
+      const lifecycle = await phase('streaming-lifecycle-8', 180000, 8, {
+        splitMs: 135000,
+        settleMs: 45000,
+        onSplit: assertStream,
+        begin: async () => {
+          for (const view of views()) await view.webContents.executeJavaScript('window.fixtureStartStream()');
+        }
+      });
+      assertStream(lifecycle.after);
+      const finalProbe = safeProbe(
+        await activeView.webContents.executeJavaScriptInIsolatedWorld(1017, [
+          { code: 'globalThis.__studioRecoveryChanges?.()' }
+        ])
+      );
+      const finalCapture = captures.get(activeId),
+        finalReplacement = renames.get(targetFile);
+      const settled =
+        !!finalCapture?.success &&
+        finalCapture.startedAtMs >= lifecycle.startedAtMs + 130000 &&
+        finalReplacement?.atMs >= finalCapture.completedAtMs &&
+        finalReplacement.atMs <= lifecycle.endedAtMs &&
+        pendingCaptures.size === 0 &&
+        finalProbe?.known === true &&
+        ['document', 'draft', 'viewport', 'conversation'].every((key) => finalProbe[key] === finalCapture.probe?.[key]);
+      report.settlement = {
+        scope:
+          'Active page checkpoint pipeline; all eight page identities/DOM tokens/connections separately validated.',
+        passed: settled,
+        pendingCaptures: pendingCaptures.size,
+        finalCapture,
+        finalReplacement,
+        finalProbe
+      };
+      if (!settled)
         throw Error(
-          'Fixed streaming workload did not complete all 1040 ordered DOM tokens at the visible tail within 135 seconds'
+          '45-second settle ended with missing final capture/replacement, pending capture or dirty probe versions'
         );
       if (config.backgroundMs) {
         // Boundary reads only. The single late read checks the last 30 seconds,
         // rather than inferring connection activity from a 30-minute total.
         win.hide();
         if (win.isVisible()) throw Error('Window did not hide');
-        const background = await phase('hidden-8', config.backgroundMs, 8, true);
+        const background = await phase('hidden-8', config.backgroundMs, 8, { late: true });
         if (win.isVisible()) throw Error('Window unexpectedly became visible while held');
         win.show();
         await sleep(2000);
@@ -638,14 +1008,15 @@ function startupHook(config) {
         if (!report.retention.passed)
           throw Error('Background restoration lost identity, draft, connection, counters or zero-send invariant');
       }
-      report.totals = counts;
+      report.totals = config.instrumentation === 'on' ? counts : null;
       report.passed = true;
     } catch (error) {
       report.error = { message: String(error), stack: error.stack };
       process.exitCode = 1;
       console.error(error);
     } finally {
-      report.totals = counts;
+      report.totals = config.instrumentation === 'on' ? counts : null;
+      report.completedAt = Date.now();
       persist();
       app.exit(report.passed ? 0 : 1);
     }

@@ -66,7 +66,7 @@ jobs:
     runs-on: macos-15
     timeout-minutes: 120
     env:
-      BASELINE_COMMIT: 7ad0219f169be84293abbc9ba669b51743ba574c
+      BASELINE_COMMIT: 462d4f3c9fea960fcdba0cd96cdf039d5cf8a24c
     defaults:
       run:
         shell: bash
@@ -121,10 +121,16 @@ jobs:
           node --version > test-results/cpu/node-version.txt
       - name: Native baseline idle and fixed streaming workloads
         run: |
-          node scripts/measure-cpu.mjs --app-root "$RUNNER_TEMP/studio-cpu-baseline/desktop" --label baseline --source-sha "$BASELINE_COMMIT" --output test-results/cpu/baseline
+          node scripts/measure-cpu.mjs --app-root "$RUNNER_TEMP/studio-cpu-baseline/desktop" --label baseline --profile full --instrumentation on --source-sha "$BASELINE_COMMIT" --output test-results/cpu/forward-baseline
       - name: Native candidate workloads, observer control and 30-minute hidden retention
         run: |
-          node scripts/measure-cpu.mjs --label candidate --source-sha "$GITHUB_SHA" --output test-results/cpu/candidate
+          node scripts/measure-cpu.mjs --label candidate --profile full --instrumentation on --source-sha "$GITHUB_SHA" --output test-results/cpu/forward-candidate
+      - name: Reverse-order candidate stream-only control without counters or timeline
+        run: |
+          node scripts/measure-cpu.mjs --label candidate --profile stream-only --instrumentation off --source-sha "$GITHUB_SHA" --output test-results/cpu/reverse-candidate
+      - name: Reverse-order baseline stream-only control without counters or timeline
+        run: |
+          node scripts/measure-cpu.mjs --app-root "$RUNNER_TEMP/studio-cpu-baseline/desktop" --label baseline --profile stream-only --instrumentation off --source-sha "$BASELINE_COMMIT" --output test-results/cpu/reverse-baseline
       - name: Summarize complete evidence without assuming CPU benefit
         run: |
           node scripts/summarize-cpu.mjs test-results/cpu
