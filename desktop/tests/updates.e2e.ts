@@ -2,7 +2,16 @@ import { test, expect, _electron as electron, type ElectronApplication } from '@
 import { createServer, type Server } from 'node:http';
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, realpathSync, readFileSync, writeFileSync, rmSync, readdirSync } from 'node:fs';
+import {
+  mkdtempSync,
+  mkdirSync,
+  realpathSync,
+  readFileSync,
+  writeFileSync,
+  rmSync,
+  readdirSync,
+  existsSync
+} from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { fileURLToPath } from 'node:url';
@@ -407,7 +416,11 @@ for (const mode of ['quit', 'idle', 'manual'] as const)
       expect(readFileSync(path.join(updateState.ready.staged.candidate, 'Contents/Info.plist'), 'utf8')).toContain(
         packageInfo.version
       );
-      expect(JSON.parse(readFileSync(path.join(data, 'updates/install-result.json'), 'utf8')).ok).toBe(true);
+      const installResult = path.join(data, 'updates/install-result.json');
+      // The swap exposes the new Info.plist before signature validation and
+      // atomic publication of the installer's terminal result have finished.
+      await expect.poll(() => existsSync(installResult)).toBe(true);
+      expect(JSON.parse(readFileSync(installResult, 'utf8')).ok).toBe(true);
       if (mode === 'idle') {
         app = await electron.launch({
           args: [desktop, '--profiles-background-update'],
