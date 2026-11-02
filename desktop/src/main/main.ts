@@ -2,7 +2,8 @@ import { protectRemoteInput } from './remote-input';
 import { RecoveryStore, RecentlyClosedPages, resumeURL } from './recovery-store';
 import { RecoveryAccess, type PresenceKey } from './recovery-access';
 import { captureResume, applyResume, finishResume } from './page-resume';
-import { captureSnapshot } from './page-snapshot';
+import { collectCheckpoint } from './page-checkpoint';
+import { RecoveryCheckpoints } from './recovery-checkpoint';
 import { UpdateManager } from './update-manager';
 import type { UpdateService } from './update-service';
 import { createWindowsUpdates } from './windows-update-platform';
@@ -165,8 +166,7 @@ let checkpointTimer: ReturnType<typeof setInterval> | undefined,
 const checkpointErrors = new Set<string>();
 const savedPages = new Map<string, PageSnapshot>(),
   offlinePages = new Map<string, PageSnapshot>(),
-  snapshotTimes = new Map<string, number>(),
-  capturingSnapshots = new Set<string>();
+  recoveryCheckpoints = new RecoveryCheckpoints();
 
 const status = new Map<string, TabStatus>();
 const popups = new Map<BrowserWindow, string>();
@@ -368,45 +368,58 @@ function savePanel(): void {
   });
 }
 async function checkpointTab(id: string, strict = false): Promise<void> {
-  if (!recovery || recoveryChanging || restoringPages.has(id) || blockedRecovery.has(id)) return;
-  const tab = [...store.read().tabs, ...store.read().closedTabs].find((t) => t.id === id),
-    contents = views.get(id)?.webContents;
-  if (!tab || !contents || pendingProfiles.has(tab.profileId)) return;
+  const contents = views.get(id)?.webContents;
+  if (!contents || contents.isDestroyed()) return;
   try {
-    const record = await deadline(captureResume(contents, tab.profileId, id, fixtureOrigin), 1500);
-    if (!record) return;
-    if (!capturingSnapshots.has(id) && (strict || Date.now() - (snapshotTimes.get(id) || 0) > 30000)) {
-      capturingSnapshots.add(id);
-      snapshotTimes.set(id, Date.now());
-      try {
-        const page = await deadline(captureSnapshot(contents, fixtureOrigin), 1200);
-        if (
-          page &&
-          page.url === record.url &&
-          !pendingProfiles.has(tab.profileId) &&
-          [...store.read().tabs, ...store.read().closedTabs].some((t) => t.id === id && t.profileId === tab.profileId)
-        )
-          savedPages.set(id, page);
-      } catch {
-        /* A viewport capture must not prevent saving the draft. */
-      } finally {
-        capturingSnapshots.delete(id);
-      }
-    }
-    const page = savedPages.get(id);
-    if (page?.url === record.url) record.page = page;
-    const alternative = localDrafts.get(id)?.draft;
-    if (alternative && alternative !== record.draft) record.alternativeDraft = alternative;
-    if (recoveryChanging) return;
-    await recovery.save(
-      record,
-      () =>
+    await recoveryCheckpoints.run(`${id}:${contents.id}`, strict, async (forced, active) => {
+      if (!recovery || recoveryChanging || restoringPages.has(id) || blockedRecovery.has(id)) return;
+      const tab = [...store.read().tabs, ...store.read().closedTabs].find((t) => t.id === id);
+      if (!tab || pendingProfiles.has(tab.profileId)) return;
+      const target = recovery,
+        url = contents.getURL();
+      const available = () =>
+        active() &&
+        recovery === target &&
+        !recoveryChanging &&
+        !restoringPages.has(id) &&
+        !blockedRecovery.has(id) &&
         !pendingProfiles.has(tab.profileId) &&
-        [...store.read().tabs, ...store.read().closedTabs].some((t) => t.id === id && t.profileId === tab.profileId) &&
+        views.get(id)?.webContents === contents &&
         !contents.isDestroyed() &&
-        resumeURL(contents.getURL(), fixtureOrigin) === record.url
-    );
-    checkpointErrors.delete(id);
+        contents.getURL() === url &&
+        [...store.read().tabs, ...store.read().closedTabs].some((t) => t.id === id && t.profileId === tab.profileId);
+      const captured = await collectCheckpoint(
+        contents,
+        tab.profileId,
+        id,
+        savedPages.get(id),
+        forced,
+        available,
+        fixtureOrigin
+      );
+      if (!captured || !available()) return;
+      const record = captured.record,
+        alternative = localDrafts.get(id)?.draft;
+      if (alternative && alternative !== record.draft) record.alternativeDraft = alternative;
+      // Save the small recovery state before a potentially slow viewport capture.
+      await target.save(record, available);
+      if (!available()) return;
+      captured.acknowledge();
+      let snapshot: Awaited<ReturnType<typeof captured.snapshot>>;
+      try {
+        snapshot = await captured.snapshot();
+      } catch {
+        // Snapshot failure never erases the already-saved draft or the old image.
+      }
+      if (snapshot && available()) {
+        await target.save({ ...record, page: snapshot.page }, available);
+        if (available()) {
+          savedPages.set(id, snapshot.page);
+          snapshot.acknowledge();
+        }
+      }
+      if (available()) checkpointErrors.delete(id);
+    });
   } catch (error) {
     if (!checkpointErrors.has(id)) {
       checkpointErrors.add(id);
@@ -419,7 +432,7 @@ function pruneRecovery(): void {
   const tabs = [...store.read().tabs, ...store.read().closedTabs],
     ids = new Set(tabs.map((t) => t.id));
   recovery?.prune(tabs);
-  for (const map of [localDrafts, closedReplacements, savedPages, offlinePages, snapshotTimes])
+  for (const map of [localDrafts, closedReplacements, savedPages, offlinePages])
     for (const id of map.keys()) if (!ids.has(id)) map.delete(id);
   for (const set of [blockedRecovery, checkpointErrors]) for (const id of set) if (!ids.has(id)) set.delete(id);
 }
@@ -1092,7 +1105,6 @@ async function clearProfile(id: string, remove: boolean): Promise<void> {
       localDrafts.delete(t.id);
       savedPages.delete(t.id);
       offlinePages.delete(t.id);
-      snapshotTimes.delete(t.id);
       blockedRecovery.delete(t.id);
       if (views.has(t.id)) destroyView(t.id);
     }

@@ -5,13 +5,19 @@ on:
   pull_request:
     paths: ['desktop/**', '.github/workflows/desktop-ci.yml']
   workflow_dispatch:
+    inputs:
+      cpu_validation:
+        description: Same arm64 macOS runner; synthetic CPU baseline/candidate and 30-minute hidden retention
+        type: boolean
+        default: false
 permissions:
   contents: read
 concurrency:
-  group: desktop-ci-${{ github.ref }}
+  group: desktop-ci-${{ github.ref }}-${{ github.event_name == 'workflow_dispatch' && inputs.cpu_validation && 'cpu' || 'checks' }}
   cancel-in-progress: true
 jobs:
   check:
+    if: github.event_name != 'workflow_dispatch' || !inputs.cpu_validation
     name: Typecheck, lint, format and unit tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -36,6 +42,7 @@ jobs:
       - name: Unit tests
         run: npm test
   build:
+    if: github.event_name != 'workflow_dispatch' || !inputs.cpu_validation
     name: Build on macOS
     runs-on: macos-15
     timeout-minutes: 20
@@ -53,3 +60,80 @@ jobs:
         run: npm ci --ignore-scripts
       - name: Build main process, native helpers and renderer
         run: npm run build
+  cpu-validation:
+    if: github.event_name == 'workflow_dispatch' && inputs.cpu_validation
+    name: Native macOS CPU comparison and background retention
+    runs-on: macos-15
+    timeout-minutes: 120
+    env:
+      BASELINE_COMMIT: 7ad0219f169be84293abbc9ba669b51743ba574c
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '26.7.0'
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - name: Prepare disposable native arm64 desktop session
+        run: |
+          test "$(uname -m)" = arm64
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          mkdir -p test-results/cpu
+          clang scripts/ci-display.c -framework CoreGraphics -framework CoreFoundation -o "$RUNNER_TEMP/studio-ci-display"
+          defaults write com.apple.dock autohide -bool true
+          killall Dock || true
+          "$RUNNER_TEMP/studio-ci-display"
+          "$RUNNER_TEMP/studio-ci-display" --check
+          npm ci
+      - name: Full candidate checks and build at this SHA
+        run: npm run check 2>&1 | tee "$RUNNER_TEMP/studio-cpu-check.log"
+      - name: Full candidate isolated E2E at the same SHA
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_FILE: test-results/full-regression.json
+        run: npm run test:e2e -- --reporter=list,json 2>&1 | tee "$RUNNER_TEMP/studio-cpu-e2e.log"
+      - name: Restore check and E2E logs after Playwright output cleanup
+        if: always()
+        run: |
+          mkdir -p test-results/cpu
+          for studio_log in check e2e; do
+            if [ -f "$RUNNER_TEMP/studio-cpu-$studio_log.log" ]; then
+              cp "$RUNNER_TEMP/studio-cpu-$studio_log.log" "test-results/cpu/$studio_log.log"
+            fi
+          done
+      - name: Export and build exact baseline using identical locked dependencies
+        run: |
+          studio_baseline="$RUNNER_TEMP/studio-cpu-baseline"
+          test ! -e "$studio_baseline"
+          mkdir -p "$studio_baseline"
+          git -C "$GITHUB_WORKSPACE" archive "$BASELINE_COMMIT" | tar -x -C "$studio_baseline"
+          cmp package-lock.json "$studio_baseline/desktop/package-lock.json"
+          ln -s "$GITHUB_WORKSPACE/desktop/node_modules" "$studio_baseline/desktop/node_modules"
+          (cd "$studio_baseline/desktop" && npm run build) 2>&1 | tee test-results/cpu/baseline-build.log
+          git rev-parse HEAD > test-results/cpu/candidate-sha.txt
+          git rev-parse "$BASELINE_COMMIT" > test-results/cpu/baseline-sha.txt
+          shasum -a 256 package-lock.json scripts/measure-cpu.mjs scripts/summarize-cpu.mjs > test-results/cpu/input-sha256.txt
+          node --version > test-results/cpu/node-version.txt
+      - name: Native baseline idle and fixed streaming workloads
+        run: |
+          node scripts/measure-cpu.mjs --app-root "$RUNNER_TEMP/studio-cpu-baseline/desktop" --label baseline --source-sha "$BASELINE_COMMIT" --output test-results/cpu/baseline
+      - name: Native candidate workloads, observer control and 30-minute hidden retention
+        run: |
+          node scripts/measure-cpu.mjs --label candidate --source-sha "$GITHUB_SHA" --output test-results/cpu/candidate
+      - name: Summarize complete evidence without assuming CPU benefit
+        run: |
+          node scripts/summarize-cpu.mjs test-results/cpu
+          cat test-results/cpu/comparison.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: macos-native-cpu-${{ github.sha }}
+          retention-days: 14
+          if-no-files-found: error
+          path: |
+            desktop/test-results/
+            desktop/playwright-report/

@@ -15,7 +15,7 @@ import {
   readdirSync
 } from 'node:fs';
 import path from 'node:path';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHash } from 'node:crypto';
 import { recoveryId, validResume, type PageResume } from '../shared/recovery';
 import { isChatURL } from './policy';
 export function resumeURL(value: string, fixtureOrigin?: string): string | undefined {
@@ -45,6 +45,7 @@ export class RecoveryStore {
   private epochs = new Map<string, number>();
   private pending = new Map<string, Promise<unknown>>();
   private fingerprints = new Map<string, string>();
+  private imageFingerprints = new Map<string, { value: string; hash: string }>();
   constructor(
     dataDir: string,
     private cipher: RecoveryCipher,
@@ -127,7 +128,20 @@ export class RecoveryStore {
       .catch(() => {})
       .then(async () => {
         if (!available() || (this.epochs.get(record.profileId) || 0) !== epoch) return;
-        const fingerprint = JSON.stringify({ ...record, capturedAt: 0 });
+        let imageHash: string | undefined;
+        if (record.page?.image) {
+          let cached = this.imageFingerprints.get(key);
+          if (cached?.value !== record.page.image) {
+            cached = { value: record.page.image, hash: createHash('sha256').update(record.page.image).digest('hex') };
+            this.imageFingerprints.set(key, cached);
+          }
+          imageHash = cached.hash;
+        } else this.imageFingerprints.delete(key);
+        const fingerprint = JSON.stringify({
+          ...record,
+          capturedAt: 0,
+          page: record.page ? { ...record.page, image: imageHash, capturedAt: 0 } : undefined
+        });
         if (this.fingerprints.get(key) === fingerprint) return;
         const encrypted = await this.cipher.encrypt(JSON.stringify(record));
         if (!available() || (this.epochs.get(record.profileId) || 0) !== epoch) return;
@@ -154,6 +168,8 @@ export class RecoveryStore {
       rmSync(dir, { recursive: true, force: true });
     }
     for (const key of this.fingerprints.keys()) if (key.startsWith(profileId + '/')) this.fingerprints.delete(key);
+    for (const key of this.imageFingerprints.keys())
+      if (key.startsWith(profileId + '/')) this.imageFingerprints.delete(key);
   }
   preserveOrphans(): void {
     this.safe(this.directory, true);
@@ -173,6 +189,7 @@ export class RecoveryStore {
   }
   prune(allowed: Iterable<{ profileId: string; id: string }>): void {
     const keys = new Set([...allowed].map((t) => t.profileId + '/' + t.id));
+    for (const key of this.imageFingerprints.keys()) if (!keys.has(key)) this.imageFingerprints.delete(key);
     this.safe(this.directory, true);
     for (const profile of readdirSync(this.directory)) {
       if (!recoveryId(profile)) continue;
