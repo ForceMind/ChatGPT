@@ -46,7 +46,7 @@ async function api(method, endpoint, options = {}) {
       const response = await fetch(url, {
         method,
         redirect: 'error',
-        signal: AbortSignal.timeout(options.raw ? 300000 : 30000),
+        signal: globalThis.AbortSignal.timeout(options.raw ? 300000 : 30000),
         headers: {
           Authorization: 'Bearer ' + token,
           Accept: 'application/vnd.github+json',
@@ -293,7 +293,7 @@ try {
   }
   const originalSums = new Map();
   for (const line of readFileSync(find('SHA256SUMS'), 'utf8').trim().split('\n')) {
-    const match = /^([a-f0-9]{64})  ([A-Za-z0-9._-]+)$/.exec(line);
+    const match = /^([a-f0-9]{64}) {2}([A-Za-z0-9._-]+)$/.exec(line);
     assert(match && !originalSums.has(match[2]), 'Invalid/duplicate original SHA256SUMS entry');
     originalSums.set(match[2], match[1]);
   }
