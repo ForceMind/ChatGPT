@@ -33,6 +33,9 @@ import static org.junit.Assert.*;
 public final class NetworkPocInstrumentedTest {
     private static final byte[] FILE = "network-poc-fixture\n".getBytes(StandardCharsets.UTF_8);
     private final Bundle args = InstrumentationRegistry.getArguments();
+    @Test public void controlledInFlightTransfersFailClosedWithoutReplay() throws Exception {
+        new TransferFaultCases(args).run();
+    }
     private String fixture() { return args.getString("fixtureUrl", "http://network-fixture.test:18080"); }
     private VlessNode node(String suffix) {
         VlessNode result = VlessNode.parse(args.getString("node" + suffix, "vless://00000000-0000-4000-8000-000000000001@10.0.2.2:" + ("A".equals(suffix) ? "18443" : "18444") + "?encryption=none&type=tcp&security=none"), suffix);
@@ -54,6 +57,9 @@ public final class NetworkPocInstrumentedTest {
     private void awaitJs(MainActivity activity, String expression, String expected) throws Exception {
         long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(20); String actual;
         do { actual = js(activity, expression); if (expected.equals(actual)) return; Thread.sleep(150); } while (System.nanoTime() < deadline);
+        if (BuildConfig.APPLICATION_ID.endsWith(".ci")) try {
+            System.out.println("NETWORK_POC_JS_TIMEOUT " + js(activity, "JSON.stringify({url:location.href.slice(0,256),title:document.title.slice(0,120),ready:document.readyState,body:(document.body?.innerText||'').slice(0,200)})"));
+        } catch (Exception diagnosticFailure) { System.out.println("NETWORK_POC_JS_TIMEOUT diagnostic=" + diagnosticFailure.getClass().getSimpleName()); }
         assertEquals(expected, actual);
     }
     @Test public void encryptedStoreRoundTripAndTamperDoesNotOverwrite() throws Exception {

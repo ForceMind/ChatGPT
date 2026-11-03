@@ -39,11 +39,11 @@ class RoutingDriverTests(unittest.TestCase):
     def health(self):
         return evidence()
 
-    def test_exact_three_tests_and_failure_markers(self):
-        driver.verify_instrumentation(0, 'Time: 42\n\nOK (3 tests)\n')
-        for code, output in [(1, 'OK (3 tests)'), (0, 'OK (2 tests)'), (0, 'OK (4 tests)'),
-                             (0, 'INSTRUMENTATION_FAILED\nOK (3 tests)'), (0, 'FAILURES!!!\nOK (3 tests)'),
-                             (0, 'shortMsg=crash\nOK (3 tests)'), (0, 'OK (3 tests)\nOK (3 tests)')]:
+    def test_exact_four_tests_and_failure_markers(self):
+        driver.verify_instrumentation(0, 'Time: 42\n\nOK (4 tests)\n')
+        for code, output in [(1, 'OK (4 tests)'), (0, 'OK (2 tests)'), (0, 'OK (3 tests)'),
+                             (0, 'INSTRUMENTATION_FAILED\nOK (4 tests)'), (0, 'FAILURES!!!\nOK (4 tests)'),
+                             (0, 'shortMsg=crash\nOK (4 tests)'), (0, 'OK (4 tests)\nOK (4 tests)')]:
             with self.subTest(code=code, output=output), self.assertRaises(RuntimeError):
                 driver.verify_instrumentation(code, output)
 
@@ -93,6 +93,79 @@ class RoutingDriverTests(unittest.TestCase):
         self.assertNotIn('00000000-0000-4000-8000-000000000001', result)
         self.assertNotIn('@10.0.2.2', result)
         self.assertIn('REDACTED', result)
+
+    def transfer(self):
+        original = {'identity': 'owned-document', 'draft': 'transfer-fault-draft', 'url': 'https://network-fixture.test:18480/stability/owned/page', 'submissions': 0}
+        phases, final, callbacks, controls = [], [], [], []
+        for suffix, kind, action in driver.TRANSFER_CASES:
+            opid = 'tls-https-' + suffix
+            upload = kind != 'download'; success = action == 'explicit-new-success'
+            size = 65536 if kind == 'native-upload' else 33000 if upload else 262144
+            started = {'opid': opid, 'transport': 'tls', 'origin': 'https', 'kind': 'upload' if upload else 'download',
+                       'route': 'A', 'started': True, 'prefix': True, 'bodyComplete': upload, 'commitCount': int(upload),
+                       'released': False, 'completed': False, 'writeError': None, 'readError': None, 'timedOut': False,
+                       'opCount': 1, 'attemptCount': 1, 'requestBytesRead': size if upload else 0,
+                       'responseBytesWritten': 0 if upload else 4096, 'totalBytes': size}
+            terminal = dict(started, released=True, completed=True,
+                            responseBytesWritten=len(b'network-poc-upload-committed\n') if upload else size)
+            phase = {'opid': opid, 'kind': kind, 'action': action, 'started': started, 'terminal': terminal,
+                     'activeTransfers': 0, 'routeState': 'FAILED' if action == 'core-stop' else 'CONNECTED',
+                     'coreRunning': action != 'core-stop', 'document': dict(original), 'terminationMillis': 900}
+            if not upload:
+                phase.update(callbackCount=1, successCount=int(success), baselineFiles=['download-owned-baseline'],
+                             afterFiles=['download-owned-baseline'], deliveredBytes=size, partialBytes=4096, error='cancelled or failed')
+                callbacks.append({'opid': opid, 'callbackCount': 1, 'successCount': int(success)})
+            elif kind == 'native-upload':
+                phase.update(completionCount=1, successCount=int(success), outcomeUncertain=not success,
+                             responseBytes=len(b'network-poc-upload-committed\n') if success else 0,
+                             error=None if success else '上传结果不明；未自动重发')
+            else:
+                phase.update(outcomeUncertain=not success, clientBefore={'state': 'pending', 'completions': 0},
+                             client={'state': 'success' if success else 'error', 'completions': 1, 'route': 'A',
+                                     'body': 'network-poc-upload-committed\n', 'error': 'Failed to fetch'})
+            phases.append(phase); final.append(dict(terminal))
+            controls.extend({'opid': opid, 'method': method, 'status': 200, 'ownedDirectControl': True} for method in ['GET', 'POST'])
+        rejected = [{'opid': 'tls-https-closed-rejected-download', 'kind': 'download', 'callbackCount': 1, 'successCount': 0, 'serverAbsent': True},
+                    {'opid': 'tls-https-closed-rejected-upload', 'kind': 'upload', 'rejectedBeforeTransfer': True, 'serverAbsent': True}]
+        callbacks.append({'opid': rejected[0]['opid'], 'callbackCount': 1, 'successCount': 0})
+        controls.extend({'opid': item['opid'], 'method': 'GET', 'status': 404, 'ownedDirectControl': True} for item in rejected)
+        return {'schema': 1, 'complete': True, 'transport': 'tls', 'origin': 'https://network-fixture.test:18480',
+                'controlOrigin': 'http://10.0.2.2:18080', 'controlPlane': 'androidTest-only direct owned control; not production fallback',
+                'originalDocument': original, 'finalDocument': dict(original), 'phases': phases, 'finalOperations': final,
+                'closedRejections': rejected, 'finalDownloadCallbacks': callbacks, 'controlRequests': controls, 'activeTransfers': 0}
+
+    def test_transfer_fault_missing_duplicate_callback_residue_and_unknown_are_rejected(self):
+        complete = self.transfer()
+        self.assertEqual(12, len(complete['phases']))
+        driver.verify_transfer_fault(complete, 'tls', complete['origin'])
+        broken = []
+        value = self.transfer(); value['phases'].pop(); broken.append(value)
+        value = self.transfer(); value['phases'][0]['callbackCount'] = 2; broken.append(value)
+        value = self.transfer(); value['finalDownloadCallbacks'][0]['callbackCount'] = 2; broken.append(value)
+        value = self.transfer(); value['phases'][0]['afterFiles'].append('download-leaked-partial'); broken.append(value)
+        value = self.transfer(); value['finalOperations'][0]['opCount'] = 2; broken.append(value)
+        value = self.transfer(); value['phases'][2]['outcomeUncertain'] = False; broken.append(value)
+        value = self.transfer(); value['phases'][6]['terminationMillis'] = 10001; broken.append(value)
+        value = self.transfer(); value['phases'][10]['terminationMillis'] = 10001; broken.append(value)
+        value = self.transfer(); del value['finalOperations']; broken.append(value)
+        value = self.transfer(); value['finalDocument']['identity'] = 'reloaded'; broken.append(value)
+        for candidate in broken:
+            with self.subTest(candidate=candidate), self.assertRaises((AssertionError, KeyError)):
+                driver.verify_transfer_fault(candidate, 'tls', candidate['origin'])
+
+    def test_transfer_terminal_event_is_once_and_server_commit_cannot_replay(self):
+        complete = self.transfer()
+        events = [dict(item, event='owned-transfer-summary') for item in complete['finalOperations']]
+        encode = lambda values: '\n'.join(json.dumps(value) for value in values)
+        self.assertEqual(12, len(driver.verify_transfer_requests(complete, encode(events))))
+        for candidate in [events[:-1], events + [events[0]],
+                          [dict(item, opCount=2) for item in events],
+                          [dict(item, route='direct') for item in events]]:
+            with self.subTest(events=candidate), self.assertRaises(AssertionError):
+                driver.verify_transfer_requests(complete, encode(candidate))
+        # A server can complete write/flush after a disconnect; this alone is not client success.
+        self.assertTrue(complete['phases'][0]['terminal']['completed'])
+        self.assertEqual(0, complete['phases'][0]['successCount'])
 
 
 if __name__ == '__main__':

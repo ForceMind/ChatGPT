@@ -7,6 +7,7 @@ import http.server
 import json
 import os
 from pathlib import Path
+import re
 import signal
 import socket
 import ssl
@@ -25,6 +26,93 @@ UNTRUSTED_TLS_PORT = 19543
 TRANSPORT_PORTS = {'raw': (18443, 18444), 'tls': (19443, 19444),
                    'reality': (20443, 20444)}
 SCHEMA_VERSION = 2
+TRANSFER_DOWNLOAD = b'D' * 262144
+TRANSFER_PREFIX_BYTES = 4096
+TRANSFER_UPLOAD_ACK = b'network-poc-upload-committed\n'
+TRANSFER_MAX_BODY_BYTES = 262144
+TRANSFER_GATE_TIMEOUT_SECONDS = 45
+TRANSFER_IO_TIMEOUT_SECONDS = 10
+TRANSFER_MAX_OPERATIONS = 128
+TRANSFER_ID = r'(?:raw|tls|reality)-(?:http|https)-[a-z][a-z0-9-]{0,47}'
+
+
+class TransferGates:
+    """Bounded state for the owned in-flight transfer cases; never stores bodies."""
+    def __init__(self, timeout=TRANSFER_GATE_TIMEOUT_SECONDS, limit=TRANSFER_MAX_OPERATIONS):
+        self.timeout, self.limit = timeout, limit
+        self.lock = threading.Lock()
+        self.operations = {}
+
+    def start(self, opid, kind, origin, route, total_bytes):
+        with self.lock:
+            if opid in self.operations:
+                state = self.operations[opid]['state']
+                state['attemptCount'] += 1
+                state['opCount'] += 1
+                return 409, dict(state)
+            if len(self.operations) >= self.limit:
+                return 429, {'error': 'operation-limit'}
+            state = {'opid': opid, 'transport': opid.split('-', 1)[0],
+                     'origin': origin, 'kind': kind, 'route': route,
+                     'started': True, 'prefix': False, 'bodyComplete': False,
+                     'commitCount': 0, 'released': False, 'completed': False,
+                     'writeError': None, 'readError': None, 'timedOut': False,
+                     'attemptCount': 1, 'opCount': 1, 'requestBytesRead': 0,
+                     'responseBytesWritten': 0, 'totalBytes': total_bytes,
+                     'payloadSha256': hashlib.sha256(TRANSFER_DOWNLOAD).hexdigest()
+                     if kind == 'download' else None, 'failure': None}
+            self.operations[opid] = {'state': state, 'release': threading.Event(),
+                                    'deadline': time.monotonic() + self.timeout,
+                                    'logged': False}
+            return 200, dict(state)
+
+    def update(self, opid, **fields):
+        with self.lock:
+            self.operations[opid]['state'].update(fields)
+
+    def state(self, opid):
+        with self.lock:
+            operation = self.operations.get(opid)
+            return None if operation is None else dict(operation['state'])
+
+    def remaining(self, opid):
+        with self.lock:
+            return max(0, self.operations[opid]['deadline'] - time.monotonic())
+
+    def release(self, opid):
+        with self.lock:
+            operation = self.operations.get(opid)
+            if operation is None:
+                return 404, {'error': 'unknown-operation'}
+            state = operation['state']
+            if state['timedOut'] or (not state['released'] and time.monotonic() >= operation['deadline']):
+                state.update(timedOut=True, failure='gate-timeout')
+                operation['release'].set()
+                return 409, dict(state)
+            state['released'] = True
+            operation['release'].set()
+            return 200, dict(state)
+
+    def await_release(self, opid):
+        with self.lock:
+            operation = self.operations[opid]
+            delay = max(0, operation['deadline'] - time.monotonic())
+        operation['release'].wait(delay)
+        with self.lock:
+            state = operation['state']
+            if state['released'] and not state['timedOut']:
+                return True
+            state.update(timedOut=True, failure='gate-timeout')
+            return False
+
+    def summary(self, opid):
+        with self.lock:
+            operation = self.operations[opid]
+            if operation['logged']:
+                return
+            operation['logged'] = True
+            event = {'event': 'owned-transfer-summary', **operation['state']}
+        print(json.dumps(event, sort_keys=True), flush=True)
 
 
 class Origin(http.server.BaseHTTPRequestHandler):
@@ -32,6 +120,7 @@ class Origin(http.server.BaseHTTPRequestHandler):
     _access_count = 0
     _access_limit = 256
     _access_lock = threading.Lock()
+    _transfer_gates = TransferGates()
 
     def log_message(self, *_):
         pass
@@ -79,7 +168,117 @@ class Origin(http.server.BaseHTTPRequestHandler):
         finally:
             self.access_diagnostic(status, len(data), body_len, written, error)
 
+    def transfer_headers(self, status, length, route, kind='application/json'):
+        self.close_connection = True
+        self.send_response(status)
+        self.send_header('Content-Type', kind)
+        self.send_header('X-Fixture-Route', route)
+        self.send_header('Content-Length', str(length))
+        self.send_header('Cache-Control', 'no-store')
+        self.send_header('Connection', 'close')
+        self.end_headers()
+
+    def transfer_json(self, status, value, route):
+        # Control traffic never consumes the ordinary origin's diagnostic quota.
+        data = json.dumps(value, sort_keys=True).encode()
+        try:
+            self.transfer_headers(status, len(data), route)
+            self.wfile.write(data)
+            self.wfile.flush()
+        except OSError:
+            pass
+
+    def transfer(self, method):
+        route = {'127.0.0.2': 'A', '127.0.0.3': 'B'}.get(self.client_address[0], 'direct')
+        control = re.fullmatch(r'/transfer-control/(' + TRANSFER_ID + r')/(state|release)', self.path)
+        if control:
+            opid, action = control.groups()
+            if isinstance(self.connection, ssl.SSLSocket) or route != 'direct':
+                self.transfer_json(403, {'error': 'direct-http-control-only'}, route)
+            elif method == 'GET' and action == 'state':
+                state = Origin._transfer_gates.state(opid)
+                self.transfer_json(404 if state is None else 200,
+                                   {'error': 'unknown-operation'} if state is None else state, route)
+            elif (method == 'POST' and action == 'release'
+                  and self.headers.get('Content-Length', '0') == '0'
+                  and self.headers.get('Transfer-Encoding') is None):
+                status, state = Origin._transfer_gates.release(opid)
+                self.transfer_json(status, state, route)
+            else:
+                self.transfer_json(400, {'error': 'invalid-control-request'}, route)
+            return
+        business = re.fullmatch(r'/transfer/(' + TRANSFER_ID + r')/(download|upload)', self.path)
+        if business is None:
+            self.transfer_json(400, {'error': 'invalid-transfer-path'}, route)
+            return
+        opid, kind = business.groups()
+        origin = 'https' if isinstance(self.connection, ssl.SSLSocket) else 'http'
+        if opid.split('-', 2)[1] != origin or method != ('GET' if kind == 'download' else 'POST'):
+            self.transfer_json(400, {'error': 'transfer-origin-or-method-mismatch'}, route)
+            return
+        total = len(TRANSFER_DOWNLOAD)
+        if kind == 'upload':
+            length = self.headers.get('Content-Length', '')
+            if self.headers.get('Transfer-Encoding') is not None or not re.fullmatch(r'[0-9]{1,6}', length):
+                self.transfer_json(400, {'error': 'bounded-content-length-required'}, route)
+                return
+            total = int(length)
+            if total < 1 or total > TRANSFER_MAX_BODY_BYTES:
+                self.transfer_json(413, {'error': 'upload-body-limit'}, route)
+                return
+        status, state = Origin._transfer_gates.start(opid, kind, origin, route, total)
+        if status != 200:
+            self.transfer_json(status, state, route)
+            return
+        gates = Origin._transfer_gates
+        self.connection.settimeout(TRANSFER_IO_TIMEOUT_SECONDS)
+        try:
+            if kind == 'download':
+                self.transfer_headers(200, total, route, 'application/octet-stream')
+                self.wfile.write(TRANSFER_DOWNLOAD[:TRANSFER_PREFIX_BYTES])
+                self.wfile.flush()
+                gates.update(opid, prefix=True, responseBytesWritten=TRANSFER_PREFIX_BYTES)
+            else:
+                digest, received = hashlib.sha256(), 0
+                try:
+                    while received < total:
+                        remaining = gates.remaining(opid)
+                        if remaining <= 0:
+                            raise TimeoutError('owned-upload-deadline')
+                        self.connection.settimeout(min(TRANSFER_IO_TIMEOUT_SECONDS, remaining))
+                        part = self.rfile.read(min(TRANSFER_PREFIX_BYTES, total - received))
+                        if not part:
+                            raise EOFError('incomplete-owned-upload')
+                        digest.update(part)
+                        received += len(part)
+                        gates.update(opid, prefix=True, requestBytesRead=received)
+                except (OSError, EOFError) as failure:
+                    gates.update(opid, readError=type(failure).__name__, failure='upload-read-failed')
+                    self.transfer_json(408, {'error': 'upload-read-failed'}, route)
+                    return
+                gates.update(opid, bodyComplete=True, commitCount=1, payloadSha256=digest.hexdigest())
+            if not gates.await_release(opid):
+                if kind == 'upload':
+                    self.transfer_json(504, {'error': 'gate-timeout'}, route)
+                return
+            if kind == 'download':
+                self.wfile.write(TRANSFER_DOWNLOAD[TRANSFER_PREFIX_BYTES:])
+                self.wfile.flush()
+                gates.update(opid, responseBytesWritten=total, completed=True)
+            else:
+                self.transfer_headers(200, len(TRANSFER_UPLOAD_ACK), route)
+                self.wfile.write(TRANSFER_UPLOAD_ACK)
+                self.wfile.flush()
+                gates.update(opid, responseBytesWritten=len(TRANSFER_UPLOAD_ACK), completed=True)
+        except OSError as failure:
+            gates.update(opid, writeError=type(failure).__name__, failure='response-write-failed')
+        finally:
+            gates.summary(opid)
+
     def do_GET(self):
+        if self.path.startswith(('/transfer/', '/transfer-control/')):
+            self.transfer('GET')
+            return
         route = {'127.0.0.2': 'A', '127.0.0.3': 'B'}.get(self.client_address[0], 'direct')
         path = self.path.partition('?')[0]
         # Unique, synthetic operation paths let CI count reloads and request replay
@@ -97,6 +296,9 @@ class Origin(http.server.BaseHTTPRequestHandler):
         self.finite_response(200, data, route, kind)
 
     def do_POST(self):
+        if self.path.startswith(('/transfer/', '/transfer-control/')):
+            self.transfer('POST')
+            return
         try:
             data = self.rfile.read(int(self.headers.get('Content-Length', '0')))
         except OSError as failure:

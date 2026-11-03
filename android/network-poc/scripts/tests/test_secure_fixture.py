@@ -7,6 +7,7 @@ from pathlib import Path
 import ssl
 import tempfile
 import threading
+import time
 import unittest
 from unittest import mock
 from urllib.parse import parse_qs, urlsplit
@@ -167,6 +168,220 @@ class SecureFixtureTests(unittest.TestCase):
         for host in ('10.0.2.2', '127.0.0.1'):
             fixture.openssl('verify', '-CAfile', str(self.folder / 'ca.pem'),
                             '-verify_ip', host, str(self.folder / 'ca.pem'))
+
+    def transfer_control(self, server, opid, action='state'):
+        client = http.client.HTTPConnection('127.0.0.1', server.server_port, timeout=3)
+        try:
+            client.request('GET' if action == 'state' else 'POST',
+                           f'/transfer-control/{opid}/{action}')
+            response = client.getresponse()
+            return response.status, json.loads(response.read())
+        finally:
+            client.close()
+
+    def await_transfer(self, control, opid, field):
+        deadline = time.monotonic() + 3
+        while time.monotonic() < deadline:
+            status, state = self.transfer_control(control, opid)
+            if status == 200 and state[field]:
+                return state
+            threading.Event().wait(0.01)
+        self.fail('transfer phase not observed: ' + field)
+
+    def test_transfer_download_prefix_requires_release_for_http_and_https(self):
+        gates = fixture.TransferGates(timeout=5)
+        http_server = fixture.http.server.ThreadingHTTPServer(('127.0.0.1', 0), fixture.Origin)
+        https_server = fixture.http.server.ThreadingHTTPServer(('127.0.0.1', 0), fixture.Origin)
+        https_server.socket = fixture.tls_context(self.folder).wrap_socket(https_server.socket, server_side=True)
+        servers = [http_server, https_server]
+        threads = [threading.Thread(target=server.serve_forever, daemon=True) for server in servers]
+        with mock.patch.object(fixture.Origin, '_transfer_gates', gates), \
+                mock.patch.object(fixture.Origin, 'access_diagnostic') as ordinary:
+            for thread in threads:
+                thread.start()
+            try:
+                for origin, server in zip(('http', 'https'), servers):
+                    opid = f'tls-{origin}-prefix-download'
+                    options = {'timeout': 3}
+                    if origin == 'https':
+                        options['context'] = ssl.create_default_context(cafile=str(self.folder / 'ca.pem'))
+                    client_type = http.client.HTTPConnection if origin == 'http' else http.client.HTTPSConnection
+                    client = client_type('127.0.0.1', server.server_port, **options)
+                    try:
+                        self.assertEqual(self.transfer_control(http_server, opid)[0], 404)
+                        client.request('GET', f'/transfer/{opid}/download')
+                        response = client.getresponse()
+                        self.assertEqual(response.status, 200)
+                        self.assertEqual(response.read(fixture.TRANSFER_PREFIX_BYTES), b'D' * 4096)
+                        state = self.await_transfer(http_server, opid, 'prefix')
+                        self.assertFalse(state['released'])
+                        self.assertFalse(state['completed'])
+                        self.assertEqual(state['responseBytesWritten'], 4096)
+                        self.assertEqual(state['totalBytes'], 262144)
+                        self.assertEqual(self.transfer_control(http_server, opid, 'release')[0], 200)
+                        self.assertEqual(response.read(), b'D' * (262144 - 4096))
+                        state = self.await_transfer(http_server, opid, 'completed')
+                        self.assertEqual(state['opCount'], 1)
+                        self.assertEqual(state['commitCount'], 0)
+                        self.assertEqual(state['payloadSha256'], hashlib.sha256(b'D' * 262144).hexdigest())
+                        self.assertEqual(state['responseBytesWritten'], 262144)
+                        self.assertIsNone(state['writeError'])
+                        self.assertFalse(state['timedOut'])
+                        self.assertEqual(self.transfer_control(http_server, opid, 'release')[0], 200)
+                    finally:
+                        self.transfer_control(http_server, opid, 'release')
+                        client.close()
+                ordinary.assert_not_called()
+            finally:
+                for server in servers:
+                    server.shutdown()
+                    server.server_close()
+                for thread in threads:
+                    thread.join(timeout=2)
+
+    def test_transfer_upload_commits_once_before_response_and_rejects_duplicate(self):
+        gates = fixture.TransferGates(timeout=5)
+        server = fixture.http.server.ThreadingHTTPServer(('127.0.0.1', 0), fixture.Origin)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        result, failures = [], []
+        opid = 'raw-http-committed-upload'
+        body = b'owned-synthetic-content-not-for-logs' * 128
+
+        def upload():
+            client = http.client.HTTPConnection('127.0.0.1', server.server_port, timeout=4)
+            try:
+                client.request('POST', f'/transfer/{opid}/upload', body=body)
+                response = client.getresponse()
+                result.append((response.status, response.read()))
+            except Exception as failure:
+                failures.append(type(failure).__name__)
+            finally:
+                client.close()
+
+        uploader = threading.Thread(target=upload, daemon=True)
+        with mock.patch.object(fixture.Origin, '_transfer_gates', gates), \
+                mock.patch.object(fixture.Origin, 'access_diagnostic') as ordinary, \
+                mock.patch('builtins.print') as diagnostic:
+            thread.start()
+            uploader.start()
+            try:
+                state = self.await_transfer(server, opid, 'bodyComplete')
+                self.assertEqual(state['requestBytesRead'], len(body))
+                self.assertEqual(state['payloadSha256'], hashlib.sha256(body).hexdigest())
+                self.assertEqual(state['commitCount'], 1)
+                self.assertEqual(state['responseBytesWritten'], 0)
+                self.assertFalse(state['completed'])
+                self.assertTrue(uploader.is_alive())
+                duplicate = http.client.HTTPConnection('127.0.0.1', server.server_port, timeout=3)
+                try:
+                    duplicate.request('POST', f'/transfer/{opid}/upload', body=b'duplicate')
+                    response = duplicate.getresponse()
+                    self.assertEqual(response.status, 409)
+                    self.assertEqual(json.loads(response.read())['opCount'], 2)
+                finally:
+                    duplicate.close()
+                self.assertEqual(self.transfer_control(server, opid, 'release')[0], 200)
+                uploader.join(timeout=3)
+                self.assertFalse(uploader.is_alive())
+                self.assertFalse(failures)
+                self.assertEqual(result, [(200, fixture.TRANSFER_UPLOAD_ACK)])
+                state = self.await_transfer(server, opid, 'completed')
+                self.assertEqual(state['commitCount'], 1)
+                self.assertEqual(state['attemptCount'], 2)
+                ordinary.assert_not_called()
+                deadline = time.monotonic() + 2
+                while diagnostic.call_count == 0 and time.monotonic() < deadline:
+                    threading.Event().wait(0.01)
+                self.assertEqual(diagnostic.call_count, 1)
+                event = json.loads(diagnostic.call_args.args[0])
+                self.assertEqual(event['event'], 'owned-transfer-summary')
+                self.assertEqual(event['opid'], opid)
+                self.assertEqual(event['commitCount'], 1)
+                self.assertNotIn(body.decode(), json.dumps(event))
+                self.assertNotIn('owned-synthetic-content-not-for-logs', json.dumps(event))
+                self.assertNotIn('vless://', json.dumps(event))
+                self.assertNotIn('PRIVATE KEY', json.dumps(event))
+            finally:
+                self.transfer_control(server, opid, 'release')
+                uploader.join(timeout=3)
+                server.shutdown()
+                server.server_close()
+                thread.join(timeout=2)
+
+    def test_transfer_gate_timeout_and_operation_capacity_are_explicit(self):
+        gates = fixture.TransferGates(timeout=0, limit=1)
+        opid = 'raw-http-timeout-download'
+        status, state = gates.start(opid, 'download', 'http', 'A', 262144)
+        self.assertEqual(status, 200)
+        self.assertFalse(gates.await_release(opid))
+        state = gates.state(opid)
+        self.assertTrue(state['timedOut'])
+        self.assertEqual(state['failure'], 'gate-timeout')
+        self.assertFalse(state['completed'])
+        self.assertFalse(state['released'])
+        self.assertEqual(gates.release(opid)[0], 409)
+        self.assertEqual(gates.start('raw-http-capacity-upload', 'upload', 'http', 'A', 1)[0], 429)
+        self.assertEqual(gates.release('raw-http-unknown-upload')[0], 404)
+        with mock.patch('builtins.print') as output:
+            gates.summary(opid)
+            gates.summary(opid)
+        self.assertEqual(output.call_count, 1)
+        self.assertLess(len(output.call_args.args[0]), 1024)
+
+    def test_transfer_download_timeout_closes_an_incomplete_response(self):
+        gates = fixture.TransferGates(timeout=0)
+        server = fixture.http.server.ThreadingHTTPServer(('127.0.0.1', 0), fixture.Origin)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        opid = 'raw-http-expired-download'
+        with mock.patch.object(fixture.Origin, '_transfer_gates', gates):
+            thread.start()
+            client = http.client.HTTPConnection('127.0.0.1', server.server_port, timeout=3)
+            try:
+                client.request('GET', f'/transfer/{opid}/download')
+                response = client.getresponse()
+                self.assertEqual(response.status, 200)
+                with self.assertRaises(http.client.IncompleteRead) as failure:
+                    response.read()
+                self.assertEqual(failure.exception.partial, b'D' * 4096)
+                state = gates.state(opid)
+                self.assertTrue(state['timedOut'])
+                self.assertFalse(state['completed'])
+                self.assertFalse(state['released'])
+                self.assertEqual(state['responseBytesWritten'], 4096)
+            finally:
+                client.close()
+                server.shutdown()
+                server.server_close()
+                thread.join(timeout=2)
+
+    def test_transfer_rejects_bad_ids_mismatched_origin_and_unbounded_upload(self):
+        server = fixture.http.server.ThreadingHTTPServer(('127.0.0.1', 0), fixture.Origin)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        with mock.patch.object(fixture.Origin, '_transfer_gates', fixture.TransferGates()), \
+                mock.patch.object(fixture.Origin, 'access_diagnostic') as ordinary:
+            thread.start()
+            try:
+                for method, path, headers, expected in (
+                    ('GET', '/transfer/not-a-bounded-id/download', {}, 400),
+                    ('GET', '/transfer/tls-https-wrong-origin/download', {}, 400),
+                    ('POST', '/transfer/raw-http-over-limit/upload', {'Content-Length': '262145'}, 413),
+                    ('POST', '/transfer/raw-http-chunked/upload', {'Transfer-Encoding': 'chunked'}, 400),
+                    ('GET', '/transfer-control/raw-http-invalid-query/state?hidden=do-not-log', {}, 400),
+                ):
+                    client = http.client.HTTPConnection('127.0.0.1', server.server_port, timeout=3)
+                    try:
+                        client.request(method, path, headers=headers)
+                        response = client.getresponse()
+                        self.assertEqual(response.status, expected)
+                        response.read()
+                    finally:
+                        client.close()
+                ordinary.assert_not_called()
+                self.assertFalse(fixture.Origin._transfer_gates.operations)
+            finally:
+                server.shutdown()
+                server.server_close()
+                thread.join(timeout=2)
 
     def test_rejects_unrecognized_x25519_der(self):
         with mock.patch.object(fixture, 'openssl', side_effect=[b'x' * 48, b'y' * 44]):
