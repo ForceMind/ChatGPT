@@ -7,7 +7,13 @@ TEST='com.forcemind.chatgpt.profiles.NetworkBenchmarkTest#syntheticThreeProfileR
 class FormalSampler(base.Sampler):
  def __init__(self,*args,mode,source,**kwargs):super().__init__(*args,**kwargs);self.mode=mode;self.source=source
  def preflight(self):
-  metadata=super().preflight();metadata['sourceSha']=self.source;metadata['mode']=self.mode;metadata['proxyTransport']={'configuredNode':'VLESS raw/none only for enabled control probe','activeDuringWindow':self.mode in ('enabled','background'),'webpageTraffic':'offline interceptor, no network stream'}
+  try:metadata=super().preflight()
+  except RuntimeError as failure:
+   if 'adb root failed' not in str(failure) or 'closed' not in str(failure):raise
+   self.adb('wait-for-device',timeout=30)
+   if self.shell('id','-u').strip()!='0':raise
+   metadata=super().preflight()
+  metadata['sourceSha']=self.source;metadata['mode']=self.mode;metadata['proxyTransport']={'configuredNode':'VLESS raw/none only for enabled control probe','activeDuringWindow':self.mode in ('enabled','background'),'webpageTraffic':'offline interceptor, no network stream'}
   (self.output/'environment.json').write_text(json.dumps(metadata,indent=2)+'\n');return metadata
  def launch(self):
   self.shell('run-as',base.PACKAGE,'rm','-f','files/resource-phase.json','files/resource-result.json','files/resource-ack')
@@ -22,7 +28,7 @@ class FormalSampler(base.Sampler):
    if file.exists():print(file.read_text()[-9000:],flush=True)
    raise
  def cleanup(self):
-  for name in ['resource-load-evidence.json','resource-native-maps.txt','resource-background-heartbeats.json','resource-result.json']:
+  for name in ['resource-load-evidence.json','resource-native-maps.txt','resource-background-heartbeats.json','resource-result.json','resource-task-preflight.json']:
    try:(self.output/name).write_text(self.phase_file(name))
    except Exception:pass
   super().cleanup()
