@@ -11,6 +11,6 @@ collect_diagnostics() {
   cp "$RUNNER_TEMP/network-fixture.log" evidence/fixture.log 2>/dev/null || true
 }
 trap collect_diagnostics EXIT
-find app/build/outputs/apk/ci/debug -name '*.apk' -print -quit | xargs adb install -r
-find app/build/outputs/apk/androidTest/ci/debug -name '*.apk' -print -quit | xargs adb install -r
+find app/build/outputs/apk/ci/debug -name '*.apk' -print -quit | xargs adb install -r -t
+find app/build/outputs/apk/androidTest/ci/debug -name '*.apk' -print -quit | xargs adb install -r -t
 python3 -u scripts/run-stability.py --fixture secure-fixture/fixture.json --transport "${NETWORK_TEST_TRANSPORT:?}" --output evidence/stability

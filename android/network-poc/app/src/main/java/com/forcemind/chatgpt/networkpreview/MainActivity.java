@@ -26,6 +26,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /** Isolated proof-of-concept application; its app ID and WebView directory never share formal login data. */
 public final class MainActivity extends ComponentActivity {
     private static final AtomicBoolean SPACE_SET = new AtomicBoolean();
+    static void ensureWebViewSpace() {
+        if (SPACE_SET.compareAndSet(false, true)) WebView.setDataDirectorySuffix("network-preview");
+    }
     private WebView web;
     private RouteManager routes;
     private NativeDownloads downloads;
@@ -40,7 +43,7 @@ public final class MainActivity extends ComponentActivity {
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override public void handleOnBackPressed() { if (web != null && web.canGoBack()) web.goBack(); else finish(); }
         });
-        if (SPACE_SET.compareAndSet(false, true)) WebView.setDataDirectorySuffix("network-preview");
+        ensureWebViewSpace();
         routes = new RouteManager(); downloads = new NativeDownloads(this, routes); store = new NodeStore(this);
         try { data = store.read(); } catch (Exception e) { data = new NodeStore.Data(); storeReadable = false; }
         LinearLayout layout = new LinearLayout(this); layout.setOrientation(LinearLayout.VERTICAL); layout.setBackgroundColor(Color.WHITE);
@@ -71,8 +74,7 @@ public final class MainActivity extends ComponentActivity {
                 String scheme = request.getUrl().getScheme(); return !"https".equals(scheme) && !"http".equals(scheme);
             }
             @Override public void onReceivedError(WebView w, WebResourceRequest request, WebResourceError error) {
-                RouteManager.State state = routes.snapshot().state;
-                if (request.isForMainFrame() && (state == RouteManager.State.DIRECT || state == RouteManager.State.CONNECTED))
+                if (request.isForMainFrame() && routes.snapshot().ready())
                     status.setText("页面连接失败 · 未自动重试");
             }
         });
@@ -105,8 +107,7 @@ public final class MainActivity extends ComponentActivity {
                     else if (which == 4) probe();
                     else if (which == 5) downloads.cancel();
                     else if (which == 6) new AlertDialog.Builder(this).setMessage("重新打开会离开当前页面。未完成的内容不会自动重发。").setNegativeButton("取消", null).setPositiveButton("打开", (a, b) -> {
-                        RouteManager.State s = routes.snapshot().state;
-                        if (s == RouteManager.State.DIRECT || s == RouteManager.State.CONNECTED) web.loadUrl(BuildConfig.NETWORK_HOME_URL);
+                        if (routes.snapshot().ready()) web.loadUrl(BuildConfig.NETWORK_HOME_URL);
                         else message("请先连接线路或选择直连");
                     }).show();
                 }).show();
@@ -121,12 +122,12 @@ public final class MainActivity extends ComponentActivity {
                 .setNeutralButton("详细信息", (d, w) -> message("核心：" + studio.networkcore.Networkcore.version() + "\n" + routes.error())).show();
     }
     private static String stateText(RouteManager.State state) {
-        switch (state) { case DIRECT: return "直连"; case CONNECTED: return "已连接 · 本地代理"; case CONNECTING: return "正在连接"; case FAILED: return "连接失败 · 请手动重连"; default: return "未连接"; }
+        switch (state) { case DIRECT: return "直连"; case SYSTEM: return "使用系统网络"; case CONNECTED: return "已连接 · 本地代理"; case CONNECTING: return "正在连接"; case FAILED: return "连接失败 · 请手动重连"; default: return "未连接"; }
     }
     private void renderRouteState(RouteManager.Snapshot snapshot) {
         if (isFinishing() || isDestroyed()) return;
         status.setText(stateText(snapshot.state));
-        boolean block = snapshot.state != RouteManager.State.DIRECT && snapshot.state != RouteManager.State.CONNECTED;
+        boolean block = !snapshot.ready();
         web.getSettings().setBlockNetworkLoads(block);
         for (WebView popup : popups) popup.getSettings().setBlockNetworkLoads(block);
     }

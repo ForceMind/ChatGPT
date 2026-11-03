@@ -1,3 +1,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools">
-    <application android:usesCleartextTraffic="true" android:networkSecurityConfig="@xml/ci_network_security" tools:replace="android:usesCleartextTraffic" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <application android:usesCleartextTraffic="true" android:networkSecurityConfig="@xml/ci_network_security" android:testOnly="true" tools:replace="android:usesCleartextTraffic">
+        <activity android:name=".JointProfileActivity" android:exported="true" android:launchMode="singleTask" />
+        <provider android:name=".OwnedDocumentsProvider" android:authorities="${applicationId}.owned-docs" android:exported="false" android:grantUriPermissions="true" />
+        <receiver android:name=".JointProxyAdminReceiver" android:exported="true" android:permission="android.permission.BIND_DEVICE_ADMIN">
+            <meta-data android:name="android.app.device_admin" android:resource="@xml/joint_device_admin" />
+            <intent-filter><action android:name="android.app.action.DEVICE_ADMIN_ENABLED" /></intent-filter>
+        </receiver>
+    </application>
 </manifest>

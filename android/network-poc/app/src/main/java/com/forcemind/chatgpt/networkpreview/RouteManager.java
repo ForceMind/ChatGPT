@@ -18,15 +18,18 @@ import studio.networkcore.Networkcore;
 public final class RouteManager {
     public interface Listener { void complete(boolean success, String message); }
     public interface StateListener { void changed(Snapshot snapshot); }
-    public enum State { DIRECT, CONNECTING, CONNECTED, FAILED, CLOSED }
+    public enum State { DIRECT, SYSTEM, CONNECTING, CONNECTED, FAILED, CLOSED }
     public static final class Snapshot {
         public final State state; public final VlessNode node; public final int port; public final long generation;
         Snapshot(State state, VlessNode node, int port, long generation) { this.state = state; this.node = node; this.port = port; this.generation = generation; }
+        public boolean ready() { return state == State.DIRECT || state == State.SYSTEM || state == State.CONNECTED; }
         public Proxy proxy() {
             if (state != State.DIRECT && state != State.CONNECTED) throw new IllegalStateException("线路尚未就绪");
             return node == null ? Proxy.NO_PROXY : new Proxy(Proxy.Type.HTTP, new InetSocketAddress("127.0.0.1", port));
         }
         public java.net.HttpURLConnection openConnection(java.net.URL url) throws java.io.IOException {
+            if (!ready()) throw new IllegalStateException("线路尚未就绪");
+            if (state == State.SYSTEM) return (java.net.HttpURLConnection) url.openConnection();
             Proxy selected = proxy();
             // Legacy WebView follows Android's system proxy; native files must do the same.
             return (java.net.HttpURLConnection) (state == State.DIRECT && !supportsWebViewProxy()
@@ -114,13 +117,18 @@ public final class RouteManager {
     }
     public synchronized int activeTransfers() { return transfers; }
     public synchronized Snapshot beginTransfer() {
-        Snapshot s = current; s.proxy();
+        Snapshot s = current;
+        if (!s.ready()) throw new IllegalStateException("线路尚未就绪");
         if (closed) throw new IllegalStateException("线路已关闭");
         transfers++; return s;
     }
     public synchronized void endTransfer() { if (transfers > 0) transfers--; }
     public void useDirect(Listener listener) { switchTo(null, listener); }
+    public void useSystem(Listener listener) { switchTo(null, true, listener); }
     public void switchTo(VlessNode node, Listener listener) {
+        switchTo(node, false, listener);
+    }
+    private void switchTo(VlessNode node, boolean system, Listener listener) {
         final Snapshot pending;
         synchronized (this) {
             if (closed || current.state == State.CLOSED) { listener.complete(false, "线路已关闭"); return; }
@@ -155,7 +163,7 @@ public final class RouteManager {
                     } finally { if (probe != null) probe.disconnect(); }
                 }
                 final int appliedPort = port;
-                main.post(() -> applyWebView(node, appliedPort, generation, listener));
+                main.post(() -> applyWebView(node, appliedPort, generation, system, listener));
             } catch (Exception e) {
                 if (BuildConfig.APPLICATION_ID.endsWith(".ci"))
                     android.util.Log.e("NetworkPreviewCI", "startup stage=" + stage + " exception=" + e.getClass().getName());
@@ -164,7 +172,7 @@ public final class RouteManager {
             }
         });
     }
-    private void applyWebView(VlessNode node, int port, long generation, Listener listener) {
+    private void applyWebView(VlessNode node, int port, long generation, boolean system, Listener listener) {
         if (closed || current.generation != generation || current.state != State.CONNECTING) return;
         Runnable timeout = () -> {
             if (closed || current.generation != generation || current.state != State.CONNECTING) return;
@@ -174,13 +182,14 @@ public final class RouteManager {
         Runnable done = () -> {
             main.removeCallbacks(timeout);
             if (closed || current.generation != generation || current.state != State.CONNECTING) return;
-            current = new Snapshot(node == null ? State.DIRECT : State.CONNECTED, node, port, generation);
+            current = new Snapshot(node == null ? (system ? State.SYSTEM : State.DIRECT) : State.CONNECTED, node, port, generation);
             stateChanged(current);
-            listener.complete(true, node == null ? "直连" : "已连接；仅已验证当前检查目标");
+            listener.complete(true, node == null ? (system ? "使用系统网络" : "直连") : "已连接；仅已验证当前检查目标");
         };
         main.postDelayed(timeout, 12000);
         try {
             if (!supportsWebViewProxy()) { if (node == null) done.run(); else fail(generation, listener, "WebView 不支持代理覆盖"); }
+            else if (system) ProxyController.getInstance().clearProxyOverride(main::post, done);
             else if (node == null) ProxyController.getInstance().setProxyOverride(new ProxyConfig.Builder().addDirect().build(), main::post, done);
             else ProxyController.getInstance().setProxyOverride(new ProxyConfig.Builder()
                     .addProxyRule("http://127.0.0.1:" + port).removeImplicitRules().build(), main::post, done);

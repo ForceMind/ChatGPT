@@ -2,6 +2,14 @@
 
 状态：Android 独立网络预览 0.1.0 已交付；核心停止状态和在途文件故障修复已在 GitHub Actions 合成验证通过（2026-11-03）。正式接入方案已形成，尚未实施。
 
+## 当前批次：独立多 Profile 联合验收（进行中）
+
+用户已确认按 [正式接入建议](android-network-integration-plan.md) 推进下一批联合验收；只修改独立包，不实施正式客户端适配。目标为三个真实隔离 Profile、四页及所属弹窗，核对账号 Cookie / localStorage、两类原生文件出口与网页同路由、账号 epoch、Activity 重建、系统 HTTP 代理 / PAC 及明确停用回退。正式 App、登录数据、生产签名、main、官网、公开 Release、依赖版本和工作流不变。
+
+当前第一迭代先构建真实会话支架，并在原路由测试前执行独立能力门槛：动态读取实际 provider / API、`MULTI_PROFILE`、`PROXY_OVERRIDE` 和系统 ProxyInfo，报告明确标记 `fullJointAcceptance=false`。不支持即保存证据并失败，不用默认共享 Profile 代替，也不将原四项回归通过当作联合验收通过。
+
+系统代理 / PAC 的后续真实验收只允许全新 CI 模拟器临时 DeviceOwner 和公开 DPM API；测试后恢复并撤销，不用隐 API / 安全豁免或仅写 settings 自证。管理员 Receiver、Provider 与 testOnly 仅在 ci flavor；预览 APK 的编译产物将单独核对隔离。Profile 清理先立即使该账号 epoch / 资源失效；物理删除按实际 API 结果报告，若已加载而无法删除，则在新的测试进程、加载 Profile 前验证 owned tombstone 清理，不冒称本进程已抹除数据。完整联合功能、系统路由与清理仍未运行验收。
+
 ## 已验证：在途文件故障收口（2026-11-03）
 
 用户已明确批准：先在独立包验证上传 / 下载进行中核心停止、取消、关闭和重连，必要时做最小修复；通过后形成正式接入方案，但不实施正式接入。构建和浏览器 / 文件交互仅在 Actions 合成环境，正式 App、登录 / 恢复数据、生产签名、main、官网和公开版本保持原状。
