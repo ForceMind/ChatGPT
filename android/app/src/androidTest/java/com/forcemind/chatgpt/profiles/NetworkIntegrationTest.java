@@ -145,7 +145,7 @@ public final class NetworkIntegrationTest {
         origin=args.getString("origin");String transport=args.getString("transport");prefix="formal-"+transport+"-";
         report.put("schema",1).put("sourceSHA",args.getString("sourceSHA")).put("api",android.os.Build.VERSION.SDK_INT).put("transport",transport).put("screenshots",false).put("realChatGPT",false);
         AtomicReference<NetworkSession> off=new AtomicReference<>();main(()->off.set(BrowserMemory.get(context).network()));until("default system readiness",()->off.get().ready(),15);
-        assertEquals(NetworkRoute.State.SYSTEM,off.get().routes.snapshot().state);assertFalse(off.get().routes.coreInitialized());assertFalse(new String(Files.readAllBytes(new File("/proc/self/maps").toPath()),StandardCharsets.UTF_8).contains("libgojni"));
+        assertEquals(NetworkRoute.State.SYSTEM,off.get().routes.snapshot().state);assertFalse(off.get().routes.coreInitialized());assertFalse(NetworkBenchmarkTest.goMapped(context));
         report.put("disabledCoreUnloaded",true);main(()->BrowserMemory.get(context).clear());seed();
         try(ActivityScenario<MainActivity> scenario=ActivityScenario.launch(MainActivity.class)){
             scenario.onActivity(current->{activity=current;memory=BrowserMemory.get(context);session=memory.network();});until("restored selected route before pages",()->session.ready(),35);assertEquals("A",session.routes.snapshot().node.name);

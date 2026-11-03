@@ -43,6 +43,25 @@ public final class NetworkBenchmarkTest {
     private void ack(String token)throws Exception{long end=SystemClock.elapsedRealtime()+(seconds+120L)*1000;File file=new File(context.getFilesDir(),"resource-ack");while(SystemClock.elapsedRealtime()<end){if(file.isFile()&&token.equals(new String(Files.readAllBytes(file.toPath()),StandardCharsets.UTF_8)))return;Thread.sleep(250);}throw new AssertionError("Missing full host window ack: "+token);}
     private String js(WebView web,String code)throws Exception{CountDownLatch done=new CountDownLatch(1);AtomicReference<String> out=new AtomicReference<>();main(()->web.evaluateJavascript(code,value->{out.set(value);done.countDown();}));assertTrue(done.await(10,TimeUnit.SECONDS));return out.get();}
     private Object invoke(String method,Class<?>[] types,Object... values){try{Method call=MainActivity.class.getDeclaredMethod(method,types);call.setAccessible(true);return call.invoke(activity,values);}catch(Exception failure){throw new AssertionError(method,failure);}}
+    static boolean goMapped(Context context)throws Exception{
+        String maps=new String(Files.readAllBytes(new File("/proc/self/maps").toPath()),StandardCharsets.UTF_8);
+        if(maps.contains("libgojni.so"))return true;
+        File apk=new File(context.getApplicationInfo().sourceDir);
+        try(java.io.RandomAccessFile input=new java.io.RandomAccessFile(apk,"r")){
+            int count=(int)Math.min(input.length(),65557);byte[] tail=new byte[count];input.seek(input.length()-count);input.readFully(tail);java.nio.ByteBuffer end=java.nio.ByteBuffer.wrap(tail).order(java.nio.ByteOrder.LITTLE_ENDIAN);int eocd=-1;
+            for(int i=count-22;i>=0;i--)if(end.getInt(i)==0x06054b50){eocd=i;break;}assertTrue("APK ZIP directory",eocd>=0);
+            long central=Integer.toUnsignedLong(end.getInt(eocd+16));int entries=Short.toUnsignedInt(end.getShort(eocd+10));input.seek(central);
+            for(int i=0;i<entries;i++){
+                byte[] header=new byte[46];input.readFully(header);java.nio.ByteBuffer h=java.nio.ByteBuffer.wrap(header).order(java.nio.ByteOrder.LITTLE_ENDIAN);assertEquals(0x02014b50,h.getInt(0));int nameLen=Short.toUnsignedInt(h.getShort(28)),extra=Short.toUnsignedInt(h.getShort(30)),comment=Short.toUnsignedInt(h.getShort(32));byte[] name=new byte[nameLen];input.readFully(name);String member=new String(name,StandardCharsets.UTF_8);long next=input.getFilePointer()+extra+comment;
+                if(member.startsWith("lib/")&&member.endsWith("/libgojni.so")&&h.getShort(10)==0){
+                    long local=Integer.toUnsignedLong(h.getInt(42)),size=Integer.toUnsignedLong(h.getInt(24));input.seek(local);byte[] localHeader=new byte[30];input.readFully(localHeader);java.nio.ByteBuffer l=java.nio.ByteBuffer.wrap(localHeader).order(java.nio.ByteOrder.LITTLE_ENDIAN);assertEquals(0x04034b50,l.getInt(0));long start=local+30+Short.toUnsignedInt(l.getShort(26))+Short.toUnsignedInt(l.getShort(28));
+                    for(String row:maps.split("\\n")){String[] fields=row.trim().split("\\s+",6);if(fields.length==6&&fields[1].contains("x")&&fields[5].startsWith(apk.getPath())){long offset=Long.parseLong(fields[2],16);if(offset>=start&&offset<start+size)return true;}}
+                }
+                input.seek(next);
+            }
+        }
+        return false;
+    }
     private void configure(String mode)throws Exception{
         if(mode.equals("baseline")){try{Class.forName("com.forcemind.chatgpt.profiles.NetworkSession");fail("Baseline must be actual pre-integration code");}catch(ClassNotFoundException expected){}return;}
         if(mode.equals("system"))return;
@@ -83,8 +102,9 @@ public final class NetworkBenchmarkTest {
             for(WorkspaceState.Account account:state.accounts)for(WorkspaceState.Tab tab:account.tabs){main(()->{assertTrue((Boolean)invoke("change",new Class<?>[]{Consumer.class},(Consumer<WorkspaceState>)(s->{s.activeAccount=account.id;s.find(account.id).activeTab=tab.id;})));invoke("showCurrent",new Class<?>[]{});});long end=SystemClock.elapsedRealtime()+35000;AtomicReference<WebView> web=new AtomicReference<>();String mark=null;do{main(()->web.set(activity.recoveryCurrentWeb()));if(web.get()!=null){mark=js(web.get(),"window.__identity");if(mark!=null&&mark.startsWith("\"owned-"))break;}Thread.sleep(75);}while(SystemClock.elapsedRealtime()<end);assertNotNull(mark);assertTrue(mark.startsWith("\"owned-"));pages.add(web.get());identities.add(mark);}
             assertEquals(4,pages.size());
             long readyMillis=SystemClock.elapsedRealtime()-launched;
-            boolean goLoaded=new String(Files.readAllBytes(new File("/proc/self/maps").toPath()),StandardCharsets.UTF_8).contains("libgojni");assertEquals(!mode.equals("baseline")&&!mode.equals("system"),goLoaded);
-            if(!mode.equals("baseline")){Method get=BrowserMemory.class.getDeclaredMethod("network");get.setAccessible(true);network=get.invoke(BrowserMemory.get(context));}
+            boolean goLoaded=goMapped(context);JSONObject loadProof=new JSONObject().put("mode",mode).put("mapped",goLoaded).put("apk",context.getApplicationInfo().sourceDir);Files.write(new File(context.getFilesDir(),"resource-native-maps.txt").toPath(),Files.readAllBytes(new File("/proc/self/maps").toPath()));
+            if(!mode.equals("baseline")){Method get=BrowserMemory.class.getDeclaredMethod("network");get.setAccessible(true);network=get.invoke(BrowserMemory.get(context));java.lang.reflect.Field field=network.getClass().getDeclaredField("routes");field.setAccessible(true);Object routes=field.get(network);boolean initialized=(Boolean)routes.getClass().getMethod("coreInitialized").invoke(routes);Object snapshot=routes.getClass().getMethod("snapshot").invoke(routes);loadProof.put("coreInitialized",initialized).put("routeState",String.valueOf(snapshot.getClass().getField("state").get(snapshot)));}
+            write("resource-load-evidence.json",loadProof);if(!mode.equals("baseline"))assertEquals(!mode.equals("system"),loadProof.getBoolean("coreInitialized"));assertEquals("actual executable JNI mapping, including APK-direct load",!mode.equals("baseline")&&!mode.equals("system"),goLoaded);
             if(mode.equals("warm-system"))stopToSystem();
             if(mode.equals("background")){main(()->KeepaliveService.enable(context));long end=SystemClock.elapsedRealtime()+10000;while(!KeepaliveService.running()&&SystemClock.elapsedRealtime()<end)Thread.sleep(50);assertTrue(KeepaliveService.running());phase("background",false,true);}
             else{phase("idle",false,false);phase("stream",true,false);}

@@ -1771,10 +1771,4476 @@
     "systemPickerUIValidated": false
   },
   "phase2": {
-    "status": "code-prepared-awaiting-Actions"
+    "status": "passed",
+    "sourceSHA": "a6baf078656dbd5be763f83f26ade63e62c39159",
+    "run": 41690901023,
+    "devices": [
+      {
+        "artifact": 13257868056,
+        "archiveBytes": 10901,
+        "archiveSHA256": "2f89024424bd85664e620df5d04a1efa4f0be08538dfbbdf4d74243fefef62bb",
+        "api": 28,
+        "transport": "tls",
+        "initial": {
+          "complete": true,
+          "sourceSHA": "a6baf078656dbd5be763f83f26ade63e62c39159",
+          "api": 28,
+          "transport": "tls",
+          "exactRequests": 17,
+          "successfulFiles": 12,
+          "screenshots": false,
+          "realChatGPT": false
+        },
+        "fileSafety": {
+          "schema": 1,
+          "sourceSHA": "a6baf078656dbd5be763f83f26ade63e62c39159",
+          "api": 28,
+          "transport": "tls",
+          "screenshots": false,
+          "realChatGPT": false,
+          "accountClear": {
+            "elapsedMillis": 536,
+            "oldStorage": "69f44baf-4dc9-4beb-b9d1-c9d202c80834",
+            "assetBytesRetained": true,
+            "otherAccountStillTransferring": true,
+            "oldCallbackInvalid": true
+          },
+          "cancelledDocumentMillis": 52,
+          "closedOwner": {
+            "elapsedMillis": 55,
+            "partialRemoved": true,
+            "otherTransferPreserved": true,
+            "newRequestRejected": true
+          },
+          "realSystemPicker": true,
+          "writePermissionDenied": true,
+          "publisherFailure": {
+            "actualPrefixBytes": 4096,
+            "newPartialRemoved": true,
+            "existingDocumentPreserved": true
+          },
+          "lateSelectionIgnored": true,
+          "routeChangeBlockedWhileSelecting": true,
+          "syntheticAutomationGuard": true,
+          "gateFinal": [
+            {
+              "attemptCount": 1,
+              "bodyComplete": false,
+              "commitCount": 0,
+              "completed": true,
+              "failure": null,
+              "kind": "download",
+              "opCount": 1,
+              "opid": "tls-https-formal-clear-a",
+              "origin": "https",
+              "payloadSha256": "6646d3e1ba8d13e25ea0e4558fe982505f8d5d7704cf18c9d4dd992d4d103a62",
+              "prefix": true,
+              "readError": null,
+              "released": true,
+              "requestBytesRead": 0,
+              "responseBytesWritten": 262144,
+              "route": "A",
+              "started": true,
+              "syntheticAccount": "A",
+              "timedOut": false,
+              "totalBytes": 262144,
+              "transport": "tls",
+              "writeError": null
+            },
+            {
+              "attemptCount": 1,
+              "bodyComplete": false,
+              "commitCount": 0,
+              "completed": true,
+              "failure": null,
+              "kind": "download",
+              "opCount": 1,
+              "opid": "tls-https-formal-live-b",
+              "origin": "https",
+              "payloadSha256": "6646d3e1ba8d13e25ea0e4558fe982505f8d5d7704cf18c9d4dd992d4d103a62",
+              "prefix": true,
+              "readError": null,
+              "released": true,
+              "requestBytesRead": 0,
+              "responseBytesWritten": 262144,
+              "route": "A",
+              "started": true,
+              "syntheticAccount": "B",
+              "timedOut": false,
+              "totalBytes": 262144,
+              "transport": "tls",
+              "writeError": null
+            },
+            {
+              "attemptCount": 1,
+              "bodyComplete": false,
+              "commitCount": 0,
+              "completed": true,
+              "failure": null,
+              "kind": "download",
+              "opCount": 1,
+              "opid": "tls-https-formal-cancel-doc",
+              "origin": "https",
+              "payloadSha256": "6646d3e1ba8d13e25ea0e4558fe982505f8d5d7704cf18c9d4dd992d4d103a62",
+              "prefix": true,
+              "readError": null,
+              "released": true,
+              "requestBytesRead": 0,
+              "responseBytesWritten": 262144,
+              "route": "A",
+              "started": true,
+              "syntheticAccount": "C",
+              "timedOut": false,
+              "totalBytes": 262144,
+              "transport": "tls",
+              "writeError": null
+            },
+            {
+              "attemptCount": 1,
+              "bodyComplete": false,
+              "commitCount": 0,
+              "completed": true,
+              "failure": null,
+              "kind": "download",
+              "opCount": 1,
+              "opid": "tls-https-formal-publish-fault",
+              "origin": "https",
+              "payloadSha256": "6646d3e1ba8d13e25ea0e4558fe982505f8d5d7704cf18c9d4dd992d4d103a62",
+              "prefix": true,
+              "readError": null,
+              "released": true,
+              "requestBytesRead": 0,
+              "responseBytesWritten": 262144,
+              "route": "A",
+              "started": true,
+              "syntheticAccount": "C",
+              "timedOut": false,
+              "totalBytes": 262144,
+              "transport": "tls",
+              "writeError": null
+            },
+            {
+              "attemptCount": 1,
+              "bodyComplete": false,
+              "commitCount": 0,
+              "completed": true,
+              "failure": null,
+              "kind": "download",
+              "opCount": 1,
+              "opid": "tls-https-formal-owner-close",
+              "origin": "https",
+              "payloadSha256": "6646d3e1ba8d13e25ea0e4558fe982505f8d5d7704cf18c9d4dd992d4d103a62",
+              "prefix": true,
+              "readError": null,
+              "released": true,
+              "requestBytesRead": 0,
+              "responseBytesWritten": 262144,
+              "route": "A",
+              "started": true,
+              "syntheticAccount": "C",
+              "timedOut": false,
+              "totalBytes": 262144,
+              "transport": "tls",
+              "writeError": null
+            }
+          ],
+          "accountStorage": {
+            "B": "520b9106-f964-420d-92d3-c7c302aa71e3",
+            "C": "3c8886db-7889-4963-a738-302704f635a9"
+          },
+          "accounts": {
+            "A": "db176db4-9792-465c-a3df-d1b6b72b4ca1",
+            "B": "8f9e6262-1e0f-4245-b081-ad237ba2ac28",
+            "C": "8df925c2-4de8-4b7c-adef-2c40c5a59f0b"
+          },
+          "lastDocumentEvidence": {
+            "stage": "saved",
+            "authority": "com.forcemind.chatgpt.profiles.networkci.network-docs",
+            "flags": 3,
+            "taskId": "8d964f69-3e82-46cb-bf4c-658433418ebb",
+            "available": true,
+            "failureClass": null
+          },
+          "complete": true,
+          "files": [
+            {
+              "exit": "asset",
+              "account": "A",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "A",
+                "operation": "formal-files-tls-protected-A"
+              },
+              "id": "c50b255b-7c4c-4b58-9868-d7bb1928b69b",
+              "sha256": "852ceebb64050161e98f91488798bad2c8b1b07249c56ceea61380147fd50715"
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "S",
+              "body": {
+                "route": "S",
+                "account": "B",
+                "operation": "formal-files-tls-http-system-asset"
+              },
+              "id": "69d0f162-1d18-4a46-b87c-d7c698d671d7",
+              "sha256": "c56bae24360dc241e9fd28634b2fc526c09d0f7912c09f91acdb899882df38a1"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "S",
+              "body": {
+                "route": "S",
+                "account": "C",
+                "operation": "formal-files-tls-http-system-doc"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "B",
+                "operation": "formal-files-tls-http-app-A-asset"
+              },
+              "id": "7e7f1764-5c67-4a25-b0eb-f754708bcf98",
+              "sha256": "51999e2e6305c2012261ce062d4f559d7ff5d90da6f4e6ab5be4c443c6aaa6fe"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "C",
+                "operation": "formal-files-tls-http-app-A-doc"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "B",
+                "operation": "formal-files-tls-http-app-B-asset"
+              },
+              "id": "35195dc7-0576-4397-8f17-76d6ea758baf",
+              "sha256": "997326b65fd15a61f231f63ef1dd7ea65116790c7068f88fe598d6d9fd442d34"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "C",
+                "operation": "formal-files-tls-http-app-B-doc"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "S",
+              "body": {
+                "route": "S",
+                "account": "B",
+                "operation": "formal-files-tls-http-restored-asset"
+              },
+              "id": "2989698c-7984-4c93-848b-153b7fbb6e83",
+              "sha256": "501bd2948e06bae8b5914c878de1a42c9665dcaad1e01ed59bd6e8ee25342803"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "S",
+              "body": {
+                "route": "S",
+                "account": "C",
+                "operation": "formal-files-tls-http-restored-doc"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "P",
+              "body": {
+                "route": "P",
+                "account": "B",
+                "operation": "formal-files-tls-pac-system-asset"
+              },
+              "id": "3d9d6e4b-fca0-4fed-a0de-219f3288f2df",
+              "sha256": "48a72f40f3e818ca0bdfab76b9bee1ca7fdc4017205d769ed09ddb3a87abb46c"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "P",
+              "body": {
+                "route": "P",
+                "account": "C",
+                "operation": "formal-files-tls-pac-system-doc"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "B",
+                "operation": "formal-files-tls-pac-app-A-asset"
+              },
+              "id": "1bab7673-ae88-4586-8061-301e8da93fb6",
+              "sha256": "3c39f994e1d0ded426a20b5f2af6b2b84a3b7b32e8025e90b2584aa5fbc2feae"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "C",
+                "operation": "formal-files-tls-pac-app-A-doc"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "B",
+                "operation": "formal-files-tls-pac-app-B-asset"
+              },
+              "id": "b1d91c74-dec7-40a6-8667-97cd36df973e",
+              "sha256": "4b05e68f6a21c50f6cb88f51566ab916311fb2ca592a8679f501399ee3e3fd0e"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "C",
+                "operation": "formal-files-tls-pac-app-B-doc"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "P",
+              "body": {
+                "route": "P",
+                "account": "B",
+                "operation": "formal-files-tls-pac-restored-asset"
+              },
+              "id": "16b35e44-0659-4e5e-901c-4a4ec9a92722",
+              "sha256": "430f78b614f1eeb7c34dba48f80bcf172f7d1c58ed7b5f4abf01e90be575da40"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "P",
+              "body": {
+                "route": "P",
+                "account": "C",
+                "operation": "formal-files-tls-pac-restored-doc"
+              }
+            }
+          ],
+          "expectedRequests": [
+            {
+              "path": "/joint/formal-files-tls-page-A1/page",
+              "route": "A",
+              "syntheticAccount": "A",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-page-B1/page",
+              "route": "A",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-page-C1/page",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-protected-A/download",
+              "route": "A",
+              "syntheticAccount": "A",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-actual-system-save/download",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-refuse-existing-document/download",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-write-permission-denied/download",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-http-system-web/echo",
+              "route": "S",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-http-system-asset/download",
+              "route": "S",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-http-system-doc/download",
+              "route": "S",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-http-app-A-web/echo",
+              "route": "A",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-http-app-A-asset/download",
+              "route": "A",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-http-app-A-doc/download",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-http-app-B-web/echo",
+              "route": "B",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-http-app-B-asset/download",
+              "route": "B",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-http-app-B-doc/download",
+              "route": "B",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-http-restored-web/echo",
+              "route": "S",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-http-restored-asset/download",
+              "route": "S",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-http-restored-doc/download",
+              "route": "S",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-pac-system-web/echo",
+              "route": "P",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-pac-system-asset/download",
+              "route": "P",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-pac-system-doc/download",
+              "route": "P",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-pac-app-A-web/echo",
+              "route": "A",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-pac-app-A-asset/download",
+              "route": "A",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-pac-app-A-doc/download",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-pac-app-B-web/echo",
+              "route": "B",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-pac-app-B-asset/download",
+              "route": "B",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-pac-app-B-doc/download",
+              "route": "B",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-pac-restored-web/echo",
+              "route": "P",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-pac-restored-asset/download",
+              "route": "P",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-pac-restored-doc/download",
+              "route": "P",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-delayed-save-result/download",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            }
+          ],
+          "systemPolicy": {
+            "originalProxy": null,
+            "deviceOwnerBefore": false,
+            "configurations": [
+              {
+                "mode": "http",
+                "requested": {
+                  "host": "10.0.2.2",
+                  "port": 18082,
+                  "pacURL": "",
+                  "exclusions": []
+                },
+                "actualProxyInfo": {
+                  "host": "10.0.2.2",
+                  "port": 18082,
+                  "pacURL": "",
+                  "exclusions": []
+                },
+                "elapsedMillis": 8,
+                "deviceOwner": true
+              },
+              {
+                "mode": "pac",
+                "requested": {
+                  "host": "localhost",
+                  "port": -1,
+                  "pacURL": "http://10.0.2.2:18080/joint-system.pac",
+                  "exclusions": [
+                    ""
+                  ]
+                },
+                "actualProxyInfo": {
+                  "host": "localhost",
+                  "port": 34557,
+                  "pacURL": "http://10.0.2.2:18080/joint-system.pac",
+                  "exclusions": [
+                    ""
+                  ]
+                },
+                "elapsedMillis": 83,
+                "deviceOwner": true
+              }
+            ],
+            "restored": true,
+            "roleRemoved": true,
+            "provisionOutput": "Success: Device owner set to package ComponentInfo{com.forcemind.chatgpt.profiles.networkci/com.forcemind.chatgpt.profiles.NetworkProxyAdminReceiver}\nActive admin set to component {com.forcemind.chatgpt.profiles.networkci/com.forcemind.chatgpt.profiles.NetworkProxyAdminReceiver}\n",
+            "deviceOwnerAfter": true,
+            "restoredProxyInfo": null,
+            "removeOutput": "Success: Admin removed ComponentInfo{com.forcemind.chatgpt.profiles.networkci/com.forcemind.chatgpt.profiles.NetworkProxyAdminReceiver}\n"
+          }
+        },
+        "fileSafetyVerified": {
+          "complete": true,
+          "sourceSHA": "a6baf078656dbd5be763f83f26ade63e62c39159",
+          "api": 28,
+          "transport": "tls",
+          "exactRequests": 32,
+          "gatedOperations": 5,
+          "realSystemPicker": true,
+          "proxyRestored": true,
+          "temporaryOwnerRemoved": true,
+          "screenshots": false,
+          "realChatGPT": false
+        },
+        "restartSeed": {
+          "schema": 1,
+          "complete": true,
+          "sourceSHA": "a6baf078656dbd5be763f83f26ade63e62c39159",
+          "phase": "seed",
+          "pid": 3462,
+          "screenshots": false,
+          "realChatGPT": false,
+          "fixturePage": "logical ChatGPT origin served by offline interceptor; no real service requests",
+          "account": "8df925c2-4de8-4b7c-adef-2c40c5a59f0b",
+          "storage": "3c8886db-7889-4963-a738-302704f635a9",
+          "tab": "1948b90c-c86e-4e0c-9d1a-f180a0bf6992",
+          "draft": "Synthetic encrypted process recovery draft",
+          "clearedStorage": "69f44baf-4dc9-4beb-b9d1-c9d202c80834",
+          "route": 0
+        },
+        "restart": {
+          "schema": 1,
+          "complete": true,
+          "sourceSHA": "a6baf078656dbd5be763f83f26ade63e62c39159",
+          "phase": "verify",
+          "pid": 3543,
+          "screenshots": false,
+          "realChatGPT": false,
+          "fixturePage": "logical ChatGPT origin served by offline interceptor; no real service requests",
+          "oldPid": 3462,
+          "newDocument": true,
+          "sameRamDocumentClaim": false,
+          "draftActualDOMMatches": true,
+          "cookiePreserved": true,
+          "profilePreserved": true,
+          "deferredClearedProfileRemoved": true,
+          "selectedRouteRestored": true
+        },
+        "restartVerified": {
+          "complete": true,
+          "sourceSHA": "a6baf078656dbd5be763f83f26ade63e62c39159",
+          "api": 28,
+          "transport": "tls",
+          "newProcess": true,
+          "sameRamDocumentClaim": false,
+          "actualDOMDraft": true,
+          "selectedRouteRestored": true,
+          "realChatGPTRequests": 0,
+          "screenshots": false
+        }
+      },
+      {
+        "artifact": 13257738780,
+        "archiveBytes": 8902,
+        "archiveSHA256": "0cdf09caae5b804fe77880dc15c1add53539875ae1bac2396fcf1a41e1b13b36",
+        "api": 35,
+        "transport": "reality",
+        "initial": {
+          "complete": true,
+          "sourceSHA": "a6baf078656dbd5be763f83f26ade63e62c39159",
+          "api": 35,
+          "transport": "reality",
+          "exactRequests": 17,
+          "successfulFiles": 12,
+          "screenshots": false,
+          "realChatGPT": false
+        },
+        "fileSafety": {
+          "schema": 1,
+          "sourceSHA": "a6baf078656dbd5be763f83f26ade63e62c39159",
+          "api": 35,
+          "transport": "reality",
+          "screenshots": false,
+          "realChatGPT": false,
+          "accountClear": {
+            "elapsedMillis": 280,
+            "oldStorage": "0df8a605-9ce1-40a0-90e8-2e6ac6f08387",
+            "assetBytesRetained": true,
+            "otherAccountStillTransferring": true,
+            "oldCallbackInvalid": true
+          },
+          "cancelledDocumentMillis": 51,
+          "closedOwner": {
+            "elapsedMillis": 62,
+            "partialRemoved": true,
+            "otherTransferPreserved": true,
+            "newRequestRejected": true
+          },
+          "realSystemPicker": true,
+          "writePermissionDenied": true,
+          "publisherFailure": {
+            "actualPrefixBytes": 4096,
+            "newPartialRemoved": true,
+            "existingDocumentPreserved": true
+          },
+          "lateSelectionIgnored": true,
+          "routeChangeBlockedWhileSelecting": true,
+          "syntheticAutomationGuard": true,
+          "gateFinal": [
+            {
+              "attemptCount": 1,
+              "bodyComplete": false,
+              "commitCount": 0,
+              "completed": false,
+              "failure": "response-write-failed",
+              "kind": "download",
+              "opCount": 1,
+              "opid": "reality-https-formal-clear-a",
+              "origin": "https",
+              "payloadSha256": "6646d3e1ba8d13e25ea0e4558fe982505f8d5d7704cf18c9d4dd992d4d103a62",
+              "prefix": true,
+              "readError": null,
+              "released": true,
+              "requestBytesRead": 0,
+              "responseBytesWritten": 4096,
+              "route": "A",
+              "started": true,
+              "syntheticAccount": "A",
+              "timedOut": false,
+              "totalBytes": 262144,
+              "transport": "reality",
+              "writeError": "SSLEOFError"
+            },
+            {
+              "attemptCount": 1,
+              "bodyComplete": false,
+              "commitCount": 0,
+              "completed": true,
+              "failure": null,
+              "kind": "download",
+              "opCount": 1,
+              "opid": "reality-https-formal-live-b",
+              "origin": "https",
+              "payloadSha256": "6646d3e1ba8d13e25ea0e4558fe982505f8d5d7704cf18c9d4dd992d4d103a62",
+              "prefix": true,
+              "readError": null,
+              "released": true,
+              "requestBytesRead": 0,
+              "responseBytesWritten": 262144,
+              "route": "A",
+              "started": true,
+              "syntheticAccount": "B",
+              "timedOut": false,
+              "totalBytes": 262144,
+              "transport": "reality",
+              "writeError": null
+            },
+            {
+              "attemptCount": 1,
+              "bodyComplete": false,
+              "commitCount": 0,
+              "completed": true,
+              "failure": null,
+              "kind": "download",
+              "opCount": 1,
+              "opid": "reality-https-formal-cancel-doc",
+              "origin": "https",
+              "payloadSha256": "6646d3e1ba8d13e25ea0e4558fe982505f8d5d7704cf18c9d4dd992d4d103a62",
+              "prefix": true,
+              "readError": null,
+              "released": true,
+              "requestBytesRead": 0,
+              "responseBytesWritten": 262144,
+              "route": "A",
+              "started": true,
+              "syntheticAccount": "C",
+              "timedOut": false,
+              "totalBytes": 262144,
+              "transport": "reality",
+              "writeError": null
+            },
+            {
+              "attemptCount": 1,
+              "bodyComplete": false,
+              "commitCount": 0,
+              "completed": true,
+              "failure": null,
+              "kind": "download",
+              "opCount": 1,
+              "opid": "reality-https-formal-publish-fault",
+              "origin": "https",
+              "payloadSha256": "6646d3e1ba8d13e25ea0e4558fe982505f8d5d7704cf18c9d4dd992d4d103a62",
+              "prefix": true,
+              "readError": null,
+              "released": true,
+              "requestBytesRead": 0,
+              "responseBytesWritten": 262144,
+              "route": "A",
+              "started": true,
+              "syntheticAccount": "C",
+              "timedOut": false,
+              "totalBytes": 262144,
+              "transport": "reality",
+              "writeError": null
+            },
+            {
+              "attemptCount": 1,
+              "bodyComplete": false,
+              "commitCount": 0,
+              "completed": true,
+              "failure": null,
+              "kind": "download",
+              "opCount": 1,
+              "opid": "reality-https-formal-owner-close",
+              "origin": "https",
+              "payloadSha256": "6646d3e1ba8d13e25ea0e4558fe982505f8d5d7704cf18c9d4dd992d4d103a62",
+              "prefix": true,
+              "readError": null,
+              "released": true,
+              "requestBytesRead": 0,
+              "responseBytesWritten": 262144,
+              "route": "A",
+              "started": true,
+              "syntheticAccount": "C",
+              "timedOut": false,
+              "totalBytes": 262144,
+              "transport": "reality",
+              "writeError": null
+            }
+          ],
+          "accountStorage": {
+            "B": "95bc09d0-f1ce-4df9-9aef-e9ac157af7a9",
+            "C": "f942d296-d144-43c3-bb95-7593034bcfaf"
+          },
+          "accounts": {
+            "A": "b0ee2769-b7c4-42c0-b17d-db81d2a22e1b",
+            "B": "3e515191-c1d1-4714-933c-7f8943c92bea",
+            "C": "1e2bb00f-7551-40d6-83c8-487ce4391b1f"
+          },
+          "lastDocumentEvidence": {
+            "stage": "saved",
+            "authority": "com.forcemind.chatgpt.profiles.networkci.network-docs",
+            "flags": 3,
+            "taskId": "4b78b363-d7d9-4795-9d3b-fded0b5350dc",
+            "available": true,
+            "failureClass": null
+          },
+          "complete": true,
+          "files": [
+            {
+              "exit": "asset",
+              "account": "A",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "A",
+                "operation": "formal-files-reality-protected-A"
+              },
+              "id": "adb943b9-964d-4d51-8541-f5034db34cd3",
+              "sha256": "a27ecaa456f2786bc3add0fc6ab8976dd954bb8999c7af19c675213e6782e4fa"
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "S",
+              "body": {
+                "route": "S",
+                "account": "B",
+                "operation": "formal-files-reality-http-system-asset"
+              },
+              "id": "e4c75050-484f-41c9-a0c6-c453f5401642",
+              "sha256": "0397fb167a80c6e7cb1687b863f7925b59bb92e921f73ad043076a8b49a86b36"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "S",
+              "body": {
+                "route": "S",
+                "account": "C",
+                "operation": "formal-files-reality-http-system-doc"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "B",
+                "operation": "formal-files-reality-http-app-A-asset"
+              },
+              "id": "e1c4b404-b9c7-40b4-8cdb-71a28e2508d4",
+              "sha256": "08daab8726d992419c5e32e2e3c6126dc50ec4477924d6a310d10ef602a59553"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "C",
+                "operation": "formal-files-reality-http-app-A-doc"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "B",
+                "operation": "formal-files-reality-http-app-B-asset"
+              },
+              "id": "91259fc0-53ce-4f6c-b926-8cd441a1cbd1",
+              "sha256": "461d51a011c66d29f018a7f10a874e833f3763a92b71fd4dfea3e9847c2165d7"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "C",
+                "operation": "formal-files-reality-http-app-B-doc"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "S",
+              "body": {
+                "route": "S",
+                "account": "B",
+                "operation": "formal-files-reality-http-restored-asset"
+              },
+              "id": "6774c3cc-faa7-4b4e-af60-fe843e7c1cc4",
+              "sha256": "4288ee63b8c94c9cc8275f5aeaf10cf15748d59584cbb7eb6215f8e130519937"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "S",
+              "body": {
+                "route": "S",
+                "account": "C",
+                "operation": "formal-files-reality-http-restored-doc"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "P",
+              "body": {
+                "route": "P",
+                "account": "B",
+                "operation": "formal-files-reality-pac-system-asset"
+              },
+              "id": "c752168b-1c0c-4632-9cac-930e1488f983",
+              "sha256": "cf1e979d35b79d3768687354c185f974941d14ff8344f6dc1fe3a04bc9ff57cc"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "P",
+              "body": {
+                "route": "P",
+                "account": "C",
+                "operation": "formal-files-reality-pac-system-doc"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "B",
+                "operation": "formal-files-reality-pac-app-A-asset"
+              },
+              "id": "4a72aae7-5ad7-4245-a4e3-15d4d9be1fad",
+              "sha256": "ac61f624429b3c70663a6c73ae6dfda47b2044262b77617c09aac82849fc8541"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "C",
+                "operation": "formal-files-reality-pac-app-A-doc"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "B",
+                "operation": "formal-files-reality-pac-app-B-asset"
+              },
+              "id": "8ff3420d-2c37-4539-ad05-fd38465f2ef2",
+              "sha256": "734e14c5371cd4a73e735b013dceb279d5ae1d261df608ed9ef9f89cf886c240"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "C",
+                "operation": "formal-files-reality-pac-app-B-doc"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "P",
+              "body": {
+                "route": "P",
+                "account": "B",
+                "operation": "formal-files-reality-pac-restored-asset"
+              },
+              "id": "e084007a-6657-45a0-ac91-e37a84ffecb2",
+              "sha256": "a95507b8137feb6c4f7a798fe77af420ff59f7d673222947031131b06e520060"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "P",
+              "body": {
+                "route": "P",
+                "account": "C",
+                "operation": "formal-files-reality-pac-restored-doc"
+              }
+            }
+          ],
+          "expectedRequests": [
+            {
+              "path": "/joint/formal-files-reality-page-A1/page",
+              "route": "A",
+              "syntheticAccount": "A",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-page-B1/page",
+              "route": "A",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-page-C1/page",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-protected-A/download",
+              "route": "A",
+              "syntheticAccount": "A",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-actual-system-save/download",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-refuse-existing-document/download",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-write-permission-denied/download",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-http-system-web/echo",
+              "route": "S",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-http-system-asset/download",
+              "route": "S",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-http-system-doc/download",
+              "route": "S",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-http-app-A-web/echo",
+              "route": "A",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-http-app-A-asset/download",
+              "route": "A",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-http-app-A-doc/download",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-http-app-B-web/echo",
+              "route": "B",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-http-app-B-asset/download",
+              "route": "B",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-http-app-B-doc/download",
+              "route": "B",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-http-restored-web/echo",
+              "route": "S",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-http-restored-asset/download",
+              "route": "S",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-http-restored-doc/download",
+              "route": "S",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-pac-system-web/echo",
+              "route": "P",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-pac-system-asset/download",
+              "route": "P",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-pac-system-doc/download",
+              "route": "P",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-pac-app-A-web/echo",
+              "route": "A",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-pac-app-A-asset/download",
+              "route": "A",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-pac-app-A-doc/download",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-pac-app-B-web/echo",
+              "route": "B",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-pac-app-B-asset/download",
+              "route": "B",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-pac-app-B-doc/download",
+              "route": "B",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-pac-restored-web/echo",
+              "route": "P",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-pac-restored-asset/download",
+              "route": "P",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-pac-restored-doc/download",
+              "route": "P",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-delayed-save-result/download",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            }
+          ],
+          "systemPolicy": {
+            "originalProxy": null,
+            "deviceOwnerBefore": false,
+            "configurations": [
+              {
+                "mode": "http",
+                "requested": {
+                  "host": "10.0.2.2",
+                  "port": 18082,
+                  "pacURL": "",
+                  "exclusions": []
+                },
+                "actualProxyInfo": {
+                  "host": "10.0.2.2",
+                  "port": 18082,
+                  "pacURL": "",
+                  "exclusions": []
+                },
+                "elapsedMillis": 23,
+                "deviceOwner": true
+              },
+              {
+                "mode": "pac",
+                "requested": {
+                  "host": "localhost",
+                  "port": -1,
+                  "pacURL": "http://10.0.2.2:18080/joint-system.pac",
+                  "exclusions": [
+                    ""
+                  ]
+                },
+                "actualProxyInfo": {
+                  "host": "localhost",
+                  "port": 33549,
+                  "pacURL": "http://10.0.2.2:18080/joint-system.pac",
+                  "exclusions": [
+                    ""
+                  ]
+                },
+                "elapsedMillis": 775,
+                "deviceOwner": true
+              }
+            ],
+            "restored": true,
+            "roleRemoved": true,
+            "provisionOutput": "Success: Device owner set to package com.forcemind.chatgpt.profiles.networkci/com.forcemind.chatgpt.profiles.NetworkProxyAdminReceiver\nActive admin set to component com.forcemind.chatgpt.profiles.networkci/com.forcemind.chatgpt.profiles.NetworkProxyAdminReceiver\n",
+            "deviceOwnerAfter": true,
+            "restoredProxyInfo": null,
+            "removeOutput": "Success: Admin removed ComponentInfo{com.forcemind.chatgpt.profiles.networkci/com.forcemind.chatgpt.profiles.NetworkProxyAdminReceiver}\n"
+          }
+        },
+        "fileSafetyVerified": {
+          "complete": true,
+          "sourceSHA": "a6baf078656dbd5be763f83f26ade63e62c39159",
+          "api": 35,
+          "transport": "reality",
+          "exactRequests": 32,
+          "gatedOperations": 5,
+          "realSystemPicker": true,
+          "proxyRestored": true,
+          "temporaryOwnerRemoved": true,
+          "screenshots": false,
+          "realChatGPT": false
+        },
+        "restartSeed": {
+          "schema": 1,
+          "complete": true,
+          "sourceSHA": "a6baf078656dbd5be763f83f26ade63e62c39159",
+          "phase": "seed",
+          "pid": 4586,
+          "screenshots": false,
+          "realChatGPT": false,
+          "fixturePage": "logical ChatGPT origin served by offline interceptor; no real service requests",
+          "account": "1e2bb00f-7551-40d6-83c8-487ce4391b1f",
+          "storage": "f942d296-d144-43c3-bb95-7593034bcfaf",
+          "tab": "fb31cda1-01c3-4528-b34d-9ba87e8c0496",
+          "draft": "Synthetic encrypted process recovery draft",
+          "clearedStorage": "0df8a605-9ce1-40a0-90e8-2e6ac6f08387",
+          "route": 0
+        },
+        "restart": {
+          "schema": 1,
+          "complete": true,
+          "sourceSHA": "a6baf078656dbd5be763f83f26ade63e62c39159",
+          "phase": "verify",
+          "pid": 4681,
+          "screenshots": false,
+          "realChatGPT": false,
+          "fixturePage": "logical ChatGPT origin served by offline interceptor; no real service requests",
+          "oldPid": 4586,
+          "newDocument": true,
+          "sameRamDocumentClaim": false,
+          "draftActualDOMMatches": true,
+          "cookiePreserved": true,
+          "profilePreserved": true,
+          "deferredClearedProfileRemoved": true,
+          "selectedRouteRestored": true
+        },
+        "restartVerified": {
+          "complete": true,
+          "sourceSHA": "a6baf078656dbd5be763f83f26ade63e62c39159",
+          "api": 35,
+          "transport": "reality",
+          "newProcess": true,
+          "sameRamDocumentClaim": false,
+          "actualDOMDraft": true,
+          "selectedRouteRestored": true,
+          "realChatGPTRequests": 0,
+          "screenshots": false
+        }
+      },
+      {
+        "artifact": 13257574136,
+        "archiveBytes": 8800,
+        "archiveSHA256": "4c0e7b671809c41c3eea5c1a2d2fa6313f01e119dbeff506feb6323a0a0f6329",
+        "api": 35,
+        "transport": "tls",
+        "initial": {
+          "complete": true,
+          "sourceSHA": "a6baf078656dbd5be763f83f26ade63e62c39159",
+          "api": 35,
+          "transport": "tls",
+          "exactRequests": 17,
+          "successfulFiles": 12,
+          "screenshots": false,
+          "realChatGPT": false
+        },
+        "fileSafety": {
+          "schema": 1,
+          "sourceSHA": "a6baf078656dbd5be763f83f26ade63e62c39159",
+          "api": 35,
+          "transport": "tls",
+          "screenshots": false,
+          "realChatGPT": false,
+          "accountClear": {
+            "elapsedMillis": 306,
+            "oldStorage": "772123e8-a4df-4837-9074-7d525dc7e5bf",
+            "assetBytesRetained": true,
+            "otherAccountStillTransferring": true,
+            "oldCallbackInvalid": true
+          },
+          "cancelledDocumentMillis": 53,
+          "closedOwner": {
+            "elapsedMillis": 80,
+            "partialRemoved": true,
+            "otherTransferPreserved": true,
+            "newRequestRejected": true
+          },
+          "realSystemPicker": true,
+          "writePermissionDenied": true,
+          "publisherFailure": {
+            "actualPrefixBytes": 4096,
+            "newPartialRemoved": true,
+            "existingDocumentPreserved": true
+          },
+          "lateSelectionIgnored": true,
+          "routeChangeBlockedWhileSelecting": true,
+          "syntheticAutomationGuard": true,
+          "gateFinal": [
+            {
+              "attemptCount": 1,
+              "bodyComplete": false,
+              "commitCount": 0,
+              "completed": true,
+              "failure": null,
+              "kind": "download",
+              "opCount": 1,
+              "opid": "tls-https-formal-clear-a",
+              "origin": "https",
+              "payloadSha256": "6646d3e1ba8d13e25ea0e4558fe982505f8d5d7704cf18c9d4dd992d4d103a62",
+              "prefix": true,
+              "readError": null,
+              "released": true,
+              "requestBytesRead": 0,
+              "responseBytesWritten": 262144,
+              "route": "A",
+              "started": true,
+              "syntheticAccount": "A",
+              "timedOut": false,
+              "totalBytes": 262144,
+              "transport": "tls",
+              "writeError": null
+            },
+            {
+              "attemptCount": 1,
+              "bodyComplete": false,
+              "commitCount": 0,
+              "completed": true,
+              "failure": null,
+              "kind": "download",
+              "opCount": 1,
+              "opid": "tls-https-formal-live-b",
+              "origin": "https",
+              "payloadSha256": "6646d3e1ba8d13e25ea0e4558fe982505f8d5d7704cf18c9d4dd992d4d103a62",
+              "prefix": true,
+              "readError": null,
+              "released": true,
+              "requestBytesRead": 0,
+              "responseBytesWritten": 262144,
+              "route": "A",
+              "started": true,
+              "syntheticAccount": "B",
+              "timedOut": false,
+              "totalBytes": 262144,
+              "transport": "tls",
+              "writeError": null
+            },
+            {
+              "attemptCount": 1,
+              "bodyComplete": false,
+              "commitCount": 0,
+              "completed": true,
+              "failure": null,
+              "kind": "download",
+              "opCount": 1,
+              "opid": "tls-https-formal-cancel-doc",
+              "origin": "https",
+              "payloadSha256": "6646d3e1ba8d13e25ea0e4558fe982505f8d5d7704cf18c9d4dd992d4d103a62",
+              "prefix": true,
+              "readError": null,
+              "released": true,
+              "requestBytesRead": 0,
+              "responseBytesWritten": 262144,
+              "route": "A",
+              "started": true,
+              "syntheticAccount": "C",
+              "timedOut": false,
+              "totalBytes": 262144,
+              "transport": "tls",
+              "writeError": null
+            },
+            {
+              "attemptCount": 1,
+              "bodyComplete": false,
+              "commitCount": 0,
+              "completed": true,
+              "failure": null,
+              "kind": "download",
+              "opCount": 1,
+              "opid": "tls-https-formal-publish-fault",
+              "origin": "https",
+              "payloadSha256": "6646d3e1ba8d13e25ea0e4558fe982505f8d5d7704cf18c9d4dd992d4d103a62",
+              "prefix": true,
+              "readError": null,
+              "released": true,
+              "requestBytesRead": 0,
+              "responseBytesWritten": 262144,
+              "route": "A",
+              "started": true,
+              "syntheticAccount": "C",
+              "timedOut": false,
+              "totalBytes": 262144,
+              "transport": "tls",
+              "writeError": null
+            },
+            {
+              "attemptCount": 1,
+              "bodyComplete": false,
+              "commitCount": 0,
+              "completed": true,
+              "failure": null,
+              "kind": "download",
+              "opCount": 1,
+              "opid": "tls-https-formal-owner-close",
+              "origin": "https",
+              "payloadSha256": "6646d3e1ba8d13e25ea0e4558fe982505f8d5d7704cf18c9d4dd992d4d103a62",
+              "prefix": true,
+              "readError": null,
+              "released": true,
+              "requestBytesRead": 0,
+              "responseBytesWritten": 262144,
+              "route": "A",
+              "started": true,
+              "syntheticAccount": "C",
+              "timedOut": false,
+              "totalBytes": 262144,
+              "transport": "tls",
+              "writeError": null
+            }
+          ],
+          "accountStorage": {
+            "B": "e66ac4b4-0692-4a7f-8552-eca9ec4a5e18",
+            "C": "a851e6af-743b-4d0c-b589-2cc08fcae20e"
+          },
+          "accounts": {
+            "A": "011c917a-52f7-4f40-b14a-8ac03b8df8cc",
+            "B": "c310f4cf-da84-4134-9755-de745a706a4d",
+            "C": "1a493cb4-2055-4566-b269-d05c08f69424"
+          },
+          "lastDocumentEvidence": {
+            "stage": "saved",
+            "authority": "com.forcemind.chatgpt.profiles.networkci.network-docs",
+            "flags": 3,
+            "taskId": "7ae139ac-12e9-4a67-aa16-8a1529971d7c",
+            "available": true,
+            "failureClass": null
+          },
+          "complete": true,
+          "files": [
+            {
+              "exit": "asset",
+              "account": "A",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "A",
+                "operation": "formal-files-tls-protected-A"
+              },
+              "id": "d4e9505d-679e-48b8-a792-f51118cf548d",
+              "sha256": "852ceebb64050161e98f91488798bad2c8b1b07249c56ceea61380147fd50715"
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "S",
+              "body": {
+                "route": "S",
+                "account": "B",
+                "operation": "formal-files-tls-http-system-asset"
+              },
+              "id": "628c2c93-61a6-461f-9d98-0f0e6fbb5b44",
+              "sha256": "c56bae24360dc241e9fd28634b2fc526c09d0f7912c09f91acdb899882df38a1"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "S",
+              "body": {
+                "route": "S",
+                "account": "C",
+                "operation": "formal-files-tls-http-system-doc"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "B",
+                "operation": "formal-files-tls-http-app-A-asset"
+              },
+              "id": "ab9f4379-28bc-440f-a94d-5665c0f41487",
+              "sha256": "51999e2e6305c2012261ce062d4f559d7ff5d90da6f4e6ab5be4c443c6aaa6fe"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "C",
+                "operation": "formal-files-tls-http-app-A-doc"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "B",
+                "operation": "formal-files-tls-http-app-B-asset"
+              },
+              "id": "0486c531-84da-48be-be1e-7fe5e925e9c2",
+              "sha256": "997326b65fd15a61f231f63ef1dd7ea65116790c7068f88fe598d6d9fd442d34"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "C",
+                "operation": "formal-files-tls-http-app-B-doc"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "S",
+              "body": {
+                "route": "S",
+                "account": "B",
+                "operation": "formal-files-tls-http-restored-asset"
+              },
+              "id": "7072e442-0e43-42c1-97fa-a9e7a7098197",
+              "sha256": "501bd2948e06bae8b5914c878de1a42c9665dcaad1e01ed59bd6e8ee25342803"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "S",
+              "body": {
+                "route": "S",
+                "account": "C",
+                "operation": "formal-files-tls-http-restored-doc"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "P",
+              "body": {
+                "route": "P",
+                "account": "B",
+                "operation": "formal-files-tls-pac-system-asset"
+              },
+              "id": "86c110b1-5988-4db2-8361-752cfd932d35",
+              "sha256": "48a72f40f3e818ca0bdfab76b9bee1ca7fdc4017205d769ed09ddb3a87abb46c"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "P",
+              "body": {
+                "route": "P",
+                "account": "C",
+                "operation": "formal-files-tls-pac-system-doc"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "B",
+                "operation": "formal-files-tls-pac-app-A-asset"
+              },
+              "id": "890eec84-f5d3-44c5-b250-26ca4a2e23e6",
+              "sha256": "3c39f994e1d0ded426a20b5f2af6b2b84a3b7b32e8025e90b2584aa5fbc2feae"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "C",
+                "operation": "formal-files-tls-pac-app-A-doc"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "B",
+                "operation": "formal-files-tls-pac-app-B-asset"
+              },
+              "id": "74f14344-18ee-4b6f-be9c-66a79dd8d9ef",
+              "sha256": "4b05e68f6a21c50f6cb88f51566ab916311fb2ca592a8679f501399ee3e3fd0e"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "C",
+                "operation": "formal-files-tls-pac-app-B-doc"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "P",
+              "body": {
+                "route": "P",
+                "account": "B",
+                "operation": "formal-files-tls-pac-restored-asset"
+              },
+              "id": "3cf8002c-18c4-48f0-908c-ef10b32a99d4",
+              "sha256": "430f78b614f1eeb7c34dba48f80bcf172f7d1c58ed7b5f4abf01e90be575da40"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "P",
+              "body": {
+                "route": "P",
+                "account": "C",
+                "operation": "formal-files-tls-pac-restored-doc"
+              }
+            }
+          ],
+          "expectedRequests": [
+            {
+              "path": "/joint/formal-files-tls-page-A1/page",
+              "route": "A",
+              "syntheticAccount": "A",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-page-B1/page",
+              "route": "A",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-page-C1/page",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-protected-A/download",
+              "route": "A",
+              "syntheticAccount": "A",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-actual-system-save/download",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-refuse-existing-document/download",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-write-permission-denied/download",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-http-system-web/echo",
+              "route": "S",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-http-system-asset/download",
+              "route": "S",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-http-system-doc/download",
+              "route": "S",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-http-app-A-web/echo",
+              "route": "A",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-http-app-A-asset/download",
+              "route": "A",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-http-app-A-doc/download",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-http-app-B-web/echo",
+              "route": "B",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-http-app-B-asset/download",
+              "route": "B",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-http-app-B-doc/download",
+              "route": "B",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-http-restored-web/echo",
+              "route": "S",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-http-restored-asset/download",
+              "route": "S",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-http-restored-doc/download",
+              "route": "S",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-pac-system-web/echo",
+              "route": "P",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-pac-system-asset/download",
+              "route": "P",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-pac-system-doc/download",
+              "route": "P",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-pac-app-A-web/echo",
+              "route": "A",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-pac-app-A-asset/download",
+              "route": "A",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-pac-app-A-doc/download",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-pac-app-B-web/echo",
+              "route": "B",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-pac-app-B-asset/download",
+              "route": "B",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-pac-app-B-doc/download",
+              "route": "B",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-pac-restored-web/echo",
+              "route": "P",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-pac-restored-asset/download",
+              "route": "P",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-pac-restored-doc/download",
+              "route": "P",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-tls-delayed-save-result/download",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            }
+          ],
+          "systemPolicy": {
+            "originalProxy": null,
+            "deviceOwnerBefore": false,
+            "configurations": [
+              {
+                "mode": "http",
+                "requested": {
+                  "host": "10.0.2.2",
+                  "port": 18082,
+                  "pacURL": "",
+                  "exclusions": []
+                },
+                "actualProxyInfo": {
+                  "host": "10.0.2.2",
+                  "port": 18082,
+                  "pacURL": "",
+                  "exclusions": []
+                },
+                "elapsedMillis": 9,
+                "deviceOwner": true
+              },
+              {
+                "mode": "pac",
+                "requested": {
+                  "host": "localhost",
+                  "port": -1,
+                  "pacURL": "http://10.0.2.2:18080/joint-system.pac",
+                  "exclusions": [
+                    ""
+                  ]
+                },
+                "actualProxyInfo": {
+                  "host": "localhost",
+                  "port": 32973,
+                  "pacURL": "http://10.0.2.2:18080/joint-system.pac",
+                  "exclusions": [
+                    ""
+                  ]
+                },
+                "elapsedMillis": 639,
+                "deviceOwner": true
+              }
+            ],
+            "restored": true,
+            "roleRemoved": true,
+            "provisionOutput": "Success: Device owner set to package com.forcemind.chatgpt.profiles.networkci/com.forcemind.chatgpt.profiles.NetworkProxyAdminReceiver\nActive admin set to component com.forcemind.chatgpt.profiles.networkci/com.forcemind.chatgpt.profiles.NetworkProxyAdminReceiver\n",
+            "deviceOwnerAfter": true,
+            "restoredProxyInfo": null,
+            "removeOutput": "Success: Admin removed ComponentInfo{com.forcemind.chatgpt.profiles.networkci/com.forcemind.chatgpt.profiles.NetworkProxyAdminReceiver}\n"
+          }
+        },
+        "fileSafetyVerified": {
+          "complete": true,
+          "sourceSHA": "a6baf078656dbd5be763f83f26ade63e62c39159",
+          "api": 35,
+          "transport": "tls",
+          "exactRequests": 32,
+          "gatedOperations": 5,
+          "realSystemPicker": true,
+          "proxyRestored": true,
+          "temporaryOwnerRemoved": true,
+          "screenshots": false,
+          "realChatGPT": false
+        },
+        "restartSeed": {
+          "schema": 1,
+          "complete": true,
+          "sourceSHA": "a6baf078656dbd5be763f83f26ade63e62c39159",
+          "phase": "seed",
+          "pid": 4500,
+          "screenshots": false,
+          "realChatGPT": false,
+          "fixturePage": "logical ChatGPT origin served by offline interceptor; no real service requests",
+          "account": "1a493cb4-2055-4566-b269-d05c08f69424",
+          "storage": "a851e6af-743b-4d0c-b589-2cc08fcae20e",
+          "tab": "22ff7f00-0b28-4b82-9e13-01de9f45e3ed",
+          "draft": "Synthetic encrypted process recovery draft",
+          "clearedStorage": "772123e8-a4df-4837-9074-7d525dc7e5bf",
+          "route": 0
+        },
+        "restart": {
+          "schema": 1,
+          "complete": true,
+          "sourceSHA": "a6baf078656dbd5be763f83f26ade63e62c39159",
+          "phase": "verify",
+          "pid": 4601,
+          "screenshots": false,
+          "realChatGPT": false,
+          "fixturePage": "logical ChatGPT origin served by offline interceptor; no real service requests",
+          "oldPid": 4500,
+          "newDocument": true,
+          "sameRamDocumentClaim": false,
+          "draftActualDOMMatches": true,
+          "cookiePreserved": true,
+          "profilePreserved": true,
+          "deferredClearedProfileRemoved": true,
+          "selectedRouteRestored": true
+        },
+        "restartVerified": {
+          "complete": true,
+          "sourceSHA": "a6baf078656dbd5be763f83f26ade63e62c39159",
+          "api": 35,
+          "transport": "tls",
+          "newProcess": true,
+          "sameRamDocumentClaim": false,
+          "actualDOMDraft": true,
+          "selectedRouteRestored": true,
+          "realChatGPTRequests": 0,
+          "screenshots": false
+        }
+      },
+      {
+        "artifact": 13257279941,
+        "archiveBytes": 10925,
+        "archiveSHA256": "6e3b746d95321c6811ea3d15d6d6a5a7cb150517dc0daef78573746fb31da7d9",
+        "api": 28,
+        "transport": "reality",
+        "initial": {
+          "complete": true,
+          "sourceSHA": "a6baf078656dbd5be763f83f26ade63e62c39159",
+          "api": 28,
+          "transport": "reality",
+          "exactRequests": 17,
+          "successfulFiles": 12,
+          "screenshots": false,
+          "realChatGPT": false
+        },
+        "fileSafety": {
+          "schema": 1,
+          "sourceSHA": "a6baf078656dbd5be763f83f26ade63e62c39159",
+          "api": 28,
+          "transport": "reality",
+          "screenshots": false,
+          "realChatGPT": false,
+          "accountClear": {
+            "elapsedMillis": 485,
+            "oldStorage": "520b44c0-f552-48ce-a139-31f1410d15f2",
+            "assetBytesRetained": true,
+            "otherAccountStillTransferring": true,
+            "oldCallbackInvalid": true
+          },
+          "cancelledDocumentMillis": 52,
+          "closedOwner": {
+            "elapsedMillis": 22,
+            "partialRemoved": true,
+            "otherTransferPreserved": true,
+            "newRequestRejected": true
+          },
+          "realSystemPicker": true,
+          "writePermissionDenied": true,
+          "publisherFailure": {
+            "actualPrefixBytes": 4096,
+            "newPartialRemoved": true,
+            "existingDocumentPreserved": true
+          },
+          "lateSelectionIgnored": true,
+          "routeChangeBlockedWhileSelecting": true,
+          "syntheticAutomationGuard": true,
+          "gateFinal": [
+            {
+              "attemptCount": 1,
+              "bodyComplete": false,
+              "commitCount": 0,
+              "completed": true,
+              "failure": null,
+              "kind": "download",
+              "opCount": 1,
+              "opid": "reality-https-formal-clear-a",
+              "origin": "https",
+              "payloadSha256": "6646d3e1ba8d13e25ea0e4558fe982505f8d5d7704cf18c9d4dd992d4d103a62",
+              "prefix": true,
+              "readError": null,
+              "released": true,
+              "requestBytesRead": 0,
+              "responseBytesWritten": 262144,
+              "route": "A",
+              "started": true,
+              "syntheticAccount": "A",
+              "timedOut": false,
+              "totalBytes": 262144,
+              "transport": "reality",
+              "writeError": null
+            },
+            {
+              "attemptCount": 1,
+              "bodyComplete": false,
+              "commitCount": 0,
+              "completed": true,
+              "failure": null,
+              "kind": "download",
+              "opCount": 1,
+              "opid": "reality-https-formal-live-b",
+              "origin": "https",
+              "payloadSha256": "6646d3e1ba8d13e25ea0e4558fe982505f8d5d7704cf18c9d4dd992d4d103a62",
+              "prefix": true,
+              "readError": null,
+              "released": true,
+              "requestBytesRead": 0,
+              "responseBytesWritten": 262144,
+              "route": "A",
+              "started": true,
+              "syntheticAccount": "B",
+              "timedOut": false,
+              "totalBytes": 262144,
+              "transport": "reality",
+              "writeError": null
+            },
+            {
+              "attemptCount": 1,
+              "bodyComplete": false,
+              "commitCount": 0,
+              "completed": true,
+              "failure": null,
+              "kind": "download",
+              "opCount": 1,
+              "opid": "reality-https-formal-cancel-doc",
+              "origin": "https",
+              "payloadSha256": "6646d3e1ba8d13e25ea0e4558fe982505f8d5d7704cf18c9d4dd992d4d103a62",
+              "prefix": true,
+              "readError": null,
+              "released": true,
+              "requestBytesRead": 0,
+              "responseBytesWritten": 262144,
+              "route": "A",
+              "started": true,
+              "syntheticAccount": "C",
+              "timedOut": false,
+              "totalBytes": 262144,
+              "transport": "reality",
+              "writeError": null
+            },
+            {
+              "attemptCount": 1,
+              "bodyComplete": false,
+              "commitCount": 0,
+              "completed": true,
+              "failure": null,
+              "kind": "download",
+              "opCount": 1,
+              "opid": "reality-https-formal-publish-fault",
+              "origin": "https",
+              "payloadSha256": "6646d3e1ba8d13e25ea0e4558fe982505f8d5d7704cf18c9d4dd992d4d103a62",
+              "prefix": true,
+              "readError": null,
+              "released": true,
+              "requestBytesRead": 0,
+              "responseBytesWritten": 262144,
+              "route": "A",
+              "started": true,
+              "syntheticAccount": "C",
+              "timedOut": false,
+              "totalBytes": 262144,
+              "transport": "reality",
+              "writeError": null
+            },
+            {
+              "attemptCount": 1,
+              "bodyComplete": false,
+              "commitCount": 0,
+              "completed": true,
+              "failure": null,
+              "kind": "download",
+              "opCount": 1,
+              "opid": "reality-https-formal-owner-close",
+              "origin": "https",
+              "payloadSha256": "6646d3e1ba8d13e25ea0e4558fe982505f8d5d7704cf18c9d4dd992d4d103a62",
+              "prefix": true,
+              "readError": null,
+              "released": true,
+              "requestBytesRead": 0,
+              "responseBytesWritten": 262144,
+              "route": "A",
+              "started": true,
+              "syntheticAccount": "C",
+              "timedOut": false,
+              "totalBytes": 262144,
+              "transport": "reality",
+              "writeError": null
+            }
+          ],
+          "accountStorage": {
+            "B": "ba48ff71-7eab-4791-bd4b-ceedc1c7fb05",
+            "C": "1a64d7be-e303-44af-ab0b-44aef992a3ef"
+          },
+          "accounts": {
+            "A": "b882259d-d1e1-4fb3-9e83-fad7da8a1f57",
+            "B": "5452c787-f8fc-4f3e-a01c-78bb5c5ee30f",
+            "C": "e63fbf5c-ae51-4bf6-b5a0-e498f23286e1"
+          },
+          "lastDocumentEvidence": {
+            "stage": "saved",
+            "authority": "com.forcemind.chatgpt.profiles.networkci.network-docs",
+            "flags": 3,
+            "taskId": "c963c277-5164-490f-a85f-de9261ba706f",
+            "available": true,
+            "failureClass": null
+          },
+          "complete": true,
+          "files": [
+            {
+              "exit": "asset",
+              "account": "A",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "A",
+                "operation": "formal-files-reality-protected-A"
+              },
+              "id": "05b7967d-5e57-4a46-8d32-ddef8fc71197",
+              "sha256": "a27ecaa456f2786bc3add0fc6ab8976dd954bb8999c7af19c675213e6782e4fa"
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "S",
+              "body": {
+                "route": "S",
+                "account": "B",
+                "operation": "formal-files-reality-http-system-asset"
+              },
+              "id": "8d8698d4-234f-48a3-af5c-4bbde782c06f",
+              "sha256": "0397fb167a80c6e7cb1687b863f7925b59bb92e921f73ad043076a8b49a86b36"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "S",
+              "body": {
+                "route": "S",
+                "account": "C",
+                "operation": "formal-files-reality-http-system-doc"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "B",
+                "operation": "formal-files-reality-http-app-A-asset"
+              },
+              "id": "0692b64e-3539-40c7-ad6a-31861eada8f2",
+              "sha256": "08daab8726d992419c5e32e2e3c6126dc50ec4477924d6a310d10ef602a59553"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "C",
+                "operation": "formal-files-reality-http-app-A-doc"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "B",
+                "operation": "formal-files-reality-http-app-B-asset"
+              },
+              "id": "08e9f790-babb-4efa-bb71-1bc6248806c3",
+              "sha256": "461d51a011c66d29f018a7f10a874e833f3763a92b71fd4dfea3e9847c2165d7"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "C",
+                "operation": "formal-files-reality-http-app-B-doc"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "S",
+              "body": {
+                "route": "S",
+                "account": "B",
+                "operation": "formal-files-reality-http-restored-asset"
+              },
+              "id": "6beb6342-8d61-4c6c-a35e-fcc4d43aa73d",
+              "sha256": "4288ee63b8c94c9cc8275f5aeaf10cf15748d59584cbb7eb6215f8e130519937"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "S",
+              "body": {
+                "route": "S",
+                "account": "C",
+                "operation": "formal-files-reality-http-restored-doc"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "P",
+              "body": {
+                "route": "P",
+                "account": "B",
+                "operation": "formal-files-reality-pac-system-asset"
+              },
+              "id": "a412bd44-dec7-48d1-8c63-74911a1db1e5",
+              "sha256": "cf1e979d35b79d3768687354c185f974941d14ff8344f6dc1fe3a04bc9ff57cc"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "P",
+              "body": {
+                "route": "P",
+                "account": "C",
+                "operation": "formal-files-reality-pac-system-doc"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "B",
+                "operation": "formal-files-reality-pac-app-A-asset"
+              },
+              "id": "bc831057-30b6-4654-89d5-56277ce5f423",
+              "sha256": "ac61f624429b3c70663a6c73ae6dfda47b2044262b77617c09aac82849fc8541"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "C",
+                "operation": "formal-files-reality-pac-app-A-doc"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "B",
+                "operation": "formal-files-reality-pac-app-B-asset"
+              },
+              "id": "5b446e93-4240-46a6-9559-3ede417fca5e",
+              "sha256": "734e14c5371cd4a73e735b013dceb279d5ae1d261df608ed9ef9f89cf886c240"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "C",
+                "operation": "formal-files-reality-pac-app-B-doc"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "P",
+              "body": {
+                "route": "P",
+                "account": "B",
+                "operation": "formal-files-reality-pac-restored-asset"
+              },
+              "id": "826a5cf2-1ecf-44ec-958b-ac2564b0c4b4",
+              "sha256": "a95507b8137feb6c4f7a798fe77af420ff59f7d673222947031131b06e520060"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "P",
+              "body": {
+                "route": "P",
+                "account": "C",
+                "operation": "formal-files-reality-pac-restored-doc"
+              }
+            }
+          ],
+          "expectedRequests": [
+            {
+              "path": "/joint/formal-files-reality-page-A1/page",
+              "route": "A",
+              "syntheticAccount": "A",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-page-B1/page",
+              "route": "A",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-page-C1/page",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-protected-A/download",
+              "route": "A",
+              "syntheticAccount": "A",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-actual-system-save/download",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-refuse-existing-document/download",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-write-permission-denied/download",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-http-system-web/echo",
+              "route": "S",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-http-system-asset/download",
+              "route": "S",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-http-system-doc/download",
+              "route": "S",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-http-app-A-web/echo",
+              "route": "A",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-http-app-A-asset/download",
+              "route": "A",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-http-app-A-doc/download",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-http-app-B-web/echo",
+              "route": "B",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-http-app-B-asset/download",
+              "route": "B",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-http-app-B-doc/download",
+              "route": "B",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-http-restored-web/echo",
+              "route": "S",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-http-restored-asset/download",
+              "route": "S",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-http-restored-doc/download",
+              "route": "S",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-pac-system-web/echo",
+              "route": "P",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-pac-system-asset/download",
+              "route": "P",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-pac-system-doc/download",
+              "route": "P",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-pac-app-A-web/echo",
+              "route": "A",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-pac-app-A-asset/download",
+              "route": "A",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-pac-app-A-doc/download",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-pac-app-B-web/echo",
+              "route": "B",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-pac-app-B-asset/download",
+              "route": "B",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-pac-app-B-doc/download",
+              "route": "B",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-pac-restored-web/echo",
+              "route": "P",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-pac-restored-asset/download",
+              "route": "P",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-pac-restored-doc/download",
+              "route": "P",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-reality-delayed-save-result/download",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            }
+          ],
+          "systemPolicy": {
+            "originalProxy": null,
+            "deviceOwnerBefore": false,
+            "configurations": [
+              {
+                "mode": "http",
+                "requested": {
+                  "host": "10.0.2.2",
+                  "port": 18082,
+                  "pacURL": "",
+                  "exclusions": []
+                },
+                "actualProxyInfo": {
+                  "host": "10.0.2.2",
+                  "port": 18082,
+                  "pacURL": "",
+                  "exclusions": []
+                },
+                "elapsedMillis": 7,
+                "deviceOwner": true
+              },
+              {
+                "mode": "pac",
+                "requested": {
+                  "host": "localhost",
+                  "port": -1,
+                  "pacURL": "http://10.0.2.2:18080/joint-system.pac",
+                  "exclusions": [
+                    ""
+                  ]
+                },
+                "actualProxyInfo": {
+                  "host": "localhost",
+                  "port": 43904,
+                  "pacURL": "http://10.0.2.2:18080/joint-system.pac",
+                  "exclusions": [
+                    ""
+                  ]
+                },
+                "elapsedMillis": 84,
+                "deviceOwner": true
+              }
+            ],
+            "restored": true,
+            "roleRemoved": true,
+            "provisionOutput": "Success: Device owner set to package ComponentInfo{com.forcemind.chatgpt.profiles.networkci/com.forcemind.chatgpt.profiles.NetworkProxyAdminReceiver}\nActive admin set to component {com.forcemind.chatgpt.profiles.networkci/com.forcemind.chatgpt.profiles.NetworkProxyAdminReceiver}\n",
+            "deviceOwnerAfter": true,
+            "restoredProxyInfo": null,
+            "removeOutput": "Success: Admin removed ComponentInfo{com.forcemind.chatgpt.profiles.networkci/com.forcemind.chatgpt.profiles.NetworkProxyAdminReceiver}\n"
+          }
+        },
+        "fileSafetyVerified": {
+          "complete": true,
+          "sourceSHA": "a6baf078656dbd5be763f83f26ade63e62c39159",
+          "api": 28,
+          "transport": "reality",
+          "exactRequests": 32,
+          "gatedOperations": 5,
+          "realSystemPicker": true,
+          "proxyRestored": true,
+          "temporaryOwnerRemoved": true,
+          "screenshots": false,
+          "realChatGPT": false
+        },
+        "restartSeed": {
+          "schema": 1,
+          "complete": true,
+          "sourceSHA": "a6baf078656dbd5be763f83f26ade63e62c39159",
+          "phase": "seed",
+          "pid": 3483,
+          "screenshots": false,
+          "realChatGPT": false,
+          "fixturePage": "logical ChatGPT origin served by offline interceptor; no real service requests",
+          "account": "e63fbf5c-ae51-4bf6-b5a0-e498f23286e1",
+          "storage": "1a64d7be-e303-44af-ab0b-44aef992a3ef",
+          "tab": "c52241fd-c2c2-46af-86fd-2f37bc37bbdf",
+          "draft": "Synthetic encrypted process recovery draft",
+          "clearedStorage": "520b44c0-f552-48ce-a139-31f1410d15f2",
+          "route": 0
+        },
+        "restart": {
+          "schema": 1,
+          "complete": true,
+          "sourceSHA": "a6baf078656dbd5be763f83f26ade63e62c39159",
+          "phase": "verify",
+          "pid": 3563,
+          "screenshots": false,
+          "realChatGPT": false,
+          "fixturePage": "logical ChatGPT origin served by offline interceptor; no real service requests",
+          "oldPid": 3483,
+          "newDocument": true,
+          "sameRamDocumentClaim": false,
+          "draftActualDOMMatches": true,
+          "cookiePreserved": true,
+          "profilePreserved": true,
+          "deferredClearedProfileRemoved": true,
+          "selectedRouteRestored": true
+        },
+        "restartVerified": {
+          "complete": true,
+          "sourceSHA": "a6baf078656dbd5be763f83f26ade63e62c39159",
+          "api": 28,
+          "transport": "reality",
+          "newProcess": true,
+          "sameRamDocumentClaim": false,
+          "actualDOMDraft": true,
+          "selectedRouteRestored": true,
+          "realChatGPTRequests": 0,
+          "screenshots": false
+        }
+      },
+      {
+        "artifact": 13257263962,
+        "archiveBytes": 10900,
+        "archiveSHA256": "6c5f49b21a44d9ebfc5ad7680702c6b1e96a02166cfb73ddc417963c89673eec",
+        "api": 28,
+        "transport": "raw",
+        "initial": {
+          "complete": true,
+          "sourceSHA": "a6baf078656dbd5be763f83f26ade63e62c39159",
+          "api": 28,
+          "transport": "raw",
+          "exactRequests": 17,
+          "successfulFiles": 12,
+          "screenshots": false,
+          "realChatGPT": false
+        },
+        "fileSafety": {
+          "schema": 1,
+          "sourceSHA": "a6baf078656dbd5be763f83f26ade63e62c39159",
+          "api": 28,
+          "transport": "raw",
+          "screenshots": false,
+          "realChatGPT": false,
+          "accountClear": {
+            "elapsedMillis": 548,
+            "oldStorage": "a182887f-23b7-4e11-984a-0d14b21b42fc",
+            "assetBytesRetained": true,
+            "otherAccountStillTransferring": true,
+            "oldCallbackInvalid": true
+          },
+          "cancelledDocumentMillis": 58,
+          "closedOwner": {
+            "elapsedMillis": 67,
+            "partialRemoved": true,
+            "otherTransferPreserved": true,
+            "newRequestRejected": true
+          },
+          "realSystemPicker": true,
+          "writePermissionDenied": true,
+          "publisherFailure": {
+            "actualPrefixBytes": 4096,
+            "newPartialRemoved": true,
+            "existingDocumentPreserved": true
+          },
+          "lateSelectionIgnored": true,
+          "routeChangeBlockedWhileSelecting": true,
+          "syntheticAutomationGuard": true,
+          "gateFinal": [
+            {
+              "attemptCount": 1,
+              "bodyComplete": false,
+              "commitCount": 0,
+              "completed": true,
+              "failure": null,
+              "kind": "download",
+              "opCount": 1,
+              "opid": "raw-https-formal-clear-a",
+              "origin": "https",
+              "payloadSha256": "6646d3e1ba8d13e25ea0e4558fe982505f8d5d7704cf18c9d4dd992d4d103a62",
+              "prefix": true,
+              "readError": null,
+              "released": true,
+              "requestBytesRead": 0,
+              "responseBytesWritten": 262144,
+              "route": "A",
+              "started": true,
+              "syntheticAccount": "A",
+              "timedOut": false,
+              "totalBytes": 262144,
+              "transport": "raw",
+              "writeError": null
+            },
+            {
+              "attemptCount": 1,
+              "bodyComplete": false,
+              "commitCount": 0,
+              "completed": true,
+              "failure": null,
+              "kind": "download",
+              "opCount": 1,
+              "opid": "raw-https-formal-live-b",
+              "origin": "https",
+              "payloadSha256": "6646d3e1ba8d13e25ea0e4558fe982505f8d5d7704cf18c9d4dd992d4d103a62",
+              "prefix": true,
+              "readError": null,
+              "released": true,
+              "requestBytesRead": 0,
+              "responseBytesWritten": 262144,
+              "route": "A",
+              "started": true,
+              "syntheticAccount": "B",
+              "timedOut": false,
+              "totalBytes": 262144,
+              "transport": "raw",
+              "writeError": null
+            },
+            {
+              "attemptCount": 1,
+              "bodyComplete": false,
+              "commitCount": 0,
+              "completed": true,
+              "failure": null,
+              "kind": "download",
+              "opCount": 1,
+              "opid": "raw-https-formal-cancel-doc",
+              "origin": "https",
+              "payloadSha256": "6646d3e1ba8d13e25ea0e4558fe982505f8d5d7704cf18c9d4dd992d4d103a62",
+              "prefix": true,
+              "readError": null,
+              "released": true,
+              "requestBytesRead": 0,
+              "responseBytesWritten": 262144,
+              "route": "A",
+              "started": true,
+              "syntheticAccount": "C",
+              "timedOut": false,
+              "totalBytes": 262144,
+              "transport": "raw",
+              "writeError": null
+            },
+            {
+              "attemptCount": 1,
+              "bodyComplete": false,
+              "commitCount": 0,
+              "completed": true,
+              "failure": null,
+              "kind": "download",
+              "opCount": 1,
+              "opid": "raw-https-formal-publish-fault",
+              "origin": "https",
+              "payloadSha256": "6646d3e1ba8d13e25ea0e4558fe982505f8d5d7704cf18c9d4dd992d4d103a62",
+              "prefix": true,
+              "readError": null,
+              "released": true,
+              "requestBytesRead": 0,
+              "responseBytesWritten": 262144,
+              "route": "A",
+              "started": true,
+              "syntheticAccount": "C",
+              "timedOut": false,
+              "totalBytes": 262144,
+              "transport": "raw",
+              "writeError": null
+            },
+            {
+              "attemptCount": 1,
+              "bodyComplete": false,
+              "commitCount": 0,
+              "completed": true,
+              "failure": null,
+              "kind": "download",
+              "opCount": 1,
+              "opid": "raw-https-formal-owner-close",
+              "origin": "https",
+              "payloadSha256": "6646d3e1ba8d13e25ea0e4558fe982505f8d5d7704cf18c9d4dd992d4d103a62",
+              "prefix": true,
+              "readError": null,
+              "released": true,
+              "requestBytesRead": 0,
+              "responseBytesWritten": 262144,
+              "route": "A",
+              "started": true,
+              "syntheticAccount": "C",
+              "timedOut": false,
+              "totalBytes": 262144,
+              "transport": "raw",
+              "writeError": null
+            }
+          ],
+          "accountStorage": {
+            "B": "736aeba2-0648-44f0-b7a9-9991c0ad54b2",
+            "C": "7e75d596-7885-4011-a4ae-6482d9d538ef"
+          },
+          "accounts": {
+            "A": "742323d4-b931-451d-a259-384f9be94ac4",
+            "B": "7dded18e-d151-4f6a-9e74-68eb2ebbdc1c",
+            "C": "e8670363-f02d-4c78-aac5-542c741a40b4"
+          },
+          "lastDocumentEvidence": {
+            "stage": "saved",
+            "authority": "com.forcemind.chatgpt.profiles.networkci.network-docs",
+            "flags": 3,
+            "taskId": "2da97288-bbd7-4729-bac8-b7712f9956b6",
+            "available": true,
+            "failureClass": null
+          },
+          "complete": true,
+          "files": [
+            {
+              "exit": "asset",
+              "account": "A",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "A",
+                "operation": "formal-files-raw-protected-A"
+              },
+              "id": "e5656402-55f6-4e5a-ab51-30083000671b",
+              "sha256": "0d79354d7ed2ad63384c18fe7b720d52d4e203635835d1971d57a542cc6afd96"
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "S",
+              "body": {
+                "route": "S",
+                "account": "B",
+                "operation": "formal-files-raw-http-system-asset"
+              },
+              "id": "033bd20a-ab76-45d8-946f-a7815af0c494",
+              "sha256": "3666ba4d76b36be1993d4e46fe33627d5061c5c1dc0cab82493b57eb1b9f6461"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "S",
+              "body": {
+                "route": "S",
+                "account": "C",
+                "operation": "formal-files-raw-http-system-doc"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "B",
+                "operation": "formal-files-raw-http-app-A-asset"
+              },
+              "id": "097cca43-4aad-4895-a60a-fd7012e63f99",
+              "sha256": "00f95afb7837cf3ccc0b90c5e8b786e2140ae98afa3732c7d37f87103b1eeeb8"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "C",
+                "operation": "formal-files-raw-http-app-A-doc"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "B",
+                "operation": "formal-files-raw-http-app-B-asset"
+              },
+              "id": "6dc8ef4c-766a-4e51-8546-dc88568bd9bd",
+              "sha256": "de83ac81b297cb72bccf279e4b3b0d8b66760102da1ee3ea3806f04adad0ff95"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "C",
+                "operation": "formal-files-raw-http-app-B-doc"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "S",
+              "body": {
+                "route": "S",
+                "account": "B",
+                "operation": "formal-files-raw-http-restored-asset"
+              },
+              "id": "5b7b14ba-8d47-4f67-a695-388482455c1d",
+              "sha256": "7b360a988a17d4fbd6e08034e1695fef1fb8e743dd8fd8ec82885b8948ca2a1a"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "S",
+              "body": {
+                "route": "S",
+                "account": "C",
+                "operation": "formal-files-raw-http-restored-doc"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "P",
+              "body": {
+                "route": "P",
+                "account": "B",
+                "operation": "formal-files-raw-pac-system-asset"
+              },
+              "id": "e8c12edf-e2a5-49d1-9e64-21fd1a28dc85",
+              "sha256": "cc8a0d0079aa9a1146702ef891271eabe86219a60edfc1e9c290596059ded9ff"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "P",
+              "body": {
+                "route": "P",
+                "account": "C",
+                "operation": "formal-files-raw-pac-system-doc"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "B",
+                "operation": "formal-files-raw-pac-app-A-asset"
+              },
+              "id": "8a74c8de-a0a0-4e55-bbe6-f630f5277c33",
+              "sha256": "ea9742e038e732153ae8ed29fd825c87d5d0d581feb355f5241dd69b9f7a480a"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "C",
+                "operation": "formal-files-raw-pac-app-A-doc"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "B",
+                "operation": "formal-files-raw-pac-app-B-asset"
+              },
+              "id": "3101094e-b1b1-4e43-83fe-782b16bf7ac1",
+              "sha256": "9fb50f8db7c67bc3b25620ebdba8745cfe89f1d1b4dd3eb10617bdebc03f26bd"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "C",
+                "operation": "formal-files-raw-pac-app-B-doc"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "P",
+              "body": {
+                "route": "P",
+                "account": "B",
+                "operation": "formal-files-raw-pac-restored-asset"
+              },
+              "id": "adb24198-34ba-46b4-9815-7a1aeb540e5a",
+              "sha256": "28ebb0ddec9d391d9dc0a9aedada3aff135811ab920fb4ece5853d7ce1284f36"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "P",
+              "body": {
+                "route": "P",
+                "account": "C",
+                "operation": "formal-files-raw-pac-restored-doc"
+              }
+            }
+          ],
+          "expectedRequests": [
+            {
+              "path": "/joint/formal-files-raw-page-A1/page",
+              "route": "A",
+              "syntheticAccount": "A",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-page-B1/page",
+              "route": "A",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-page-C1/page",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-protected-A/download",
+              "route": "A",
+              "syntheticAccount": "A",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-actual-system-save/download",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-refuse-existing-document/download",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-write-permission-denied/download",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-http-system-web/echo",
+              "route": "S",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-http-system-asset/download",
+              "route": "S",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-http-system-doc/download",
+              "route": "S",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-http-app-A-web/echo",
+              "route": "A",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-http-app-A-asset/download",
+              "route": "A",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-http-app-A-doc/download",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-http-app-B-web/echo",
+              "route": "B",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-http-app-B-asset/download",
+              "route": "B",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-http-app-B-doc/download",
+              "route": "B",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-http-restored-web/echo",
+              "route": "S",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-http-restored-asset/download",
+              "route": "S",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-http-restored-doc/download",
+              "route": "S",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-pac-system-web/echo",
+              "route": "P",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-pac-system-asset/download",
+              "route": "P",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-pac-system-doc/download",
+              "route": "P",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-pac-app-A-web/echo",
+              "route": "A",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-pac-app-A-asset/download",
+              "route": "A",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-pac-app-A-doc/download",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-pac-app-B-web/echo",
+              "route": "B",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-pac-app-B-asset/download",
+              "route": "B",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-pac-app-B-doc/download",
+              "route": "B",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-pac-restored-web/echo",
+              "route": "P",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-pac-restored-asset/download",
+              "route": "P",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-pac-restored-doc/download",
+              "route": "P",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-delayed-save-result/download",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            }
+          ],
+          "systemPolicy": {
+            "originalProxy": null,
+            "deviceOwnerBefore": false,
+            "configurations": [
+              {
+                "mode": "http",
+                "requested": {
+                  "host": "10.0.2.2",
+                  "port": 18082,
+                  "pacURL": "",
+                  "exclusions": []
+                },
+                "actualProxyInfo": {
+                  "host": "10.0.2.2",
+                  "port": 18082,
+                  "pacURL": "",
+                  "exclusions": []
+                },
+                "elapsedMillis": 7,
+                "deviceOwner": true
+              },
+              {
+                "mode": "pac",
+                "requested": {
+                  "host": "localhost",
+                  "port": -1,
+                  "pacURL": "http://10.0.2.2:18080/joint-system.pac",
+                  "exclusions": [
+                    ""
+                  ]
+                },
+                "actualProxyInfo": {
+                  "host": "localhost",
+                  "port": 35523,
+                  "pacURL": "http://10.0.2.2:18080/joint-system.pac",
+                  "exclusions": [
+                    ""
+                  ]
+                },
+                "elapsedMillis": 158,
+                "deviceOwner": true
+              }
+            ],
+            "restored": true,
+            "roleRemoved": true,
+            "provisionOutput": "Success: Device owner set to package ComponentInfo{com.forcemind.chatgpt.profiles.networkci/com.forcemind.chatgpt.profiles.NetworkProxyAdminReceiver}\nActive admin set to component {com.forcemind.chatgpt.profiles.networkci/com.forcemind.chatgpt.profiles.NetworkProxyAdminReceiver}\n",
+            "deviceOwnerAfter": true,
+            "restoredProxyInfo": null,
+            "removeOutput": "Success: Admin removed ComponentInfo{com.forcemind.chatgpt.profiles.networkci/com.forcemind.chatgpt.profiles.NetworkProxyAdminReceiver}\n"
+          }
+        },
+        "fileSafetyVerified": {
+          "complete": true,
+          "sourceSHA": "a6baf078656dbd5be763f83f26ade63e62c39159",
+          "api": 28,
+          "transport": "raw",
+          "exactRequests": 32,
+          "gatedOperations": 5,
+          "realSystemPicker": true,
+          "proxyRestored": true,
+          "temporaryOwnerRemoved": true,
+          "screenshots": false,
+          "realChatGPT": false
+        },
+        "restartSeed": {
+          "schema": 1,
+          "complete": true,
+          "sourceSHA": "a6baf078656dbd5be763f83f26ade63e62c39159",
+          "phase": "seed",
+          "pid": 3574,
+          "screenshots": false,
+          "realChatGPT": false,
+          "fixturePage": "logical ChatGPT origin served by offline interceptor; no real service requests",
+          "account": "e8670363-f02d-4c78-aac5-542c741a40b4",
+          "storage": "7e75d596-7885-4011-a4ae-6482d9d538ef",
+          "tab": "a0f0368c-d6a7-4f7e-9bde-122590490843",
+          "draft": "Synthetic encrypted process recovery draft",
+          "clearedStorage": "a182887f-23b7-4e11-984a-0d14b21b42fc",
+          "route": 0
+        },
+        "restart": {
+          "schema": 1,
+          "complete": true,
+          "sourceSHA": "a6baf078656dbd5be763f83f26ade63e62c39159",
+          "phase": "verify",
+          "pid": 3654,
+          "screenshots": false,
+          "realChatGPT": false,
+          "fixturePage": "logical ChatGPT origin served by offline interceptor; no real service requests",
+          "oldPid": 3574,
+          "newDocument": true,
+          "sameRamDocumentClaim": false,
+          "draftActualDOMMatches": true,
+          "cookiePreserved": true,
+          "profilePreserved": true,
+          "deferredClearedProfileRemoved": true,
+          "selectedRouteRestored": true
+        },
+        "restartVerified": {
+          "complete": true,
+          "sourceSHA": "a6baf078656dbd5be763f83f26ade63e62c39159",
+          "api": 28,
+          "transport": "raw",
+          "newProcess": true,
+          "sameRamDocumentClaim": false,
+          "actualDOMDraft": true,
+          "selectedRouteRestored": true,
+          "realChatGPTRequests": 0,
+          "screenshots": false
+        }
+      },
+      {
+        "artifact": 13256509495,
+        "archiveBytes": 8803,
+        "archiveSHA256": "d24ab9cbd8ea0a8cf77b1ed43ec7ba81624b1a3f3d6ba317adb58e60fc6fd851",
+        "api": 35,
+        "transport": "raw",
+        "initial": {
+          "complete": true,
+          "sourceSHA": "a6baf078656dbd5be763f83f26ade63e62c39159",
+          "api": 35,
+          "transport": "raw",
+          "exactRequests": 17,
+          "successfulFiles": 12,
+          "screenshots": false,
+          "realChatGPT": false
+        },
+        "fileSafety": {
+          "schema": 1,
+          "sourceSHA": "a6baf078656dbd5be763f83f26ade63e62c39159",
+          "api": 35,
+          "transport": "raw",
+          "screenshots": false,
+          "realChatGPT": false,
+          "accountClear": {
+            "elapsedMillis": 272,
+            "oldStorage": "33450556-ea31-404e-96ea-36e6f31e1adf",
+            "assetBytesRetained": true,
+            "otherAccountStillTransferring": true,
+            "oldCallbackInvalid": true
+          },
+          "cancelledDocumentMillis": 53,
+          "closedOwner": {
+            "elapsedMillis": 189,
+            "partialRemoved": true,
+            "otherTransferPreserved": true,
+            "newRequestRejected": true
+          },
+          "realSystemPicker": true,
+          "writePermissionDenied": true,
+          "publisherFailure": {
+            "actualPrefixBytes": 4096,
+            "newPartialRemoved": true,
+            "existingDocumentPreserved": true
+          },
+          "lateSelectionIgnored": true,
+          "routeChangeBlockedWhileSelecting": true,
+          "syntheticAutomationGuard": true,
+          "gateFinal": [
+            {
+              "attemptCount": 1,
+              "bodyComplete": false,
+              "commitCount": 0,
+              "completed": true,
+              "failure": null,
+              "kind": "download",
+              "opCount": 1,
+              "opid": "raw-https-formal-clear-a",
+              "origin": "https",
+              "payloadSha256": "6646d3e1ba8d13e25ea0e4558fe982505f8d5d7704cf18c9d4dd992d4d103a62",
+              "prefix": true,
+              "readError": null,
+              "released": true,
+              "requestBytesRead": 0,
+              "responseBytesWritten": 262144,
+              "route": "A",
+              "started": true,
+              "syntheticAccount": "A",
+              "timedOut": false,
+              "totalBytes": 262144,
+              "transport": "raw",
+              "writeError": null
+            },
+            {
+              "attemptCount": 1,
+              "bodyComplete": false,
+              "commitCount": 0,
+              "completed": true,
+              "failure": null,
+              "kind": "download",
+              "opCount": 1,
+              "opid": "raw-https-formal-live-b",
+              "origin": "https",
+              "payloadSha256": "6646d3e1ba8d13e25ea0e4558fe982505f8d5d7704cf18c9d4dd992d4d103a62",
+              "prefix": true,
+              "readError": null,
+              "released": true,
+              "requestBytesRead": 0,
+              "responseBytesWritten": 262144,
+              "route": "A",
+              "started": true,
+              "syntheticAccount": "B",
+              "timedOut": false,
+              "totalBytes": 262144,
+              "transport": "raw",
+              "writeError": null
+            },
+            {
+              "attemptCount": 1,
+              "bodyComplete": false,
+              "commitCount": 0,
+              "completed": true,
+              "failure": null,
+              "kind": "download",
+              "opCount": 1,
+              "opid": "raw-https-formal-cancel-doc",
+              "origin": "https",
+              "payloadSha256": "6646d3e1ba8d13e25ea0e4558fe982505f8d5d7704cf18c9d4dd992d4d103a62",
+              "prefix": true,
+              "readError": null,
+              "released": true,
+              "requestBytesRead": 0,
+              "responseBytesWritten": 262144,
+              "route": "A",
+              "started": true,
+              "syntheticAccount": "C",
+              "timedOut": false,
+              "totalBytes": 262144,
+              "transport": "raw",
+              "writeError": null
+            },
+            {
+              "attemptCount": 1,
+              "bodyComplete": false,
+              "commitCount": 0,
+              "completed": true,
+              "failure": null,
+              "kind": "download",
+              "opCount": 1,
+              "opid": "raw-https-formal-publish-fault",
+              "origin": "https",
+              "payloadSha256": "6646d3e1ba8d13e25ea0e4558fe982505f8d5d7704cf18c9d4dd992d4d103a62",
+              "prefix": true,
+              "readError": null,
+              "released": true,
+              "requestBytesRead": 0,
+              "responseBytesWritten": 262144,
+              "route": "A",
+              "started": true,
+              "syntheticAccount": "C",
+              "timedOut": false,
+              "totalBytes": 262144,
+              "transport": "raw",
+              "writeError": null
+            },
+            {
+              "attemptCount": 1,
+              "bodyComplete": false,
+              "commitCount": 0,
+              "completed": true,
+              "failure": null,
+              "kind": "download",
+              "opCount": 1,
+              "opid": "raw-https-formal-owner-close",
+              "origin": "https",
+              "payloadSha256": "6646d3e1ba8d13e25ea0e4558fe982505f8d5d7704cf18c9d4dd992d4d103a62",
+              "prefix": true,
+              "readError": null,
+              "released": true,
+              "requestBytesRead": 0,
+              "responseBytesWritten": 262144,
+              "route": "A",
+              "started": true,
+              "syntheticAccount": "C",
+              "timedOut": false,
+              "totalBytes": 262144,
+              "transport": "raw",
+              "writeError": null
+            }
+          ],
+          "accountStorage": {
+            "B": "8b59ec5e-9a0c-4f79-a4b7-6bb5a3892b14",
+            "C": "95a82669-6c52-4ebf-bc4d-d34f0e36ea43"
+          },
+          "accounts": {
+            "A": "769e93dc-266e-4cae-ae23-db27d5d6af62",
+            "B": "4a5a2f7e-88c5-441e-8138-84c124b40eeb",
+            "C": "80b54cba-b1dc-4705-8c40-bad492962194"
+          },
+          "lastDocumentEvidence": {
+            "stage": "saved",
+            "authority": "com.forcemind.chatgpt.profiles.networkci.network-docs",
+            "flags": 3,
+            "taskId": "60671437-16b9-4536-8bc2-0945288b7baf",
+            "available": true,
+            "failureClass": null
+          },
+          "complete": true,
+          "files": [
+            {
+              "exit": "asset",
+              "account": "A",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "A",
+                "operation": "formal-files-raw-protected-A"
+              },
+              "id": "64f78bb9-6108-482d-a246-8f8d1cae8720",
+              "sha256": "0d79354d7ed2ad63384c18fe7b720d52d4e203635835d1971d57a542cc6afd96"
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "S",
+              "body": {
+                "route": "S",
+                "account": "B",
+                "operation": "formal-files-raw-http-system-asset"
+              },
+              "id": "c7acdadb-0c86-4134-95ba-304d411c3c32",
+              "sha256": "3666ba4d76b36be1993d4e46fe33627d5061c5c1dc0cab82493b57eb1b9f6461"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "S",
+              "body": {
+                "route": "S",
+                "account": "C",
+                "operation": "formal-files-raw-http-system-doc"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "B",
+                "operation": "formal-files-raw-http-app-A-asset"
+              },
+              "id": "88c6ecd5-6617-4a34-ab42-55bc2058b5c8",
+              "sha256": "00f95afb7837cf3ccc0b90c5e8b786e2140ae98afa3732c7d37f87103b1eeeb8"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "C",
+                "operation": "formal-files-raw-http-app-A-doc"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "B",
+                "operation": "formal-files-raw-http-app-B-asset"
+              },
+              "id": "e47ea897-b7c1-4f97-817c-4807682e0b32",
+              "sha256": "de83ac81b297cb72bccf279e4b3b0d8b66760102da1ee3ea3806f04adad0ff95"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "C",
+                "operation": "formal-files-raw-http-app-B-doc"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "S",
+              "body": {
+                "route": "S",
+                "account": "B",
+                "operation": "formal-files-raw-http-restored-asset"
+              },
+              "id": "8b3e0bcf-6873-4d40-8481-82eb494e68ca",
+              "sha256": "7b360a988a17d4fbd6e08034e1695fef1fb8e743dd8fd8ec82885b8948ca2a1a"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "S",
+              "body": {
+                "route": "S",
+                "account": "C",
+                "operation": "formal-files-raw-http-restored-doc"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "P",
+              "body": {
+                "route": "P",
+                "account": "B",
+                "operation": "formal-files-raw-pac-system-asset"
+              },
+              "id": "4f2b2c8a-26b5-4c76-a4ae-05f6c1be3a88",
+              "sha256": "cc8a0d0079aa9a1146702ef891271eabe86219a60edfc1e9c290596059ded9ff"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "P",
+              "body": {
+                "route": "P",
+                "account": "C",
+                "operation": "formal-files-raw-pac-system-doc"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "B",
+                "operation": "formal-files-raw-pac-app-A-asset"
+              },
+              "id": "115ba71e-800a-4299-ac8f-961f56a8ca60",
+              "sha256": "ea9742e038e732153ae8ed29fd825c87d5d0d581feb355f5241dd69b9f7a480a"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "C",
+                "operation": "formal-files-raw-pac-app-A-doc"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "B",
+                "operation": "formal-files-raw-pac-app-B-asset"
+              },
+              "id": "92168806-3dd5-427e-96ad-b7ea93484ca7",
+              "sha256": "9fb50f8db7c67bc3b25620ebdba8745cfe89f1d1b4dd3eb10617bdebc03f26bd"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "C",
+                "operation": "formal-files-raw-pac-app-B-doc"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "P",
+              "body": {
+                "route": "P",
+                "account": "B",
+                "operation": "formal-files-raw-pac-restored-asset"
+              },
+              "id": "75f12557-da5b-4844-9407-41cf972835df",
+              "sha256": "28ebb0ddec9d391d9dc0a9aedada3aff135811ab920fb4ece5853d7ce1284f36"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "P",
+              "body": {
+                "route": "P",
+                "account": "C",
+                "operation": "formal-files-raw-pac-restored-doc"
+              }
+            }
+          ],
+          "expectedRequests": [
+            {
+              "path": "/joint/formal-files-raw-page-A1/page",
+              "route": "A",
+              "syntheticAccount": "A",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-page-B1/page",
+              "route": "A",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-page-C1/page",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-protected-A/download",
+              "route": "A",
+              "syntheticAccount": "A",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-actual-system-save/download",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-refuse-existing-document/download",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-write-permission-denied/download",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-http-system-web/echo",
+              "route": "S",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-http-system-asset/download",
+              "route": "S",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-http-system-doc/download",
+              "route": "S",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-http-app-A-web/echo",
+              "route": "A",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-http-app-A-asset/download",
+              "route": "A",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-http-app-A-doc/download",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-http-app-B-web/echo",
+              "route": "B",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-http-app-B-asset/download",
+              "route": "B",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-http-app-B-doc/download",
+              "route": "B",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-http-restored-web/echo",
+              "route": "S",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-http-restored-asset/download",
+              "route": "S",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-http-restored-doc/download",
+              "route": "S",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-pac-system-web/echo",
+              "route": "P",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-pac-system-asset/download",
+              "route": "P",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-pac-system-doc/download",
+              "route": "P",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-pac-app-A-web/echo",
+              "route": "A",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-pac-app-A-asset/download",
+              "route": "A",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-pac-app-A-doc/download",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-pac-app-B-web/echo",
+              "route": "B",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-pac-app-B-asset/download",
+              "route": "B",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-pac-app-B-doc/download",
+              "route": "B",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-pac-restored-web/echo",
+              "route": "P",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-pac-restored-asset/download",
+              "route": "P",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-pac-restored-doc/download",
+              "route": "P",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-files-raw-delayed-save-result/download",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            }
+          ],
+          "systemPolicy": {
+            "originalProxy": null,
+            "deviceOwnerBefore": false,
+            "configurations": [
+              {
+                "mode": "http",
+                "requested": {
+                  "host": "10.0.2.2",
+                  "port": 18082,
+                  "pacURL": "",
+                  "exclusions": []
+                },
+                "actualProxyInfo": {
+                  "host": "10.0.2.2",
+                  "port": 18082,
+                  "pacURL": "",
+                  "exclusions": []
+                },
+                "elapsedMillis": 22,
+                "deviceOwner": true
+              },
+              {
+                "mode": "pac",
+                "requested": {
+                  "host": "localhost",
+                  "port": -1,
+                  "pacURL": "http://10.0.2.2:18080/joint-system.pac",
+                  "exclusions": [
+                    ""
+                  ]
+                },
+                "actualProxyInfo": {
+                  "host": "localhost",
+                  "port": 41005,
+                  "pacURL": "http://10.0.2.2:18080/joint-system.pac",
+                  "exclusions": [
+                    ""
+                  ]
+                },
+                "elapsedMillis": 477,
+                "deviceOwner": true
+              }
+            ],
+            "restored": true,
+            "roleRemoved": true,
+            "provisionOutput": "Success: Device owner set to package com.forcemind.chatgpt.profiles.networkci/com.forcemind.chatgpt.profiles.NetworkProxyAdminReceiver\nActive admin set to component com.forcemind.chatgpt.profiles.networkci/com.forcemind.chatgpt.profiles.NetworkProxyAdminReceiver\n",
+            "deviceOwnerAfter": true,
+            "restoredProxyInfo": null,
+            "removeOutput": "Success: Admin removed ComponentInfo{com.forcemind.chatgpt.profiles.networkci/com.forcemind.chatgpt.profiles.NetworkProxyAdminReceiver}\n"
+          }
+        },
+        "fileSafetyVerified": {
+          "complete": true,
+          "sourceSHA": "a6baf078656dbd5be763f83f26ade63e62c39159",
+          "api": 35,
+          "transport": "raw",
+          "exactRequests": 32,
+          "gatedOperations": 5,
+          "realSystemPicker": true,
+          "proxyRestored": true,
+          "temporaryOwnerRemoved": true,
+          "screenshots": false,
+          "realChatGPT": false
+        },
+        "restartSeed": {
+          "schema": 1,
+          "complete": true,
+          "sourceSHA": "a6baf078656dbd5be763f83f26ade63e62c39159",
+          "phase": "seed",
+          "pid": 4550,
+          "screenshots": false,
+          "realChatGPT": false,
+          "fixturePage": "logical ChatGPT origin served by offline interceptor; no real service requests",
+          "account": "80b54cba-b1dc-4705-8c40-bad492962194",
+          "storage": "95a82669-6c52-4ebf-bc4d-d34f0e36ea43",
+          "tab": "6fdacb1c-9720-4508-ad78-ad8e09e7a0b3",
+          "draft": "Synthetic encrypted process recovery draft",
+          "clearedStorage": "33450556-ea31-404e-96ea-36e6f31e1adf",
+          "route": 0
+        },
+        "restart": {
+          "schema": 1,
+          "complete": true,
+          "sourceSHA": "a6baf078656dbd5be763f83f26ade63e62c39159",
+          "phase": "verify",
+          "pid": 4672,
+          "screenshots": false,
+          "realChatGPT": false,
+          "fixturePage": "logical ChatGPT origin served by offline interceptor; no real service requests",
+          "oldPid": 4550,
+          "newDocument": true,
+          "sameRamDocumentClaim": false,
+          "draftActualDOMMatches": true,
+          "cookiePreserved": true,
+          "profilePreserved": true,
+          "deferredClearedProfileRemoved": true,
+          "selectedRouteRestored": true
+        },
+        "restartVerified": {
+          "complete": true,
+          "sourceSHA": "a6baf078656dbd5be763f83f26ade63e62c39159",
+          "api": 35,
+          "transport": "raw",
+          "newProcess": true,
+          "sameRamDocumentClaim": false,
+          "actualDOMDraft": true,
+          "selectedRouteRestored": true,
+          "realChatGPTRequests": 0,
+          "screenshots": false
+        }
+      }
+    ],
+    "upgrades": [
+      {
+        "artifact": 13258040799,
+        "archiveBytes": 2966,
+        "archiveSHA256": "4f5f974839a95e8fff519b26db135fee4264f50124754cb5008f3f45c3af7cc5",
+        "verified": {
+          "complete": true,
+          "sourceSHA": "a6baf078656dbd5be763f83f26ade63e62c39159",
+          "api": 35,
+          "sameTemporaryCISignature": true,
+          "productionSignatureVerified": false,
+          "preserved": [
+            "workspace",
+            "profile names",
+            "cookies",
+            "encrypted drafts and handoff identity",
+            "asset bytes",
+            "background preferences"
+          ],
+          "networkRequests": 0,
+          "inlineProfileDocuments": 3,
+          "screenshots": false,
+          "personalData": false
+        },
+        "oldSeed": {
+          "schema": 1,
+          "complete": true,
+          "phase": "seed",
+          "api": 35,
+          "sourceSHA": "b44e564deaed09efea7be3d68349d2198dede46b",
+          "versionCode": 3000022,
+          "accounts": 3,
+          "tabs": 4,
+          "signingSHA256": "4ab7e8ddbd92cb0b611c26bf063f00f7b6e754931c59efc654daaff3efa6f7cc",
+          "sameTemporaryCISignature": true,
+          "productionSignatureVerified": false,
+          "networkRequests": 0,
+          "hostFixture": "debug UploadProbeActivity; every page request intercepted",
+          "inlineProfileDocuments": 6,
+          "screenshots": false,
+          "personalData": false
+        },
+        "oldCold": {
+          "schema": 1,
+          "complete": true,
+          "phase": "verify",
+          "api": 35,
+          "sourceSHA": "b44e564deaed09efea7be3d68349d2198dede46b",
+          "versionCode": 3000022,
+          "accounts": 3,
+          "tabs": 4,
+          "signingSHA256": "4ab7e8ddbd92cb0b611c26bf063f00f7b6e754931c59efc654daaff3efa6f7cc",
+          "sameTemporaryCISignature": true,
+          "productionSignatureVerified": false,
+          "networkRequests": 0,
+          "hostFixture": "debug UploadProbeActivity; every page request intercepted",
+          "inlineProfileDocuments": 3,
+          "screenshots": false,
+          "personalData": false
+        },
+        "new": {
+          "schema": 1,
+          "complete": true,
+          "phase": "verify",
+          "api": 35,
+          "sourceSHA": "a6baf078656dbd5be763f83f26ade63e62c39159",
+          "versionCode": 3000024,
+          "accounts": 3,
+          "tabs": 4,
+          "signingSHA256": "4ab7e8ddbd92cb0b611c26bf063f00f7b6e754931c59efc654daaff3efa6f7cc",
+          "sameTemporaryCISignature": true,
+          "productionSignatureVerified": false,
+          "networkRequests": 0,
+          "hostFixture": "debug UploadProbeActivity; every page request intercepted",
+          "inlineProfileDocuments": 3,
+          "screenshots": false,
+          "personalData": false
+        }
+      },
+      {
+        "artifact": 13257339438,
+        "archiveBytes": 5066,
+        "archiveSHA256": "e99546737cf42d95f09a1d90f53a9a72a34522adb22d21b7fa317ad7319f4b67",
+        "verified": {
+          "complete": true,
+          "sourceSHA": "a6baf078656dbd5be763f83f26ade63e62c39159",
+          "api": 28,
+          "sameTemporaryCISignature": true,
+          "productionSignatureVerified": false,
+          "preserved": [
+            "workspace",
+            "profile names",
+            "cookies",
+            "encrypted drafts and handoff identity",
+            "asset bytes",
+            "background preferences"
+          ],
+          "networkRequests": 0,
+          "inlineProfileDocuments": 3,
+          "screenshots": false,
+          "personalData": false
+        },
+        "oldSeed": {
+          "schema": 1,
+          "complete": true,
+          "phase": "seed",
+          "api": 28,
+          "sourceSHA": "b44e564deaed09efea7be3d68349d2198dede46b",
+          "versionCode": 3000022,
+          "accounts": 3,
+          "tabs": 4,
+          "signingSHA256": "4ab7e8ddbd92cb0b611c26bf063f00f7b6e754931c59efc654daaff3efa6f7cc",
+          "sameTemporaryCISignature": true,
+          "productionSignatureVerified": false,
+          "networkRequests": 0,
+          "hostFixture": "debug UploadProbeActivity; every page request intercepted",
+          "inlineProfileDocuments": 6,
+          "screenshots": false,
+          "personalData": false
+        },
+        "oldCold": {
+          "schema": 1,
+          "complete": true,
+          "phase": "verify",
+          "api": 28,
+          "sourceSHA": "b44e564deaed09efea7be3d68349d2198dede46b",
+          "versionCode": 3000022,
+          "accounts": 3,
+          "tabs": 4,
+          "signingSHA256": "4ab7e8ddbd92cb0b611c26bf063f00f7b6e754931c59efc654daaff3efa6f7cc",
+          "sameTemporaryCISignature": true,
+          "productionSignatureVerified": false,
+          "networkRequests": 0,
+          "hostFixture": "debug UploadProbeActivity; every page request intercepted",
+          "inlineProfileDocuments": 3,
+          "screenshots": false,
+          "personalData": false
+        },
+        "new": {
+          "schema": 1,
+          "complete": true,
+          "phase": "verify",
+          "api": 28,
+          "sourceSHA": "a6baf078656dbd5be763f83f26ade63e62c39159",
+          "versionCode": 3000024,
+          "accounts": 3,
+          "tabs": 4,
+          "signingSHA256": "4ab7e8ddbd92cb0b611c26bf063f00f7b6e754931c59efc654daaff3efa6f7cc",
+          "sameTemporaryCISignature": true,
+          "productionSignatureVerified": false,
+          "networkRequests": 0,
+          "hostFixture": "debug UploadProbeActivity; every page request intercepted",
+          "inlineProfileDocuments": 3,
+          "screenshots": false,
+          "personalData": false
+        }
+      }
+    ],
+    "deviceCases": 6,
+    "upgradeCases": 2,
+    "originalFiles": 72,
+    "originalRequests": 102,
+    "fileSafetyRequests": 192,
+    "gatedTransfers": 30,
+    "realSystemSaveWindows": 6,
+    "limitations": [
+      "Upgrade uses the same temporary CI debug signer; not original production signer",
+      "Cold page text served by debug interceptor at logical ChatGPT origin; no real service request",
+      "Provider failures use the owned synthetic provider, not arbitrary commercial cloud storage",
+      "Automation route guard uses synthetic active control; not a real ChatGPT sending test"
+    ]
   },
   "phase3": {
-    "status": "pending"
+    "status": "running-after-all-data-gates-passed",
+    "run": 41690901023,
+    "notes": [
+      "Same emulator sequential old/new/cold-off/enabled/warm-off",
+      "Fixed600-chunk offline DOM stream and idle core, not network or real ChatGPT streaming",
+      "Actual1800s Home hold, old retention policy unchanged",
+      "No CPU/memory benefit claimed before measurements"
+    ]
   },
   "protectedMain": "ffbbd91ee5b50ff51d88758fce78a019d63796be",
   "scope": [

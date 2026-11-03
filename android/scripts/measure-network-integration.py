@@ -14,6 +14,18 @@ class FormalSampler(base.Sampler):
   self.log=(self.output/'instrumentation.txt').open('w')
   args=['am','instrument','-w','-r','-e','class',TEST,'-e','resourceSampler','1','-e','resourceWindowSeconds',str(self.window),'-e','mode',self.mode,'-e','sourceSHA',self.source,'-e','nodeA',self.fixture['transports']['raw']['nodeA'],base.PACKAGE+'.test/androidx.test.runner.AndroidJUnitRunner']
   self.instrumentation=subprocess.Popen(['adb','shell',' '.join(shlex.quote(x) for x in args)],stdout=self.log,stderr=subprocess.STDOUT)
+ def wait_phase(self,name):
+  try:return super().wait_phase(name)
+  except Exception:
+   if self.log:self.log.flush()
+   file=self.output/'instrumentation.txt'
+   if file.exists():print(file.read_text()[-9000:],flush=True)
+   raise
+ def cleanup(self):
+  for name in ['resource-load-evidence.json','resource-native-maps.txt','resource-background-heartbeats.json']:
+   try:(self.output/name).write_text(self.phase_file(name))
+   except Exception:pass
+  super().cleanup()
  def finish(self):
   result=super().finish();assert result['mode']==self.mode and result['sourceSHA']==self.source and result['screenshots'] is False and result['realChatGPTRequests']==0
   assert all(p['liveDocuments']==4 and p['noReload'] for p in result['phases'])
