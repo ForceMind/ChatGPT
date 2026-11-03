@@ -17,15 +17,17 @@ final class AssetDownloads {
     private final NetworkSession network;
     private final ExecutorService publish = Executors.newSingleThreadExecutor();
     private volatile boolean closed;
+    private final java.util.concurrent.ConcurrentHashMap<String,NetworkSession.FileJob> owned=new java.util.concurrent.ConcurrentHashMap<>();
     AssetDownloads(Context context) { this.context = context.getApplicationContext(); network = BrowserMemory.get(context).network(); }
     void start(WebView web, String accountId, String accountName, String url, String agent, String disposition, String mime) {
         if (closed || !NavigationPolicy.https(url)) { notice("当前链接暂不支持归档"); return; }
         final NetworkSession.FileJob job;
         try { job = network.begin(web, accountId); } catch (Exception failure) { notice(failure.getMessage()); return; }
+        owned.put(job.id,job);
         String name = URLUtil.guessFileName(url, disposition, mime);
         notice(accountName + " · 正在下载到资产库…");
         NetworkDownload.start(context, network, job, url, agent, (file, error) -> {
-            if (file == null) { job.finish(); notice(error); return; }
+            if (file == null) { finish(job); notice(error); return; }
             try { publish.execute(() -> {
                 boolean success = false;
                 try (FileInputStream input = new FileInputStream(file)) {
@@ -34,13 +36,14 @@ final class AssetDownloads {
                             () -> !closed && job.valid());
                     success = true;
                 } catch (Exception failure) { /* Only terminal state, never URLs/cookies. */ }
-                finally { if (file.exists() && !file.delete()) android.util.Log.w("StudioNetwork", "Owned asset staging cleanup failed"); job.finish(); }
+                finally { if (file.exists() && !file.delete()) android.util.Log.w("StudioNetwork", "Owned asset staging cleanup failed"); finish(job); }
                 final boolean published = success;
                 new Handler(Looper.getMainLooper()).post(() -> { if (job.valid()) notice(published ? accountName + " · 文件已归档" : "归档失败或已取消，原文件保留"); });
-            }); } catch (java.util.concurrent.RejectedExecutionException stopped) { if (file.exists()) file.delete(); job.cancel(); job.finish(); }
+            }); } catch (java.util.concurrent.RejectedExecutionException stopped) { if (file.exists()) file.delete(); job.cancel(); finish(job); }
         });
     }
-    void cancel(String accountId) { network.invalidateAccount(accountId); }
-    void close() { closed = true; publish.shutdown(); }
+    private void finish(NetworkSession.FileJob job) { owned.remove(job.id);job.finish(); }
+    void cancel(String accountId) { for(NetworkSession.FileJob job:owned.values())if(job.account.equals(accountId))job.cancel(); }
+    void close() { closed = true; for(NetworkSession.FileJob job:owned.values())job.cancel();publish.shutdown(); }
     private void notice(String text) { new Handler(Looper.getMainLooper()).post(() -> { if (!closed && text != null) Toast.makeText(context, text, Toast.LENGTH_LONG).show(); }); }
 }

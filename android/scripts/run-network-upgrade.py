@@ -8,7 +8,7 @@ def phase(name,source,output):
  text=run('adb','shell',' '.join(shlex.quote(v) for v in command),timeout=180);(output/(name+'-instrumentation.txt')).write_text(text);print(text)
  raw=run('adb','exec-out','run-as',PACKAGE,'cat','files/upgrade-result-'+name+'.json',timeout=20);(output/(name+'-result.json')).write_text(raw)
  assert re.findall(r'(?m)^OK \((\d+) test\)\s*$',text)==['1'] and not re.search(r'FAILURES!!!|INSTRUMENTATION_FAILED|shortMsg=',text)
- proof=json.loads(raw);assert proof['complete'] and proof['phase']==name and proof['sourceSHA']==source and proof['screenshots'] is False and proof['browserNavigations']==0
+ proof=json.loads(raw);assert proof['complete'] and proof['phase']==name and proof['sourceSHA']==source and proof['screenshots'] is False and proof['networkRequests']==0 and proof['inlineProfileDocuments']==(6 if name=='seed' else 3)
  return proof
 p=argparse.ArgumentParser();p.add_argument('--inputs',required=True);p.add_argument('--output',required=True);a=p.parse_args()
 assert os.environ.get('GITHUB_ACTIONS')=='true' and run('adb','shell','getprop','ro.kernel.qemu').strip()=='1'
@@ -22,4 +22,4 @@ run('adb','install','-r','-t',str(folder/'candidate-debug.apk'))
 after=phase('verify',os.environ['GITHUB_SHA'],output)
 assert before['signingSHA256']==after['signingSHA256'] and before['api']==after['api']
 assert after['accounts']==3 and after['tabs']==4
-(output/'verified.json').write_text(json.dumps({'complete':True,'sourceSHA':os.environ['GITHUB_SHA'],'api':after['api'],'sameTemporaryCISignature':True,'productionSignatureVerified':False,'preserved':['workspace','profile names','cookies','encrypted drafts and handoff identity','asset bytes','background preferences'],'browserNavigations':0,'screenshots':False,'personalData':False},indent=2)+'\n')
+(output/'verified.json').write_text(json.dumps({'complete':True,'sourceSHA':os.environ['GITHUB_SHA'],'api':after['api'],'sameTemporaryCISignature':True,'productionSignatureVerified':False,'preserved':['workspace','profile names','cookies','encrypted drafts and handoff identity','asset bytes','background preferences'],'networkRequests':0,'inlineProfileDocuments':3,'screenshots':False,'personalData':False},indent=2)+'\n')

@@ -55,7 +55,7 @@ def main():
  assert proof['accountClear']['assetBytesRetained'] and proof['accountClear']['otherAccountStillTransferring'] and proof['accountClear']['oldCallbackInvalid']
  assert proof['realSystemPicker'] and proof['writePermissionDenied'] and proof['lateSelectionIgnored'] and proof['routeChangeBlockedWhileSelecting'] and proof['syntheticAutomationGuard']
  assert proof['publisherFailure']['actualPrefixBytes']==4096 and proof['publisherFailure']['newPartialRemoved'] and proof['publisherFailure']['existingDocumentPreserved']
- assert proof['cancelledDocumentMillis']<=10000
+ assert proof['cancelledDocumentMillis']<=10000 and proof['closedOwner']['elapsedMillis']<=10000 and proof['closedOwner']['partialRemoved'] and proof['closedOwner']['otherTransferPreserved'] and proof['closedOwner']['newRequestRejected']
  raw=Path(os.environ['RUNNER_TEMP'],'formal-network-fixture.log').read_text();events=[];gates=[]
  for line in raw.splitlines():
   try:e=json.loads(line)
@@ -65,11 +65,11 @@ def main():
   if e.get('event')=='owned-transfer-summary' and e.get('opid','').startswith(a.transport+'-https-formal-'):gates.append(e)
  assert len(proof['expectedRequests'])==32 and len(events)==32
  for item in proof['expectedRequests']:assert len([e for e in events if all(e.get(k)==v for k,v in item.items())])==1,'File/UI/system route request mismatch: '+item['path']
- assert len(gates)==len(proof['gateFinal'])==4
+ assert len(gates)==len(proof['gateFinal'])==5
  for state in proof['gateFinal']:
   assert state['opCount']==state['attemptCount']==1 and state['released'] is True and state['timedOut'] is False and state['route']=='A'
   assert len([e for e in gates if e['opid']==state['opid'] and e['opCount']==1 and e['syntheticAccount']==state['syntheticAccount']])==1
- (output/'file-safety-verified.json').write_text(json.dumps({'complete':True,'sourceSHA':os.environ['GITHUB_SHA'],'api':proof['api'],'transport':a.transport,'exactRequests':32,'gatedOperations':4,'realSystemPicker':True,'proxyRestored':True,'temporaryOwnerRemoved':True,'screenshots':False,'realChatGPT':False},indent=2)+'\n')
+ (output/'file-safety-verified.json').write_text(json.dumps({'complete':True,'sourceSHA':os.environ['GITHUB_SHA'],'api':proof['api'],'transport':a.transport,'exactRequests':32,'gatedOperations':5,'realSystemPicker':True,'proxyRestored':True,'temporaryOwnerRemoved':True,'screenshots':False,'realChatGPT':False},indent=2)+'\n')
  print('FORMAL_FILE_SAFETY_VERIFIED '+json.dumps(proof))
  # Role/proxy restoration was verified above before ending this CI process.
  subprocess.run(['adb','shell','am','force-stop',PACKAGE],check=True,capture_output=True,timeout=15)

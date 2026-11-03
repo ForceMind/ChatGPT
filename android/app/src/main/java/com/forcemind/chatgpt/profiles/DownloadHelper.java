@@ -34,6 +34,7 @@ final class DownloadHelper {
         final String name, mime;
         File file;
         boolean launched, publishing;
+        int resultFlags;
         Selection(NetworkSession.FileJob job, String name, String mime) { this.job = job; this.name = name; this.mime = mime; }
     }
     DownloadHelper(Activity activity) { context = activity.getApplicationContext(); owner = new WeakReference<>(activity); network = BrowserMemory.get(context).network(); }
@@ -77,9 +78,9 @@ final class DownloadHelper {
         if (selected == null || !selected.launched || selected.publishing) return;
         selected.launched = false;
         if (result != Activity.RESULT_OK || data == null || data.getData() == null) { finish(selected); return; }
-        Uri destination = data.getData();
+        Uri destination = data.getData(); selected.resultFlags=data.getFlags();ciEvidence(selected,destination,"returned",null);
         if (!"content".equals(destination.getScheme()) || (data.getFlags() & Intent.FLAG_GRANT_WRITE_URI_PERMISSION) == 0 || !selected.job.publishAllowed()) {
-            finish(selected); notifyUser("保存授权或账号已改变，没有写入或删除目标文件"); return;
+            ciEvidence(selected,destination,"result-unusable",null);finish(selected); notifyUser("保存授权或账号已改变，没有写入或删除目标文件"); return;
         }
         selected.publishing = true; notifyUser("正在保存新副本…");
         writer.execute(() -> {
@@ -92,7 +93,7 @@ final class DownloadHelper {
                 try (Cursor row = context.getContentResolver().query(destination, new String[]{OpenableColumns.SIZE}, null, null, null)) {
                     if (row == null || !row.moveToFirst() || row.isNull(0) || row.getLong(0) != 0) throw new java.io.IOException("Cannot establish a newly created empty destination");
                 }
-                ownedNewDocument = true;
+                ownedNewDocument = true;ciEvidence(selected,destination,"new-empty-target",null);
                 try (FileInputStream input = new FileInputStream(selected.file); OutputStream output = context.getContentResolver().openOutputStream(destination, "w")) {
                     if (output == null) throw new java.io.IOException("Cannot write new document");
                     byte[] bytes = new byte[32768]; int n;
@@ -100,14 +101,19 @@ final class DownloadHelper {
                     output.flush();
                 }
                 if (closed || !selected.job.publishAllowed()) throw new java.io.IOException("保存任务已失效");
-                success = true;
+                success = true;ciEvidence(selected,destination,"saved",null);
             } catch (Exception failure) {
+                ciEvidence(selected,destination,"write-failed",failure);
                 if (ownedNewDocument) try { DocumentsContract.deleteDocument(context.getContentResolver(), destination); }
                 catch (Exception cleanup) { problem = "本次新建副本可能不完整，请在所选位置检查；既有文件未删除"; }
             }
             final boolean saved = success; final String message = problem;
             main.post(() -> { boolean current = selected.job.publishAllowed(); finish(selected); if (!closed) notifyUser(saved && current ? "文件已保存" : message); });
         });
+    }
+    private void ciEvidence(Selection selected,Uri destination,String stage,Exception failure) {
+        if(!BuildConfig.NETWORK_TEST)return;
+        try{org.json.JSONObject value=new org.json.JSONObject().put("stage",stage).put("authority",destination.getAuthority()).put("flags",selected.resultFlags).put("taskId",selected.job.id).put("available",selected.job.publishAllowed()).put("failureClass",failure==null?org.json.JSONObject.NULL:failure.getClass().getSimpleName());java.nio.file.Files.write(new File(context.getFilesDir(),"network-document-evidence.json").toPath(),value.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));}catch(Exception ignored){}
     }
     void close() { closed = true; cancelSelection(); writer.shutdown(); owner.clear(); }
     private void notifyUser(String message) { main.post(() -> { if (!closed && message != null) Toast.makeText(context, message, Toast.LENGTH_LONG).show(); }); }
