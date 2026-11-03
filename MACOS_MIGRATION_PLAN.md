@@ -1013,3 +1013,13 @@
 - 部署源码 fd94f1f：chatgpt-studio / 29ee5a86-612e-4c1f-b38a-54cb18366028、chatgpt-profiles / 42f490eb-cb02-48b0-96ff-f2e8d3ae6d1a 均已回读为 Production / main。保留既有域名和旧根路径 308，新旧 Mac 更新接口直接返回 alpha.22，Windows 版本与清单仍为 alpha.21，Android 仍手动更新。
 - HTTP 7 项与原始 / 国内加速 8 项范围请求通过：两站首页和 Mac feed 精确匹配源码；自定义域名仅对既有邮件混淆做严格逆变换后整页比对。四个安装包的 GitHub / gh-proxy 入口均为 206，前 32 字节一致且总大小匹配。Windows feed 实际采用 JSON 语法（合法 YAML），临时核对脚本首次误按裸 YAML 文本断言失败；原始线上内容逐字节一致，改用实际 JSON 结构复核既有响应后通过，无需重新请求或修改产品。此范围证明入口和首段响应，不宣称完整代理包已重新计算摘要。
 - 发布 / 摘要 / CI / 新旧部署与全部回读集中于 docs/releases/3.0.0-alpha.22-publication.json。中英文 README 与两平台说明已同步，历史候选和失败收据保留；浏览器未验证，真实账号发送与 Android 真机升级继续待人工验收。本机 App / 登录、正式签名材料与独立实验未改。
+
+
+## macOS alpha.23 公开发布（2026-11-03）
+
+- 用户明确授权合并 PR #1、同步 main / dev、公开 Mac DMG / ZIP，并更新官网下载、国内加速、里程碑及现用 Mac 更新接口。PR 源 1db8aa8 已通过完整检查和合成页面验收，以 5ccb02b 合并；保留开发历史与格式化 blame-ignore 记录。Windows 保持 alpha.21，Android 保持 alpha.22；dev 的 Android 独立实验继续保留，不接入正式客户端。
+- alpha.23 显示真实下载百分比及校验 / 准备安装状态，账号菜单提供手动检查、重试和立即安装；保留标签实例、后台保活和既有登录 / 加密恢复身份。流式 CPU 对照尚未证明稳定收益，不将调度改动描述为确定降幅。
+- 原包来自 Actions 41493373060 / 1db8aa8：Mac 完整 npm run check 通过，106 项单元通过，37 项 macOS 合成页面 E2E 通过，5 项 Windows 专属跳过。原始包、签名和摘要复用，不重新打包。
+- 晋级初轮 41574320874 / a13e601 在新脚本的两处 lint 失败；按实际日志修正全局对象引用和恰好两个空格的正则写法，未修改规则或放宽断言，失败时尚未上传资产。最终 41574574680 / 84331bc 完整 check 退出 0（Linux 单元 105 通过、1 项现有 Mac 原生专属跳过），源码冻结、原工件及服务端 9 项资产摘要核对后公开，标签固定指向经过 Mac 验证的 1db8aa8。
+- Release 432247054 于 2026-11-03T03:51:35Z 公开为预发布。手动下载使用 Studio DMG / ZIP，自动更新保留 Profiles 根目录兼容 ZIP；各自大小与摘要分别记录，避免混用。
+- 用户确认仅更新现有 chatgpt-studio 项目及 chatgpt.xincreates.com；Cloudflare 旧 chatgpt-profiles 项目返回不存在，不重建。site-legacy 只保留历史规则和同源清单，不宣称旧站已经部署。

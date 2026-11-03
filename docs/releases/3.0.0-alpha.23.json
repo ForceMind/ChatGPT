@@ -2,7 +2,7 @@
   "schema": 1,
   "product": "ChatGPT Studio",
   "version": "3.0.0-alpha.23",
-  "status": "validated-candidate-awaiting-publication",
+  "status": "published",
   "sourceCommit": "1db8aa817971ae161737a99dff8f4a5ee1b7ab9a",
   "runs": {
     "macos": 41493373060
@@ -71,5 +71,30 @@
     "Full native App update requires restart; no delta update",
     "No stable reduction in full-streaming CPU has been proven",
     "Real ChatGPT account workflows remain manual acceptance"
-  ]
+  ],
+  "publishedAt": "2026-11-03T03:51:35Z",
+  "release": {
+    "id": 432247054,
+    "url": "https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.23",
+    "tag": "v3.0.0-alpha.23",
+    "prerelease": true,
+    "draft": false
+  },
+  "promotion": {
+    "run": 41574574680,
+    "sourceCommit": "84331bc1f48a1c65cbc7afd26105844c1f275df4",
+    "checkExitCode": 0,
+    "unitTests": {
+      "passed": 105,
+      "skippedMacNativeOnlyOnLinux": 1,
+      "failed": 0
+    },
+    "originalMacCandidateUnitTests": {
+      "passed": 106,
+      "skipped": 0,
+      "failed": 0
+    },
+    "rebuiltInstallationPackages": false,
+    "assetsVerified": 9
+  }
 }
