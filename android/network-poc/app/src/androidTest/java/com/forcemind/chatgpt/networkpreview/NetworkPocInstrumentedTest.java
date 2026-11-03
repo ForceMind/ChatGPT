@@ -9,6 +9,7 @@ import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 import org.junit.Test;
+import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -32,6 +33,57 @@ import static org.junit.Assert.*;
 @RunWith(AndroidJUnit4.class)
 public final class NetworkPocInstrumentedTest {
     private static final byte[] FILE = "network-poc-fixture\n".getBytes(StandardCharsets.UTF_8);
+    @BeforeClass public static void ownedOriginReadyBeforeActivities() throws Exception {
+        assertTrue("owned readiness requires the isolated CI package", BuildConfig.APPLICATION_ID.endsWith(".ci"));
+        assertEquals("http://10.0.2.2:18080/page", BuildConfig.NETWORK_HOME_URL);
+        assertTrue("readiness must not block the main Looper", android.os.Looper.myLooper() != android.os.Looper.getMainLooper());
+        long started = SystemClock.elapsedRealtime(), deadline = started + 15000;
+        int attempts = 0, lastStatus = 0; String lastErrorClass = "none";
+        while (SystemClock.elapsedRealtime() < deadline) {
+            attempts++; lastStatus = 0; HttpURLConnection connection = null;
+            try {
+                connection = (HttpURLConnection) new URL("http://10.0.2.2:18080/echo").openConnection(Proxy.NO_PROXY);
+                int timeout = (int) Math.max(1, Math.min(1000, deadline - SystemClock.elapsedRealtime()));
+                connection.setConnectTimeout(timeout); connection.setReadTimeout(timeout);
+                connection.setRequestMethod("GET"); connection.setDoOutput(false); connection.setUseCaches(false);
+                connection.setInstanceFollowRedirects(false); connection.setAllowUserInteraction(false);
+                connection.setRequestProperty("Accept", "application/json"); connection.setRequestProperty("Connection", "close");
+                // Do not read WebView cookies or attach any credential/body to this setup GET.
+                connection.setRequestProperty("Cookie", "");
+                connection.connect();
+                long remaining = deadline - SystemClock.elapsedRealtime();
+                if (remaining <= 0) throw new java.net.SocketTimeoutException("owned readiness deadline");
+                connection.setReadTimeout((int) Math.min(1000, remaining));
+                lastStatus = connection.getResponseCode();
+                if (lastStatus != 200) throw new java.io.IOException("owned readiness HTTP status");
+                ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+                try (InputStream stream = connection.getInputStream()) {
+                    byte[] buffer = new byte[128]; int count;
+                    while (true) {
+                        remaining = deadline - SystemClock.elapsedRealtime();
+                        if (remaining <= 0) throw new java.net.SocketTimeoutException("owned readiness deadline");
+                        connection.setReadTimeout((int) Math.min(1000, remaining));
+                        count = stream.read(buffer); if (count < 0) break;
+                        if (bytes.size() + count > 512) throw new java.io.IOException("owned readiness response limit");
+                        bytes.write(buffer, 0, count);
+                    }
+                }
+                JSONObject result = new JSONObject(bytes.toString("UTF-8"));
+                if (!"direct".equals(result.getString("route"))) throw new java.io.IOException("owned readiness route mismatch");
+                if (SystemClock.elapsedRealtime() >= deadline) throw new java.net.SocketTimeoutException("owned readiness deadline");
+                assertEquals(200, lastStatus); assertEquals("direct", result.getString("route"));
+                System.out.println("NETWORK_POC_OWNED_ORIGIN_READY " + new JSONObject().put("attempts", attempts)
+                        .put("elapsedMillis", SystemClock.elapsedRealtime() - started).put("lastErrorClass", lastErrorClass)
+                        .put("httpStatus", lastStatus).put("route", result.getString("route")).put("responseBytes", bytes.size()));
+                return;
+            } catch (Exception failure) { lastErrorClass = failure.getClass().getSimpleName(); }
+            finally { if (connection != null) connection.disconnect(); }
+            long remaining = deadline - SystemClock.elapsedRealtime();
+            if (remaining > 0) Thread.sleep(Math.min(100, remaining));
+        }
+        throw new AssertionError("Owned-origin setup readiness failed before Activity launch: attempts=" + attempts
+                + " elapsedMillis=" + (SystemClock.elapsedRealtime() - started) + " lastErrorClass=" + lastErrorClass + " lastHttpStatus=" + lastStatus);
+    }
     private final Bundle args = InstrumentationRegistry.getArguments();
     @Test public void controlledInFlightTransfersFailClosedWithoutReplay() throws Exception {
         new TransferFaultCases(args).run();
