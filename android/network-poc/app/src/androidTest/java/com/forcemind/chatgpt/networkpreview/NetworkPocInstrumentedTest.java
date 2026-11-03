@@ -57,10 +57,12 @@ public final class NetworkPocInstrumentedTest {
     private void awaitJs(MainActivity activity, String expression, String expected) throws Exception {
         long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(20); String actual;
         do { actual = js(activity, expression); if (expected.equals(actual)) return; Thread.sleep(150); } while (System.nanoTime() < deadline);
+        String diagnostic = "not available";
         if (BuildConfig.APPLICATION_ID.endsWith(".ci")) try {
-            System.out.println("NETWORK_POC_JS_TIMEOUT " + js(activity, "JSON.stringify({url:location.href.slice(0,256),title:document.title.slice(0,120),ready:document.readyState,body:(document.body?.innerText||'').slice(0,200)})"));
-        } catch (Exception diagnosticFailure) { System.out.println("NETWORK_POC_JS_TIMEOUT diagnostic=" + diagnosticFailure.getClass().getSimpleName()); }
-        assertEquals(expected, actual);
+            diagnostic = js(activity, "JSON.stringify({url:location.href.slice(0,256),title:document.title.slice(0,120),ready:document.readyState,body:(document.body?.innerText||'').slice(0,200)})");
+            System.out.println("NETWORK_POC_JS_TIMEOUT " + diagnostic);
+        } catch (Exception diagnosticFailure) { diagnostic = diagnosticFailure.getClass().getSimpleName(); System.out.println("NETWORK_POC_JS_TIMEOUT diagnostic=" + diagnostic); }
+        assertEquals("Local WebView timeout; diagnostic=" + diagnostic, expected, actual);
     }
     @Test public void encryptedStoreRoundTripAndTamperDoesNotOverwrite() throws Exception {
         Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
