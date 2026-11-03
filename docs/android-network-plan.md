@@ -12,6 +12,8 @@
 
 能力门槛首轮 `4a58b3c` / Actions `41649274933` 的核心、合成服务和包检查通过；设备在编译 APK 隔离检查处停止，尚未查询多 Profile 能力。预览包的管理员 / Provider / 测试 CA 检查为不存在；CI `testOnly` 被初始解析器判为 false，但原始 aapt 字段未保留，不能据此断言是构建标记丢失或格式误读。检查脚本现保留两包原 manifest 文本和原始布尔行，严格识别明确 true 与 typed boolean true 编码，false / 缺失 / 未知仍失败；没有跳过 CI 必须为 testOnly、preview 必须隔离的断言，等待后续真实字段核对。
 
+次轮 `01c61bf` / Actions `41652136446` 的实际 aapt 字段为 `android:testOnly(0x01010272)=true`，按明确布尔语义核对后，preview / ci 隔离通过。设备随后在 Provider 初始化处报 `SecurityException: Provider must be exported`，能力测试还未查询 MFP。按 Android DocumentsProvider 合约，将 CI Provider 声明为 exported 并用 `MANAGE_DOCUMENTS` 签名权限保护，同时补齐必要投影列；该 Provider 与权限不进入 preview，隔离检查同步要求权限确实存在。未通过取消权限检查或共享 Profile 绕过初始化，后续仍须真实运行能力门槛。
+
 ## 已验证：在途文件故障收口（2026-11-03）
 
 用户已明确批准：先在独立包验证上传 / 下载进行中核心停止、取消、关闭和重连，必要时做最小修复；通过后形成正式接入方案，但不实施正式接入。构建和浏览器 / 文件交互仅在 Actions 合成环境，正式 App、登录 / 恢复数据、生产签名、main、官网和公开版本保持原状。

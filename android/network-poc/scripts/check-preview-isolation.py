@@ -34,6 +34,7 @@ def main():
                                                 '--file', 'AndroidManifest.xml'], text=True)
             admin = 'JointProxyAdminReceiver' in manifest and 'android.permission.BIND_DEVICE_ADMIN' in manifest
             provider = 'OwnedDocumentsProvider' in manifest
+            document_permission = 'android.permission.MANAGE_DOCUMENTS' in manifest
             test_only = re.search(r'android:testOnly[^\n]*', manifest)
             raw_test_only = test_only[0] if test_only is not None else None
             enabled = boolean_attribute(raw_test_only)
@@ -48,13 +49,14 @@ def main():
                 admin_resource = any('joint_device_admin' in n for n in names)
                 ca_resource = any('network_fixture_ca' in n for n in names)
             report[flavor] = {'adminReceiverAndPermission': admin, 'ownedProvider': provider,
+                              'managedDocumentPermission': document_permission,
                               'testOnly': enabled, 'testOnlyRawAttribute': raw_test_only, 'adminResource': admin_resource,
                               'fixtureCAResource': ca_resource, 'dexCIClasses': found}
             if flavor == 'preview':
-                assert not admin and not provider and not enabled and not admin_resource and not ca_resource
+                assert not admin and not provider and not document_permission and not enabled and not admin_resource and not ca_resource
                 assert not any(found.values()), 'CI-only implementation leaked into preview APK'
             else:
-                assert admin and provider and enabled and admin_resource and ca_resource
+                assert admin and provider and document_permission and enabled and admin_resource and ca_resource
                 assert all(found.values()), 'CI implementation missing from isolated test APK'
         report['passed'] = True
     except Exception as error:

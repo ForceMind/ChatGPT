@@ -15,10 +15,10 @@ import java.util.UUID;
 public final class OwnedDocumentsProvider extends DocumentsProvider {
     private static final String[] ROOT_COLUMNS = {DocumentsContract.Root.COLUMN_ROOT_ID,
             DocumentsContract.Root.COLUMN_DOCUMENT_ID, DocumentsContract.Root.COLUMN_TITLE,
-            DocumentsContract.Root.COLUMN_FLAGS, DocumentsContract.Root.COLUMN_MIME_TYPES};
+            DocumentsContract.Root.COLUMN_FLAGS, DocumentsContract.Root.COLUMN_MIME_TYPES, DocumentsContract.Root.COLUMN_ICON};
     private static final String[] DOCUMENT_COLUMNS = {DocumentsContract.Document.COLUMN_DOCUMENT_ID,
             DocumentsContract.Document.COLUMN_DISPLAY_NAME, DocumentsContract.Document.COLUMN_MIME_TYPE,
-            DocumentsContract.Document.COLUMN_FLAGS, DocumentsContract.Document.COLUMN_SIZE};
+            DocumentsContract.Document.COLUMN_FLAGS, DocumentsContract.Document.COLUMN_SIZE, DocumentsContract.Document.COLUMN_LAST_MODIFIED};
     private File directory;
     @Override public boolean onCreate() {
         if (getContext() == null || !getContext().getPackageName().endsWith(".ci")) return false;
@@ -41,6 +41,7 @@ public final class OwnedDocumentsProvider extends DocumentsProvider {
             else if (DocumentsContract.Document.COLUMN_DISPLAY_NAME.equals(name)) value = root ? "Owned CI documents" : id;
             else if (DocumentsContract.Document.COLUMN_MIME_TYPE.equals(name)) value = root ? DocumentsContract.Document.MIME_TYPE_DIR : "application/octet-stream";
             else if (DocumentsContract.Document.COLUMN_SIZE.equals(name)) value = root ? 0L : file.length();
+            else if (DocumentsContract.Document.COLUMN_LAST_MODIFIED.equals(name)) value = root ? 0L : file.lastModified();
             else if (DocumentsContract.Document.COLUMN_FLAGS.equals(name)) value = root ? DocumentsContract.Document.FLAG_DIR_SUPPORTS_CREATE
                     : DocumentsContract.Document.FLAG_SUPPORTS_WRITE | DocumentsContract.Document.FLAG_SUPPORTS_DELETE;
             row.add(value);
@@ -56,6 +57,7 @@ public final class OwnedDocumentsProvider extends DocumentsProvider {
             else if (DocumentsContract.Root.COLUMN_TITLE.equals(name)) value = "Owned CI documents";
             else if (DocumentsContract.Root.COLUMN_FLAGS.equals(name)) value = DocumentsContract.Root.FLAG_SUPPORTS_CREATE | DocumentsContract.Root.FLAG_LOCAL_ONLY;
             else if (DocumentsContract.Root.COLUMN_MIME_TYPES.equals(name)) value = "application/octet-stream";
+            else if (DocumentsContract.Root.COLUMN_ICON.equals(name)) value = android.R.drawable.ic_menu_save;
             row.add(value);
         }
         return cursor;
