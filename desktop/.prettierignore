@@ -1,0 +1,14 @@
+dist/
+release/
+test-results/
+playwright-report/
+resources/
+ui-preview/
+assets/
+node_modules/
+package-lock.json
+**/*.css
+**/*.html
+**/*.htm
+**/*.json
+**/._*
