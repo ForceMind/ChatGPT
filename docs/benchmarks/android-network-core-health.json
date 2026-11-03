@@ -1,0 +1,1345 @@
+{
+  "schema": 1,
+  "scope": "Independent Android network core lifecycle health; no official client integration",
+  "sourceCommit": "5c6e8fc9b9fdd86df3ed715afda74e59e57a2797",
+  "ci": {
+    "run": 41604827606,
+    "url": "https://github.com/ForceMind/ChatGPT/actions/runs/41604827606",
+    "finalAttempt": 2,
+    "conclusion": "success",
+    "deviceGroupsPassed": 6,
+    "routingSuitesPassed": 8,
+    "instrumentationTestsPerSuite": 3,
+    "instrumentationExecutions": 24,
+    "javaUnitTests": {
+      "suites": [
+        {
+          "name": "com.forcemind.chatgpt.networkpreview.CoreConfigTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "name": "com.forcemind.chatgpt.networkpreview.VlessNodeTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ],
+      "tests": 10,
+      "skipped": 0,
+      "failed": 0
+    },
+    "routingDriverUnitTests": 5,
+    "goLifecycleAndTransportTests": "passed in Build fixed proxy core",
+    "existingResourceRegressionGroupsPassed": 6,
+    "jobs": [
+      {
+        "id": 125820762370,
+        "name": "network-preview / secure-fixture",
+        "conclusion": "success"
+      },
+      {
+        "id": 125820762673,
+        "name": "network-preview / core",
+        "conclusion": "success"
+      },
+      {
+        "id": 125820763376,
+        "name": "network-preview / device (35, reality)",
+        "conclusion": "success"
+      },
+      {
+        "id": 125820764025,
+        "name": "network-preview / package",
+        "conclusion": "success"
+      },
+      {
+        "id": 125820764831,
+        "name": "network-preview / device (35, raw)",
+        "conclusion": "success"
+      },
+      {
+        "id": 125820764872,
+        "name": "network-preview / device (28, tls)",
+        "conclusion": "success"
+      },
+      {
+        "id": 125820764934,
+        "name": "network-preview / device (28, raw)",
+        "conclusion": "success"
+      },
+      {
+        "id": 125820765372,
+        "name": "network-preview / device (35, tls)",
+        "conclusion": "success"
+      },
+      {
+        "id": 125820765482,
+        "name": "network-preview / device (28, reality)",
+        "conclusion": "success"
+      },
+      {
+        "id": 125820805365,
+        "name": "network-preview / webview-provider",
+        "conclusion": "success"
+      }
+    ]
+  },
+  "candidate": {
+    "sourceSha": "5c6e8fc9b9fdd86df3ed715afda74e59e57a2797",
+    "apk": "ChatGPT-Studio-Network-Preview-0.1.0-android-arm64.apk",
+    "bytes": 40669834,
+    "sha256": "bc3bbaae64571db0cde0ba1665fd2055a808c82574e0f155aae0807a87d9adb1",
+    "libraries": {
+      "lib/arm64-v8a/libgojni.so": 33489336
+    },
+    "productionSigning": false,
+    "formalAppModified": false,
+    "artifactID": 13217025632,
+    "artifactURL": "https://github.com/ForceMind/ChatGPT/actions/runs/41604827606/artifacts/13217025632",
+    "artifactDigest": "sha256:c7ed14e19781d0cb3b7f2831c16f2193c0b2056f379f0d9cdadab53414b00dc5"
+  },
+  "measurements": {
+    "nominalLocalCheckIntervalMillis": 2000,
+    "observedForegroundDetectionMillisMin": 992,
+    "observedForegroundDetectionMillisMax": 1762,
+    "wakeupLockAdded": false,
+    "externalTargetsProbedByMonitor": false,
+    "schedulerInvocationCountsMeasured": false
+  },
+  "firstAttempt": {
+    "passedGroups": 5,
+    "failedGroup": "35/reality",
+    "job": 125814260853,
+    "artifactID": 13216591999,
+    "artifactSHA256": "2bf6c9aa3cecf251be3d575dba2b2f585569ecb79c14f68ebee153d054a9c84b",
+    "firstObservedDifference": "Initial DIRECT document unavailable before monitor; first proxy target probe IOException; no origin access events",
+    "rootCause": "not determined; isolated environment/precondition failure suspected, not proven",
+    "sameSourceRetryJob": 125820763376,
+    "retrySucceeded": true,
+    "codeAssertionsOrTimeoutsChangedForRetry": false
+  },
+  "results": [
+    {
+      "api": 28,
+      "transport": "raw",
+      "origin": "http://network-fixture.test:18080",
+      "instrumentationTestsPassed": 3,
+      "detectionMillis": 1561,
+      "automaticFailure": {
+        "state": "FAILED",
+        "generation": 2,
+        "port": 34737,
+        "coreRunning": false,
+        "visibleStatus": "连接失败 · 请手动重连",
+        "webNetworkBlocked": true,
+        "error": "本地代理核心已停止或状态不可用；未切换直连，请手动重新连接线路"
+      },
+      "background": {
+        "homeCommand": "input keyevent KEYCODE_HOME",
+        "returnCommand": "am start -W -n com.forcemind.chatgpt.networkpreview.ci/com.forcemind.chatgpt.networkpreview.MainActivity",
+        "stoppedLifecycle": "CREATED",
+        "resumedLifecycle": "RESUMED",
+        "sameActivity": true,
+        "elapsedMillis": 1119,
+        "failure": {
+          "state": "FAILED",
+          "generation": 3,
+          "port": 39408,
+          "coreRunning": false,
+          "visibleStatus": "连接失败 · 请手动重连",
+          "webNetworkBlocked": true,
+          "error": "本地代理核心已停止或状态不可用；未切换直连，请手动重新连接线路"
+        }
+      },
+      "explicitReconnect": {
+        "state": "CONNECTED",
+        "generation": 3,
+        "port": 39408,
+        "coreRunning": true,
+        "visibleStatus": "已连接 · 本地代理",
+        "webNetworkBlocked": false,
+        "error": ""
+      },
+      "explicitDirect": {
+        "state": "DIRECT",
+        "generation": 4,
+        "port": 0,
+        "coreRunning": false,
+        "visibleStatus": "直连",
+        "webNetworkBlocked": false,
+        "error": ""
+      },
+      "closed": {
+        "state": "CLOSED",
+        "generation": 6,
+        "expectedGeneration": 6,
+        "observedMillis": 4512,
+        "samples": 60,
+        "callbackInvocations": 0,
+        "coreRunning": false
+      },
+      "documents": {
+        "before": {
+          "draft": "core-health-unsent-draft",
+          "fetchStarts": 0,
+          "identity": "owned-1793695603807-0.2800863340961135",
+          "submissions": 0,
+          "url": "http://network-fixture.test:18080/stability/core-health/page"
+        },
+        "afterAutomaticFailure": {
+          "draft": "core-health-unsent-draft",
+          "fetchStarts": 0,
+          "identity": "owned-1793695603807-0.2800863340961135",
+          "submissions": 0,
+          "url": "http://network-fixture.test:18080/stability/core-health/page"
+        },
+        "afterBlockedRequests": {
+          "draft": "core-health-unsent-draft",
+          "fetchStarts": 1,
+          "identity": "owned-1793695603807-0.2800863340961135",
+          "submissions": 0,
+          "url": "http://network-fixture.test:18080/stability/core-health/page"
+        },
+        "afterExplicitReconnect": {
+          "draft": "core-health-unsent-draft",
+          "fetchStarts": 1,
+          "identity": "owned-1793695603807-0.2800863340961135",
+          "submissions": 0,
+          "url": "http://network-fixture.test:18080/stability/core-health/page"
+        },
+        "afterHomeResumeFailure": {
+          "draft": "core-health-unsent-draft",
+          "fetchStarts": 2,
+          "identity": "owned-1793695603807-0.2800863340961135",
+          "submissions": 0,
+          "url": "http://network-fixture.test:18080/stability/core-health/page"
+        },
+        "afterExplicitDirect": {
+          "draft": "core-health-unsent-draft",
+          "fetchStarts": 2,
+          "identity": "owned-1793695603807-0.2800863340961135",
+          "submissions": 0,
+          "url": "http://network-fixture.test:18080/stability/core-health/page"
+        }
+      },
+      "originRequests": [
+        {
+          "path": "/stability/core-health-before/echo",
+          "method": "GET",
+          "route": "A",
+          "count": 1,
+          "status": 200
+        },
+        {
+          "path": "/stability/core-health/page",
+          "method": "GET",
+          "route": "A",
+          "count": 1,
+          "status": 200
+        },
+        {
+          "path": "/stability/core-health-reconnected-native/echo",
+          "method": "GET",
+          "route": "A",
+          "count": 1,
+          "status": 200
+        },
+        {
+          "path": "/stability/core-health-reconnected-web/upload",
+          "method": "POST",
+          "route": "A",
+          "count": 1,
+          "status": 200
+        },
+        {
+          "path": "/stability/core-health-direct/echo",
+          "method": "GET",
+          "route": "direct",
+          "count": 1,
+          "status": 200
+        }
+      ],
+      "expectedFailedNativeException": "IllegalStateException",
+      "failedWebResult": "error",
+      "failureDetectedBeforeNewRequests": true,
+      "artifact": {
+        "id": 13216248327,
+        "name": "network-device-api-28-raw",
+        "bytes": 925151,
+        "sha256": "ca9a2f3ad167bbbc7649ddf9f7f1eb623a22fac0534110e3e910d8d49d51647d"
+      }
+    },
+    {
+      "api": 28,
+      "transport": "raw",
+      "origin": "https://network-fixture.test:18480",
+      "instrumentationTestsPassed": 3,
+      "detectionMillis": 1561,
+      "automaticFailure": {
+        "state": "FAILED",
+        "generation": 2,
+        "port": 43020,
+        "coreRunning": false,
+        "visibleStatus": "连接失败 · 请手动重连",
+        "webNetworkBlocked": true,
+        "error": "本地代理核心已停止或状态不可用；未切换直连，请手动重新连接线路"
+      },
+      "background": {
+        "homeCommand": "input keyevent KEYCODE_HOME",
+        "returnCommand": "am start -W -n com.forcemind.chatgpt.networkpreview.ci/com.forcemind.chatgpt.networkpreview.MainActivity",
+        "stoppedLifecycle": "CREATED",
+        "resumedLifecycle": "RESUMED",
+        "sameActivity": true,
+        "elapsedMillis": 1062,
+        "failure": {
+          "state": "FAILED",
+          "generation": 3,
+          "port": 39217,
+          "coreRunning": false,
+          "visibleStatus": "连接失败 · 请手动重连",
+          "webNetworkBlocked": true,
+          "error": "本地代理核心已停止或状态不可用；未切换直连，请手动重新连接线路"
+        }
+      },
+      "explicitReconnect": {
+        "state": "CONNECTED",
+        "generation": 3,
+        "port": 39217,
+        "coreRunning": true,
+        "visibleStatus": "已连接 · 本地代理",
+        "webNetworkBlocked": false,
+        "error": ""
+      },
+      "explicitDirect": {
+        "state": "DIRECT",
+        "generation": 4,
+        "port": 0,
+        "coreRunning": false,
+        "visibleStatus": "直连",
+        "webNetworkBlocked": false,
+        "error": ""
+      },
+      "closed": {
+        "state": "CLOSED",
+        "generation": 6,
+        "expectedGeneration": 6,
+        "observedMillis": 4513,
+        "samples": 60,
+        "callbackInvocations": 0,
+        "coreRunning": false
+      },
+      "documents": {
+        "before": {
+          "draft": "core-health-unsent-draft",
+          "fetchStarts": 0,
+          "identity": "owned-1793695624533-0.5659492171844294",
+          "submissions": 0,
+          "url": "https://network-fixture.test:18480/stability/core-health/page"
+        },
+        "afterAutomaticFailure": {
+          "draft": "core-health-unsent-draft",
+          "fetchStarts": 0,
+          "identity": "owned-1793695624533-0.5659492171844294",
+          "submissions": 0,
+          "url": "https://network-fixture.test:18480/stability/core-health/page"
+        },
+        "afterBlockedRequests": {
+          "draft": "core-health-unsent-draft",
+          "fetchStarts": 1,
+          "identity": "owned-1793695624533-0.5659492171844294",
+          "submissions": 0,
+          "url": "https://network-fixture.test:18480/stability/core-health/page"
+        },
+        "afterExplicitReconnect": {
+          "draft": "core-health-unsent-draft",
+          "fetchStarts": 1,
+          "identity": "owned-1793695624533-0.5659492171844294",
+          "submissions": 0,
+          "url": "https://network-fixture.test:18480/stability/core-health/page"
+        },
+        "afterHomeResumeFailure": {
+          "draft": "core-health-unsent-draft",
+          "fetchStarts": 2,
+          "identity": "owned-1793695624533-0.5659492171844294",
+          "submissions": 0,
+          "url": "https://network-fixture.test:18480/stability/core-health/page"
+        },
+        "afterExplicitDirect": {
+          "draft": "core-health-unsent-draft",
+          "fetchStarts": 2,
+          "identity": "owned-1793695624533-0.5659492171844294",
+          "submissions": 0,
+          "url": "https://network-fixture.test:18480/stability/core-health/page"
+        }
+      },
+      "originRequests": [
+        {
+          "path": "/stability/core-health-before/echo",
+          "method": "GET",
+          "route": "A",
+          "count": 1,
+          "status": 200
+        },
+        {
+          "path": "/stability/core-health/page",
+          "method": "GET",
+          "route": "A",
+          "count": 1,
+          "status": 200
+        },
+        {
+          "path": "/stability/core-health-reconnected-native/echo",
+          "method": "GET",
+          "route": "A",
+          "count": 1,
+          "status": 200
+        },
+        {
+          "path": "/stability/core-health-reconnected-web/upload",
+          "method": "POST",
+          "route": "A",
+          "count": 1,
+          "status": 200
+        },
+        {
+          "path": "/stability/core-health-direct/echo",
+          "method": "GET",
+          "route": "direct",
+          "count": 1,
+          "status": 200
+        }
+      ],
+      "expectedFailedNativeException": "IllegalStateException",
+      "failedWebResult": "error",
+      "failureDetectedBeforeNewRequests": true,
+      "artifact": {
+        "id": 13216248327,
+        "name": "network-device-api-28-raw",
+        "bytes": 925151,
+        "sha256": "ca9a2f3ad167bbbc7649ddf9f7f1eb623a22fac0534110e3e910d8d49d51647d"
+      }
+    },
+    {
+      "api": 28,
+      "transport": "reality",
+      "origin": "https://network-fixture.test:18480",
+      "instrumentationTestsPassed": 3,
+      "detectionMillis": 1465,
+      "automaticFailure": {
+        "state": "FAILED",
+        "generation": 2,
+        "port": 36476,
+        "coreRunning": false,
+        "visibleStatus": "连接失败 · 请手动重连",
+        "webNetworkBlocked": true,
+        "error": "本地代理核心已停止或状态不可用；未切换直连，请手动重新连接线路"
+      },
+      "background": {
+        "homeCommand": "input keyevent KEYCODE_HOME",
+        "returnCommand": "am start -W -n com.forcemind.chatgpt.networkpreview.ci/com.forcemind.chatgpt.networkpreview.MainActivity",
+        "stoppedLifecycle": "CREATED",
+        "resumedLifecycle": "RESUMED",
+        "sameActivity": true,
+        "elapsedMillis": 1126,
+        "failure": {
+          "state": "FAILED",
+          "generation": 3,
+          "port": 42289,
+          "coreRunning": false,
+          "visibleStatus": "连接失败 · 请手动重连",
+          "webNetworkBlocked": true,
+          "error": "本地代理核心已停止或状态不可用；未切换直连，请手动重新连接线路"
+        }
+      },
+      "explicitReconnect": {
+        "state": "CONNECTED",
+        "generation": 3,
+        "port": 42289,
+        "coreRunning": true,
+        "visibleStatus": "已连接 · 本地代理",
+        "webNetworkBlocked": false,
+        "error": ""
+      },
+      "explicitDirect": {
+        "state": "DIRECT",
+        "generation": 4,
+        "port": 0,
+        "coreRunning": false,
+        "visibleStatus": "直连",
+        "webNetworkBlocked": false,
+        "error": ""
+      },
+      "closed": {
+        "state": "CLOSED",
+        "generation": 6,
+        "expectedGeneration": 6,
+        "observedMillis": 4519,
+        "samples": 60,
+        "callbackInvocations": 0,
+        "coreRunning": false
+      },
+      "documents": {
+        "before": {
+          "draft": "core-health-unsent-draft",
+          "fetchStarts": 0,
+          "identity": "owned-1793695619977-0.05939301400495611",
+          "submissions": 0,
+          "url": "https://network-fixture.test:18480/stability/core-health/page"
+        },
+        "afterAutomaticFailure": {
+          "draft": "core-health-unsent-draft",
+          "fetchStarts": 0,
+          "identity": "owned-1793695619977-0.05939301400495611",
+          "submissions": 0,
+          "url": "https://network-fixture.test:18480/stability/core-health/page"
+        },
+        "afterBlockedRequests": {
+          "draft": "core-health-unsent-draft",
+          "fetchStarts": 1,
+          "identity": "owned-1793695619977-0.05939301400495611",
+          "submissions": 0,
+          "url": "https://network-fixture.test:18480/stability/core-health/page"
+        },
+        "afterExplicitReconnect": {
+          "draft": "core-health-unsent-draft",
+          "fetchStarts": 1,
+          "identity": "owned-1793695619977-0.05939301400495611",
+          "submissions": 0,
+          "url": "https://network-fixture.test:18480/stability/core-health/page"
+        },
+        "afterHomeResumeFailure": {
+          "draft": "core-health-unsent-draft",
+          "fetchStarts": 2,
+          "identity": "owned-1793695619977-0.05939301400495611",
+          "submissions": 0,
+          "url": "https://network-fixture.test:18480/stability/core-health/page"
+        },
+        "afterExplicitDirect": {
+          "draft": "core-health-unsent-draft",
+          "fetchStarts": 2,
+          "identity": "owned-1793695619977-0.05939301400495611",
+          "submissions": 0,
+          "url": "https://network-fixture.test:18480/stability/core-health/page"
+        }
+      },
+      "originRequests": [
+        {
+          "path": "/stability/core-health-before/echo",
+          "method": "GET",
+          "route": "A",
+          "count": 1,
+          "status": 200
+        },
+        {
+          "path": "/stability/core-health/page",
+          "method": "GET",
+          "route": "A",
+          "count": 1,
+          "status": 200
+        },
+        {
+          "path": "/stability/core-health-reconnected-native/echo",
+          "method": "GET",
+          "route": "A",
+          "count": 1,
+          "status": 200
+        },
+        {
+          "path": "/stability/core-health-reconnected-web/upload",
+          "method": "POST",
+          "route": "A",
+          "count": 1,
+          "status": 200
+        },
+        {
+          "path": "/stability/core-health-direct/echo",
+          "method": "GET",
+          "route": "direct",
+          "count": 1,
+          "status": 200
+        }
+      ],
+      "expectedFailedNativeException": "IllegalStateException",
+      "failedWebResult": "error",
+      "failureDetectedBeforeNewRequests": true,
+      "artifact": {
+        "id": 13216577885,
+        "name": "network-device-api-28-reality",
+        "bytes": 929896,
+        "sha256": "15938e83248a30124423a99c1c96d63ad98366740662cd44e7304888b2ad304e"
+      }
+    },
+    {
+      "api": 28,
+      "transport": "tls",
+      "origin": "https://network-fixture.test:18480",
+      "instrumentationTestsPassed": 3,
+      "detectionMillis": 1762,
+      "automaticFailure": {
+        "state": "FAILED",
+        "generation": 2,
+        "port": 40359,
+        "coreRunning": false,
+        "visibleStatus": "连接失败 · 请手动重连",
+        "webNetworkBlocked": true,
+        "error": "本地代理核心已停止或状态不可用；未切换直连，请手动重新连接线路"
+      },
+      "background": {
+        "homeCommand": "input keyevent KEYCODE_HOME",
+        "returnCommand": "am start -W -n com.forcemind.chatgpt.networkpreview.ci/com.forcemind.chatgpt.networkpreview.MainActivity",
+        "stoppedLifecycle": "CREATED",
+        "resumedLifecycle": "RESUMED",
+        "sameActivity": true,
+        "elapsedMillis": 1017,
+        "failure": {
+          "state": "FAILED",
+          "generation": 3,
+          "port": 44583,
+          "coreRunning": false,
+          "visibleStatus": "连接失败 · 请手动重连",
+          "webNetworkBlocked": true,
+          "error": "本地代理核心已停止或状态不可用；未切换直连，请手动重新连接线路"
+        }
+      },
+      "explicitReconnect": {
+        "state": "CONNECTED",
+        "generation": 3,
+        "port": 44583,
+        "coreRunning": true,
+        "visibleStatus": "已连接 · 本地代理",
+        "webNetworkBlocked": false,
+        "error": ""
+      },
+      "explicitDirect": {
+        "state": "DIRECT",
+        "generation": 4,
+        "port": 0,
+        "coreRunning": false,
+        "visibleStatus": "直连",
+        "webNetworkBlocked": false,
+        "error": ""
+      },
+      "closed": {
+        "state": "CLOSED",
+        "generation": 6,
+        "expectedGeneration": 6,
+        "observedMillis": 4511,
+        "samples": 60,
+        "callbackInvocations": 0,
+        "coreRunning": false
+      },
+      "documents": {
+        "before": {
+          "draft": "core-health-unsent-draft",
+          "fetchStarts": 0,
+          "identity": "owned-1793695607381-0.4008893681834762",
+          "submissions": 0,
+          "url": "https://network-fixture.test:18480/stability/core-health/page"
+        },
+        "afterAutomaticFailure": {
+          "draft": "core-health-unsent-draft",
+          "fetchStarts": 0,
+          "identity": "owned-1793695607381-0.4008893681834762",
+          "submissions": 0,
+          "url": "https://network-fixture.test:18480/stability/core-health/page"
+        },
+        "afterBlockedRequests": {
+          "draft": "core-health-unsent-draft",
+          "fetchStarts": 1,
+          "identity": "owned-1793695607381-0.4008893681834762",
+          "submissions": 0,
+          "url": "https://network-fixture.test:18480/stability/core-health/page"
+        },
+        "afterExplicitReconnect": {
+          "draft": "core-health-unsent-draft",
+          "fetchStarts": 1,
+          "identity": "owned-1793695607381-0.4008893681834762",
+          "submissions": 0,
+          "url": "https://network-fixture.test:18480/stability/core-health/page"
+        },
+        "afterHomeResumeFailure": {
+          "draft": "core-health-unsent-draft",
+          "fetchStarts": 2,
+          "identity": "owned-1793695607381-0.4008893681834762",
+          "submissions": 0,
+          "url": "https://network-fixture.test:18480/stability/core-health/page"
+        },
+        "afterExplicitDirect": {
+          "draft": "core-health-unsent-draft",
+          "fetchStarts": 2,
+          "identity": "owned-1793695607381-0.4008893681834762",
+          "submissions": 0,
+          "url": "https://network-fixture.test:18480/stability/core-health/page"
+        }
+      },
+      "originRequests": [
+        {
+          "path": "/stability/core-health-before/echo",
+          "method": "GET",
+          "route": "A",
+          "count": 1,
+          "status": 200
+        },
+        {
+          "path": "/stability/core-health/page",
+          "method": "GET",
+          "route": "A",
+          "count": 1,
+          "status": 200
+        },
+        {
+          "path": "/stability/core-health-reconnected-native/echo",
+          "method": "GET",
+          "route": "A",
+          "count": 1,
+          "status": 200
+        },
+        {
+          "path": "/stability/core-health-reconnected-web/upload",
+          "method": "POST",
+          "route": "A",
+          "count": 1,
+          "status": 200
+        },
+        {
+          "path": "/stability/core-health-direct/echo",
+          "method": "GET",
+          "route": "direct",
+          "count": 1,
+          "status": 200
+        }
+      ],
+      "expectedFailedNativeException": "IllegalStateException",
+      "failedWebResult": "error",
+      "failureDetectedBeforeNewRequests": true,
+      "artifact": {
+        "id": 13216328653,
+        "name": "network-device-api-28-tls",
+        "bytes": 925022,
+        "sha256": "a431032a0a5cef338559241736c0d849d14452ba9ea869dd19ff69f80a741a79"
+      }
+    },
+    {
+      "api": 35,
+      "transport": "raw",
+      "origin": "http://network-fixture.test:18080",
+      "instrumentationTestsPassed": 3,
+      "detectionMillis": 992,
+      "automaticFailure": {
+        "state": "FAILED",
+        "generation": 2,
+        "port": 41971,
+        "coreRunning": false,
+        "visibleStatus": "连接失败 · 请手动重连",
+        "webNetworkBlocked": true,
+        "error": "本地代理核心已停止或状态不可用；未切换直连，请手动重新连接线路"
+      },
+      "background": {
+        "homeCommand": "input keyevent KEYCODE_HOME",
+        "returnCommand": "am start -W -n com.forcemind.chatgpt.networkpreview.ci/com.forcemind.chatgpt.networkpreview.MainActivity",
+        "stoppedLifecycle": "CREATED",
+        "resumedLifecycle": "RESUMED",
+        "sameActivity": true,
+        "elapsedMillis": 2612,
+        "failure": {
+          "state": "FAILED",
+          "generation": 3,
+          "port": 34955,
+          "coreRunning": false,
+          "visibleStatus": "连接失败 · 请手动重连",
+          "webNetworkBlocked": true,
+          "error": "本地代理核心已停止或状态不可用；未切换直连，请手动重新连接线路"
+        }
+      },
+      "explicitReconnect": {
+        "state": "CONNECTED",
+        "generation": 3,
+        "port": 34955,
+        "coreRunning": true,
+        "visibleStatus": "已连接 · 本地代理",
+        "webNetworkBlocked": false,
+        "error": ""
+      },
+      "explicitDirect": {
+        "state": "DIRECT",
+        "generation": 4,
+        "port": 0,
+        "coreRunning": false,
+        "visibleStatus": "直连",
+        "webNetworkBlocked": false,
+        "error": ""
+      },
+      "closed": {
+        "state": "CLOSED",
+        "generation": 6,
+        "expectedGeneration": 6,
+        "observedMillis": 4501,
+        "samples": 59,
+        "callbackInvocations": 0,
+        "coreRunning": false
+      },
+      "documents": {
+        "before": {
+          "draft": "core-health-unsent-draft",
+          "fetchStarts": 0,
+          "identity": "owned-1793695607225-0.009913337879111639",
+          "submissions": 0,
+          "url": "http://network-fixture.test:18080/stability/core-health/page"
+        },
+        "afterAutomaticFailure": {
+          "draft": "core-health-unsent-draft",
+          "fetchStarts": 0,
+          "identity": "owned-1793695607225-0.009913337879111639",
+          "submissions": 0,
+          "url": "http://network-fixture.test:18080/stability/core-health/page"
+        },
+        "afterBlockedRequests": {
+          "draft": "core-health-unsent-draft",
+          "fetchStarts": 1,
+          "identity": "owned-1793695607225-0.009913337879111639",
+          "submissions": 0,
+          "url": "http://network-fixture.test:18080/stability/core-health/page"
+        },
+        "afterExplicitReconnect": {
+          "draft": "core-health-unsent-draft",
+          "fetchStarts": 1,
+          "identity": "owned-1793695607225-0.009913337879111639",
+          "submissions": 0,
+          "url": "http://network-fixture.test:18080/stability/core-health/page"
+        },
+        "afterHomeResumeFailure": {
+          "draft": "core-health-unsent-draft",
+          "fetchStarts": 2,
+          "identity": "owned-1793695607225-0.009913337879111639",
+          "submissions": 0,
+          "url": "http://network-fixture.test:18080/stability/core-health/page"
+        },
+        "afterExplicitDirect": {
+          "draft": "core-health-unsent-draft",
+          "fetchStarts": 2,
+          "identity": "owned-1793695607225-0.009913337879111639",
+          "submissions": 0,
+          "url": "http://network-fixture.test:18080/stability/core-health/page"
+        }
+      },
+      "originRequests": [
+        {
+          "path": "/stability/core-health-before/echo",
+          "method": "GET",
+          "route": "A",
+          "count": 1,
+          "status": 200
+        },
+        {
+          "path": "/stability/core-health/page",
+          "method": "GET",
+          "route": "A",
+          "count": 1,
+          "status": 200
+        },
+        {
+          "path": "/stability/core-health-reconnected-native/echo",
+          "method": "GET",
+          "route": "A",
+          "count": 1,
+          "status": 200
+        },
+        {
+          "path": "/stability/core-health-reconnected-web/upload",
+          "method": "POST",
+          "route": "A",
+          "count": 1,
+          "status": 200
+        },
+        {
+          "path": "/stability/core-health-direct/echo",
+          "method": "GET",
+          "route": "direct",
+          "count": 1,
+          "status": 200
+        }
+      ],
+      "expectedFailedNativeException": "IllegalStateException",
+      "failedWebResult": "error",
+      "failureDetectedBeforeNewRequests": true,
+      "artifact": {
+        "id": 13217047101,
+        "name": "network-device-api-35-raw",
+        "bytes": 2442497,
+        "sha256": "ea49f3c96176aaaf59269ff9d3fb7aaa4dd1d77e790de9868eeaf116ee70ce75"
+      }
+    },
+    {
+      "api": 35,
+      "transport": "raw",
+      "origin": "https://network-fixture.test:18480",
+      "instrumentationTestsPassed": 3,
+      "detectionMillis": 1170,
+      "automaticFailure": {
+        "state": "FAILED",
+        "generation": 2,
+        "port": 45815,
+        "coreRunning": false,
+        "visibleStatus": "连接失败 · 请手动重连",
+        "webNetworkBlocked": true,
+        "error": "本地代理核心已停止或状态不可用；未切换直连，请手动重新连接线路"
+      },
+      "background": {
+        "homeCommand": "input keyevent KEYCODE_HOME",
+        "returnCommand": "am start -W -n com.forcemind.chatgpt.networkpreview.ci/com.forcemind.chatgpt.networkpreview.MainActivity",
+        "stoppedLifecycle": "CREATED",
+        "resumedLifecycle": "RESUMED",
+        "sameActivity": true,
+        "elapsedMillis": 2009,
+        "failure": {
+          "state": "FAILED",
+          "generation": 3,
+          "port": 46667,
+          "coreRunning": false,
+          "visibleStatus": "连接失败 · 请手动重连",
+          "webNetworkBlocked": true,
+          "error": "本地代理核心已停止或状态不可用；未切换直连，请手动重新连接线路"
+        }
+      },
+      "explicitReconnect": {
+        "state": "CONNECTED",
+        "generation": 3,
+        "port": 46667,
+        "coreRunning": true,
+        "visibleStatus": "已连接 · 本地代理",
+        "webNetworkBlocked": false,
+        "error": ""
+      },
+      "explicitDirect": {
+        "state": "DIRECT",
+        "generation": 4,
+        "port": 0,
+        "coreRunning": false,
+        "visibleStatus": "直连",
+        "webNetworkBlocked": false,
+        "error": ""
+      },
+      "closed": {
+        "state": "CLOSED",
+        "generation": 6,
+        "expectedGeneration": 6,
+        "observedMillis": 4540,
+        "samples": 60,
+        "callbackInvocations": 0,
+        "coreRunning": false
+      },
+      "documents": {
+        "before": {
+          "draft": "core-health-unsent-draft",
+          "fetchStarts": 0,
+          "identity": "owned-1793695638323-0.9941704719761126",
+          "submissions": 0,
+          "url": "https://network-fixture.test:18480/stability/core-health/page"
+        },
+        "afterAutomaticFailure": {
+          "draft": "core-health-unsent-draft",
+          "fetchStarts": 0,
+          "identity": "owned-1793695638323-0.9941704719761126",
+          "submissions": 0,
+          "url": "https://network-fixture.test:18480/stability/core-health/page"
+        },
+        "afterBlockedRequests": {
+          "draft": "core-health-unsent-draft",
+          "fetchStarts": 1,
+          "identity": "owned-1793695638323-0.9941704719761126",
+          "submissions": 0,
+          "url": "https://network-fixture.test:18480/stability/core-health/page"
+        },
+        "afterExplicitReconnect": {
+          "draft": "core-health-unsent-draft",
+          "fetchStarts": 1,
+          "identity": "owned-1793695638323-0.9941704719761126",
+          "submissions": 0,
+          "url": "https://network-fixture.test:18480/stability/core-health/page"
+        },
+        "afterHomeResumeFailure": {
+          "draft": "core-health-unsent-draft",
+          "fetchStarts": 2,
+          "identity": "owned-1793695638323-0.9941704719761126",
+          "submissions": 0,
+          "url": "https://network-fixture.test:18480/stability/core-health/page"
+        },
+        "afterExplicitDirect": {
+          "draft": "core-health-unsent-draft",
+          "fetchStarts": 2,
+          "identity": "owned-1793695638323-0.9941704719761126",
+          "submissions": 0,
+          "url": "https://network-fixture.test:18480/stability/core-health/page"
+        }
+      },
+      "originRequests": [
+        {
+          "path": "/stability/core-health-before/echo",
+          "method": "GET",
+          "route": "A",
+          "count": 1,
+          "status": 200
+        },
+        {
+          "path": "/stability/core-health/page",
+          "method": "GET",
+          "route": "A",
+          "count": 1,
+          "status": 200
+        },
+        {
+          "path": "/stability/core-health-reconnected-native/echo",
+          "method": "GET",
+          "route": "A",
+          "count": 1,
+          "status": 200
+        },
+        {
+          "path": "/stability/core-health-reconnected-web/upload",
+          "method": "POST",
+          "route": "A",
+          "count": 1,
+          "status": 200
+        },
+        {
+          "path": "/stability/core-health-direct/echo",
+          "method": "GET",
+          "route": "direct",
+          "count": 1,
+          "status": 200
+        }
+      ],
+      "expectedFailedNativeException": "IllegalStateException",
+      "failedWebResult": "error",
+      "failureDetectedBeforeNewRequests": true,
+      "artifact": {
+        "id": 13217047101,
+        "name": "network-device-api-35-raw",
+        "bytes": 2442497,
+        "sha256": "ea49f3c96176aaaf59269ff9d3fb7aaa4dd1d77e790de9868eeaf116ee70ce75"
+      }
+    },
+    {
+      "api": 35,
+      "transport": "reality",
+      "origin": "https://network-fixture.test:18480",
+      "instrumentationTestsPassed": 3,
+      "detectionMillis": 1548,
+      "automaticFailure": {
+        "state": "FAILED",
+        "generation": 2,
+        "port": 34049,
+        "coreRunning": false,
+        "visibleStatus": "连接失败 · 请手动重连",
+        "webNetworkBlocked": true,
+        "error": "本地代理核心已停止或状态不可用；未切换直连，请手动重新连接线路"
+      },
+      "background": {
+        "homeCommand": "input keyevent KEYCODE_HOME",
+        "returnCommand": "am start -W -n com.forcemind.chatgpt.networkpreview.ci/com.forcemind.chatgpt.networkpreview.MainActivity",
+        "stoppedLifecycle": "CREATED",
+        "resumedLifecycle": "RESUMED",
+        "sameActivity": true,
+        "elapsedMillis": 2791,
+        "failure": {
+          "state": "FAILED",
+          "generation": 3,
+          "port": 46395,
+          "coreRunning": false,
+          "visibleStatus": "连接失败 · 请手动重连",
+          "webNetworkBlocked": true,
+          "error": "本地代理核心已停止或状态不可用；未切换直连，请手动重新连接线路"
+        }
+      },
+      "explicitReconnect": {
+        "state": "CONNECTED",
+        "generation": 3,
+        "port": 46395,
+        "coreRunning": true,
+        "visibleStatus": "已连接 · 本地代理",
+        "webNetworkBlocked": false,
+        "error": ""
+      },
+      "explicitDirect": {
+        "state": "DIRECT",
+        "generation": 4,
+        "port": 0,
+        "coreRunning": false,
+        "visibleStatus": "直连",
+        "webNetworkBlocked": false,
+        "error": ""
+      },
+      "closed": {
+        "state": "CLOSED",
+        "generation": 6,
+        "expectedGeneration": 6,
+        "observedMillis": 4530,
+        "samples": 60,
+        "callbackInvocations": 0,
+        "coreRunning": false
+      },
+      "documents": {
+        "before": {
+          "draft": "core-health-unsent-draft",
+          "fetchStarts": 0,
+          "identity": "owned-1793696522830-0.053849792270254104",
+          "submissions": 0,
+          "url": "https://network-fixture.test:18480/stability/core-health/page"
+        },
+        "afterAutomaticFailure": {
+          "draft": "core-health-unsent-draft",
+          "fetchStarts": 0,
+          "identity": "owned-1793696522830-0.053849792270254104",
+          "submissions": 0,
+          "url": "https://network-fixture.test:18480/stability/core-health/page"
+        },
+        "afterBlockedRequests": {
+          "draft": "core-health-unsent-draft",
+          "fetchStarts": 1,
+          "identity": "owned-1793696522830-0.053849792270254104",
+          "submissions": 0,
+          "url": "https://network-fixture.test:18480/stability/core-health/page"
+        },
+        "afterExplicitReconnect": {
+          "draft": "core-health-unsent-draft",
+          "fetchStarts": 1,
+          "identity": "owned-1793696522830-0.053849792270254104",
+          "submissions": 0,
+          "url": "https://network-fixture.test:18480/stability/core-health/page"
+        },
+        "afterHomeResumeFailure": {
+          "draft": "core-health-unsent-draft",
+          "fetchStarts": 2,
+          "identity": "owned-1793696522830-0.053849792270254104",
+          "submissions": 0,
+          "url": "https://network-fixture.test:18480/stability/core-health/page"
+        },
+        "afterExplicitDirect": {
+          "draft": "core-health-unsent-draft",
+          "fetchStarts": 2,
+          "identity": "owned-1793696522830-0.053849792270254104",
+          "submissions": 0,
+          "url": "https://network-fixture.test:18480/stability/core-health/page"
+        }
+      },
+      "originRequests": [
+        {
+          "path": "/stability/core-health-before/echo",
+          "method": "GET",
+          "route": "A",
+          "count": 1,
+          "status": 200
+        },
+        {
+          "path": "/stability/core-health/page",
+          "method": "GET",
+          "route": "A",
+          "count": 1,
+          "status": 200
+        },
+        {
+          "path": "/stability/core-health-reconnected-native/echo",
+          "method": "GET",
+          "route": "A",
+          "count": 1,
+          "status": 200
+        },
+        {
+          "path": "/stability/core-health-reconnected-web/upload",
+          "method": "POST",
+          "route": "A",
+          "count": 1,
+          "status": 200
+        },
+        {
+          "path": "/stability/core-health-direct/echo",
+          "method": "GET",
+          "route": "direct",
+          "count": 1,
+          "status": 200
+        }
+      ],
+      "expectedFailedNativeException": "IllegalStateException",
+      "failedWebResult": "error",
+      "failureDetectedBeforeNewRequests": true,
+      "artifact": {
+        "id": 13218506121,
+        "name": "network-device-api-35-reality",
+        "bytes": 2456767,
+        "sha256": "7fecb5ff509ed5e1f63980412d6f44445e4b3a21f297206c08f5134e3c19b392"
+      }
+    },
+    {
+      "api": 35,
+      "transport": "tls",
+      "origin": "https://network-fixture.test:18480",
+      "instrumentationTestsPassed": 3,
+      "detectionMillis": 1703,
+      "automaticFailure": {
+        "state": "FAILED",
+        "generation": 2,
+        "port": 35395,
+        "coreRunning": false,
+        "visibleStatus": "连接失败 · 请手动重连",
+        "webNetworkBlocked": true,
+        "error": "本地代理核心已停止或状态不可用；未切换直连，请手动重新连接线路"
+      },
+      "background": {
+        "homeCommand": "input keyevent KEYCODE_HOME",
+        "returnCommand": "am start -W -n com.forcemind.chatgpt.networkpreview.ci/com.forcemind.chatgpt.networkpreview.MainActivity",
+        "stoppedLifecycle": "CREATED",
+        "resumedLifecycle": "RESUMED",
+        "sameActivity": true,
+        "elapsedMillis": 3257,
+        "failure": {
+          "state": "FAILED",
+          "generation": 3,
+          "port": 41495,
+          "coreRunning": false,
+          "visibleStatus": "连接失败 · 请手动重连",
+          "webNetworkBlocked": true,
+          "error": "本地代理核心已停止或状态不可用；未切换直连，请手动重新连接线路"
+        }
+      },
+      "explicitReconnect": {
+        "state": "CONNECTED",
+        "generation": 3,
+        "port": 41495,
+        "coreRunning": true,
+        "visibleStatus": "已连接 · 本地代理",
+        "webNetworkBlocked": false,
+        "error": ""
+      },
+      "explicitDirect": {
+        "state": "DIRECT",
+        "generation": 4,
+        "port": 0,
+        "coreRunning": false,
+        "visibleStatus": "直连",
+        "webNetworkBlocked": false,
+        "error": ""
+      },
+      "closed": {
+        "state": "CLOSED",
+        "generation": 6,
+        "expectedGeneration": 6,
+        "observedMillis": 4533,
+        "samples": 60,
+        "callbackInvocations": 0,
+        "coreRunning": false
+      },
+      "documents": {
+        "before": {
+          "draft": "core-health-unsent-draft",
+          "fetchStarts": 0,
+          "identity": "owned-1793695593878-0.8260312728004644",
+          "submissions": 0,
+          "url": "https://network-fixture.test:18480/stability/core-health/page"
+        },
+        "afterAutomaticFailure": {
+          "draft": "core-health-unsent-draft",
+          "fetchStarts": 0,
+          "identity": "owned-1793695593878-0.8260312728004644",
+          "submissions": 0,
+          "url": "https://network-fixture.test:18480/stability/core-health/page"
+        },
+        "afterBlockedRequests": {
+          "draft": "core-health-unsent-draft",
+          "fetchStarts": 1,
+          "identity": "owned-1793695593878-0.8260312728004644",
+          "submissions": 0,
+          "url": "https://network-fixture.test:18480/stability/core-health/page"
+        },
+        "afterExplicitReconnect": {
+          "draft": "core-health-unsent-draft",
+          "fetchStarts": 1,
+          "identity": "owned-1793695593878-0.8260312728004644",
+          "submissions": 0,
+          "url": "https://network-fixture.test:18480/stability/core-health/page"
+        },
+        "afterHomeResumeFailure": {
+          "draft": "core-health-unsent-draft",
+          "fetchStarts": 2,
+          "identity": "owned-1793695593878-0.8260312728004644",
+          "submissions": 0,
+          "url": "https://network-fixture.test:18480/stability/core-health/page"
+        },
+        "afterExplicitDirect": {
+          "draft": "core-health-unsent-draft",
+          "fetchStarts": 2,
+          "identity": "owned-1793695593878-0.8260312728004644",
+          "submissions": 0,
+          "url": "https://network-fixture.test:18480/stability/core-health/page"
+        }
+      },
+      "originRequests": [
+        {
+          "path": "/stability/core-health-before/echo",
+          "method": "GET",
+          "route": "A",
+          "count": 1,
+          "status": 200
+        },
+        {
+          "path": "/stability/core-health/page",
+          "method": "GET",
+          "route": "A",
+          "count": 1,
+          "status": 200
+        },
+        {
+          "path": "/stability/core-health-reconnected-native/echo",
+          "method": "GET",
+          "route": "A",
+          "count": 1,
+          "status": 200
+        },
+        {
+          "path": "/stability/core-health-reconnected-web/upload",
+          "method": "POST",
+          "route": "A",
+          "count": 1,
+          "status": 200
+        },
+        {
+          "path": "/stability/core-health-direct/echo",
+          "method": "GET",
+          "route": "direct",
+          "count": 1,
+          "status": 200
+        }
+      ],
+      "expectedFailedNativeException": "IllegalStateException",
+      "failedWebResult": "error",
+      "failureDetectedBeforeNewRequests": true,
+      "artifact": {
+        "id": 13217590157,
+        "name": "network-device-api-35-tls",
+        "bytes": 2397437,
+        "sha256": "eb9d719e86d921e799f9d2881a00fe157b71942211f2b624d288fff9ae21167f"
+      }
+    }
+  ],
+  "protected": {
+    "formalClientSourceChanged": false,
+    "existingLoginRecoveryDataTouched": false,
+    "mainUpdated": false,
+    "publicReleasesOrWebsiteChanged": false,
+    "workflowFilesChanged": false,
+    "productionSigningUsed": false,
+    "localBuildOrBrowserExecuted": false
+  },
+  "limitations": [
+    "Synthetic Android9/API28 and Android15/API35 x86_64 emulators; no real ChatGPT, real nodes/accounts, screenshots or personal devices",
+    "Native core lifecycle only; a running local core does not prove upstream network or target availability",
+    "No automatic core restart, direct fallback, navigation/reload or replay after failure",
+    "Short actual Home/return and 4.5-second CLOSED/callback observation; no new 30-minute background, Doze, OEM or native process-crash claim",
+    "Existing resource windows completed; no paired CPU/memory improvement is claimed",
+    "Independent arm64 candidate only; temporary experimental signing and 14-day artifact retention; not a production upgrade",
+    "Popup blocking and single-chain scheduling reviewed in source; the focused runtime evidence observes the main WebView and CLOSED/callback behavior, not exact scheduler counts."
+  ]
+}

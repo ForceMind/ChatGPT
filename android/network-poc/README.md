@@ -63,4 +63,12 @@ CI 使用两条自有临时 VLESS 线路和本地回显服务，检查网页、�
 
 这三个页面共享独立 CI 空间，不代表三个隔离账号。30 分钟测试有 instrumentation 进程存活，不保证 Doze、OEM 强制回收、真实 ChatGPT 或用户手机中的保活结果。本专项没有重新测量内存和 CPU。
 
-2026-10-30 的 [稳定性专项](https://github.com/ForceMind/ChatGPT/actions/runs/41068430363) 四组全部通过，每组实际停止态后台1800.001秒、主机30次后台检查、17项原站业务请求各一次。完整证据见 [长期报告](../../docs/benchmarks/android-network-stability.json)。发现外部核心停止后状态仍为`CONNECTED`：请求失败且不直连、手动重连能恢复，但尚无主动故障状态通知；该问题保留为后续工作，不宣称自动恢复已完成。正式App、main、生产签名和现有数据保持不动。
+2026-10-30 的 [稳定性专项](https://github.com/ForceMind/ChatGPT/actions/runs/41068430363) 四组全部通过，每组实际停止态后台1800.001秒、主机30次后台检查、17项原站业务请求各一次。完整证据见 [长期报告](../../docs/benchmarks/android-network-stability.json)。当时发现外部核心停止后状态仍为`CONNECTED`；这一缺口由下述独立修复处理，历史结果保留，不宣称已实现自动重启或请求重发。正式App、main、生产签名和现有数据保持不动。
+
+## 核心停止状态修复（2026-11-03）
+
+源码 `5c6e8fc` 的 [Actions 41604827606](https://github.com/ForceMind/ChatGPT/actions/runs/41604827606) 已通过六组 Android 9 / 15 的 RAW、TLS、REALITY 回归。Go 读取真实实例运行状态，已连接时由单条约两秒的本地检查链复核，返回 App 立即检查。JNI 在串行线程执行，不探测网站、不使用唤醒锁；核心存活不等于目标网站可用。
+
+核心停止后自动显示“连接失败 · 请手动重连”，阻止主页面和弹窗的新网络请求，保留当前网页与草稿；不静默直连、不自动重启、刷新或重发。旧线路检查结果在切路或关闭后失效。八组协议 / 原站组合各通过三项 instrumentation，保留原两项路由与存储检查；合成前台实际检测为 992–1762 ms。真实 Home / 返回保留原 Activity 和文档；关闭后至少 4.5 秒的观察未发生旧完成回调，未声称测量了精确调度次数。
+
+Java 单元 10 项、驱动契约单元 5 项、Go 生命周期 / 传输及原有六组资源回归通过。首轮 Android 15 / REALITY 的初始网络前置失败已保留；同源码单组重跑通过，具体环境原因未确定，没有放宽断言。详见 [结果与边界](../../docs/benchmarks/android-network-core-health.json) 和 [独立 arm64 候选](https://github.com/ForceMind/ChatGPT/actions/runs/41604827606/artifacts/13217025632)。仅是独立实验签名包，不覆盖正式客户端，不导入现有登录；真机 / OEM、真实服务、JNI 进程崩溃和新增长时间后台验证均不在本批范围。
