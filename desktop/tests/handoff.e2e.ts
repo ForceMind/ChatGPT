@@ -1,31 +1,207 @@
-import{shellWindow}from'./helpers/shell';
-import {test,expect,_electron as electron,type ElectronApplication}from'@playwright/test';import {createServer,type Server}from'node:http';import{mkdtempSync,writeFileSync,readFileSync,rmSync}from'node:fs';import os from'node:os';import path from'node:path';import{fileURLToPath}from'node:url';
-import{StateStore}from'../src/main/state';import{AssetStore}from'../src/main/asset-store';import type{HandoffJob}from'../src/shared/handoff';
-const desktop=path.resolve(fileURLToPath(new URL('..',import.meta.url)));
-test('Desktop Skill handoff really uploads bytes to the selected session, sends once, persists acknowledgement and surfaces uncertainty',async({},info)=>{
- test.skip(!['darwin','win32'].includes(process.platform));const root=mkdtempSync(path.join(os.tmpdir(),'profiles-handoff-e2e-')),data=path.join(root,'data');let app:ElectronApplication|undefined,server:Server|undefined;const uploads:{cookie:string;body:string}[]=[],messages:{cookie:string;prompt:string}[]=[];let acknowledge=true,holdComposer=false;
- try{
-  server=createServer(async(q,r)=>{if(q.url==='/upload'||q.url==='/message'){let body='';for await(const chunk of q)body+=chunk.toString();if(q.url==='/upload')uploads.push({cookie:q.headers.cookie||'',body});else messages.push({cookie:q.headers.cookie||'',prompt:JSON.parse(body).prompt});r.writeHead(200,{'Content-Type':'application/json'});r.end(JSON.stringify({ok:true,ack:acknowledge}));return;}
-   if(holdComposer){r.writeHead(200,{'Content-Type':'text/html'});r.end('<h1>Local cancelled task fixture</h1>');return;}
-   r.writeHead(200,{'Content-Type':'text/html'});r.end(`<!doctype html><meta charset="utf-8"><title>Local handoff acceptance fixture</title><h1>本地网页上传与发送验收</h1><form onsubmit="return false"><div id="files"></div><button type="button" data-testid="composer-plus-btn">Upload files</button><textarea id="prompt-textarea" placeholder="询问"></textarea><button type="button" data-testid="send-button" disabled>Send</button></form><section id="messages"></section><script>
+import { shellWindow } from './helpers/shell';
+import { test, expect, _electron as electron, type ElectronApplication } from '@playwright/test';
+import { createServer, type Server } from 'node:http';
+import { mkdtempSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { StateStore } from '../src/main/state';
+import { AssetStore } from '../src/main/asset-store';
+import type { HandoffJob } from '../src/shared/handoff';
+const desktop = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
+test('Desktop Skill handoff really uploads bytes to the selected session, sends once, persists acknowledgement and surfaces uncertainty', async ({}, info) => {
+  test.skip(!['darwin', 'win32'].includes(process.platform));
+  const root = mkdtempSync(path.join(os.tmpdir(), 'profiles-handoff-e2e-')),
+    data = path.join(root, 'data');
+  let app: ElectronApplication | undefined, server: Server | undefined;
+  const uploads: { cookie: string; body: string }[] = [],
+    messages: { cookie: string; prompt: string }[] = [];
+  let acknowledge = true,
+    holdComposer = false;
+  try {
+    server = createServer(async (q, r) => {
+      if (q.url === '/upload' || q.url === '/message') {
+        let body = '';
+        for await (const chunk of q) body += chunk.toString();
+        if (q.url === '/upload') uploads.push({ cookie: q.headers.cookie || '', body });
+        else messages.push({ cookie: q.headers.cookie || '', prompt: JSON.parse(body).prompt });
+        r.writeHead(200, { 'Content-Type': 'application/json' });
+        r.end(JSON.stringify({ ok: true, ack: acknowledge }));
+        return;
+      }
+      if (holdComposer) {
+        r.writeHead(200, { 'Content-Type': 'text/html' });
+        r.end('<h1>Local cancelled task fixture</h1>');
+        return;
+      }
+      r.writeHead(200, { 'Content-Type': 'text/html' });
+      r.end(`<!doctype html><meta charset="utf-8"><title>Local handoff acceptance fixture</title><h1>本地网页上传与发送验收</h1><form onsubmit="return false"><div id="files"></div><button type="button" data-testid="composer-plus-btn">Upload files</button><textarea id="prompt-textarea" placeholder="询问"></textarea><button type="button" data-testid="send-button" disabled>Send</button></form><section id="messages"></section><script>
     const send=document.querySelector('[data-testid="send-button"]'),text=document.querySelector('textarea'),files=document.querySelector('#files');text.addEventListener('input',()=>send.disabled=!text.value.trim());document.querySelector('[data-testid="composer-plus-btn"]').addEventListener('click',()=>{if(document.querySelector('input'))return;const input=document.createElement('input');input.type='file';input.multiple=true;input.hidden=true;document.querySelector('form').append(input);input.addEventListener('change',async()=>{const fd=new FormData();[...input.files].forEach(f=>fd.append('file',f));await fetch('/upload',{method:'POST',body:fd});[...input.files].forEach(f=>{const chip=document.createElement('div');chip.dataset.testid='attachment';chip.title=f.name;chip.textContent=f.name;const remove=document.createElement('button');remove.type='button';remove.setAttribute('aria-label','Remove '+f.name);remove.textContent='×';chip.append(remove);files.append(chip);});});});
     send.addEventListener('click',async()=>{if(send.disabled)return;send.disabled=true;const value=text.value;const response=await fetch('/message',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:value})});const result=await response.json();if(result.ack){const msg=document.createElement('div');msg.dataset.messageAuthorRole='user';msg.textContent=value;document.querySelector('#messages').append(msg);text.value='';history.pushState({},'','/c/local-ack');}});
    </script>`);
-  });await new Promise<void>(r=>server!.listen(0,'127.0.0.1',r));const address=server.address();if(!address||typeof address==='string')throw Error();const origin=`http://127.0.0.1:${address.port}`;
-  const state=new StateStore(data,origin),sourceId=state.read().activeProfileId;const original=path.join(root,'source.html');writeFileSync(original,'<!doctype html><h1>Exact handoff source bytes 原件</h1>');const asset=await new AssetStore(data).importFile(sourceId,original,{kind:'import'},undefined,'text/html');
-  const launch=async()=>{app=await electron.launch({args:[desktop],env:{...process.env,PROFILES_E2E:'1',PROFILES_TEST_DATA:data,PROFILES_FIXTURE_ORIGIN:origin}});const shell=await shellWindow(app,{width:1360,height:640});await shell.waitForURL('app://shell/index.html');await expect(shell.getByRole('button',{name:'资产中心',exact:true})).toBeVisible();return shell;};let shell=await launch();
-  await shell.evaluate(()=>window.profiles.command({type:'profile:add',name:'Target account',email:'',color:'#5275a0'}));const snapshot=await shell.evaluate(()=>window.profiles.snapshot()),targetId=snapshot.activeProfileId;
-  await app!.evaluate(async({session},{sourceId,targetId,origin})=>{await session.fromPartition('persist:profile-'+sourceId).cookies.set({url:origin,name:'owner',value:'source'});await session.fromPartition('persist:profile-'+targetId).cookies.set({url:origin,name:'owner',value:'target'});},{sourceId,targetId,origin});
-  await shell.evaluate(id=>window.profiles.command({type:'profile:activate',id}),sourceId);await shell.getByRole('button',{name:'资产中心',exact:true}).click();await expect(shell.locator('#wb-asset-grid [data-asset]')).toHaveCount(1);
-  await shell.locator('#wb-asset-detail [data-action="send-current"]').click();await shell.locator('#wb-task-account').selectOption(targetId);await shell.locator('#wb-task-skill').selectOption('skill-001');await shell.locator('#wb-task-agent').selectOption('studio-agent-004');await shell.locator('#wb-task-instructions').fill('Inspect this HTML and preserve the original source.');await shell.locator('[data-action="task-prompt"]').click();await expect(shell.locator('#wb-prompt-preview')).toContainText('HTML 结构解读');await shell.locator('[data-action="start-handoff"]').click();await expect(shell.locator('.toast')).toContainText('请确认');expect(uploads).toHaveLength(0);expect(messages).toHaveLength(0);
-  await shell.locator('#wb-cross-consent').check();await shell.locator('[data-action="start-handoff"]').click();await expect.poll(()=>shell.evaluate(id=>window.profiles.workbench.handoffs(id).then(j=>j[0]?.status),sourceId)).toBe('submitted');
-  const jobs=await shell.evaluate(id=>window.profiles.workbench.handoffs(id),sourceId),job=jobs[0];expect(job.request.targetProfileId).toBe(targetId);expect(job.request.skillId).toBe('skill-001');expect(job.request.agentId).toBe('studio-agent-004');const role=await shell.evaluate(()=>window.profiles.workbench.agent('studio-agent-004'));expect(messages[0].prompt).toContain(role);expect(job.progress).toHaveLength(7);expect(job.progress!.every(p=>p.completedAt!==undefined)).toBe(true);await expect(shell.getByLabel('任务七阶段进度')).toBeVisible();await expect(shell.locator('.aw-handoff-progress li')).toHaveCount(7);const skill=(await shell.evaluate(()=>window.profiles.workbench.capabilities())).skills.find(s=>s.id==='skill-001')!;for(const required of [skill.name,skill.instructions,...skill.steps,...skill.outputSections,...skill.checks])expect(messages[0].prompt).toContain(required);expect(job.files[0].assetId).toBe(asset.id);expect(uploads).toHaveLength(1);expect(uploads[0].cookie).toContain('owner=target');expect(uploads[0].body).toContain('Exact handoff source bytes 原件');expect(uploads[0].body).toContain('source.html.txt');expect(messages).toHaveLength(1);expect(messages[0].cookie).toContain('owner=target');expect(messages[0].prompt).toContain('Inspect this HTML');expect(messages[0].prompt).toContain('附件名称映射');expect(messages[0].prompt).not.toContain(root);expect(readFileSync(original,'utf8')).toContain('Exact handoff source bytes');
-  await shell.evaluate(request=>window.profiles.workbench.startHandoff(request),job.request);expect(messages).toHaveLength(1);expect((await shell.evaluate(()=>window.profiles.snapshot())).activeProfileId).toBe(sourceId);
-  await shell.screenshot({path:info.outputPath(process.platform+'-handoff-submitted.png')});await shell.locator('[data-action="open-handoff"]').click();expect((await shell.evaluate(()=>window.profiles.snapshot())).activeProfileId).toBe(targetId);
-  await shell.getByRole('button',{name:'资产中心',exact:true}).click();await expect(shell.locator('#wb-asset-grid [data-asset]')).toHaveCount(0);await shell.locator('#wb-workbench [data-action="handoff-history"]').click();await expect(shell.locator('[data-job]')).toHaveCount(1);
-  holdComposer=true;const cancelled=await shell.evaluate(targetId=>window.profiles.workbench.startHandoff({requestId:crypto.randomUUID(),sourceProfileId:targetId,targetProfileId:targetId,assetIds:[],crossAccountConfirmed:false,language:'English',instructions:'Local cancellation fixture.'}),targetId);await shell.evaluate(({profile,id})=>window.profiles.workbench.cancelHandoff(profile,id),{profile:targetId,id:cancelled.id});await expect.poll(()=>shell.evaluate(({profile,id})=>window.profiles.workbench.handoffs(profile).then(js=>js.find(j=>j.id===id)?.status),{profile:targetId,id:cancelled.id})).toBe('cancelled');expect(messages).toHaveLength(1);holdComposer=false;
-  acknowledge=false;const uncertain=await shell.evaluate(({targetId})=>window.profiles.workbench.startHandoff({requestId:crypto.randomUUID(),sourceProfileId:targetId,targetProfileId:targetId,assetIds:[],crossAccountConfirmed:false,language:'English',instructions:'Visible local uncertainty fixture only.'}),{sourceId,targetId});
-  await expect.poll(()=>shell.evaluate(({profile,id})=>window.profiles.workbench.handoffs(profile).then(js=>js.find(j=>j.id===id)?.status),{profile:targetId,id:uncertain.id}),{timeout:35000}).toBe('uncertain');expect(messages).toHaveLength(2);
-  await shell.evaluate(request=>window.profiles.workbench.startHandoff(request),uncertain.request);expect(messages).toHaveLength(2);await app!.close();app=undefined;shell=await launch();const restored:HandoffJob[]=await shell.evaluate(id=>window.profiles.workbench.handoffs(id),targetId);expect(restored.find(j=>j.id===job.id)?.status).toBe('submitted');expect(restored.find(j=>j.id===uncertain.id)?.status).toBe('uncertain');expect(messages).toHaveLength(2);
- }finally{if(app)await app.close();if(server){server.closeAllConnections();await new Promise<void>(r=>server!.close(()=>r()));}rmSync(root,{recursive:true,force:true});}
+    });
+    await new Promise<void>((r) => server!.listen(0, '127.0.0.1', r));
+    const address = server.address();
+    if (!address || typeof address === 'string') throw Error();
+    const origin = `http://127.0.0.1:${address.port}`;
+    const state = new StateStore(data, origin),
+      sourceId = state.read().activeProfileId;
+    const original = path.join(root, 'source.html');
+    writeFileSync(original, '<!doctype html><h1>Exact handoff source bytes 原件</h1>');
+    const asset = await new AssetStore(data).importFile(sourceId, original, { kind: 'import' }, undefined, 'text/html');
+    const launch = async () => {
+      app = await electron.launch({
+        args: [desktop],
+        env: { ...process.env, PROFILES_E2E: '1', PROFILES_TEST_DATA: data, PROFILES_FIXTURE_ORIGIN: origin }
+      });
+      const shell = await shellWindow(app, { width: 1360, height: 640 });
+      await shell.waitForURL('app://shell/index.html');
+      await expect(shell.getByRole('button', { name: '资产中心', exact: true })).toBeVisible();
+      return shell;
+    };
+    let shell = await launch();
+    await shell.evaluate(() =>
+      window.profiles.command({ type: 'profile:add', name: 'Target account', email: '', color: '#5275a0' })
+    );
+    const snapshot = await shell.evaluate(() => window.profiles.snapshot()),
+      targetId = snapshot.activeProfileId;
+    await app!.evaluate(
+      async ({ session }, { sourceId, targetId, origin }) => {
+        await session
+          .fromPartition('persist:profile-' + sourceId)
+          .cookies.set({ url: origin, name: 'owner', value: 'source' });
+        await session
+          .fromPartition('persist:profile-' + targetId)
+          .cookies.set({ url: origin, name: 'owner', value: 'target' });
+      },
+      { sourceId, targetId, origin }
+    );
+    await shell.evaluate((id) => window.profiles.command({ type: 'profile:activate', id }), sourceId);
+    await shell.getByRole('button', { name: '资产中心', exact: true }).click();
+    await expect(shell.locator('#wb-asset-grid [data-asset]')).toHaveCount(1);
+    await shell.locator('#wb-asset-detail [data-action="send-current"]').click();
+    await shell.locator('#wb-task-account').selectOption(targetId);
+    await shell.locator('#wb-task-skill').selectOption('skill-001');
+    await shell.locator('#wb-task-agent').selectOption('studio-agent-004');
+    await shell.locator('#wb-task-instructions').fill('Inspect this HTML and preserve the original source.');
+    await shell.locator('[data-action="task-prompt"]').click();
+    await expect(shell.locator('#wb-prompt-preview')).toContainText('HTML 结构解读');
+    await shell.locator('[data-action="start-handoff"]').click();
+    await expect(shell.locator('.toast')).toContainText('请确认');
+    expect(uploads).toHaveLength(0);
+    expect(messages).toHaveLength(0);
+    await shell.locator('#wb-cross-consent').check();
+    await shell.locator('[data-action="start-handoff"]').click();
+    await expect
+      .poll(() => shell.evaluate((id) => window.profiles.workbench.handoffs(id).then((j) => j[0]?.status), sourceId))
+      .toBe('submitted');
+    const jobs = await shell.evaluate((id) => window.profiles.workbench.handoffs(id), sourceId),
+      job = jobs[0];
+    expect(job.request.targetProfileId).toBe(targetId);
+    expect(job.request.skillId).toBe('skill-001');
+    expect(job.request.agentId).toBe('studio-agent-004');
+    const role = await shell.evaluate(() => window.profiles.workbench.agent('studio-agent-004'));
+    expect(messages[0].prompt).toContain(role);
+    expect(job.progress).toHaveLength(7);
+    expect(job.progress!.every((p) => p.completedAt !== undefined)).toBe(true);
+    await expect(shell.getByLabel('任务七阶段进度')).toBeVisible();
+    await expect(shell.locator('.aw-handoff-progress li')).toHaveCount(7);
+    const skill = (await shell.evaluate(() => window.profiles.workbench.capabilities())).skills.find(
+      (s) => s.id === 'skill-001'
+    )!;
+    for (const required of [skill.name, skill.instructions, ...skill.steps, ...skill.outputSections, ...skill.checks])
+      expect(messages[0].prompt).toContain(required);
+    expect(job.files[0].assetId).toBe(asset.id);
+    expect(uploads).toHaveLength(1);
+    expect(uploads[0].cookie).toContain('owner=target');
+    expect(uploads[0].body).toContain('Exact handoff source bytes 原件');
+    expect(uploads[0].body).toContain('source.html.txt');
+    expect(messages).toHaveLength(1);
+    expect(messages[0].cookie).toContain('owner=target');
+    expect(messages[0].prompt).toContain('Inspect this HTML');
+    expect(messages[0].prompt).toContain('附件名称映射');
+    expect(messages[0].prompt).not.toContain(root);
+    expect(readFileSync(original, 'utf8')).toContain('Exact handoff source bytes');
+    await shell.evaluate((request) => window.profiles.workbench.startHandoff(request), job.request);
+    expect(messages).toHaveLength(1);
+    expect((await shell.evaluate(() => window.profiles.snapshot())).activeProfileId).toBe(sourceId);
+    await shell.screenshot({ path: info.outputPath(process.platform + '-handoff-submitted.png') });
+    await shell.locator('[data-action="open-handoff"]').click();
+    expect((await shell.evaluate(() => window.profiles.snapshot())).activeProfileId).toBe(targetId);
+    await shell.getByRole('button', { name: '资产中心', exact: true }).click();
+    await expect(shell.locator('#wb-asset-grid [data-asset]')).toHaveCount(0);
+    await shell.locator('#wb-workbench [data-action="handoff-history"]').click();
+    await expect(shell.locator('[data-job]')).toHaveCount(1);
+    holdComposer = true;
+    const cancelled = await shell.evaluate(
+      (targetId) =>
+        window.profiles.workbench.startHandoff({
+          requestId: crypto.randomUUID(),
+          sourceProfileId: targetId,
+          targetProfileId: targetId,
+          assetIds: [],
+          crossAccountConfirmed: false,
+          language: 'English',
+          instructions: 'Local cancellation fixture.'
+        }),
+      targetId
+    );
+    await shell.evaluate(({ profile, id }) => window.profiles.workbench.cancelHandoff(profile, id), {
+      profile: targetId,
+      id: cancelled.id
+    });
+    await expect
+      .poll(() =>
+        shell.evaluate(
+          ({ profile, id }) =>
+            window.profiles.workbench.handoffs(profile).then((js) => js.find((j) => j.id === id)?.status),
+          { profile: targetId, id: cancelled.id }
+        )
+      )
+      .toBe('cancelled');
+    expect(messages).toHaveLength(1);
+    holdComposer = false;
+    acknowledge = false;
+    const uncertain = await shell.evaluate(
+      ({ targetId }) =>
+        window.profiles.workbench.startHandoff({
+          requestId: crypto.randomUUID(),
+          sourceProfileId: targetId,
+          targetProfileId: targetId,
+          assetIds: [],
+          crossAccountConfirmed: false,
+          language: 'English',
+          instructions: 'Visible local uncertainty fixture only.'
+        }),
+      { sourceId, targetId }
+    );
+    await expect
+      .poll(
+        () =>
+          shell.evaluate(
+            ({ profile, id }) =>
+              window.profiles.workbench.handoffs(profile).then((js) => js.find((j) => j.id === id)?.status),
+            { profile: targetId, id: uncertain.id }
+          ),
+        { timeout: 35000 }
+      )
+      .toBe('uncertain');
+    expect(messages).toHaveLength(2);
+    await shell.evaluate((request) => window.profiles.workbench.startHandoff(request), uncertain.request);
+    expect(messages).toHaveLength(2);
+    await app!.close();
+    app = undefined;
+    shell = await launch();
+    const restored: HandoffJob[] = await shell.evaluate((id) => window.profiles.workbench.handoffs(id), targetId);
+    expect(restored.find((j) => j.id === job.id)?.status).toBe('submitted');
+    expect(restored.find((j) => j.id === uncertain.id)?.status).toBe('uncertain');
+    expect(messages).toHaveLength(2);
+  } finally {
+    if (app) await app.close();
+    if (server) {
+      server.closeAllConnections();
+      await new Promise<void>((r) => server!.close(() => r()));
+    }
+    rmSync(root, { recursive: true, force: true });
+  }
 });

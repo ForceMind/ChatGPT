@@ -1,5 +1,6 @@
 export type AssetKind = 'image' | 'web' | 'document' | 'data' | 'audio' | 'video' | 'other';
-export type AssetStatus = 'downloading' | 'paused' | 'processing' | 'ready' | 'interrupted' | 'cancelled' | 'failed' | 'missing' | 'changed';
+export type AssetStatus =
+  'downloading' | 'paused' | 'processing' | 'ready' | 'interrupted' | 'cancelled' | 'failed' | 'missing' | 'changed';
 export type AssetSource = {
   kind: 'download' | 'import' | 'conversion';
   profileName?: string;

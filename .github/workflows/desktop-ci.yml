@@ -1,0 +1,342 @@
+name: Desktop CI
+on:
+  push:
+    paths: ['desktop/**', '.github/workflows/desktop-ci.yml']
+  pull_request:
+    paths: ['desktop/**', '.github/workflows/desktop-ci.yml']
+  workflow_dispatch:
+    inputs:
+      cpu_validation:
+        description: Same arm64 macOS runner; synthetic CPU baseline/candidate and 30-minute hidden retention
+        type: boolean
+        default: false
+      candidate_package:
+        description: Validate and package an ad-hoc arm64 macOS candidate for local installation; no publication
+        type: boolean
+        default: false
+      promote_release:
+        description: Publish the verified alpha.23 original macOS candidate artifacts without repackaging
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: desktop-ci-${{ github.ref }}-${{ github.event_name == 'workflow_dispatch' && ((inputs.cpu_validation && inputs.candidate_package) || (inputs.promote_release && (inputs.cpu_validation || inputs.candidate_package))) && 'invalid' || github.event_name == 'workflow_dispatch' && inputs.promote_release && 'promotion' || github.event_name == 'workflow_dispatch' && inputs.candidate_package && 'package' || github.event_name == 'workflow_dispatch' && inputs.cpu_validation && 'cpu' || 'checks' }}
+  cancel-in-progress: ${{ !(github.event_name == 'workflow_dispatch' && inputs.promote_release) }}
+jobs:
+  check:
+    if: github.event_name != 'workflow_dispatch' || (!inputs.cpu_validation && !inputs.candidate_package && !inputs.promote_release)
+    name: Typecheck, lint, format and unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '26.7.0'
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - name: Install dependencies without downloading Electron
+        run: npm ci --ignore-scripts
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Lint
+        run: npm run lint
+      - name: Format check
+        run: npm run format:check
+      - name: Unit tests
+        run: npm test
+  build:
+    if: github.event_name != 'workflow_dispatch' || (!inputs.cpu_validation && !inputs.candidate_package && !inputs.promote_release)
+    name: Build on macOS
+    runs-on: macos-15
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '26.7.0'
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - name: Install dependencies without downloading Electron
+        run: npm ci --ignore-scripts
+      - name: Build main process, native helpers and renderer
+        run: npm run build
+  cpu-validation:
+    if: github.event_name == 'workflow_dispatch' && inputs.cpu_validation && !inputs.candidate_package && !inputs.promote_release
+    name: Native macOS CPU comparison and background retention
+    runs-on: macos-15
+    timeout-minutes: 120
+    env:
+      BASELINE_COMMIT: 462d4f3c9fea960fcdba0cd96cdf039d5cf8a24c
+    defaults:
+      run:
+        shell: bash
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '26.7.0'
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - name: Prepare disposable native arm64 desktop session
+        run: |
+          test "$(uname -m)" = arm64
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          mkdir -p test-results/cpu
+          clang scripts/ci-display.c -framework CoreGraphics -framework CoreFoundation -o "$RUNNER_TEMP/studio-ci-display"
+          defaults write com.apple.dock autohide -bool true
+          killall Dock || true
+          "$RUNNER_TEMP/studio-ci-display"
+          "$RUNNER_TEMP/studio-ci-display" --check
+          npm ci
+      - name: Full candidate checks and build at this SHA
+        run: npm run check 2>&1 | tee "$RUNNER_TEMP/studio-cpu-check.log"
+      - name: Full candidate isolated E2E at the same SHA
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_FILE: test-results/full-regression.json
+        run: npm run test:e2e -- --reporter=list,json 2>&1 | tee "$RUNNER_TEMP/studio-cpu-e2e.log"
+      - name: Restore check and E2E logs after Playwright output cleanup
+        if: always()
+        run: |
+          mkdir -p test-results/cpu
+          for studio_log in check e2e; do
+            if [ -f "$RUNNER_TEMP/studio-cpu-$studio_log.log" ]; then
+              cp "$RUNNER_TEMP/studio-cpu-$studio_log.log" "test-results/cpu/$studio_log.log"
+            fi
+          done
+      - name: Export and build exact baseline using identical locked dependencies
+        run: |
+          studio_baseline="$RUNNER_TEMP/studio-cpu-baseline"
+          test ! -e "$studio_baseline"
+          mkdir -p "$studio_baseline"
+          git -C "$GITHUB_WORKSPACE" archive "$BASELINE_COMMIT" | tar -x -C "$studio_baseline"
+          cmp package-lock.json "$studio_baseline/desktop/package-lock.json"
+          ln -s "$GITHUB_WORKSPACE/desktop/node_modules" "$studio_baseline/desktop/node_modules"
+          (cd "$studio_baseline/desktop" && npm run build) 2>&1 | tee test-results/cpu/baseline-build.log
+          git rev-parse HEAD > test-results/cpu/candidate-sha.txt
+          git rev-parse "$BASELINE_COMMIT" > test-results/cpu/baseline-sha.txt
+          shasum -a 256 package-lock.json scripts/measure-cpu.mjs scripts/summarize-cpu.mjs > test-results/cpu/input-sha256.txt
+          node --version > test-results/cpu/node-version.txt
+      - name: Native baseline idle and fixed streaming workloads
+        run: |
+          node scripts/measure-cpu.mjs --app-root "$RUNNER_TEMP/studio-cpu-baseline/desktop" --label baseline --profile full --instrumentation on --source-sha "$BASELINE_COMMIT" --output test-results/cpu/forward-baseline
+      - name: Native candidate workloads, observer control and 30-minute hidden retention
+        run: |
+          node scripts/measure-cpu.mjs --label candidate --profile full --instrumentation on --source-sha "$GITHUB_SHA" --output test-results/cpu/forward-candidate
+      - name: Reverse-order candidate stream-only control without counters or timeline
+        run: |
+          node scripts/measure-cpu.mjs --label candidate --profile stream-only --instrumentation off --source-sha "$GITHUB_SHA" --output test-results/cpu/reverse-candidate
+      - name: Reverse-order baseline stream-only control without counters or timeline
+        run: |
+          node scripts/measure-cpu.mjs --app-root "$RUNNER_TEMP/studio-cpu-baseline/desktop" --label baseline --profile stream-only --instrumentation off --source-sha "$BASELINE_COMMIT" --output test-results/cpu/reverse-baseline
+      - name: Summarize complete evidence without assuming CPU benefit
+        run: |
+          node scripts/summarize-cpu.mjs test-results/cpu
+          cat test-results/cpu/comparison.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: macos-native-cpu-${{ github.sha }}
+          retention-days: 14
+          if-no-files-found: error
+          path: |
+            desktop/test-results/
+            desktop/playwright-report/
+  invalid-manual-inputs:
+    if: github.event_name == 'workflow_dispatch' && ((inputs.cpu_validation && inputs.candidate_package) || (inputs.promote_release && (inputs.cpu_validation || inputs.candidate_package)))
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Reject mutually exclusive validation modes
+        run: |
+          echo '::error::Select only one of cpu_validation, candidate_package or promote_release.'
+          exit 1
+  candidate-package:
+    if: github.event_name == 'workflow_dispatch' && inputs.candidate_package && !inputs.cpu_validation && !inputs.promote_release
+    name: Validate and package local macOS arm64 candidate
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+    defaults:
+      run:
+        shell: bash
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '26.7.0'
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - name: Prepare disposable arm64 session and locked dependencies
+        run: |
+          test "$(uname -m)" = arm64
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          clang scripts/ci-display.c -framework CoreGraphics -framework CoreFoundation -o "$RUNNER_TEMP/studio-candidate-display"
+          defaults write com.apple.dock autohide -bool true
+          killall Dock || true
+          "$RUNNER_TEMP/studio-candidate-display"
+          "$RUNNER_TEMP/studio-candidate-display" --check
+          npm ci
+      - name: Complete candidate checks and build
+        run: npm run check 2>&1 | tee "$RUNNER_TEMP/studio-candidate-check.log"
+      - name: Complete isolated macOS E2E including real synthetic update progress
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_FILE: test-results/full-regression.json
+        run: npm run test:e2e -- --reporter=list,json 2>&1 | tee "$RUNNER_TEMP/studio-candidate-e2e.log"
+      - name: Preserve logs after Playwright output cleanup
+        if: always()
+        run: |
+          mkdir -p test-results/candidate
+          for studio_log in check e2e; do
+            if [ -f "$RUNNER_TEMP/studio-candidate-$studio_log.log" ]; then
+              cp "$RUNNER_TEMP/studio-candidate-$studio_log.log" "test-results/candidate/$studio_log.log"
+            fi
+          done
+      - name: Package existing build without publishing or repeating checks
+        run: |
+          node scripts/icon.mjs
+          node scripts/package-mac.mjs 2>&1 | tee test-results/candidate/package.log
+      - name: Verify candidate identity, ad-hoc signature and artifact SHA256 receipts
+        run: |
+          node --input-type=module <<'JS'
+          import { createHash } from 'node:crypto';
+          import { spawnSync } from 'node:child_process';
+          import { readFileSync, realpathSync, writeFileSync } from 'node:fs';
+          import os from 'node:os';
+          import path from 'node:path';
+          const requireValue = (condition, message) => { if (!condition) throw Error(message); };
+          const pkg = JSON.parse(readFileSync('package.json', 'utf8'));
+          const build = JSON.parse(readFileSync('release/build-info.json', 'utf8'));
+          requireValue(pkg.version === '3.0.0-alpha.23' && build.version === pkg.version && build.architecture === 'arm64', 'Wrong candidate version or architecture');
+          const bundle = realpathSync(build.appPath);
+          requireValue(bundle.startsWith(realpathSync(os.tmpdir()) + path.sep) && path.basename(bundle) === 'ChatGPT Studio.app', 'Candidate bundle is outside owned packaging staging');
+          const checks = [];
+          const run = (command, args) => {
+            const result = spawnSync(command, args, { encoding: 'utf8' });
+            checks.push({ command, args, exitCode: result.status, stdout: result.stdout, stderr: result.stderr });
+            requireValue(result.status === 0, 'Candidate verification failed: ' + command + '\n' + result.stderr);
+            return (result.stdout + result.stderr).trim();
+          };
+          const plist = (key) => run('/usr/libexec/PlistBuddy', ['-c', 'Print:' + key, path.join(bundle, 'Contents/Info.plist')]);
+          const bundleID = plist('CFBundleIdentifier'), version = plist('CFBundleShortVersionString');
+          requireValue(bundleID === 'com.forcemind.chatgpt.profiles' && version === pkg.version, 'Bundle identity or version changed');
+          const executable = plist('CFBundleExecutable');
+          requireValue(/^[^/\\]+$/.test(executable), 'Unsafe bundle executable');
+          const architecture = run('/usr/bin/lipo', ['-archs', path.join(bundle, 'Contents/MacOS', executable)]);
+          requireValue(architecture === 'arm64', 'Candidate executable is not arm64 only');
+          const verification = run('/usr/bin/codesign', ['--verify', '--deep', '--strict', '--verbose=2', bundle]);
+          const signing = run('/usr/bin/codesign', ['-d', '--verbose=4', bundle]);
+          requireValue(/Signature=adhoc/.test(signing), 'Candidate unexpectedly uses a production signing identity');
+          writeFileSync('release/candidate-codesign-verify.txt', verification + '\n' + signing + '\n');
+          const digest = (file) => createHash('sha256').update(readFileSync(file)).digest('hex');
+          const artifacts = build.artifacts.map((item) => {
+            requireValue(path.basename(item.file) === item.file && !item.file.startsWith('.') && /\.(dmg|zip|blockmap)$/.test(item.file), 'Unsafe artifact path');
+            const file = path.join('release', item.file), bytes = readFileSync(file).length, sha256 = digest(file);
+            requireValue(sha256 === item.sha256, 'Artifact digest differs from build-info: ' + item.file);
+            return { file: item.file, bytes, sha256 };
+          });
+          for (const file of ['ChatGPT-Studio-' + version + '-mac-arm64.dmg', 'ChatGPT-Studio-' + version + '-mac-arm64.zip', 'ChatGPT-Profiles-' + version + '-mac-arm64.zip'])
+            requireValue(artifacts.some((item) => item.file === file), 'Missing candidate deliverable: ' + file);
+          const receipt = { schema: 1, sourceSha: process.env.GITHUB_SHA, version, architecture, bundleID, signing: 'ad-hoc', notarized: false, published: false, installedOnRunner: false,
+            installTarget: { bundleName: 'ChatGPT Studio.app', bundleID: 'com.forcemind.chatgpt.profiles', version },
+            buildInfoSHA256: digest('release/build-info.json'), checks, artifacts };
+          writeFileSync('release/candidate-receipt.json', JSON.stringify(receipt, null, 2) + '\n');
+          const sums = [...artifacts, ...['build-info.json', 'candidate-receipt.json', 'candidate-codesign-verify.txt'].map((file) => ({ file, sha256: digest(path.join('release', file)) }))];
+          writeFileSync('release/SHA256SUMS', sums.map((item) => item.sha256 + '  ' + item.file).join('\n') + '\n');
+          console.log(JSON.stringify(receipt, null, 2));
+          JS
+      - name: Record read-only public update-feed availability separately from acceptance
+        if: always()
+        run: |
+          mkdir -p test-results/candidate
+          node --input-type=module <<'JS'
+          import { writeFileSync } from 'node:fs';
+          const observation = { url: 'https://chatgpt.xincreates.com/updates/macos.json', checkedAt: new Date().toISOString(), acceptanceEvidence: false };
+          try {
+            const response = await fetch(observation.url, { credentials: 'omit', redirect: 'manual', headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(15000) });
+            observation.httpStatus = response.status;
+            if (response.ok) {
+              const value = await response.json();
+              observation.publicVersion = typeof value?.version === 'string' ? value.version : null;
+            } else await response.body?.cancel();
+          } catch (error) { observation.error = String(error); }
+          writeFileSync('test-results/candidate/public-feed-observation.json', JSON.stringify(observation, null, 2) + '\n');
+          console.log(JSON.stringify(observation));
+          JS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: macos-local-candidate-${{ github.sha }}
+          retention-days: 14
+          if-no-files-found: error
+          path: |
+            desktop/release/*.dmg
+            desktop/release/*.zip
+            desktop/release/*.blockmap
+            desktop/release/build-info.json
+            desktop/release/candidate-receipt.json
+            desktop/release/candidate-codesign-verify.txt
+            desktop/release/SHA256SUMS
+            desktop/test-results/
+            desktop/playwright-report/
+  promote-release:
+    if: github.event_name == 'workflow_dispatch' && inputs.promote_release && !inputs.cpu_validation && !inputs.candidate_package
+    name: Promote verified original alpha.23 macOS artifacts
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: write
+      actions: read
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '26.7.0'
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - name: Prepare promotion evidence and locked validation dependencies
+        run: |
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          mkdir -p promotion
+          npm ci --ignore-scripts --prefix desktop
+      - name: Complete checks without creating new installation packages
+        working-directory: desktop
+        run: npm run check 2>&1 | tee "$GITHUB_WORKSPACE/promotion/check.log"
+      - uses: actions/download-artifact@v4
+        with:
+          artifact-ids: '13166043620'
+          github-token: ${{ github.token }}
+          run-id: '41493373060'
+          path: promotion/original
+          merge-multiple: true
+      - name: Verify immutable original candidate assets and publish the draft via REST
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PROMOTE_RELEASE: 'true'
+        run: node desktop/scripts/publish-macos-candidate.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: macos-alpha23-promotion-verification-${{ github.sha }}
+          retention-days: 14
+          path: |
+            promotion/verification.json
+            promotion/check.log
+            promotion/SHA256SUMS.txt

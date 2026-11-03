@@ -1,6 +1,6 @@
 {
   "name": "chatgpt-profiles",
-  "version": "3.0.0-alpha.22",
+  "version": "3.0.0-alpha.23",
   "private": true,
   "description": "ChatGPT Studio — independent accounts, immersive browsing and local asset workflows",
   "author": "ForceMind",
@@ -13,9 +13,12 @@
     "start": "npm run build && electron .",
     "start:built": "electron .",
     "typecheck": "tsc --noEmit",
+    "lint": "eslint src tests scripts playwright.config.ts",
+    "format": "prettier --write \"src/**/*.{ts,tsx}\" \"tests/**/*.ts\" \"scripts/**/*.{mjs,ts}\" playwright.config.ts",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx}\" \"tests/**/*.ts\" \"scripts/**/*.{mjs,ts}\" playwright.config.ts",
     "test": "node --import tsx --test tests/state.test.ts tests/asset-store.test.ts tests/asset-downloads.test.ts tests/capabilities.test.ts tests/formats.test.ts tests/login-diagnostics.test.ts tests/handoff-store.test.ts tests/recovery-store.test.ts tests/updates.test.ts tests/update-installer.test.ts tests/idle-update.test.ts tests/recovery-access.test.ts tests/windows-updates.test.ts",
     "test:e2e": "npm run build && playwright test",
-    "check": "npm run typecheck && npm test && npm run build",
+    "check": "npm run typecheck && npm run lint && npm run format:check && npm test && npm run build",
     "dist:mac": "npm run check && node scripts/icon.mjs && node scripts/package-mac.mjs",
     "dist:win": "npm run check && node scripts/icon.mjs && node scripts/package-win.mjs"
   },
@@ -28,6 +31,7 @@
     "react-dom": "19.3.1"
   },
   "devDependencies": {
+    "@eslint/js": "10.0.1",
     "@playwright/test": "1.64.1",
     "@resvg/resvg-js": "^2.6.2",
     "@types/node": "^24.0.0",
@@ -37,12 +41,15 @@
     "electron": "44.9.1",
     "electron-builder": "26.15.3",
     "esbuild": "0.28.2",
+    "eslint": "10.14.0",
+    "prettier": "3.9.10",
     "prosemirror-model": "1.25.12",
     "prosemirror-schema-basic": "1.2.5",
     "prosemirror-state": "1.4.4",
     "prosemirror-view": "1.42.7",
     "tsx": "^4.20.0",
     "typescript": "^5.9.3",
+    "typescript-eslint": "8.72.1",
     "vite": "8.3.4"
   },
   "build": {

@@ -1067,3 +1067,15 @@
 - 有限实验40904089731 / a1495de：5000ms子任务123553977946成功，原20项通过；500ms子任务123553977380在已记录Home保持后，读取实验PID4964/smaps超过25秒，随后普通Native证据读取也超时，最终managed-report未完成。高频组不计全量通过，不据此判App泄漏/崩溃，不增加超时或扩展矩阵。低频/高频unsigned APK SHA相同，原ZIP摘要分别beeac6ae0a6ed7eade9cea15283b6d4d80a0ee4aca8504c9daf22c1f54150232 / 5e535763a46e9f9661887f54f28a4facd82b4ea342dfb8de394bbcd5733b5f3e，均已核验。
 - 已取得的高频Home增长主要在三个内容进程rw-p [anon:jemalloc]，PSS增20476/10404/10040KiB；低频Home最大对应2200KiB。仅属映射标签级定位，无法区分缓存/分配器保留/对象泄漏。有限阶段收尾，证据docs/benchmarks/android-memory-mapping-attribution.json，原始元数据在CI，不读内存内容、不改正式App/登录/生产签名。
 - docs/android-network-plan.md已形成下一阶段具体准备：独立Android包、原生最小界面、用户VLESS线路、本地代理核心候选、网页/原生文件同路由、连接/错误/切换不重发契约、加密配置与CI合成服务验收。只读核对Android官方ProxyController及XTLS官方libXray/core资料；没有拷贝参考项目源码、没有集成核心、没有提供免费节点或声称WARP已接入。随后按独立网络首版顺序推进，不直接覆盖用户客户端。
+
+
+## macOS alpha.23 公开发布（2026-11-03）
+
+- 用户明确授权合并 PR #1、同步 main / dev、公开 Mac DMG / ZIP，并更新官网下载、国内加速、里程碑及现用 Mac 更新接口。PR 源 1db8aa8 已通过完整检查和合成页面验收，以 5ccb02b 合并；保留开发历史与格式化 blame-ignore 记录。Windows 保持 alpha.21，Android 保持 alpha.22；dev 的 Android 独立实验继续保留，不接入正式客户端。
+- alpha.23 显示真实下载百分比及校验 / 准备安装状态，账号菜单提供手动检查、重试和立即安装；保留标签实例、后台保活和既有登录 / 加密恢复身份。流式 CPU 对照尚未证明稳定收益，不将调度改动描述为确定降幅。
+- 原包来自 Actions 41493373060 / 1db8aa8：Mac 完整 npm run check 通过，106 项单元通过，37 项 macOS 合成页面 E2E 通过，5 项 Windows 专属跳过。原始包、签名和摘要复用，不重新打包。
+- 晋级初轮 41574320874 / a13e601 在新脚本的两处 lint 失败；按实际日志修正全局对象引用和恰好两个空格的正则写法，未修改规则或放宽断言，失败时尚未上传资产。最终 41574574680 / 84331bc 完整 check 退出 0（Linux 单元 105 通过、1 项现有 Mac 原生专属跳过），源码冻结、原工件及服务端 9 项资产摘要核对后公开，标签固定指向经过 Mac 验证的 1db8aa8。
+- Release 432247054 于 2026-11-03T03:51:35Z 公开为预发布。手动下载使用 Studio DMG / ZIP，自动更新保留 Profiles 根目录兼容 ZIP；各自大小与摘要分别记录，避免混用。
+- 用户确认仅更新现有 chatgpt-studio 项目及 chatgpt.xincreates.com；Cloudflare 旧 chatgpt-profiles 项目返回不存在，不重建。site-legacy 只保留历史规则和同源清单，不宣称旧站已经部署。
+- 站点源码 35f6036：最终干净部署 chatgpt-studio / ed023ed2-0176-47b6-ba55-6cfa424bd53a 已回读为 Production / main。初次 exFAT 上传包含附属文件，随后改用仅含 17 个跟踪文件的 APFS 暂存重新部署；正式站不沿用附属文件。既有域名绑定保持不变。
+- 官网双域的三个下载卡片、alpha.23 里程碑与现用 Mac feed 均核对源码，Mac feed 直接 200 / no-store，Windows feed / JS / CSS 保持原内容；共 7 项 HTTP 核对和 5 项 GitHub / 加速入口范围请求通过。范围请求核对总大小与前 32 字节，不宣称全量代理文件重新计算摘要。发布记录集中于 docs/releases/3.0.0-alpha.23-publication.json；浏览器未验证，真实账号流程继续待人工验收。
