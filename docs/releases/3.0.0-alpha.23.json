@@ -1,0 +1,75 @@
+{
+  "schema": 1,
+  "product": "ChatGPT Studio",
+  "version": "3.0.0-alpha.23",
+  "status": "validated-candidate-awaiting-publication",
+  "sourceCommit": "1db8aa817971ae161737a99dff8f4a5ee1b7ab9a",
+  "runs": {
+    "macos": 41493373060
+  },
+  "artifactID": 13166043620,
+  "artifactName": "macos-local-candidate-1db8aa817971ae161737a99dff8f4a5ee1b7ab9a",
+  "architecture": "arm64",
+  "bundleID": "com.forcemind.chatgpt.profiles",
+  "signing": "ad-hoc; not notarized",
+  "verification": {
+    "checkExitCode": 0,
+    "unitTests": {
+      "passed": 106,
+      "failed": 0
+    },
+    "e2e": {
+      "passed": 37,
+      "skippedWindowsOnly": 5,
+      "failed": 0
+    },
+    "runURL": "https://github.com/ForceMind/ChatGPT/actions/runs/41493373060",
+    "realAccounts": "not automatically tested; synthetic pages only"
+  },
+  "artifacts": [
+    {
+      "file": "ChatGPT-Profiles-3.0.0-alpha.23-mac-arm64.zip",
+      "bytes": 155183045,
+      "sha256": "84270d37471595e1da6cb4995169a4435d68d0ab7061d3976c1afe465a39f8dc",
+      "platform": "macos"
+    },
+    {
+      "file": "ChatGPT-Studio-3.0.0-alpha.23-mac-arm64.dmg",
+      "bytes": 155112864,
+      "sha256": "21294081a83363a024807512da9337ae6985370c47b8a110cb1e3d9dbfff909c",
+      "platform": "macos"
+    },
+    {
+      "file": "ChatGPT-Studio-3.0.0-alpha.23-mac-arm64.dmg.blockmap",
+      "bytes": 163109,
+      "sha256": "528fde4372323a0638ca8ad34c43880c4ba1200b9173ab72caaf9ad3ec82989f",
+      "platform": "macos"
+    },
+    {
+      "file": "ChatGPT-Studio-3.0.0-alpha.23-mac-arm64.zip",
+      "bytes": 155067729,
+      "sha256": "8d2a1a92e7cd57fecfe6fa2fb33b60d0edc76c526f39e90597abf1fa3882979f",
+      "platform": "macos"
+    },
+    {
+      "file": "ChatGPT-Studio-3.0.0-alpha.23-mac-arm64.zip.blockmap",
+      "bytes": 162448,
+      "sha256": "1490d2c22a85ca9cdee8d645441fee4bb4eb9286c3e6173850b608bd0581e652",
+      "platform": "macos"
+    }
+  ],
+  "otherPublicPlatforms": {
+    "windows": "3.0.0-alpha.21",
+    "android": "3.0.0-alpha.22"
+  },
+  "releaseNotes": "docs/releases/3.0.0-alpha.23-notes.md",
+  "preserved": [
+    "Existing account and recovery identity and directories",
+    "Live tab instances on switch and background retention strategy"
+  ],
+  "limitations": [
+    "Full native App update requires restart; no delta update",
+    "No stable reduction in full-streaming CPU has been proven",
+    "Real ChatGPT account workflows remain manual acceptance"
+  ]
+}

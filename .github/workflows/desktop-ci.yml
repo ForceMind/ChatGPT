@@ -14,14 +14,18 @@ on:
         description: Validate and package an ad-hoc arm64 macOS candidate for local installation; no publication
         type: boolean
         default: false
+      promote_release:
+        description: Publish the verified alpha.23 original macOS candidate artifacts without repackaging
+        type: boolean
+        default: false
 permissions:
   contents: read
 concurrency:
-  group: desktop-ci-${{ github.ref }}-${{ github.event_name == 'workflow_dispatch' && inputs.cpu_validation && inputs.candidate_package && 'invalid' || github.event_name == 'workflow_dispatch' && inputs.candidate_package && 'package' || github.event_name == 'workflow_dispatch' && inputs.cpu_validation && 'cpu' || 'checks' }}
-  cancel-in-progress: true
+  group: desktop-ci-${{ github.ref }}-${{ github.event_name == 'workflow_dispatch' && ((inputs.cpu_validation && inputs.candidate_package) || (inputs.promote_release && (inputs.cpu_validation || inputs.candidate_package))) && 'invalid' || github.event_name == 'workflow_dispatch' && inputs.promote_release && 'promotion' || github.event_name == 'workflow_dispatch' && inputs.candidate_package && 'package' || github.event_name == 'workflow_dispatch' && inputs.cpu_validation && 'cpu' || 'checks' }}
+  cancel-in-progress: ${{ !(github.event_name == 'workflow_dispatch' && inputs.promote_release) }}
 jobs:
   check:
-    if: github.event_name != 'workflow_dispatch' || (!inputs.cpu_validation && !inputs.candidate_package)
+    if: github.event_name != 'workflow_dispatch' || (!inputs.cpu_validation && !inputs.candidate_package && !inputs.promote_release)
     name: Typecheck, lint, format and unit tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -46,7 +50,7 @@ jobs:
       - name: Unit tests
         run: npm test
   build:
-    if: github.event_name != 'workflow_dispatch' || (!inputs.cpu_validation && !inputs.candidate_package)
+    if: github.event_name != 'workflow_dispatch' || (!inputs.cpu_validation && !inputs.candidate_package && !inputs.promote_release)
     name: Build on macOS
     runs-on: macos-15
     timeout-minutes: 20
@@ -65,7 +69,7 @@ jobs:
       - name: Build main process, native helpers and renderer
         run: npm run build
   cpu-validation:
-    if: github.event_name == 'workflow_dispatch' && inputs.cpu_validation && !inputs.candidate_package
+    if: github.event_name == 'workflow_dispatch' && inputs.cpu_validation && !inputs.candidate_package && !inputs.promote_release
     name: Native macOS CPU comparison and background retention
     runs-on: macos-15
     timeout-minutes: 120
@@ -149,16 +153,16 @@ jobs:
             desktop/test-results/
             desktop/playwright-report/
   invalid-manual-inputs:
-    if: github.event_name == 'workflow_dispatch' && inputs.cpu_validation && inputs.candidate_package
+    if: github.event_name == 'workflow_dispatch' && ((inputs.cpu_validation && inputs.candidate_package) || (inputs.promote_release && (inputs.cpu_validation || inputs.candidate_package)))
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
       - name: Reject mutually exclusive validation modes
         run: |
-          echo '::error::Select only one of cpu_validation or candidate_package.'
+          echo '::error::Select only one of cpu_validation, candidate_package or promote_release.'
           exit 1
   candidate-package:
-    if: github.event_name == 'workflow_dispatch' && inputs.candidate_package && !inputs.cpu_validation
+    if: github.event_name == 'workflow_dispatch' && inputs.candidate_package && !inputs.cpu_validation && !inputs.promote_release
     name: Validate and package local macOS arm64 candidate
     runs-on: macos-15
     timeout-minutes: 60
@@ -287,3 +291,52 @@ jobs:
             desktop/release/SHA256SUMS
             desktop/test-results/
             desktop/playwright-report/
+  promote-release:
+    if: github.event_name == 'workflow_dispatch' && inputs.promote_release && !inputs.cpu_validation && !inputs.candidate_package
+    name: Promote verified original alpha.23 macOS artifacts
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: write
+      actions: read
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '26.7.0'
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - name: Prepare promotion evidence and locked validation dependencies
+        run: |
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          mkdir -p promotion
+          npm ci --ignore-scripts --prefix desktop
+      - name: Complete checks without creating new installation packages
+        working-directory: desktop
+        run: npm run check 2>&1 | tee "$GITHUB_WORKSPACE/promotion/check.log"
+      - uses: actions/download-artifact@v4
+        with:
+          artifact-ids: '13166043620'
+          github-token: ${{ github.token }}
+          run-id: '41493373060'
+          path: promotion/original
+          merge-multiple: true
+      - name: Verify immutable original candidate assets and publish the draft via REST
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PROMOTE_RELEASE: 'true'
+        run: node desktop/scripts/publish-macos-candidate.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: macos-alpha23-promotion-verification-${{ github.sha }}
+          retention-days: 14
+          path: |
+            promotion/verification.json
+            promotion/check.log
+            promotion/SHA256SUMS.txt
