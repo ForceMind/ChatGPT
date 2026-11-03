@@ -15,7 +15,10 @@ while text.strip():
  value,n=decoder.raw_decode(text.lstrip());text=text.lstrip()[n:];path=value.get('Dir')
  if not path:continue
  source=pathlib.Path(path)
- if not source.is_dir():raise RuntimeError('Missing dependency source licenses: '+value['Path'])
+ if not source.is_dir():
+  cached=list((root/'licenses').glob(value['Path'].replace('/','_')+'_*'))
+  if not cached:raise RuntimeError('Missing dependency source licenses: '+value['Path'])
+  copied+=len(cached);continue
  for f in source.iterdir():
   if f.is_file() and f.name.lower().startswith(('license','copying','notice')):
    (root/'licenses'/(value['Path'].replace('/','_')+'_'+f.name)).write_bytes(f.read_bytes());copied+=1

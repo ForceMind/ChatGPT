@@ -27,15 +27,17 @@ final class NetworkSession {
     private final Map<String, Long> epochs = new LinkedHashMap<>();
     private final Runnable observer;
     private NetworkSettingsStore.Data settings = new NetworkSettingsStore.Data();
-    private volatile boolean changing = true, closed, unreadable;
+    private volatile boolean changing = true, saving, closed, unreadable;
     private boolean booted;
+    private volatile boolean fileStagingReady = true;
     NetworkSession(Context context, Runnable observer) {
         this.context = context.getApplicationContext(); this.observer = observer;
         store = new NetworkSettingsStore(this.context);
         routes.setStateListener(snapshot -> notifyChanged());
         settingsIO.execute(() -> {
             try {
-                NetworkDownload.clearPreviousProcessParts(this.context);
+                try { NetworkDownload.clearPreviousProcessParts(this.context); }
+                catch (Exception cleanup) { fileStagingReady = false; }
                 NetworkSettingsStore.Data value = store.read();
                 main.post(() -> {
                     if (closed) return;
@@ -87,25 +89,25 @@ final class NetworkSession {
         else routes.useSystem(done);
     }
     private boolean canChange(NetworkRoute.Listener listener) {
-        if (closed || !booted || changing) { listener.complete(false, "网络正在准备，请稍候"); return false; }
+        if (closed || !booted || changing || saving) { listener.complete(false, "网络正在准备，请稍候"); return false; }
         if (busy() || routes.activeTransfers() != 0 || HandoffRuntime.networkBusy()) { listener.complete(false, "文件任务进行中，请完成或取消后再更改网络"); return false; }
         return true;
     }
     private void save(NetworkSettingsStore.Data value, boolean reconnect, NetworkRoute.Listener listener) {
         if (!canChange(listener)) return;
         if (unreadable) { listener.complete(false, "原线路配置已保留，请先恢复配置；本次可使用系统网络"); return; }
-        changing = true; notifyChanged();
+        saving = true; if (reconnect) changing = true; notifyChanged();
         settingsIO.execute(() -> {
             try {
                 store.write(value);
                 main.post(() -> {
                     if (closed) return;
-                    settings = value;
+                    settings = value; saving = false;
                     if (reconnect) apply(value, listener);
                     else { changing = false; notifyChanged(); listener.complete(true, "线路已保存"); }
                 });
             } catch (Exception failure) {
-                main.post(() -> { if (!closed) { changing = false; notifyChanged(); listener.complete(false, "线路配置保存失败，原配置和当前网络保持不变"); } });
+                main.post(() -> { if (!closed) { changing = false; saving = false; notifyChanged(); listener.complete(false, "线路配置保存失败，原配置和当前网络保持不变"); } });
             }
         });
     }
@@ -145,6 +147,7 @@ final class NetworkSession {
     }
     FileJob begin(WebView web, String accountId) throws Exception {
         if (Looper.myLooper() != main.getLooper()) throw new IllegalStateException("File ownership must be captured on UI thread");
+        if (!fileStagingReady) throw new IllegalStateException("下载暂存暂不可用，未改动账号或恢复数据");
         if (!ready()) throw new IllegalStateException("网络尚未就绪，请先选择线路或使用系统网络");
         WorkspaceState.Account account = WorkspaceFiles.read(context.getFilesDir()).find(accountId);
         if (!WorkspaceState.profile(account.storageId).equals(WebViewCompat.getProfile(web).getName())) throw new IllegalStateException("文件账号已改变，请重新发起");

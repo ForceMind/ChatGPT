@@ -23,6 +23,13 @@ jobs:
       - uses: android-actions/setup-android@v3
         with:
           packages: platform-tools
+      - uses: actions/cache@v4
+        with:
+          path: |
+            android/network-poc/app/libs/
+            android/network-poc/corebridge/bin/
+            android/app/libs/licenses/
+          key: formal-network-core-go1273-ndk282-${{ hashFiles('android/network-poc/corebridge/go.mod', 'android/network-poc/corebridge/go.sum', 'android/network-poc/corebridge/networkcore.go', 'android/network-poc/scripts/build-core.sh', 'android/scripts/prepare-network-core.sh') }}
       - name: Build the exact validated core
         run: bash android/scripts/prepare-network-core.sh
       - name: Prepare owned synthetic trust
@@ -52,3 +59,82 @@ jobs:
           name: formal-network-fixture
           retention-days: 1
           path: android/network-poc/secure-fixture/
+      - name: Prepare pinned Android 9 WebView
+        run: python3 android/network-poc/scripts/prepare-webview.py --output android/network-poc/webview-fixture
+      - uses: actions/upload-artifact@v4
+        with:
+          name: formal-network-provider
+          retention-days: 14
+          path: android/network-poc/webview-fixture/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: formal-network-host-core
+          retention-days: 14
+          path: android/network-poc/corebridge/bin/xray
+  device:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [28, 35]
+        transport: [raw, tls, reality]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: formal-network-build
+          path: android/app
+      - uses: actions/download-artifact@v4
+        with:
+          name: formal-network-fixture
+          path: android/network-poc/secure-fixture
+      - uses: actions/download-artifact@v4
+        with:
+          name: formal-network-host-core
+          path: android/network-poc/corebridge/bin
+      - uses: actions/download-artifact@v4
+        if: matrix.api == 28
+        with:
+          name: formal-network-provider
+          path: android/network-poc/webview-fixture
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - name: Start owned fixtures
+        run: |
+          chmod +x android/network-poc/corebridge/bin/xray
+          python3 android/network-poc/scripts/fixture.py --core android/network-poc/corebridge/bin/xray --output android/network-poc/secure-fixture > "$RUNNER_TEMP/formal-network-fixture.log" 2>&1 &
+          for attempt in $(seq 1 40); do
+            if [ -f android/network-poc/secure-fixture/ready.json ]; then break; fi
+            sleep 1
+          done
+          test -f android/network-poc/secure-fixture/ready.json
+          test -c /dev/kvm
+          sudo chmod a+rw /dev/kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          target: ${{ matrix.api == 28 && 'default' || 'google_apis' }}
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -writable-system
+          script: |
+            if [ '${{ matrix.api }}' = 28 ]; then python3 android/network-poc/scripts/install-webview.py --provider android/network-poc/webview-fixture --output android/app/build/network-evidence/provider; fi
+            adb install -r -t android/app/build/outputs/apk/networkCi/app-networkCi.apk
+            adb install -r -t android/app/build/outputs/apk/androidTest/networkCi/app-networkCi-androidTest.apk
+            python3 android/scripts/run-network-integration.py --transport '${{ matrix.transport }}' --output android/app/build/network-evidence
+      - name: Preserve evidence without image capture
+        if: always()
+        run: |
+          mkdir -p android/app/build/network-evidence
+          timeout 15 adb logcat -d -t 5000 > android/app/build/network-evidence/logcat.txt 2>&1 || true
+          cp "$RUNNER_TEMP/formal-network-fixture.log" android/app/build/network-evidence/fixture.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: formal-network-api-${{ matrix.api }}-${{ matrix.transport }}
+          retention-days: 14
+          path: android/app/build/network-evidence/

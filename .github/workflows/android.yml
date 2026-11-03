@@ -127,6 +127,13 @@ jobs:
         with:
           go-version: '1.27.3'
           cache: false
+      - uses: actions/cache@v4
+        with:
+          path: |
+            android/network-poc/app/libs/
+            android/network-poc/corebridge/bin/
+            android/app/libs/licenses/
+          key: formal-network-core-go1273-ndk282-${{ hashFiles('android/network-poc/corebridge/go.mod', 'android/network-poc/corebridge/go.sum', 'android/network-poc/corebridge/networkcore.go', 'android/network-poc/scripts/build-core.sh', 'android/scripts/prepare-network-core.sh') }}
       - name: Prepare fixed embedded network core
         run: bash android/scripts/prepare-network-core.sh
       - name: Verify and build
@@ -173,6 +180,13 @@ jobs:
         with:
           go-version: '1.27.3'
           cache: false
+      - uses: actions/cache@v4
+        with:
+          path: |
+            android/network-poc/app/libs/
+            android/network-poc/corebridge/bin/
+            android/app/libs/licenses/
+          key: formal-network-core-go1273-ndk282-${{ hashFiles('android/network-poc/corebridge/go.mod', 'android/network-poc/corebridge/go.sum', 'android/network-poc/corebridge/networkcore.go', 'android/network-poc/scripts/build-core.sh', 'android/scripts/prepare-network-core.sh') }}
       - name: Prepare fixed embedded network core
         run: bash android/scripts/prepare-network-core.sh
       - name: Enable emulator acceleration
@@ -354,6 +368,13 @@ jobs:
         with:
           go-version: '1.27.3'
           cache: false
+      - uses: actions/cache@v4
+        with:
+          path: |
+            android/network-poc/app/libs/
+            android/network-poc/corebridge/bin/
+            android/app/libs/licenses/
+          key: formal-network-core-go1273-ndk282-${{ hashFiles('android/network-poc/corebridge/go.mod', 'android/network-poc/corebridge/go.sum', 'android/network-poc/corebridge/networkcore.go', 'android/network-poc/scripts/build-core.sh', 'android/scripts/prepare-network-core.sh') }}
       - name: Prepare fixed embedded network core
         run: bash android/scripts/prepare-network-core.sh
       - name: Build isolated debug application

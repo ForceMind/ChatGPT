@@ -196,6 +196,7 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
     }
     void recoveryHideSnapshot(WebView web){if(snapshotOwner!=web)return;OfflineSnapshotView old=offlineSnapshot;offlineSnapshot=null;snapshotOwner=null;if(old!=null)browserArea.removeView(old);if(web!=null)selectPage(web,currentWeb()==web);}
     boolean recoveryCanCapturePicture(WebView web){
+        if(BuildConfig.NETWORK_TEST)return false; // Authorized CI contains no image capture.
         if(!ready||fatal||!resumed||isFinishing()||isDestroyed()||keyboardVisible||overview!=null||offlineSnapshot!=null||undoBar!=null||currentWeb()!=web||!web.isShown()||web.getAlpha()<0.99f)return false;
         View decor=getWindow().peekDecorView();if(decor==null||!decor.hasWindowFocus())return false;Rect visible=new Rect();return web.getGlobalVisibleRect(visible)&&visible.width()==web.getWidth()&&visible.height()==web.getHeight();
     }
@@ -392,7 +393,6 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
         List<String> ids=new ArrayList<>();for(WorkspaceState.Tab t:state.find(id).tabs)ids.add(t.id);
         for(WorkspaceState.Tab t:state.find(id).closedTabs)ids.add(t.id);
         memory.network().invalidateAccount(id);
-        if(assetDownloads!=null)assetDownloads.cancel(id);
         try{if(recovery!=null)recovery.clear(id,state.find(id).storageId);else new PageRecoveryStore(getFilesDir(),DevicePayloadKeys.recoveryCipher(getApplicationContext())).clear(id,state.find(id).storageId);store.revoke(state.find(id).storageId);}catch(Exception e){fail("无法保护账号清除记录",e);return;}
         cancelRequests();for(String tabId:ids)destroyView(tabId);
         if(change(s->{if(remove)s.removeAccount(s.find(id));else s.clearAccount(s.find(id));}))showCurrent();

@@ -109,6 +109,9 @@ if (project.hasProperty('networkIntegration')) {
             def ca = new File(root, 'res/raw/studio_network_ci_ca.pem'); ca.parentFile.mkdirs(); ca.text = pem
         }
     }
+    android.sourceSets.networkCi.java.srcDir('src/debug/java')
+    android.sourceSets.networkCi.assets.srcDir('src/debug/assets')
+    android.sourceSets.networkCi.res.srcDir('src/debug/res')
     android.sourceSets.networkCi.java.srcDir(generated.map { it.dir('java') })
     android.sourceSets.networkCi.res.srcDir(generated.map { it.dir('res') })
     tasks.matching { it.name == 'preNetworkCiBuild' }.configureEach { dependsOn 'prepareNetworkCiTrust' }
