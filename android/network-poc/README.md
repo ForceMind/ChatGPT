@@ -72,3 +72,15 @@ CI 使用两条自有临时 VLESS 线路和本地回显服务，检查网页、�
 核心停止后自动显示“连接失败 · 请手动重连”，阻止主页面和弹窗的新网络请求，保留当前网页与草稿；不静默直连、不自动重启、刷新或重发。旧线路检查结果在切路或关闭后失效。八组协议 / 原站组合各通过三项 instrumentation，保留原两项路由与存储检查；合成前台实际检测为 992–1762 ms。真实 Home / 返回保留原 Activity 和文档；关闭后至少 4.5 秒的观察未发生旧完成回调，未声称测量了精确调度次数。
 
 Java 单元 10 项、驱动契约单元 5 项、Go 生命周期 / 传输及原有六组资源回归通过。首轮 Android 15 / REALITY 的初始网络前置失败已保留；同源码单组重跑通过，具体环境原因未确定，没有放宽断言。详见 [结果与边界](../../docs/benchmarks/android-network-core-health.json) 和 [独立 arm64 候选](https://github.com/ForceMind/ChatGPT/actions/runs/41604827606/artifacts/13217025632)。仅是独立实验签名包，不覆盖正式客户端，不导入现有登录；真机 / OEM、真实服务、JNI 进程崩溃和新增长时间后台验证均不在本批范围。
+
+## 在途文件故障收口（2026-11-03）
+
+源码 `254685a` 的 [Actions 41636997369](https://github.com/ForceMind/ChatGPT/actions/runs/41636997369) 十个必要作业通过。六组 Android 9 / 15 RAW / TLS / REALITY 回归包含八个 HTTP / HTTPS 路由套件，每套保留原三项并增加在途文件一项，共 32 次 instrumentation 执行；96 个受控业务操作各一次，16 个关闭后请求在发起前被拒绝。Java 单元 10 项、合成服务 13 项、驱动契约 7 项和四个 Go 在途子场景均通过。
+
+本轮实际发现并修复两处问题：下载器关闭后仍可能发起同步请求 / 无法主动关闭同步上传；核心 `Close` 只关监听而没有取消已接受流。现在下载器有 terminal guard 和在途连接追踪，已尝试发送但没有完整成功回应的原生上传标为 `RequestFailure.outcomeUncertain`；包装层持有可取消根上下文，停止时先取消再关闭。保留原 20 秒读超时、网页 25 秒断言，未用测试 Abort 或页面重载制造通过。
+
+下载必须实际读到 4096 字节、服务端尚扣留其余响应时才注入故障；失败无成功回调、残片集合回到基线、传输计数归零。上传先由原站完整接收并记一次处理、再扣留 ACK，故障后客户端终结为错误 / 不明，重连不会重发旧操作；显式新操作才能继续。取消后可复用同一下载器，关闭后新实例可接替，原文档和草稿保留，每操作回调 / 完成记录一次。
+
+本批原生终结观测为核心停止 1–19 ms、取消 1–5 ms、关闭 1–6 ms，仅是合成样本，不是 UI 提示时限或性能收益。初轮因流未取消失败、次轮因首次 DIRECT 页面 `ERR_ADDRESS_UNREACHABLE` 失败的记录均保留；最终在启动 Activity 前用 15 秒有界 owned GET 验证可达，不附 Cookie、不发业务体、不增加网页重载，原全部断言保留。
+
+完整 [计数与边界](../../docs/benchmarks/android-network-transfer-faults.json) 及 [当前独立 arm64 候选](https://github.com/ForceMind/ChatGPT/actions/runs/41636997369/artifacts/13231850662) 可查看。候选仍是 0.1.0 实验通道，以 source SHA 区分，不是正式升级包；没有本机构建、下载或安装 APK。按批准顺序形成的 [正式接入建议](../../docs/android-network-integration-plan.md) 只是一份待确认设计，未修改正式 App、登录 / 恢复数据、签名、main、官网、公开 Release 或工作流。
