@@ -21,3 +21,6 @@ android/release/
 .wrangler/
 __pycache__/
 .codex-attachments/
+
+# Generated only by the pinned Actions network-core build.
+android/app/libs/

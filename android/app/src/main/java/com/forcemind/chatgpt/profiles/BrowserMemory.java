@@ -25,6 +25,12 @@ final class BrowserMemory {
     PageRecoveryManager recovery;
     AssetDownloads assetDownloads;
     DownloadHelper downloads;
+    private volatile NetworkSession network;
+    NetworkSession network() { if (network == null) network = new NetworkSession(context, this::networkChanged); return network; }
+    boolean networkReady() { NetworkSession value = network; return value != null && value.ready(); }
+    String accountOf(WebView web) { for (Map.Entry<String,WebView> entry : views.entrySet()) if (entry.getValue() == web) return accounts.get(entry.getKey()); throw new IllegalStateException("文件页面已关闭"); }
+    void networkChanged() { if (network == null) return; for (WebView view : new ArrayList<>(views.values())) view.getSettings().setBlockNetworkLoads(!network.ready()); MainActivity activity = owner(); if (activity != null) activity.networkChanged(); }
+
     private WeakReference<MainActivity> owner=new WeakReference<>(null);
     private final Set<android.app.Activity> visibleActivities=Collections.newSetFromMap(new WeakHashMap<>());
     private final Runnable recentPruner=this::pruneRecent;
@@ -48,7 +54,7 @@ final class BrowserMemory {
     void attach(MainActivity activity){owner=new WeakReference<>(activity);if(recovery!=null)recovery.attach(activity);if(downloads!=null)downloads.attach(activity);}
     boolean retainsExecution(){return !visibleActivities.isEmpty()||KeepaliveService.running();}
     void refreshExecutionPolicy(){boolean retain=retainsExecution();for(Map.Entry<String,WebView> entry:new ArrayList<>(views.entrySet()))if(entry.getValue() instanceof RetainedWebView)((RetainedWebView)entry.getValue()).retainExecution(retain&&!recentClosed.containsKey(entry.getKey()));}
-    void register(String tab,String account,String storageId,WebView web){views.put(tab,web);accounts.put(tab,account);storage.put(tab,storageId);epochs.putIfAbsent(tab,0L);if(web instanceof RetainedWebView)((RetainedWebView)web).retainExecution(retainsExecution());}
+    void register(String tab,String account,String storageId,WebView web){views.put(tab,web);accounts.put(tab,account);storage.put(tab,storageId);epochs.putIfAbsent(tab,0L);web.getSettings().setBlockNetworkLoads(!network().ready());if(web instanceof RetainedWebView)((RetainedWebView)web).retainExecution(retainsExecution());}
     void detach(MainActivity activity){
         if(owner()!=activity)return;owner.clear();if(recovery!=null)recovery.attach(null);if(downloads!=null)downloads.attach(null);
         for(Map.Entry<String,WebView> entry:new ArrayList<>(views.entrySet())){
@@ -62,7 +68,7 @@ final class BrowserMemory {
                 @Override public void onPageFinished(WebView view,String url){remember(account,tab,url,null);}
                 @Override public void doUpdateVisitedHistory(WebView view,String url,boolean reload){remember(account,tab,url,null);}
                 @Override public boolean shouldOverrideUrlLoading(WebView view,WebResourceRequest request){return !NavigationPolicy.internal(request.getUrl().toString());}
-                @Override public WebResourceResponse shouldInterceptRequest(WebView view,WebResourceRequest request){return BuildConfig.DEBUG&&MainActivity.handoffFixture!=null?MainActivity.handoffFixture.response(account,request):null;}
+                @Override public WebResourceResponse shouldInterceptRequest(WebView view,WebResourceRequest request){if(!networkReady())return new WebResourceResponse("text/plain","UTF-8",503,"Network unavailable",java.util.Collections.emptyMap(),new java.io.ByteArrayInputStream(new byte[0]));return BuildConfig.DEBUG&&MainActivity.handoffFixture!=null?MainActivity.handoffFixture.response(account,request):null;}
                 @Override public boolean onRenderProcessGone(WebView view,RenderProcessGoneDetail detail){diagnostics.event(detail.didCrash()?"renderer-crash":"renderer-reclaimed",account,tab,"priority:"+detail.rendererPriorityAtExit());destroy(tab);return true;}
                 @Override public void onReceivedSslError(WebView view,SslErrorHandler handler,android.net.http.SslError error){handler.cancel();diagnostics.event("ssl-error",account,tab,null);}
             });
@@ -82,7 +88,7 @@ final class BrowserMemory {
         if(!recentClosed.isEmpty())handler.postDelayed(recentPruner,Math.max(1,Collections.min(recentClosed.values())-now));
     }
     void clear(){
-        handler.removeCallbacks(recentPruner);if(recovery!=null){recovery.close();recovery=null;}
+        if(network!=null){network.close();network=null;}handler.removeCallbacks(recentPruner);if(recovery!=null){recovery.close();recovery=null;}
         for(String id:new ArrayList<>(views.keySet()))destroy(id);
         if(assetDownloads!=null){assetDownloads.close();assetDownloads=null;}if(downloads!=null){downloads.close();downloads=null;}owner.clear();
     }

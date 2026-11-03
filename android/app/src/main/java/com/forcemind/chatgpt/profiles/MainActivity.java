@@ -90,6 +90,8 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
     private String mediaOwner;
     private boolean ready, fatal;
     private boolean resumed;
+    private LinearLayout networkNotice;
+    private TextView networkNoticeText;
     private Map<String,Long> pageEpochs=new HashMap<>();
     private HandoffRuntime handoffs;
     private PageRecoveryManager recovery;
@@ -105,7 +107,7 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
     @Override public void onCreate(Bundle bundle) {
         super.onCreate(bundle);
         WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG);
-        memory=BrowserMemory.get(this);views=memory.views;popupOwners=memory.popupOwners;pageEpochs=memory.epochs;recentClosed=memory.recentClosed;memory.attach(this);assetDownloads=memory.assetDownloads;downloadHelper=memory.downloads;
+        memory=BrowserMemory.get(this);views=memory.views;popupOwners=memory.popupOwners;pageEpochs=memory.epochs;recentClosed=memory.recentClosed;memory.attach(this);memory.network();assetDownloads=memory.assetDownloads;downloadHelper=memory.downloads;
         buildLayout();
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override public void handleOnBackPressed() { navigateBack(); }
@@ -141,6 +143,8 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
             return insets;
         });
         header=new LinearLayout(this);header.setGravity(Gravity.CENTER_VERTICAL);header.setPadding(dp(10),dp(6),dp(8),dp(6));header.setMinimumHeight(dp(56));header.setBackgroundColor(Color.WHITE);root.addView(header,new LinearLayout.LayoutParams(-1,-2));
+        networkNotice=new LinearLayout(this);networkNotice.setGravity(Gravity.CENTER_VERTICAL);networkNotice.setPadding(dp(12),dp(4),dp(8),dp(4));networkNotice.setBackgroundColor(GRAY);networkNotice.setVisibility(View.GONE);
+        networkNoticeText=text("",13);networkNotice.addView(networkNoticeText,new LinearLayout.LayoutParams(0,-2,1));TextView networkAction=button("网络","查看网络设置");networkAction.setOnClickListener(v->NetworkSheet.show(this,memory.network()));networkNotice.addView(networkAction);root.addView(networkNotice,new LinearLayout.LayoutParams(-1,-2));
         progress=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);progress.setProgressTintList(android.content.res.ColorStateList.valueOf(INK));progress.setVisibility(View.INVISIBLE);root.addView(progress,new LinearLayout.LayoutParams(-1,dp(2)));
         taskBanner=new LinearLayout(this);taskBanner.setGravity(Gravity.CENTER_VERTICAL);taskBanner.setBackgroundColor(GRAY);taskBanner.setVisibility(View.GONE);root.addView(taskBanner,new LinearLayout.LayoutParams(-1,-2));taskText=text("",12);taskText.setMaxLines(3);taskText.setPadding(dp(10),dp(6),dp(6),dp(6));taskBanner.addView(taskText,new LinearLayout.LayoutParams(0,-2,1));taskAction=button("停止","停止自动任务");taskBanner.addView(taskAction,new LinearLayout.LayoutParams(-2,StudioTypography.controlHeight(this)));TextView details=button("任务","查看网页任务");taskBanner.addView(details,new LinearLayout.LayoutParams(-2,StudioTypography.controlHeight(this)));details.setOnClickListener(v->showHandoffHistory());taskAction.setOnClickListener(v->{if(bannerJob==null)return;if(HandoffStore.active(bannerJob.optString("status")))try{handoffs.cancel(bannerJob.optString("id"),state.activeAccount);}catch(Exception e){toast("无法停止任务，请查看任务记录");}else taskBanner.setVisibility(View.GONE);});
         browserArea=new FrameLayout(this);root.addView(browserArea,new LinearLayout.LayoutParams(-1,0,1));content=new FrameLayout(this);browserArea.addView(content,new FrameLayout.LayoutParams(-1,-1));
@@ -165,10 +169,17 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
         if(!ready||fatal)return;if(recovery!=null)recovery.checkpointVisible();if(snapshotOwner!=null)recoveryHideSnapshot(snapshotOwner);cancelRequests();renderHeader();WorkspaceState.Account account=state.current();WorkspaceState.Tab tab=account.current();recentClosed.remove(tab.id);pruneRecent();
         try{
             for(Map.Entry<String,WebView> held:views.entrySet())selectPage(held.getValue(),held.getKey().equals(tab.id));memory.refreshExecutionPolicy();WebView web=views.get(tab.id);boolean created=web==null;
+            if(created&&!memory.network().ready()){networkChanged();return;}
             if(created){web=makeWebView(account.id,tab.id,account.storageId);WebView fresh=web;String address=tab.url;if(recovery!=null)recovery.prepare(fresh,address,()->fresh.loadUrl(address));else fresh.loadUrl(address);}
             for(WorkspaceState.Account a:state.accounts)for(WorkspaceState.Tab t:a.tabs){WebView existing=views.get(t.id);if(existing==null)continue;if(existing.getParent()!=content){if(existing.getParent() instanceof ViewGroup)((ViewGroup)existing.getParent()).removeView(existing);content.addView(existing,new FrameLayout.LayoutParams(-1,-1));}selectPage(existing,t.id.equals(tab.id));}
             web.bringToFront();if(overview==null&&offlineSnapshot==null)web.requestFocus();web.onResume();if(recovery!=null){if(!created&&web.getProgress()==100)recovery.ready(web);recovery.visible();}if(overview!=null)overview.refresh();
         }catch(Exception e){fail("标签页暂时无法打开",e);}
+    }
+    void networkChanged(){
+        if(memory==null||memory.owner()!=this||networkNotice==null)return;
+        NetworkSession network=memory.network();boolean waiting=!network.ready();networkNotice.setVisibility(waiting?View.VISIBLE:View.GONE);networkNoticeText.setText(network.status()+" · 网页和草稿保留");
+        if(!waiting&&ready&&!fatal&&state!=null&&!views.containsKey(state.current().activeTab))showCurrent();
+        if(!waiting)drainHandoff();
     }
     private void selectPage(WebView web,boolean selected){if(web instanceof RetainedWebView){((RetainedWebView)web).blockInput(overview!=null||snapshotOwner==web);((RetainedWebView)web).selectPage(selected);}else web.setVisibility(selected?View.VISIBLE:View.INVISIBLE);}
 
@@ -246,7 +257,7 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
         web.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT,false);pageEpochs.putIfAbsent(tabId,0L);if(initial&&recovery!=null)recovery.bind(web,accountId,storageId,tabId);
         web.setWebViewClient(new WebViewClient() {
             @Override public void onPageStarted(WebView view,String url,android.graphics.Bitmap icon){pageEpochs.put(tabId,pageEpochs.getOrDefault(tabId,0L)+1);if(recovery!=null)recovery.navigating(view,url);memory.diagnostics.event("page-load",accountId,tabId,null);}
-            @Override public WebResourceResponse shouldInterceptRequest(WebView view,WebResourceRequest request){if(BuildConfig.DEBUG&&handoffFixture!=null)return handoffFixture.response(accountId,request);return null;}
+            @Override public WebResourceResponse shouldInterceptRequest(WebView view,WebResourceRequest request){if(!memory.networkReady())return new WebResourceResponse("text/plain","UTF-8",503,"Network unavailable",java.util.Collections.emptyMap(),new java.io.ByteArrayInputStream(new byte[0]));if(BuildConfig.DEBUG&&handoffFixture!=null)return handoffFixture.response(accountId,request);return null;}
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 String url = request.getUrl().toString();
                 if (!request.isForMainFrame()) return !NavigationPolicy.https(url);
@@ -283,7 +294,7 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
                 if (active(tabId)) { progress.setProgress(value); progress.setVisibility(value >= 100 ? View.INVISIBLE : View.VISIBLE); }
             }
             @Override public boolean onCreateWindow(WebView view, boolean dialog, boolean gesture, Message result) {
-                if (!gesture || !exists(accountId, tabId) || fatal) return false;
+                if (!gesture || !exists(accountId, tabId) || fatal || !memory.networkReady()) return false;
                 if (!change(s -> s.addTab(s.find(accountId)))) return false;
                 WorkspaceState.Account a = state.find(accountId); WorkspaceState.Tab popup = a.current();
                 try {
@@ -326,6 +337,7 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
         sheet.row("新建标签页","","plus",()->{sheet.dismiss();if(change(next->next.addTab(next.current())))showCurrent();});
         sheet.row("资产库","","folder",()->{sheet.dismiss();startActivity(new Intent(this,AssetWorkbenchActivity.class).putExtra(AssetWorkbenchActivity.ACCOUNT,state.activeAccount));});
         sheet.row("能力库","","spark",()->{sheet.dismiss();startActivity(new Intent(this,AssetWorkbenchActivity.class).putExtra(AssetWorkbenchActivity.ACCOUNT,state.activeAccount).putExtra("skills",true));});
+        sheet.row("网络",memory.network().status(),"",()->{sheet.dismiss();NetworkSheet.show(this,memory.network());});
         sheet.row("处理记录","","file",()->{sheet.dismiss();showHandoffHistory();});
         sheet.row("账号管理","","account",()->{sheet.dismiss();manageAccount();});sheet.show();
     }
@@ -379,6 +391,7 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
     private void finishAccountChange(String id,boolean remove) {
         List<String> ids=new ArrayList<>();for(WorkspaceState.Tab t:state.find(id).tabs)ids.add(t.id);
         for(WorkspaceState.Tab t:state.find(id).closedTabs)ids.add(t.id);
+        memory.network().invalidateAccount(id);
         if(assetDownloads!=null)assetDownloads.cancel(id);
         try{if(recovery!=null)recovery.clear(id,state.find(id).storageId);else new PageRecoveryStore(getFilesDir(),DevicePayloadKeys.recoveryCipher(getApplicationContext())).clear(id,state.find(id).storageId);store.revoke(state.find(id).storageId);}catch(Exception e){fail("无法保护账号清除记录",e);return;}
         cancelRequests();for(String tabId:ids)destroyView(tabId);
@@ -465,7 +478,6 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
     private void cancelRequests() {
         if (fileCallback != null) { fileCallback.onReceiveValue(null); fileCallback = null; fileOwner = null; }
         if (mediaRequest != null) { mediaRequest.deny(); mediaRequest = null; mediaOwner = null; }
-        if (downloadHelper != null) downloadHelper.cancelSelection();
     }
     private void navigateBack() {
         if(overview!=null){closeOverview();return;}
@@ -474,7 +486,7 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
         else if (ready && !fatal && popupOwners.containsKey(state.current().activeTab)) closeTab(state.activeAccount, state.current().activeTab);
         else moveTaskToBack(true);
     }
-    @Override protected void onResume(){super.onResume();resumed=true;if(memory!=null&&memory.owner()!=this&&ready){memory.attach(this);try{state=store.load();rebindLivePages();showCurrent();}catch(Exception e){fail("无法读取账号记录",e);}}for(WebView web:views.values())web.onResume();if(recovery!=null)recovery.resume();if(ready&&!fatal&&KeepaliveService.enabled(this)&&!KeepaliveService.running())enableKeepalive();drainHandoff();}
+    @Override protected void onResume(){super.onResume();resumed=true;if(memory!=null)memory.network().routes.recheckCoreState();if(memory!=null&&memory.owner()!=this&&ready){memory.attach(this);try{state=store.load();rebindLivePages();showCurrent();}catch(Exception e){fail("无法读取账号记录",e);}}for(WebView web:views.values())web.onResume();if(recovery!=null)recovery.resume();if(ready&&!fatal&&KeepaliveService.enabled(this)&&!KeepaliveService.running())enableKeepalive();drainHandoff();}
     @Override protected void onPause(){if(recovery!=null)recovery.pause();resumed=false;if(handoffs!=null&&handoffs.controller()!=null&&handoffs.controller().ownedBy(this))handoffs.controller().cancel("应用已离开前台，已停止自动发送；请检查目标对话");if(!KeepaliveService.running())for(WebView web:views.values())web.onPause();super.onPause();}
     @Override protected void onStop(){try{if(WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE))for(WebView web:views.values())WebViewCompat.getProfile(web).getCookieManager().flush();}catch(RuntimeException ignored){}super.onStop();}
     @Override protected void onSaveInstanceState(Bundle bundle){if(overview!=null){bundle.putBoolean("tabsOverview",true);bundle.putString("tabFilter",overview.filter());bundle.putString("tabQuery",overview.query());bundle.putInt("tabPosition",overview.position());}super.onSaveInstanceState(bundle);}
@@ -496,14 +508,14 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
         try{pendingJob=intent.getStringExtra("handoffJob");pendingJobToken=intent.getStringExtra("handoffToken");WorkspaceState.profile(pendingJob);WorkspaceState.profile(pendingJobToken);}catch(Exception e){pendingJob=null;pendingJobToken=null;toast("任务授权参数无效");}
         intent.removeExtra("handoffJob");intent.removeExtra("handoffToken");drainHandoff();
     }
-    private void drainHandoff(){if(!resumed||!ready||fatal||pendingJob==null)return;String id=pendingJob,token=pendingJobToken;pendingJob=null;pendingJobToken=null;try{handoffs=HandoffRuntime.get(this);handoffs.start(this,id,token);}catch(Exception e){toast("任务无法启动或已有任务正在运行，请查看任务记录");}}
+    private void drainHandoff(){if(!resumed||!ready||fatal||pendingJob==null||!memory.networkReady())return;String id=pendingJob,token=pendingJobToken;pendingJob=null;pendingJobToken=null;try{handoffs=HandoffRuntime.get(this);handoffs.start(this,id,token);}catch(Exception e){toast("任务无法启动或已有任务正在运行，请查看任务记录");}}
     @Override public HandoffController.Page open(JSONObject job)throws Exception{
         if(!resumed||!ready||fatal)throw new IllegalStateException("应用不可用");closeOverview();String target=job.getString("targetAccountId");
         if(!state.find(target).storageId.equals(job.getString("targetStorageId"))||!state.find(job.getString("sourceAccountId")).storageId.equals(job.getString("sourceStorageId")))throw new IllegalStateException("账号空间已改变");
         String[] tab=new String[1];if(!change(s->{s.activeAccount=target;tab[0]=s.addTab(s.find(target)).id;}))throw new IllegalStateException("无法创建标签页");showCurrent();WebView web=views.get(tab[0]);if(web==null)throw new IllegalStateException("目标标签不可用");return new HandoffController.Page(tab[0],web);
     }
     @Override public boolean valid(JSONObject job,HandoffController.Page page){
-        try{return resumed&&ready&&!fatal&&overview==null&&state.activeAccount.equals(job.getString("targetAccountId"))&&state.current().activeTab.equals(page.tab)&&views.get(page.tab)==page.web&&page.web.getParent()==content&&page.web.isShown()&&page.web.getAlpha()==1f&&page.web.isEnabled()&&state.find(job.getString("sourceAccountId")).storageId.equals(job.getString("sourceStorageId"))&&state.find(job.getString("targetAccountId")).storageId.equals(job.getString("targetStorageId"));}catch(Exception e){return false;}
+        try{return memory.networkReady()&&resumed&&ready&&!fatal&&overview==null&&state.activeAccount.equals(job.getString("targetAccountId"))&&state.current().activeTab.equals(page.tab)&&views.get(page.tab)==page.web&&page.web.getParent()==content&&page.web.isShown()&&page.web.getAlpha()==1f&&page.web.isEnabled()&&state.find(job.getString("sourceAccountId")).storageId.equals(job.getString("sourceStorageId"))&&state.find(job.getString("targetAccountId")).storageId.equals(job.getString("targetStorageId"));}catch(Exception e){return false;}
     }
     @Override public long epoch(HandoffController.Page page){return pageEpochs.getOrDefault(page.tab,-1L);}
     @Override public void changed(JSONObject job){

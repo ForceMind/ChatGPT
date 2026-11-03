@@ -14,6 +14,9 @@ android {
         versionCode 3000022
         versionName '3.0.0-alpha.22'
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
+        buildConfigField 'boolean', 'NETWORK_TEST', 'false'
+        buildConfigField 'String', 'NETWORK_HOME_URL', '""'
+        buildConfigField 'String', 'NETWORK_PROBE_URL', '""'
     }
     signingConfigs {
         if (signingFile.exists()) {
@@ -30,8 +33,22 @@ android {
         release {
             if (signingFile.exists()) signingConfig signingConfigs.localRelease
             minifyEnabled false
+            ndk { abiFilters 'arm64-v8a' }
         }
     }
+        // Isolated, synthetic acceptance only; never installed over the public app.
+        buildTypes { networkCi {
+            initWith buildTypes.debug
+            applicationIdSuffix '.networkci'
+            versionNameSuffix '-network-ci'
+            matchingFallbacks = ['debug']
+            ndk { abiFilters 'x86_64' }
+            buildConfigField 'boolean', 'NETWORK_TEST', 'true'
+            buildConfigField 'String', 'NETWORK_HOME_URL', '"https://network-fixture.test:18480/joint/studio-home/page"'
+            buildConfigField 'String', 'NETWORK_PROBE_URL', '"https://network-fixture.test:18480/echo"'
+        }
+        }
+        testBuildType = project.hasProperty('networkIntegration') ? 'networkCi' : 'debug'
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
     buildFeatures { buildConfig true }
     testOptions { unitTests.returnDefaultValues = true }
@@ -41,6 +58,7 @@ tasks.register('requireReleaseKey') {
 }
 tasks.matching { it.name == 'preReleaseBuild' }.configureEach { dependsOn 'requireReleaseKey' }
 dependencies {
+    implementation files('libs/networkcore.aar')
     implementation 'androidx.activity:activity:1.13.0'
     implementation 'androidx.webkit:webkit:1.17.1'
     implementation 'com.google.code.gson:gson:2.13.2'
@@ -72,4 +90,26 @@ tasks.named('preBuild').configure { dependsOn 'copyProjectCapabilities' }
 
 android.testOptions.unitTests.all {
     systemProperty 'capabilityRoot', rootProject.file('../desktop/resources/capabilities').absolutePath
+}
+
+// CI-only trust is generated from the owned ephemeral fixture, never release assets.
+if (project.hasProperty('networkIntegration')) {
+    def fixture = rootProject.file('network-poc/secure-fixture/ca.pem')
+    def generated = layout.buildDirectory.dir('generated/network-ci')
+    tasks.register('prepareNetworkCiTrust') {
+        inputs.file fixture
+        outputs.dir generated
+        doLast {
+            def pem = fixture.getText('UTF-8')
+            if (!pem.startsWith('-----BEGIN CERTIFICATE-----')) throw new GradleException('Missing owned CI CA')
+            def root = generated.get().asFile
+            def javaFile = new File(root, 'java/com/forcemind/chatgpt/profiles/GeneratedNetworkTrust.java')
+            javaFile.parentFile.mkdirs()
+            javaFile.text = 'package com.forcemind.chatgpt.profiles; public final class GeneratedNetworkTrust { public static final String PEM = ' + groovy.json.JsonOutput.toJson(pem) + '; }'
+            def ca = new File(root, 'res/raw/studio_network_ci_ca.pem'); ca.parentFile.mkdirs(); ca.text = pem
+        }
+    }
+    android.sourceSets.networkCi.java.srcDir(generated.map { it.dir('java') })
+    android.sourceSets.networkCi.res.srcDir(generated.map { it.dir('res') })
+    tasks.matching { it.name == 'preNetworkCiBuild' }.configureEach { dependsOn 'prepareNetworkCiTrust' }
 }

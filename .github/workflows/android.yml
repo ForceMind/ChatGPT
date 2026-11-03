@@ -123,6 +123,12 @@ jobs:
           packages: platform-tools
       - name: Install compile SDK
         run: sdkmanager 'platforms;android-36' 'build-tools;35.0.0'
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.3'
+          cache: false
+      - name: Prepare fixed embedded network core
+        run: bash android/scripts/prepare-network-core.sh
       - name: Verify and build
         working-directory: android
         run: ./gradlew --no-daemon -PunsignedRelease testDebugUnitTest lintDebug assembleDebug assembleRelease assembleDebugAndroidTest
@@ -163,6 +169,12 @@ jobs:
       - uses: android-actions/setup-android@v3
         with:
           packages: platform-tools
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.3'
+          cache: false
+      - name: Prepare fixed embedded network core
+        run: bash android/scripts/prepare-network-core.sh
       - name: Enable emulator acceleration
         run: sudo chmod 666 /dev/kvm
       - name: Install emulator
@@ -338,6 +350,12 @@ jobs:
           python3 -c 'import ast; ast.parse(open("android/scripts/verify-lifecycle.py").read())'
           sudo chmod 666 /dev/kvm
           sdkmanager 'platforms;android-36' 'build-tools;35.0.0' emulator "system-images;android-${STUDIO_API};google_apis;x86_64"
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.3'
+          cache: false
+      - name: Prepare fixed embedded network core
+        run: bash android/scripts/prepare-network-core.sh
       - name: Build isolated debug application
         working-directory: android
         run: ./gradlew --no-daemon assembleDebug

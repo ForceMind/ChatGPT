@@ -12,6 +12,7 @@ import org.json.*;
 final class HandoffRuntime {
     private static HandoffRuntime instance;
     static synchronized HandoffRuntime get(Context context)throws Exception{if(instance==null)instance=new HandoffRuntime(context.getApplicationContext());return instance;}
+    static synchronized boolean networkBusy(){if(instance==null)return false;synchronized(instance){return instance.activeId!=null||!instance.controls.isEmpty();}}
     final Context context;
     final HandoffStore store;
     final ExecutorService io=Executors.newSingleThreadExecutor();
@@ -42,12 +43,13 @@ final class HandoffRuntime {
     }
     private static String label(WorkspaceState.Account account){return account.name+(account.email.isEmpty()?"":" · "+account.email);}
     void start(HandoffController.Host host,String id,String token)throws Exception{
+        if(!BrowserMemory.get(context).network().ready())throw new IOException("网络尚未就绪，任务未发送");
         WorkspaceState.profile(id);WorkspaceState.profile(token);AtomicBoolean control=new AtomicBoolean(true);
         synchronized(this){if(activeId!=null)throw new IOException("已有网页任务正在运行，请先查看任务记录");activeId=id;controls.put(id,control);}
         io.execute(()->{
             boolean claimed=false;
             try{JSONObject payload=store.payload(id);JSONObject job=store.claim(id,token);claimed=true;HandoffRequest.accounts(context.getFilesDir(),payload.getJSONObject("request"));
-                handler.post(()->{if(!control.get()){finishStartFailure(host,id,"任务已取消",true);return;}controller=new HandoffController(this,host,job,payload,control);controller.begin();});
+                handler.post(()->{if(!control.get()){finishStartFailure(host,id,"任务已取消",true);return;}if(!BrowserMemory.get(context).network().ready()){finishStartFailure(host,id,"网络已改变，未开始发送",true);return;}controller=new HandoffController(this,host,job,payload,control);controller.begin();});
             }catch(Exception e){if(claimed)try{store.failure(id,"任务账号或文件不可用，请重新确认",!control.get());}catch(Exception ignored){}release(id);handler.post(()->host.failed("任务授权无效、已经执行或账号已改变；不会自动重发"));}
         });
     }
