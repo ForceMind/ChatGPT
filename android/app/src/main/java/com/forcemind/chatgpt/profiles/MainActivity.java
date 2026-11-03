@@ -258,7 +258,7 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
         web.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT,false);pageEpochs.putIfAbsent(tabId,0L);if(initial&&recovery!=null)recovery.bind(web,accountId,storageId,tabId);
         web.setWebViewClient(new WebViewClient() {
             @Override public void onPageStarted(WebView view,String url,android.graphics.Bitmap icon){pageEpochs.put(tabId,pageEpochs.getOrDefault(tabId,0L)+1);if(recovery!=null)recovery.navigating(view,url);memory.diagnostics.event("page-load",accountId,tabId,null);}
-            @Override public WebResourceResponse shouldInterceptRequest(WebView view,WebResourceRequest request){if(!memory.networkReady())return new WebResourceResponse("text/plain","UTF-8",503,"Network unavailable",java.util.Collections.emptyMap(),new java.io.ByteArrayInputStream(new byte[0]));if(BuildConfig.DEBUG&&handoffFixture!=null)return handoffFixture.response(accountId,request);return null;}
+            @Override public WebResourceResponse shouldInterceptRequest(WebView view,WebResourceRequest request){if(!memory.networkReady())return null; /* WebSettings blocks network; preserve the native failure. */if(BuildConfig.DEBUG&&handoffFixture!=null)return handoffFixture.response(accountId,request);return null;}
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 String url = request.getUrl().toString();
                 if (!request.isForMainFrame()) return !NavigationPolicy.https(url);

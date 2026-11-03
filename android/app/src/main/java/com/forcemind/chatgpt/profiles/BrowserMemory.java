@@ -68,7 +68,7 @@ final class BrowserMemory {
                 @Override public void onPageFinished(WebView view,String url){remember(account,tab,url,null);}
                 @Override public void doUpdateVisitedHistory(WebView view,String url,boolean reload){remember(account,tab,url,null);}
                 @Override public boolean shouldOverrideUrlLoading(WebView view,WebResourceRequest request){return !NavigationPolicy.internal(request.getUrl().toString());}
-                @Override public WebResourceResponse shouldInterceptRequest(WebView view,WebResourceRequest request){if(!networkReady())return new WebResourceResponse("text/plain","UTF-8",503,"Network unavailable",java.util.Collections.emptyMap(),new java.io.ByteArrayInputStream(new byte[0]));return BuildConfig.DEBUG&&MainActivity.handoffFixture!=null?MainActivity.handoffFixture.response(account,request):null;}
+                @Override public WebResourceResponse shouldInterceptRequest(WebView view,WebResourceRequest request){if(!networkReady())return null; /* WebSettings blocks network; preserve the native failure. */return BuildConfig.DEBUG&&MainActivity.handoffFixture!=null?MainActivity.handoffFixture.response(account,request):null;}
                 @Override public boolean onRenderProcessGone(WebView view,RenderProcessGoneDetail detail){diagnostics.event(detail.didCrash()?"renderer-crash":"renderer-reclaimed",account,tab,"priority:"+detail.rendererPriorityAtExit());destroy(tab);return true;}
                 @Override public void onReceivedSslError(WebView view,SslErrorHandler handler,android.net.http.SslError error){handler.cancel();diagnostics.event("ssl-error",account,tab,null);}
             });
