@@ -1023,3 +1023,5 @@
 - 晋级初轮 41574320874 / a13e601 在新脚本的两处 lint 失败；按实际日志修正全局对象引用和恰好两个空格的正则写法，未修改规则或放宽断言，失败时尚未上传资产。最终 41574574680 / 84331bc 完整 check 退出 0（Linux 单元 105 通过、1 项现有 Mac 原生专属跳过），源码冻结、原工件及服务端 9 项资产摘要核对后公开，标签固定指向经过 Mac 验证的 1db8aa8。
 - Release 432247054 于 2026-11-03T03:51:35Z 公开为预发布。手动下载使用 Studio DMG / ZIP，自动更新保留 Profiles 根目录兼容 ZIP；各自大小与摘要分别记录，避免混用。
 - 用户确认仅更新现有 chatgpt-studio 项目及 chatgpt.xincreates.com；Cloudflare 旧 chatgpt-profiles 项目返回不存在，不重建。site-legacy 只保留历史规则和同源清单，不宣称旧站已经部署。
+- 站点源码 35f6036：最终干净部署 chatgpt-studio / ed023ed2-0176-47b6-ba55-6cfa424bd53a 已回读为 Production / main。初次 exFAT 上传包含附属文件，随后改用仅含 17 个跟踪文件的 APFS 暂存重新部署；正式站不沿用附属文件。既有域名绑定保持不变。
+- 官网双域的三个下载卡片、alpha.23 里程碑与现用 Mac feed 均核对源码，Mac feed 直接 200 / no-store，Windows feed / JS / CSS 保持原内容；共 7 项 HTTP 核对和 5 项 GitHub / 加速入口范围请求通过。范围请求核对总大小与前 32 字节，不宣称全量代理文件重新计算摘要。发布记录集中于 docs/releases/3.0.0-alpha.23-publication.json；浏览器未验证，真实账号流程继续待人工验收。

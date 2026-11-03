@@ -279,19 +279,133 @@
     "assetsVerified": 9
   },
   "website": {
-    "status": "prepared-not-yet-deployed",
+    "status": "production-deployed-and-http-verified",
     "project": "chatgpt-studio",
     "domain": "chatgpt.xincreates.com",
     "legacyProject": {
       "recreated": false,
       "deployed": false,
       "userDecision": "existing canonical project only"
-    }
+    },
+    "deployment": {
+      "id": "ed023ed2-0176-47b6-ba55-6cfa424bd53a",
+      "environment": "Production",
+      "branch": "main",
+      "sourceCommit": "35f6036ee1d34445b90bda06b15b717985f4f2e6",
+      "url": "https://ed023ed2.chatgpt-studio.pages.dev"
+    },
+    "uploadFiles": 17,
+    "appleDoubleFilesInFinalUpload": 0,
+    "cleanDeploymentExitCode": 0,
+    "sourceExport": "Git-tracked files only; APFS upload staging removed after verification"
   },
   "otherPlatforms": {
     "windows": "3.0.0-alpha.21",
     "android": "3.0.0-alpha.22"
   },
   "browserVerified": false,
-  "localLoginDataChangedByPublication": false
+  "localLoginDataChangedByPublication": false,
+  "verifiedAt": "2026-11-03T04:00:46.207958+00:00",
+  "online": {
+    "version": "3.0.0-alpha.23",
+    "sourceCommit": "35f6036ee1d34445b90bda06b15b717985f4f2e6",
+    "browserVerified": false,
+    "http": [
+      {
+        "url": "https://chatgpt-studio.pages.dev/",
+        "status": 200,
+        "platformCardsAndMacMilestoneMatchSource": true
+      },
+      {
+        "url": "https://chatgpt.xincreates.com/",
+        "status": 200,
+        "platformCardsAndMacMilestoneMatchSource": true
+      },
+      {
+        "url": "https://chatgpt-studio.pages.dev/updates/macos.json",
+        "status": 200,
+        "sha256": "b46f0e63af3738fecaa75fa86b5b221453741a8898246dee919aa53bb1677112",
+        "version": "3.0.0-alpha.23",
+        "directResponse": true,
+        "noStore": true
+      },
+      {
+        "url": "https://chatgpt.xincreates.com/updates/macos.json",
+        "status": 200,
+        "sha256": "b46f0e63af3738fecaa75fa86b5b221453741a8898246dee919aa53bb1677112",
+        "version": "3.0.0-alpha.23",
+        "directResponse": true,
+        "noStore": true
+      },
+      {
+        "url": "https://chatgpt-studio.pages.dev/app.js",
+        "status": 200,
+        "matchesSource": true
+      },
+      {
+        "url": "https://chatgpt-studio.pages.dev/styles.css",
+        "status": 200,
+        "matchesSource": true
+      },
+      {
+        "url": "https://chatgpt-studio.pages.dev/updates/windows/alpha.yml",
+        "status": 200,
+        "matchesSource": true
+      }
+    ],
+    "rangeProbes": [
+      {
+        "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.23/ChatGPT-Profiles-3.0.0-alpha.23-mac-arm64.zip",
+        "status": 206,
+        "totalBytes": 155183045,
+        "first32SHA256": "7a8fa79fd98a416b5d1b5ec595a48a03d1b549dd230982c4ee3ad719fef6276c",
+        "prefixOnly": true,
+        "ok": true
+      },
+      {
+        "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.23/ChatGPT-Studio-3.0.0-alpha.23-mac-arm64.dmg",
+        "status": 206,
+        "totalBytes": 155112864,
+        "first32SHA256": "b9d6a580531141b65ce5ceeb73bc7f3e9559bea5e6163c8bad07fcb2e27f0446",
+        "prefixOnly": true,
+        "ok": true
+      },
+      {
+        "url": "https://gh-proxy.org/https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.23/ChatGPT-Studio-3.0.0-alpha.23-mac-arm64.dmg",
+        "status": 206,
+        "totalBytes": 155112864,
+        "first32SHA256": "b9d6a580531141b65ce5ceeb73bc7f3e9559bea5e6163c8bad07fcb2e27f0446",
+        "prefixOnly": true,
+        "ok": true
+      },
+      {
+        "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.23/ChatGPT-Studio-3.0.0-alpha.23-mac-arm64.zip",
+        "status": 206,
+        "totalBytes": 155067729,
+        "first32SHA256": "ce6a93150a92a98782bcee6de02809cb9037776a614ab26f2465a591c943fa14",
+        "prefixOnly": true,
+        "ok": true
+      },
+      {
+        "url": "https://gh-proxy.org/https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.23/ChatGPT-Studio-3.0.0-alpha.23-mac-arm64.zip",
+        "status": 206,
+        "totalBytes": 155067729,
+        "first32SHA256": "ce6a93150a92a98782bcee6de02809cb9037776a614ab26f2465a591c943fa14",
+        "prefixOnly": true,
+        "ok": true
+      }
+    ],
+    "legacySite": {
+      "deployed": false,
+      "recreated": false,
+      "reason": "User selected existing canonical site only after missing-project API result"
+    },
+    "success": true
+  },
+  "verificationScope": {
+    "browser": "not run",
+    "realChatGPT": "not visited",
+    "releaseFiles": "original archives fully hashed in Actions and server asset digests read back",
+    "proxyFiles": "range response, exact total size and first 32 bytes checked; full proxy file not rehashed"
+  }
 }
