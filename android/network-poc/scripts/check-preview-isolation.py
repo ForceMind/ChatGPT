@@ -7,6 +7,15 @@ import subprocess
 import zipfile
 
 
+def boolean_attribute(line):
+    if line is None:
+        return False
+    value = line.rsplit('=', 1)[-1].strip().lower()
+    if value in ('true', '"true"'):
+        return True
+    return re.fullmatch(r'(?:\(type\s+0x12\)\s*)?0x(?:1|ffffffff)', value) is not None
+
+
 def main():
     assert os.environ.get('GITHUB_ACTIONS') == 'true'
     root = Path(__file__).resolve().parents[1]
@@ -14,6 +23,10 @@ def main():
     report = {'scope': 'compiled preview/ci APK isolation', 'builtLocally': False}
     failure = None
     try:
+        for value in ['true', '"true"', '(type 0x12)0xffffffff', '(type 0x12)0x1']:
+            assert boolean_attribute('android:testOnly=' + value)
+        for value in ['false', '0x0', '(type 0x12)0x0', 'unknown', '1']:
+            assert not boolean_attribute('android:testOnly=' + value)
         for flavor in ['preview', 'ci']:
             apk = root / f'app/build/outputs/apk/{flavor}/debug/app-{flavor}-debug.apk'
             assert apk.is_file(), 'Missing exact built APK: ' + flavor
@@ -22,7 +35,11 @@ def main():
             admin = 'JointProxyAdminReceiver' in manifest and 'android.permission.BIND_DEVICE_ADMIN' in manifest
             provider = 'OwnedDocumentsProvider' in manifest
             test_only = re.search(r'android:testOnly[^\n]*', manifest)
-            enabled = test_only is not None and ('0xffffffff' in test_only[0] or '="true"' in test_only[0])
+            raw_test_only = test_only[0] if test_only is not None else None
+            enabled = boolean_attribute(raw_test_only)
+            evidence_folder = root / 'evidence'
+            evidence_folder.mkdir(exist_ok=True)
+            (evidence_folder / ('joint-manifest-' + flavor + '.txt')).write_text(manifest)
             with zipfile.ZipFile(apk) as archive:
                 names = archive.namelist()
                 tokens = ['JointProxyAdminReceiver', 'OwnedDocumentsProvider', 'GeneratedFixtureCa']
@@ -31,7 +48,7 @@ def main():
                 admin_resource = any('joint_device_admin' in n for n in names)
                 ca_resource = any('network_fixture_ca' in n for n in names)
             report[flavor] = {'adminReceiverAndPermission': admin, 'ownedProvider': provider,
-                              'testOnly': enabled, 'adminResource': admin_resource,
+                              'testOnly': enabled, 'testOnlyRawAttribute': raw_test_only, 'adminResource': admin_resource,
                               'fixtureCAResource': ca_resource, 'dexCIClasses': found}
             if flavor == 'preview':
                 assert not admin and not provider and not enabled and not admin_resource and not ca_resource

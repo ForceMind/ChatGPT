@@ -10,6 +10,8 @@
 
 系统代理 / PAC 的后续真实验收只允许全新 CI 模拟器临时 DeviceOwner 和公开 DPM API；测试后恢复并撤销，不用隐 API / 安全豁免或仅写 settings 自证。管理员 Receiver、Provider 与 testOnly 仅在 ci flavor；预览 APK 的编译产物将单独核对隔离。Profile 清理先立即使该账号 epoch / 资源失效；物理删除按实际 API 结果报告，若已加载而无法删除，则在新的测试进程、加载 Profile 前验证 owned tombstone 清理，不冒称本进程已抹除数据。完整联合功能、系统路由与清理仍未运行验收。
 
+能力门槛首轮 `4a58b3c` / Actions `41649274933` 的核心、合成服务和包检查通过；设备在编译 APK 隔离检查处停止，尚未查询多 Profile 能力。预览包的管理员 / Provider / 测试 CA 检查为不存在；CI `testOnly` 被初始解析器判为 false，但原始 aapt 字段未保留，不能据此断言是构建标记丢失或格式误读。检查脚本现保留两包原 manifest 文本和原始布尔行，严格识别明确 true 与 typed boolean true 编码，false / 缺失 / 未知仍失败；没有跳过 CI 必须为 testOnly、preview 必须隔离的断言，等待后续真实字段核对。
+
 ## 已验证：在途文件故障收口（2026-11-03）
 
 用户已明确批准：先在独立包验证上传 / 下载进行中核心停止、取消、关闭和重连，必要时做最小修复；通过后形成正式接入方案，但不实施正式接入。构建和浏览器 / 文件交互仅在 Actions 合成环境，正式 App、登录 / 恢复数据、生产签名、main、官网和公开版本保持原状。
