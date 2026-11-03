@@ -120,7 +120,7 @@ public final class NetworkRoute {
                 if (!isCurrentSession(session)) return;
                 if (!alive) {
                     Snapshot previous = session.expected;
-                    error = "本地代理核心已停止或状态不可用；未切换直连，请手动重新连接线路";
+                    error = "线路已断开，请重新连接；网页和草稿保留";
                     current = new Snapshot(State.FAILED, previous.node, previous.port, previous.generation);
                     stateChanged(current);
                 } else main.postDelayed(session.check, CORE_CHECK_INTERVAL_MS);

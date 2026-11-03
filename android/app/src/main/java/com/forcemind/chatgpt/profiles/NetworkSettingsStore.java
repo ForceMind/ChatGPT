@@ -69,6 +69,7 @@ public final class NetworkSettingsStore {
         cipher.updateAAD("chatgpt-studio-network-v1".getBytes(StandardCharsets.UTF_8));
         byte[] encrypted = cipher.doFinal(plain);
         byte[] output = ByteBuffer.allocate(1 + cipher.getIV().length + encrypted.length).put((byte) 1).put(cipher.getIV()).put(encrypted).array();
+        if (output.length > 1024 * 1024) throw new IllegalArgumentException("线路配置总大小超过上限，原配置保持不变");
         FileOutputStream out = null;
         try { out = file.startWrite(); out.write(output); file.finishWrite(out); }
         catch (Exception e) { if (out != null) file.failWrite(out); throw e; }

@@ -62,6 +62,8 @@ final class DownloadHelper {
         if (activity == null || activity.isFinishing() || activity.isDestroyed()) return;
         Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
                 .setType(selected.mime).putExtra(Intent.EXTRA_TITLE, selected.name);
+        if (BuildConfig.NETWORK_TEST) intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI,
+                DocumentsContract.buildRootUri(BuildConfig.APPLICATION_ID + ".network-docs", "owned-ci-root"));
         try { selected.launched = true; activity.startActivityForResult(intent, REQUEST_SAVE); }
         catch (RuntimeException unavailable) { selected.launched = false; notifyUser("文件已下载，无法打开保存窗口。重新选择另存为可重试"); }
     }

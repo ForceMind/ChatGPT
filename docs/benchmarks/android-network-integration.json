@@ -1,0 +1,1788 @@
+{
+  "schemaVersion": 1,
+  "status": "in-progress-three-batches",
+  "formalPublished": false,
+  "phase1": {
+    "run": 41676289330,
+    "sourceSHA": "4412b98994dc7b2d6887b457369fdc9605fbbdd0",
+    "cases": [
+      {
+        "artifact": 13252290104,
+        "archiveBytes": 4722,
+        "archiveSHA256": "2aaae64de9c41640ededebd21798fea563f8419008d94ed6d115757dc7e469f3",
+        "result": {
+          "schema": 1,
+          "sourceSHA": "4412b98994dc7b2d6887b457369fdc9605fbbdd0",
+          "api": 28,
+          "transport": "tls",
+          "screenshots": false,
+          "realChatGPT": false,
+          "disabledCoreUnloaded": true,
+          "popupGesture": true,
+          "profileNames": {
+            "A": "profile-dd10a33c-c699-4653-abb8-8040ccd23644",
+            "B": "profile-6264723d-bdf4-47e4-8989-7b9cc02d014f",
+            "C": "profile-d59eb928-f34c-4c82-b974-85d4d7cfe1ad"
+          },
+          "liveDocuments": 5,
+          "systemPicker": "ActivityMonitor result stub; actual system UI not yet verified",
+          "recreatedSameViews": true,
+          "selectedRouteRestoredBeforeLoad": true,
+          "failedCoreBlockedAllViews": true,
+          "failureDidNotReload": true,
+          "retryDidNotReload": true,
+          "complete": true,
+          "files": [
+            {
+              "exit": "asset",
+              "account": "A",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "A",
+                "operation": "formal-tls-asset-A-A"
+              },
+              "id": "f0c046b4-fbd7-4e9e-bc77-555105d5d1c8",
+              "sha256": "64862f9d174dbb95a7437c5bc1c38692c4348b250a1a092f2099965ec1a11cf4"
+            },
+            {
+              "exit": "document",
+              "account": "A",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "A",
+                "operation": "formal-tls-doc-A-A"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "B",
+                "operation": "formal-tls-asset-A-B"
+              },
+              "id": "36f8a8f7-3a02-4c8c-9d9f-743ff9f90444",
+              "sha256": "df6fd0d8961df21aa8c979ccc7371f4babfddee5929766413dfe84bddb8e6080"
+            },
+            {
+              "exit": "document",
+              "account": "B",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "B",
+                "operation": "formal-tls-doc-A-B"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "C",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "C",
+                "operation": "formal-tls-asset-A-C"
+              },
+              "id": "9bee0a78-1528-4aab-82d1-618ab372575b",
+              "sha256": "932d59607d178eb9eb1e9c05b838c890b2f3ed0258f0678fb0c49c2b2399082a"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "C",
+                "operation": "formal-tls-doc-A-C"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "A",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "A",
+                "operation": "formal-tls-asset-B-A"
+              },
+              "id": "b2dca8ec-b709-41fe-a541-1d0f0fb3208c",
+              "sha256": "7a2fdfe4c7279a57c843ff884a79daa43a217c9de68f11f87905a9cc69d3aafa"
+            },
+            {
+              "exit": "document",
+              "account": "A",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "A",
+                "operation": "formal-tls-doc-B-A"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "B",
+                "operation": "formal-tls-asset-B-B"
+              },
+              "id": "cb181d5f-d50f-4c94-b233-2174e7dab706",
+              "sha256": "8bc8536d9cde4b4cf8268e46d52c0d69a9ebb95e18278e7e6afb1584106d33be"
+            },
+            {
+              "exit": "document",
+              "account": "B",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "B",
+                "operation": "formal-tls-doc-B-B"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "C",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "C",
+                "operation": "formal-tls-asset-B-C"
+              },
+              "id": "1212b8ad-af73-4fd6-b0ac-25a4f8baa258",
+              "sha256": "c5d6c43adff430056a418a9193a63b9d3648c3f19f394d18e4134f2b960e3992"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "C",
+                "operation": "formal-tls-doc-B-C"
+              }
+            }
+          ],
+          "expectedRequests": [
+            {
+              "path": "/joint/formal-tls-page-A1/page",
+              "route": "A",
+              "syntheticAccount": "A",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-tls-page-A2/page",
+              "route": "A",
+              "syntheticAccount": "A",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-tls-page-B1/page",
+              "route": "A",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-tls-page-C1/page",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-tls-page-A1-popup/page",
+              "route": "A",
+              "syntheticAccount": "A",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-tls-asset-A-A/download",
+              "route": "A",
+              "syntheticAccount": "A",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-tls-doc-A-A/download",
+              "route": "A",
+              "syntheticAccount": "A",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-tls-asset-A-B/download",
+              "route": "A",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-tls-doc-A-B/download",
+              "route": "A",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-tls-asset-A-C/download",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-tls-doc-A-C/download",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-tls-asset-B-A/download",
+              "route": "B",
+              "syntheticAccount": "A",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-tls-doc-B-A/download",
+              "route": "B",
+              "syntheticAccount": "A",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-tls-asset-B-B/download",
+              "route": "B",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-tls-doc-B-B/download",
+              "route": "B",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-tls-asset-B-C/download",
+              "route": "B",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-tls-doc-B-C/download",
+              "route": "B",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            }
+          ]
+        },
+        "verified": {
+          "complete": true,
+          "sourceSHA": "4412b98994dc7b2d6887b457369fdc9605fbbdd0",
+          "api": 28,
+          "transport": "tls",
+          "exactRequests": 17,
+          "successfulFiles": 12,
+          "screenshots": false,
+          "realChatGPT": false
+        }
+      },
+      {
+        "artifact": 13252100272,
+        "archiveBytes": 4720,
+        "archiveSHA256": "87feda33dd980e24fadc7e368903bb85d9342a885a20785d5090e6b22090420d",
+        "result": {
+          "schema": 1,
+          "sourceSHA": "4412b98994dc7b2d6887b457369fdc9605fbbdd0",
+          "api": 28,
+          "transport": "raw",
+          "screenshots": false,
+          "realChatGPT": false,
+          "disabledCoreUnloaded": true,
+          "popupGesture": true,
+          "profileNames": {
+            "A": "profile-08c245bf-1588-4496-8a34-05dd81c4e208",
+            "B": "profile-88e6b38e-623d-41cd-be75-6e7a56ee688d",
+            "C": "profile-64d4b742-ff9a-469e-b92a-3d2269e6437a"
+          },
+          "liveDocuments": 5,
+          "systemPicker": "ActivityMonitor result stub; actual system UI not yet verified",
+          "recreatedSameViews": true,
+          "selectedRouteRestoredBeforeLoad": true,
+          "failedCoreBlockedAllViews": true,
+          "failureDidNotReload": true,
+          "retryDidNotReload": true,
+          "complete": true,
+          "files": [
+            {
+              "exit": "asset",
+              "account": "A",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "A",
+                "operation": "formal-raw-asset-A-A"
+              },
+              "id": "a06d12f9-20e4-4edc-91ed-ac10b37ed781",
+              "sha256": "4c8dde09fab8abe4f3b57e5af79239bea5ea5fe67152c834492dd613d1ca3574"
+            },
+            {
+              "exit": "document",
+              "account": "A",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "A",
+                "operation": "formal-raw-doc-A-A"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "B",
+                "operation": "formal-raw-asset-A-B"
+              },
+              "id": "999cf1d3-b3f3-4b49-aaca-9c9302d6c352",
+              "sha256": "c630b5b2cff1b3145b009d6f7a25dacf835ff47613822ec5f85bb06e1d9effa1"
+            },
+            {
+              "exit": "document",
+              "account": "B",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "B",
+                "operation": "formal-raw-doc-A-B"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "C",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "C",
+                "operation": "formal-raw-asset-A-C"
+              },
+              "id": "fa52d719-a18c-4027-af31-ccd88aef4e3a",
+              "sha256": "991c0b94780e7550185bad75b7c004ab5d89556f3cd56ce1d0f93de72f17b68d"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "C",
+                "operation": "formal-raw-doc-A-C"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "A",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "A",
+                "operation": "formal-raw-asset-B-A"
+              },
+              "id": "f248c412-0ad7-4cf9-bc03-1ff64dbe05f2",
+              "sha256": "39636eb54108e666e3af5fb069784bd2dc6899de3127c4e0f16bd1a3a34c6292"
+            },
+            {
+              "exit": "document",
+              "account": "A",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "A",
+                "operation": "formal-raw-doc-B-A"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "B",
+                "operation": "formal-raw-asset-B-B"
+              },
+              "id": "86fb6430-4666-4d1a-966e-c5560a4be074",
+              "sha256": "15611aa32c6847541441dd3ac0e7417d696cf8fdf29c06698f929bcebf18d5ae"
+            },
+            {
+              "exit": "document",
+              "account": "B",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "B",
+                "operation": "formal-raw-doc-B-B"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "C",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "C",
+                "operation": "formal-raw-asset-B-C"
+              },
+              "id": "bd49a823-c505-43ce-9430-2d5eb46b63f0",
+              "sha256": "2632cdac86a87e578bd9e6ea34f0443cde6ed2c1b4ca503e5b727f205d247b1d"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "C",
+                "operation": "formal-raw-doc-B-C"
+              }
+            }
+          ],
+          "expectedRequests": [
+            {
+              "path": "/joint/formal-raw-page-A1/page",
+              "route": "A",
+              "syntheticAccount": "A",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-raw-page-A2/page",
+              "route": "A",
+              "syntheticAccount": "A",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-raw-page-B1/page",
+              "route": "A",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-raw-page-C1/page",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-raw-page-A1-popup/page",
+              "route": "A",
+              "syntheticAccount": "A",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-raw-asset-A-A/download",
+              "route": "A",
+              "syntheticAccount": "A",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-raw-doc-A-A/download",
+              "route": "A",
+              "syntheticAccount": "A",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-raw-asset-A-B/download",
+              "route": "A",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-raw-doc-A-B/download",
+              "route": "A",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-raw-asset-A-C/download",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-raw-doc-A-C/download",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-raw-asset-B-A/download",
+              "route": "B",
+              "syntheticAccount": "A",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-raw-doc-B-A/download",
+              "route": "B",
+              "syntheticAccount": "A",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-raw-asset-B-B/download",
+              "route": "B",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-raw-doc-B-B/download",
+              "route": "B",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-raw-asset-B-C/download",
+              "route": "B",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-raw-doc-B-C/download",
+              "route": "B",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            }
+          ]
+        },
+        "verified": {
+          "complete": true,
+          "sourceSHA": "4412b98994dc7b2d6887b457369fdc9605fbbdd0",
+          "api": 28,
+          "transport": "raw",
+          "exactRequests": 17,
+          "successfulFiles": 12,
+          "screenshots": false,
+          "realChatGPT": false
+        }
+      },
+      {
+        "artifact": 13251672157,
+        "archiveBytes": 4737,
+        "archiveSHA256": "26087adbc57a2965b321960c528082d155bb7031cc5b62b2f459858559cac660",
+        "result": {
+          "schema": 1,
+          "sourceSHA": "4412b98994dc7b2d6887b457369fdc9605fbbdd0",
+          "api": 28,
+          "transport": "reality",
+          "screenshots": false,
+          "realChatGPT": false,
+          "disabledCoreUnloaded": true,
+          "popupGesture": true,
+          "profileNames": {
+            "A": "profile-99410411-76b4-454c-8674-60108d2a970d",
+            "B": "profile-8da0f286-9d94-4219-96e4-2ac4d3bfbc35",
+            "C": "profile-811d147d-0cb3-4a47-9908-b58de4d1b5d7"
+          },
+          "liveDocuments": 5,
+          "systemPicker": "ActivityMonitor result stub; actual system UI not yet verified",
+          "recreatedSameViews": true,
+          "selectedRouteRestoredBeforeLoad": true,
+          "failedCoreBlockedAllViews": true,
+          "failureDidNotReload": true,
+          "retryDidNotReload": true,
+          "complete": true,
+          "files": [
+            {
+              "exit": "asset",
+              "account": "A",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "A",
+                "operation": "formal-reality-asset-A-A"
+              },
+              "id": "1429da43-7d8f-4745-b8de-ec8039938140",
+              "sha256": "29867bf16cbf23e37d749204382406b89823f16c1165e3c5fbedef2b9f41ed91"
+            },
+            {
+              "exit": "document",
+              "account": "A",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "A",
+                "operation": "formal-reality-doc-A-A"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "B",
+                "operation": "formal-reality-asset-A-B"
+              },
+              "id": "72d688e5-eb0e-4be4-921c-6412655b14d3",
+              "sha256": "2c1d5bca1b11f49015b10cdb86bfa9ff678d749652a779d944fa559634ba672e"
+            },
+            {
+              "exit": "document",
+              "account": "B",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "B",
+                "operation": "formal-reality-doc-A-B"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "C",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "C",
+                "operation": "formal-reality-asset-A-C"
+              },
+              "id": "f3a81997-9aea-43b5-9074-37f734a1f5ea",
+              "sha256": "3d80c21e34e9216da1454c275bd87678375f803c6fbaf35f9b1d1846eada38e7"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "C",
+                "operation": "formal-reality-doc-A-C"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "A",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "A",
+                "operation": "formal-reality-asset-B-A"
+              },
+              "id": "334c3e21-3796-4a9b-8a9d-350aed781af9",
+              "sha256": "d5cab4b62ebdd44e7cbc6acafd8f95559fcdec6b752221a3f17775c295f2c6ba"
+            },
+            {
+              "exit": "document",
+              "account": "A",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "A",
+                "operation": "formal-reality-doc-B-A"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "B",
+                "operation": "formal-reality-asset-B-B"
+              },
+              "id": "36aa5d16-6c94-4204-82fc-ba4b98af2db0",
+              "sha256": "1b8ca5a1abfbe7300457a35dd9835574552f4d38f5af924b8d89781316a290bd"
+            },
+            {
+              "exit": "document",
+              "account": "B",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "B",
+                "operation": "formal-reality-doc-B-B"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "C",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "C",
+                "operation": "formal-reality-asset-B-C"
+              },
+              "id": "29a9a492-4386-4986-ae90-0df712237c35",
+              "sha256": "876212eff023aae8844712d670d62ddf6bf4283ed2282baaf1296af92d271552"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "C",
+                "operation": "formal-reality-doc-B-C"
+              }
+            }
+          ],
+          "expectedRequests": [
+            {
+              "path": "/joint/formal-reality-page-A1/page",
+              "route": "A",
+              "syntheticAccount": "A",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-reality-page-A2/page",
+              "route": "A",
+              "syntheticAccount": "A",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-reality-page-B1/page",
+              "route": "A",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-reality-page-C1/page",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-reality-page-A1-popup/page",
+              "route": "A",
+              "syntheticAccount": "A",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-reality-asset-A-A/download",
+              "route": "A",
+              "syntheticAccount": "A",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-reality-doc-A-A/download",
+              "route": "A",
+              "syntheticAccount": "A",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-reality-asset-A-B/download",
+              "route": "A",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-reality-doc-A-B/download",
+              "route": "A",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-reality-asset-A-C/download",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-reality-doc-A-C/download",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-reality-asset-B-A/download",
+              "route": "B",
+              "syntheticAccount": "A",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-reality-doc-B-A/download",
+              "route": "B",
+              "syntheticAccount": "A",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-reality-asset-B-B/download",
+              "route": "B",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-reality-doc-B-B/download",
+              "route": "B",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-reality-asset-B-C/download",
+              "route": "B",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-reality-doc-B-C/download",
+              "route": "B",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            }
+          ]
+        },
+        "verified": {
+          "complete": true,
+          "sourceSHA": "4412b98994dc7b2d6887b457369fdc9605fbbdd0",
+          "api": 28,
+          "transport": "reality",
+          "exactRequests": 17,
+          "successfulFiles": 12,
+          "screenshots": false,
+          "realChatGPT": false
+        }
+      },
+      {
+        "artifact": 13250707232,
+        "archiveBytes": 2623,
+        "archiveSHA256": "2858b027aa79113f87bea946df5f65c35d39533ef09937fdca19869dda64df8c",
+        "result": {
+          "schema": 1,
+          "sourceSHA": "4412b98994dc7b2d6887b457369fdc9605fbbdd0",
+          "api": 35,
+          "transport": "raw",
+          "screenshots": false,
+          "realChatGPT": false,
+          "disabledCoreUnloaded": true,
+          "popupGesture": true,
+          "profileNames": {
+            "A": "profile-a43a7942-1699-4d8a-8ca5-c9cdf2ce167a",
+            "B": "profile-44154932-0dfa-4c17-919e-e6d583661015",
+            "C": "profile-d76890ea-2586-46d7-be18-6eefaf11a8a9"
+          },
+          "liveDocuments": 5,
+          "systemPicker": "ActivityMonitor result stub; actual system UI not yet verified",
+          "recreatedSameViews": true,
+          "selectedRouteRestoredBeforeLoad": true,
+          "failedCoreBlockedAllViews": true,
+          "failureDidNotReload": true,
+          "retryDidNotReload": true,
+          "complete": true,
+          "files": [
+            {
+              "exit": "asset",
+              "account": "A",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "A",
+                "operation": "formal-raw-asset-A-A"
+              },
+              "id": "26b2fbfb-6b4d-4f09-8642-2042fb6cee59",
+              "sha256": "4c8dde09fab8abe4f3b57e5af79239bea5ea5fe67152c834492dd613d1ca3574"
+            },
+            {
+              "exit": "document",
+              "account": "A",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "A",
+                "operation": "formal-raw-doc-A-A"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "B",
+                "operation": "formal-raw-asset-A-B"
+              },
+              "id": "982d1481-151f-4809-a1e9-2143cff37eda",
+              "sha256": "c630b5b2cff1b3145b009d6f7a25dacf835ff47613822ec5f85bb06e1d9effa1"
+            },
+            {
+              "exit": "document",
+              "account": "B",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "B",
+                "operation": "formal-raw-doc-A-B"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "C",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "C",
+                "operation": "formal-raw-asset-A-C"
+              },
+              "id": "83e8115c-6fd1-42b4-b5eb-0bff14592f35",
+              "sha256": "991c0b94780e7550185bad75b7c004ab5d89556f3cd56ce1d0f93de72f17b68d"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "C",
+                "operation": "formal-raw-doc-A-C"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "A",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "A",
+                "operation": "formal-raw-asset-B-A"
+              },
+              "id": "a29cac23-67f0-4c4b-8bfd-5f7beb2c74a7",
+              "sha256": "39636eb54108e666e3af5fb069784bd2dc6899de3127c4e0f16bd1a3a34c6292"
+            },
+            {
+              "exit": "document",
+              "account": "A",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "A",
+                "operation": "formal-raw-doc-B-A"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "B",
+                "operation": "formal-raw-asset-B-B"
+              },
+              "id": "e86ac6ef-7ac5-44f0-a900-a362c0605c16",
+              "sha256": "15611aa32c6847541441dd3ac0e7417d696cf8fdf29c06698f929bcebf18d5ae"
+            },
+            {
+              "exit": "document",
+              "account": "B",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "B",
+                "operation": "formal-raw-doc-B-B"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "C",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "C",
+                "operation": "formal-raw-asset-B-C"
+              },
+              "id": "5bf4cacb-9e80-4f48-8497-08ef608e94cb",
+              "sha256": "2632cdac86a87e578bd9e6ea34f0443cde6ed2c1b4ca503e5b727f205d247b1d"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "C",
+                "operation": "formal-raw-doc-B-C"
+              }
+            }
+          ],
+          "expectedRequests": [
+            {
+              "path": "/joint/formal-raw-page-A1/page",
+              "route": "A",
+              "syntheticAccount": "A",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-raw-page-A2/page",
+              "route": "A",
+              "syntheticAccount": "A",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-raw-page-B1/page",
+              "route": "A",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-raw-page-C1/page",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-raw-page-A1-popup/page",
+              "route": "A",
+              "syntheticAccount": "A",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-raw-asset-A-A/download",
+              "route": "A",
+              "syntheticAccount": "A",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-raw-doc-A-A/download",
+              "route": "A",
+              "syntheticAccount": "A",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-raw-asset-A-B/download",
+              "route": "A",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-raw-doc-A-B/download",
+              "route": "A",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-raw-asset-A-C/download",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-raw-doc-A-C/download",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-raw-asset-B-A/download",
+              "route": "B",
+              "syntheticAccount": "A",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-raw-doc-B-A/download",
+              "route": "B",
+              "syntheticAccount": "A",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-raw-asset-B-B/download",
+              "route": "B",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-raw-doc-B-B/download",
+              "route": "B",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-raw-asset-B-C/download",
+              "route": "B",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-raw-doc-B-C/download",
+              "route": "B",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            }
+          ]
+        },
+        "verified": {
+          "complete": true,
+          "sourceSHA": "4412b98994dc7b2d6887b457369fdc9605fbbdd0",
+          "api": 35,
+          "transport": "raw",
+          "exactRequests": 17,
+          "successfulFiles": 12,
+          "screenshots": false,
+          "realChatGPT": false
+        }
+      },
+      {
+        "artifact": 13250558974,
+        "archiveBytes": 2636,
+        "archiveSHA256": "634e423b41854b8e6744fcc4483bceac125481aaeac4aeb978177561773c3807",
+        "result": {
+          "schema": 1,
+          "sourceSHA": "4412b98994dc7b2d6887b457369fdc9605fbbdd0",
+          "api": 35,
+          "transport": "reality",
+          "screenshots": false,
+          "realChatGPT": false,
+          "disabledCoreUnloaded": true,
+          "popupGesture": true,
+          "profileNames": {
+            "A": "profile-77e67c9e-e754-4820-b586-5012c2ae65d5",
+            "B": "profile-5eee267a-3c8e-44ba-9a8d-ae11cf469212",
+            "C": "profile-0c3ede35-3c2e-44bc-acfa-d8b59c806316"
+          },
+          "liveDocuments": 5,
+          "systemPicker": "ActivityMonitor result stub; actual system UI not yet verified",
+          "recreatedSameViews": true,
+          "selectedRouteRestoredBeforeLoad": true,
+          "failedCoreBlockedAllViews": true,
+          "failureDidNotReload": true,
+          "retryDidNotReload": true,
+          "complete": true,
+          "files": [
+            {
+              "exit": "asset",
+              "account": "A",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "A",
+                "operation": "formal-reality-asset-A-A"
+              },
+              "id": "ebd2778c-2bc0-4644-bca3-0e5acdb36e00",
+              "sha256": "29867bf16cbf23e37d749204382406b89823f16c1165e3c5fbedef2b9f41ed91"
+            },
+            {
+              "exit": "document",
+              "account": "A",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "A",
+                "operation": "formal-reality-doc-A-A"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "B",
+                "operation": "formal-reality-asset-A-B"
+              },
+              "id": "73ddc838-123b-4deb-8e86-368308a721d8",
+              "sha256": "2c1d5bca1b11f49015b10cdb86bfa9ff678d749652a779d944fa559634ba672e"
+            },
+            {
+              "exit": "document",
+              "account": "B",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "B",
+                "operation": "formal-reality-doc-A-B"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "C",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "C",
+                "operation": "formal-reality-asset-A-C"
+              },
+              "id": "3a77a35a-83c3-4413-90e1-d834fe5f7b37",
+              "sha256": "3d80c21e34e9216da1454c275bd87678375f803c6fbaf35f9b1d1846eada38e7"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "C",
+                "operation": "formal-reality-doc-A-C"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "A",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "A",
+                "operation": "formal-reality-asset-B-A"
+              },
+              "id": "2e7a5522-41b1-43b6-ac74-813581f6448e",
+              "sha256": "d5cab4b62ebdd44e7cbc6acafd8f95559fcdec6b752221a3f17775c295f2c6ba"
+            },
+            {
+              "exit": "document",
+              "account": "A",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "A",
+                "operation": "formal-reality-doc-B-A"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "B",
+                "operation": "formal-reality-asset-B-B"
+              },
+              "id": "339cd357-e99d-4ea8-9b93-662b3675abf8",
+              "sha256": "1b8ca5a1abfbe7300457a35dd9835574552f4d38f5af924b8d89781316a290bd"
+            },
+            {
+              "exit": "document",
+              "account": "B",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "B",
+                "operation": "formal-reality-doc-B-B"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "C",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "C",
+                "operation": "formal-reality-asset-B-C"
+              },
+              "id": "a8e2119d-2c99-42fe-a16d-9392eb348a40",
+              "sha256": "876212eff023aae8844712d670d62ddf6bf4283ed2282baaf1296af92d271552"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "C",
+                "operation": "formal-reality-doc-B-C"
+              }
+            }
+          ],
+          "expectedRequests": [
+            {
+              "path": "/joint/formal-reality-page-A1/page",
+              "route": "A",
+              "syntheticAccount": "A",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-reality-page-A2/page",
+              "route": "A",
+              "syntheticAccount": "A",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-reality-page-B1/page",
+              "route": "A",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-reality-page-C1/page",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-reality-page-A1-popup/page",
+              "route": "A",
+              "syntheticAccount": "A",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-reality-asset-A-A/download",
+              "route": "A",
+              "syntheticAccount": "A",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-reality-doc-A-A/download",
+              "route": "A",
+              "syntheticAccount": "A",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-reality-asset-A-B/download",
+              "route": "A",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-reality-doc-A-B/download",
+              "route": "A",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-reality-asset-A-C/download",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-reality-doc-A-C/download",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-reality-asset-B-A/download",
+              "route": "B",
+              "syntheticAccount": "A",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-reality-doc-B-A/download",
+              "route": "B",
+              "syntheticAccount": "A",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-reality-asset-B-B/download",
+              "route": "B",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-reality-doc-B-B/download",
+              "route": "B",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-reality-asset-B-C/download",
+              "route": "B",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-reality-doc-B-C/download",
+              "route": "B",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            }
+          ]
+        },
+        "verified": {
+          "complete": true,
+          "sourceSHA": "4412b98994dc7b2d6887b457369fdc9605fbbdd0",
+          "api": 35,
+          "transport": "reality",
+          "exactRequests": 17,
+          "successfulFiles": 12,
+          "screenshots": false,
+          "realChatGPT": false
+        }
+      },
+      {
+        "artifact": 13249844541,
+        "archiveBytes": 2622,
+        "archiveSHA256": "b38cc5100eacdbd8fa54354fd607bfc05e9709bfecb6f1cf7dd70e78046f33f6",
+        "result": {
+          "schema": 1,
+          "sourceSHA": "4412b98994dc7b2d6887b457369fdc9605fbbdd0",
+          "api": 35,
+          "transport": "tls",
+          "screenshots": false,
+          "realChatGPT": false,
+          "disabledCoreUnloaded": true,
+          "popupGesture": true,
+          "profileNames": {
+            "A": "profile-8181586b-900d-4ab5-afe7-346887b945cd",
+            "B": "profile-b51546cd-33c8-41ea-abde-fa9d4e7bf20d",
+            "C": "profile-76e0aff2-194d-49c0-a720-85ed8cd39c8b"
+          },
+          "liveDocuments": 5,
+          "systemPicker": "ActivityMonitor result stub; actual system UI not yet verified",
+          "recreatedSameViews": true,
+          "selectedRouteRestoredBeforeLoad": true,
+          "failedCoreBlockedAllViews": true,
+          "failureDidNotReload": true,
+          "retryDidNotReload": true,
+          "complete": true,
+          "files": [
+            {
+              "exit": "asset",
+              "account": "A",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "A",
+                "operation": "formal-tls-asset-A-A"
+              },
+              "id": "9aac44fa-5ece-48c6-b288-4b9fb8aebaf0",
+              "sha256": "64862f9d174dbb95a7437c5bc1c38692c4348b250a1a092f2099965ec1a11cf4"
+            },
+            {
+              "exit": "document",
+              "account": "A",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "A",
+                "operation": "formal-tls-doc-A-A"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "B",
+                "operation": "formal-tls-asset-A-B"
+              },
+              "id": "52e986d5-b3c1-4e72-80c4-bdd38fbd7579",
+              "sha256": "df6fd0d8961df21aa8c979ccc7371f4babfddee5929766413dfe84bddb8e6080"
+            },
+            {
+              "exit": "document",
+              "account": "B",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "B",
+                "operation": "formal-tls-doc-A-B"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "C",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "C",
+                "operation": "formal-tls-asset-A-C"
+              },
+              "id": "293b06f6-e22d-493a-8e5b-51c65c90045b",
+              "sha256": "932d59607d178eb9eb1e9c05b838c890b2f3ed0258f0678fb0c49c2b2399082a"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "A",
+              "body": {
+                "route": "A",
+                "account": "C",
+                "operation": "formal-tls-doc-A-C"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "A",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "A",
+                "operation": "formal-tls-asset-B-A"
+              },
+              "id": "9070adb1-6d32-40a0-bd60-271067a33efe",
+              "sha256": "7a2fdfe4c7279a57c843ff884a79daa43a217c9de68f11f87905a9cc69d3aafa"
+            },
+            {
+              "exit": "document",
+              "account": "A",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "A",
+                "operation": "formal-tls-doc-B-A"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "B",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "B",
+                "operation": "formal-tls-asset-B-B"
+              },
+              "id": "4cc711ea-5cb2-4fe7-a7f7-2a607ae6738a",
+              "sha256": "8bc8536d9cde4b4cf8268e46d52c0d69a9ebb95e18278e7e6afb1584106d33be"
+            },
+            {
+              "exit": "document",
+              "account": "B",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "B",
+                "operation": "formal-tls-doc-B-B"
+              }
+            },
+            {
+              "exit": "asset",
+              "account": "C",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "C",
+                "operation": "formal-tls-asset-B-C"
+              },
+              "id": "246270bf-31bd-4f55-835c-7550239681b1",
+              "sha256": "c5d6c43adff430056a418a9193a63b9d3648c3f19f394d18e4134f2b960e3992"
+            },
+            {
+              "exit": "document",
+              "account": "C",
+              "route": "B",
+              "body": {
+                "route": "B",
+                "account": "C",
+                "operation": "formal-tls-doc-B-C"
+              }
+            }
+          ],
+          "expectedRequests": [
+            {
+              "path": "/joint/formal-tls-page-A1/page",
+              "route": "A",
+              "syntheticAccount": "A",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-tls-page-A2/page",
+              "route": "A",
+              "syntheticAccount": "A",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-tls-page-B1/page",
+              "route": "A",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-tls-page-C1/page",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-tls-page-A1-popup/page",
+              "route": "A",
+              "syntheticAccount": "A",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-tls-asset-A-A/download",
+              "route": "A",
+              "syntheticAccount": "A",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-tls-doc-A-A/download",
+              "route": "A",
+              "syntheticAccount": "A",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-tls-asset-A-B/download",
+              "route": "A",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-tls-doc-A-B/download",
+              "route": "A",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-tls-asset-A-C/download",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-tls-doc-A-C/download",
+              "route": "A",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-tls-asset-B-A/download",
+              "route": "B",
+              "syntheticAccount": "A",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-tls-doc-B-A/download",
+              "route": "B",
+              "syntheticAccount": "A",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-tls-asset-B-B/download",
+              "route": "B",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-tls-doc-B-B/download",
+              "route": "B",
+              "syntheticAccount": "B",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-tls-asset-B-C/download",
+              "route": "B",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            },
+            {
+              "path": "/joint/formal-tls-doc-B-C/download",
+              "route": "B",
+              "syntheticAccount": "C",
+              "method": "GET",
+              "status": 200
+            }
+          ]
+        },
+        "verified": {
+          "complete": true,
+          "sourceSHA": "4412b98994dc7b2d6887b457369fdc9605fbbdd0",
+          "api": 35,
+          "transport": "tls",
+          "exactRequests": 17,
+          "successfulFiles": 12,
+          "screenshots": false,
+          "realChatGPT": false
+        }
+      }
+    ],
+    "files": 72,
+    "exactRequests": 102,
+    "systemPicker": "ActivityMonitor stub, not actual UI",
+    "systemPickerUIValidated": false
+  },
+  "phase2": {
+    "status": "code-prepared-awaiting-Actions"
+  },
+  "phase3": {
+    "status": "pending"
+  },
+  "protectedMain": "ffbbd91ee5b50ff51d88758fce78a019d63796be",
+  "scope": [
+    "synthetic CI only",
+    "no screenshots",
+    "no real ChatGPT",
+    "no personal devices",
+    "no production signing",
+    "no main merge or public release"
+  ]
+}

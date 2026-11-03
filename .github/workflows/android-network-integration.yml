@@ -40,6 +40,23 @@ jobs:
           sdkmanager 'platforms;android-36' 'build-tools;35.0.0'
           bash gradlew --no-daemon -PunsignedRelease :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:assembleRelease
           bash gradlew --no-daemon -PnetworkIntegration :app:assembleNetworkCi :app:assembleNetworkCiAndroidTest
+      - uses: actions/checkout@v4
+        with:
+          ref: b44e564deaed09efea7be3d68349d2198dede46b
+          path: baseline-upgrade
+      - name: Build old client with the same synthetic data test
+        run: |
+          cp android/app/src/androidTest/java/com/forcemind/chatgpt/profiles/NetworkUpgradeCompatibilityTest.java baseline-upgrade/android/app/src/androidTest/java/com/forcemind/chatgpt/profiles/
+          bash baseline-upgrade/android/gradlew -p baseline-upgrade/android --no-daemon :app:assembleDebug :app:assembleDebugAndroidTest
+          mkdir -p android/app/build/upgrade-inputs
+          cp baseline-upgrade/android/app/build/outputs/apk/debug/app-debug.apk android/app/build/upgrade-inputs/baseline-debug.apk
+          cp baseline-upgrade/android/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk android/app/build/upgrade-inputs/baseline-test.apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk android/app/build/upgrade-inputs/candidate-debug.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: formal-network-upgrade-inputs
+          retention-days: 14
+          path: android/app/build/upgrade-inputs/
       - name: Record candidate identity and packaged isolation
         run: python3 android/scripts/network-candidate-evidence.py
       - uses: actions/upload-artifact@v4
@@ -138,3 +155,47 @@ jobs:
           name: formal-network-api-${{ matrix.api }}-${{ matrix.transport }}
           retention-days: 14
           path: android/app/build/network-evidence/
+
+  upgrade:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [28, 35]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: formal-network-upgrade-inputs
+          path: android/app/build/upgrade-inputs
+      - uses: actions/download-artifact@v4
+        if: matrix.api == 28
+        with:
+          name: formal-network-provider
+          path: android/network-poc/webview-fixture
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - name: Enable isolated emulator acceleration
+        run: |
+          test -c /dev/kvm
+          sudo chmod a+rw /dev/kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          target: ${{ matrix.api == 28 && 'default' || 'google_apis' }}
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -writable-system
+          script: |
+            if [ '${{ matrix.api }}' = 28 ]; then python3 android/network-poc/scripts/install-webview.py --provider android/network-poc/webview-fixture --output android/app/build/upgrade-evidence/provider; fi
+            python3 android/scripts/run-network-upgrade.py --inputs android/app/build/upgrade-inputs --output android/app/build/upgrade-evidence
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: formal-network-upgrade-api-${{ matrix.api }}
+          retention-days: 14
+          path: android/app/build/upgrade-evidence/

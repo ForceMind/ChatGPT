@@ -20,6 +20,21 @@ public final class NetworkDocumentsProvider extends DocumentsProvider {
             DocumentsContract.Document.COLUMN_DISPLAY_NAME, DocumentsContract.Document.COLUMN_MIME_TYPE,
             DocumentsContract.Document.COLUMN_FLAGS, DocumentsContract.Document.COLUMN_SIZE, DocumentsContract.Document.COLUMN_LAST_MODIFIED};
     private File directory;
+    private volatile String nextFault = "none";
+    private final java.util.concurrent.atomic.AtomicInteger faults = new java.util.concurrent.atomic.AtomicInteger();
+    private final java.util.concurrent.atomic.AtomicLong faultBytes = new java.util.concurrent.atomic.AtomicLong();
+    @Override public android.os.Bundle call(String method, String arg, android.os.Bundle extras) {
+        android.os.Bundle standard = super.call(method,arg,extras); if (standard != null) return standard;
+        if ("fixture-fault".equals(method) || "fixture-stats".equals(method)) {
+            if (android.os.Binder.getCallingUid() != android.os.Process.myUid()) throw new SecurityException("CI owner only");
+            if ("fixture-fault".equals(method)) {
+                if (!java.util.Arrays.asList("none", "open-fail", "mid-write").contains(arg)) throw new IllegalArgumentException("Unknown CI fault");
+                nextFault = arg;
+            }
+            android.os.Bundle out = new android.os.Bundle();out.putInt("faults", faults.get());out.putLong("bytes", faultBytes.get());return out;
+        }
+        return null;
+    }
     @Override public boolean onCreate() {
         if (getContext() == null || !getContext().getPackageName().endsWith(".networkci")) return false;
         directory = new File(getContext().getFilesDir(), "owned-joint-documents");
@@ -56,7 +71,7 @@ public final class NetworkDocumentsProvider extends DocumentsProvider {
             else if (DocumentsContract.Root.COLUMN_DOCUMENT_ID.equals(name)) value = "root";
             else if (DocumentsContract.Root.COLUMN_TITLE.equals(name)) value = "Owned CI documents";
             else if (DocumentsContract.Root.COLUMN_FLAGS.equals(name)) value = DocumentsContract.Root.FLAG_SUPPORTS_CREATE | DocumentsContract.Root.FLAG_LOCAL_ONLY;
-            else if (DocumentsContract.Root.COLUMN_MIME_TYPES.equals(name)) value = "application/octet-stream";
+            else if (DocumentsContract.Root.COLUMN_MIME_TYPES.equals(name)) value = "*/*";
             else if (DocumentsContract.Root.COLUMN_ICON.equals(name)) value = android.R.drawable.ic_menu_save;
             row.add(value);
         }
@@ -82,7 +97,26 @@ public final class NetworkDocumentsProvider extends DocumentsProvider {
         return id;
     }
     @Override public ParcelFileDescriptor openDocument(String id, String mode, CancellationSignal signal) throws FileNotFoundException {
-        return ParcelFileDescriptor.open(document(id), ParcelFileDescriptor.parseMode(mode));
+        File target = document(id);
+        if (mode.contains("w")) {
+            String fault = nextFault; nextFault = "none";
+            if ("open-fail".equals(fault)) { faults.incrementAndGet(); throw new SecurityException("Owned synthetic write permission denial"); }
+            if ("mid-write".equals(fault)) {
+                faults.incrementAndGet();
+                try {
+                    ParcelFileDescriptor[] pipe = ParcelFileDescriptor.createReliablePipe();
+                    new Thread(() -> {
+                        try (java.io.InputStream input = new ParcelFileDescriptor.AutoCloseInputStream(pipe[0]); java.io.FileOutputStream output = new java.io.FileOutputStream(target)) {
+                            byte[] buffer = new byte[4096];int received = 0,n;
+                            while (received < 4096 && (n = input.read(buffer,0,4096-received)) != -1) { output.write(buffer,0,n);received += n;faultBytes.addAndGet(n); }
+                            output.getFD().sync();pipe[0].closeWithError("Owned synthetic failure after a real 4096-byte write");
+                        } catch (IOException failure) { try { pipe[0].closeWithError("Owned synthetic pipe closed"); } catch(IOException ignored){} }
+                    }, "owned-document-fault").start();
+                    return pipe[1];
+                } catch (IOException failure) { throw new FileNotFoundException("Cannot create owned fault pipe"); }
+            }
+        }
+        return ParcelFileDescriptor.open(target, ParcelFileDescriptor.parseMode(mode));
     }
     @Override public void deleteDocument(String id) throws FileNotFoundException {
         if (!document(id).delete()) throw new FileNotFoundException("Cannot remove owned document");
