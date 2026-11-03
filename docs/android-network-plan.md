@@ -1,22 +1,24 @@
 # Android 应用内网络首版
 
-状态：Android 独立网络预览 0.1.0 已交付；核心停止状态和在途文件故障修复已在 GitHub Actions 合成验证通过（2026-11-03）。正式接入方案已形成，尚未实施。
+状态：Android 独立网络预览 0.1.0 已交付；核心状态、在途故障与多 Profile 联合验收已在 GitHub Actions 合成验证通过（2026-11-03）。正式接入方案已形成，尚未实施。
 
-## 当前批次：独立多 Profile 联合验收（进行中）
+## 已验证：独立多 Profile 联合验收（2026-11-03）
 
-用户已确认按 [正式接入建议](android-network-integration-plan.md) 推进下一批联合验收；只修改独立包，不实施正式客户端适配。目标为三个真实隔离 Profile、四页及所属弹窗，核对账号 Cookie / localStorage、两类原生文件出口与网页同路由、账号 epoch、Activity 重建、系统 HTTP 代理 / PAC 及明确停用回退。正式 App、登录数据、生产签名、main、官网、公开 Release、依赖版本和工作流不变。
+源码 `6df1bdd795460aa18e706637c5741eea2d4eab17` 的 [Actions 41660146017](https://github.com/ForceMind/ChatGPT/actions/runs/41660146017) 十个必要网络作业全部通过。只修改独立包及直接相关测试和说明，没有实施正式接入；正式 App、现有登录 / 恢复数据、生产签名、main、官网、公开 Release、依赖与工作流保持不变。
 
-当前第一迭代先构建真实会话支架，并在原路由测试前执行独立能力门槛：动态读取实际 provider / API、`MULTI_PROFILE`、`PROXY_OVERRIDE` 和系统 ProxyInfo，报告明确标记 `fullJointAcceptance=false`。不支持即保存证据并失败，不用默认共享 Profile 代替，也不将原四项回归通过当作联合验收通过。
+Android 9 / 15 × RAW / TLS / REALITY 六组设备作业，RAW 覆盖 HTTP / HTTPS，共八个套件。各套严格顺序执行原四项、单独联合一项、冷进程清理一项，共 48 次 instrumentation，另有六次独立能力门槛。实际 provider 为 `com.android.webview` / `com.google.android.webview`，均为 `124.0.6367.219`，MFP 与代理覆盖同时可用。读取 JUnit XML 核对 Java 单元 10 项，合成服务 16 项、驱动合同 9 项通过；原六组资源窗口保留，不将默认单空间资源窗口当作多 Profile 资源测量。
 
-系统代理 / PAC 的后续真实验收只允许全新 CI 模拟器临时 DeviceOwner 和公开 DPM API；测试后恢复并撤销，不用隐 API / 安全豁免或仅写 settings 自证。管理员 Receiver、Provider 与 testOnly 仅在 ci flavor；预览 APK 的编译产物将单独核对隔离。Profile 清理先立即使该账号 epoch / 资源失效；物理删除按实际 API 结果报告，若已加载而无法删除，则在新的测试进程、加载 Profile 前验证 owned tombstone 清理，不冒称本进程已抹除数据。完整联合功能、系统路由与清理仍未运行验收。
+- 每套三个真实隔离 Profile、四页及真实触摸创建的所属弹窗，Cookie / localStorage 不串账号。真实 Activity 重建仍是同一会话、同一批 WebViews 和原文档 / 草稿；全部系统线路切换后 B / C 的原文档也保持一致。
+- 八套累计 256 个成功文件任务、432 个精确网页 / 文件请求，资产副本与 ContentResolver 文档两出口同线路，重定向按目标地址重新读取发起 Profile 的 Cookie。临时切换可见账号不改变文件归属。
+- 系统 HTTP 代理走受限出口 S，PAC 走另一受限出口 P；网页及两类原生出口实测一致。应用 A / B 覆盖后，明确停用等待 `clearProxyOverride` 回调并恢复对应 S / P。公开 DPM API 的临时 CI DeviceOwner 最后恢复原系统代理并实际撤销；编译隔离检查确认这些控制入口、Provider、testOnly 和合成 CA 不进入预览包。
+- A / B 客户端均实际收到至少 4096 字节后，重建 Activity，再清理 A；A 的 epoch 和回调失效、私有资产删除，B 下载继续，B / C 文件、已完成导出与既有文档哈希不变。C 的文档下载在真实部分文件阶段取消，没有新文档或残片；关闭的文件入口拒绝新请求。八套账号清理 52–205 ms、文档下载取消 1–35 ms，仅为合成模拟器样本。
+- 八套的已加载 A Profile 都无法在原进程立即物理删除，如实记录 owned tombstone；随后新进程在加载 Profile 前实际删除 A，并用新 WebViews 读取 B / C 的持久 Cookie / localStorage。不声称进程退出后仍是原内存文档。原 96 个在途操作各一次和 16 个关闭后请求不到站的断言保留；新增 24 个精确 gate 操作及 8 个关闭入口拒绝不混入旧命名空间。
 
-能力门槛源码 `0e9198e2c45fc86379c9652ae2b9349d616513a3` 的 [Actions 41653710935](https://github.com/ForceMind/ChatGPT/actions/runs/41653710935) 六组设备作业已全部通过。已读取 API 28 / 35 的真实报告：分别为 `com.android.webview` / `com.google.android.webview`，版本均为 `124.0.6367.219`，`MULTI_PROFILE` 与 `PROXY_OVERRIDE` 均为 true；每组严格一项能力测试，原四项路由回归和原资源窗口继续通过。编译 APK 隔离报告确认预览包不包含 CI 管理员、文档 Provider、testOnly 与合成 CA，CI 包包含受平台权限保护的测试入口。此结果明确为 `fullJointAcceptance=false`。
+完整 [源码、归档摘要、逐组结果与限制](benchmarks/android-network-joint-profiles.json) 和 [独立 arm64 候选](https://github.com/ForceMind/ChatGPT/actions/runs/41660146017/artifacts/13242620619) 可查看。候选仍为 0.1.0 实验签名，三 Profile 合成界面和系统角色仅在 CI；预览 APK 的常规网络入口没有变成正式多账号产品。APK 为 40,702,858 字节，SHA-256 为 `3e1aee230975403b8e9d17e86cfa3eb0e88572a6feb6de31cbf784696b60a909`。本机只读取小型元数据与设备证据，没有构建、下载或安装 APK、截图或访问真实 ChatGPT。
 
-前两次门槛尚未读到能力即停止：首轮对 `aapt2` 裸 `true` 属性的解析不完整；修正后，第二轮被 Android `DocumentsProvider` 的 `Provider must be exported` 平台约束拒绝。第三轮将测试 Provider 设为 exported 并受 `MANAGE_DOCUMENTS` 保护后通过；未放宽隔离断言或运行能力条件。完整联合验收将以原四项、单独联合一项、冷进程清理一项顺序运行，避免不同 Activity 的异步核心回收互相干扰。系统静态代理与 PAC 分别采用受限合成出口 S / P，必须核对实际流量，不能只看配置。
+前置失败均保留：`4a58b3c` / `41649274933` 在隔离检查处因未识别 aapt 裸 `true` 停止；`01c61bf` / `41652136446` 隔离通过后被 `Provider must be exported` 拒绝，尚未查询 MFP。CI Provider 改为 exported 并受 `MANAGE_DOCUMENTS` 保护后，`0e9198e` / [41653710935](https://github.com/ForceMind/ChatGPT/actions/runs/41653710935) 的实际能力及编译隔离通过，明确不代替联合验收。首个完整候选运行 `41659673369` 因误以为缺少驱动单测入口被取消；最终源码多跑了一次重复外层前检，交付只删除该重复调用，仍由每次 `run-routing.py` 执行同样九项单测。未修改 App 或测试场景、原断言，复用已通过的运行证据。
 
-能力门槛首轮 `4a58b3c` / Actions `41649274933` 的核心、合成服务和包检查通过；设备在编译 APK 隔离检查处停止，尚未查询多 Profile 能力。预览包的管理员 / Provider / 测试 CA 检查为不存在；CI `testOnly` 被初始解析器判为 false，但原始 aapt 字段未保留，不能据此断言是构建标记丢失或格式误读。检查脚本现保留两包原 manifest 文本和原始布尔行，严格识别明确 true 与 typed boolean true 编码，false / 缺失 / 未知仍失败；没有跳过 CI 必须为 testOnly、preview 必须隔离的断言，等待后续真实字段核对。
-
-次轮 `01c61bf` / Actions `41652136446` 的实际 aapt 字段为 `android:testOnly(0x01010272)=true`，按明确布尔语义核对后，preview / ci 隔离通过。设备随后在 Provider 初始化处报 `SecurityException: Provider must be exported`，能力测试还未查询 MFP。按 Android DocumentsProvider 合约，将 CI Provider 声明为 exported 并用 `MANAGE_DOCUMENTS` 签名权限保护，同时补齐必要投影列；该 Provider 与权限不进入 preview，隔离检查同步要求权限确实存在。未通过取消权限检查或共享 Profile 绕过初始化，后续仍须真实运行能力门槛。
+下一步仍为待批准的 [正式客户端最小接入](android-network-integration-plan.md)。系统 picker UI、外部文档提供方授权 / 磁盘满 / 创建文档后的写入中断，真实节点与 ChatGPT、arm64 真机 / OEM 和正式原证书升级仍未验收；本批没有以合成结果替代这些证据。
 
 ## 已验证：在途文件故障收口（2026-11-03）
 

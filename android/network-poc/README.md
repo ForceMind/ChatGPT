@@ -84,3 +84,10 @@ Java 单元 10 项、驱动契约单元 5 项、Go 生命周期 / 传输及原�
 本批原生终结观测为核心停止 1–19 ms、取消 1–5 ms、关闭 1–6 ms，仅是合成样本，不是 UI 提示时限或性能收益。初轮因流未取消失败、次轮因首次 DIRECT 页面 `ERR_ADDRESS_UNREACHABLE` 失败的记录均保留；最终在启动 Activity 前用 15 秒有界 owned GET 验证可达，不附 Cookie、不发业务体、不增加网页重载，原全部断言保留。
 
 完整 [计数与边界](../../docs/benchmarks/android-network-transfer-faults.json) 及 [当前独立 arm64 候选](https://github.com/ForceMind/ChatGPT/actions/runs/41636997369/artifacts/13231850662) 可查看。候选仍是 0.1.0 实验通道，以 source SHA 区分，不是正式升级包；没有本机构建、下载或安装 APK。按批准顺序形成的 [正式接入建议](../../docs/android-network-integration-plan.md) 只是一份待确认设计，未修改正式 App、登录 / 恢复数据、签名、main、官网、公开 Release 或工作流。
+
+
+## 多账号与系统路由联合验收（2026-11-03）
+
+源码 `6df1bdd` 的 [Actions 41660146017](https://github.com/ForceMind/ChatGPT/actions/runs/41660146017) 十个必要作业通过。Android 9 / 15 的八套流程逐次执行原四项、联合一项、冷清理一项；Java 单元 10 项、合成服务 16 项和驱动合同 9 项通过。三个真实 Profile、四页及触摸弹窗隔离，网页 / 资产 / ContentResolver 文档同路由，HTTP S / PAC P、应用覆盖与停用恢复均有实际流量证据；累计 256 个成功文件任务与 432 个精确请求。A 清理不终止 B，文档下载取消无残片，Activity 重建与全部线路切换保留原网页和草稿。
+
+加载过的 A Profile 在当前进程无法立即删除，先失效 epoch 并清理 owned 私有资产，再在冷进程实际删除；B / C 的持久数据保留。跨进程用的是新网页，不声称原 RAM 文档保活。[完整证据与限制](../../docs/benchmarks/android-network-joint-profiles.json) 和 [本轮独立 arm64 候选](https://github.com/ForceMind/ChatGPT/actions/runs/41660146017/artifacts/13242620619) 可查看，合成多 Profile 界面 / 管理角色只在 CI，不是正式升级包。正式接入、系统 picker / 外部 URI 授权与发布故障、真实 ChatGPT / 节点 / 设备仍未验证；正式 App、登录数据、签名、main、网站和工作流未改。

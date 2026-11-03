@@ -4,7 +4,6 @@ test "${GITHUB_ACTIONS:-}" = true
 test "$(adb shell getprop ro.kernel.qemu | tr -d '\r')" = 1
 cd "$(dirname "$0")/.."
 mkdir -p evidence
-python3 -m unittest discover -s scripts/tests -p 'test_routing_driver.py' -v
 trap 'timeout 15 adb logcat -d -t 5000 > evidence/logcat.txt 2>&1 || true; cp "$RUNNER_TEMP/network-fixture.log" evidence/fixture.log 2>/dev/null || true' EXIT
 adb shell getprop ro.build.version.sdk > evidence/api.txt
 adb shell dumpsys webviewupdate > evidence/webview.txt
