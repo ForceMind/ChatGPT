@@ -21,5 +21,6 @@ run('adb','shell','am','force-stop',PACKAGE)
 run('adb','install','-r','-t',str(folder/'candidate-debug.apk'))
 after=phase('verify',os.environ['GITHUB_SHA'],output)
 assert before['signingSHA256']==after['signingSHA256'] and before['api']==after['api']
+assert before['versionCode']==3000022 and after['versionCode']==3000024 and after['versionCode']>before['versionCode']
 assert after['accounts']==3 and after['tabs']==4
 (output/'verified.json').write_text(json.dumps({'complete':True,'sourceSHA':os.environ['GITHUB_SHA'],'api':after['api'],'sameTemporaryCISignature':True,'productionSignatureVerified':False,'preserved':['workspace','profile names','cookies','encrypted drafts and handoff identity','asset bytes','background preferences'],'networkRequests':0,'inlineProfileDocuments':3,'screenshots':False,'personalData':False},indent=2)+'\n')

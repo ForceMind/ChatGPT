@@ -11,7 +11,7 @@ import java.util.List;
 /** Network controls live in More; the webpage shell stays unchanged. */
 final class NetworkSheet {
     static void show(MainActivity activity, NetworkSession session) {
-        StudioSheet sheet = new StudioSheet(activity, "网络", session.status());
+        StudioSheet sheet = new StudioSheet(activity, "网络", session.status()+" · 所有账号共用");
         sheet.row("使用系统网络", session.unreadable() ? "仅本次，保留原线路配置" : "停用应用内线路", "", () -> confirm(activity, () -> { sheet.dismiss(); session.useSystem(result(activity)); }));
         List<NetworkNode> nodes = session.nodes();
         for (int i = 0; i < nodes.size(); i++) {

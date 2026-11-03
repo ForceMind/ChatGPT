@@ -27,6 +27,7 @@ final class BrowserMemory {
     DownloadHelper downloads;
     private volatile NetworkSession network;
     NetworkSession network() { if (network == null) network = new NetworkSession(context, this::networkChanged); return network; }
+    void closeNetwork() { NetworkSession value=network;network=null;if(value!=null)value.close(); }
     boolean networkReady() { NetworkSession value = network; return value != null && value.ready(); }
     String accountOf(WebView web) { for (Map.Entry<String,WebView> entry : views.entrySet()) if (entry.getValue() == web) return accounts.get(entry.getKey()); throw new IllegalStateException("文件页面已关闭"); }
     void networkChanged() { if (network == null) return; for (WebView view : new ArrayList<>(views.values())) view.getSettings().setBlockNetworkLoads(!network.ready()); MainActivity activity = owner(); if (activity != null) activity.networkChanged(); }

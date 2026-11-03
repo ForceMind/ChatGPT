@@ -47,6 +47,7 @@ jobs:
       - name: Build old client with the same synthetic data test
         run: |
           cp android/app/src/androidTest/java/com/forcemind/chatgpt/profiles/NetworkUpgradeCompatibilityTest.java baseline-upgrade/android/app/src/androidTest/java/com/forcemind/chatgpt/profiles/
+          cp android/app/src/androidTest/java/com/forcemind/chatgpt/profiles/NetworkBenchmarkTest.java baseline-upgrade/android/app/src/androidTest/java/com/forcemind/chatgpt/profiles/
           bash baseline-upgrade/android/gradlew -p baseline-upgrade/android --no-daemon :app:assembleDebug :app:assembleDebugAndroidTest
           mkdir -p android/app/build/upgrade-inputs
           cp baseline-upgrade/android/app/build/outputs/apk/debug/app-debug.apk android/app/build/upgrade-inputs/baseline-debug.apk
@@ -57,8 +58,27 @@ jobs:
           name: formal-network-upgrade-inputs
           retention-days: 14
           path: android/app/build/upgrade-inputs/
+      - name: Prepare matched resource inputs
+        run: |
+          mkdir -p android/app/build/performance-inputs
+          cp android/app/build/upgrade-inputs/baseline-debug.apk android/app/build/performance-inputs/
+          cp android/app/build/upgrade-inputs/baseline-test.apk android/app/build/performance-inputs/
+          cp android/app/build/outputs/apk/networkCi/app-networkCi.apk android/app/build/performance-inputs/candidate-networkci.apk
+          cp android/app/build/outputs/apk/androidTest/networkCi/app-networkCi-androidTest.apk android/app/build/performance-inputs/candidate-networkci-test.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: formal-network-performance-inputs
+          retention-days: 14
+          path: android/app/build/performance-inputs/
       - name: Record candidate identity and packaged isolation
         run: python3 android/scripts/network-candidate-evidence.py
+      - name: Prepare unsigned arm64 review candidate
+        run: python3 android/scripts/package-network-candidate.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ChatGPT-Studio-Network-Candidate-Android-arm64-UNSIGNED
+          retention-days: 14
+          path: android/app/build/network-candidate/
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -199,3 +219,63 @@ jobs:
           name: formal-network-upgrade-api-${{ matrix.api }}
           retention-days: 14
           path: android/app/build/upgrade-evidence/
+
+  resources:
+    needs: [build, device, upgrade]
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [28, 35]
+        background: [false, true]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: formal-network-performance-inputs
+          path: android/app/build/performance-inputs
+      - uses: actions/download-artifact@v4
+        with:
+          name: formal-network-fixture
+          path: android/network-poc/secure-fixture
+      - uses: actions/download-artifact@v4
+        with:
+          name: formal-network-host-core
+          path: android/network-poc/corebridge/bin
+      - uses: actions/download-artifact@v4
+        if: matrix.api == 28
+        with:
+          name: formal-network-provider
+          path: android/network-poc/webview-fixture
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - name: Owned resource fixture and acceleration
+        run: |
+          chmod +x android/network-poc/corebridge/bin/xray
+          python3 android/network-poc/scripts/fixture.py --core android/network-poc/corebridge/bin/xray --output android/network-poc/secure-fixture > "$RUNNER_TEMP/formal-resource-fixture.log" 2>&1 &
+          for attempt in $(seq 1 40); do
+            if [ -f android/network-poc/secure-fixture/ready.json ]; then break; fi
+            sleep 1
+          done
+          test -f android/network-poc/secure-fixture/ready.json
+          test -c /dev/kvm
+          sudo chmod a+rw /dev/kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          target: ${{ matrix.api == 28 && 'default' || 'google_apis' }}
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -writable-system
+          script: |
+            if [ '${{ matrix.api }}' = 28 ]; then python3 android/network-poc/scripts/install-webview.py --provider android/network-poc/webview-fixture --output android/app/build/resource-evidence/provider; fi
+            python3 android/scripts/measure-network-integration.py --inputs android/app/build/performance-inputs --output android/app/build/resource-evidence ${{ matrix.background && '--background' || '' }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: formal-network-resources-api-${{ matrix.api }}-background-${{ matrix.background }}
+          retention-days: 14
+          path: android/app/build/resource-evidence/

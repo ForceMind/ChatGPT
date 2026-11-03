@@ -107,7 +107,7 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
     @Override public void onCreate(Bundle bundle) {
         super.onCreate(bundle);
         WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG);
-        memory=BrowserMemory.get(this);views=memory.views;popupOwners=memory.popupOwners;pageEpochs=memory.epochs;recentClosed=memory.recentClosed;memory.attach(this);memory.network();assetDownloads=memory.assetDownloads;downloadHelper=memory.downloads;
+        memory=BrowserMemory.get(this);views=memory.views;popupOwners=memory.popupOwners;pageEpochs=memory.epochs;recentClosed=memory.recentClosed;memory.attach(this);assetDownloads=memory.assetDownloads;downloadHelper=memory.downloads;
         buildLayout();
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override public void handleOnBackPressed() { navigateBack(); }
@@ -120,7 +120,7 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
             return;
         }
         try {
-            store = new StateStore(getFilesDir()); state = store.load();
+            store = new StateStore(getFilesDir()); state = store.load();memory.network();
             if (!WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE)) throw new IllegalStateException("WebView 多档案能力不可用，请重新打开应用");
             // Delete before binding any WebView. Loaded profiles cannot be deleted in this process.
             List<String> cleared = new ArrayList<>();
@@ -486,7 +486,7 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
         else if (ready && !fatal && popupOwners.containsKey(state.current().activeTab)) closeTab(state.activeAccount, state.current().activeTab);
         else moveTaskToBack(true);
     }
-    @Override protected void onResume(){super.onResume();resumed=true;if(memory!=null)memory.network().routes.recheckCoreState();if(memory!=null&&memory.owner()!=this&&ready){memory.attach(this);try{state=store.load();rebindLivePages();showCurrent();}catch(Exception e){fail("无法读取账号记录",e);}}for(WebView web:views.values())web.onResume();if(recovery!=null)recovery.resume();if(ready&&!fatal&&KeepaliveService.enabled(this)&&!KeepaliveService.running())enableKeepalive();drainHandoff();}
+    @Override protected void onResume(){super.onResume();resumed=true;if(memory!=null&&ready&&!fatal)memory.network().routes.recheckCoreState();if(memory!=null&&memory.owner()!=this&&ready){memory.attach(this);try{state=store.load();rebindLivePages();showCurrent();}catch(Exception e){fail("无法读取账号记录",e);}}for(WebView web:views.values())web.onResume();if(recovery!=null)recovery.resume();if(ready&&!fatal&&KeepaliveService.enabled(this)&&!KeepaliveService.running())enableKeepalive();drainHandoff();}
     @Override protected void onPause(){if(recovery!=null)recovery.pause();resumed=false;if(handoffs!=null&&handoffs.controller()!=null&&handoffs.controller().ownedBy(this))handoffs.controller().cancel("应用已离开前台，已停止自动发送；请检查目标对话");if(!KeepaliveService.running())for(WebView web:views.values())web.onPause();super.onPause();}
     @Override protected void onStop(){try{if(WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE))for(WebView web:views.values())WebViewCompat.getProfile(web).getCookieManager().flush();}catch(RuntimeException ignored){}super.onStop();}
     @Override protected void onSaveInstanceState(Bundle bundle){if(overview!=null){bundle.putBoolean("tabsOverview",true);bundle.putString("tabFilter",overview.filter());bundle.putString("tabQuery",overview.query());bundle.putInt("tabPosition",overview.position());}super.onSaveInstanceState(bundle);}
@@ -495,7 +495,7 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
         if(memory!=null&&memory.owner()==this){if(!fatal&&(!isFinishing()||KeepaliveService.running()))memory.detach(this);else memory.clear();}ready=false;super.onDestroy();
     }
     private void fail(String title, Exception error) {
-        closeOverview();KeepaliveService.disable(this);fatal = true; ready = false; cancelRequests(); for (String id : new ArrayList<>(views.keySet())) destroyView(id);
+        closeOverview();KeepaliveService.disable(this);if(memory!=null)memory.closeNetwork();fatal = true; ready = false; cancelRequests(); for (String id : new ArrayList<>(views.keySet())) destroyView(id);
         header.removeAllViews(); showMessage(title, error.getMessage() == null ? "请保留应用数据并反馈。" : error.getMessage(), "关闭", this::finish);
     }
     private void rememberURL(String account,String tab,String url){

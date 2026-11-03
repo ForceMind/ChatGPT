@@ -75,7 +75,7 @@ public final class NetworkUpgradeCompatibilityTest {
     @Test public void syntheticUpgradeKeepsProfileAndEncryptedData()throws Exception{
         assertEquals("com.forcemind.chatgpt.profiles.debug",context.getPackageName());Bundle args=InstrumentationRegistry.getArguments();String phase=args.getString("phase");assertTrue("seed".equals(phase)||"verify".equals(phase));
         if("seed".equals(phase))seed();verify();
-        JSONObject report=new JSONObject().put("schema",1).put("complete",true).put("phase",phase).put("api",android.os.Build.VERSION.SDK_INT).put("sourceSHA",args.getString("sourceSHA")).put("accounts",3).put("tabs",4).put("signingSHA256",signature()).put("sameTemporaryCISignature",true).put("productionSignatureVerified",false).put("networkRequests",0).put("inlineProfileDocuments","seed".equals(phase)?6:3).put("screenshots",false).put("personalData",false);
+        JSONObject report=new JSONObject().put("schema",1).put("complete",true).put("phase",phase).put("api",android.os.Build.VERSION.SDK_INT).put("sourceSHA",args.getString("sourceSHA")).put("versionCode",context.getPackageManager().getPackageInfo(context.getPackageName(),0).getLongVersionCode()).put("accounts",3).put("tabs",4).put("signingSHA256",signature()).put("sameTemporaryCISignature",true).put("productionSignatureVerified",false).put("networkRequests",0).put("inlineProfileDocuments","seed".equals(phase)?6:3).put("screenshots",false).put("personalData",false);
         Files.write(file("upgrade-result-"+phase+".json").toPath(),report.toString().getBytes(StandardCharsets.UTF_8));System.out.println("UPGRADE_DATA_VERIFIED "+report);
     }
 }
