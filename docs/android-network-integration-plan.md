@@ -30,6 +30,8 @@
 
 `3512023` / `41695140228` 的前台两端四状态、各两窗口全部通过，已读取原始 CPU/PSS。后台采样确实完成完整窗口（已读 Android 15 为 31 样本、1804.9 秒），但 JUnit 整体在返回前台后的 ActivityScenario.close 抛出状态为空的 NPE，不能记为完整通过。资源用例改用公开 Instrumentation 启动和同任务 Intent 返回前台，显式核对实际服务停止与 Activity 销毁，保留原始主异常和全部页面/草稿/1800 秒断言，不忽略 NPE。收尾始终拉回原始 resource-result/mapping/心跳用于失败定位；产品代码与保活策略未改，待重新跑完整验收。
 
+`584e500` 的直接 Instrumentation 启动在一组 Android 15 中未取得页面，已恢复此前通过的 ActivityScenario 启动。查阅 AndroidX 原始实现后，resumeActivity 仅关闭测试辅助 Activity，不能独自撤销真实 Home；现用仅 networkCi 声明的正常 REORDER_TASKS 权限及公开 ActivityManager.moveTaskToFront 恢复原任务，不发不同启动 Intent、不创建新实例或使用隐藏 API。长测前先做一次短 Home/原任务返回前置来验证适配器，不计为长测；正式保持仍严格1800秒。收尾先实际停止既有服务再关闭同一受管场景，并验证实际销毁，所有业务断言保留。
+
 后文保留原设计基线；其中待批准及跨启动待确认表述以本段用户确认范围为准。状态与后续验证集中在本文更新，不把编译、合成与原签名升级证据互相替代。
 
 独立候选源码 `254685aa9c0cf0b41d2fd22a2a75a9a0e5e81fe4` 的 [Actions 41636997369](https://github.com/ForceMind/ChatGPT/actions/runs/41636997369) 已回读十个必要网络作业通过。Android 9 / 15 的六个协议组合、八个路由套件各四项测试通过；96 个在途操作各处理一次，16 个关闭后请求未到原站。失败残片、任务释放、未知上传结果及页面保留均有实际证据。见 [在途故障记录](benchmarks/android-network-transfer-faults.json) 和 [历史能力与限制](android-network-plan.md)。上述基线是单空间证据；新增源码 `6df1bdd` 的 [Actions 41660146017](https://github.com/ForceMind/ChatGPT/actions/runs/41660146017) 已补齐三 Profile、四页与弹窗、两类文件同路由、系统 HTTP / PAC、账号清理及 Activity 重建的独立合成验收。见 [联合证据](benchmarks/android-network-joint-profiles.json)。正式文件选择器、外部 URI 权限 / 发布失败、真实服务与生产签名仍须正式适配后另验。

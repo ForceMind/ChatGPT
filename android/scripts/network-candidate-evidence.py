@@ -29,7 +29,7 @@ for kind,name in [('release','app-release-unsigned.apk'),('networkCi','app-netwo
   assert "name='com.forcemind.chatgpt.profiles'" in badging
   assert not ci_trust and not generated
   assert native and all('/arm64-v8a/' in n for n in native)
-  assert 'MANAGE_DOCUMENTS' not in manifest and 'BIND_DEVICE_ADMIN' not in manifest
+  assert 'MANAGE_DOCUMENTS' not in manifest and 'BIND_DEVICE_ADMIN' not in manifest and 'REORDER_TASKS' not in manifest
   subprocess.run([str(tool.with_name('zipalign')),'-c','-P','16','4',str(apk)],check=True,capture_output=True)
  else:
   assert "name='com.forcemind.chatgpt.profiles.networkci'" in badging

@@ -5,8 +5,7 @@ import android.os.Bundle;
 import android.os.SystemClock;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebView;
-import android.content.Intent;
-import android.content.ComponentName;
+import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 import org.json.JSONArray;
@@ -34,6 +33,7 @@ public final class NetworkBenchmarkTest {
     private final Bundle args=InstrumentationRegistry.getArguments();
     private final JSONArray phases=new JSONArray();
     private MainActivity activity;
+    private ActivityScenario<MainActivity> scenario;
     private final List<WebView> pages=new ArrayList<>();
     private final List<String> identities=new ArrayList<>();
     private int seconds;
@@ -87,9 +87,9 @@ public final class NetworkBenchmarkTest {
         ack(name+":done");assertTrue("full window",SystemClock.elapsedRealtime()-started>=(seconds-2L)*1000);
         long held=background?SystemClock.elapsedRealtime()-backgroundAt:0;if(background)assertTrue("actual stopped-state hold must be full 1800 seconds",held>=seconds*1000L);
         if(background){
-            main(()->context.startActivity(new Intent(activity.getIntent()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)));
-            AtomicReference<MainActivity> foreground=new AtomicReference<>();long limit=SystemClock.elapsedRealtime()+10000;
-            do{main(()->{MainActivity owner=BrowserMemory.get(context).owner();if(owner!=null&&owner.getLifecycle().getCurrentState()==androidx.lifecycle.Lifecycle.State.RESUMED&&owner.hasWindowFocus())foreground.set(owner);});if(foreground.get()!=null)break;Thread.sleep(50);}while(SystemClock.elapsedRealtime()<limit);assertNotNull("actual foreground owner resumed",foreground.get());activity=foreground.get();
+            main(()->((android.app.ActivityManager)context.getSystemService(Context.ACTIVITY_SERVICE)).moveTaskToFront(activity.getTaskId(),0));
+            AtomicReference<Boolean> focused=new AtomicReference<>(false);long limit=SystemClock.elapsedRealtime()+10000;
+            do{main(()->focused.set(activity.getLifecycle().getCurrentState()==androidx.lifecycle.Lifecycle.State.RESUMED&&activity.hasWindowFocus()));if(focused.get())break;Thread.sleep(50);}while(SystemClock.elapsedRealtime()<limit);assertTrue("same managed Activity actually resumed in foreground",focused.get());
         }
         for(int i=0;i<pages.size();i++){assertEquals(identities.get(i),js(pages.get(i),"window.__identity"));assertEquals("\"Synthetic unchanged draft\"",js(pages.get(i),"document.getElementById('prompt-textarea').value"));}
         if(stream){assertEquals("600",js(pages.get(pages.size()-1),"window.__chunks"));assertEquals("true",js(pages.get(pages.size()-1),"window.__streamDone"));}
@@ -104,8 +104,7 @@ public final class NetworkBenchmarkTest {
         // The visible iframe also makes the old client's existing pictureSafe return skip.
         MainActivity.handoffFixture=(account,request)->new WebResourceResponse("text/html","UTF-8",new ByteArrayInputStream(html.getBytes(StandardCharsets.UTF_8)));
         long launched=SystemClock.elapsedRealtime();
-        Intent launch=Intent.makeMainActivity(new ComponentName(context.getPackageName(),MainActivity.class.getName())).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        activity=(MainActivity)InstrumentationRegistry.getInstrumentation().startActivitySync(launch);Throwable primary=null;
+        scenario=ActivityScenario.launch(MainActivity.class);scenario.onActivity(current->activity=current);Throwable primary=null;
         try{
             for(WorkspaceState.Account account:state.accounts)for(WorkspaceState.Tab tab:account.tabs){main(()->{assertTrue((Boolean)invoke("change",new Class<?>[]{Consumer.class},(Consumer<WorkspaceState>)(s->{s.activeAccount=account.id;s.find(account.id).activeTab=tab.id;})));invoke("showCurrent",new Class<?>[]{});});long end=SystemClock.elapsedRealtime()+35000;AtomicReference<WebView> web=new AtomicReference<>();String mark=null;do{main(()->web.set(activity.recoveryCurrentWeb()));if(web.get()!=null){mark=js(web.get(),"window.__identity");if(mark!=null&&mark.startsWith("\"owned-"))break;}Thread.sleep(75);}while(SystemClock.elapsedRealtime()<end);assertNotNull(mark);assertTrue(mark.startsWith("\"owned-"));pages.add(web.get());identities.add(mark);}
             assertEquals(4,pages.size());
@@ -114,14 +113,17 @@ public final class NetworkBenchmarkTest {
             if(!mode.equals("baseline")){Method get=BrowserMemory.class.getDeclaredMethod("network");get.setAccessible(true);network=get.invoke(BrowserMemory.get(context));java.lang.reflect.Field field=network.getClass().getDeclaredField("routes");field.setAccessible(true);Object routes=field.get(network);boolean initialized=(Boolean)routes.getClass().getMethod("coreInitialized").invoke(routes);Object snapshot=routes.getClass().getMethod("snapshot").invoke(routes);loadProof.put("coreInitialized",initialized).put("routeState",String.valueOf(snapshot.getClass().getField("state").get(snapshot)));}
             write("resource-load-evidence.json",loadProof);if(!mode.equals("baseline"))assertEquals(!mode.equals("system"),loadProof.getBoolean("coreInitialized"));assertEquals("actual executable JNI mapping, including APK-direct load",!mode.equals("baseline")&&!mode.equals("system"),goLoaded);
             if(mode.equals("warm-system"))stopToSystem();
-            if(mode.equals("background")){main(()->KeepaliveService.enable(context));long end=SystemClock.elapsedRealtime()+10000;while(!KeepaliveService.running()&&SystemClock.elapsedRealtime()<end)Thread.sleep(50);assertTrue(KeepaliveService.running());phase("background",false,true);}
+            if(mode.equals("background")){main(()->KeepaliveService.enable(context));long end=SystemClock.elapsedRealtime()+10000;while(!KeepaliveService.running()&&SystemClock.elapsedRealtime()<end)Thread.sleep(50);assertTrue(KeepaliveService.running());
+                assertTrue(InstrumentationRegistry.getInstrumentation().getUiAutomation().performGlobalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_HOME));AtomicReference<Boolean> back=new AtomicReference<>(false);long until=SystemClock.elapsedRealtime()+10000;do{main(()->back.set(activity.getLifecycle().getCurrentState()==androidx.lifecycle.Lifecycle.State.CREATED));if(back.get())break;Thread.sleep(50);}while(SystemClock.elapsedRealtime()<until);assertTrue("preflight real Home stopped",back.get());
+                main(()->((android.app.ActivityManager)context.getSystemService(Context.ACTIVITY_SERVICE)).moveTaskToFront(activity.getTaskId(),0));until=SystemClock.elapsedRealtime()+10000;AtomicReference<Boolean> front=new AtomicReference<>(false);do{main(()->front.set(activity.getLifecycle().getCurrentState()==androidx.lifecycle.Lifecycle.State.RESUMED&&activity.hasWindowFocus()));if(front.get())break;Thread.sleep(50);}while(SystemClock.elapsedRealtime()<until);assertTrue("preflight same task foreground",front.get());scenario.onActivity(current->assertSame(activity,current));
+                phase("background",false,true);}
             else{phase("idle",false,false);phase("stream",true,false);}
             write("resource-result.json",new JSONObject().put("complete",true).put("sourceSHA",args.getString("sourceSHA")).put("mode",mode).put("transport","raw").put("goLoaded",goLoaded).put("startupMillis",readyMillis).put("phases",phases).put("backgroundHeartbeats",heartbeats).put("screenshots",false).put("realChatGPTRequests",0).put("workload","three profiles, four offline documents, one 600-chunk DOM stream; no network stream measurement"));
         }catch(Exception|AssertionError failure){primary=failure;throw failure;}finally{
             try{
             main(()->KeepaliveService.disable(context));AtomicReference<Boolean> stopped=new AtomicReference<>(false);long limit=SystemClock.elapsedRealtime()+10000;
             do{main(()->stopped.set(!KeepaliveService.running()));if(stopped.get())break;Thread.sleep(50);}while(SystemClock.elapsedRealtime()<limit);assertTrue("test service actually stopped",stopped.get());
-            main(()->{if(activity!=null&&!activity.isDestroyed())activity.finish();});AtomicReference<Boolean> destroyed=new AtomicReference<>(false);limit=SystemClock.elapsedRealtime()+10000;
+            scenario.close();AtomicReference<Boolean> destroyed=new AtomicReference<>(false);limit=SystemClock.elapsedRealtime()+10000;
             do{main(()->destroyed.set(activity==null||activity.isDestroyed()));if(destroyed.get())break;Thread.sleep(50);}while(SystemClock.elapsedRealtime()<limit);assertTrue("test Activity actually destroyed",destroyed.get());
             }catch(Exception|AssertionError cleanup){if(primary!=null)primary.addSuppressed(cleanup);else throw cleanup;}finally{MainActivity.handoffFixture=null;}
         }

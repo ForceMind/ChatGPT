@@ -1,4 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools">
+    <uses-permission android:name="android.permission.REORDER_TASKS" />
     <application android:name=".RestartProbeApplication" android:testOnly="true" android:networkSecurityConfig="@xml/studio_network_ci_security" tools:replace="android:networkSecurityConfig">
         <provider android:name=".NetworkDocumentsProvider" android:authorities="${applicationId}.network-docs" android:exported="true" android:permission="android.permission.MANAGE_DOCUMENTS" android:grantUriPermissions="true"><intent-filter><action android:name="android.content.action.DOCUMENTS_PROVIDER" /></intent-filter></provider>
         <receiver android:name=".NetworkProxyAdminReceiver" android:exported="true" android:permission="android.permission.BIND_DEVICE_ADMIN">
