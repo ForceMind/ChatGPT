@@ -4,21 +4,26 @@ import argparse
 import base64
 import hashlib
 import http.server
+from http.cookies import SimpleCookie, CookieError
 import json
 import os
 from pathlib import Path
 import re
+import select
 import signal
 import socket
 import ssl
 import subprocess
 import threading
 import time
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlsplit
 
 PAYLOAD = b'network-poc-fixture\n'
 IDENTITY = '00000000-0000-4000-8000-000000000001'
 SERVER_NAME = 'network-fixture.test'
+FILES_SERVER_NAME = 'files.network-fixture.test'
+SYSTEM_PROXY_PORT = 18082
+PAC_PROXY_PORT = 18083
 ORIGIN_PORT = 18080
 HTTPS_ORIGIN_PORT = 18480
 REALITY_TARGET_PORT = 18481
@@ -26,6 +31,90 @@ UNTRUSTED_TLS_PORT = 19543
 TRANSPORT_PORTS = {'raw': (18443, 18444), 'tls': (19443, 19444),
                    'reality': (20443, 20444)}
 SCHEMA_VERSION = 2
+
+
+def route_name(address):
+    return {'127.0.0.2': 'A', '127.0.0.3': 'B', '127.0.0.4': 'S', '127.0.0.5': 'P'}.get(address, 'direct')
+
+
+class OwnedSystemProxy(http.server.BaseHTTPRequestHandler):
+    """Transparent HTTP/CONNECT tunnel, restricted to the two owned origins."""
+    protocol_version = 'HTTP/1.1'
+    source_address = '127.0.0.4'
+
+    def log_message(self, *_):
+        pass
+
+    def destination(self, authority):
+        parsed = urlsplit('//' + authority)
+        if (parsed.username is not None or parsed.password is not None
+                or parsed.hostname not in (SERVER_NAME, FILES_SERVER_NAME)
+                or parsed.port not in (ORIGIN_PORT, HTTPS_ORIGIN_PORT)):
+            raise ValueError('non-owned-proxy-target')
+        return parsed
+
+    def relay(self, upstream):
+        self.connection.settimeout(15)
+        upstream.settimeout(15)
+        deadline = time.monotonic() + 30
+        while time.monotonic() < deadline:
+            ready, _, _ = select.select([self.connection, upstream], [], [], 0.5)
+            for source in ready:
+                data = source.recv(16384)
+                if not data:
+                    return
+                (upstream if source is self.connection else self.connection).sendall(data)
+        raise TimeoutError('owned-proxy-deadline')
+
+    def forward(self, connect):
+        self.close_connection = True
+        upstream = None
+        try:
+            parsed = urlsplit(self.path) if not connect else None
+            target = self.destination(self.path if connect else parsed.netloc)
+            if not connect and (parsed.scheme != 'http' or parsed.path.startswith('/transfer-control/')):
+                raise ValueError('non-owned-proxy-request')
+            upstream = socket.create_connection(('127.0.0.1', target.port), timeout=5,
+                                                source_address=(self.source_address, 0))
+            if connect:
+                self.send_response(200, 'Connection established')
+                self.end_headers()
+            else:
+                if self.command not in ('GET', 'HEAD'):
+                    raise ValueError('owned-proxy-method')
+                path = parsed.path or '/'
+                if parsed.query:
+                    path += '?' + parsed.query
+                lines = [f'{self.command} {path} HTTP/1.1', f'Host: {target.netloc}']
+                for key, value in self.headers.items():
+                    if key.lower() not in ('host', 'proxy-authorization', 'proxy-connection', 'connection'):
+                        lines.append(key + ': ' + value)
+                lines.append('Connection: close')
+                upstream.sendall(('\r\n'.join(lines) + '\r\n\r\n').encode('iso-8859-1'))
+            self.relay(upstream)
+        except (OSError, ValueError):
+            if upstream is None:
+                self.send_error(403, 'Owned targets only')
+        finally:
+            if upstream is not None:
+                upstream.close()
+
+    def do_CONNECT(self):
+        self.forward(True)
+
+    def do_GET(self):
+        self.forward(False)
+
+    def do_HEAD(self):
+        self.forward(False)
+
+
+class OwnedPACProxy(OwnedSystemProxy):
+    # A different owned egress proves the PAC was actually applied, rather than
+    # observing traffic from a stale static HTTP proxy. Same target restrictions.
+    source_address = '127.0.0.5'
+
+
 TRANSFER_DOWNLOAD = b'D' * 262144
 TRANSFER_PREFIX_BYTES = 4096
 TRANSFER_UPLOAD_ACK = b'network-poc-upload-committed\n'
@@ -137,8 +226,9 @@ class Origin(http.server.BaseHTTPRequestHandler):
                      'contentLength': content_length, 'bodylen': body_len,
                      'responseBytesWritten': written, 'port': self.server.server_port,
                      'connection': 'close'}
-            entry['route'] = {'127.0.0.2': 'A', '127.0.0.3': 'B'}.get(
-                self.client_address[0], 'direct')
+            entry['route'] = route_name(self.client_address[0])
+            if self.path.startswith('/joint/'):
+                entry['syntheticAccount'] = self.joint_account()
             try:
                 entry['requestContentLength'] = int(self.headers.get('Content-Length', '0'))
             except (AttributeError, ValueError):
@@ -189,7 +279,7 @@ class Origin(http.server.BaseHTTPRequestHandler):
             pass
 
     def transfer(self, method):
-        route = {'127.0.0.2': 'A', '127.0.0.3': 'B'}.get(self.client_address[0], 'direct')
+        route = route_name(self.client_address[0])
         control = re.fullmatch(r'/transfer-control/(' + TRANSFER_ID + r')/(state|release)', self.path)
         if control:
             opid, action = control.groups()
@@ -231,6 +321,7 @@ class Origin(http.server.BaseHTTPRequestHandler):
             self.transfer_json(status, state, route)
             return
         gates = Origin._transfer_gates
+        gates.update(opid, syntheticAccount=self.joint_account())
         self.connection.settimeout(TRANSFER_IO_TIMEOUT_SECONDS)
         try:
             if kind == 'download':
@@ -276,10 +367,19 @@ class Origin(http.server.BaseHTTPRequestHandler):
             gates.summary(opid)
 
     def do_GET(self):
+        if self.path == '/joint-system.pac':
+            pac = ("function FindProxyForURL(url, host) { if (host === '" + SERVER_NAME
+                   + "' || host === '" + FILES_SERVER_NAME
+                   + "') return 'PROXY 10.0.2.2:" + str(PAC_PROXY_PORT) + "'; return 'DIRECT'; }").encode()
+            self.finite_response(200, pac, route_name(self.client_address[0]), 'application/x-ns-proxy-autoconfig')
+            return
+        if self.path.startswith('/joint/'):
+            self.joint()
+            return
         if self.path.startswith(('/transfer/', '/transfer-control/')):
             self.transfer('GET')
             return
-        route = {'127.0.0.2': 'A', '127.0.0.3': 'B'}.get(self.client_address[0], 'direct')
+        route = route_name(self.client_address[0])
         path = self.path.partition('?')[0]
         # Unique, synthetic operation paths let CI count reloads and request replay
         # without recording query strings, headers, credentials, or request bodies.
@@ -304,8 +404,45 @@ class Origin(http.server.BaseHTTPRequestHandler):
         except OSError as failure:
             self.access_diagnostic(0, 0, 0, 0, failure)
             raise
-        route = {'127.0.0.2': 'A', '127.0.0.3': 'B'}.get(self.client_address[0], 'direct')
+        route = route_name(self.client_address[0])
         self.finite_response(200, data, route, body_len=len(data))
+
+    def joint_account(self):
+        try:
+            values = SimpleCookie()
+            values.load(self.headers.get('Cookie', ''))
+            value = values.get('ci_joint_account')
+            account = value.value if value is not None else 'missing'
+            return account if account in ('A', 'B', 'C', 'A-files', 'B-files', 'C-files') else 'unexpected'
+        except CookieError:
+            return 'unexpected'
+
+    def joint(self):
+        match = re.fullmatch(r'/joint/([A-Za-z0-9-]{1,80})/(page|echo|download|redirect-same|redirect-other)', self.path)
+        route, account = route_name(self.client_address[0]), self.joint_account()
+        if match is None:
+            self.finite_response(400, b'bad joint path', route)
+            return
+        opid, kind = match.groups()
+        if kind.startswith('redirect-'):
+            location = '/joint/' + opid + '-target/download'
+            if kind == 'redirect-other':
+                location = 'https://' + FILES_SERVER_NAME + ':' + str(HTTPS_ORIGIN_PORT) + location
+            self.close_connection = True
+            self.send_response(302)
+            self.send_header('Location', location)
+            self.send_header('Content-Length', '0')
+            self.send_header('Connection', 'close')
+            self.end_headers()
+            self.access_diagnostic(302, 0, 0, 0)
+        elif kind == 'page':
+            body = ('<!doctype html><meta name="viewport" content="width=device-width"><title>'
+                    + route + ':' + account + '</title><textarea id="draft"></textarea>'
+                    + '<button id="popup" onclick="window.open(\'/joint/' + opid + '-popup/page\',\'_blank\')">Open owned popup</button>').encode()
+            self.finite_response(200, body, route, 'text/html')
+        else:
+            data = json.dumps({'route': route, 'account': account, 'operation': opid}).encode()
+            self.finite_response(200, data, route, 'application/json' if kind == 'echo' else 'application/octet-stream')
 
 
 def openssl(*arguments, data=None):
@@ -349,7 +486,7 @@ def fixture_config(mode, port, source, certificate, key, private_key):
                                      'shortIds': ['1234']}
     return {
         'log': {'loglevel': 'none'},
-        'dns': {'hosts': {SERVER_NAME: '127.0.0.1'}},
+        'dns': {'hosts': {SERVER_NAME: '127.0.0.1', FILES_SERVER_NAME: '127.0.0.1'}},
         'inbounds': [{'listen': '0.0.0.0', 'port': port, 'protocol': 'vless',
                       'settings': {'clients': [{'id': IDENTITY}], 'decryption': 'none'},
                       'streamSettings': stream}],
@@ -376,7 +513,7 @@ def prepare(folder):
     cert_path, key_path = folder / 'ca.pem', folder / 'key.pem'
     openssl('req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-sha256', '-days', '2',
             '-keyout', str(key_path), '-out', str(cert_path), '-subj', f'/CN={SERVER_NAME}',
-            '-addext', f'subjectAltName=DNS:{SERVER_NAME},IP:10.0.2.2,IP:127.0.0.1',
+            '-addext', f'subjectAltName=DNS:{SERVER_NAME},DNS:{FILES_SERVER_NAME},IP:10.0.2.2,IP:127.0.0.1',
             '-addext', 'basicConstraints=critical,CA:TRUE',
             '-addext', 'keyUsage=critical,digitalSignature,keyEncipherment,keyCertSign',
             '-addext', 'extendedKeyUsage=serverAuth')
@@ -388,6 +525,9 @@ def prepare(folder):
                 'payloadSha256': hashlib.sha256(PAYLOAD).hexdigest(), 'payloadBytes': len(PAYLOAD),
                 'nodePorts': list(TRANSPORT_PORTS['raw']), 'originPort': ORIGIN_PORT,
                 'httpsOriginPort': HTTPS_ORIGIN_PORT, 'realityTargetPort': REALITY_TARGET_PORT,
+                'filesServerName': FILES_SERVER_NAME, 'systemProxyPort': SYSTEM_PROXY_PORT,
+                'pacProxyPort': PAC_PROXY_PORT,
+                'systemPACURL': f'http://10.0.2.2:{ORIGIN_PORT}/joint-system.pac',
                 'externalRequests': False, 'caCertificateLines': certificate,
                 'certificateSha256': hashlib.sha256(certificate_der).hexdigest(),
                 'transports': {}}
@@ -491,7 +631,7 @@ class CamouflageServer:
 
 
 def wait_ready(children, folder, timeout=20):
-    ports = [ORIGIN_PORT, HTTPS_ORIGIN_PORT, REALITY_TARGET_PORT,
+    ports = [ORIGIN_PORT, HTTPS_ORIGIN_PORT, REALITY_TARGET_PORT, SYSTEM_PROXY_PORT, PAC_PROXY_PORT,
              UNTRUSTED_TLS_PORT,
              *(port for pair in TRANSPORT_PORTS.values() for port in pair)]
     context = ssl.create_default_context(cafile=str(folder / 'ca.pem'))
@@ -535,6 +675,12 @@ def run(core, folder, manifest):
         https.socket = tls_context(folder).wrap_socket(https.socket, server_side=True)
         servers.append(https)
         threading.Thread(target=https.serve_forever, daemon=True).start()
+        system_proxy = http.server.ThreadingHTTPServer(('0.0.0.0', SYSTEM_PROXY_PORT), OwnedSystemProxy)
+        servers.append(system_proxy)
+        threading.Thread(target=system_proxy.serve_forever, daemon=True).start()
+        pac_proxy = http.server.ThreadingHTTPServer(('0.0.0.0', PAC_PROXY_PORT), OwnedPACProxy)
+        servers.append(pac_proxy)
+        threading.Thread(target=pac_proxy.serve_forever, daemon=True).start()
         servers.append(CamouflageServer(tls_context(folder, camouflage=True)))
         for mode in TRANSPORT_PORTS:
             for tag in ('A', 'B', 'untrusted') if mode == 'tls' else ('A', 'B'):

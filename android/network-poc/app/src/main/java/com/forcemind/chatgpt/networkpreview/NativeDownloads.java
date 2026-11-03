@@ -34,13 +34,25 @@ public final class NativeDownloads {
     }
     private final RouteManager routes;
     private final Context context;
+    private final CookieManager profileCookies;
+    private final java.util.function.BooleanSupplier available;
     private final ExecutorService worker = Executors.newCachedThreadPool();
     private final Handler main = new Handler(Looper.getMainLooper());
     private volatile HttpURLConnection active;
     private volatile boolean cancelled;
     private volatile boolean closed;
+    private boolean downloadReserved;
     private final Set<HttpURLConnection> requests = new HashSet<>();
-    public NativeDownloads(Context context, RouteManager routes) { this.context = context.getApplicationContext(); this.routes = routes; }
+    public NativeDownloads(Context context, RouteManager routes) {
+        this(context, routes, null, () -> true);
+    }
+    /** The initiating Profile is captured once; it is never inferred from the visible tab. */
+    public NativeDownloads(Context context, RouteManager routes, CookieManager cookies,
+                           java.util.function.BooleanSupplier available) {
+        this.context = context.getApplicationContext(); this.routes = routes;
+        this.profileCookies = cookies; this.available = available;
+    }
+    private boolean usable() { return !closed && available.getAsBoolean(); }
     private static URL checkedUrl(String address) throws Exception {
         URL url = new URL(address);
         if (!"http".equals(url.getProtocol()) && !"https".equals(url.getProtocol())) throw new IllegalArgumentException("仅支持 HTTP/HTTPS 文件地址");
@@ -50,7 +62,7 @@ public final class NativeDownloads {
     public Response request(String address, String method, byte[] body) throws Exception {
         final RouteManager.Snapshot route;
         synchronized (this) {
-            if (closed) throw new IllegalStateException("下载器已关闭");
+            if (!usable()) throw new IllegalStateException("下载器已关闭或账号任务已失效");
             route = routes.beginTransfer();
         }
         HttpURLConnection connection = null;
@@ -58,16 +70,20 @@ public final class NativeDownloads {
         try {
             connection = route.openConnection(checkedUrl(address));
             synchronized (this) {
-                if (closed) throw new IllegalStateException("下载器已关闭");
+                if (!usable()) throw new IllegalStateException("下载器已关闭或账号任务已失效");
                 requests.add(connection);
             }
             connection.setConnectTimeout(15000); connection.setReadTimeout(20000); connection.setInstanceFollowRedirects(false); connection.setUseCaches(false);
             connection.setRequestMethod(method);
+            if (profileCookies != null) {
+                String cookie = profileCookies.getCookie(address);
+                if (cookie != null) connection.setRequestProperty("Cookie", cookie);
+            }
             if (body != null) { connection.setDoOutput(true); connection.setFixedLengthStreamingMode(body.length); connection.setRequestProperty("Content-Type", "application/octet-stream"); uploadAttempted = true; try (java.io.OutputStream out = connection.getOutputStream()) { out.write(body); } }
             int status = connection.getResponseCode();
             if (status >= 300) throw new java.io.IOException("目标返回 HTTP " + status);
             ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-            try (InputStream in = connection.getInputStream()) { byte[] buffer = new byte[8192]; int count; while ((count = in.read(buffer)) >= 0) { if (bytes.size() + count > 4 * 1024 * 1024) throw new java.io.IOException("检查响应过大"); bytes.write(buffer, 0, count); } }
+            try (InputStream in = connection.getInputStream()) { byte[] buffer = new byte[8192]; int count; while ((count = in.read(buffer)) >= 0) { if (!usable()) throw new java.io.IOException("账号任务已失效"); if (bytes.size() + count > 4 * 1024 * 1024) throw new java.io.IOException("检查响应过大"); bytes.write(buffer, 0, count); } }
             return new Response(bytes.toByteArray(), connection.getHeaderField("X-Fixture-Route"), status);
         } catch (Exception failure) {
             // Never infer that a POST was not processed merely because its reply was lost.
@@ -85,7 +101,7 @@ public final class NativeDownloads {
     public Future<?> download(String address, String userAgent, Result result) {
         final RouteManager.Snapshot route;
         try {
-            synchronized (this) { if (closed) throw new IllegalStateException("下载器已关闭"); if (active != null || routes.activeTransfers() != 0) throw new IllegalStateException("已有文件传输进行中"); cancelled = false; route = routes.beginTransfer(); }
+            synchronized (this) { if (!usable()) throw new IllegalStateException("下载器已关闭或账号任务已失效"); if (downloadReserved || (profileCookies == null && routes.activeTransfers() != 0)) throw new IllegalStateException("已有文件传输进行中"); cancelled = false; route = routes.beginTransfer(); downloadReserved = true; }
         } catch (Exception e) { result.complete(null, e.getMessage()); return null; }
         try { return worker.submit(() -> {
             File target = new File(context.getFilesDir(), "download-" + UUID.randomUUID());
@@ -93,15 +109,15 @@ public final class NativeDownloads {
             try {
                 URL url = checkedUrl(address);
                 for (int redirects = 0; ; redirects++) {
-                    if (cancelled) throw new java.io.IOException("下载已取消");
+                    if (cancelled || !usable()) throw new java.io.IOException("下载已取消或账号已失效");
                     HttpURLConnection nextConnection = route.openConnection(url);
                     synchronized (this) {
-                        if (closed || cancelled) { nextConnection.disconnect(); throw new java.io.IOException("下载已取消"); }
+                        if (!usable() || cancelled) { nextConnection.disconnect(); throw new java.io.IOException("下载已取消"); }
                         active = nextConnection;
                     }
                     active.setConnectTimeout(15000); active.setReadTimeout(20000); active.setInstanceFollowRedirects(false); active.setUseCaches(false);
                     if (userAgent != null) active.setRequestProperty("User-Agent", userAgent);
-                    String cookie = CookieManager.getInstance().getCookie(url.toString());
+                    String cookie = (profileCookies == null ? CookieManager.getInstance() : profileCookies).getCookie(url.toString());
                     if (cookie != null) active.setRequestProperty("Cookie", cookie);
                     int status = active.getResponseCode();
                     if (status >= 300 && status < 400) {
@@ -113,15 +129,22 @@ public final class NativeDownloads {
                     if (status < 200 || status >= 300) throw new java.io.IOException("目标返回 HTTP " + status);
                     try (InputStream in = active.getInputStream(); FileOutputStream out = new FileOutputStream(target)) {
                         byte[] buffer = new byte[32768]; int count;
-                        while ((count = in.read(buffer)) >= 0) { if (cancelled || Thread.currentThread().isInterrupted()) throw new java.io.IOException("下载已取消"); out.write(buffer, 0, count); }
+                        while ((count = in.read(buffer)) >= 0) { if (cancelled || !usable() || Thread.currentThread().isInterrupted()) throw new java.io.IOException("下载已取消"); out.write(buffer, 0, count); }
                         out.getFD().sync();
                     }
                     break;
                 }
             } catch (Exception e) { error = cancelled ? "下载已取消" : "下载失败；未自动重试"; if (target.exists() && !target.delete()) error += "，临时文件需稍后清理"; }
-            finally { if (active != null) active.disconnect(); active = null; routes.endTransfer(); }
+            finally {
+                try { if (active != null) active.disconnect(); }
+                finally {
+                    synchronized (this) { active = null; downloadReserved = false; }
+                    routes.endTransfer();
+                }
+            }
             String finalError = error; main.post(() -> result.complete(finalError == null ? target : null, finalError));
         }); } catch (java.util.concurrent.RejectedExecutionException e) {
+            synchronized (this) { downloadReserved = false; }
             routes.endTransfer(); result.complete(null, "下载已停止"); return null;
         }
     }

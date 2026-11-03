@@ -12,6 +12,91 @@ import unittest
 from unittest import mock
 from urllib.parse import parse_qs, urlsplit
 
+
+class JointOriginTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.temp = tempfile.TemporaryDirectory()
+        cls.folder = Path(cls.temp.name)
+        fixture.prepare(cls.folder)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.temp.cleanup()
+
+    def test_joint_cookie_enum_redirect_and_popup_paths(self):
+        server = fixture.http.server.ThreadingHTTPServer(('127.0.0.1', 0), fixture.Origin)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            connection = http.client.HTTPConnection('127.0.0.1', server.server_port, timeout=3)
+            connection.request('GET', '/joint/unit-cookie/echo', headers={'Cookie': 'ci_joint_account=A'})
+            response = connection.getresponse()
+            self.assertEqual(response.status, 200)
+            self.assertEqual(json.loads(response.read()), {'route': 'direct', 'account': 'A', 'operation': 'unit-cookie'})
+            connection.close()
+            connection = http.client.HTTPConnection('127.0.0.1', server.server_port, timeout=3)
+            connection.request('GET', '/joint/unit-redirect/redirect-other', headers={'Cookie': 'ci_joint_account=A'})
+            response = connection.getresponse()
+            self.assertEqual(response.status, 302)
+            self.assertEqual(response.getheader('Location'), 'https://files.network-fixture.test:18480/joint/unit-redirect-target/download')
+            response.read(); connection.close()
+            connection = http.client.HTTPConnection('127.0.0.1', server.server_port, timeout=3)
+            connection.request('GET', '/joint-system.pac')
+            response = connection.getresponse(); pac = response.read().decode()
+            self.assertEqual(response.status, 200)
+            self.assertIn('PROXY 10.0.2.2:18083', pac)
+            self.assertNotIn('PROXY 10.0.2.2:18082', pac)
+            self.assertIn(fixture.FILES_SERVER_NAME, pac)
+            connection.close()
+            connection = http.client.HTTPConnection('127.0.0.1', server.server_port, timeout=3)
+            connection.request('GET', '/joint/unit-popup/page', headers={'Cookie': 'ci_joint_account=B'})
+            response = connection.getresponse(); body = response.read()
+            self.assertIn(b'<title>direct:B</title>', body)
+            self.assertIn(b"window.open('/joint/unit-popup-popup/page'", body)
+            connection.close()
+        finally:
+            server.shutdown(); server.server_close(); thread.join(timeout=2)
+
+    def test_owned_system_connect_proxy_preserves_tls_and_marks_source(self):
+        for proxy_class, expected in [(fixture.OwnedSystemProxy, 'S'), (fixture.OwnedPACProxy, 'P')]:
+            with self.subTest(route=expected):
+                self.check_connect_proxy(proxy_class, expected)
+
+    def check_connect_proxy(self, proxy_class, expected):
+        origin = fixture.http.server.ThreadingHTTPServer(('127.0.0.1', fixture.HTTPS_ORIGIN_PORT), fixture.Origin)
+        origin.socket = fixture.tls_context(self.folder).wrap_socket(origin.socket, server_side=True)
+        proxy = fixture.http.server.ThreadingHTTPServer(('127.0.0.1', 0), proxy_class)
+        threads = [threading.Thread(target=s.serve_forever, daemon=True) for s in [origin, proxy]]
+        for thread in threads: thread.start()
+        try:
+            context = ssl.create_default_context(cafile=str(self.folder/'ca.pem'))
+            connection = http.client.HTTPSConnection('127.0.0.1', proxy.server_port, timeout=3, context=context)
+            connection.set_tunnel(fixture.FILES_SERVER_NAME, fixture.HTTPS_ORIGIN_PORT)
+            connection.request('GET', '/joint/unit-system/echo', headers={'Cookie': 'ci_joint_account=C-files'})
+            response = connection.getresponse()
+            self.assertEqual(response.status, 200)
+            self.assertEqual(json.loads(response.read()), {'route': expected, 'account': 'C-files', 'operation': 'unit-system'})
+            connection.close()
+            denied = http.client.HTTPConnection('127.0.0.1', proxy.server_port, timeout=3)
+            denied.request('CONNECT', 'not-owned.invalid:443')
+            response = denied.getresponse(); self.assertEqual(response.status, 403)
+            response.read(); denied.close()
+        finally:
+            for server in [origin, proxy]: server.shutdown(); server.server_close()
+            for thread in threads: thread.join(timeout=2)
+
+    def test_owned_cookie_diagnostic_never_prints_arbitrary_cookie(self):
+        handler = fixture.Origin.__new__(fixture.Origin)
+        handler.command = 'GET'; handler.path = '/joint/unit-safe/echo'
+        handler.headers = {'Cookie': 'ci_joint_account=private-example-not-for-logs'}
+        handler.server = mock.Mock(server_port=18480); handler.client_address = ('127.0.0.4', 12345)
+        with mock.patch.object(fixture.Origin, '_access_count', 0), mock.patch('builtins.print') as output:
+            handler.access_diagnostic(200, 20, 0, 20)
+        record = json.loads(output.call_args.args[0])
+        self.assertEqual(record['route'], 'S'); self.assertEqual(record['syntheticAccount'], 'unexpected')
+        self.assertNotIn('private-example-not-for-logs', json.dumps(record))
+
 SPEC = importlib.util.spec_from_file_location(
     'network_fixture', Path(__file__).resolve().parents[1] / 'fixture.py')
 fixture = importlib.util.module_from_spec(SPEC)
@@ -36,6 +121,10 @@ class SecureFixtureTests(unittest.TestCase):
         self.assertEqual(manifest['payloadBytes'], 20)
         self.assertEqual(manifest['payloadSha256'], hashlib.sha256(fixture.PAYLOAD).hexdigest())
         self.assertEqual(manifest['nodePorts'], [18443, 18444])
+        self.assertEqual(manifest['systemProxyPort'], 18082)
+        self.assertEqual(manifest['pacProxyPort'], 18083)
+        self.assertEqual(fixture.route_name('127.0.0.4'), 'S')
+        self.assertEqual(fixture.route_name('127.0.0.5'), 'P')
         for mode, ports in fixture.TRANSPORT_PORTS.items():
             self.assertEqual(manifest['transports'][mode]['expectedSecurity'],
                              'none' if mode == 'raw' else mode)

@@ -10,6 +10,10 @@
 
 系统代理 / PAC 的后续真实验收只允许全新 CI 模拟器临时 DeviceOwner 和公开 DPM API；测试后恢复并撤销，不用隐 API / 安全豁免或仅写 settings 自证。管理员 Receiver、Provider 与 testOnly 仅在 ci flavor；预览 APK 的编译产物将单独核对隔离。Profile 清理先立即使该账号 epoch / 资源失效；物理删除按实际 API 结果报告，若已加载而无法删除，则在新的测试进程、加载 Profile 前验证 owned tombstone 清理，不冒称本进程已抹除数据。完整联合功能、系统路由与清理仍未运行验收。
 
+能力门槛源码 `0e9198e2c45fc86379c9652ae2b9349d616513a3` 的 [Actions 41653710935](https://github.com/ForceMind/ChatGPT/actions/runs/41653710935) 六组设备作业已全部通过。已读取 API 28 / 35 的真实报告：分别为 `com.android.webview` / `com.google.android.webview`，版本均为 `124.0.6367.219`，`MULTI_PROFILE` 与 `PROXY_OVERRIDE` 均为 true；每组严格一项能力测试，原四项路由回归和原资源窗口继续通过。编译 APK 隔离报告确认预览包不包含 CI 管理员、文档 Provider、testOnly 与合成 CA，CI 包包含受平台权限保护的测试入口。此结果明确为 `fullJointAcceptance=false`。
+
+前两次门槛尚未读到能力即停止：首轮对 `aapt2` 裸 `true` 属性的解析不完整；修正后，第二轮被 Android `DocumentsProvider` 的 `Provider must be exported` 平台约束拒绝。第三轮将测试 Provider 设为 exported 并受 `MANAGE_DOCUMENTS` 保护后通过；未放宽隔离断言或运行能力条件。完整联合验收将以原四项、单独联合一项、冷进程清理一项顺序运行，避免不同 Activity 的异步核心回收互相干扰。系统静态代理与 PAC 分别采用受限合成出口 S / P，必须核对实际流量，不能只看配置。
+
 能力门槛首轮 `4a58b3c` / Actions `41649274933` 的核心、合成服务和包检查通过；设备在编译 APK 隔离检查处停止，尚未查询多 Profile 能力。预览包的管理员 / Provider / 测试 CA 检查为不存在；CI `testOnly` 被初始解析器判为 false，但原始 aapt 字段未保留，不能据此断言是构建标记丢失或格式误读。检查脚本现保留两包原 manifest 文本和原始布尔行，严格识别明确 true 与 typed boolean true 编码，false / 缺失 / 未知仍失败；没有跳过 CI 必须为 testOnly、preview 必须隔离的断言，等待后续真实字段核对。
 
 次轮 `01c61bf` / Actions `41652136446` 的实际 aapt 字段为 `android:testOnly(0x01010272)=true`，按明确布尔语义核对后，preview / ci 隔离通过。设备随后在 Provider 初始化处报 `SecurityException: Provider must be exported`，能力测试还未查询 MFP。按 Android DocumentsProvider 合约，将 CI Provider 声明为 exported 并用 `MANAGE_DOCUMENTS` 签名权限保护，同时补齐必要投影列；该 Provider 与权限不进入 preview，隔离检查同步要求权限确实存在。未通过取消权限检查或共享 Profile 绕过初始化，后续仍须真实运行能力门槛。

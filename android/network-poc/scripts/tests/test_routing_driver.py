@@ -167,6 +167,95 @@ class RoutingDriverTests(unittest.TestCase):
         self.assertTrue(complete['phases'][0]['terminal']['completed'])
         self.assertEqual(0, complete['phases'][0]['successCount'])
 
+    def joint(self):
+        prefix = 'tls-https-joint-'; names = {account: 'joint-owned-' + account for account in 'ABC'}
+        isolated = []
+        for tab, account in [('A1', 'A'), ('A2', 'A'), ('B1', 'B'), ('C1', 'C')]:
+            isolated.append({'tab': tab, 'account': account, 'profileName': names[account],
+                'storageBefore': '"A"' if tab == 'A2' else 'null',
+                'document': {'cookie': account, 'storage': account, 'identity': 'token-' + tab, 'draft': 'joint-draft-' + tab}})
+        results = []
+        def file(task, account, exit, route, alias=False):
+            return {'taskId': prefix + task, 'accountId': account, 'storageId': names[account], 'accountEpoch': 0,
+                    'state': 'COMPLETED', 'callbackCount': 1, 'currentEpochDeliveries': 1, 'exit': exit, 'routeGeneration': 2, 'capturedRouteGeneration': 2,
+                    'body': {'account': account + ('-files' if alias else ''), 'route': route}}
+        for index in range(16): results.append(file('base-' + str(index), 'ABC'[index % 3], 'asset' if index % 2 == 0 else 'document', 'A', index < 2))
+        checks = []
+        configurations = []
+        for mode, system in [('http', 'S'), ('pac', 'P')]:
+            configurations.append({'mode': mode, 'actualProxyInfo': {'host': '10.0.2.2' if mode == 'http' else 'localhost',
+                'port': 18082 if mode == 'http' else 9000, 'pacURL': '' if mode == 'http' else 'http://10.0.2.2:18080/joint-system.pac'}})
+            for state in ['system-initial', 'A', 'B', 'system-restored']:
+                route = system if state.startswith('system') else state
+                operation = mode + '-' + state
+                checks.append({'operation': operation + '-web', 'body': {'route': route, 'account': 'B'},
+                               'routeState': 'SYSTEM' if state.startswith('system') else 'CONNECTED'})
+                results.extend([file(operation + '-asset', 'B', 'asset', route), file(operation + '-document', 'C', 'document', route)])
+        for index in range(5): checks.append({'operation': 'B-web-' + str(index), 'body': {'route': 'B', 'account': 'A'}, 'routeState': 'CONNECTED'})
+        requests = [{'path': '/joint/' + prefix + 'wire-' + str(index) + '/echo', 'route': 'A', 'syntheticAccount': 'A', 'method': 'GET', 'status': 200} for index in range(54)]
+        gates = [{'opid': prefix + suffix, 'transport': 'tls', 'origin': 'https', 'kind': 'download', 'route': 'A',
+                  'syntheticAccount': account, 'opCount': 1, 'attemptCount': 1, 'commitCount': 0, 'released': True, 'timedOut': False}
+                 for suffix, account in [('a-clear', 'A'), ('b-live', 'B'), ('document-cancel', 'C')]]
+        value = {'schema': 1, 'complete': True, 'fullJointAcceptance': True, 'transport': 'tls', 'origin': 'https://network-fixture.test:18480', 'sourceSHA': driver.os.environ.get('GITHUB_SHA', 'unavailable'),
+            'pid': 100, 'profileNames': names, 'isolation': isolated,
+            'afterSystemDocuments': {'B1': dict(isolated[2]['document']), 'C1': dict(isolated[3]['document'])},
+            'popup': {'realGesture': True, 'owner': 'A1', 'account': 'A', 'profileName': names['A'], 'document': {'cookie': 'A', 'storage': 'A'}},
+            'recreation': {'sameSession': True, 'sameViewsAndDocuments': True, 'coreRunning': True,
+                          'documents': [{'sameView': True, 'before': {'token': index}, 'after': {'token': index}} for index in range(5)]},
+            'clearA': {'epoch': 1, 'oldResultState': 'CANCELLED', 'oldResultCurrentEpochDeliveries': 0, 'bResultState': 'COMPLETED',
+                       'clearMillis': 100, 'remainingPages': ['B1', 'C1'], 'profileDeleted': False,
+                       'deletionError': 'loaded-profile', 'deferredProfiles': [names['A']], 'sentinelBeforeSHA256': 'same', 'sentinelAfterSHA256': 'same',
+                       'aExportBeforeSHA256': 'same', 'aExportAfterSHA256': 'same', 'protectedFiles': [
+                           {'accountId': account, 'assetBeforeSHA256': 'same', 'assetAfterSHA256': 'same', 'documentBeforeSHA256': 'same', 'documentAfterSHA256': 'same'} for account in ['B', 'C']]},
+            'fileResults': results, 'routeChecks': checks, 'systemPolicy': {'deviceOwnerBefore': False, 'deviceOwnerAfter': True, 'restored': True, 'roleRemoved': True, 'originalProxy': None, 'restoredProxyInfo': None, 'configurations': configurations},
+            'localGatePartials': {'A': 4096, 'B': 4096, 'activeTransfers': 2},
+            'documentCancellation': {'opid': prefix + 'document-cancel', 'state': 'CANCELLED', 'callbackCount': 1, 'partialBytes': 4096,
+                'elapsedMillis': 500, 'documentsBefore': ['sentinel'], 'documentsAfter': ['sentinel'], 'bCallbackCountBeforeRelease': 0,
+                'cancelledFileAbsent': True, 'cancelledDocumentAbsent': True,
+                'rejectedOpid': prefix + 'closed-owner-rejected', 'rejectedServerAbsent': True, 'rejectedState': 'CANCELLED', 'rejectedCallbackCount': 1,
+                'rejectedFileAbsent': True, 'rejectedDocumentAbsent': True},
+            'finalAccountGates': gates, 'expectedRequests': requests,
+            'stages': [{'name': str(index), 'state': 'passed', 'startedAtMillis': index, 'endedAtMillis': index + 1} for index in range(50)]}
+        raw = '\n'.join(json.dumps(dict(item, event='owned-origin-access')) for item in requests)
+        raw += '\n' + '\n'.join(json.dumps(dict(item, event='owned-transfer-summary')) for item in gates)
+        return value, raw
+
+    def test_joint_roles_cookies_pac_and_owned_cleanup_are_strict(self):
+        complete, raw = self.joint()
+        driver.verify_joint(complete, 'tls', complete['origin'], raw)
+        broken = []
+        for key in ['restored', 'roleRemoved']:
+            value = copy.deepcopy(complete); value['systemPolicy'][key] = False; broken.append(value)
+        value = copy.deepcopy(complete); value['isolation'][2]['document']['cookie'] = 'A'; broken.append(value)
+        value = copy.deepcopy(complete); value['popup']['profileName'] = complete['profileNames']['B']; broken.append(value)
+        value = copy.deepcopy(complete); value['clearA']['oldResultState'] = 'COMPLETED'; broken.append(value)
+        value = copy.deepcopy(complete); value['clearA']['protectedFiles'][0]['assetAfterSHA256'] = 'changed'; broken.append(value)
+        value = copy.deepcopy(complete); value['routeChecks'][4]['body']['route'] = 'S'; broken.append(value)
+        value = copy.deepcopy(complete); value['documentCancellation']['documentsAfter'].append('leaked'); broken.append(value)
+        value = copy.deepcopy(complete); value['finalAccountGates'][0]['opCount'] = 2; broken.append(value)
+        value = copy.deepcopy(complete); value['stages'][0]['state'] = 'failed'; broken.append(value)
+        for value in broken:
+            with self.subTest(value=value), self.assertRaises((AssertionError, KeyError)):
+                driver.verify_joint(value, 'tls', value['origin'], raw)
+        for key in ['restored', 'roleRemoved']:
+            value = copy.deepcopy(complete); value['systemPolicy'][key] = False
+            with self.subTest(force_stop_guard=key), self.assertRaises(AssertionError): driver.require_restored_role(value)
+
+    def test_joint_namespace_is_exact_and_cold_persistence_is_not_live_reuse(self):
+        hot, raw = self.joint(); legacy = self.transfer()
+        old = '\n'.join(json.dumps(dict(item, event='owned-transfer-summary')) for item in legacy['finalOperations'])
+        self.assertEqual(12, len(driver.verify_transfer_requests(legacy, old + '\n' + raw, allow_declared_joint=True)))
+        unknown = dict(legacy['finalOperations'][0], event='owned-transfer-summary', opid='tls-https-joint-unknown')
+        with self.assertRaises(AssertionError): driver.verify_transfer_requests(legacy, old + '\n' + raw + '\n' + json.dumps(unknown), allow_declared_joint=True)
+        cold = {'schema': 1, 'complete': True, 'oldPid': 100, 'pid': 101, 'newViewsAndDocuments': True, 'sameLiveDocumentClaim': False,
+                'profileNames': hot['profileNames'], 'remainingProfiles': [hot['profileNames']['B'], hot['profileNames']['C']],
+                'ownedTombstone': {'deleted': True, 'deletionError': 'loaded-profile'},
+                'persisted': [{'accountId': account, 'profileName': hot['profileNames'][account], 'title': json.dumps('A:' + account), 'localStorage': json.dumps(account)} for account in ['B', 'C']]}
+        driver.verify_joint_cleanup(cold, hot)
+        for key, value in [('pid', 100), ('sameLiveDocumentClaim', True)]:
+            bad = copy.deepcopy(cold); bad[key] = value
+            with self.assertRaises(AssertionError): driver.verify_joint_cleanup(bad, hot)
+
 
 if __name__ == '__main__':
     unittest.main()
