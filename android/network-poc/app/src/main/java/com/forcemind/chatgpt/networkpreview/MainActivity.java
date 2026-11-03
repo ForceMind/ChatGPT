@@ -50,6 +50,7 @@ public final class MainActivity extends ComponentActivity {
         Button menu = new Button(this); menu.setText("⋯"); menu.setContentDescription("网络与页面菜单"); menu.setOnClickListener(v -> showMenu());
         bar.addView(menu, new LinearLayout.LayoutParams(dp(56), dp(48))); layout.addView(bar);
         web = createWebView(); layout.addView(web, new LinearLayout.LayoutParams(-1, 0, 1)); setContentView(layout);
+        routes.setStateListener(this::renderRouteState);
         if (!storeReadable) {
             status.setText("配置不可读 · 请选择直连");
             message("线路存储无法解密，原文件已保留。页面保持离线，请明确选择“使用直连”后再打开页面。");
@@ -70,7 +71,9 @@ public final class MainActivity extends ComponentActivity {
                 String scheme = request.getUrl().getScheme(); return !"https".equals(scheme) && !"http".equals(scheme);
             }
             @Override public void onReceivedError(WebView w, WebResourceRequest request, WebResourceError error) {
-                if (request.isForMainFrame()) status.setText("页面连接失败 · 未自动重试");
+                RouteManager.State state = routes.snapshot().state;
+                if (request.isForMainFrame() && (state == RouteManager.State.DIRECT || state == RouteManager.State.CONNECTED))
+                    status.setText("页面连接失败 · 未自动重试");
             }
         });
         view.setWebChromeClient(new WebChromeClient() {
@@ -112,12 +115,20 @@ public final class MainActivity extends ComponentActivity {
         RouteManager.Snapshot s = routes.snapshot();
         String state = stateText(s.state);
         String text = "状态：" + state + "\n线路：" + (s.node == null ? "直连" : s.node.name) + "\nWebView 代理支持：" + RouteManager.supportsWebViewProxy()
-                + "\n文件传输：" + routes.activeTransfers() + "\n切换不刷新页面，不自动重发消息或上传。已有连接可能需要手动重新打开。";
+                + "\n文件传输：" + routes.activeTransfers() + "\n切换不刷新页面，不自动重发消息或上传。已有连接可能需要手动重新打开。"
+                + "\n核心存活仅代表本地代理运行，不代表网站业务可用。连接中断后请手动重新连接线路。";
         new AlertDialog.Builder(this).setTitle("连接状态").setMessage(text).setPositiveButton("关闭", null)
                 .setNeutralButton("详细信息", (d, w) -> message("核心：" + studio.networkcore.Networkcore.version() + "\n" + routes.error())).show();
     }
     private static String stateText(RouteManager.State state) {
-        switch (state) { case DIRECT: return "直连"; case CONNECTED: return "已连接 · 本地代理"; case CONNECTING: return "正在连接"; case FAILED: return "连接失败"; default: return "未连接"; }
+        switch (state) { case DIRECT: return "直连"; case CONNECTED: return "已连接 · 本地代理"; case CONNECTING: return "正在连接"; case FAILED: return "连接失败 · 请手动重连"; default: return "未连接"; }
+    }
+    private void renderRouteState(RouteManager.Snapshot snapshot) {
+        if (isFinishing() || isDestroyed()) return;
+        status.setText(stateText(snapshot.state));
+        boolean block = snapshot.state != RouteManager.State.DIRECT && snapshot.state != RouteManager.State.CONNECTED;
+        web.getSettings().setBlockNetworkLoads(block);
+        for (WebView popup : popups) popup.getSettings().setBlockNetworkLoads(block);
     }
     private void showNodes() {
         if (data.nodes.isEmpty()) { message("暂无线路，请添加 VLESS 地址。"); return; }
@@ -202,8 +213,14 @@ public final class MainActivity extends ComponentActivity {
     public RouteManager routeManagerForTests() { return routes; }
     public WebView webViewForTests() { return web; }
     public NativeDownloads downloadsForTests() { return downloads; }
+    public String networkStatusForTests() { return status.getText().toString(); }
+    @Override protected void onResume() {
+        super.onResume();
+        if (routes != null) routes.recheckCoreState();
+    }
     @Override protected void onDestroy() {
         if (fileCallback != null) fileCallback.onReceiveValue(null);
+        routes.setStateListener(null);
         downloads.close(); routes.close(); for (WebView popup : popups) popup.destroy(); popups.clear(); web.destroy(); super.onDestroy();
     }
 }

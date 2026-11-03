@@ -2,11 +2,16 @@ package com.forcemind.chatgpt.networkpreview;
 
 import android.content.Context;
 import android.os.Bundle;
+import android.os.ParcelFileDescriptor;
+import android.os.SystemClock;
+import androidx.lifecycle.Lifecycle;
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -19,6 +24,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicInteger;
 import studio.networkcore.Networkcore;
 import static org.junit.Assert.*;
 
@@ -156,6 +162,145 @@ public final class NetworkPocInstrumentedTest {
         main(() -> activity.downloadsForTests().download(fixture() + "/download", "network-poc-ci", (file, message) -> { output.set(file); error.set(message); done.countDown(); }));
         assertTrue(done.await(30, TimeUnit.SECONDS)); assertNull(error.get()); assertNotNull(output.get());
         assertArrayEquals(FILE, java.nio.file.Files.readAllBytes(output.get().toPath())); assertTrue(output.get().delete());
+    }
+    private void waitState(RouteManager routes, RouteManager.State expected) throws Exception {
+        long deadline = SystemClock.elapsedRealtime() + 40000;
+        while (routes.snapshot().state != expected && SystemClock.elapsedRealtime() < deadline) Thread.sleep(50);
+        assertEquals("production route state", expected, routes.snapshot().state);
+    }
+    private JSONObject document(MainActivity activity) throws Exception {
+        return new JSONObject(js(activity, "({url:location.href,identity:window.__healthIdentity,draft:document.getElementById('draft').value,fetchStarts:window.__healthFetchStarts,submissions:window.__healthSubmissions})"));
+    }
+    private JSONObject preservedDocument(MainActivity activity, JSONObject original, int fetchStarts) throws Exception {
+        JSONObject actual = document(activity);
+        for (String key : new String[]{"url", "identity", "draft", "submissions"}) assertEquals("retained " + key, original.get(key), actual.get(key));
+        assertEquals("no automatic WebView replay", fetchStarts, actual.getInt("fetchStarts"));
+        return actual;
+    }
+    private JSONObject observation(MainActivity activity) throws Exception {
+        AtomicReference<String> status = new AtomicReference<>(); AtomicReference<Boolean> blocked = new AtomicReference<>();
+        main(() -> { status.set(activity.networkStatusForTests()); blocked.set(activity.webViewForTests().getSettings().getBlockNetworkLoads()); });
+        RouteManager routes = activity.routeManagerForTests(); RouteManager.Snapshot snapshot = routes.snapshot();
+        return new JSONObject().put("state", snapshot.state.name()).put("generation", snapshot.generation)
+                .put("port", snapshot.port).put("coreRunning", Networkcore.isRunning()).put("visibleStatus", status.get())
+                .put("webNetworkBlocked", blocked.get()).put("error", routes.error());
+    }
+    private JSONObject failedObservation(MainActivity activity) throws Exception {
+        JSONObject actual = observation(activity);
+        assertEquals("FAILED", actual.getString("state")); assertFalse(actual.getBoolean("coreRunning"));
+        assertTrue(actual.getBoolean("webNetworkBlocked")); assertFalse(actual.getString("visibleStatus").contains("已连接"));
+        assertTrue("visible failure state", actual.getString("visibleStatus").contains("失败"));
+        String error = actual.getString("error");
+        assertTrue("manual recovery guidance", error.contains("手动") && (error.contains("重新连接") || error.contains("重连")) && error.contains("直连"));
+        return actual;
+    }
+    private void systemCommand(String command) throws Exception {
+        try (ParcelFileDescriptor descriptor = InstrumentationRegistry.getInstrumentation().getUiAutomation().executeShellCommand(command);
+             InputStream output = new ParcelFileDescriptor.AutoCloseInputStream(descriptor)) {
+            byte[] buffer = new byte[1024]; while (output.read(buffer) >= 0) { }
+        }
+    }
+    private void lifecycle(ActivityScenario<MainActivity> scenario, Lifecycle.State expected) throws Exception {
+        long deadline = SystemClock.elapsedRealtime() + 20000;
+        while (scenario.getState() != expected && SystemClock.elapsedRealtime() < deadline) Thread.sleep(75);
+        assertEquals("actual system lifecycle", expected, scenario.getState());
+    }
+    private boolean listenerAlive(int port) {
+        try (java.net.Socket socket = new java.net.Socket()) { socket.connect(new InetSocketAddress("127.0.0.1", port), 1000); return true; }
+        catch (java.io.IOException absent) { return false; }
+    }
+    @Test public void unexpectedCoreStopFailsClosedAndRequiresExplicitRecovery() throws Exception {
+        assertTrue("isolated synthetic package only", BuildConfig.APPLICATION_ID.endsWith(".ci"));
+        assertEquals("http://10.0.2.2:18080/page", BuildConfig.NETWORK_HOME_URL);
+        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        NodeStore.Data data = new NodeStore.Data(); data.nodes.add(node("A")); data.nodes.add(node("B")); data.selected = -1;
+        new NodeStore(context).write(data);
+        JSONObject evidence = new JSONObject().put("schema", 1).put("security", args.getString("expectedSecurity", "none"))
+                .put("origin", fixture()).put("test", "unexpectedCoreStopFailsClosedAndRequiresExplicitRecovery");
+        JSONArray expectedRequests = new JSONArray(); JSONObject documents = new JSONObject();
+        try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
+            AtomicReference<MainActivity> reference = new AtomicReference<>(); scenario.onActivity(reference::set);
+            MainActivity activity = reference.get(); RouteManager routes = activity.routeManagerForTests();
+            waitState(routes, RouteManager.State.DIRECT); assertTrue(RouteManager.supportsWebViewProxy());
+            awaitJs(activity, "document.title", "\"direct\"");
+            main(() -> activity.changeRoute(node("A"), 0)); waitState(routes, RouteManager.State.CONNECTED);
+            assertTrue("real core is running", Networkcore.isRunning());
+            assertEquals("A", activity.downloadsForTests().request(fixture() + "/stability/core-health-before/echo", "GET", null).route);
+            expectedRequests.put(new JSONObject().put("path", "/stability/core-health-before/echo").put("method", "GET").put("route", "A"));
+            main(() -> activity.webViewForTests().loadUrl(fixture() + "/stability/core-health/page"));
+            awaitJs(activity, "document.title", "\"A\""); awaitJs(activity, "document.readyState", "\"complete\"");
+            expectedRequests.put(new JSONObject().put("path", "/stability/core-health/page").put("method", "GET").put("route", "A"));
+            js(activity, "document.getElementById('draft').value='core-health-unsent-draft';window.__healthIdentity='owned-'+Date.now()+'-'+Math.random();window.__healthSubmissions=0;window.__healthFetchStarts=0;document.addEventListener('submit',()=>window.__healthSubmissions++);const originalFetch=window.fetch;window.fetch=function(...args){window.__healthFetchStarts++;return originalFetch.apply(this,args)};true");
+            JSONObject original = document(activity); documents.put("before", original);
+            JSONObject before = observation(activity); assertEquals("CONNECTED", before.getString("state"));
+            assertTrue(before.getString("visibleStatus").contains("已连接")); assertFalse(before.getBoolean("webNetworkBlocked"));
+            evidence.put("before", before);
+            long stoppedAt = SystemClock.elapsedRealtime(); int stoppedPort = routes.snapshot().port;
+            Networkcore.stop(); assertFalse("actual Go binding stopped", Networkcore.isRunning());
+            assertFalse("actual local listener stopped", listenerAlive(stoppedPort));
+            // No requests or recheckCoreState test calls occur before automatic FAILED.
+            waitState(routes, RouteManager.State.FAILED);
+            long detectedAt = SystemClock.elapsedRealtime();
+            evidence.put("automaticFailure", failedObservation(activity)).put("externalStopAtMillis", stoppedAt)
+                    .put("failureDetectedAtMillis", detectedAt).put("detectionMillis", detectedAt - stoppedAt);
+            documents.put("afterAutomaticFailure", preservedDocument(activity, original, 0));
+            evidence.put("failedRequestsStartedAtMillis", SystemClock.elapsedRealtime());
+            String nativeFailure = null;
+            try { activity.downloadsForTests().request(fixture() + "/stability/core-health-failed-native/upload", "POST", FILE); fail("core failure fell back to a native route"); }
+            catch (IllegalStateException expected) { nativeFailure = expected.getClass().getSimpleName(); }
+            js(activity, "window.__healthBlocked='pending';fetch('/stability/core-health-failed-web/upload',{method:'POST',body:'must-not-arrive',cache:'no-store'}).then(()=>window.__healthBlocked='unexpected-response').catch(()=>window.__healthBlocked='error');true");
+            awaitJs(activity, "window.__healthBlocked", "\"error\"");
+            assertEquals(0, routes.activeTransfers());
+            long failedGeneration = routes.snapshot().generation;
+            for (int i = 0; i < 30; i++) { Thread.sleep(100); assertFalse(Networkcore.isRunning()); assertEquals(RouteManager.State.FAILED, routes.snapshot().state); assertEquals(failedGeneration, routes.snapshot().generation); }
+            documents.put("afterBlockedRequests", preservedDocument(activity, original, 1));
+            evidence.put("nativeFailure", nativeFailure).put("webFailure", new org.json.JSONTokener(js(activity, "window.__healthBlocked")).nextValue())
+                    .put("activeTransfersAfterFailure", routes.activeTransfers());
+            main(() -> activity.changeRoute(node("A"), 0)); waitState(routes, RouteManager.State.CONNECTED);
+            assertTrue(Networkcore.isRunning()); assertEquals("\"error\"", js(activity, "window.__healthBlocked"));
+            documents.put("afterExplicitReconnect", preservedDocument(activity, original, 1));
+            evidence.put("reconnected", observation(activity));
+            assertEquals("A", activity.downloadsForTests().request(fixture() + "/stability/core-health-reconnected-native/echo", "GET", null).route);
+            expectedRequests.put(new JSONObject().put("path", "/stability/core-health-reconnected-native/echo").put("method", "GET").put("route", "A"));
+            js(activity, "fetch('/stability/core-health-reconnected-web/upload',{method:'POST',body:'explicit-new-request',cache:'no-store'}).then(async r=>window.__healthRecovered=r.headers.get('X-Fixture-Route')+':'+await r.text());true");
+            awaitJs(activity, "window.__healthRecovered", "\"A:explicit-new-request\"");
+            expectedRequests.put(new JSONObject().put("path", "/stability/core-health-reconnected-web/upload").put("method", "POST").put("route", "A"));
+            long homeStarted = SystemClock.elapsedRealtime();
+            systemCommand("input keyevent KEYCODE_HOME"); lifecycle(scenario, Lifecycle.State.CREATED);
+            Thread.sleep(700); Lifecycle.State stoppedLifecycle = scenario.getState(); assertEquals(Lifecycle.State.CREATED, stoppedLifecycle);
+            Networkcore.stop(); assertFalse(Networkcore.isRunning());
+            String returnCommand = "am start -W -n " + BuildConfig.APPLICATION_ID + "/com.forcemind.chatgpt.networkpreview.MainActivity";
+            systemCommand(returnCommand); lifecycle(scenario, Lifecycle.State.RESUMED);
+            AtomicReference<Boolean> sameActivity = new AtomicReference<>(); scenario.onActivity(current -> sameActivity.set(current == activity));
+            assertTrue("real Home return must reuse original Activity", sameActivity.get());
+            waitState(routes, RouteManager.State.FAILED);
+            documents.put("afterHomeResumeFailure", preservedDocument(activity, original, 2));
+            evidence.put("background", new JSONObject().put("homeCommand", "input keyevent KEYCODE_HOME").put("returnCommand", returnCommand)
+                    .put("stoppedLifecycle", stoppedLifecycle.name()).put("resumedLifecycle", scenario.getState().name()).put("sameActivity", sameActivity.get())
+                    .put("elapsedMillis", SystemClock.elapsedRealtime() - homeStarted).put("failure", failedObservation(activity)));
+            main(() -> activity.changeRoute(null, -1)); waitState(routes, RouteManager.State.DIRECT);
+            assertFalse(Networkcore.isRunning());
+            documents.put("afterExplicitDirect", preservedDocument(activity, original, 2)); evidence.put("direct", observation(activity));
+            String direct = args.getString("directFixtureUrl", "http://10.0.2.2:18080");
+            assertEquals("direct", activity.downloadsForTests().request(direct + "/stability/core-health-direct/echo", "GET", null).route);
+            expectedRequests.put(new JSONObject().put("path", "/stability/core-health-direct/echo").put("method", "GET").put("route", "direct"));
+            AtomicInteger staleCallbacks = new AtomicInteger(); VlessNode late = node("B");
+            main(() -> { routes.switchTo(late, (success, message) -> staleCallbacks.incrementAndGet()); routes.close(); });
+            long closedGeneration = routes.snapshot().generation, closeStarted = SystemClock.elapsedRealtime(); int samples = 0;
+            while (SystemClock.elapsedRealtime() - closeStarted < 4500) {
+                assertEquals(RouteManager.State.CLOSED, routes.snapshot().state); assertEquals(closedGeneration, routes.snapshot().generation);
+                samples++; Thread.sleep(75);
+            }
+            assertFalse("closed route must not restart the core", Networkcore.isRunning()); assertEquals("stale switch callback", 0, staleCallbacks.get());
+            evidence.put("closed", new JSONObject().put("state", routes.snapshot().state.name()).put("generation", routes.snapshot().generation)
+                    .put("expectedGeneration", closedGeneration).put("observedMillis", SystemClock.elapsedRealtime() - closeStarted)
+                    .put("samples", samples).put("callbackInvocations", staleCallbacks.get()).put("coreRunning", Networkcore.isRunning()));
+            evidence.put("documents", documents).put("expectedRequests", expectedRequests).put("complete", true);
+            java.io.File temporary = new java.io.File(context.getFilesDir(), "core-health-result.json.tmp");
+            java.nio.file.Files.write(temporary.toPath(), evidence.toString().getBytes(StandardCharsets.UTF_8));
+            assertTrue("atomic core health evidence", temporary.renameTo(new java.io.File(context.getFilesDir(), "core-health-result.json")));
+            System.out.println("NETWORK_CORE_HEALTH_RESULT " + evidence.toString());
+        }
     }
     private void nativeCoreOnly(VlessNode node, String expected) throws Exception {
         int port;

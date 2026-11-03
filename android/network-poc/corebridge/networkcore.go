@@ -41,4 +41,12 @@ func Stop() error {
     return nil
 }
 
+// IsRunning reports only the local instance lifecycle, not remote connectivity.
+// Use the same ownership lock as Start/Stop before reading Xray's locked state.
+func IsRunning() bool {
+    mu.Lock()
+    defer mu.Unlock()
+    return instance != nil && instance.IsRunning()
+}
+
 func Version() string { return core.Version() }

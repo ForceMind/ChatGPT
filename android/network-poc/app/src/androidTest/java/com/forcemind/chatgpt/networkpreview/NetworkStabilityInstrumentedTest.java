@@ -118,6 +118,7 @@ public final class NetworkStabilityInstrumentedTest {
             activity.downloadsForTests().request(origin + "/stability/" + id + "-native/upload", "POST", id.getBytes(StandardCharsets.UTF_8));
             fail("unavailable proxy unexpectedly delivered native POST");
         } catch (java.io.IOException expected) { }
+        catch (IllegalStateException expected) { assertEquals("failed route denies before opening a connection", RouteManager.State.FAILED, routes.snapshot().state); }
         WebView web = tabs.get(0);
         js(web, "window.__failure='pending';(()=>{const c=new AbortController();const timer=setTimeout(()=>c.abort(),8000);fetch("
                 + JSONObject.quote(origin + "/stability/" + id + "-web/upload")
@@ -181,9 +182,14 @@ public final class NetworkStabilityInstrumentedTest {
                 checkpoint("network-recovered-explicitly-no-replay");
                 int stoppedPort = routes.snapshot().port;
                 Networkcore.stop(); assertFalse("core listener really stopped", listenerAlive(stoppedPort));
+                assertFalse("core binding reports real stop", Networkcore.isRunning());
+                long healthDeadline = SystemClock.elapsedRealtime() + 15000;
+                while (routes.snapshot().state != RouteManager.State.FAILED && SystemClock.elapsedRealtime() < healthDeadline) Thread.sleep(50);
+                assertEquals("automatic core health failure before a new request", RouteManager.State.FAILED, routes.snapshot().state);
                 failedRequests("core-stopped"); preserved(); Thread.sleep(3000);
                 assertFalse("no automatic core restart", listenerAlive(stoppedPort));
                 String stateAfterStop = routes.snapshot().state.name();
+                assertEquals("FAILED", stateAfterStop);
                 route(a); preserved();
                 nativeUpload("after-core-restart", "A"); nativeFile("after-core-restart", "A"); webUpload(tabs.get(0), "web-after-core-restart", "A");
                 checkpoint("core-recovered-explicitly-no-replay");
