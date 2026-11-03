@@ -34,6 +34,8 @@
 
 `9ad96dd` 的 Android 9 原任务返回前置未满足生命周期/窗口焦点组合，尚未开始长测；现仅追加该前置的 taskId、生命周期、焦点、系统可访问窗口包名及合成界面文字证据，不放宽条件。Android 15 前台资源在 adb root 重启 adbd 时连接关闭，未进入采样；仅当等待设备后实际 UID 已为0才重跑原 preflight，其他错误照常失败，绝不以缺少 renderer/计数补零继续。
 
+`d4f8af6` 的诊断增补在 CI 编译时报局部变量 `state` 与既有工作区变量重名，未进入设备测试；现仅将诊断变量改名 `lifecycleState`，不改变条件或产品逻辑，交回 Actions 编译与原矩阵。
+
 后文保留原设计基线；其中待批准及跨启动待确认表述以本段用户确认范围为准。状态与后续验证集中在本文更新，不把编译、合成与原签名升级证据互相替代。
 
 独立候选源码 `254685aa9c0cf0b41d2fd22a2a75a9a0e5e81fe4` 的 [Actions 41636997369](https://github.com/ForceMind/ChatGPT/actions/runs/41636997369) 已回读十个必要网络作业通过。Android 9 / 15 的六个协议组合、八个路由套件各四项测试通过；96 个在途操作各处理一次，16 个关闭后请求未到原站。失败残片、任务释放、未知上传结果及页面保留均有实际证据。见 [在途故障记录](benchmarks/android-network-transfer-faults.json) 和 [历史能力与限制](android-network-plan.md)。上述基线是单空间证据；新增源码 `6df1bdd` 的 [Actions 41660146017](https://github.com/ForceMind/ChatGPT/actions/runs/41660146017) 已补齐三 Profile、四页与弹窗、两类文件同路由、系统 HTTP / PAC、账号清理及 Activity 重建的独立合成验收。见 [联合证据](benchmarks/android-network-joint-profiles.json)。正式文件选择器、外部 URI 权限 / 发布失败、真实服务与生产签名仍须正式适配后另验。
