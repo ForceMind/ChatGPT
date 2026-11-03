@@ -17,6 +17,9 @@ run('adb','install','-r','-t',str(folder/'baseline-debug.apk'));run('adb','insta
 assert 'Success' in run('adb','shell','pm','clear',PACKAGE)
 before=phase('seed','b44e564deaed09efea7be3d68349d2198dede46b',output)
 run('adb','shell','am','force-stop',PACKAGE)
+cold=output/'baseline-cold';cold.mkdir()
+phase('verify','b44e564deaed09efea7be3d68349d2198dede46b',cold)
+run('adb','shell','am','force-stop',PACKAGE)
 # No uninstall or data clearing between these steps.
 run('adb','install','-r','-t',str(folder/'candidate-debug.apk'))
 after=phase('verify',os.environ['GITHUB_SHA'],output)

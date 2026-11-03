@@ -1,6 +1,8 @@
 package com.forcemind.chatgpt.profiles;
 
 import android.content.Context;
+import android.app.Activity;
+import androidx.test.core.app.ActivityScenario;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
@@ -29,13 +31,14 @@ import static org.junit.Assert.*;
 @RunWith(AndroidJUnit4.class)
 public final class NetworkUpgradeCompatibilityTest {
     private final Context context=InstrumentationRegistry.getInstrumentation().getTargetContext();
+    private Activity profileHost;
     private void main(Runnable action){InstrumentationRegistry.getInstrumentation().runOnMainSync(action);}
     private String hash(byte[] bytes)throws Exception{StringBuilder s=new StringBuilder();for(byte b:MessageDigest.getInstance("SHA-256").digest(bytes))s.append(String.format(java.util.Locale.ROOT,"%02x",b&255));return s.toString();}
     private String signature()throws Exception{PackageInfo p=context.getPackageManager().getPackageInfo(context.getPackageName(),PackageManager.GET_SIGNING_CERTIFICATES);return hash(p.signingInfo.getApkContentsSigners()[0].toByteArray());}
     private File file(String name){return new File(context.getFilesDir(),name);}
     private WebView inlineProfile(String name,boolean existing)throws Exception{
         CountDownLatch done=new CountDownLatch(1);AtomicReference<WebView> result=new AtomicReference<>();
-        main(()->{WebView web=new WebView(context);if(existing)assertTrue("Persistent profile must preexist target loading",ProfileStore.getInstance().getAllProfileNames().contains(name));WebViewCompat.setProfile(web,name);web.getSettings().setJavaScriptEnabled(true);web.getSettings().setDomStorageEnabled(true);web.getSettings().setBlockNetworkLoads(true);web.setWebViewClient(new WebViewClient(){@Override public WebResourceResponse shouldInterceptRequest(WebView view,android.webkit.WebResourceRequest request){return new WebResourceResponse("text/plain","UTF-8",new ByteArrayInputStream("Owned upgrade fixture blocks every network request".getBytes(StandardCharsets.UTF_8)));}@Override public void onPageFinished(WebView view,String url){done.countDown();}});result.set(web);web.loadDataWithBaseURL("https://chatgpt.com/","<!doctype html><title>Owned inline upgrade fixture, not ChatGPT</title>","text/html","UTF-8",null);});assertTrue(done.await(20,TimeUnit.SECONDS));return result.get();
+        main(()->{WebView web=new WebView(profileHost);if(existing)assertTrue("Persistent profile "+name+" missing before target load; observed "+ProfileStore.getInstance().getAllProfileNames(),ProfileStore.getInstance().getAllProfileNames().contains(name));WebViewCompat.setProfile(web,name);web.getSettings().setJavaScriptEnabled(true);web.getSettings().setDomStorageEnabled(true);web.getSettings().setBlockNetworkLoads(true);web.setWebViewClient(new WebViewClient(){@Override public WebResourceResponse shouldInterceptRequest(WebView view,android.webkit.WebResourceRequest request){return new WebResourceResponse("text/plain","UTF-8",new ByteArrayInputStream("Owned upgrade fixture blocks every network request".getBytes(StandardCharsets.UTF_8)));}@Override public void onPageFinished(WebView view,String url){done.countDown();}});result.set(web);profileHost.setContentView(web);web.loadDataWithBaseURL("https://chatgpt.com/","<!doctype html><title>Owned inline upgrade fixture, not ChatGPT</title>","text/html","UTF-8",null);});assertTrue(done.await(20,TimeUnit.SECONDS));return result.get();
     }
     private String js(WebView web,String code)throws Exception{CountDownLatch done=new CountDownLatch(1);AtomicReference<String> result=new AtomicReference<>();main(()->web.evaluateJavascript(code,value->{result.set(value);done.countDown();}));assertTrue(done.await(10,TimeUnit.SECONDS));return result.get();}
     private void seed()throws Exception{
@@ -47,7 +50,7 @@ public final class NetworkUpgradeCompatibilityTest {
         for(int i=0;i<state.accounts.size();i++){
             WorkspaceState.Account a=state.accounts.get(i);String marker="synthetic-cookie-"+i;CountDownLatch done=new CountDownLatch(1);AtomicReference<Boolean> accepted=new AtomicReference<>();
             WebView browser=inlineProfile(WorkspaceState.profile(a.storageId),false);js(browser,"localStorage.setItem('ci-upgrade-storage',"+JSONObject.quote(marker)+");true");
-            main(()->WebViewCompat.getProfile(browser).getCookieManager().setCookie("https://chatgpt.com/","ci_upgrade_profile="+marker+"; Path=/; Secure; SameSite=Lax",ok->{accepted.set(ok);done.countDown();}));assertTrue(done.await(10,TimeUnit.SECONDS));assertTrue(accepted.get());assertEquals(JSONObject.quote(marker),js(browser,"localStorage.getItem('ci-upgrade-storage')"));main(()->{WebViewCompat.getProfile(browser).getCookieManager().flush();browser.destroy();});
+            main(()->WebViewCompat.getProfile(browser).getCookieManager().setCookie("https://chatgpt.com/","ci_upgrade_profile="+marker+"; Path=/; Secure; SameSite=Lax",ok->{accepted.set(ok);done.countDown();}));assertTrue(done.await(10,TimeUnit.SECONDS));assertTrue(accepted.get());assertEquals(JSONObject.quote(marker),js(browser,"localStorage.getItem('ci-upgrade-storage')"));main(()->{WebViewCompat.getProfile(browser).getCookieManager().flush();if(browser.getParent() instanceof android.view.ViewGroup)((android.view.ViewGroup)browser.getParent()).removeView(browser);browser.destroy();});
             JSONObject account=new JSONObject().put("id",a.id).put("storageId",a.storageId).put("profile",WorkspaceState.profile(a.storageId)).put("cookie",marker).put("tabs",new JSONArray());
             for(WorkspaceState.Tab t:a.tabs){String draft="synthetic encrypted draft "+t.id;JSONObject record=new JSONObject().put("schema",1).put("accountId",a.id).put("storageId",a.storageId).put("tabId",t.id).put("url",t.url).put("draft",draft).put("scroll",321).put("ratio",0.25).put("capturedAt",123456789);
                 recovery.save(record,recovery.generation(a.id,a.storageId));File payload=file("page-recovery/"+a.id+"/"+a.storageId+"/"+t.id+".bin");account.getJSONArray("tabs").put(new JSONObject().put("id",t.id).put("url",t.url).put("draft",draft).put("ciphertextSHA256",hash(Files.readAllBytes(payload.toPath()))));}
@@ -65,7 +68,7 @@ public final class NetworkUpgradeCompatibilityTest {
         WorkspaceState state=new StateStore(context.getFilesDir()).load();assertEquals(3,state.accounts.size());PageRecoveryStore recovery=new PageRecoveryStore(context.getFilesDir(),DevicePayloadKeys.recoveryCipher(context));
         for(int i=0;i<expected.getJSONArray("accounts").length();i++){
             JSONObject a=expected.getJSONArray("accounts").getJSONObject(i);WorkspaceState.Account actual=state.find(a.getString("id"));assertEquals(a.getString("storageId"),actual.storageId);assertEquals(a.getString("profile"),WorkspaceState.profile(actual.storageId));
-            WebView browser=inlineProfile(a.getString("profile"),true);AtomicReference<String> cookie=new AtomicReference<>();main(()->cookie.set(WebViewCompat.getProfile(browser).getCookieManager().getCookie("https://chatgpt.com/")));assertNotNull(cookie.get());assertTrue(cookie.get().contains("ci_upgrade_profile="+a.getString("cookie")));assertEquals(JSONObject.quote(a.getString("cookie")),js(browser,"localStorage.getItem('ci-upgrade-storage')"));main(browser::destroy);
+            WebView browser=inlineProfile(a.getString("profile"),true);AtomicReference<String> cookie=new AtomicReference<>();main(()->cookie.set(WebViewCompat.getProfile(browser).getCookieManager().getCookie("https://chatgpt.com/")));assertNotNull(cookie.get());assertTrue(cookie.get().contains("ci_upgrade_profile="+a.getString("cookie")));assertEquals(JSONObject.quote(a.getString("cookie")),js(browser,"localStorage.getItem('ci-upgrade-storage')"));main(()->{if(browser.getParent() instanceof android.view.ViewGroup)((android.view.ViewGroup)browser.getParent()).removeView(browser);browser.destroy();});
             for(int n=0;n<a.getJSONArray("tabs").length();n++){JSONObject tab=a.getJSONArray("tabs").getJSONObject(n);JSONObject read=recovery.load(actual.id,actual.storageId,tab.getString("id"),tab.getString("url"));assertNotNull(read);assertEquals(tab.getString("draft"),read.getString("draft"));assertEquals(321,read.getInt("scroll"));assertEquals(tab.getString("ciphertextSHA256"),hash(Files.readAllBytes(file("page-recovery/"+actual.id+"/"+actual.storageId+"/"+tab.getString("id")+".bin").toPath())));}
             AssetLedger ledger=new AssetLedger(context.getFilesDir(),actual.id);assertEquals(a.getString("assetSHA256"),hash(Files.readAllBytes(ledger.verifiedFile(a.getString("assetId")).toPath())));
         }
@@ -74,8 +77,8 @@ public final class NetworkUpgradeCompatibilityTest {
     }
     @Test public void syntheticUpgradeKeepsProfileAndEncryptedData()throws Exception{
         assertEquals("com.forcemind.chatgpt.profiles.debug",context.getPackageName());Bundle args=InstrumentationRegistry.getArguments();String phase=args.getString("phase");assertTrue("seed".equals(phase)||"verify".equals(phase));
-        if("seed".equals(phase))seed();verify();
-        JSONObject report=new JSONObject().put("schema",1).put("complete",true).put("phase",phase).put("api",android.os.Build.VERSION.SDK_INT).put("sourceSHA",args.getString("sourceSHA")).put("versionCode",context.getPackageManager().getPackageInfo(context.getPackageName(),0).getLongVersionCode()).put("accounts",3).put("tabs",4).put("signingSHA256",signature()).put("sameTemporaryCISignature",true).put("productionSignatureVerified",false).put("networkRequests",0).put("inlineProfileDocuments","seed".equals(phase)?6:3).put("screenshots",false).put("personalData",false);
+        try(ActivityScenario<UploadProbeActivity> host=ActivityScenario.launch(UploadProbeActivity.class)){host.onActivity(value->profileHost=value);if("seed".equals(phase))seed();verify();}
+        JSONObject report=new JSONObject().put("schema",1).put("complete",true).put("phase",phase).put("api",android.os.Build.VERSION.SDK_INT).put("sourceSHA",args.getString("sourceSHA")).put("versionCode",context.getPackageManager().getPackageInfo(context.getPackageName(),0).getLongVersionCode()).put("accounts",3).put("tabs",4).put("signingSHA256",signature()).put("sameTemporaryCISignature",true).put("productionSignatureVerified",false).put("networkRequests",0).put("hostFixture","debug UploadProbeActivity; every page request intercepted").put("inlineProfileDocuments","seed".equals(phase)?6:3).put("screenshots",false).put("personalData",false);
         Files.write(file("upgrade-result-"+phase+".json").toPath(),report.toString().getBytes(StandardCharsets.UTF_8));System.out.println("UPGRADE_DATA_VERIFIED "+report);
     }
 }
