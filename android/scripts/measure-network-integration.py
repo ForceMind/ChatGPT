@@ -22,7 +22,7 @@ class FormalSampler(base.Sampler):
    if file.exists():print(file.read_text()[-9000:],flush=True)
    raise
  def cleanup(self):
-  for name in ['resource-load-evidence.json','resource-native-maps.txt','resource-background-heartbeats.json']:
+  for name in ['resource-load-evidence.json','resource-native-maps.txt','resource-background-heartbeats.json','resource-result.json']:
    try:(self.output/name).write_text(self.phase_file(name))
    except Exception:pass
   super().cleanup()
