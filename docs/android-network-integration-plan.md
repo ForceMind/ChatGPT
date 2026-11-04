@@ -206,3 +206,7 @@ Android 9 取最新 `d0b8db4` / [41713812139](https://github.com/ForceMind/ChatG
 ## 独立测试版 GitHub 预发布（2026-11-05）
 
 经用户明确授权，已将既有Actions41832194012原APK和完整ZIP发布为[独立Pre-release](https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.24-candidate.1-standalone)，标签绑定实际构建源码aff127aecc0e1f71b497f90a0d1f115ece31dd88，不设Latest。四附件服务器SHA256与原产物一致，发布后匿名下载前缀和发布页均核验。未重建或改签，固定证书/新ActionsSecret仍未实施；未合并main、替换官网正式下载或更新清单。此前“仅Actions、未公开”的记载是当时状态，以本次[发布记录](releases/android-network-standalone-preview.1-publication.json)为后续状态。
+
+## 初步使用反馈与后续签名范围（2026-11-05）
+
+用户反馈独立测试版暂未发现明显问题，并允许继续开发。该反馈作为初步使用结果保留，尚无逐项设备、线路协议、网页/文件、恢复验证记录，不据此宣称全面真机验收。下一步固定签名方案涉及长期测试版身份及测试专用私钥写入Actions Secret，正在等待明确授权；当前临时签名测试包与数据继续保留，未生成新证书、修改Secret、合并main或自动发布新包。
