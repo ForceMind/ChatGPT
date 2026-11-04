@@ -1,5 +1,6 @@
 """Paired old/new formal-client CPU/PSS on fresh CI emulators, reusing strict native counter attribution."""
-import argparse,importlib.util,json,os,shlex,subprocess,time,traceback,sys
+import argparse,importlib.util,json,os,shlex,subprocess,time,sys
+from sampling_evidence import capture_failure, finalize_report
 from pathlib import Path
 SPEC=importlib.util.spec_from_file_location('owned_sampler',Path(__file__).resolve().parents[1]/'network-poc/scripts/measure-resources.py')
 base=importlib.util.module_from_spec(SPEC);SPEC.loader.exec_module(base)
@@ -49,10 +50,7 @@ p=argparse.ArgumentParser();p.add_argument('--output',required=True);p.add_argum
 assert os.environ.get('GITHUB_ACTIONS')=='true'
 root=Path(a.output);root.mkdir(parents=True,exist_ok=True)
 def preserve_terminal_error(kind,error,tb):
- data={'type':kind.__name__,'message':str(error),'traceback':''.join(traceback.format_exception(kind,error,tb))}
- if isinstance(error,subprocess.CalledProcessError):data.update({'command':error.cmd,'returnCode':error.returncode,'stdout':error.stdout,'stderr':error.stderr})
- target=root/'first-terminal-error.json'
- if not target.exists():target.write_text(json.dumps(data,indent=2,default=str)+'\n')
+ capture_failure(root,error)
  sys.__excepthook__(kind,error,tb)
 sys.excepthook=preserve_terminal_error
 assert subprocess.check_output(['adb','shell','getprop','ro.kernel.qemu'],text=True).strip()=='1'
@@ -77,17 +75,17 @@ for mode in modes:
  subprocess.run(['adb','shell','pm','clear',package],check=True,capture_output=True)
  if a.background:subprocess.run(['adb','shell','pm','grant',package,'android.permission.POST_NOTIFICATIONS'],check=False,capture_output=True)
  sampler=FormalSampler(folder,1800 if a.background else 60,5,60 if a.background else 10,fixture=fixture,mode=mode,source=source)
+ primary_error=None
  report={'complete':False,'mode':mode,'sourceSHA':source,'phases':[],'scope':'3 actual profiles / 4 offline documents; idle + fixed 600-chunk DOM stream and idle core. Not real ChatGPT or network streaming cost.'}
  try:
   report['environment']=sampler.preflight();sampler.launch()
   for name in base.PHASES:report['phases'].append(sampler.measure(name))
   report['deviceResult']=sampler.finish();report['complete']=True
  except Exception as failure:
-  original=folder/'command-failure.json'
-  if original.exists():(folder/'first-command-failure.json').write_bytes(original.read_bytes())
-  report['error']={'message':str(failure),'traceback':traceback.format_exc()};raise
+  primary_error=failure
+  report['error']=capture_failure(folder,failure);raise
  finally:
-  sampler.cleanup();(folder/'report.json').write_text(json.dumps(report,indent=2)+'\n')
+  finalize_report(folder,report,sampler.cleanup,primary_error)
  reports.append(report)
 if len(reports)>1:
  identity=reports[0]['environment']['webViewIdentity'];assert all(r['environment']['webViewIdentity']==identity for r in reports)

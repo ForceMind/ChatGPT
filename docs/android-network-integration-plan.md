@@ -173,3 +173,5 @@ Android 9 取最新 `d0b8db4` / [41713812139](https://github.com/ForceMind/ChatG
 - [41786067631](https://github.com/ForceMind/ChatGPT/actions/runs/41786067631)（持续logcat）及[41787762471](https://github.com/ForceMind/ChatGPT/actions/runs/41787762471)（关闭持续logcat）均完整通过四状态、各两窗口；实际读取两份 comparison.complete=true，原60秒、600chunk和完整进程计数断言保留。未重复后台长测。结果与源码分开记录于JSON。
 - 两轮均未复现原失败。首轮guest/host日志未检出OOM或崩溃特征，不能据此排除过去的故障；第二轮未产生first-error文件是成功运行的预期，不代表错误分支已实际验过。仍没有带完整首错的失败样本，不能声称原间歇故障已定位或根治。
 - 后续定位入口为现有工作流foreground_diagnostic=true，复用既有合成APK；保留两种日志连接条件。没有新失败证据时不继续盲目重跑，也不以重跑通过代替根因证明。个人数据、main与公开发布均未操作。
+
+采样专项继续：从代码发现cleanup抛错会掩盖主异常并跳过report.json写入。已将首错不可覆盖、主/cleanup双错误记录和原始二进制stdout/stderr独立保存加入采样证据函数，新增三项纯Python合成故障用例（主错+cleanup双错、仅cleanup失败、安装卸载输出完整保存）。只在Actions运行证据契约与语法检查，不启动模拟器；原Android15间歇故障仍未复现。

@@ -9,6 +9,10 @@ on:
         description: Reuse d0b8db4 inputs; Android 15 foreground only
         type: boolean
         default: false
+      evidence_contract_only:
+        description: Only synthetic error-retention tests, no emulator
+        type: boolean
+        default: false
       stream_guest_log:
         description: Keep continuous adb logcat connection (disable for controlled diagnosis)
         type: boolean
@@ -17,7 +21,7 @@ permissions:
   contents: read
 jobs:
   build:
-    if: ${{ !inputs.foreground_diagnostic }}
+    if: ${{ !inputs.foreground_diagnostic && !inputs.evidence_contract_only }}
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
@@ -291,7 +295,7 @@ jobs:
           path: android/app/build/resource-evidence/
 
   foreground_diagnostic:
-    if: ${{ inputs.foreground_diagnostic }}
+    if: ${{ inputs.foreground_diagnostic && !inputs.evidence_contract_only }}
     env:
       NETWORK_SOURCE_SHA: d0b8db47f0ff029d7f9ca0ff784281e0a1307b73
       NETWORK_LOG_STREAM: ${{ inputs.stream_guest_log && '1' || '0' }}
@@ -366,3 +370,13 @@ jobs:
           name: formal-network-resources-api-${{ matrix.api }}-background-${{ matrix.background }}
           retention-days: 14
           path: android/app/build/resource-evidence/
+
+  evidence_contract:
+    if: ${{ inputs.evidence_contract_only }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify first error, cleanup and raw command outputs
+        run: |
+          python3 -m py_compile android/scripts/measure-network-integration.py android/scripts/sampling_evidence.py
+          python3 -m unittest discover -s android/scripts -p test_sampling_evidence.py -v
