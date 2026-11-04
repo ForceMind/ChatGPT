@@ -217,7 +217,7 @@ cd android
 | 环境隔离 | Android 每账号语言 / 时区从独立 PoC 迁入日常客户端 | 独立三账号 / 四页恢复与触摸验证完成；非调试优化 release 的模拟器运行验证完成，实站 / 真机与正式接入待验，[运行证据](docs/benchmarks/android-optimized-release-runtime.json) |
 | 系统集成 | 系统 / Chrome 通行密钥、真实 Touch ID 恢复与稳定签名 | 通行密钥未接入；Touch ID 受证书与实机验收条件限制 |
 | 已发布 | 自有智能体与设计补丁 Skill | alpha.21 桌面含 32 个角色，支持单独使用、组合 Skill、收藏与任务恢复 |
-| 移动网络 | 应用内代理与 VLESS 配置 | 正式代码候选 **3.0.0-alpha.24-candidate.1** 已在 dev 接入；Android 9/15 的账号、文件、HTTP/PAC、冷恢复、临时签名升级和完整 30 分钟后台已通过；CPU/PSS 有完整对照数据，最新整轮另有 Android 15 采样失败，报告保留来源与限制。候选未签名、未公开发布，公开 Android 仍为 alpha.22。不提供免费节点。[实施记录](docs/android-network-integration-plan.md) · [验收与限制](docs/benchmarks/android-network-integration.json) |
+| 移动网络 | 应用内代理与 VLESS 配置 | 正式代码候选 **3.0.0-alpha.24-candidate.1** 已在 dev 接入；Android 9/15 的账号、文件、HTTP/PAC、冷恢复、临时签名升级和完整 30 分钟后台已通过；CPU/PSS 有完整对照数据，后续两轮 Android 15 前台专项已通过，间歇失败根因仍待完整失败样本；报告保留旧失败与各轮来源。候选未签名、未公开发布，公开 Android 仍为 alpha.22。不提供免费节点。[实施记录](docs/android-network-integration-plan.md) · [验收与限制](docs/benchmarks/android-network-integration.json) |
 | 新平台 | iPhone / iPad 后续开发；Intel Mac、Linux 与商店发行 | 未纳入当前迭代，暂无对应安装包 |
 | 更新能力 | 差量下载 | 尚未实现；alpha.23 已提供下载进度与手动入口，完整原生程序更新仍需重启 |
 

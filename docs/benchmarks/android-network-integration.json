@@ -7169,5 +7169,295 @@
     "tests": 77,
     "failures": 0,
     "directlyReadJUnitXML": true
+  },
+  "samplingFollowup": {
+    "status": "primary-error-overwrite-fixed-in-code-original-flake-not-reproduced",
+    "evidence": [
+      {
+        "run": 41786067631,
+        "artifact": 13302325106,
+        "archiveSHA256": "47a454cf3a21a99cb3cb83f3ea6a03b4cc04f6611cad46773a5e7409989a0a78",
+        "continuousLogcat": true,
+        "complete": true,
+        "sourceSHA": "d0b8db47f0ff029d7f9ca0ff784281e0a1307b73",
+        "samplerSourceSHA": "3759a62cfc2ff4d50bd3c472e37f7ba0005d9435",
+        "modes": [
+          {
+            "mode": "baseline",
+            "complete": true,
+            "phases": [
+              {
+                "phase": "idle",
+                "durationSeconds": 61.95699061900001,
+                "summary": {
+                  "pssMiBMean": 118.42103794642857,
+                  "pssMiBPeak": 154.6630859375,
+                  "rssMiBMean": 470.96875,
+                  "cpuPercentOneCoreMean": 0.9595033345953069,
+                  "cpuCoreSeconds": 0.5900000000000001,
+                  "systemCpuPercentOneCoreMean": 146.76431958653882,
+                  "systemMemAvailableMiBMean": 973.5680803571429
+                }
+              },
+              {
+                "phase": "stream",
+                "durationSeconds": 60.306055168,
+                "summary": {
+                  "pssMiBMean": 185.76841517857142,
+                  "pssMiBPeak": 293.7763671875,
+                  "rssMiBMean": 527.8800223214286,
+                  "cpuPercentOneCoreMean": 10.065170650808867,
+                  "cpuCoreSeconds": 6.069999999999999,
+                  "systemCpuPercentOneCoreMean": 29.362676872783997,
+                  "systemMemAvailableMiBMean": 1023.3069196428571
+                }
+              }
+            ]
+          },
+          {
+            "mode": "system",
+            "complete": true,
+            "phases": [
+              {
+                "phase": "idle",
+                "durationSeconds": 60.39900448699996,
+                "summary": {
+                  "pssMiBMean": 199.189453125,
+                  "pssMiBPeak": 208.7265625,
+                  "rssMiBMean": 687.0212053571429,
+                  "cpuPercentOneCoreMean": 0.8448321139401517,
+                  "cpuCoreSeconds": 0.51,
+                  "systemCpuPercentOneCoreMean": 6.955473809794679,
+                  "systemMemAvailableMiBMean": 1003.7801339285714
+                }
+              },
+              {
+                "phase": "stream",
+                "durationSeconds": 60.32977296799993,
+                "summary": {
+                  "pssMiBMean": 240.2197265625,
+                  "pssMiBPeak": 343.6630859375,
+                  "rssMiBMean": 733.4620535714286,
+                  "cpuPercentOneCoreMean": 10.095344119510605,
+                  "cpuCoreSeconds": 6.09,
+                  "systemCpuPercentOneCoreMean": 23.134217094496186,
+                  "systemMemAvailableMiBMean": 997.8197544642857
+                }
+              }
+            ]
+          },
+          {
+            "mode": "enabled",
+            "complete": true,
+            "phases": [
+              {
+                "phase": "idle",
+                "durationSeconds": 60.388681752000025,
+                "summary": {
+                  "pssMiBMean": 228.52162388392858,
+                  "pssMiBPeak": 232.6005859375,
+                  "rssMiBMean": 719.2723214285714,
+                  "cpuPercentOneCoreMean": 1.0104233055505898,
+                  "cpuCoreSeconds": 0.61,
+                  "systemCpuPercentOneCoreMean": 11.671834146222562,
+                  "systemMemAvailableMiBMean": 972.1233258928571
+                }
+              },
+              {
+                "phase": "stream",
+                "durationSeconds": 60.30638890299997,
+                "summary": {
+                  "pssMiBMean": 273.6708984375,
+                  "pssMiBPeak": 378.4267578125,
+                  "rssMiBMean": 768.2684151785714,
+                  "cpuPercentOneCoreMean": 10.231110924074882,
+                  "cpuCoreSeconds": 6.17,
+                  "systemCpuPercentOneCoreMean": 25.196397180359288,
+                  "systemMemAvailableMiBMean": 975.9933035714286
+                }
+              }
+            ]
+          },
+          {
+            "mode": "warm-system",
+            "complete": true,
+            "phases": [
+              {
+                "phase": "idle",
+                "durationSeconds": 60.39582975899998,
+                "summary": {
+                  "pssMiBMean": 225.6962890625,
+                  "pssMiBPeak": 231.6767578125,
+                  "rssMiBMean": 717.6651785714286,
+                  "cpuPercentOneCoreMean": 0.8449165183662439,
+                  "cpuCoreSeconds": 0.51,
+                  "systemCpuPercentOneCoreMean": 5.096852873041078,
+                  "systemMemAvailableMiBMean": 982.0245535714286
+                }
+              },
+              {
+                "phase": "stream",
+                "durationSeconds": 60.32294091899996,
+                "summary": {
+                  "pssMiBMean": 245.77622767857142,
+                  "pssMiBPeak": 251.791015625,
+                  "rssMiBMean": 741.1434151785714,
+                  "cpuPercentOneCoreMean": 10.195350356151861,
+                  "cpuCoreSeconds": 6.1499999999999995,
+                  "systemCpuPercentOneCoreMean": 23.926357741971024,
+                  "systemMemAvailableMiBMean": 1011.3253348214286
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "run": 41787762471,
+        "artifact": 13301529249,
+        "archiveSHA256": "75b3e1c8d7c3f1d6a9a483f1d97d45548e000559f0289d41f10b2c36210b7e93",
+        "continuousLogcat": false,
+        "complete": true,
+        "sourceSHA": "d0b8db47f0ff029d7f9ca0ff784281e0a1307b73",
+        "samplerSourceSHA": "21033ab8e051579dc3fc051d8b172b28542d2a60",
+        "modes": [
+          {
+            "mode": "baseline",
+            "complete": true,
+            "phases": [
+              {
+                "phase": "idle",
+                "durationSeconds": 61.18624700800001,
+                "summary": {
+                  "pssMiBMean": 120.82993861607143,
+                  "pssMiBPeak": 164.41796875,
+                  "rssMiBMean": 477.36160714285717,
+                  "cpuPercentOneCoreMean": 0.8531497746995154,
+                  "cpuCoreSeconds": 0.52,
+                  "systemCpuPercentOneCoreMean": 114.003571585106,
+                  "systemMemAvailableMiBMean": 959.953125
+                }
+              },
+              {
+                "phase": "stream",
+                "durationSeconds": 60.31572299800001,
+                "summary": {
+                  "pssMiBMean": 183.6005859375,
+                  "pssMiBPeak": 292.107421875,
+                  "rssMiBMean": 527.3147321428571,
+                  "cpuPercentOneCoreMean": 10.16409314978451,
+                  "cpuCoreSeconds": 6.13,
+                  "systemCpuPercentOneCoreMean": 28.213551112600754,
+                  "systemMemAvailableMiBMean": 957.5864955357143
+                }
+              }
+            ]
+          },
+          {
+            "mode": "system",
+            "complete": true,
+            "phases": [
+              {
+                "phase": "idle",
+                "durationSeconds": 60.34024512499997,
+                "summary": {
+                  "pssMiBMean": 199.85993303571428,
+                  "pssMiBPeak": 207.6064453125,
+                  "rssMiBMean": 686.0753348214286,
+                  "cpuPercentOneCoreMean": 0.7460151799393934,
+                  "cpuCoreSeconds": 0.45,
+                  "systemCpuPercentOneCoreMean": 14.269234840983167,
+                  "systemMemAvailableMiBMean": 941.5072544642857
+                }
+              },
+              {
+                "phase": "stream",
+                "durationSeconds": 60.26768871400003,
+                "summary": {
+                  "pssMiBMean": 240.21707589285714,
+                  "pssMiBPeak": 344.7734375,
+                  "rssMiBMean": 731.2327008928571,
+                  "cpuPercentOneCoreMean": 9.274385112986458,
+                  "cpuCoreSeconds": 5.59,
+                  "systemCpuPercentOneCoreMean": 24.50191528825418,
+                  "systemMemAvailableMiBMean": 926.8125
+                }
+              }
+            ]
+          },
+          {
+            "mode": "enabled",
+            "complete": true,
+            "phases": [
+              {
+                "phase": "idle",
+                "durationSeconds": 60.33820641,
+                "summary": {
+                  "pssMiBMean": 225.53138950892858,
+                  "pssMiBPeak": 229.2666015625,
+                  "rssMiBMean": 713.2672991071429,
+                  "cpuPercentOneCoreMean": 0.8785208687974817,
+                  "cpuCoreSeconds": 0.53,
+                  "systemCpuPercentOneCoreMean": 4.896833638397409,
+                  "systemMemAvailableMiBMean": 934.7689732142857
+                }
+              },
+              {
+                "phase": "stream",
+                "durationSeconds": 60.265652896000006,
+                "summary": {
+                  "pssMiBMean": 271.16964285714283,
+                  "pssMiBPeak": 374.6923828125,
+                  "rssMiBMean": 763.7650669642857,
+                  "cpuPercentOneCoreMean": 9.823516853757402,
+                  "cpuCoreSeconds": 5.92,
+                  "systemCpuPercentOneCoreMean": 21.686562669485955,
+                  "systemMemAvailableMiBMean": 956.0033482142857
+                }
+              }
+            ]
+          },
+          {
+            "mode": "warm-system",
+            "complete": true,
+            "phases": [
+              {
+                "phase": "idle",
+                "durationSeconds": 60.31642280799997,
+                "summary": {
+                  "pssMiBMean": 227.40373883928572,
+                  "pssMiBPeak": 232.2080078125,
+                  "rssMiBMean": 716.8074776785714,
+                  "cpuPercentOneCoreMean": 0.6964715736250131,
+                  "cpuCoreSeconds": 0.42,
+                  "systemCpuPercentOneCoreMean": 3.424497096395831,
+                  "systemMemAvailableMiBMean": 952.9034598214286
+                }
+              },
+              {
+                "phase": "stream",
+                "durationSeconds": 60.28153697799996,
+                "summary": {
+                  "pssMiBMean": 247.65959821428572,
+                  "pssMiBPeak": 253.9287109375,
+                  "rssMiBMean": 742.3498883928571,
+                  "cpuPercentOneCoreMean": 9.473489421768534,
+                  "cpuCoreSeconds": 5.71,
+                  "systemCpuPercentOneCoreMean": 26.617689448889486,
+                  "systemMemAvailableMiBMean": 976.4737723214286
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "assertionsRelaxed": false,
+    "backgroundLongTestsRepeated": false,
+    "formalAppChanged": false,
+    "runtimeRootCauseConfirmed": false,
+    "failureCaptureExercisedByRealFailure": false,
+    "knownDefect": "cleanup overwrote command-failure.json with secondary missing-file errors; primary command result is now copied before cleanup, and setup terminal errors retain stdout/stderr.",
+    "remaining": "Need a failed sample with the new first-error and guest/host logs. Two targeted full foreground runs passed; this does not establish root-cause repair."
   }
 }

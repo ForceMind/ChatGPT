@@ -166,3 +166,10 @@ Android 9 取最新 `d0b8db4` / [41713812139](https://github.com/ForceMind/ChatG
 用户已批准继续修复采样失败。首次只修取证：主异常进入 cleanup 前保存 first-command-failure.json 和 report.error，保留 guest logcat、主机内核 / 内存 / 进程记录。通过现有专用工作流的 foreground_diagnostic 手动入口复用 d0b8db4 的构建和合成节点，只有 API35 前台四状态，原60秒窗口、600chunk及完整进程计数断言不变；不重编译正式客户端、不重复后台长测。采样源码与安装包源码分别记录，未将记录改进当作根因修复。
 
 专项首轮 `3759a62` / Actions `41786067631` 的四状态八个前台窗口完整通过；实际读取 comparison.complete=true，guest/host日志未检出OOM或崩溃特征，仍不认定根因已修。下一轮唯一控制变量为关闭持续adb logcat连接，保留结束时日志、主机记录及首错；增加未进入采样循环时的安装/卸载等终端异常原始stdout/stderr记录。仍只跑API35前台，不追加后台。
+
+### 本轮采样专项结论（尚未完成原故障根因修复）
+
+- 已证实的日志问题：旧失败产物的 command-failure.json 被 cleanup 的缺失文件读取覆盖。从代码看，现于 cleanup 前保存 first-command-failure.json / report.error，安装和卸载等阶段的终端异常另存 first-terminal-error.json（含stdout/stderr），不吞异常、不补零。
+- [41786067631](https://github.com/ForceMind/ChatGPT/actions/runs/41786067631)（持续logcat）及[41787762471](https://github.com/ForceMind/ChatGPT/actions/runs/41787762471)（关闭持续logcat）均完整通过四状态、各两窗口；实际读取两份 comparison.complete=true，原60秒、600chunk和完整进程计数断言保留。未重复后台长测。结果与源码分开记录于JSON。
+- 两轮均未复现原失败。首轮guest/host日志未检出OOM或崩溃特征，不能据此排除过去的故障；第二轮未产生first-error文件是成功运行的预期，不代表错误分支已实际验过。仍没有带完整首错的失败样本，不能声称原间歇故障已定位或根治。
+- 后续定位入口为现有工作流foreground_diagnostic=true，复用既有合成APK；保留两种日志连接条件。没有新失败证据时不继续盲目重跑，也不以重跑通过代替根因证明。个人数据、main与公开发布均未操作。
