@@ -1,5 +1,5 @@
 """Paired old/new formal-client CPU/PSS on fresh CI emulators, reusing strict native counter attribution."""
-import argparse,importlib.util,json,os,shlex,subprocess,time,traceback
+import argparse,importlib.util,json,os,shlex,subprocess,time,traceback,sys
 from pathlib import Path
 SPEC=importlib.util.spec_from_file_location('owned_sampler',Path(__file__).resolve().parents[1]/'network-poc/scripts/measure-resources.py')
 base=importlib.util.module_from_spec(SPEC);SPEC.loader.exec_module(base)
@@ -13,7 +13,8 @@ class FormalSampler(base.Sampler):
    self.adb('wait-for-device',timeout=30)
    if self.shell('id','-u').strip()!='0':raise
    metadata=super().preflight()
-  self.guest_log=(self.output/'guest-logcat.txt').open('w');self.guest_reader=subprocess.Popen(['adb','logcat','-v','threadtime'],stdout=self.guest_log,stderr=subprocess.STDOUT)
+  if os.environ.get('NETWORK_LOG_STREAM','1')=='1':
+   self.guest_log=(self.output/'guest-logcat.txt').open('w');self.guest_reader=subprocess.Popen(['adb','logcat','-v','threadtime'],stdout=self.guest_log,stderr=subprocess.STDOUT)
   metadata['samplerSourceSha']=os.environ['GITHUB_SHA'];metadata['sourceSha']=self.source;metadata['mode']=self.mode;metadata['proxyTransport']={'configuredNode':'VLESS raw/none only for enabled control probe','activeDuringWindow':self.mode in ('enabled','background'),'webpageTraffic':'offline interceptor, no network stream'}
   (self.output/'environment.json').write_text(json.dumps(metadata,indent=2)+'\n');return metadata
  def launch(self):
@@ -32,6 +33,10 @@ class FormalSampler(base.Sampler):
   for name in ['resource-load-evidence.json','resource-native-maps.txt','resource-background-heartbeats.json','resource-result.json','resource-task-preflight.json']:
    try:(self.output/name).write_text(self.phase_file(name))
    except Exception:pass
+  if not hasattr(self,'guest_reader'):
+   with (self.output/'guest-logcat-final.txt').open('w') as log:
+    try:subprocess.run(['adb','logcat','-d','-v','threadtime'],stdout=log,stderr=subprocess.STDOUT,timeout=10)
+    except subprocess.TimeoutExpired:log.write('Post-failure logcat timed out; primary error preserved separately.\n')
   super().cleanup()
   if hasattr(self,'guest_reader'):
    self.guest_reader.terminate();self.guest_reader.wait(timeout=10);self.guest_log.close()
@@ -43,6 +48,13 @@ class FormalSampler(base.Sampler):
 p=argparse.ArgumentParser();p.add_argument('--output',required=True);p.add_argument('--inputs',required=True);p.add_argument('--background',action='store_true');a=p.parse_args()
 assert os.environ.get('GITHUB_ACTIONS')=='true'
 root=Path(a.output);root.mkdir(parents=True,exist_ok=True)
+def preserve_terminal_error(kind,error,tb):
+ data={'type':kind.__name__,'message':str(error),'traceback':''.join(traceback.format_exception(kind,error,tb))}
+ if isinstance(error,subprocess.CalledProcessError):data.update({'command':error.cmd,'returnCode':error.returncode,'stdout':error.stdout,'stderr':error.stderr})
+ target=root/'first-terminal-error.json'
+ if not target.exists():target.write_text(json.dumps(data,indent=2,default=str)+'\n')
+ sys.__excepthook__(kind,error,tb)
+sys.excepthook=preserve_terminal_error
 assert subprocess.check_output(['adb','shell','getprop','ro.kernel.qemu'],text=True).strip()=='1'
 fixture=json.loads(Path('android/network-poc/secure-fixture/fixture.json').read_text())
 original_attribution=base.attributable_processes

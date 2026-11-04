@@ -9,6 +9,10 @@ on:
         description: Reuse d0b8db4 inputs; Android 15 foreground only
         type: boolean
         default: false
+      stream_guest_log:
+        description: Keep continuous adb logcat connection (disable for controlled diagnosis)
+        type: boolean
+        default: true
 permissions:
   contents: read
 jobs:
@@ -290,6 +294,7 @@ jobs:
     if: ${{ inputs.foreground_diagnostic }}
     env:
       NETWORK_SOURCE_SHA: d0b8db47f0ff029d7f9ca0ff784281e0a1307b73
+      NETWORK_LOG_STREAM: ${{ inputs.stream_guest_log && '1' || '0' }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
     strategy:
