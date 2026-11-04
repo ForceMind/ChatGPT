@@ -175,3 +175,5 @@ Android 9 取最新 `d0b8db4` / [41713812139](https://github.com/ForceMind/ChatG
 - 后续定位入口为现有工作流foreground_diagnostic=true，复用既有合成APK；保留两种日志连接条件。没有新失败证据时不继续盲目重跑，也不以重跑通过代替根因证明。个人数据、main与公开发布均未操作。
 
 采样专项继续：从代码发现cleanup抛错会掩盖主异常并跳过report.json写入。已将首错不可覆盖、主/cleanup双错误记录和原始二进制stdout/stderr独立保存加入采样证据函数，新增三项纯Python合成故障用例（主错+cleanup双错、仅cleanup失败、安装卸载输出完整保存）。只在Actions运行证据契约与语法检查，不启动模拟器；原Android15间歇故障仍未复现。
+
+证据契约验证 `065bb53` / [Actions41789679934](https://github.com/ForceMind/ChatGPT/actions/runs/41789679934) 已通过：实际读取3项unittest均ok、语法检查成功，其余模拟器/构建/后台任务均skipped。合成故障验证了首错不被二次错误覆盖、主异常保持传播、仅cleanup失败仍失败、report始终保留，以及安装卸载二进制输出逐字节还原。它证明错误留存修正，不证明原间歇性adb/dumpsys故障已根治；没有新失败样本时不再盲目重跑。

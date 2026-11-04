@@ -7458,6 +7458,19 @@
     "runtimeRootCauseConfirmed": false,
     "failureCaptureExercisedByRealFailure": false,
     "knownDefect": "cleanup overwrote command-failure.json with secondary missing-file errors; primary command result is now copied before cleanup, and setup terminal errors retain stdout/stderr.",
-    "remaining": "Need a failed sample with the new first-error and guest/host logs. Two targeted full foreground runs passed; this does not establish root-cause repair."
+    "remaining": "Need a failed sample with the new first-error and guest/host logs. Two targeted full foreground runs passed; this does not establish root-cause repair.",
+    "evidenceContract": {
+      "sourceSHA": "065bb53",
+      "run": 41789679934,
+      "job": 126439887093,
+      "tests": 3,
+      "failures": 0,
+      "syntaxCheck": "passed",
+      "emulatorStarted": false,
+      "primaryAndCleanupFailurePreserved": true,
+      "cleanupOnlyStillFails": true,
+      "binaryCommandOutputRoundTrip": true,
+      "runtimeRootCauseProven": false
+    }
   }
 }
