@@ -1,0 +1,218 @@
+{
+  "run": 41832194012,
+  "artifact": 13322559438,
+  "receipt": {
+    "sourceSHA": "aff127aecc0e1f71b497f90a0d1f115ece31dd88",
+    "package": "com.forcemind.chatgpt.profiles.networkpreview",
+    "displayName": "ChatGPT Studio 测试版",
+    "versionName": "3.0.0-alpha.24-candidate.1-standalone",
+    "versionCode": 3000024,
+    "file": "ChatGPT-Studio-3.0.0-alpha.24-candidate.1-standalone-android-arm64.apk",
+    "bytes": 40911397,
+    "sha256": "c19754b421163b1266f2f75ab8b4846a3ddc1c7c4800f1ab3e6d22ecc17dc591",
+    "signerSHA256": "bfaa13f8b30fbd3d3ea9dccbc58c06dfb2b8c970aaba1fd11530f8ad44610e26",
+    "signing": "temporary CI test key; not production; future overlay upgrades not guaranteed",
+    "ciTrustIncluded": false,
+    "syntheticNodesIncluded": false,
+    "debuggable": false,
+    "testOnly": false,
+    "abi": [
+      "arm64-v8a"
+    ],
+    "minAndroid": 9,
+    "alignment16KiB": true,
+    "phoneInstalled": false,
+    "realServiceTested": false,
+    "publicRelease": false
+  },
+  "unit": {
+    "tests": 77,
+    "failures": 0,
+    "suites": 16
+  },
+  "junit": [
+    {
+      "name": "com.forcemind.chatgpt.profiles.AssetLedgerTest",
+      "tests": "9",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-04T12:49:09.587Z",
+      "hostname": "runnervm48cm3",
+      "time": "0.197",
+      "file": "test-results/testDebugUnitTest/TEST-com.forcemind.chatgpt.profiles.AssetLedgerTest.xml"
+    },
+    {
+      "name": "com.forcemind.chatgpt.profiles.DocumentConversionsTest",
+      "tests": "5",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-04T12:49:09.870Z",
+      "hostname": "runnervm48cm3",
+      "time": "0.731",
+      "file": "test-results/testDebugUnitTest/TEST-com.forcemind.chatgpt.profiles.DocumentConversionsTest.xml"
+    },
+    {
+      "name": "com.forcemind.chatgpt.profiles.BrowserDiagnosticsTest",
+      "tests": "2",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-04T12:49:09.786Z",
+      "hostname": "runnervm48cm3",
+      "time": "0.081",
+      "file": "test-results/testDebugUnitTest/TEST-com.forcemind.chatgpt.profiles.BrowserDiagnosticsTest.xml"
+    },
+    {
+      "name": "com.forcemind.chatgpt.profiles.DocumentFormatsTest",
+      "tests": "9",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-04T12:49:10.604Z",
+      "hostname": "runnervm48cm3",
+      "time": "0.252",
+      "file": "test-results/testDebugUnitTest/TEST-com.forcemind.chatgpt.profiles.DocumentFormatsTest.xml"
+    },
+    {
+      "name": "com.forcemind.chatgpt.profiles.HandoffFilesTest",
+      "tests": "4",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-04T12:49:10.859Z",
+      "hostname": "runnervm48cm3",
+      "time": "0.035",
+      "file": "test-results/testDebugUnitTest/TEST-com.forcemind.chatgpt.profiles.HandoffFilesTest.xml"
+    },
+    {
+      "name": "com.forcemind.chatgpt.profiles.HandoffStoreTest",
+      "tests": "7",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-04T12:49:10.897Z",
+      "hostname": "runnervm48cm3",
+      "time": "0.183",
+      "file": "test-results/testDebugUnitTest/TEST-com.forcemind.chatgpt.profiles.HandoffStoreTest.xml"
+    },
+    {
+      "name": "com.forcemind.chatgpt.profiles.LoopbackFixtureServerTest",
+      "tests": "1",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-04T12:49:11.082Z",
+      "hostname": "runnervm48cm3",
+      "time": "2.009",
+      "file": "test-results/testDebugUnitTest/TEST-com.forcemind.chatgpt.profiles.LoopbackFixtureServerTest.xml"
+    },
+    {
+      "name": "com.forcemind.chatgpt.profiles.NetworkCoreConfigTest",
+      "tests": "2",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-04T12:49:13.092Z",
+      "hostname": "runnervm48cm3",
+      "time": "0.012",
+      "file": "test-results/testDebugUnitTest/TEST-com.forcemind.chatgpt.profiles.NetworkCoreConfigTest.xml"
+    },
+    {
+      "name": "com.forcemind.chatgpt.profiles.NetworkNodeTest",
+      "tests": "3",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-04T12:49:13.105Z",
+      "hostname": "runnervm48cm3",
+      "time": "0.006",
+      "file": "test-results/testDebugUnitTest/TEST-com.forcemind.chatgpt.profiles.NetworkNodeTest.xml"
+    },
+    {
+      "name": "com.forcemind.chatgpt.profiles.PageRecoveryStoreTest",
+      "tests": "9",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-04T12:49:13.116Z",
+      "hostname": "runnervm48cm3",
+      "time": "0.175",
+      "file": "test-results/testDebugUnitTest/TEST-com.forcemind.chatgpt.profiles.PageRecoveryStoreTest.xml"
+    },
+    {
+      "name": "com.forcemind.chatgpt.profiles.PageSelectionTest",
+      "tests": "3",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-04T12:49:13.294Z",
+      "hostname": "runnervm48cm3",
+      "time": "0.002",
+      "file": "test-results/testDebugUnitTest/TEST-com.forcemind.chatgpt.profiles.PageSelectionTest.xml"
+    },
+    {
+      "name": "com.forcemind.chatgpt.profiles.RasterPdfWriterTest",
+      "tests": "3",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-04T12:49:13.298Z",
+      "hostname": "runnervm48cm3",
+      "time": "0.014",
+      "file": "test-results/testDebugUnitTest/TEST-com.forcemind.chatgpt.profiles.RasterPdfWriterTest.xml"
+    },
+    {
+      "name": "com.forcemind.chatgpt.profiles.RenderTasksTest",
+      "tests": "8",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-04T12:49:13.315Z",
+      "hostname": "runnervm48cm3",
+      "time": "0.1",
+      "file": "test-results/testDebugUnitTest/TEST-com.forcemind.chatgpt.profiles.RenderTasksTest.xml"
+    },
+    {
+      "name": "com.forcemind.chatgpt.profiles.SkillCatalogTest",
+      "tests": "4",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-04T12:49:13.417Z",
+      "hostname": "runnervm48cm3",
+      "time": "0.114",
+      "file": "test-results/testDebugUnitTest/TEST-com.forcemind.chatgpt.profiles.SkillCatalogTest.xml"
+    },
+    {
+      "name": "com.forcemind.chatgpt.profiles.WorkspaceFilesTest",
+      "tests": "3",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-04T12:49:13.533Z",
+      "hostname": "runnervm48cm3",
+      "time": "0.003",
+      "file": "test-results/testDebugUnitTest/TEST-com.forcemind.chatgpt.profiles.WorkspaceFilesTest.xml"
+    },
+    {
+      "name": "com.forcemind.chatgpt.profiles.WorkspaceStateTest",
+      "tests": "5",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-04T12:49:13.538Z",
+      "hostname": "runnervm48cm3",
+      "time": "0.004",
+      "file": "test-results/testDebugUnitTest/TEST-com.forcemind.chatgpt.profiles.WorkspaceStateTest.xml"
+    }
+  ],
+  "manifestNoSharedUID": true,
+  "backupDisabled": true,
+  "artifactURL": "https://github.com/ForceMind/ChatGPT/actions/runs/41832194012/artifacts/13322559438",
+  "buildChecks": "unit tests77/0, lintNetworkPreview, assembleNetworkPreview, apksigner verify, APK identity/trust/ABI/alignment inspection",
+  "productionDataAccessed": false,
+  "productionSigningUsed": false,
+  "knownLimit": "Temporary test signer, no guaranteed future overlay upgrade; phone and real nodes are user acceptance."
+}

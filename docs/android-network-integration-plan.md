@@ -198,3 +198,7 @@ Android 9 取最新 `d0b8db4` / [41713812139](https://github.com/ForceMind/ChatG
 41801290280仅基线窗口通过，因错误调用位置没有执行包并发，明确不计作并发证据；错误与修正均保留。镜像版本关联也存在通过/失败反例，不作根因结论。原生日志、模拟器内核控制台、逐命令完整输出/时间/退出码均已留在Actions；未截图、未访问真实ChatGPT，未动个人登录数据、main或公开发布，未重复后台长测。
 
 本轮只证明这些具体复现场景未触发旧故障，以及确定的错误留存缺陷已修。**原Android15间歇采样失败尚未定位、也未验证根治。** 当前仍缺少新取证路径捕获的真实失败样本；没有新证据时不把相同成功场景不断重跑，也不凭猜测修改采样断言、切换环境版本或补零。
+
+## 可独立安装测试版（2026-11-04）
+
+用户授权真实节点由自己配置验收。已在Actions41832194012构建并签名独立正式逻辑变体，包名com.forcemind.chatgpt.profiles.networkpreview、名称ChatGPT Studio测试版，与正式版及旧独立PoC包名均不同；77项单测/0失败、lint与APK签名/隔离/16KiB校验通过。仅交付Actions产物，临时测试签名不保证后续覆盖升级，无个人设备或实站验证。详见[安装说明](android-network-standalone-preview.md)与[最终收据](releases/android-network-standalone-preview.1.json)。
