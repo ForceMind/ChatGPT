@@ -295,6 +295,7 @@ jobs:
           script: |
             if [ '${{ matrix.api }}' = 28 ]; then python3 android/network-poc/scripts/install-webview.py --provider android/network-poc/webview-fixture --output android/app/build/resource-evidence/provider; fi
             python3 android/scripts/measure-network-integration.py --inputs android/app/build/performance-inputs --output android/app/build/resource-evidence ${{ matrix.background && '--background' || '' }} ${{ inputs.adb_profile_diagnostic && '--baseline-only' || '' }}
+            if [ '${{ inputs.adb_profile_diagnostic }}' = true ]; then python3 android/scripts/reproduce-adb-package-churn.py; fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
