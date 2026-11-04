@@ -1,6 +1,6 @@
-# Android 应用内网络正式接入建议
+# Android 应用内网络候选与验收
 
-**三批正式接入候选已获批准，实施中（2026-11-04），尚未验收。** 仅 dev 候选与 Actions 验收，不合并 main、不公开发布、不更新个人手机或使用生产签名。
+**候选和三批合成验收报告已交付（2026-11-04）。最新整轮 CI 未全绿：Android 15 前台复测仍有采样失败，原因未确定；有效性能证据来自此前完整通过的同 APK 测量，未将失败复测计为通过。** 仅 dev 候选与 Actions 验收，不合并 main、不公开发布、不更新个人手机或使用生产签名。
 
 ## 当前实施记录
 
@@ -10,7 +10,54 @@
 |---|---|
 | 1 · 最小接入 | 已通过：源码 `4412b98` / [41676289330](https://github.com/ForceMind/ChatGPT/actions/runs/41676289330) 的构建及 Android 9/15 六组 RAW/TLS/REALITY 完整通过。实际读取六组原始报告：72 个两出口文件、102 个精确请求，三 Profile、四页及触摸弹窗、Activity 重建、切线、核心故障和手动重试保留原页面/草稿，默认关闭未加载 Go。保存结果由 ActivityMonitor 返回，尚不算真实保存窗口验收。 |
 | 2 · 数据与文件 | 已通过 `a6baf07` / [41690901023](https://github.com/ForceMind/ChatGPT/actions/runs/41690901023) 的六组协议 / 两端升级。覆盖：公开 alpha.22 旧新同临时签名升级；真实系统保存窗口；实际 4096 字节文档写入后失败；权限拒绝、既有文件保护、取消及迟到回调；真实进程结束后新网页恢复加密草稿、Cookie、所选线路及旧 Profile 延后清理；实际 HTTP/PAC 出口与临时角色恢复。 |
-| 3 · 性能与候选 | 前台四状态测量已通过，完整后台 JUnit 尚未通过；详见下表。工作流依赖 build、device、upgrade 全部通过后才启用资源任务：同一模拟器顺序比较公开 alpha.22、新版冷关闭、启用、启用后关闭；每种空闲与固定 600-chunk 离线 DOM 流各完整 60 秒，包含 App/JNI 与可归属 renderer 的 CPU/PSS。另做 Android 9/15 实际 Home 后 1800 秒与心跳记录。不是实际网络流或真实 ChatGPT 的成本。候选版本为 `3.0.0-alpha.24-candidate.1` / 3000024，校验 arm64 ELF/ZIP 的 16 KiB 对齐，生成未签名审阅包和 SHA，不创建标签/发布。 |
+| 3 · 性能与候选 | 候选与性能报告已交付。Android 9 最新前台、两端完整后台通过；Android 15 使用此前同 APK 的完整对照数据，本轮两次复测失败保留为 CI 待办。工作流依赖 build、device、upgrade 全部通过后才启用资源任务：同一模拟器顺序比较公开 alpha.22、新版冷关闭、启用、启用后关闭；每种空闲与固定 600-chunk 离线 DOM 流各完整 60 秒，包含 App/JNI 与可归属 renderer 的 CPU/PSS。另做 Android 9/15 实际 Home 后 1800 秒与心跳记录。不是实际网络流或真实 ChatGPT 的成本。候选版本为 `3.0.0-alpha.24-candidate.1` / 3000024，校验 arm64 ELF/ZIP 的 16 KiB 对齐，生成未签名审阅包和 SHA，不创建标签/发布。 |
+
+### 当前候选入口（审阅用途）
+
+[Actions 41713812139](https://github.com/ForceMind/ChatGPT/actions/runs/41713812139) / 源码 `d0b8db4` 已完成构建、77 项单元测试（实际读取 16 份 JUnit XML，0 失败）、六组协议设备用例和两端合成同签名升级。候选 [arm64 未签名产物](https://github.com/ForceMind/ChatGPT/actions/runs/41713812139/artifacts/13268817906) 保存 14 天，仅供审阅，不能作为原签名覆盖安装包。
+
+- 文件：`ChatGPT-Studio-Network-Candidate-d0b8db47-android-arm64-UNSIGNED.apk`
+- 版本：`3.0.0-alpha.24-candidate.1` / `3000024`
+- 大小：40,903,165 字节（约 39.0 MiB）；公开 alpha.22 为 7,376,521 字节（约 7.0 MiB），字面差约 32.0 MiB，不能把每一字节差值都归因于核心。
+- SHA-256：`571e3fdc934e22f08dd511305a985c23368c35dbef19e63894576d04b381bfab`，与第二批通过时的正式 APK 字节相同。
+- CI 确认无测试 CA / 生成信任类、测试管理权限或 Provider；仅 arm64，ELF 与 ZIP 16 KiB 对齐通过；未改变 R8 设置。
+- 本批不含原签名升级、32 位设备、厂商系统、真实节点 / ChatGPT 或真人 UI 体验验收。没有操作个人设备、main 或公开站点。
+
+最新整轮 [41713812139](https://github.com/ForceMind/ChatGPT/actions/runs/41713812139) 未全绿：第 1 次尝试在基线后 emulator 端口不可连接，第 2 次尝试的首个基线快照中 dumpsys 返回255，随后设备离线。运行器诊断包未能确定根因，不能断言 OOM 或产品故障。两次失败均保留。两端后台和 Android 9 前台完整通过；Android 15 复用此前完整同条件测量，依据为正式代码 / 构建配置 / 基础采样器 / 工作流无差异、APK 字节相同、WebView 同为124.0.6367.219。原签名、真机、真实节点与人工 UI 体验均未在本批验证。
+
+### 前台性能证据
+
+Android 9 取最新 `d0b8db4` / [41713812139](https://github.com/ForceMind/ChatGPT/actions/runs/41713812139) 的完整四状态测量；Android 15 取 `3512023` / [41695140228](https://github.com/ForceMind/ChatGPT/actions/runs/41695140228) 的完整测量，复用依据如上。每端为同一模拟器顺序比较；三个真实 Profile、四个离线合成页面，各空闲 / 600-chunk DOM 流窗口完整60秒。CPU以一核100%计，PSS含App/JNI与可明确归属的renderer。x86_64 CI测试构建对照旧debug，不是arm64真机或实际ChatGPT网络成本。
+
+| Android | 状态 | 空闲 CPU | 空闲 PSS MiB | DOM 流 CPU | DOM 流 PSS MiB |
+|---|---|---:|---:|---:|---:|
+| 9 | alpha.22 基线 | 0.96% | 222.5 | 24.21% | 272.5 |
+| 9 | 冷关闭 | 0.91% | 229.5 | 24.02% | 275.0 |
+| 9 | 启用 | 1.29% | 259.4 | 23.95% | 308.8 |
+| 9 | 启用后关闭 | 0.93% | 259.8 | 24.10% | 310.2 |
+| 15 | alpha.22 基线 | 1.16% | 129.8 | 15.86% | 189.5 |
+| 15 | 冷关闭 | 1.22% | 183.3 | 16.44% | 227.0 |
+| 15 | 启用 | 1.37% | 210.3 | 16.48% | 232.3 |
+| 15 | 启用后关闭 | 0.99% | 214.7 | 16.52% | 260.8 |
+
+启用相对冷关闭的空闲 PSS 多约30 / 27MiB；关闭已启用核心不会卸载Go运行时。冷关闭相对旧版也有约7 / 54MiB差值，原因未确定，不能宣称零成本。Android15参考基线的系统CPU约171%，存在明显启动服务负载；加上顺序、缓存、JIT与仪器影响，不把这些单轮值当作启动或CPU改善的因果证明。各轮原值、四页就绪时间、来源和失败记录见[JSON](benchmarks/android-network-integration.json)。
+
+### 最新完整后台结果
+
+源码 `d0b8db4` / [41713812139 第 1 次尝试](https://github.com/ForceMind/ChatGPT/actions/runs/41713812139/attempts/1)。实际读取两份完整报告及各自 `OK (1 test)`：真实 Home、四页继续运行、返回同一受管 Activity / 原文档 / 草稿、服务停止和场景销毁全部通过。Android 9 的短前置也实际取得原任务的 RESUMED / 焦点。
+
+| Android | 实际停止态时长 | CPU（一核100%） | 平均 PSS | 观测 |
+|---|---:|---:|---:|---|
+| 9 | 1801 秒 | 0.64% | 257.4 MiB | 60 次四页心跳推进；全部观测均为停止态 / 原服务运行 |
+| 15 | 1805 秒 | 0.33% | 128.9 MiB | 60 次四页心跳推进；全部观测均为停止态 / 原服务运行 |
+
+这是核心空闲、三 Profile / 四离线页面、每30秒一次 JS / 生命周期观测的模拟器证据。仪器与观测可能影响 CPU 和执行，不代表无人观测的厂商真机耗电保证；TLS / REALITY 路由另有功能用例，本表没有测它们的大流量加密成本。四页就绪时间记录在 JSON，含 Profile / DOM 初始化，不当作点击到首帧耗时。
+
+## 验证边界与遗留项
+
+本批交付正式代码候选及合成验收报告，不进行公开发布或个人设备升级。原证书升级、arm64 / 厂商真机、真实节点 / ChatGPT、32位设备、语音 / WebRTC路由另需验证。当前CI遗留为Android15前台采样稳定性；若继续诊断，应先保留首个命令错误和guest/host日志，避免cleanup覆盖它，不能放宽完整计数断言或补零。已有完整有效测量继续保留，不为这项问题重复已通过的30分钟后台场景。
+
+## 实施与失败迭代记录
 
 第二批 `8bfef1d` / Actions `41683113485` 构建通过，但整体未通过。已读 Android 15/TLS 的实际文件报告：真实 DocumentsUI、32 个精确网页/文件请求、4 个真实 gate 操作、4096 字节后发布失败清理、HTTP S/PAC P 和临时角色恢复通过。后续冷进程用例在启动前拒绝继续，因为测试写成 `process-restart-probe.json`，实际 debug 应用读取 `process-restart-fixture.json`；没有放行真实网页。升级测试 seed 成功，新进程验证通过 `getProfile` 直接取 Cookie 触发 WebView 124 空指针；改为先断言原名称确实存在，再加载同一 Profile 并逐字校验原 Cookie，不允许默认/共享/空 Profile 兜底。两处测试初始化已修，待重验，尚不算升级或冷恢复完成。
 
@@ -40,37 +87,9 @@
 
 `93620e8` 的 Android 9 短前置原始诊断为 taskId 3 / CREATED / windowFocus=false / 活动窗口 Launcher。核对 [AOSP Android 9 ActivityManagerService](https://github.com/aosp-mirror/platform_frameworks_base/blob/android-9.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java) 与 [PhoneWindowManager](https://github.com/aosp-mirror/platform_frameworks_base/blob/android-9.0.0_r1/services/core/java/com/android/server/policy/PhoneWindowManager.java)：普通 Home 调用 stopAppSwitches，保护期5秒，期间 moveTaskToFront 直接返回且不会排队。现仅在短 Home 前置确认已停止后等待5500ms，再调用原任务返回；全部RESUMED/焦点/同一Activity、1800秒及收尾断言保留，不改变产品行为。该源代码解释与现象相符，修正尚待CI确认。
 
-### 当前候选入口（尚未整体验收）
+## 原接入方案（历史基线）
 
-[Actions 41710266286](https://github.com/ForceMind/ChatGPT/actions/runs/41710266286) / 源码 `93620e8` 已完成构建、77 项单元测试（实际读取 16 份 JUnit XML，0 失败）、六组协议设备用例和两端合成同签名升级。候选 [arm64 未签名产物](https://github.com/ForceMind/ChatGPT/actions/runs/41710266286/artifacts/13267543066) 保存 14 天，仅供审阅，不能作为原签名覆盖安装包。
-
-- 文件：`ChatGPT-Studio-Network-Candidate-93620e89-android-arm64-UNSIGNED.apk`
-- 版本：`3.0.0-alpha.24-candidate.1` / `3000024`
-- 大小：40,903,165 字节（约 39.0 MiB）；公开 alpha.22 为 7,376,521 字节（约 7.0 MiB），字面差约 32.0 MiB，不能把每一字节差值都归因于核心。
-- SHA-256：`571e3fdc934e22f08dd511305a985c23368c35dbef19e63894576d04b381bfab`，与第二批通过时的正式 APK 字节相同。
-- CI 确认无测试 CA / 生成信任类、测试管理权限或 Provider；仅 arm64，ELF 与 ZIP 16 KiB 对齐通过；未改变 R8 设置。
-- 本批不含原签名升级、32 位设备、厂商系统、真实节点 / ChatGPT 或真人 UI 体验验收。没有操作个人设备、main 或公开站点。
-
-本轮 Android 15 前台资源任务的 adb/dumpsys 异常退出后设备离线，数据不完整，未接受；其余资源任务待完成。下面保留此前同一 APK 的完整前台测量与失败边界。
-
-### 前台资源结果（单次合成测量）
-
-源码 `3512023` / [41695140228](https://github.com/ForceMind/ChatGPT/actions/runs/41695140228)，每端同一模拟器顺序测量旧版、冷关闭、启用、启用后关闭。三个真实 Profile、四个离线合成页面；每个空闲 / 600-chunk DOM 流窗口完整 60 秒。CPU 以一核 100% 计；PSS 包含 App/JNI 与可明确归属的 renderer。不是实际 ChatGPT 或网络流成本。
-
-| Android | 状态 | 空闲 CPU | 空闲 PSS MiB | DOM 流 CPU | DOM 流 PSS MiB |
-|---|---|---:|---:|---:|---:|
-| 9 | alpha.22 基线 | 1.03% | 224.5 | 22.27% | 274.0 |
-| 9 | 冷关闭 | 1.09% | 232.4 | 22.25% | 277.7 |
-| 9 | 启用 | 1.28% | 258.2 | 22.27% | 308.0 |
-| 9 | 启用后关闭 | 1.06% | 261.5 | 23.35% | 310.2 |
-| 15 | alpha.22 基线 | 1.16% | 129.8 | 15.86% | 189.5 |
-| 15 | 冷关闭 | 1.22% | 183.3 | 16.44% | 227.0 |
-| 15 | 启用 | 1.37% | 210.3 | 16.48% | 232.3 |
-| 15 | 启用后关闭 | 0.99% | 214.7 | 16.52% | 260.8 |
-
-启用相对新版冷关闭的空闲 PSS 多约 26–27 MiB；关闭已启用核心不会卸载 Go 运行时。新版冷关闭相对旧版也有约 8 MiB / 54 MiB 差值，原因未确定，不能宣称零成本。Android 15 基线窗口系统 CPU 很高（约 171%），且各状态有顺序 / 缓存 / JIT 影响，不能据此宣称启动或 CPU 改善。原始数值、产物哈希与边界见 [JSON](benchmarks/android-network-integration.json)。后台完整通过前不将此候选作为已验收交付。
-
-后文保留原设计基线；其中待批准及跨启动待确认表述以本段用户确认范围为准。状态与后续验证集中在本文更新，不把编译、合成与原签名升级证据互相替代。
+以下保留原设计基线；其中待批准及跨启动待确认表述以本段用户确认范围为准。状态与后续验证集中在本文更新，不把编译、合成与原签名升级证据互相替代。
 
 独立候选源码 `254685aa9c0cf0b41d2fd22a2a75a9a0e5e81fe4` 的 [Actions 41636997369](https://github.com/ForceMind/ChatGPT/actions/runs/41636997369) 已回读十个必要网络作业通过。Android 9 / 15 的六个协议组合、八个路由套件各四项测试通过；96 个在途操作各处理一次，16 个关闭后请求未到原站。失败残片、任务释放、未知上传结果及页面保留均有实际证据。见 [在途故障记录](benchmarks/android-network-transfer-faults.json) 和 [历史能力与限制](android-network-plan.md)。上述基线是单空间证据；新增源码 `6df1bdd` 的 [Actions 41660146017](https://github.com/ForceMind/ChatGPT/actions/runs/41660146017) 已补齐三 Profile、四页与弹窗、两类文件同路由、系统 HTTP / PAC、账号清理及 Activity 重建的独立合成验收。见 [联合证据](benchmarks/android-network-joint-profiles.json)。正式文件选择器、外部 URI 权限 / 发布失败、真实服务与生产签名仍须正式适配后另验。
 

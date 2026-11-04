@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "status": "in-progress-three-batches",
+  "status": "candidate-delivered-with-recorded-ci-failure",
   "formalPublished": false,
   "phase1": {
     "run": 41676289330,
@@ -6230,17 +6230,859 @@
       "Cold page text served by debug interceptor at logical ChatGPT origin; no real service request",
       "Provider failures use the owned synthetic provider, not arbitrary commercial cloud storage",
       "Automation route guard uses synthetic active control; not a real ChatGPT sending test"
-    ]
+    ],
+    "revalidated": {
+      "run": 41713812139,
+      "sourceSHA": "d0b8db47f0ff029d7f9ca0ff784281e0a1307b73",
+      "sixProtocolDeviceJobs": "success",
+      "twoSameTemporarySignerUpgradeJobs": "success",
+      "sameReleaseApkAsOriginalPhase2Evidence": true
+    }
   },
   "phase3": {
-    "status": "running-after-all-data-gates-passed",
-    "run": 41690901023,
+    "status": "measurements-complete-latest-workflow-not-green",
+    "foregroundRun": 41695140228,
+    "sourceSHA": "351202387ebc6f1de2614c558552240f137021ff",
+    "backgroundAccepted": true,
     "notes": [
-      "Same emulator sequential old/new/cold-off/enabled/warm-off",
-      "Fixed600-chunk offline DOM stream and idle core, not network or real ChatGPT streaming",
-      "Actual1800s Home hold, old retention policy unchanged",
-      "No CPU/memory benefit claimed before measurements"
-    ]
+      "Evidence combines complete individual jobs; the latest overall workflow is NOT green.",
+      "Same-emulator sequential old/new/cold-system/enabled/warm-system; exact600-chunk offline DOM flow and full60-second windows, no forcedGC.",
+      "Current full1800-second Home jobs passed with original retained views/drafts and complete cleanup on API28/35.",
+      "API28 latest idle PSS increases by about30MiB when enabling versus cold-system; API35 first complete trial increases by about27MiB. Warm-off retains initialized Go memory.",
+      "Cold-system also exceeds old baseline PSS. Causes are not established, and no zero-cost or CPU-improvement claim is made.",
+      "Do not confuse temporary-signer synthetic upgrade, unsigned arm64 artifact, or these emulator metrics with production-signer/real-device/real-ChatGPT acceptance."
+    ],
+    "backgroundByAPI": [
+      {
+        "api": 28,
+        "run": 41713812139,
+        "artifact": 13272421034,
+        "archiveSHA256": "29bd656c8c0581a1ed965ab3867600481e43e840e86f453454f3e18079fd555d",
+        "sourceSHA": "d0b8db47f0ff029d7f9ca0ff784281e0a1307b73",
+        "complete": true,
+        "junit": "OK (1 test)",
+        "sameManagedTaskReturnAndCleanupPassed": true,
+        "durationSeconds": 1800.380577927,
+        "actualBackgroundMillis": 1800968,
+        "summary": {
+          "pssMiBMean": 257.41066028225805,
+          "pssMiBPeak": 260.876953125,
+          "rssMiBMean": 703.5560735887096,
+          "cpuPercentOneCoreMean": 0.6415447773204535,
+          "cpuCoreSeconds": 11.55,
+          "systemCpuPercentOneCoreMean": 1.7386775290166125,
+          "systemMemAvailableMiBMean": 937.7471018145161
+        },
+        "heartbeatSamples": 60,
+        "firstHeartbeat": {
+          "elapsedMillis": 5,
+          "ticks": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lifecycle": "CREATED",
+          "backgroundServiceRunning": true
+        },
+        "lastHeartbeat": {
+          "elapsedMillis": 1772192,
+          "ticks": [
+            "1772",
+            "1772",
+            "1772",
+            "1772"
+          ],
+          "lifecycle": "CREATED",
+          "backgroundServiceRunning": true
+        },
+        "allObservedStoppedWithService": true,
+        "liveDocuments": 4,
+        "noReload": true,
+        "taskPreflight": {
+          "taskId": 3,
+          "resumedAndFocused": true,
+          "lifecycle": "RESUMED",
+          "windowFocus": true,
+          "activePackage": "com.forcemind.chatgpt.profiles.networkci",
+          "visibleLabels": [
+            "标签 1",
+            "Synthetic C"
+          ]
+        }
+      },
+      {
+        "api": 35,
+        "run": 41713812139,
+        "artifact": 13270844400,
+        "archiveSHA256": "ba90183ababe46eeaac08bf01d52de428e1b64f29b4f94b39733ad68b998b433",
+        "sourceSHA": "d0b8db47f0ff029d7f9ca0ff784281e0a1307b73",
+        "complete": true,
+        "junit": "OK (1 test)",
+        "sameManagedTaskReturnAndCleanupPassed": true,
+        "durationSeconds": 1802.378027269,
+        "actualBackgroundMillis": 1804574,
+        "summary": {
+          "pssMiBMean": 128.89512978830646,
+          "pssMiBPeak": 177.95703125,
+          "rssMiBMean": 449.8656754032258,
+          "cpuPercentOneCoreMean": 0.32687432987232484,
+          "cpuCoreSeconds": 5.89,
+          "systemCpuPercentOneCoreMean": 9.332267264444619,
+          "systemMemAvailableMiBMean": 1150.1270161290322
+        },
+        "heartbeatSamples": 60,
+        "firstHeartbeat": {
+          "elapsedMillis": 6,
+          "ticks": [
+            "5",
+            "5",
+            "5",
+            "5"
+          ],
+          "lifecycle": "CREATED",
+          "backgroundServiceRunning": true
+        },
+        "lastHeartbeat": {
+          "elapsedMillis": 1771696,
+          "ticks": [
+            "1777",
+            "1777",
+            "1777",
+            "1777"
+          ],
+          "lifecycle": "CREATED",
+          "backgroundServiceRunning": true
+        },
+        "allObservedStoppedWithService": true,
+        "liveDocuments": 4,
+        "noReload": true,
+        "taskPreflight": {
+          "taskId": 8,
+          "resumedAndFocused": true,
+          "lifecycle": "RESUMED",
+          "windowFocus": true,
+          "activePackage": "com.forcemind.chatgpt.profiles.networkci",
+          "visibleLabels": [
+            "标签 1",
+            "Synthetic C",
+            "Owned CPU fixture, not ChatGPT",
+            "Synthetic unchanged draft",
+            "Synthetic answer",
+            "",
+            ""
+          ]
+        }
+      }
+    ],
+    "measurementBuilds": {
+      "baseline": "alpha.22 debug plus identical synthetic benchmark class",
+      "candidate": "networkCi x86_64 test build, not unsigned arm64 release on a device",
+      "controlledWorkload": "offline DOM, not network payload or real ChatGPT generation",
+      "productionApkSameBytesAcrossReferencedCandidates": true
+    },
+    "latestAttempt": {
+      "run": 41713812139,
+      "sourceSHA": "d0b8db47f0ff029d7f9ca0ff784281e0a1307b73",
+      "allBuildDeviceUpgradeGatesPassed": true,
+      "foreground35": {
+        "job": 126193753039,
+        "accepted": false,
+        "failure": "adb uninstall test package exit255 after both baseline windows; emulator port5554 refused. Exact emulator exit cause unknown.",
+        "baselineWindowsCompleted": true,
+        "retry": "Attempt2 job126417839809 failed on first baseline snapshot: adb shell su2000 dumpsys activity processes exit255. Subsequent diagnostic reads found device offline. Original failure retained.",
+        "retryJob": 126417839809,
+        "retryArtifact": 13299638217,
+        "retryAccepted": false,
+        "rootCause": "Unknown. Runner diagnostic archive read; it did not establish OOM, emulator crash, or a product cause."
+      },
+      "remainingResources": "Both full1800s background JUnits and API28 foreground passed; API35 repeat failed twice. Earlier complete paired API35 data remains applicable by code/build/APK/provider identity.",
+      "runAttempt": 2,
+      "workflowConclusion": "failure",
+      "allGreen": false
+    },
+    "observationLimits": [
+      "Background tests read four JS timers and native lifecycle/service observations every30seconds; instrumentation and polling can influence execution, CPU and power. This is not an unattended OEM-device guarantee.",
+      "Resource windows use raw/none for the core control route and offline DOM fixtures; TLS/REALITY routing tests are separate and do not establish encrypted network throughput CPU."
+    ],
+    "previousBackgroundByAPI": [
+      {
+        "api": 35,
+        "run": 41706366042,
+        "artifact": 13269605142,
+        "archiveSHA256": "eb27f1d077a2b6c666ebe314394e07dc17354e1734d3bf22ae7aa6d3789b9d9a",
+        "sourceSHA": "9ad96dd1a63ea62b148701249840a6c534ca69ca",
+        "complete": true,
+        "junit": "OK (1 test)",
+        "sameManagedTaskReturnAndCleanupPassed": true,
+        "durationSeconds": 1801.6001933740001,
+        "actualBackgroundMillis": 1803300,
+        "summary": {
+          "pssMiBMean": 140.14620085685485,
+          "pssMiBPeak": 170.251953125,
+          "rssMiBMean": 529.7956149193549,
+          "cpuPercentOneCoreMean": 0.31698899549416276,
+          "cpuCoreSeconds": 5.71,
+          "systemCpuPercentOneCoreMean": 6.3231492564878105,
+          "systemMemAvailableMiBMean": 1122.342741935484
+        },
+        "heartbeatSamples": 60,
+        "firstHeartbeat": {
+          "elapsedMillis": 23,
+          "ticks": [
+            "3",
+            "3",
+            "3",
+            "3"
+          ],
+          "lifecycle": "CREATED",
+          "backgroundServiceRunning": true
+        },
+        "lastHeartbeat": {
+          "elapsedMillis": 1771758,
+          "ticks": [
+            "1774",
+            "1774",
+            "1774",
+            "1774"
+          ],
+          "lifecycle": "CREATED",
+          "backgroundServiceRunning": true
+        },
+        "allObservedStoppedWithService": true,
+        "liveDocuments": 4,
+        "noReload": true
+      }
+    ],
+    "startupMetric": "Cold Activity launch until all four synthetic documents and JS markers are ready; not OS tap-to-first-frame.",
+    "initialForeground": [
+      {
+        "artifact": 13262865868,
+        "archiveSHA256": "7408c6181c736d8c43d7bf0be64b8b1c947121ab577cb1d65cb1560338bb2f14",
+        "summary": [
+          {
+            "api": 28,
+            "mode": "baseline",
+            "goLoaded": false,
+            "startupMillis": 3537,
+            "phases": [
+              {
+                "name": "idle",
+                "durationSeconds": 60.319518439999996,
+                "summary": {
+                  "pssMiBMean": 224.46721540178572,
+                  "pssMiBPeak": 225.546875,
+                  "rssMiBMean": 662.2271205357143,
+                  "cpuPercentOneCoreMean": 1.0280769501131037,
+                  "cpuCoreSeconds": 0.62,
+                  "systemCpuPercentOneCoreMean": 4.418959380873911,
+                  "systemMemAvailableMiBMean": 933.0340401785714
+                },
+                "chunks": 0
+              },
+              {
+                "name": "stream",
+                "durationSeconds": 60.30115215400002,
+                "summary": {
+                  "pssMiBMean": 274.0375279017857,
+                  "pssMiBPeak": 377.111328125,
+                  "rssMiBMean": 709.7879464285714,
+                  "cpuPercentOneCoreMean": 22.271760922315217,
+                  "cpuCoreSeconds": 13.43,
+                  "systemCpuPercentOneCoreMean": 33.406213430871595,
+                  "systemMemAvailableMiBMean": 888.7845982142857
+                },
+                "chunks": 600
+              }
+            ]
+          },
+          {
+            "api": 28,
+            "mode": "system",
+            "goLoaded": false,
+            "startupMillis": 3225,
+            "phases": [
+              {
+                "name": "idle",
+                "durationSeconds": 60.31299744500001,
+                "summary": {
+                  "pssMiBMean": 232.44294084821428,
+                  "pssMiBPeak": 243.451171875,
+                  "rssMiBMean": 665.6690848214286,
+                  "cpuPercentOneCoreMean": 1.094401692996628,
+                  "cpuCoreSeconds": 0.66,
+                  "systemCpuPercentOneCoreMean": 4.160016285695957,
+                  "systemMemAvailableMiBMean": 931.6646205357143
+                },
+                "chunks": 0
+              },
+              {
+                "name": "stream",
+                "durationSeconds": 60.30355835,
+                "summary": {
+                  "pssMiBMean": 277.67578125,
+                  "pssMiBPeak": 381.0859375,
+                  "rssMiBMean": 713.8878348214286,
+                  "cpuPercentOneCoreMean": 22.25458660348707,
+                  "cpuCoreSeconds": 13.42,
+                  "systemCpuPercentOneCoreMean": 35.082958940779754,
+                  "systemMemAvailableMiBMean": 886.8359375
+                },
+                "chunks": 600
+              }
+            ]
+          },
+          {
+            "api": 28,
+            "mode": "enabled",
+            "goLoaded": true,
+            "startupMillis": 3315,
+            "phases": [
+              {
+                "name": "idle",
+                "durationSeconds": 60.30665588699998,
+                "summary": {
+                  "pssMiBMean": 258.17354910714283,
+                  "pssMiBPeak": 263.22265625,
+                  "rssMiBMean": 684.23046875,
+                  "cpuPercentOneCoreMean": 1.2768120210476936,
+                  "cpuCoreSeconds": 0.77,
+                  "systemCpuPercentOneCoreMean": 5.098553246472879,
+                  "systemMemAvailableMiBMean": 938.2879464285714
+                },
+                "chunks": 0
+              },
+              {
+                "name": "stream",
+                "durationSeconds": 60.29451576600002,
+                "summary": {
+                  "pssMiBMean": 308.0283203125,
+                  "pssMiBPeak": 411.6064453125,
+                  "rssMiBMean": 740.6830357142857,
+                  "cpuPercentOneCoreMean": 22.27341128019655,
+                  "cpuCoreSeconds": 13.43,
+                  "systemCpuPercentOneCoreMean": 35.212801238545616,
+                  "systemMemAvailableMiBMean": 890.0139508928571
+                },
+                "chunks": 600
+              }
+            ]
+          },
+          {
+            "api": 28,
+            "mode": "warm-system",
+            "goLoaded": true,
+            "startupMillis": 3572,
+            "phases": [
+              {
+                "name": "idle",
+                "durationSeconds": 60.31824739199999,
+                "summary": {
+                  "pssMiBMean": 261.53892299107144,
+                  "pssMiBPeak": 267.060546875,
+                  "rssMiBMean": 692.7823660714286,
+                  "cpuPercentOneCoreMean": 1.0610421268423598,
+                  "cpuCoreSeconds": 0.64,
+                  "systemCpuPercentOneCoreMean": 4.510601734321004,
+                  "systemMemAvailableMiBMean": 932.0306919642857
+                },
+                "chunks": 0
+              },
+              {
+                "name": "stream",
+                "durationSeconds": 60.30973464400006,
+                "summary": {
+                  "pssMiBMean": 310.2114955357143,
+                  "pssMiBPeak": 414.1298828125,
+                  "rssMiBMean": 744.2868303571429,
+                  "cpuPercentOneCoreMean": 23.345084526775377,
+                  "cpuCoreSeconds": 14.08,
+                  "systemCpuPercentOneCoreMean": 38.43185279284037,
+                  "systemMemAvailableMiBMean": 884.9575892857143
+                },
+                "chunks": 600
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "artifact": 13261773181,
+        "archiveSHA256": "7f3d30875a7d18d73ffc919f8577e69a1637a87cbcbb80a375ce8735f840f1d0",
+        "summary": [
+          {
+            "api": 35,
+            "mode": "baseline",
+            "goLoaded": false,
+            "startupMillis": 10789,
+            "phases": [
+              {
+                "name": "idle",
+                "durationSeconds": 61.70388790000004,
+                "summary": {
+                  "pssMiBMean": 129.7978515625,
+                  "pssMiBPeak": 169.220703125,
+                  "rssMiBMean": 514.5842633928571,
+                  "cpuPercentOneCoreMean": 1.1558218442500514,
+                  "cpuCoreSeconds": 0.7100000000000001,
+                  "systemCpuPercentOneCoreMean": 170.666353599738,
+                  "systemMemAvailableMiBMean": 976.92578125
+                },
+                "chunks": 0
+              },
+              {
+                "name": "stream",
+                "durationSeconds": 60.627824670999985,
+                "summary": {
+                  "pssMiBMean": 189.50837053571428,
+                  "pssMiBPeak": 297.1962890625,
+                  "rssMiBMean": 567.4715401785714,
+                  "cpuPercentOneCoreMean": 15.855242466770553,
+                  "cpuCoreSeconds": 9.61,
+                  "systemCpuPercentOneCoreMean": 53.55456007478115,
+                  "systemMemAvailableMiBMean": 979.0926339285714
+                },
+                "chunks": 600
+              }
+            ]
+          },
+          {
+            "api": 35,
+            "mode": "system",
+            "goLoaded": false,
+            "startupMillis": 4558,
+            "phases": [
+              {
+                "name": "idle",
+                "durationSeconds": 60.57191277100003,
+                "summary": {
+                  "pssMiBMean": 183.31961495535714,
+                  "pssMiBPeak": 194.69140625,
+                  "rssMiBMean": 688.7879464285714,
+                  "cpuPercentOneCoreMean": 1.2223170156338952,
+                  "cpuCoreSeconds": 0.74,
+                  "systemCpuPercentOneCoreMean": 11.999502552610792,
+                  "systemMemAvailableMiBMean": 988.2963169642857
+                },
+                "chunks": 0
+              },
+              {
+                "name": "stream",
+                "durationSeconds": 60.46443217500007,
+                "summary": {
+                  "pssMiBMean": 226.97154017857142,
+                  "pssMiBPeak": 331.375,
+                  "rssMiBMean": 736.9810267857143,
+                  "cpuPercentOneCoreMean": 16.43950816709907,
+                  "cpuCoreSeconds": 9.94,
+                  "systemCpuPercentOneCoreMean": 38.054202923264675,
+                  "systemMemAvailableMiBMean": 981.4827008928571
+                },
+                "chunks": 600
+              }
+            ]
+          },
+          {
+            "api": 35,
+            "mode": "enabled",
+            "goLoaded": true,
+            "startupMillis": 4240,
+            "phases": [
+              {
+                "name": "idle",
+                "durationSeconds": 60.483042821000026,
+                "summary": {
+                  "pssMiBMean": 210.27469308035714,
+                  "pssMiBPeak": 214.3974609375,
+                  "rssMiBMean": 716.9497767857143,
+                  "cpuPercentOneCoreMean": 1.3724309911320334,
+                  "cpuCoreSeconds": 0.83,
+                  "systemCpuPercentOneCoreMean": 13.246030256110435,
+                  "systemMemAvailableMiBMean": 957.3510044642857
+                },
+                "chunks": 0
+              },
+              {
+                "name": "stream",
+                "durationSeconds": 60.48735090800005,
+                "summary": {
+                  "pssMiBMean": 232.31431361607142,
+                  "pssMiBPeak": 239.646484375,
+                  "rssMiBMean": 743.8113839285714,
+                  "cpuPercentOneCoreMean": 16.482213483518404,
+                  "cpuCoreSeconds": 9.97,
+                  "systemCpuPercentOneCoreMean": 40.95324964712094,
+                  "systemMemAvailableMiBMean": 962.0502232142857
+                },
+                "chunks": 600
+              }
+            ]
+          },
+          {
+            "api": 35,
+            "mode": "warm-system",
+            "goLoaded": true,
+            "startupMillis": 4642,
+            "phases": [
+              {
+                "name": "idle",
+                "durationSeconds": 60.506186848000084,
+                "summary": {
+                  "pssMiBMean": 214.68512834821428,
+                  "pssMiBPeak": 219.5908203125,
+                  "rssMiBMean": 723.2109375,
+                  "cpuPercentOneCoreMean": 0.9917257834946873,
+                  "cpuCoreSeconds": 0.6,
+                  "systemCpuPercentOneCoreMean": 8.751183063030355,
+                  "systemMemAvailableMiBMean": 975.5630580357143
+                },
+                "chunks": 0
+              },
+              {
+                "name": "stream",
+                "durationSeconds": 60.46981395499995,
+                "summary": {
+                  "pssMiBMean": 260.81277901785717,
+                  "pssMiBPeak": 364.7734375,
+                  "rssMiBMean": 773.6316964285714,
+                  "cpuPercentOneCoreMean": 16.520181599679184,
+                  "cpuCoreSeconds": 9.99,
+                  "systemCpuPercentOneCoreMean": 43.82512935643596,
+                  "systemMemAvailableMiBMean": 981.8191964285714
+                },
+                "chunks": 600
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "foregroundEvidence": [
+      {
+        "api": 28,
+        "run": 41713812139,
+        "artifact": 13270825926,
+        "archiveSHA256": "2e21aadb07d573809255220ddeb659ef5a327fc69d935beab00ba2e5e418cdb7",
+        "sourceSHA": "d0b8db47f0ff029d7f9ca0ff784281e0a1307b73",
+        "complete": true,
+        "summary": [
+          {
+            "mode": "baseline",
+            "startupMillis": 3700,
+            "goLoaded": false,
+            "phases": [
+              {
+                "name": "idle",
+                "durationSeconds": 60.29594233200004,
+                "summary": {
+                  "pssMiBMean": 222.46721540178572,
+                  "pssMiBPeak": 223.2705078125,
+                  "rssMiBMean": 653.8498883928571,
+                  "cpuPercentOneCoreMean": 0.9622999832259442,
+                  "cpuCoreSeconds": 0.58,
+                  "systemCpuPercentOneCoreMean": 5.565531569124564,
+                  "systemMemAvailableMiBMean": 932.1869419642857
+                }
+              },
+              {
+                "name": "stream",
+                "durationSeconds": 60.23452112199999,
+                "summary": {
+                  "pssMiBMean": 272.5044642857143,
+                  "pssMiBPeak": 376.0244140625,
+                  "rssMiBMean": 706.9888392857143,
+                  "cpuPercentOneCoreMean": 24.20504285944655,
+                  "cpuCoreSeconds": 14.58,
+                  "systemCpuPercentOneCoreMean": 34.28788139886146,
+                  "systemMemAvailableMiBMean": 888.4938616071429
+                }
+              }
+            ]
+          },
+          {
+            "mode": "system",
+            "startupMillis": 3027,
+            "goLoaded": false,
+            "phases": [
+              {
+                "name": "idle",
+                "durationSeconds": 60.24924869199998,
+                "summary": {
+                  "pssMiBMean": 229.49246651785714,
+                  "pssMiBPeak": 238.2275390625,
+                  "rssMiBMean": 658.4112723214286,
+                  "cpuPercentOneCoreMean": 0.9128972941192569,
+                  "cpuCoreSeconds": 0.55,
+                  "systemCpuPercentOneCoreMean": 3.153692044293526,
+                  "systemMemAvailableMiBMean": 934.4933035714286
+                }
+              },
+              {
+                "name": "stream",
+                "durationSeconds": 60.24196566400002,
+                "summary": {
+                  "pssMiBMean": 275.0336216517857,
+                  "pssMiBPeak": 379.2685546875,
+                  "rssMiBMean": 708.7885044642857,
+                  "cpuPercentOneCoreMean": 24.019149901644106,
+                  "cpuCoreSeconds": 14.47,
+                  "systemCpuPercentOneCoreMean": 31.19538549079781,
+                  "systemMemAvailableMiBMean": 889.8470982142857
+                }
+              }
+            ]
+          },
+          {
+            "mode": "enabled",
+            "startupMillis": 3033,
+            "goLoaded": true,
+            "phases": [
+              {
+                "name": "idle",
+                "durationSeconds": 60.25735596000004,
+                "summary": {
+                  "pssMiBMean": 259.4458705357143,
+                  "pssMiBPeak": 261.38671875,
+                  "rssMiBMean": 690.7237723214286,
+                  "cpuPercentOneCoreMean": 1.294521596267983,
+                  "cpuCoreSeconds": 0.78,
+                  "systemCpuPercentOneCoreMean": 5.5216075165657355,
+                  "systemMemAvailableMiBMean": 931.3565848214286
+                }
+              },
+              {
+                "name": "stream",
+                "durationSeconds": 60.24916520299996,
+                "summary": {
+                  "pssMiBMean": 308.77315848214283,
+                  "pssMiBPeak": 412.6162109375,
+                  "rssMiBMean": 744.3002232142857,
+                  "cpuPercentOneCoreMean": 23.950812401676384,
+                  "cpuCoreSeconds": 14.43,
+                  "systemCpuPercentOneCoreMean": 32.868657713968105,
+                  "systemMemAvailableMiBMean": 885.0993303571429
+                }
+              }
+            ]
+          },
+          {
+            "mode": "warm-system",
+            "startupMillis": 2624,
+            "goLoaded": true,
+            "phases": [
+              {
+                "name": "idle",
+                "durationSeconds": 60.24315221400002,
+                "summary": {
+                  "pssMiBMean": 259.8125,
+                  "pssMiBPeak": 263.076171875,
+                  "rssMiBMean": 689.3191964285714,
+                  "cpuPercentOneCoreMean": 0.929590504190855,
+                  "cpuCoreSeconds": 0.56,
+                  "systemCpuPercentOneCoreMean": 2.8663157007677253,
+                  "systemMemAvailableMiBMean": 935.7622767857143
+                }
+              },
+              {
+                "name": "stream",
+                "durationSeconds": 60.248562899000035,
+                "summary": {
+                  "pssMiBMean": 310.1587611607143,
+                  "pssMiBPeak": 413.7587890625,
+                  "rssMiBMean": 744.5267857142857,
+                  "cpuPercentOneCoreMean": 24.100211950002695,
+                  "cpuCoreSeconds": 14.52,
+                  "systemCpuPercentOneCoreMean": 32.62860808758009,
+                  "systemMemAvailableMiBMean": 886.6902901785714
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "api": 35,
+        "run": 41695140228,
+        "artifact": 13261773181,
+        "archiveSHA256": "7f3d30875a7d18d73ffc919f8577e69a1637a87cbcbb80a375ce8735f840f1d0",
+        "sourceSHA": "351202387ebc6f1de2614c558552240f137021ff",
+        "complete": true,
+        "summary": [
+          {
+            "api": 35,
+            "mode": "baseline",
+            "goLoaded": false,
+            "startupMillis": 10789,
+            "phases": [
+              {
+                "name": "idle",
+                "durationSeconds": 61.70388790000004,
+                "summary": {
+                  "pssMiBMean": 129.7978515625,
+                  "pssMiBPeak": 169.220703125,
+                  "rssMiBMean": 514.5842633928571,
+                  "cpuPercentOneCoreMean": 1.1558218442500514,
+                  "cpuCoreSeconds": 0.7100000000000001,
+                  "systemCpuPercentOneCoreMean": 170.666353599738,
+                  "systemMemAvailableMiBMean": 976.92578125
+                },
+                "chunks": 0
+              },
+              {
+                "name": "stream",
+                "durationSeconds": 60.627824670999985,
+                "summary": {
+                  "pssMiBMean": 189.50837053571428,
+                  "pssMiBPeak": 297.1962890625,
+                  "rssMiBMean": 567.4715401785714,
+                  "cpuPercentOneCoreMean": 15.855242466770553,
+                  "cpuCoreSeconds": 9.61,
+                  "systemCpuPercentOneCoreMean": 53.55456007478115,
+                  "systemMemAvailableMiBMean": 979.0926339285714
+                },
+                "chunks": 600
+              }
+            ]
+          },
+          {
+            "api": 35,
+            "mode": "system",
+            "goLoaded": false,
+            "startupMillis": 4558,
+            "phases": [
+              {
+                "name": "idle",
+                "durationSeconds": 60.57191277100003,
+                "summary": {
+                  "pssMiBMean": 183.31961495535714,
+                  "pssMiBPeak": 194.69140625,
+                  "rssMiBMean": 688.7879464285714,
+                  "cpuPercentOneCoreMean": 1.2223170156338952,
+                  "cpuCoreSeconds": 0.74,
+                  "systemCpuPercentOneCoreMean": 11.999502552610792,
+                  "systemMemAvailableMiBMean": 988.2963169642857
+                },
+                "chunks": 0
+              },
+              {
+                "name": "stream",
+                "durationSeconds": 60.46443217500007,
+                "summary": {
+                  "pssMiBMean": 226.97154017857142,
+                  "pssMiBPeak": 331.375,
+                  "rssMiBMean": 736.9810267857143,
+                  "cpuPercentOneCoreMean": 16.43950816709907,
+                  "cpuCoreSeconds": 9.94,
+                  "systemCpuPercentOneCoreMean": 38.054202923264675,
+                  "systemMemAvailableMiBMean": 981.4827008928571
+                },
+                "chunks": 600
+              }
+            ]
+          },
+          {
+            "api": 35,
+            "mode": "enabled",
+            "goLoaded": true,
+            "startupMillis": 4240,
+            "phases": [
+              {
+                "name": "idle",
+                "durationSeconds": 60.483042821000026,
+                "summary": {
+                  "pssMiBMean": 210.27469308035714,
+                  "pssMiBPeak": 214.3974609375,
+                  "rssMiBMean": 716.9497767857143,
+                  "cpuPercentOneCoreMean": 1.3724309911320334,
+                  "cpuCoreSeconds": 0.83,
+                  "systemCpuPercentOneCoreMean": 13.246030256110435,
+                  "systemMemAvailableMiBMean": 957.3510044642857
+                },
+                "chunks": 0
+              },
+              {
+                "name": "stream",
+                "durationSeconds": 60.48735090800005,
+                "summary": {
+                  "pssMiBMean": 232.31431361607142,
+                  "pssMiBPeak": 239.646484375,
+                  "rssMiBMean": 743.8113839285714,
+                  "cpuPercentOneCoreMean": 16.482213483518404,
+                  "cpuCoreSeconds": 9.97,
+                  "systemCpuPercentOneCoreMean": 40.95324964712094,
+                  "systemMemAvailableMiBMean": 962.0502232142857
+                },
+                "chunks": 600
+              }
+            ]
+          },
+          {
+            "api": 35,
+            "mode": "warm-system",
+            "goLoaded": true,
+            "startupMillis": 4642,
+            "phases": [
+              {
+                "name": "idle",
+                "durationSeconds": 60.506186848000084,
+                "summary": {
+                  "pssMiBMean": 214.68512834821428,
+                  "pssMiBPeak": 219.5908203125,
+                  "rssMiBMean": 723.2109375,
+                  "cpuPercentOneCoreMean": 0.9917257834946873,
+                  "cpuCoreSeconds": 0.6,
+                  "systemCpuPercentOneCoreMean": 8.751183063030355,
+                  "systemMemAvailableMiBMean": 975.5630580357143
+                },
+                "chunks": 0
+              },
+              {
+                "name": "stream",
+                "durationSeconds": 60.46981395499995,
+                "summary": {
+                  "pssMiBMean": 260.81277901785717,
+                  "pssMiBPeak": 364.7734375,
+                  "rssMiBMean": 773.6316964285714,
+                  "cpuPercentOneCoreMean": 16.520181599679184,
+                  "cpuCoreSeconds": 9.99,
+                  "systemCpuPercentOneCoreMean": 43.82512935643596,
+                  "systemMemAvailableMiBMean": 981.8191964285714
+                },
+                "chunks": 600
+              }
+            ]
+          }
+        ],
+        "reused": true,
+        "reuseReason": "Formal main sources, app build configuration, underlying resource sampler and workflow unchanged from3512023 to d0b8db4; identical release APK hash, same WebView124.0.6367.219. Full valid paired windows retained; later failed repeats not counted as passes."
+      }
+    ],
+    "unresolved": [
+      {
+        "item": "Intermittent API35 foreground sampling adb/dumpsys failure",
+        "scope": "CI sampling reliability; no runtime fix made without evidence",
+        "evidence": "attempt1 and attempt2 of41713812139 plus prior41710266286 failure retained",
+        "nextIfRequested": "Preserve the first command error before cleanup and guest/host diagnostics in a targeted CI-only rerun. Do not relax counters, substitute zeros, or repeat full background tests."
+      }
+    ],
+    "reuseVerification": {
+      "comparedSources": [
+        "351202387ebc6f1de2614c558552240f137021ff",
+        "d0b8db47f0ff029d7f9ca0ff784281e0a1307b73"
+      ],
+      "unchangedPaths": [
+        "android/app/src/main/",
+        "android/app/build.gradle",
+        "android/network-poc/scripts/measure-resources.py",
+        ".github/workflows/android-network-integration.yml"
+      ],
+      "webViewIdentity": {
+        "package": "com.google.android.webview",
+        "version": "124.0.6367.219"
+      },
+      "releaseSHA256": "571e3fdc934e22f08dd511305a985c23368c35dbef19e63894576d04b381bfab",
+      "applicableTo": "Prior complete foreground CPU/PSS measurements, not a claim that latest failed repeats passed"
+    }
   },
   "protectedMain": "ffbbd91ee5b50ff51d88758fce78a019d63796be",
   "scope": [
@@ -6250,5 +7092,82 @@
     "no personal devices",
     "no production signing",
     "no main merge or public release"
-  ]
+  ],
+  "candidate": {
+    "run": 41713812139,
+    "artifact": 13268817906,
+    "artifactURL": "https://github.com/ForceMind/ChatGPT/actions/runs/41713812139/artifacts/13268817906",
+    "identity": {
+      "sourceSHA": "d0b8db47f0ff029d7f9ca0ff784281e0a1307b73",
+      "productionSigning": false,
+      "formalDataAccessed": false,
+      "apk": {
+        "release": {
+          "file": "app-release-unsigned.apk",
+          "bytes": 40903165,
+          "sha256": "571e3fdc934e22f08dd511305a985c23368c35dbef19e63894576d04b381bfab",
+          "ciTrust": false,
+          "generatedTrust": false,
+          "nativeLibraries": [
+            "lib/arm64-v8a/libgojni.so"
+          ],
+          "unsigned": true,
+          "elf": [
+            {
+              "library": "lib/arm64-v8a/libgojni.so",
+              "loadSegmentAlignments": [
+                16384,
+                16384,
+                16384,
+                16384
+              ],
+              "supports16KiBElfAlignment": true
+            }
+          ],
+          "zipalign16KiBVerified": true
+        },
+        "networkCi": {
+          "file": "app-networkCi.apk",
+          "bytes": 44931740,
+          "sha256": "6395d628df7dc54b67d932fef3b495dc5148cfb2456b0f039b3a9ef8e5131888",
+          "ciTrust": true,
+          "generatedTrust": true,
+          "nativeLibraries": [
+            "lib/x86_64/libgojni.so"
+          ],
+          "unsigned": false,
+          "elf": [],
+          "zipalign16KiBVerified": false
+        }
+      },
+      "versionName": "3.0.0-alpha.24-candidate.1",
+      "versionCode": 3000024,
+      "artifactFile": "ChatGPT-Studio-Network-Candidate-d0b8db47-android-arm64-UNSIGNED.apk",
+      "publicRelease": false,
+      "phoneInstalled": false
+    },
+    "sameReleaseApkAsPhase2": true,
+    "installableWithProductionIdentity": false,
+    "note": "Unsigned arm64 review candidate; no release, no phone installation. Source/test changes after phase2 leave release APK bytes unchanged.",
+    "sizeComparison": {
+      "publishedTag": "v3.0.0-alpha.22",
+      "publishedAsset": "ChatGPT-Studio-3.0.0-alpha.22-android.apk",
+      "publishedBytes": 7376521,
+      "candidateUnsignedArm64Bytes": 40903165,
+      "differenceBytes": 33526644,
+      "note": "Literal APK-size comparison, not a controlled attribution of every byte to the core. No R8 policy change. Candidate includes arm64 only; 32-bit compatibility not verified."
+    },
+    "syntheticScopeEvidenceAvailable": true,
+    "latestWorkflowAllGreen": false,
+    "approvedForPublicRelease": false
+  },
+  "unitTests": {
+    "run": 41713812139,
+    "sourceSHA": "d0b8db47f0ff029d7f9ca0ff784281e0a1307b73",
+    "artifact": 13269286537,
+    "xmlSuites": 16,
+    "tests": 77,
+    "failures": 0,
+    "directlyReadJUnitXML": true
+  }
 }

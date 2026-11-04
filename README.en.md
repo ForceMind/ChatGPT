@@ -44,7 +44,7 @@ This is an independently maintained, unofficial client. It does not include a Ch
 | Layer | Current implementation | Design choice |
 | --- | --- | --- |
 | Desktop | Electron 44, React 19, TypeScript, esbuild | Shared macOS/Windows implementation; website content is isolated from local management interfaces |
-| Android | Java 17, AndroidX WebKit, System WebView | Preserve existing sign-in spaces; require runtime multi-profile support |
+| Android | Java 17, AndroidX WebKit, System WebView; pinned Go/Xray JNI in the network candidate | Preserve existing sign-in spaces; require runtime multi-profile support |
 | Assets | Local files, constrained HTML/media previews, PDF and data conversion | Keep processing and derived copies on the device; review account, files and instructions before sending |
 | Recovery | Platform encryption and account/storage/tab-bound records | Preserve existing website drafts and avoid duplicate sends |
 | Delivery | GitHub Actions, GitHub Releases, Cloudflare Pages | Traceable builds, checksums and static website deployments |
@@ -202,7 +202,7 @@ Cloudflare Pages uses Direct Upload; a Git push does not deploy the site automat
 | Android per-account locale/timezone engine migration | Independent three-account/four-tab recovery and touch validation complete; non-debuggable optimized-release emulator acceptance complete; real sites/devices and regular-client integration pending. [Runtime evidence](docs/benchmarks/android-optimized-release-runtime.json) |
 | System/Chrome passkeys, signed Touch ID and stable signing | Not integrated or dependent on unavailable certificates/device acceptance |
 | Original agent presets and design-patch Skill | Published in desktop alpha.21: 32 roles, standalone/combined tasks, favorites and task recovery |
-| In-app proxy/VLESS | Independent preview delivered. Android 9/15 same-route files/web, three-page switching, 30-minute background retention and explicit recovery passed. Core-stop status, in-flight uploads/downloads, cancel/close and uncertain outcomes pass the new regressions. A three-profile/four-page joint suite also passes account/popup isolation, both file exits, system HTTP/PAC routing and owned cold cleanup. [Joint evidence](docs/benchmarks/android-network-joint-profiles.json). A [formal integration proposal](docs/android-network-integration-plan.md) is ready for review; it is not implemented. No free nodes supplied. [Scope and evidence](docs/android-network-plan.md) |
+| In-app proxy/VLESS | Formal-code candidate **3.0.0-alpha.24-candidate.1** is implemented on dev. Android 9/15 profile/file routing, HTTP/PAC, cold recovery, same-temporary-signer upgrades and full 30-minute background checks pass. Complete paired CPU/PSS data is recorded; the latest overall run still has an Android 15 sampling failure, documented with provenance and limits. The candidate is unsigned and unpublished; public Android remains alpha.22. No free nodes supplied. [Implementation](docs/android-network-integration-plan.md) · [Evidence and limits](docs/benchmarks/android-network-integration.json) |
 | iPhone/iPad, Intel Mac, Linux and store distribution | Outside the current iteration; no packages |
 | Delta updates | Not implemented; native updates require restart |
 

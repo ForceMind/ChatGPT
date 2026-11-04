@@ -46,7 +46,7 @@ ChatGPT Studio 是独立维护的非官方客户端，不附带 ChatGPT 订阅�
 | 层次 | 当前方案 | 设计取舍 |
 | --- | --- | --- |
 | 桌面客户端 | Electron 44、React 19、TypeScript、esbuild | macOS / Windows 共用桌面实现，网页与本地管理界面隔离 |
-| Android 客户端 | Java 17、AndroidX WebKit、System WebView | 使用系统兼容内核，保留现有账号登录空间，按实际能力启用多档案 |
+| Android 客户端 | Java 17、AndroidX WebKit、System WebView；网络候选使用固定 Go/Xray JNI | 使用系统兼容内核，保留现有账号登录空间，按实际能力启用多档案 |
 | 文件工作流 | 本机文件、受限 HTML / 媒体预览、PDF 与数据转换 | 处理与派生副本留在本机；发给 GPT 前明确选择账号、附件和指令 |
 | 状态与恢复 | 平台加密、账号 / 存储空间 / 标签绑定的记录 | 不覆盖网页已有草稿，不重发结果不明的消息 |
 | 发布与站点 | GitHub Actions、GitHub Releases、Cloudflare Pages | 构建、校验与公开下载可追溯；站点以静态文件部署 |
@@ -217,7 +217,7 @@ cd android
 | 环境隔离 | Android 每账号语言 / 时区从独立 PoC 迁入日常客户端 | 独立三账号 / 四页恢复与触摸验证完成；非调试优化 release 的模拟器运行验证完成，实站 / 真机与正式接入待验，[运行证据](docs/benchmarks/android-optimized-release-runtime.json) |
 | 系统集成 | 系统 / Chrome 通行密钥、真实 Touch ID 恢复与稳定签名 | 通行密钥未接入；Touch ID 受证书与实机验收条件限制 |
 | 已发布 | 自有智能体与设计补丁 Skill | alpha.21 桌面含 32 个角色，支持单独使用、组合 Skill、收藏与任务恢复 |
-| 移动网络 | 应用内代理与 VLESS 配置 | 独立预览已交付；Android 9 / 15 同路由、三页切换、30 分钟后台与显式恢复专项通过。核心停止状态、在途上传 / 下载、取消 / 关闭及结果不明回归通过；三账号四页 / 弹窗、两类文件同路由、系统 HTTP / PAC 与冷清理[联合验收](docs/benchmarks/android-network-joint-profiles.json)通过；[正式接入建议](docs/android-network-integration-plan.md)已形成，尚未实施。不提供免费节点。[范围与证据](docs/android-network-plan.md) |
+| 移动网络 | 应用内代理与 VLESS 配置 | 正式代码候选 **3.0.0-alpha.24-candidate.1** 已在 dev 接入；Android 9/15 的账号、文件、HTTP/PAC、冷恢复、临时签名升级和完整 30 分钟后台已通过；CPU/PSS 有完整对照数据，最新整轮另有 Android 15 采样失败，报告保留来源与限制。候选未签名、未公开发布，公开 Android 仍为 alpha.22。不提供免费节点。[实施记录](docs/android-network-integration-plan.md) · [验收与限制](docs/benchmarks/android-network-integration.json) |
 | 新平台 | iPhone / iPad 后续开发；Intel Mac、Linux 与商店发行 | 未纳入当前迭代，暂无对应安装包 |
 | 更新能力 | 差量下载 | 尚未实现；alpha.23 已提供下载进度与手动入口，完整原生程序更新仍需重启 |
 
