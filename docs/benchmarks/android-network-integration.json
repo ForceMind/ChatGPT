@@ -7472,5 +7472,74 @@
       "binaryCommandOutputRoundTrip": true,
       "runtimeRootCauseProven": false
     }
+  },
+  "nativeSamplingIsolation": {
+    "status": "expanded-reproduction-complete-original-failure-not-reproduced",
+    "runtimeRootCauseConfirmed": false,
+    "cases": [
+      {
+        "kind": "native-adb-shell-root-parallel",
+        "run": 41799173089,
+        "artifact": 13307500336,
+        "archiveSHA256": "19986cb6c53c30d183ff268afb7793d2700fbcb55363ca8f7397c792c44b2067",
+        "result": {
+          "complete": true,
+          "commands": 125,
+          "sourceSHA": "75ac674c2d13917903aa4b340f219cfd853a16af",
+          "appStarted": false,
+          "browserStarted": false
+        },
+        "dumpsysCommands": 120,
+        "allCommandsZeroExit": true
+      },
+      {
+        "kind": "old-baseline-pages-plus-process-dumps",
+        "run": 41799922323,
+        "artifact": 13307596188,
+        "archiveSHA256": "aeccc8d45a7ca0e961f26f8de6725a105853d8d6c8eb629741f2e082f11566cf",
+        "complete": true,
+        "extraDumps": 42,
+        "diagnosticOnly": true
+      },
+      {
+        "kind": "old-baseline-plus-test-package-lifecycle",
+        "run": 41802479660,
+        "artifact": 13308247302,
+        "result": {
+          "complete": true,
+          "sourceSHA": "1c6b0848fc65eb3092a190845db7e54eb2ed6e9e",
+          "testPackage": "com.forcemind.chatgpt.profiles.debug.test",
+          "lifecycleCommands": 10,
+          "dumps": 40,
+          "overlappingDumps": 40,
+          "browserStartedByThisScript": false
+        },
+        "independentlyRecomputedOverlap": 40,
+        "allCommandsZeroExit": true,
+        "diagnosticOnly": true
+      }
+    ],
+    "invalidCoverageClaim": {
+      "run": 41801290280,
+      "reason": "Workflow passed but lifecycle script was not attached to actual manual job; package-churn/result.json absent. Not counted as lifecycle evidence. Fixed job routing and added mandatory actual-result gate in41802479660."
+    },
+    "errorContract": {
+      "run": 41801297489,
+      "tests": 4,
+      "failures": 0,
+      "timeoutPartialBytesPreserved": true
+    },
+    "runnerImageHypothesis": {
+      "conclusion": "Not established; both image versions have successes and failures. No version switch made.",
+      "images": [
+        "20261101.360.1",
+        "20261025.353.1"
+      ],
+      "emulatorVersion": "37.2.13.0"
+    },
+    "backgroundRepeated": false,
+    "screenshots": false,
+    "realChatGPT": false,
+    "remaining": "Original adb/dumpsys failure was not reproduced; no causal runtime fix claimed. Need a failing trace captured by retained stdout/stderr, guest/host logs and independent kernel console."
   }
 }
