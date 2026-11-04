@@ -23,8 +23,9 @@ print(badging,flush=True)
 identity='com.forcemind.chatgpt.profiles.networkpreview'
 assert "name='"+identity+"'" in badging
 assert 'ChatGPT Studio 测试版' in badging
-sdk=re.search(r'android:minSdkVersion[^\n]*\(type 0x10\)0x([0-9a-fA-F]+)',manifest)
-assert sdk and int(sdk[1],16)==28, 'APK minSdk must remain exactly28'
+sdk=re.search(r"^minSdkVersion:'([0-9]+)'$",badging,re.M)
+xml_sdk=re.search(r'android:minSdkVersion[^\n]*=([0-9]+)$',manifest,re.M)
+assert sdk and xml_sdk and int(sdk[1])==int(xml_sdk[1])==28, 'APK minSdk must remain exactly28'
 for forbidden in ['MANAGE_DOCUMENTS','BIND_DEVICE_ADMIN','REORDER_TASKS','UploadProbeActivity','EnvironmentProbeActivity','RestartProbeApplication','NetworkDocumentsProvider','NetworkProxyAdminReceiver']:
     assert forbidden not in manifest,forbidden
 for flag in ['android:debuggable','android:testOnly']:
