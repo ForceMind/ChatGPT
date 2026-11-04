@@ -4,10 +4,16 @@ on:
     branches: [dev]
     paths: ['android/**', '.github/workflows/android-network-integration.yml']
   workflow_dispatch:
+    inputs:
+      foreground_diagnostic:
+        description: Reuse d0b8db4 inputs; Android 15 foreground only
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
   build:
+    if: ${{ !inputs.foreground_diagnostic }}
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
@@ -273,6 +279,82 @@ jobs:
           script: |
             if [ '${{ matrix.api }}' = 28 ]; then python3 android/network-poc/scripts/install-webview.py --provider android/network-poc/webview-fixture --output android/app/build/resource-evidence/provider; fi
             python3 android/scripts/measure-network-integration.py --inputs android/app/build/performance-inputs --output android/app/build/resource-evidence ${{ matrix.background && '--background' || '' }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: formal-network-resources-api-${{ matrix.api }}-background-${{ matrix.background }}
+          retention-days: 14
+          path: android/app/build/resource-evidence/
+
+  foreground_diagnostic:
+    if: ${{ inputs.foreground_diagnostic }}
+    env:
+      NETWORK_SOURCE_SHA: d0b8db47f0ff029d7f9ca0ff784281e0a1307b73
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [35]
+        background: [false]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          run-id: 41713812139
+          github-token: ${{ github.token }}
+          name: formal-network-performance-inputs
+          path: android/app/build/performance-inputs
+      - uses: actions/download-artifact@v4
+        with:
+          run-id: 41713812139
+          github-token: ${{ github.token }}
+          name: formal-network-fixture
+          path: android/network-poc/secure-fixture
+      - uses: actions/download-artifact@v4
+        with:
+          run-id: 41713812139
+          github-token: ${{ github.token }}
+          name: formal-network-host-core
+          path: android/network-poc/corebridge/bin
+      - uses: actions/download-artifact@v4
+        if: matrix.api == 28
+        with:
+          name: formal-network-provider
+          path: android/network-poc/webview-fixture
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - name: Owned resource fixture and acceleration
+        run: |
+          chmod +x android/network-poc/corebridge/bin/xray
+          python3 android/network-poc/scripts/fixture.py --core android/network-poc/corebridge/bin/xray --output android/network-poc/secure-fixture > "$RUNNER_TEMP/formal-resource-fixture.log" 2>&1 &
+          for attempt in $(seq 1 40); do
+            if [ -f android/network-poc/secure-fixture/ready.json ]; then break; fi
+            sleep 1
+          done
+          test -f android/network-poc/secure-fixture/ready.json
+          test -c /dev/kvm
+          sudo chmod a+rw /dev/kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          target: ${{ matrix.api == 28 && 'default' || 'google_apis' }}
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -writable-system
+          script: |
+            if [ '${{ matrix.api }}' = 28 ]; then python3 android/network-poc/scripts/install-webview.py --provider android/network-poc/webview-fixture --output android/app/build/resource-evidence/provider; fi
+            python3 android/scripts/measure-network-integration.py --inputs android/app/build/performance-inputs --output android/app/build/resource-evidence ${{ matrix.background && '--background' || '' }}
+      - name: Preserve host diagnostics
+        if: always()
+        run: |
+          mkdir -p android/app/build/resource-evidence/host
+          sudo dmesg -T > android/app/build/resource-evidence/host/kernel.txt 2>&1 || true
+          free -m > android/app/build/resource-evidence/host/memory.txt
+          ps -eo pid,ppid,rss,stat,comm > android/app/build/resource-evidence/host/processes.txt
+          find /tmp -maxdepth 3 -type f -name '*crash*.txt' -exec cp --backup=numbered '{}' android/app/build/resource-evidence/host/ \; || true
       - uses: actions/upload-artifact@v4
         if: always()
         with:
