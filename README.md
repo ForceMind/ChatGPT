@@ -218,6 +218,7 @@ cd android
 | 系统集成 | 系统 / Chrome 通行密钥、真实 Touch ID 恢复与稳定签名 | 通行密钥未接入；Touch ID 受证书与实机验收条件限制 |
 | 已发布 | 自有智能体与设计补丁 Skill | alpha.21 桌面含 32 个角色，支持单独使用、组合 Skill、收藏与任务恢复 |
 | 移动网络 | 应用内代理与 VLESS 配置 | 正式代码候选 **3.0.0-alpha.24-candidate.1** 已在 dev 接入；Android 9/15 的账号、文件、HTTP/PAC、冷恢复、临时签名升级和完整 30 分钟后台已通过；CPU/PSS 有完整对照数据，后续两轮 Android 15 前台专项已通过，间歇失败根因仍待完整失败样本；报告保留旧失败与各轮来源。候选未签名、未公开发布，公开 Android 仍为 alpha.22。不提供免费节点。[实施记录](docs/android-network-integration-plan.md) · [验收与限制](docs/benchmarks/android-network-integration.json) |
+| 独立测试 | Android 网络测试安装包 | 已交付已签名 arm64 APK，名称“ChatGPT Studio 测试版”，包名及登录／恢复空间独立，与正式版并存。用户自行配置真实节点验收；临时测试签名不保证后续覆盖升级。仅 Actions 产物，未公开发布。[安装说明](docs/android-network-standalone-preview.md) · [构建收据](docs/releases/android-network-standalone-preview.1.json) |
 | 新平台 | iPhone / iPad 后续开发；Intel Mac、Linux 与商店发行 | 未纳入当前迭代，暂无对应安装包 |
 | 更新能力 | 差量下载 | 尚未实现；alpha.23 已提供下载进度与手动入口，完整原生程序更新仍需重启 |
 
