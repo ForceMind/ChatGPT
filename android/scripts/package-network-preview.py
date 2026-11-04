@@ -21,8 +21,11 @@ identity='com.forcemind.chatgpt.profiles.networkpreview'
 assert "name='"+identity+"'" in badging
 assert 'ChatGPT Studio 测试版' in badging
 assert "sdkVersion:'28'" in badging
-for forbidden in ['MANAGE_DOCUMENTS','BIND_DEVICE_ADMIN','REORDER_TASKS','UploadProbeActivity','EnvironmentProbeActivity','RestartProbeApplication','NetworkDocumentsProvider','NetworkProxyAdminReceiver','android:debuggable','android:testOnly']:
+for forbidden in ['MANAGE_DOCUMENTS','BIND_DEVICE_ADMIN','REORDER_TASKS','UploadProbeActivity','EnvironmentProbeActivity','RestartProbeApplication','NetworkDocumentsProvider','NetworkProxyAdminReceiver']:
     assert forbidden not in manifest,forbidden
+for flag in ['android:debuggable','android:testOnly']:
+    for line in manifest.splitlines():
+        if flag in line:assert '0xffffffff' not in line and 'true' not in line
 assert identity+'.handoff' in manifest
 config=root/'generated/source/buildConfig/networkPreview/com/forcemind/chatgpt/profiles/BuildConfig.java'
 source=config.read_text()
