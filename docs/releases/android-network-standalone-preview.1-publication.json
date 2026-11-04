@@ -1,0 +1,63 @@
+{
+  "schema": 1,
+  "kind": "standalone-android-prerelease",
+  "releaseId": 434224518,
+  "tag": "v3.0.0-alpha.24-candidate.1-standalone",
+  "url": "https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.24-candidate.1-standalone",
+  "draft": false,
+  "prerelease": true,
+  "makeLatestRequested": false,
+  "sourceCommit": "aff127aecc0e1f71b497f90a0d1f115ece31dd88",
+  "buildRun": 41832194012,
+  "buildArtifact": 13322559438,
+  "publishedAt": "2026-11-04T17:20:35Z",
+  "verifiedAt": "2026-11-04T17:21:41.186156+00:00",
+  "assets": [
+    {
+      "name": "build-receipt.json",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.24-candidate.1-standalone/build-receipt.json",
+      "status": 206,
+      "size": 885,
+      "sha256": "43196807a43e9140bc7d9a73315c8e37140d54e78283c339e3e6562abc527fdf",
+      "serverDigestVerified": true,
+      "anonymousPrefixVerified": true
+    },
+    {
+      "name": "ChatGPT-Studio-3.0.0-alpha.24-candidate.1-standalone-android-arm64.apk",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.24-candidate.1-standalone/ChatGPT-Studio-3.0.0-alpha.24-candidate.1-standalone-android-arm64.apk",
+      "status": 206,
+      "size": 40911397,
+      "sha256": "c19754b421163b1266f2f75ab8b4846a3ddc1c7c4800f1ab3e6d22ecc17dc591",
+      "serverDigestVerified": true,
+      "anonymousPrefixVerified": true
+    },
+    {
+      "name": "ChatGPT-Studio-Android-Standalone-Preview-Bundle.zip",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.24-candidate.1-standalone/ChatGPT-Studio-Android-Standalone-Preview-Bundle.zip",
+      "status": 206,
+      "size": 14710684,
+      "sha256": "c21d7f75812bd8cab71fa58e6ced9f07ebbc0f2e436d8c1108147fa1f69699c7",
+      "serverDigestVerified": true,
+      "anonymousPrefixVerified": true
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.24-candidate.1-standalone/SHA256SUMS.txt",
+      "status": 206,
+      "size": 341,
+      "sha256": "15c93e3d80956bae696e55a12988cb27351bec5c4982c4b3fe72da6eaee53541",
+      "serverDigestVerified": true,
+      "anonymousPrefixVerified": true
+    }
+  ],
+  "temporaryTestSignerUnchanged": true,
+  "gitMainMerged": false,
+  "productionSigningUsed": false,
+  "signingSecretsCreated": false,
+  "officialDownloadsChanged": false,
+  "updateFeedsChanged": false,
+  "phoneInstalled": false,
+  "realServiceTested": false,
+  "localBuildPerformed": false,
+  "verification": "All4 GitHub server digests match original files; public anonymous downloads return matching prefixes; release page200; tag peels to actual CI source."
+}

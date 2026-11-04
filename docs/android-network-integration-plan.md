@@ -202,3 +202,7 @@ Android 9 取最新 `d0b8db4` / [41713812139](https://github.com/ForceMind/ChatG
 ## 可独立安装测试版（2026-11-04）
 
 用户授权真实节点由自己配置验收。已在Actions41832194012构建并签名独立正式逻辑变体，包名com.forcemind.chatgpt.profiles.networkpreview、名称ChatGPT Studio测试版，与正式版及旧独立PoC包名均不同；77项单测/0失败、lint与APK签名/隔离/16KiB校验通过。仅交付Actions产物，临时测试签名不保证后续覆盖升级，无个人设备或实站验证。详见[安装说明](android-network-standalone-preview.md)与[最终收据](releases/android-network-standalone-preview.1.json)。
+
+## 独立测试版 GitHub 预发布（2026-11-05）
+
+经用户明确授权，已将既有Actions41832194012原APK和完整ZIP发布为[独立Pre-release](https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.24-candidate.1-standalone)，标签绑定实际构建源码aff127aecc0e1f71b497f90a0d1f115ece31dd88，不设Latest。四附件服务器SHA256与原产物一致，发布后匿名下载前缀和发布页均核验。未重建或改签，固定证书/新ActionsSecret仍未实施；未合并main、替换官网正式下载或更新清单。此前“仅Actions、未公开”的记载是当时状态，以本次[发布记录](releases/android-network-standalone-preview.1-publication.json)为后续状态。

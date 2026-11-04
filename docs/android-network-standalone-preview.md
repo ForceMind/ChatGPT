@@ -1,6 +1,6 @@
 # Android 独立网络测试版
 
-[下载 Actions 产物](https://github.com/ForceMind/ChatGPT/actions/runs/41832194012/artifacts/13322559438)，解压后打开其中的 APK 安装。适用于 Android 9 及以上的 arm64 手机；安装器可能要求允许当前下载器安装未知应用。
+[下载 APK](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.24-candidate.1-standalone/ChatGPT-Studio-3.0.0-alpha.24-candidate.1-standalone-android-arm64.apk)，或在[GitHub 独立预发布](https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.24-candidate.1-standalone)下载完整 Bundle ZIP。此前已安装同一 Actions APK 的用户无需重装。适用于 Android 9 及以上的 arm64 手机；安装器可能要求允许当前下载器安装未知应用。
 
 - 应用名：**ChatGPT Studio 测试版**。
 - 版本：`3.0.0-alpha.24-candidate.1-standalone`。
@@ -17,4 +17,4 @@
 
 [完整收据与SHA-256](releases/android-network-standalone-preview.1.json)。ZIP内也提供SHA256SUMS.txt、安装说明和第三方许可证。
 
-仅在dev交付Actions产物（保留14天），没有合并main、创建公开Release或更新官网/自动更新清单。此前CI采样间歇故障仍按原记录保留，未以这次安装包构建通过宣称根治。
+2026-11-05 经用户授权已公开为 GitHub Pre-release，附件直接复用通过校验的 Actions 原产物；构建时的收据保留历史状态，当前发布状态见[发布记录](releases/android-network-standalone-preview.1-publication.json)。不设为 Latest，没有合并 main，也没有替换官网正式下载或自动更新清单。固定测试证书和 Actions Secret 尚未创建，本次仍为原临时签名。此前CI采样间歇故障仍按原记录保留，未以这次安装包构建通过宣称根治。
