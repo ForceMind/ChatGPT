@@ -53,3 +53,12 @@ class SamplingEvidenceTest(unittest.TestCase):
             self.assertEqual(255, saved['returnCode'])
             self.assertEqual(stdout, base64.b64decode(saved['stdoutBase64']))
             self.assertEqual(stderr, base64.b64decode(saved['stderrBase64']))
+
+    def test_timeout_preserves_partial_command_output(self):
+        with tempfile.TemporaryDirectory() as directory:
+            error = subprocess.TimeoutExpired(['adb', 'shell', 'dumpsys'], 25, b'partial\xff', b'pending')
+            capture_failure(Path(directory), error)
+            saved = json.loads((Path(directory) / 'first-terminal-error.json').read_text())
+            self.assertEqual(25, saved['timeoutSeconds'])
+            self.assertEqual(b'partial\xff', base64.b64decode(saved['stdoutBase64']))
+            self.assertEqual(b'pending', base64.b64decode(saved['stderrBase64']))

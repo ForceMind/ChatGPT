@@ -9,8 +9,10 @@ from pathlib import Path
 def error_details(error):
     data = {'type': type(error).__name__, 'message': str(error),
             'traceback': ''.join(traceback.format_exception(type(error), error, error.__traceback__))}
-    if isinstance(error, subprocess.CalledProcessError):
-        data.update(command=error.cmd, returnCode=error.returncode)
+    if isinstance(error, (subprocess.CalledProcessError, subprocess.TimeoutExpired)):
+        data.update(command=error.cmd, returnCode=getattr(error, 'returncode', None))
+        if isinstance(error, subprocess.TimeoutExpired):
+            data['timeoutSeconds'] = error.timeout
         for name in ('stdout', 'stderr'):
             value = getattr(error, name)
             if isinstance(value, bytes):

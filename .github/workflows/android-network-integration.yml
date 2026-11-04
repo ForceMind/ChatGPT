@@ -388,7 +388,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Verify first error, cleanup and raw command outputs
         run: |
-          python3 -m py_compile android/scripts/measure-network-integration.py android/scripts/sampling_evidence.py
+          python3 -m py_compile android/scripts/measure-network-integration.py android/scripts/sampling_evidence.py android/scripts/reproduce-adb-package-churn.py android/scripts/reproduce-adb-sampling.py
           python3 -m unittest discover -s android/scripts -p test_sampling_evidence.py -v
 
   adb_reproducer:
