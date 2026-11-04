@@ -1,5 +1,8 @@
 name: Android Standalone Network Preview
 on:
+  push:
+    branches: [dev]
+    paths: ['.github/workflows/android-network-standalone.yml']
   workflow_dispatch:
 permissions:
   contents: read
