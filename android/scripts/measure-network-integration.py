@@ -7,6 +7,13 @@ base=importlib.util.module_from_spec(SPEC);SPEC.loader.exec_module(base)
 TEST='com.forcemind.chatgpt.profiles.NetworkBenchmarkTest#syntheticThreeProfileResourceMatrix'
 class FormalSampler(base.Sampler):
  def __init__(self,*args,mode,source,**kwargs):super().__init__(*args,**kwargs);self.mode=mode;self.source=source
+ def service(self,*args):
+  if args==('activity','processes') and os.environ.get('NETWORK_ADB_STRESS')=='1':
+   for _ in range(3):
+    index=getattr(self,'stress_calls',0);self.stress_calls=index+1
+    output=super().service(*args)
+    (self.output/('stress-dumpsys-%03d.txt'%index)).write_text(output)
+  return super().service(*args)
  def preflight(self):
   try:metadata=super().preflight()
   except RuntimeError as failure:
@@ -46,7 +53,7 @@ class FormalSampler(base.Sampler):
   assert all(p['liveDocuments']==4 and p['noReload'] for p in result['phases'])
   if self.mode!='background':assert result['phases'][1]['chunks']==600
   return result
-p=argparse.ArgumentParser();p.add_argument('--output',required=True);p.add_argument('--inputs',required=True);p.add_argument('--background',action='store_true');a=p.parse_args()
+p=argparse.ArgumentParser();p.add_argument('--output',required=True);p.add_argument('--inputs',required=True);p.add_argument('--background',action='store_true');p.add_argument('--baseline-only',action='store_true');a=p.parse_args()
 assert os.environ.get('GITHUB_ACTIONS')=='true'
 root=Path(a.output);root.mkdir(parents=True,exist_ok=True)
 def preserve_terminal_error(kind,error,tb):
@@ -56,7 +63,8 @@ sys.excepthook=preserve_terminal_error
 assert subprocess.check_output(['adb','shell','getprop','ro.kernel.qemu'],text=True).strip()=='1'
 fixture=json.loads(Path('android/network-poc/secure-fixture/fixture.json').read_text())
 original_attribution=base.attributable_processes
-modes=['background'] if a.background else ['baseline','system','enabled','warm-system']
+assert not (a.background and a.baseline_only)
+modes=['baseline'] if a.baseline_only else ['background'] if a.background else ['baseline','system','enabled','warm-system']
 reports=[]
 for mode in modes:
  package='com.forcemind.chatgpt.profiles.debug' if mode=='baseline' else 'com.forcemind.chatgpt.profiles.networkci'
@@ -90,4 +98,4 @@ for mode in modes:
 if len(reports)>1:
  identity=reports[0]['environment']['webViewIdentity'];assert all(r['environment']['webViewIdentity']==identity for r in reports)
  assert reports[0]['deviceResult']['goLoaded'] is False and reports[1]['deviceResult']['goLoaded'] is False and reports[2]['deviceResult']['goLoaded'] is True and reports[3]['deviceResult']['goLoaded'] is True
-(root/'comparison.json').write_text(json.dumps({'complete':True,'sourceSHA':os.environ.get('NETWORK_SOURCE_SHA',os.environ['GITHUB_SHA']),'samplerSourceSHA':os.environ['GITHUB_SHA'],'reports':reports,'sameEmulatorSequential':True,'forcedGC':False,'screenshots':False,'realChatGPTRequests':0,'limitations':['Instrumentation, sampling and sequential caches influence values','Only app + attributable WebView renderer PSS/CPU, not shared system totals','Offline DOM workload measures shell/retention/core overhead, not real-service network cost','Warm stopped case retains the initialized Go runtime; cold disabled does not load it']},indent=2)+'\n')
+(root/'comparison.json').write_text(json.dumps({'complete':True,'diagnosticOnly':a.baseline_only or os.environ.get('NETWORK_ADB_STRESS')=='1','appSourceSHAs':sorted({r['sourceSHA'] for r in reports}),'sourceSHA':reports[0]['sourceSHA'] if a.baseline_only else os.environ.get('NETWORK_SOURCE_SHA',os.environ['GITHUB_SHA']),'samplerSourceSHA':os.environ['GITHUB_SHA'],'reports':reports,'sameEmulatorSequential':True,'forcedGC':False,'screenshots':False,'realChatGPTRequests':0,'limitations':['Instrumentation, sampling and sequential caches influence values','Only app + attributable WebView renderer PSS/CPU, not shared system totals','Offline DOM workload measures shell/retention/core overhead, not real-service network cost','Warm stopped case retains the initialized Go runtime; cold disabled does not load it']},indent=2)+'\n')

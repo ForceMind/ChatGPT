@@ -17,6 +17,10 @@ on:
         description: Native API35 adb isolation only, no app or browser
         type: boolean
         default: false
+      adb_profile_diagnostic:
+        description: Old baseline foreground with bounded extra dumpsys load
+        type: boolean
+        default: false
       stream_guest_log:
         description: Keep continuous adb logcat connection (disable for controlled diagnosis)
         type: boolean
@@ -25,7 +29,7 @@ permissions:
   contents: read
 jobs:
   build:
-    if: ${{ !inputs.foreground_diagnostic && !inputs.evidence_contract_only && !inputs.adb_reproducer }}
+    if: ${{ !inputs.foreground_diagnostic && !inputs.evidence_contract_only && !inputs.adb_reproducer && !inputs.adb_profile_diagnostic }}
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
@@ -175,7 +179,7 @@ jobs:
           arch: x86_64
           profile: pixel_2
           disable-animations: true
-          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -writable-system
+          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -writable-system -show-kernel -verbose
           script: |
             if [ '${{ matrix.api }}' = 28 ]; then python3 android/network-poc/scripts/install-webview.py --provider android/network-poc/webview-fixture --output android/app/build/network-evidence/provider; fi
             adb install -r -t android/app/build/outputs/apk/networkCi/app-networkCi.apk
@@ -227,7 +231,7 @@ jobs:
           arch: x86_64
           profile: pixel_2
           disable-animations: true
-          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -writable-system
+          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -writable-system -show-kernel -verbose
           script: |
             if [ '${{ matrix.api }}' = 28 ]; then python3 android/network-poc/scripts/install-webview.py --provider android/network-poc/webview-fixture --output android/app/build/upgrade-evidence/provider; fi
             python3 android/scripts/run-network-upgrade.py --inputs android/app/build/upgrade-inputs --output android/app/build/upgrade-evidence
@@ -287,10 +291,10 @@ jobs:
           arch: x86_64
           profile: pixel_2
           disable-animations: true
-          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -writable-system
+          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -writable-system -show-kernel -verbose
           script: |
             if [ '${{ matrix.api }}' = 28 ]; then python3 android/network-poc/scripts/install-webview.py --provider android/network-poc/webview-fixture --output android/app/build/resource-evidence/provider; fi
-            python3 android/scripts/measure-network-integration.py --inputs android/app/build/performance-inputs --output android/app/build/resource-evidence ${{ matrix.background && '--background' || '' }}
+            python3 android/scripts/measure-network-integration.py --inputs android/app/build/performance-inputs --output android/app/build/resource-evidence ${{ matrix.background && '--background' || '' }} ${{ inputs.adb_profile_diagnostic && '--baseline-only' || '' }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -299,10 +303,11 @@ jobs:
           path: android/app/build/resource-evidence/
 
   foreground_diagnostic:
-    if: ${{ inputs.foreground_diagnostic && !inputs.evidence_contract_only && !inputs.adb_reproducer }}
+    if: ${{ (inputs.foreground_diagnostic || inputs.adb_profile_diagnostic) && !inputs.evidence_contract_only && !inputs.adb_reproducer }}
     env:
       NETWORK_SOURCE_SHA: d0b8db47f0ff029d7f9ca0ff784281e0a1307b73
       NETWORK_LOG_STREAM: ${{ inputs.stream_guest_log && '1' || '0' }}
+      NETWORK_ADB_STRESS: ${{ inputs.adb_profile_diagnostic && '1' || '0' }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
     strategy:
@@ -356,10 +361,10 @@ jobs:
           arch: x86_64
           profile: pixel_2
           disable-animations: true
-          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -writable-system
+          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -writable-system -show-kernel -verbose
           script: |
             if [ '${{ matrix.api }}' = 28 ]; then python3 android/network-poc/scripts/install-webview.py --provider android/network-poc/webview-fixture --output android/app/build/resource-evidence/provider; fi
-            python3 android/scripts/measure-network-integration.py --inputs android/app/build/performance-inputs --output android/app/build/resource-evidence ${{ matrix.background && '--background' || '' }}
+            python3 android/scripts/measure-network-integration.py --inputs android/app/build/performance-inputs --output android/app/build/resource-evidence ${{ matrix.background && '--background' || '' }} ${{ inputs.adb_profile_diagnostic && '--baseline-only' || '' }}
       - name: Preserve host diagnostics
         if: always()
         run: |
