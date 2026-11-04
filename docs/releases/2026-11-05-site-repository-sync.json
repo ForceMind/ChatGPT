@@ -1,0 +1,244 @@
+{
+  "schema": 1,
+  "kind": "website-milestone-sync-no-app-release",
+  "sourceCommit": "90a3d61b75e4eb2eaacf66a5052034bb94fa34b9",
+  "project": "chatgpt-studio",
+  "deploymentURL": "https://e9ff5df2.chatgpt-studio.pages.dev",
+  "gitBranch": "dev",
+  "gitMainMerged": false,
+  "verifiedAt": "2026-11-04T17:02:11.306359+00:00",
+  "publicFilesVerified": [
+    {
+      "url": "https://chatgpt-studio.pages.dev/app.js",
+      "status": 200,
+      "actualSHA256": "e4e5eecd24322e5f1104f43aacd625d80a5b7f188de4add38520b2246ebbb8d4",
+      "sourceSHA256": "e4e5eecd24322e5f1104f43aacd625d80a5b7f188de4add38520b2246ebbb8d4",
+      "comparison": "exact-bytes"
+    },
+    {
+      "url": "https://chatgpt-studio.pages.dev/assets/android-assets.png",
+      "status": 200,
+      "actualSHA256": "cca90311a5db1cab90b5e92a8d8c9fae8d5d09d3a7b7f193bf2ef57d037573a2",
+      "sourceSHA256": "cca90311a5db1cab90b5e92a8d8c9fae8d5d09d3a7b7f193bf2ef57d037573a2",
+      "comparison": "exact-bytes"
+    },
+    {
+      "url": "https://chatgpt-studio.pages.dev/assets/android-skills.png",
+      "status": 200,
+      "actualSHA256": "fdef510c45f8d0d3d724fea2ba2d67aca8ccf63e5fa88b2e09c1e016d97f0fbb",
+      "sourceSHA256": "fdef510c45f8d0d3d724fea2ba2d67aca8ccf63e5fa88b2e09c1e016d97f0fbb",
+      "comparison": "exact-bytes"
+    },
+    {
+      "url": "https://chatgpt-studio.pages.dev/assets/android-tablet-tabs.png",
+      "status": 200,
+      "actualSHA256": "239f1cd608cbcfe514d223264bb89a8858e33d85170077c4ba8362333f2c9f20",
+      "sourceSHA256": "239f1cd608cbcfe514d223264bb89a8858e33d85170077c4ba8362333f2c9f20",
+      "comparison": "exact-bytes"
+    },
+    {
+      "url": "https://chatgpt-studio.pages.dev/assets/android-tabs.png",
+      "status": 200,
+      "actualSHA256": "62662cee4fc379c0d4d8c21ccca7d238534e6b63a8e750fdd5b98b0b84243b07",
+      "sourceSHA256": "62662cee4fc379c0d4d8c21ccca7d238534e6b63a8e750fdd5b98b0b84243b07",
+      "comparison": "exact-bytes"
+    },
+    {
+      "url": "https://chatgpt-studio.pages.dev/assets/icon.svg",
+      "status": 200,
+      "actualSHA256": "c40527d47803acd03080ba814abe214159f3117ff277c36a600ff0ccedac82b0",
+      "sourceSHA256": "c40527d47803acd03080ba814abe214159f3117ff277c36a600ff0ccedac82b0",
+      "comparison": "exact-bytes"
+    },
+    {
+      "url": "https://chatgpt-studio.pages.dev/assets/macos-window.png",
+      "status": 200,
+      "actualSHA256": "b562a84cb733ff295a28a6f385ae3a9583dc0d6d5b95ce60cf3edead16ddcc38",
+      "sourceSHA256": "b562a84cb733ff295a28a6f385ae3a9583dc0d6d5b95ce60cf3edead16ddcc38",
+      "comparison": "exact-bytes"
+    },
+    {
+      "url": "https://chatgpt-studio.pages.dev/assets/windows-installed.png",
+      "status": 200,
+      "actualSHA256": "cf9556ec248f33e2ad70231a04231416b3d30fc73008ec1e9e727b023d5d2718",
+      "sourceSHA256": "cf9556ec248f33e2ad70231a04231416b3d30fc73008ec1e9e727b023d5d2718",
+      "comparison": "exact-bytes"
+    },
+    {
+      "url": "https://chatgpt-studio.pages.dev/",
+      "status": 200,
+      "actualSHA256": "320e2f337ceafcce93a789ef7fdc2ea32457013d3d97f1b5df67dc487baa50be",
+      "sourceSHA256": "320e2f337ceafcce93a789ef7fdc2ea32457013d3d97f1b5df67dc487baa50be",
+      "comparison": "exact-bytes"
+    },
+    {
+      "url": "https://chatgpt-studio.pages.dev/license.txt",
+      "status": 200,
+      "actualSHA256": "9d1b471b68ba1bf60015a232b380a075da38f31a74c961247a03e281785cc4a9",
+      "sourceSHA256": "9d1b471b68ba1bf60015a232b380a075da38f31a74c961247a03e281785cc4a9",
+      "comparison": "exact-bytes"
+    },
+    {
+      "url": "https://chatgpt-studio.pages.dev/robots.txt",
+      "status": 200,
+      "actualSHA256": "7f425345d5aa792cc6bf96f6b8f8cf148c87e9404b07a0593073b8322f2b3ca7",
+      "sourceSHA256": "7f425345d5aa792cc6bf96f6b8f8cf148c87e9404b07a0593073b8322f2b3ca7",
+      "comparison": "exact-bytes"
+    },
+    {
+      "url": "https://chatgpt-studio.pages.dev/sitemap.xml",
+      "status": 200,
+      "actualSHA256": "edd6e6b0a8d9d2da3a0c0a8d3b566a16112e79c8fee69206f187de93b7a757db",
+      "sourceSHA256": "edd6e6b0a8d9d2da3a0c0a8d3b566a16112e79c8fee69206f187de93b7a757db",
+      "comparison": "exact-bytes"
+    },
+    {
+      "url": "https://chatgpt-studio.pages.dev/styles.css",
+      "status": 200,
+      "actualSHA256": "df4ee39f9cd53992e7c2e718c83f941afe238fadc1c2c84ae8a7a72a11fcf1a1",
+      "sourceSHA256": "df4ee39f9cd53992e7c2e718c83f941afe238fadc1c2c84ae8a7a72a11fcf1a1",
+      "comparison": "exact-bytes"
+    },
+    {
+      "url": "https://chatgpt-studio.pages.dev/updates/macos.json",
+      "status": 200,
+      "actualSHA256": "b46f0e63af3738fecaa75fa86b5b221453741a8898246dee919aa53bb1677112",
+      "sourceSHA256": "b46f0e63af3738fecaa75fa86b5b221453741a8898246dee919aa53bb1677112",
+      "comparison": "exact-bytes"
+    },
+    {
+      "url": "https://chatgpt-studio.pages.dev/updates/windows/alpha.yml",
+      "status": 200,
+      "actualSHA256": "7780a97856251f81d689da452ddeef3beeee8c5e404061a6e0ff000e6825fd28",
+      "sourceSHA256": "7780a97856251f81d689da452ddeef3beeee8c5e404061a6e0ff000e6825fd28",
+      "comparison": "exact-bytes"
+    },
+    {
+      "url": "https://chatgpt.xincreates.com/app.js",
+      "status": 200,
+      "actualSHA256": "e4e5eecd24322e5f1104f43aacd625d80a5b7f188de4add38520b2246ebbb8d4",
+      "sourceSHA256": "e4e5eecd24322e5f1104f43aacd625d80a5b7f188de4add38520b2246ebbb8d4",
+      "comparison": "exact-bytes"
+    },
+    {
+      "url": "https://chatgpt.xincreates.com/assets/android-assets.png",
+      "status": 200,
+      "actualSHA256": "cca90311a5db1cab90b5e92a8d8c9fae8d5d09d3a7b7f193bf2ef57d037573a2",
+      "sourceSHA256": "cca90311a5db1cab90b5e92a8d8c9fae8d5d09d3a7b7f193bf2ef57d037573a2",
+      "comparison": "exact-bytes"
+    },
+    {
+      "url": "https://chatgpt.xincreates.com/assets/android-skills.png",
+      "status": 200,
+      "actualSHA256": "fdef510c45f8d0d3d724fea2ba2d67aca8ccf63e5fa88b2e09c1e016d97f0fbb",
+      "sourceSHA256": "fdef510c45f8d0d3d724fea2ba2d67aca8ccf63e5fa88b2e09c1e016d97f0fbb",
+      "comparison": "exact-bytes"
+    },
+    {
+      "url": "https://chatgpt.xincreates.com/assets/android-tablet-tabs.png",
+      "status": 200,
+      "actualSHA256": "239f1cd608cbcfe514d223264bb89a8858e33d85170077c4ba8362333f2c9f20",
+      "sourceSHA256": "239f1cd608cbcfe514d223264bb89a8858e33d85170077c4ba8362333f2c9f20",
+      "comparison": "exact-bytes"
+    },
+    {
+      "url": "https://chatgpt.xincreates.com/assets/android-tabs.png",
+      "status": 200,
+      "actualSHA256": "62662cee4fc379c0d4d8c21ccca7d238534e6b63a8e750fdd5b98b0b84243b07",
+      "sourceSHA256": "62662cee4fc379c0d4d8c21ccca7d238534e6b63a8e750fdd5b98b0b84243b07",
+      "comparison": "exact-bytes"
+    },
+    {
+      "url": "https://chatgpt.xincreates.com/assets/icon.svg",
+      "status": 200,
+      "actualSHA256": "c40527d47803acd03080ba814abe214159f3117ff277c36a600ff0ccedac82b0",
+      "sourceSHA256": "c40527d47803acd03080ba814abe214159f3117ff277c36a600ff0ccedac82b0",
+      "comparison": "exact-bytes"
+    },
+    {
+      "url": "https://chatgpt.xincreates.com/assets/macos-window.png",
+      "status": 200,
+      "actualSHA256": "b562a84cb733ff295a28a6f385ae3a9583dc0d6d5b95ce60cf3edead16ddcc38",
+      "sourceSHA256": "b562a84cb733ff295a28a6f385ae3a9583dc0d6d5b95ce60cf3edead16ddcc38",
+      "comparison": "exact-bytes"
+    },
+    {
+      "url": "https://chatgpt.xincreates.com/assets/windows-installed.png",
+      "status": 200,
+      "actualSHA256": "cf9556ec248f33e2ad70231a04231416b3d30fc73008ec1e9e727b023d5d2718",
+      "sourceSHA256": "cf9556ec248f33e2ad70231a04231416b3d30fc73008ec1e9e727b023d5d2718",
+      "comparison": "exact-bytes"
+    },
+    {
+      "url": "https://chatgpt.xincreates.com/",
+      "status": 200,
+      "actualSHA256": "d066df1d8b6570da5485343dc9fde3ce1ae1b0546d95648ece52a28f82ca69cb",
+      "sourceSHA256": "320e2f337ceafcce93a789ef7fdc2ea32457013d3d97f1b5df67dc487baa50be",
+      "comparison": "equivalent-after-known-Cloudflare-email-and-beacon-transforms"
+    },
+    {
+      "url": "https://chatgpt.xincreates.com/license.txt",
+      "status": 200,
+      "actualSHA256": "9d1b471b68ba1bf60015a232b380a075da38f31a74c961247a03e281785cc4a9",
+      "sourceSHA256": "9d1b471b68ba1bf60015a232b380a075da38f31a74c961247a03e281785cc4a9",
+      "comparison": "exact-bytes"
+    },
+    {
+      "url": "https://chatgpt.xincreates.com/robots.txt",
+      "status": 200,
+      "actualSHA256": "7f425345d5aa792cc6bf96f6b8f8cf148c87e9404b07a0593073b8322f2b3ca7",
+      "sourceSHA256": "7f425345d5aa792cc6bf96f6b8f8cf148c87e9404b07a0593073b8322f2b3ca7",
+      "comparison": "exact-bytes"
+    },
+    {
+      "url": "https://chatgpt.xincreates.com/sitemap.xml",
+      "status": 200,
+      "actualSHA256": "edd6e6b0a8d9d2da3a0c0a8d3b566a16112e79c8fee69206f187de93b7a757db",
+      "sourceSHA256": "edd6e6b0a8d9d2da3a0c0a8d3b566a16112e79c8fee69206f187de93b7a757db",
+      "comparison": "exact-bytes"
+    },
+    {
+      "url": "https://chatgpt.xincreates.com/styles.css",
+      "status": 200,
+      "actualSHA256": "df4ee39f9cd53992e7c2e718c83f941afe238fadc1c2c84ae8a7a72a11fcf1a1",
+      "sourceSHA256": "df4ee39f9cd53992e7c2e718c83f941afe238fadc1c2c84ae8a7a72a11fcf1a1",
+      "comparison": "exact-bytes"
+    },
+    {
+      "url": "https://chatgpt.xincreates.com/updates/macos.json",
+      "status": 200,
+      "actualSHA256": "b46f0e63af3738fecaa75fa86b5b221453741a8898246dee919aa53bb1677112",
+      "sourceSHA256": "b46f0e63af3738fecaa75fa86b5b221453741a8898246dee919aa53bb1677112",
+      "comparison": "exact-bytes"
+    },
+    {
+      "url": "https://chatgpt.xincreates.com/updates/windows/alpha.yml",
+      "status": 200,
+      "actualSHA256": "7780a97856251f81d689da452ddeef3beeee8c5e404061a6e0ff000e6825fd28",
+      "sourceSHA256": "7780a97856251f81d689da452ddeef3beeee8c5e404061a6e0ff000e6825fd28",
+      "comparison": "exact-bytes"
+    }
+  ],
+  "macUpdateVersion": "3.0.0-alpha.23",
+  "downloadLinksChanged": false,
+  "updateFeedsChanged": false,
+  "testApkPubliclyPromoted": false,
+  "browserRendered": false,
+  "userAgent": "ChatGPT-Studio-SiteVerifier/1.0",
+  "securitySettingsChanged": false,
+  "methodologySources": [
+    "https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-1xxx-errors/error-1010/"
+  ],
+  "verification": "Anonymous HTTP.29 raw byte matches plus1 custom-domain HTML normalized only for observed Cloudflare email protection, beacon scripts and inter-tag whitespace. No browser or screenshots.",
+  "deploymentId": "e9ff5df2-42cd-4797-aaa0-262a323dc149",
+  "pagesEnvironment": "Production",
+  "pagesBranchLabel": "main",
+  "trackedFilesUploaded": 17,
+  "appleDoubleUploaded": false,
+  "newAppRelease": false,
+  "browserVerificationPerformed": false,
+  "legacyProjectRecreated": false,
+  "domainBindingsChanged": false,
+  "gitMainChanged": false,
+  "temporaryUploadDirectoryRemoved": true
+}
