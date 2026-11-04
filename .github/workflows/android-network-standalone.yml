@@ -1,0 +1,53 @@
+name: Android Standalone Network Preview
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.3'
+          cache: false
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - uses: actions/cache@v4
+        with:
+          path: |
+            android/network-poc/app/libs/
+            android/network-poc/corebridge/bin/
+            android/app/libs/licenses/
+          key: formal-network-core-go1273-ndk282-${{ hashFiles('android/network-poc/corebridge/go.mod', 'android/network-poc/corebridge/go.sum', 'android/network-poc/corebridge/networkcore.go', 'android/network-poc/scripts/build-core.sh', 'android/scripts/prepare-network-core.sh') }}
+      - name: Build the exact validated core
+        run: bash android/scripts/prepare-network-core.sh
+      - name: Build isolated installable preview and run non-browser checks
+        working-directory: android
+        run: |
+          test ! -f keystore.properties
+          sdkmanager 'platforms;android-36' 'build-tools;35.0.0'
+          bash gradlew --no-daemon :app:testDebugUnitTest :app:lintNetworkPreview :app:assembleNetworkPreview
+      - name: Verify identity, signature and isolation
+        run: python3 android/scripts/package-network-preview.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ChatGPT-Studio-Standalone-Network-Preview-arm64
+          retention-days: 14
+          path: android/app/build/network-preview/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: standalone-preview-build-evidence
+          retention-days: 14
+          path: |
+            android/app/build/reports/
+            android/app/build/test-results/
+            android/app/build/outputs/logs/
