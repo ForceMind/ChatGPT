@@ -13,6 +13,10 @@ on:
         description: Only synthetic error-retention tests, no emulator
         type: boolean
         default: false
+      adb_reproducer:
+        description: Native API35 adb isolation only, no app or browser
+        type: boolean
+        default: false
       stream_guest_log:
         description: Keep continuous adb logcat connection (disable for controlled diagnosis)
         type: boolean
@@ -21,7 +25,7 @@ permissions:
   contents: read
 jobs:
   build:
-    if: ${{ !inputs.foreground_diagnostic && !inputs.evidence_contract_only }}
+    if: ${{ !inputs.foreground_diagnostic && !inputs.evidence_contract_only && !inputs.adb_reproducer }}
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
@@ -295,7 +299,7 @@ jobs:
           path: android/app/build/resource-evidence/
 
   foreground_diagnostic:
-    if: ${{ inputs.foreground_diagnostic && !inputs.evidence_contract_only }}
+    if: ${{ inputs.foreground_diagnostic && !inputs.evidence_contract_only && !inputs.adb_reproducer }}
     env:
       NETWORK_SOURCE_SHA: d0b8db47f0ff029d7f9ca0ff784281e0a1307b73
       NETWORK_LOG_STREAM: ${{ inputs.stream_guest_log && '1' || '0' }}
@@ -380,3 +384,39 @@ jobs:
         run: |
           python3 -m py_compile android/scripts/measure-network-integration.py android/scripts/sampling_evidence.py
           python3 -m unittest discover -s android/scripts -p test_sampling_evidence.py -v
+
+  adb_reproducer:
+    if: ${{ inputs.adb_reproducer }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - name: Enable isolated emulator acceleration
+        run: |
+          test -c /dev/kvm
+          sudo chmod a+rw /dev/kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -writable-system -show-kernel -verbose
+          script: python3 android/scripts/reproduce-adb-sampling.py
+      - name: Preserve native host evidence
+        if: always()
+        run: |
+          mkdir -p android/app/build/adb-evidence/host
+          sudo dmesg -T > android/app/build/adb-evidence/host/kernel.txt 2>&1 || true
+          free -m > android/app/build/adb-evidence/host/memory.txt
+          ps -eo pid,ppid,rss,stat,comm > android/app/build/adb-evidence/host/processes.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android15-native-adb-evidence
+          retention-days: 14
+          path: android/app/build/adb-evidence/
