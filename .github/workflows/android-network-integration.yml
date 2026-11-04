@@ -291,11 +291,10 @@ jobs:
           arch: x86_64
           profile: pixel_2
           disable-animations: true
-          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -writable-system -show-kernel -verbose
+          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -writable-system
           script: |
             if [ '${{ matrix.api }}' = 28 ]; then python3 android/network-poc/scripts/install-webview.py --provider android/network-poc/webview-fixture --output android/app/build/resource-evidence/provider; fi
-            python3 android/scripts/measure-network-integration.py --inputs android/app/build/performance-inputs --output android/app/build/resource-evidence ${{ matrix.background && '--background' || '' }} ${{ inputs.adb_profile_diagnostic && '--baseline-only' || '' }}
-            if [ '${{ inputs.adb_profile_diagnostic }}' = true ]; then python3 android/scripts/reproduce-adb-package-churn.py; fi
+            python3 android/scripts/measure-network-integration.py --inputs android/app/build/performance-inputs --output android/app/build/resource-evidence ${{ matrix.background && '--background' || '' }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -366,6 +365,20 @@ jobs:
           script: |
             if [ '${{ matrix.api }}' = 28 ]; then python3 android/network-poc/scripts/install-webview.py --provider android/network-poc/webview-fixture --output android/app/build/resource-evidence/provider; fi
             python3 android/scripts/measure-network-integration.py --inputs android/app/build/performance-inputs --output android/app/build/resource-evidence ${{ matrix.background && '--background' || '' }} ${{ inputs.adb_profile_diagnostic && '--baseline-only' || '' }}
+            if [ '${{ inputs.adb_profile_diagnostic }}' = true ]; then python3 android/scripts/reproduce-adb-package-churn.py; fi
+      - name: Require actual package lifecycle overlap evidence
+        if: ${{ always() && inputs.adb_profile_diagnostic }}
+        run: |
+          python3 - <<'PYVERIFY'
+          import json
+          from pathlib import Path
+          root=Path('android/app/build/resource-evidence')
+          comparison=json.loads((root/'comparison.json').read_text())
+          result=json.loads((root/'package-churn/result.json').read_text())
+          assert comparison['complete'] and comparison['diagnosticOnly']
+          assert result['complete'] and result['lifecycleCommands']==10 and result['dumps']==40 and result['overlappingDumps']>0
+          print(json.dumps(result))
+          PYVERIFY
       - name: Preserve host diagnostics
         if: always()
         run: |
