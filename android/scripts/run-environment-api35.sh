@@ -2,6 +2,8 @@
 # Owned Actions emulator bootstrap. No input is sent before a focused window exists.
 set -euo pipefail
 test "${GITHUB_ACTIONS:-}" = true
+command -v grep >/dev/null
+command -v timeout >/dev/null
 studio_evidence=android/app/build/environment-client-evidence
 mkdir -p "$studio_evidence"
 sdkmanager 'emulator' 'system-images;android-35;google_apis;x86_64'
@@ -34,7 +36,7 @@ done
 adb -s emulator-5554 shell wm dismiss-keyguard
 while true; do
   timeout 15 adb -s emulator-5554 shell dumpsys window > "$studio_evidence/emulator-boot-window.txt"
-  if rg -q 'mCurrentFocus=Window\{' "$studio_evidence/emulator-boot-window.txt"; then break; fi
+  if grep -Eq 'mCurrentFocus=Window\{' "$studio_evidence/emulator-boot-window.txt"; then break; fi
   test "$SECONDS" -lt "$studio_boot_deadline"
   sleep 2
 done
@@ -43,7 +45,7 @@ adb -s emulator-5554 shell settings put global transition_animation_scale 0
 adb -s emulator-5554 shell settings put global animator_duration_scale 0
 adb -s emulator-5554 shell settings put system screen_off_timeout 2147483647
 adb -s emulator-5554 logcat -d > "$studio_evidence/emulator-boot-logcat.txt"
-if rg -q 'ANR in com.google.android.apps.nexuslauncher' "$studio_evidence/emulator-boot-logcat.txt"; then
+if grep -Eq 'ANR in com.google.android.apps.nexuslauncher' "$studio_evidence/emulator-boot-logcat.txt"; then
   echo 'Launcher ANR occurred before the application test; preserving the invalid environment.' >&2
   exit 1
 fi
