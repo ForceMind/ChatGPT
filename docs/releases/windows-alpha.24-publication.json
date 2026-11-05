@@ -1,0 +1,220 @@
+{
+  "schema": 1,
+  "kind": "windows-alpha24-publication",
+  "publishedAt": "2026-11-05T06:08:34Z",
+  "verifiedAt": "2026-11-05T06:10:40.912294+00:00",
+  "releaseURL": "https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.24",
+  "prerelease": true,
+  "draft": false,
+  "tag": "v3.0.0-alpha.24",
+  "mainMergeCommit": "c2d7327292141b59c54eb02f9f8a371a12d4e629",
+  "binarySourceCommit": "6412dad85abeee8d889b628afb910e77da6117e4",
+  "acceptanceRun": 41975812832,
+  "promotionRun": 41978129830,
+  "promotionCheck": {
+    "command": "npm run check",
+    "exitCode": 0,
+    "tests": 106,
+    "passed": 105,
+    "skipped": 1,
+    "failed": 0
+  },
+  "assets": [
+    {
+      "apiUrl": "https://api.github.com/repos/ForceMind/ChatGPT/releases/assets/712283984",
+      "contentType": "application/octet-stream",
+      "createdAt": "2026-11-05T06:07:08Z",
+      "digest": "sha256:623b6f4784e54ef759ebce344b65fba3f3e6d6ceaa8d269fa919373d2ab4dfd2",
+      "downloadCount": 0,
+      "id": "RA_kwDOVQifx84qdJdQ",
+      "label": "",
+      "name": "ChatGPT-Studio-3.0.0-alpha.24-windows-x64-setup.exe",
+      "size": 131359974,
+      "state": "uploaded",
+      "updatedAt": "2026-11-05T06:07:12Z",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.24/ChatGPT-Studio-3.0.0-alpha.24-windows-x64-setup.exe"
+    },
+    {
+      "apiUrl": "https://api.github.com/repos/ForceMind/ChatGPT/releases/assets/712283981",
+      "contentType": "application/zip",
+      "createdAt": "2026-11-05T06:07:08Z",
+      "digest": "sha256:009fb5988890dcdd60b07eabd6d0c96b8dc2e56a6bf72658bc5423398520c80e",
+      "downloadCount": 0,
+      "id": "RA_kwDOVQifx84qdJdN",
+      "label": "",
+      "name": "ChatGPT-Studio-3.0.0-alpha.24-windows-x64.zip",
+      "size": 181294882,
+      "state": "uploaded",
+      "updatedAt": "2026-11-05T06:07:13Z",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.24/ChatGPT-Studio-3.0.0-alpha.24-windows-x64.zip"
+    },
+    {
+      "apiUrl": "https://api.github.com/repos/ForceMind/ChatGPT/releases/assets/712283980",
+      "contentType": "text/plain; charset=utf-8",
+      "createdAt": "2026-11-05T06:07:08Z",
+      "digest": "sha256:1b507fa0ef44018144e5dbd8635de2befc786690016cb27e01099173fcb58d19",
+      "downloadCount": 0,
+      "id": "RA_kwDOVQifx84qdJdM",
+      "label": "",
+      "name": "SHA256SUMS.windows.txt",
+      "size": 230,
+      "state": "uploaded",
+      "updatedAt": "2026-11-05T06:07:08Z",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.24/SHA256SUMS.windows.txt"
+    },
+    {
+      "apiUrl": "https://api.github.com/repos/ForceMind/ChatGPT/releases/assets/712283987",
+      "contentType": "application/json",
+      "createdAt": "2026-11-05T06:07:08Z",
+      "digest": "sha256:c9164fc15cddcc5fefd99e2bf142daaa5dda0952dff4bfc6ea0af534e4745f42",
+      "downloadCount": 0,
+      "id": "RA_kwDOVQifx84qdJdT",
+      "label": "",
+      "name": "windows-branding-acceptance.json",
+      "size": 4813,
+      "state": "uploaded",
+      "updatedAt": "2026-11-05T06:07:08Z",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.24/windows-branding-acceptance.json"
+    },
+    {
+      "apiUrl": "https://api.github.com/repos/ForceMind/ChatGPT/releases/assets/712283985",
+      "contentType": "application/json",
+      "createdAt": "2026-11-05T06:07:08Z",
+      "digest": "sha256:64f14242dd79ace2814f723c563366b987fb0f5c87952535f848b4ac615587b9",
+      "downloadCount": 0,
+      "id": "RA_kwDOVQifx84qdJdR",
+      "label": "",
+      "name": "windows-build-info.json",
+      "size": 28914,
+      "state": "uploaded",
+      "updatedAt": "2026-11-05T06:07:08Z",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.24/windows-build-info.json"
+    }
+  ],
+  "pages": {
+    "Id": "7f3a0b9f-e41f-47ec-bb97-1e5df1972274",
+    "Environment": "Production",
+    "Branch": "main",
+    "Source": "c2d7327",
+    "Deployment": "https://7f3a0b9f.chatgpt-studio.pages.dev",
+    "Status": "1 minute ago",
+    "Build": "https://dash.cloudflare.com/302a9a69ae88b6fdb5df61d4dd605f99/pages/view/chatgpt-studio/7f3a0b9f-e41f-47ec-bb97-1e5df1972274"
+  },
+  "onlineReadback": [
+    {
+      "url": "https://7f3a0b9f.chatgpt-studio.pages.dev/",
+      "status": 200,
+      "exactBytes": true,
+      "sha256": "0d75299109a6e977b89446b8fbee74e07e58a24fe7e23cbf2773179da6587a04"
+    },
+    {
+      "url": "https://7f3a0b9f.chatgpt-studio.pages.dev/updates/windows/alpha.yml",
+      "status": 200,
+      "exactBytes": true,
+      "sha256": "ccfde281b9983890ad790bed2cd47b700d89142c0d58bf931aabc9b52e85891f"
+    },
+    {
+      "url": "https://7f3a0b9f.chatgpt-studio.pages.dev/updates/macos.json",
+      "status": 200,
+      "exactBytes": true,
+      "sha256": "b46f0e63af3738fecaa75fa86b5b221453741a8898246dee919aa53bb1677112"
+    },
+    {
+      "url": "https://7f3a0b9f.chatgpt-studio.pages.dev/app.js",
+      "status": 200,
+      "exactBytes": true,
+      "sha256": "e4e5eecd24322e5f1104f43aacd625d80a5b7f188de4add38520b2246ebbb8d4"
+    },
+    {
+      "url": "https://7f3a0b9f.chatgpt-studio.pages.dev/styles.css",
+      "status": 200,
+      "exactBytes": true,
+      "sha256": "df4ee39f9cd53992e7c2e718c83f941afe238fadc1c2c84ae8a7a72a11fcf1a1"
+    },
+    {
+      "url": "https://chatgpt-studio.pages.dev/",
+      "status": 200,
+      "exactBytes": true,
+      "sha256": "0d75299109a6e977b89446b8fbee74e07e58a24fe7e23cbf2773179da6587a04"
+    },
+    {
+      "url": "https://chatgpt-studio.pages.dev/updates/windows/alpha.yml",
+      "status": 200,
+      "exactBytes": true,
+      "sha256": "ccfde281b9983890ad790bed2cd47b700d89142c0d58bf931aabc9b52e85891f"
+    },
+    {
+      "url": "https://chatgpt-studio.pages.dev/updates/macos.json",
+      "status": 200,
+      "exactBytes": true,
+      "sha256": "b46f0e63af3738fecaa75fa86b5b221453741a8898246dee919aa53bb1677112"
+    },
+    {
+      "url": "https://chatgpt-studio.pages.dev/app.js",
+      "status": 200,
+      "exactBytes": true,
+      "sha256": "e4e5eecd24322e5f1104f43aacd625d80a5b7f188de4add38520b2246ebbb8d4"
+    },
+    {
+      "url": "https://chatgpt-studio.pages.dev/styles.css",
+      "status": 200,
+      "exactBytes": true,
+      "sha256": "df4ee39f9cd53992e7c2e718c83f941afe238fadc1c2c84ae8a7a72a11fcf1a1"
+    },
+    {
+      "url": "https://chatgpt.xincreates.com/",
+      "status": 200,
+      "exactBytes": false,
+      "sha256": "8a5d08fc9d9582a5555e079e201373a9c6f04531668039ecf670eab8bf477253"
+    },
+    {
+      "url": "https://chatgpt.xincreates.com/updates/windows/alpha.yml",
+      "status": 200,
+      "exactBytes": true,
+      "sha256": "ccfde281b9983890ad790bed2cd47b700d89142c0d58bf931aabc9b52e85891f"
+    },
+    {
+      "url": "https://chatgpt.xincreates.com/updates/macos.json",
+      "status": 200,
+      "exactBytes": true,
+      "sha256": "b46f0e63af3738fecaa75fa86b5b221453741a8898246dee919aa53bb1677112"
+    },
+    {
+      "url": "https://chatgpt.xincreates.com/app.js",
+      "status": 200,
+      "exactBytes": true,
+      "sha256": "e4e5eecd24322e5f1104f43aacd625d80a5b7f188de4add38520b2246ebbb8d4"
+    },
+    {
+      "url": "https://chatgpt.xincreates.com/styles.css",
+      "status": 200,
+      "exactBytes": true,
+      "sha256": "df4ee39f9cd53992e7c2e718c83f941afe238fadc1c2c84ae8a7a72a11fcf1a1"
+    }
+  ],
+  "publicDownloadHEAD": [
+    {
+      "file": "ChatGPT-Studio-3.0.0-alpha.24-windows-x64-setup.exe",
+      "status": 200,
+      "contentLength": 131359974
+    },
+    {
+      "file": "ChatGPT-Studio-3.0.0-alpha.24-windows-x64.zip",
+      "status": 200,
+      "contentLength": 181294882
+    }
+  ],
+  "limits": {
+    "macVersion": "3.0.0-alpha.23",
+    "androidVersion": "3.0.0-alpha.22",
+    "androidClientChangesMerged": false,
+    "macFeedChanged": false,
+    "domainBindingsChanged": false,
+    "localAppInstalled": false,
+    "realAccountAcceptance": false,
+    "screenshots": false,
+    "browserVisualAcceptance": false,
+    "domesticProxyDeliveryTested": false,
+    "customDomainHtmlValidation": "Release/download/milestone markers verified; Cloudflare-modified HTML is not byte-identical; feeds, JS and CSS are byte-identical"
+  }
+}
