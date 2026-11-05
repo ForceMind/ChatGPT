@@ -241,6 +241,7 @@ jobs:
           "$ANDROID_HOME/build-tools/35.0.0/d8" --min-api 28 --lib "$ANDROID_HOME/platforms/android-36/android.jar" --output android/app/build/environment-ascii/input.jar android/app/build/environment-ascii/classes/com/forcemind/chatgpt/pocinput/AsciiInput.class
       - run: sudo chmod a+rw /dev/kvm
       - uses: reactivecircus/android-emulator-runner@v2
+        if: matrix.api != 35
         with:
           api-level: ${{ matrix.api }}
           target: ${{ matrix.api == 28 && 'default' || 'google_apis' }}
@@ -257,6 +258,20 @@ jobs:
             if [ '${{ matrix.api }}' = 28 ] && [ '${{ matrix.target }}' = synthetic ]; then adb push android/app/build/environment-touch/input.jar /data/local/tmp/studio-poc-input.jar; fi
             if [ '${{ matrix.target }}' = synthetic ]; then adb push android/app/build/environment-ascii/input.jar /data/local/tmp/studio-poc-ascii-input.jar; fi
             if [ '${{ matrix.target }}' = human ]; then python3 android/scripts/environment_upgrade.py --target human; else python3 android/scripts/run-environment-client.py; fi
+      - name: Boot Android15 without an early Launcher key event
+        if: matrix.api == 35 && matrix.target == 'synthetic'
+        run: bash android/scripts/run-environment-api35.sh
+      - name: Boot Android15 for the human upgrade check
+        if: matrix.api == 35 && matrix.target == 'human'
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader -feature -Vulkan -writable-system -memory 4096
+          script: python3 android/scripts/environment_upgrade.py --target human
       - uses: actions/upload-artifact@v4
         if: always()
         with:
