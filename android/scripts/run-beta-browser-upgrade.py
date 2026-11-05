@@ -82,7 +82,7 @@ def main():
     def phase(name):
         shell('am', 'force-stop', PACKAGE)
         output = command(['adb', 'shell', 'am', 'instrument', '-w', '-r', '-e', 'class',
-                          'com.forcemind.chatgpt.profiles.BetaBrowserUpgradeTest', '-e', 'phase', name,
+                          'com.forcemind.chatgpt.profiles.BetaBrowserUpgradeTest#originalDeliveredBetaBrowserStateSurvivesUpgrade', '-e', 'phase', name,
                           '-e', 'signer', expected_signer, PACKAGE + '.test/androidx.test.runner.AndroidJUnitRunner'], timeout=240)
         (ROOT / (name + '.txt')).write_text(output)
         print(output, flush=True)

@@ -1,6 +1,8 @@
 package com.forcemind.chatgpt.profiles;
 
 import android.content.Context;
+import android.content.Intent;
+import android.app.Activity;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.webkit.WebView;
@@ -8,6 +10,7 @@ import android.webkit.WebViewClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.core.app.ActivityScenario;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry;
 import androidx.test.runner.lifecycle.Stage;
@@ -41,6 +44,7 @@ public final class BetaBrowserUpgradeTest {
     private final AtomicInteger inlineDocuments = new AtomicInteger();
     private final AtomicInteger inlineIcons = new AtomicInteger();
     private final java.util.concurrent.ConcurrentLinkedQueue<String> requests = new java.util.concurrent.ConcurrentLinkedQueue<>();
+    private Activity profileHost;
     private File file(String name) { return new File(context.getFilesDir(), name); }
     private void main(Runnable action) { InstrumentationRegistry.getInstrumentation().runOnMainSync(action); }
     private String hash(byte[] bytes) throws Exception {
@@ -83,7 +87,7 @@ public final class BetaBrowserUpgradeTest {
             assertTrue("Provider must support real per-account profiles",
                 WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE));
             java.util.List<String> beforeStartup = ProfileStore.getInstance().getAllProfileNames();
-            WebView view = new WebView(context);
+            WebView view = new WebView(profileHost == null ? context : profileHost);
             java.util.List<String> afterStartup = ProfileStore.getInstance().getAllProfileNames();
             System.out.println("OWNED_PROFILE_STARTUP before=" + beforeStartup + " after=" + afterStartup + " expected=" + profile);
             if (mustExist) assertTrue("Original profile missing before load: " + profile,
@@ -111,6 +115,7 @@ public final class BetaBrowserUpgradeTest {
                 @Override public void onPageFinished(WebView v, String url) { ready.countDown(); }
             });
             result.set(view);
+            if (profileHost != null) profileHost.setContentView(view);
             view.loadDataWithBaseURL(ORIGIN, "<!doctype html><title>Owned offline Beta login fixture</title><link rel='icon' href='data:,'><p id='owned'>offline-only</p>",
                 "text/html", "UTF-8", null);
         });
@@ -119,7 +124,11 @@ public final class BetaBrowserUpgradeTest {
         assertEquals(ORIGIN.substring(0, ORIGIN.length() - 1), new JSONTokener(js(result.get(), "location.origin")).nextValue());
         return result.get();
     }
-    private void close(WebView view) { main(() -> { WebViewCompat.getProfile(view).getCookieManager().flush(); view.destroy(); }); }
+    private void close(WebView view) { main(() -> {
+        WebViewCompat.getProfile(view).getCookieManager().flush();
+        if (view.getParent() instanceof android.view.ViewGroup) ((android.view.ViewGroup) view.getParent()).removeView(view);
+        view.destroy();
+    }); }
     private void setCookie(WebView view, String value) throws Exception {
         CountDownLatch done = new CountDownLatch(1);
         AtomicReference<Boolean> accepted = new AtomicReference<>();
@@ -303,13 +312,22 @@ public final class BetaBrowserUpgradeTest {
     }
     @Test public void originalDeliveredBetaBrowserStateSurvivesUpgrade() throws Exception {
         assertEquals(PACKAGE, context.getPackageName());
-        assertEquals(35, android.os.Build.VERSION.SDK_INT);
-        assertEquals(PackageManager.PERMISSION_GRANTED, context.checkSelfPermission(android.Manifest.permission.INTERNET));
         Bundle args = InstrumentationRegistry.getArguments();
+        int api = Integer.parseInt(args.getString("expectedApi", "35"));
+        assertTrue(api == 28 || api == 35);
+        assertEquals(api, android.os.Build.VERSION.SDK_INT);
+        boolean ciInput = "ci-x86-baseline".equals(args.getString("baselineScope"));
+        assertTrue(!ciInput || api == 28);
+        assertEquals(ciInput ? PackageManager.PERMISSION_DENIED : PackageManager.PERMISSION_GRANTED,
+            context.checkSelfPermission(android.Manifest.permission.INTERNET));
         String phase = args.getString("phase");
         assertTrue("seed".equals(phase) || "baseline-cold".equals(phase) || "upgraded".equals(phase) || "upgraded-cold".equals(phase));
         long version = context.getPackageManager().getPackageInfo(PACKAGE, 0).getLongVersionCode();
-        assertEquals(phase.startsWith("upgraded") ? 3000026L : 3000025L, version);
+        long baselineCode = Long.parseLong(args.getString("baselineCode", "3000025"));
+        long candidateCode = Long.parseLong(args.getString("candidateCode", "3000026"));
+        assertTrue((baselineCode == 3000025L && candidateCode == 3000026L && api == 35 && !ciInput)
+            || (candidateCode == 3000027L && baselineCode == (ciInput ? 3000025L : 3000026L)));
+        assertEquals(phase.startsWith("upgraded") ? candidateCode : baselineCode, version);
         String signer = hash(context.getPackageManager().getPackageInfo(PACKAGE, PackageManager.GET_SIGNING_CERTIFICATES)
             .signingInfo.getApkContentsSigners()[0].toByteArray());
         assertEquals(args.getString("signer"), signer);
@@ -336,6 +354,107 @@ public final class BetaBrowserUpgradeTest {
             .put("interceptedRequests", intercepted.get()).put("inlineDocumentCallbacks", inlineDocuments.get())
             .put("inlineIconCallbacks", inlineIcons.get()).put("inlineSyntheticPagesOnly", true).put("appActivityLaunched", false);
         Bundle result = new Bundle(); result.putString("betaBrowserUpgradeProof", proof.toString());
+        InstrumentationRegistry.getInstrumentation().addResults(result);
+    }
+
+    /** A visible new Profile loses its real window before the 10-second periodic preference writer fires. */
+    @Test public void visibleProfileQuickExitPersistsWithoutPeriodicTimer() throws Exception {
+        assertEquals(PACKAGE, context.getPackageName());
+        Bundle args = InstrumentationRegistry.getArguments();
+        int api = Integer.parseInt(args.getString("expectedApi"));
+        assertTrue(api == 28 || api == 35); assertEquals(api, android.os.Build.VERSION.SDK_INT);
+        assertEquals(3000027L, context.getPackageManager().getPackageInfo(PACKAGE, 0).getLongVersionCode());
+        String signer = hash(context.getPackageManager().getPackageInfo(PACKAGE, PackageManager.GET_SIGNING_CERTIFICATES)
+            .signingInfo.getApkContentsSigners()[0].toByteArray());
+        assertEquals(args.getString("signer"), signer);
+        JSONObject original = new JSONObject(new String(Files.readAllBytes(file("beta-browser-expected.json").toPath()), StandardCharsets.UTF_8));
+        verifyNative(original, signer);
+        browser(original, false);
+        boolean seed = "quick-seed".equals(args.getString("phase"));
+        assertTrue(seed || "quick-cold".equals(args.getString("phase")));
+        JSONObject quick;
+        long visibleToHome = -1, homeToDisk = -1;
+        boolean persistedBeforeHome = false;
+        if (seed) {
+            assertFalse(file("beta-quick-expected.json").exists());
+            WorkspaceState state = new StateStore(context.getFilesDir()).load();
+            WorkspaceState.Account fresh = new WorkspaceState.Account();
+            String profile = WorkspaceState.profile(fresh.storageId), marker = "owned-quick-" + fresh.id;
+            Intent intent = new Intent(context, AssetWorkbenchActivity.class).putExtra(AssetWorkbenchActivity.ACCOUNT, state.current().id);
+            try (ActivityScenario<AssetWorkbenchActivity> host = ActivityScenario.launch(intent)) {
+                host.onActivity(activity -> profileHost = activity);
+                long created = android.os.SystemClock.elapsedRealtime();
+                WebView view = page(profile, false);
+                try {
+                    long deadline = android.os.SystemClock.elapsedRealtime() + 3000;
+                    AtomicReference<Boolean> visible = new AtomicReference<>(false);
+                    do {
+                        main(() -> visible.set(view.isAttachedToWindow() && view.getWindowVisibility() == android.view.View.VISIBLE && view.hasWindowFocus()));
+                        if (visible.get()) break;
+                        Thread.sleep(25);
+                    } while (android.os.SystemClock.elapsedRealtime() < deadline);
+                    assertTrue("New Profile must be in a focused real window before Home", visible.get());
+                    setCookie(view, "studio_beta_auth=" + marker + "; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=86400");
+                    setCookie(view, "studio_beta_account=" + marker + "; Path=/; Secure; SameSite=Lax; Max-Age=86400");
+                    assertEquals("true", js(view, "localStorage.setItem('studio-beta-account'," + JSONObject.quote(marker) + ");true"));
+                    indexedDB(view, marker, true);
+                    main(() -> WebViewCompat.getProfile(view).getCookieManager().flush());
+                    JSONArray accounts = new JSONArray(original.getJSONArray("accounts").toString());
+                    accounts.put(new JSONObject().put("profile", profile));
+                    JSONObject registryExpectation = new JSONObject().put("accounts", accounts);
+                    persistedBeforeHome = persistedRegistry(registryExpectation) != null;
+                    visibleToHome = android.os.SystemClock.elapsedRealtime() - created;
+                    assertTrue("Quick-exit sample exceeded five seconds; periodic flush would confound it", visibleToHome < 5000);
+                    long home = android.os.SystemClock.elapsedRealtime();
+                    try (android.os.ParcelFileDescriptor ignored = InstrumentationRegistry.getInstrumentation().getUiAutomation().executeShellCommand("input keyevent 3")) {
+                        // Real system Home, not ActivityScenario.moveToState.
+                    }
+                    AtomicReference<Boolean> stopped = new AtomicReference<>(false);
+                    JSONObject registry = null;
+                    while (android.os.SystemClock.elapsedRealtime() - home < 2000) {
+                        main(() -> stopped.set(ActivityLifecycleMonitorRegistry.getInstance().getLifecycleStageOf(profileHost) == Stage.STOPPED));
+                        registry = persistedRegistry(registryExpectation);
+                        if (stopped.get() && registry != null) break;
+                        Thread.sleep(25);
+                    }
+                    assertTrue("Host must actually stop after Home", stopped.get());
+                    assertNotNull("Original Profile registry must commit within two seconds of losing foreground", registry);
+                    homeToDisk = android.os.SystemClock.elapsedRealtime() - home;
+                    quick = new JSONObject().put("profile", profile).put("marker", marker).put("registry", registry);
+                    Files.write(file("beta-quick-expected.json").toPath(), quick.toString().getBytes(StandardCharsets.UTF_8));
+                } finally { close(view); }
+            } finally { profileHost = null; }
+        } else {
+            quick = new JSONObject(new String(Files.readAllBytes(file("beta-quick-expected.json").toPath()), StandardCharsets.UTF_8));
+            JSONArray accounts = new JSONArray(original.getJSONArray("accounts").toString());
+            accounts.put(new JSONObject().put("profile", quick.getString("profile")));
+            JSONObject registry = persistedRegistry(new JSONObject().put("accounts", accounts));
+            assertNotNull(registry);
+            JSONObject old = quick.getJSONObject("registry");
+            assertEquals(keys(old), keys(registry));
+            for (String name : keys(old)) assertEquals(old.getString(name), registry.getString(name));
+            String marker = quick.getString("marker");
+            WebView view = page(quick.getString("profile"), true);
+            try {
+                AtomicReference<String> raw = new AtomicReference<>();
+                main(() -> raw.set(WebViewCompat.getProfile(view).getCookieManager().getCookie(ORIGIN)));
+                assertNotNull(raw.get());
+                assertEquals(new HashSet<>(java.util.Arrays.asList("studio_beta_auth=" + marker, "studio_beta_account=" + marker)),
+                    new HashSet<>(java.util.Arrays.asList(raw.get().split(";\\s*"))));
+                assertEquals(JSONObject.quote(marker), js(view, "localStorage.getItem('studio-beta-account')"));
+                assertEquals(JSONObject.quote("studio_beta_account=" + marker), js(view, "document.cookie"));
+                indexedDB(view, marker, false);
+            } finally { close(view); }
+        }
+        verifyNative(original, signer);
+        assertEquals(6, inlineDocuments.get()); assertEquals(0, intercepted.get());
+        JSONObject proof = new JSONObject().put("complete", true).put("phase", args.getString("phase"))
+            .put("api", api).put("uid", android.os.Process.myUid()).put("signerSHA256", signer)
+            .put("existingProfilesAndNativeDataPreserved", true).put("profile", quick.getString("profile"))
+            .put("visibleToHomeMillis", visibleToHome).put("homeToRegistryMillis", homeToDisk)
+            .put("persistedBeforeHome", persistedBeforeHome).put("noManualChromiumPrefWrites", true)
+            .put("httpRequests", intercepted.get()).put("inlineDocuments", inlineDocuments.get()).put("screenshots", false);
+        Bundle result = new Bundle(); result.putString("betaQuickExitProof", proof.toString());
         InstrumentationRegistry.getInstrumentation().addResults(result);
     }
 }

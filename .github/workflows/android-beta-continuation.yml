@@ -1,0 +1,163 @@
+name: Android Beta Compatibility and Quick Exit Candidate
+on:
+  push:
+    branches: [dev]
+    paths: ['.github/workflows/android-beta-continuation.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      STUDIO_BETA_STORE_PASSWORD: ${{ secrets.STUDIO_BETA_STORE_PASSWORD }}
+      STUDIO_BETA_MODE: '1'
+      BETA_VERSION_CODE: '3000027'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.3'
+          cache: false
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - uses: actions/cache@v4
+        with:
+          path: |
+            android/network-poc/app/libs/
+            android/network-poc/corebridge/bin/
+            android/app/libs/licenses/
+          key: formal-network-core-go1273-ndk282-${{ hashFiles('android/network-poc/corebridge/go.mod', 'android/network-poc/corebridge/go.sum', 'android/network-poc/corebridge/networkcore.go', 'android/network-poc/scripts/build-core.sh', 'android/scripts/prepare-network-core.sh') }}
+      - run: bash android/scripts/prepare-network-core.sh
+      - name: Restore existing Beta signer
+        env:
+          STUDIO_BETA_KEYSTORE_B64: ${{ secrets.STUDIO_BETA_KEYSTORE_B64 }}
+        run: python3 android/scripts/restore-beta-signing.py
+      - name: Build human ARM candidate and isolated x86 compatibility input
+        run: |
+          test ! -f android/keystore.properties
+          sdkmanager 'platforms;android-36' 'build-tools;35.0.0' 'build-tools;36.0.0'
+          bash android/gradlew -p android --no-daemon :app:testDebugUnitTest :app:lintNetworkBeta
+          bash android/gradlew -p android --no-daemon -PbetaBrowserUpgrade -PbetaVersionCode=3000027 -PbetaVersionName=3.0.0-alpha.24-beta.3 :app:assembleNetworkBeta
+          python3 android/scripts/package-network-preview.py
+          bash android/gradlew -p android --no-daemon -PbetaUpgrade -PbetaBrowserUpgrade -PbetaAbi=x86_64 -PbetaVersionCode=3000027 -PbetaVersionName=3.0.0-alpha.24-beta.3 :app:assembleNetworkBeta :app:assembleNetworkBetaAndroidTest
+          cp android/app/build/outputs/apk/networkBeta/app-networkBeta.apk android/app/build/network-beta/candidate-x86.apk
+          cp android/app/build/outputs/apk/androidTest/networkBeta/app-networkBeta-androidTest.apk android/app/build/network-beta/browser-test.apk
+          python3 android/network-poc/scripts/prepare-webview.py --output android/app/build/network-beta/provider
+      - uses: actions/upload-artifact@v4
+        with:
+          name: beta-continuation-input
+          retention-days: 14
+          path: android/app/build/network-beta/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: beta-continuation-build-evidence
+          retention-days: 14
+          path: |
+            android/app/build/reports/
+            android/app/build/test-results/
+      - name: Remove transient key material
+        if: always()
+        run: rm -f "$RUNNER_TEMP/studio-beta.p12"
+  device:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [28, 35]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - run: sdkmanager 'build-tools;35.0.0'
+      - uses: actions/download-artifact@v4
+        with:
+          name: beta-continuation-input
+          path: android/app/build/beta-continuation-input
+      - uses: actions/download-artifact@v4
+        with:
+          name: ChatGPT-Studio-Fixed-Beta2-Browser-Upgrade-Candidate
+          run-id: 41986549978
+          github-token: ${{ github.token }}
+          path: android/app/build/beta-continuation-baseline
+      - uses: actions/download-artifact@v4
+        if: matrix.api == 28
+        with:
+          name: beta-inputs-candidate
+          run-id: 41959244766
+          github-token: ${{ github.token }}
+          path: android/app/build/beta-continuation-ci-baseline
+      - run: sudo chmod a+rw /dev/kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          target: ${{ matrix.api == 28 && 'default' || 'google_apis' }}
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -writable-system
+          script: |
+            if [ '${{ matrix.api }}' = 28 ]; then python3 android/network-poc/scripts/install-webview.py --provider android/app/build/beta-continuation-input/provider --output android/app/build/beta-continuation-evidence/provider; fi
+            python3 android/scripts/run-beta-continuation.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: beta-continuation-api-${{ matrix.api }}
+          retention-days: 14
+          path: android/app/build/beta-continuation-evidence/
+  deliver:
+    needs: device
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: beta-continuation-input
+          path: input
+      - uses: actions/download-artifact@v4
+        with:
+          name: beta-continuation-api-28
+          path: api28
+      - uses: actions/download-artifact@v4
+        with:
+          name: beta-continuation-api-35
+          path: api35
+      - name: Gate candidate on exact baseline and compatibility proofs
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, pathlib, shutil
+          old = json.loads(pathlib.Path('api28/verified.json').read_text())
+          new = json.loads(pathlib.Path('api35/verified.json').read_text())
+          assert old['complete'] and new['complete'] and new['originalDeliveredBaselineAccepted']
+          assert new['baselineScope'] == 'original-delivered-arm64'
+          receipt = json.loads(pathlib.Path('input/receipt.json').read_text())
+          apk = pathlib.Path('input', receipt['file'])
+          assert hashlib.sha256(apk.read_bytes()).hexdigest() == receipt['sha256']
+          assert receipt['sha256'] == new['candidateInstalledSHA256']
+          out = pathlib.Path('candidate'); out.mkdir()
+          for name in (receipt['file'], 'receipt.json', 'SHA256SUMS.txt', 'LICENSE', 'network-core-dependencies.json'):
+              shutil.copyfile(pathlib.Path('input', name), out / name)
+          shutil.copytree('input/licenses', out / 'licenses')
+          shutil.copyfile('docs/android-beta-continuation.md', out / 'INSTALL.md')
+          (out / 'browser-compatibility-and-quick-exit.json').write_text(json.dumps({'api28': old, 'api35': new}, indent=2) + '\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ChatGPT-Studio-Fixed-Beta3-Compatibility-Candidate
+          retention-days: 14
+          path: candidate/
