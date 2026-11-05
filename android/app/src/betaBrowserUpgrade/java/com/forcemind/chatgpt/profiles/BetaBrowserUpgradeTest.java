@@ -82,9 +82,12 @@ public final class BetaBrowserUpgradeTest {
         main(() -> {
             assertTrue("Provider must support real per-account profiles",
                 WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE));
-            if (mustExist) assertTrue("Original profile missing before load: " + profile,
-                ProfileStore.getInstance().getAllProfileNames().contains(profile));
+            java.util.List<String> beforeStartup = ProfileStore.getInstance().getAllProfileNames();
             WebView view = new WebView(context);
+            java.util.List<String> afterStartup = ProfileStore.getInstance().getAllProfileNames();
+            System.out.println("OWNED_PROFILE_STARTUP before=" + beforeStartup + " after=" + afterStartup + " expected=" + profile);
+            if (mustExist) assertTrue("Original profile missing before load: " + profile,
+                afterStartup.contains(profile));
             if (profile != null) WebViewCompat.setProfile(view, profile);
             view.getSettings().setJavaScriptEnabled(true);
             view.getSettings().setDomStorageEnabled(true);

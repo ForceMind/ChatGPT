@@ -24,3 +24,5 @@
 第二轮 `e4eddae` / Actions 41982461084：77项单元、lint及签名/隔离构建通过，种子阶段已走过三账号Cookie、localStorage、IndexedDB与默认空间隔离；末尾拦截回调计数为10，尚无URL明细，不能将此计数直接称为外网请求。保留出网拒绝和零请求断言，补回调URL与主框架标记定位；覆盖升级尚未执行。
 
 第三轮 `d4ff839` / Actions 41983441875 的原始URL明确为5次主框架 `data:text/html;charset=utf-8;base64,` 与5次合成域名 `/favicon.ico`，均本地拦截，无真实网站请求。夹具改为内置 `data:,` 空图标，精确区分并强制核对5次内联主文档；HTTP和任何未知资源仍必须为零，模拟器出网拒绝保留。[官方回调语义](https://developer.android.com/reference/android/webkit/WebViewClient#shouldInterceptRequest(android.webkit.WebView,%20android.webkit.WebResourceRequest))说明data/file也会触发该回调，原总数不是网络请求数。Cookie/存储和升级断言未放宽。
+
+第四轮 `1a5e7ca` / Actions 41984284662：旧Beta.1种子全部断言通过（WebView124.0.6367.219，5次内联文档、0 HTTP/未知请求），其自身冷启动在原Profile存在性检查处失败，尚未安装新版。对照已通过的NetworkUpgradeCompatibilityTest，当前夹具在构造首个WebView之前读取Profile列表，可能早于完整内核启动；现补充构造前后列表，并在首个WebView初始化后、任何命名Profile绑定前仍严格检查原名存在，不创建替代Profile，不延长等待或跳过旧版冷启动。
