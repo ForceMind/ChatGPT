@@ -1,3 +1,4 @@
+# Candidate delivery only; no release or deployment job.
 name: Android Fixed Signer Beta Candidate
 on:
   push:
