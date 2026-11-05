@@ -52,3 +52,16 @@
 后续CI41971460871、41972291363均通过完整check、脚本解析和NSIS编译，但停在合成TLS准备（Cert驱动缺失、RSA KeySize只读），未执行安装；已用显式RSACng和临时JWK/DER替代证书存储依赖，增加提前TLS自检。41973125990进入实际安装前校验，因安装器PowerShell找不到Get-FileHash而退出3；迁移结果保留首错且未准备/卸载旧程序。现改为相同SHA256算法的.NET文件流，仍逐文件强制比对，不把这些失败当通过。
 
 41974018097通过完整check、新装及旧默认目录迁移、快捷方式目标和安装前后用户数据字节比对，随后Cookie读回失败。夹具设置的是无有效期的会话Cookie，不能据此判定持久登录数据丢失；补充明确有效期和session=false的种子前置断言，保留升级后原值与LocalStorage严格读回验收，等待重跑。
+
+## Verified candidate: alpha.24
+
+[Actions 41975812832](https://github.com/ForceMind/ChatGPT/actions/runs/41975812832) passed on source `6412dad85abeee8d889b628afb910e77da6117e4`: full `npm run check` exit 0; 106 unit tests, 105 passed, 0 failed, 1 Mac native installer test platform-skipped. PowerShell parsing, EXE/ZIP packaging and all six synthetic installation cases passed.
+
+- Fresh default: `%LOCALAPPDATA%\Programs\ChatGPT Studio`, `ChatGPT Studio.exe`, `Uninstall ChatGPT Studio.exe`.
+- Public alpha.21 legacy default migrated to Studio; custom directory location retained. Desktop, Start Menu and synthetic pinned shortcut targets updated. User-data SHA256 values unchanged across installation; persistent Cookie and LocalStorage values survived packaged application restart.
+- Forced failure after new payload installation restored old program bytes, registry and data; old application started and read original Cookie/LocalStorage. Unknown old files and occupied destinations were refused without overwriting owned sentinel files.
+- Data directory, app identity and Mac compatibility identities unchanged. No personal installation or login data touched.
+
+[Candidate EXE and ZIP](https://github.com/ForceMind/ChatGPT/actions/runs/41975812832/artifacts/13392425702), retained 14 days, GitHub login required. Windows code signing is absent; Windows may warn about an unknown publisher. Hashes and evidence: `docs/releases/windows-branding-alpha.24-candidate.json`. Source/report pushed to dev only; no main merge, public Release, website deployment or update-feed change.
+
+Limits: isolated Windows runner and owned loopback TLS pages only; no screenshots, real ChatGPT or real account acceptance. Pinned shortcut target verified, not Explorer icon-cache appearance. Run 41975077148 had one generic launch failure after the fresh case; the instrumented full matrix passed with seven packaged app launches exiting 0. Its earlier failure root cause remains unknown and is not claimed fixed.
