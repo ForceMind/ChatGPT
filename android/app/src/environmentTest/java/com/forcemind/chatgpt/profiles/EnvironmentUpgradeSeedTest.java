@@ -129,7 +129,14 @@ public final class EnvironmentUpgradeSeedTest {
         assertEquals("HTTP must never be attempted",0,http.get());
     }
     static JSONObject registry(JSONObject expected)throws Exception{
-        String profileName=expected.getString("profile");java.util.ArrayList<java.nio.file.Path> candidates=new java.util.ArrayList<>();
+        String profileName=expected.getString("profile");HashSet<String> expectedNames=new HashSet<>();expectedNames.add(profileName);
+        if("verify-after-environment".equals(InstrumentationRegistry.getArguments().getString("phase"))){
+            // The UI test deliberately created exactly one additional legacy space.
+            // Authenticate that declared owner; unknown registrations still fail.
+            JSONObject fixture=new JSONObject(new String(Files.readAllBytes(file("browser-chrome-profile.json").toPath()),StandardCharsets.UTF_8));assertEquals(1,fixture.getInt("schema"));
+            WorkspaceState.Account added=new StateStore(context().getFilesDir()).load().find(fixture.getString("accountId"));assertNotEquals(expected.getString("accountId"),added.id);assertFalse(added.isEnvironment());assertEquals("网页测试",added.name);assertEquals(fixture.getString("storageId"),added.storageId);assertEquals(fixture.getString("profile"),WorkspaceState.profile(added.storageId));expectedNames.add(fixture.getString("profile"));assertEquals(2,expectedNames.size());
+        }
+        java.util.ArrayList<java.nio.file.Path> candidates=new java.util.ArrayList<>();
         Files.walkFileTree(context().getDataDir().toPath(),java.util.EnumSet.noneOf(java.nio.file.FileVisitOption.class),4,new java.nio.file.SimpleFileVisitor<java.nio.file.Path>(){
             @Override public java.nio.file.FileVisitResult visitFile(java.nio.file.Path path,java.nio.file.attribute.BasicFileAttributes attributes){
                 if(path.getFileName().toString().equals("pref_store")&&attributes.isRegularFile()&&attributes.size()<=1024*1024)candidates.add(path);return java.nio.file.FileVisitResult.CONTINUE;
@@ -141,7 +148,7 @@ public final class EnvironmentUpgradeSeedTest {
                 throw failure;
             }
         });
-        for(java.nio.file.Path path:candidates){JSONObject prefs;try{prefs=new JSONObject(new String(Files.readAllBytes(path),StandardCharsets.UTF_8));}catch(org.json.JSONException pendingWrite){continue;}JSONObject profile=prefs.optJSONObject("profile");if(profile==null||profile.optJSONArray("list")==null)continue;JSONArray list=profile.getJSONArray("list");if(list.length()!=1)continue;JSONObject entry=list.getJSONObject(0);if(profileName.equals(entry.getString("name")))return new JSONObject().put("name",entry.getString("name")).put("path",entry.getString("path"));}return null;
+        for(java.nio.file.Path path:candidates){JSONObject prefs;try{prefs=new JSONObject(new String(Files.readAllBytes(path),StandardCharsets.UTF_8));}catch(org.json.JSONException pendingWrite){continue;}JSONObject profile=prefs.optJSONObject("profile");if(profile==null||profile.optJSONArray("list")==null)continue;JSONArray list=profile.getJSONArray("list");HashSet<String> actualNames=new HashSet<>();JSONObject original=null;for(int i=0;i<list.length();i++){JSONObject entry=list.getJSONObject(i);assertTrue("Duplicate Chromium profile registration",actualNames.add(entry.getString("name")));if(profileName.equals(entry.getString("name")))original=entry;}if(!actualNames.equals(expectedNames)||original==null)continue;return new JSONObject().put("name",original.getString("name")).put("path",original.getString("path"));}return null;
     }
     static long registryBarrier(JSONObject expected,boolean seed)throws Exception{
         long start=android.os.SystemClock.elapsedRealtime();JSONObject persisted=registry(expected);while(seed&&persisted==null&&android.os.SystemClock.elapsedRealtime()-start<20000){Thread.sleep(100);persisted=registry(expected);}assertNotNull("Original Chromium registration must persist before process exit",persisted);

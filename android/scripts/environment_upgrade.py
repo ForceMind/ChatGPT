@@ -368,6 +368,12 @@ def verify_browser_chrome():
         _record_failure()
         raise
     finally:
+        try:
+            tree = _run(['adb', 'shell', 'cat', '/data/user/0/' + PACKAGE + '/files/browser-chrome-native-tree.txt'], timeout=15, check=False)
+            if tree.returncode == 0:
+                (EVIDENCE / 'browser-chrome-native-tree.txt').write_text(tree.stdout, encoding='utf-8')
+        except Exception:
+            (EVIDENCE / 'browser-chrome-tree-read-error.txt').write_text(traceback.format_exc(), encoding='utf-8')
         _logcat('legacy-chrome')
 
 

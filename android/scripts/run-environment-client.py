@@ -556,6 +556,7 @@ class Acceptance:
         native._write_json(EVIDENCE / ('ascii-keyboard-' + str(self.sequence) + '.json'), receipt)
         assert receipt['provider'] == 'ci-paced-ascii-keyboard' and receipt['complete'] is True
         assert receipt['api'] == self.api and receipt['uid'] == 2000 and receipt['qemu'] is True
+        assert receipt['managerClass'] == ('android.hardware.input.InputManagerGlobal' if self.api == 35 else 'android.hardware.input.InputManager')
         assert receipt['injectionMode'] == 2 and receipt['paceMillis'] == 40
         assert receipt['textLength'] == len(draft) and receipt['textSHA256'] == hashlib.sha256(draft.encode('utf-8')).hexdigest()
         events = receipt['events']

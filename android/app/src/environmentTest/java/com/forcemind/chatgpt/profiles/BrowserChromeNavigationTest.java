@@ -38,7 +38,15 @@ public final class BrowserChromeNavigationTest {
     private void main(Runnable run){instrumentation.runOnMainSync(run);}
     private void waitFor(String label,Check check)throws Exception{
         long deadline=android.os.SystemClock.elapsedRealtime()+30000;
-        while(!check.ready()){if(android.os.SystemClock.elapsedRealtime()>deadline)throw new AssertionError("Timed out: "+label);Thread.sleep(150);}
+        while(!check.ready()){if(android.os.SystemClock.elapsedRealtime()>deadline){saveNativeTree();throw new AssertionError("Timed out: "+label);}Thread.sleep(150);}
+    }
+    private void saveNativeTree(){
+        try{AccessibilityNodeInfo root=instrumentation.getUiAutomation().getRootInActiveWindow();StringBuilder text=new StringBuilder();nativeTree(root,text,0);if(root!=null)root.recycle();java.nio.file.Files.write(EnvironmentUpgradeSeedTest.file("browser-chrome-native-tree.txt").toPath(),text.toString().getBytes(StandardCharsets.UTF_8));}catch(Exception error){android.util.Log.e("BrowserChromeAcceptance","Cannot preserve native tree",error);}
+    }
+    private void nativeTree(AccessibilityNodeInfo node,StringBuilder text,int depth){
+        if(node==null){text.append("no active accessibility root\n");return;}if(depth>30||text.length()>65536)return;
+        Rect box=new Rect();node.getBoundsInScreen(box);text.append(node.getPackageName()).append(' ').append(node.getClassName()).append(" text=").append(node.getText()).append(" description=").append(node.getContentDescription()).append(" visible=").append(node.isVisibleToUser()).append(" enabled=").append(node.isEnabled()).append(' ').append(box).append('\n');
+        for(int i=0;i<node.getChildCount();i++){AccessibilityNodeInfo child=node.getChild(i);nativeTree(child,text,depth+1);if(child!=null)child.recycle();}
     }
     private WebView web(){AtomicReference<WebView> result=new AtomicReference<>();main(()->result.set(activity.recoveryCurrentWeb()));assertNotNull(result.get());return result.get();}
     private JSONObject snapshot(WebView view)throws Exception{
@@ -83,7 +91,12 @@ public final class BrowserChromeNavigationTest {
     @Test public void realHeaderAndNavigationPreserveLegacyPage()throws Exception{
         android.content.Context context=instrumentation.getTargetContext();Class<?> config=Class.forName("com.forcemind.chatgpt.profiles.BuildConfig",false,context.getClassLoader());assertTrue(config.getField("ENVIRONMENT_TEST").getBoolean(null));
         int api=EnvironmentUpgradeSeedTest.verifyIdentity(EnvironmentUpgradeSeedTest.NEW_CODE);AtomicReference<String> first=new AtomicReference<>(),second=new AtomicReference<>();
-        new StateStore(context.getFilesDir()).update(state->{WorkspaceState.Account account=state.addAccount("网页测试","",WorkspaceState.COLORS[0]);WorkspaceState.Tab one=account.current();one.url=ORIGIN+"one";one.title="旧页一";one.customTitle=true;first.set(one.id);WorkspaceState.Tab two=state.addTab(account);two.url=ORIGIN+"two";two.title="旧页二";two.customTitle=true;second.set(two.id);account.activeTab=one.id;state.activeAccount=account.id;});
+        // Connect before the first window event. Android9 may not replay an already
+        // displayed window to a lazily connected accessibility automation service.
+        android.app.UiAutomation automation=instrumentation.getUiAutomation();android.accessibilityservice.AccessibilityServiceInfo service=automation.getServiceInfo();assertNotNull(service);service.flags|=android.accessibilityservice.AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS|android.accessibilityservice.AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS;automation.setServiceInfo(service);
+        WorkspaceState prepared=new StateStore(context.getFilesDir()).update(state->{WorkspaceState.Account account=state.addAccount("网页测试","",WorkspaceState.COLORS[0]);WorkspaceState.Tab one=account.current();one.url=ORIGIN+"one";one.title="旧页一";one.customTitle=true;first.set(one.id);WorkspaceState.Tab two=state.addTab(account);two.url=ORIGIN+"two";two.title="旧页二";two.customTitle=true;second.set(two.id);account.activeTab=one.id;state.activeAccount=account.id;});
+        WorkspaceState.Account created=prepared.current();JSONObject profile=new JSONObject().put("schema",1).put("accountId",created.id).put("storageId",created.storageId).put("profile",WorkspaceState.profile(created.storageId));
+        java.nio.file.Files.write(EnvironmentUpgradeSeedTest.file("browser-chrome-profile.json").toPath(),profile.toString().getBytes(StandardCharsets.UTF_8));
         MainActivity.handoffFixture=this::response;
         try{
             activity=(MainActivity)instrumentation.startActivitySync(new Intent(context,MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));loaded("one");

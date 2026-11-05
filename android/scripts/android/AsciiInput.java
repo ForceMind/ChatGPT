@@ -25,8 +25,8 @@ public final class AsciiInput {
         for(byte item:MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8)))result.append(String.format(Locale.ROOT,"%02x",item&255));
         return result.toString();
     }
-    private static void receipt(boolean complete,String value,List<String> events,String error)throws Exception{
-        System.out.println("{\"provider\":\"ci-paced-ascii-keyboard\",\"complete\":"+complete+",\"api\":"+Build.VERSION.SDK_INT+",\"uid\":"+android.os.Process.myUid()+",\"qemu\":true,\"textLength\":"+value.length()+",\"textSHA256\":\""+hash(value)+"\",\"paceMillis\":"+PACE_MILLIS+",\"injectionMode\":"+WAIT_FOR_FINISH+",\"errorClass\":\""+error+"\",\"events\":["+String.join(",",events)+"]}");
+    private static void receipt(boolean complete,String value,List<String> events,String error,String managerClass)throws Exception{
+        System.out.println("{\"provider\":\"ci-paced-ascii-keyboard\",\"complete\":"+complete+",\"api\":"+Build.VERSION.SDK_INT+",\"uid\":"+android.os.Process.myUid()+",\"qemu\":true,\"textLength\":"+value.length()+",\"textSHA256\":\""+hash(value)+"\",\"paceMillis\":"+PACE_MILLIS+",\"injectionMode\":"+WAIT_FOR_FINISH+",\"managerClass\":\""+managerClass+"\",\"errorClass\":\""+error+"\",\"events\":["+String.join(",",events)+"]}");
     }
     public static void main(String[] args)throws Exception{
         if(android.os.Process.myUid()!=2000||(Build.VERSION.SDK_INT!=28&&Build.VERSION.SDK_INT!=35)||args.length!=1)throw new IllegalStateException("Owned API28/API35 CI shell only");
@@ -34,18 +34,23 @@ public final class AsciiInput {
         try(BufferedReader reader=new BufferedReader(new InputStreamReader(check.getInputStream()))){qemu=reader.readLine();}
         if(check.waitFor()!=0||!"1".equals(qemu))throw new IllegalStateException("Physical devices refused");
         String value=args[0];if(!value.matches("[A-Za-z0-9-]{1,128}"))throw new IllegalArgumentException("Restricted owned ASCII fixture only");
-        KeyEvent[] planned=KeyCharacterMap.load(KeyCharacterMap.VIRTUAL_KEYBOARD).getEvents(value.toCharArray());
-        if(planned==null)throw new IllegalStateException("Virtual keyboard cannot represent fixture");
-        StringBuilder printable=new StringBuilder();
-        for(KeyEvent event:planned){
-            if(event.getAction()!=KeyEvent.ACTION_DOWN&&event.getAction()!=KeyEvent.ACTION_UP)throw new IllegalStateException("Unexpected keyboard action");
-            int code=event.getUnicodeChar();if(event.getAction()==KeyEvent.ACTION_DOWN&&code!=0)printable.appendCodePoint(code);
-        }
-        if(!value.equals(printable.toString()))throw new IllegalStateException("Planned native character sequence differs");
-        Class<?> type=Class.forName("android.hardware.input.InputManager");Object manager=type.getMethod("getInstance").invoke(null);
-        Method inject=type.getMethod("injectInputEvent",InputEvent.class,int.class);
+        // Android 15's InputManager.getInstance requires an Application context.
+        // AOSP android-15.0.0_r1 InputManagerGlobal exposes context-free getInstance
+        // and injectInputEvent(InputEvent,int); SDK selection is explicit, never a fallback.
+        String managerClass=Build.VERSION.SDK_INT>=33?"android.hardware.input.InputManagerGlobal":"android.hardware.input.InputManager";
         Map<Integer,Long> downTimes=new HashMap<>();List<String> events=new ArrayList<>();
         try{
+            KeyEvent[] planned=KeyCharacterMap.load(KeyCharacterMap.VIRTUAL_KEYBOARD).getEvents(value.toCharArray());
+            if(planned==null)throw new IllegalStateException("Virtual keyboard cannot represent fixture");
+            StringBuilder printable=new StringBuilder();
+            for(KeyEvent event:planned){
+                if(event.getAction()!=KeyEvent.ACTION_DOWN&&event.getAction()!=KeyEvent.ACTION_UP)throw new IllegalStateException("Unexpected keyboard action");
+                int code=event.getUnicodeChar();if(event.getAction()==KeyEvent.ACTION_DOWN&&code!=0)printable.appendCodePoint(code);
+            }
+            if(!value.equals(printable.toString()))throw new IllegalStateException("Planned native character sequence differs");
+            Class<?> type=Class.forName(managerClass);Object manager=type.getMethod("getInstance").invoke(null);
+            if(manager==null)throw new IllegalStateException("Input manager is not initialized");
+            Method inject=type.getMethod("injectInputEvent",InputEvent.class,int.class);
             for(int index=0;index<planned.length;index++){
                 KeyEvent source=planned[index];int action=source.getAction(),key=source.getKeyCode();long now=SystemClock.uptimeMillis(),down;
                 if(action==KeyEvent.ACTION_DOWN){if(downTimes.containsKey(key))throw new IllegalStateException("Duplicate native key down");down=now;downTimes.put(key,down);}
@@ -57,7 +62,7 @@ public final class AsciiInput {
                 SystemClock.sleep(PACE_MILLIS);
             }
             if(!downTimes.isEmpty())throw new IllegalStateException("Native keyboard batch left keys down");
-            receipt(true,value,events,"");
-        }catch(Exception error){receipt(false,value,events,error.getClass().getName());throw error;}
+            receipt(true,value,events,"",managerClass);
+        }catch(Exception error){Throwable cause=error instanceof java.lang.reflect.InvocationTargetException&&error.getCause()!=null?error.getCause():error;receipt(false,value,events,cause.getClass().getName(),managerClass);throw error;}
     }
 }

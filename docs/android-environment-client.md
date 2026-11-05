@@ -10,6 +10,8 @@
 
 42080311560（7fb373e）构建与Android9人用包升级通过，运行期缓存修复尚未完成验收：Android15旧版seed扫描碰到Chromium已消失的临时文件；合成输入收到43次可信事件但一字符移至末尾；Android9冷开am返回255，随后logcat超时，设备通信故障原因未定。修正seed只忽略已消失的`.com.google.Chrome.*`临时条目，真实pref_store与注册表断言不变；输入改成单批原生键事件，每次等待完成并间隔40ms，保存原生注入收据，仍精确比较完整DOM/model/trusted结果。没有补字、重试导航或放行255，也不把这些失败记为通过。
 
+42083532859（242f217）两端人用包升级及Android9完整Gecko导航/草稿验收通过，旧WebView测试在首个原生控件定位超时。日志显示无障碍服务在窗口已显示后才连接，现提前连接并在失败时保留文字树；仍要求实际控件点击。Android15测试工具首错为InputManager.getInstance在无Application的app_process中抛空指针，按固定AOSP源码使用InputManagerGlobal并核对回执类名。额外声明UI测试主动创建的合成Profile，收尾严格核对原Profile加该唯一已知Profile的集合及原注册路径，不把合法新增账号误判为旧账号变化。
+
 ## 交付状态
 
 已交付固定签名 **3.0.0-alpha.24-beta.5**（versionCode `3000029`），适用于 Android 9 及以上 arm64 设备。源码与验收仅在 `dev`；未合并 `main`、未创建公开 Release、未更新官网或个人设备。
