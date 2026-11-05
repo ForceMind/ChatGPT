@@ -20,3 +20,5 @@
 当前实施与 CI 结果将记入 `docs/releases/android-network-fixed-beta.2.json`。只有构建、签名、隔离检查与浏览器升级断言通过后才生成最终候选入口；不合并 main、不创建公开 Release、不更新官网或个人手机。
 
 首轮 `c8aa679` / Actions 41981565990：构建、检查和签名通过，原始 Beta.1 成功安装并执行测试。种子阶段在来源地址断言失败：Android JSONObject 对斜杠转义与 Chromium JSON 表示不同；尚未到 Cookie 保留断言，不能据此判登录丢失。修正为解码后的地址精确比较，并在模拟器退出前保存 logcat；默认空间原生 Cookie 与无 Activity 断言同时补齐，等待复验。
+
+第二轮 `e4eddae` / Actions 41982461084：77项单元、lint及签名/隔离构建通过，种子阶段已走过三账号Cookie、localStorage、IndexedDB与默认空间隔离；末尾拦截回调计数为10，尚无URL明细，不能将此计数直接称为外网请求。保留出网拒绝和零请求断言，补回调URL与主框架标记定位；覆盖升级尚未执行。

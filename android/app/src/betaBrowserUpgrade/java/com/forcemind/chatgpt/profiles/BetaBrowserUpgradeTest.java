@@ -38,6 +38,7 @@ public final class BetaBrowserUpgradeTest {
     private static final String ORIGIN = "https://beta-login-fixture.invalid/";
     private final Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
     private final AtomicInteger intercepted = new AtomicInteger();
+    private final java.util.concurrent.ConcurrentLinkedQueue<String> requests = new java.util.concurrent.ConcurrentLinkedQueue<>();
     private File file(String name) { return new File(context.getFilesDir(), name); }
     private void main(Runnable action) { InstrumentationRegistry.getInstrumentation().runOnMainSync(action); }
     private String hash(byte[] bytes) throws Exception {
@@ -89,6 +90,7 @@ public final class BetaBrowserUpgradeTest {
             view.setWebViewClient(new WebViewClient() {
                 @Override public WebResourceResponse shouldInterceptRequest(WebView v, WebResourceRequest request) {
                     intercepted.incrementAndGet();
+                    requests.add(request.getUrl().toString() + " mainFrame=" + request.isForMainFrame());
                     return new WebResourceResponse("text/plain", "UTF-8",
                         new ByteArrayInputStream("Blocked by owned fixture".getBytes(StandardCharsets.UTF_8)));
                 }
@@ -153,7 +155,7 @@ public final class BetaBrowserUpgradeTest {
             assertEquals("null", js(defaultPage, "localStorage.getItem('studio-beta-account')"));
             // Do not open/create an IndexedDB in the default profile: the three originals are tested above.
         } finally { close(defaultPage); }
-        assertEquals("Fixture unexpectedly requested a network resource", 0, intercepted.get());
+        assertEquals("Fixture unexpectedly requested a network resource: " + requests, 0, intercepted.get());
     }
     private JSONObject seedNative(String signer) throws Exception {
         assertFalse("Refuse to overwrite an existing fixture", file("beta-browser-expected.json").exists());
