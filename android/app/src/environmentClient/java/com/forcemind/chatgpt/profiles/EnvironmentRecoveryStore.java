@@ -28,7 +28,7 @@ final class EnvironmentRecoveryStore {
     }
     private JSONObject normalize(JSONObject raw,String account,String storage,String tab,String url)throws Exception{
         if(raw.getInt("schema")!=1||!account.equals(raw.getString("accountId"))||!storage.equals(raw.getString("storageId"))||!tab.equals(raw.getString("tabId"))||!url.equals(raw.getString("url")))throw new IOException("恢复记录归属无效");
-        if(raw.toString().length()>900000||raw.optString("nativeSessionState").length()>700000)throw new IOException("恢复记录过大");
+        if(raw.toString().length()>900000||raw.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8).length>1024*1024||raw.optString("nativeSessionState").length()>700000)throw new IOException("恢复记录过大");
         JSONObject document=raw.optJSONObject("document");
         if(document!=null){if(!url.equals(document.getString("url"))||document.getString("draft").length()>100000||document.getString("preview").length()>100000)throw new IOException("文档恢复记录无效");double scroll=document.getDouble("scroll"),ratio=document.getDouble("ratio");if(!Double.isFinite(scroll)||scroll<0||scroll>100000000||!Double.isFinite(ratio)||ratio<0||ratio>1)throw new IOException("阅读位置无效");}
         return raw;
