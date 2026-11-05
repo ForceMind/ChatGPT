@@ -2,7 +2,7 @@
   "schema": 1,
   "kind": "windows-alpha24-publication",
   "publishedAt": "2026-11-05T06:08:34Z",
-  "verifiedAt": "2026-11-05T06:10:40.912294+00:00",
+  "verifiedAt": "2026-11-05T06:12:49.508232+00:00",
   "releaseURL": "https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.24",
   "prerelease": true,
   "draft": false,
@@ -92,13 +92,13 @@
     }
   ],
   "pages": {
-    "Id": "7f3a0b9f-e41f-47ec-bb97-1e5df1972274",
+    "Id": "894eaaad-07f0-4372-b0b8-6d68ed48228a",
     "Environment": "Production",
     "Branch": "main",
-    "Source": "c2d7327",
-    "Deployment": "https://7f3a0b9f.chatgpt-studio.pages.dev",
-    "Status": "1 minute ago",
-    "Build": "https://dash.cloudflare.com/302a9a69ae88b6fdb5df61d4dd605f99/pages/view/chatgpt-studio/7f3a0b9f-e41f-47ec-bb97-1e5df1972274"
+    "Source": "d08617f",
+    "Deployment": "https://894eaaad.chatgpt-studio.pages.dev",
+    "Status": "35 seconds ago",
+    "Build": "https://dash.cloudflare.com/302a9a69ae88b6fdb5df61d4dd605f99/pages/view/chatgpt-studio/894eaaad-07f0-4372-b0b8-6d68ed48228a"
   },
   "onlineReadback": [
     {
@@ -216,5 +216,53 @@
     "browserVisualAcceptance": false,
     "domesticProxyDeliveryTested": false,
     "customDomainHtmlValidation": "Release/download/milestone markers verified; Cloudflare-modified HTML is not byte-identical; feeds, JS and CSS are byte-identical"
-  }
+  },
+  "previousPages": {
+    "Id": "7f3a0b9f-e41f-47ec-bb97-1e5df1972274",
+    "Environment": "Production",
+    "Branch": "main",
+    "Source": "c2d7327",
+    "Deployment": "https://7f3a0b9f.chatgpt-studio.pages.dev",
+    "Status": "1 minute ago",
+    "Build": "https://dash.cloudflare.com/302a9a69ae88b6fdb5df61d4dd605f99/pages/view/chatgpt-studio/7f3a0b9f-e41f-47ec-bb97-1e5df1972274"
+  },
+  "siteSourceCommit": "d08617f",
+  "latestSiteReadback": [
+    {
+      "url": "https://894eaaad.chatgpt-studio.pages.dev/",
+      "status": 200,
+      "exactBytes": true,
+      "sha256": "26970fb05d676fee59f80894dcc7fc352a4082804c89bac7a492f025b2768ced"
+    },
+    {
+      "url": "https://894eaaad.chatgpt-studio.pages.dev/updates/windows/alpha.yml",
+      "status": 200,
+      "exactBytes": true,
+      "sha256": "ccfde281b9983890ad790bed2cd47b700d89142c0d58bf931aabc9b52e85891f"
+    },
+    {
+      "url": "https://chatgpt-studio.pages.dev/",
+      "status": 200,
+      "exactBytes": true,
+      "sha256": "26970fb05d676fee59f80894dcc7fc352a4082804c89bac7a492f025b2768ced"
+    },
+    {
+      "url": "https://chatgpt-studio.pages.dev/updates/windows/alpha.yml",
+      "status": 200,
+      "exactBytes": true,
+      "sha256": "ccfde281b9983890ad790bed2cd47b700d89142c0d58bf931aabc9b52e85891f"
+    },
+    {
+      "url": "https://chatgpt.xincreates.com/",
+      "status": 200,
+      "exactBytes": false,
+      "sha256": "64bef56d804f2e7b6da39de97084d7fec8909fe7232fcf3025d9e44102681343"
+    },
+    {
+      "url": "https://chatgpt.xincreates.com/updates/windows/alpha.yml",
+      "status": 200,
+      "exactBytes": true,
+      "sha256": "ccfde281b9983890ad790bed2cd47b700d89142c0d58bf931aabc9b52e85891f"
+    }
+  ]
 }
