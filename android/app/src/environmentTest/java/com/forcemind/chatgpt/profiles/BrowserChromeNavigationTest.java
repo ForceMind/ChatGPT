@@ -111,6 +111,7 @@ public final class BrowserChromeNavigationTest {
             String before=snapshot(web()).getString("document");click("刷新页面");waitFor("normal refresh new document",()->!before.equals(snapshot(web()).getString("document")));loaded("one");assertDraft(draft);
             String normal=snapshot(web()).getString("document");click("更多功能");click("强制刷新");waitFor("force refresh new document",()->!normal.equals(snapshot(web()).getString("document")));loaded("one");assertDraft(draft);
             assertEquals(0,unexpected.get());JSONObject proof=new JSONObject().put("schema",1).put("complete",true).put("api",api).put("engine","webview").put("nativeHeaderTitleSwitch",true).put("switchNoReload",true).put("disabledEmptyHistory",true).put("backForward",true).put("normalAndForceRefresh",true).put("draftCookieStoragePreserved",true).put("allRequestsIntercepted",true).put("unexpectedRequests",unexpected.get()).put("screenshots",false).put("realServicesAccessed",false);
+            if(api==35){JSONObject observed=EnvironmentUpgradeSeedTest.uiRegistryBarrier(EnvironmentUpgradeSeedTest.expected());proof.put("profileRegistryPersisted",true).put("registryBarrierMillis",observed.getLong("registryBarrierMillis")).put("firstObservedProfileNames",observed.get("firstObservedProfileNames")).put("profileRegistryBarrier",observed);}
             Bundle output=new Bundle();output.putString("browserChromeProof",proof.toString());instrumentation.addResults(output);
         }finally{if(activity!=null)main(activity::finish);MainActivity.handoffFixture=null;}
     }

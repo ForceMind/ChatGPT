@@ -240,6 +240,18 @@ def run_upgrade(target='human'):
         candidate = INPUT / ('synthetic-x86.apk' if target == 'synthetic'
                              else receipt['file'] if api == 35 else 'human-x86.apk')
         test = INPUT / 'upgrade-test.apk'
+        test_receipt = None
+        override = INPUT / 'api35-test-receipt.json'
+        if api == 35 and override.is_file():
+            assert target == 'synthetic', 'The additional API35 test is scoped to the synthetic client'
+            test_receipt = _json(override)
+            assert test_receipt['file'] == 'api35-upgrade-test.apk'
+            assert test_receipt['sourceSHA'] == os.environ['GITHUB_SHA']
+            assert test_receipt['applicationSourceSHA'] == receipt['sourceSHA']
+            assert test_receipt['targetPackage'] == PACKAGE and test_receipt['targetVersionCode'] == NEW_CODE
+            assert test_receipt['signerSHA256'] == signer
+            test = INPUT / test_receipt['file']
+            assert _sha(test) == test_receipt['sha256']
         tools = _tools()
         old_apk = _inspect_apk(old, tools, signer, PACKAGE, OLD_CODE)
         candidate_apk = _inspect_apk(candidate, tools, signer, PACKAGE, NEW_CODE)
@@ -281,6 +293,8 @@ def run_upgrade(target='human'):
                  'ownedInlineWebViewOnly': True, 'geckoOpened': False, 'screenshots': False,
                  'realWebsitesAccessed': False}
         filename = 'verified-' + target + '.json'
+        if test_receipt is not None:
+            proof['api35AcceptanceTestSource'] = test_receipt
         _write_json(EVIDENCE / filename, proof)
         _write_json(EVIDENCE / 'native-context.json', {'schema': 1, 'proofFile': filename, 'target': target})
         _write_json(EVIDENCE / 'upgrade-expected.json', expected)
@@ -369,7 +383,7 @@ def verify_browser_chrome():
         raise
     finally:
         try:
-            for name in ('browser-chrome-native-tree.txt', 'browser-chrome-document.json'):
+            for name in ('browser-chrome-native-tree.txt', 'browser-chrome-document.json', 'browser-chrome-registry-barrier.json'):
                 tree = _run(['adb', 'shell', 'cat', '/data/user/0/' + PACKAGE + '/files/' + name], timeout=15, check=False)
                 if tree.returncode == 0:
                     (EVIDENCE / name).write_text(tree.stdout, encoding='utf-8')

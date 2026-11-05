@@ -140,6 +140,53 @@ public final class EnvironmentUpgradeSeedTest {
         registryCandidates(context().getDataDir(),4,candidates);
         for(java.nio.file.Path path:candidates){JSONObject prefs;try{prefs=new JSONObject(new String(Files.readAllBytes(path),StandardCharsets.UTF_8));}catch(org.json.JSONException pendingWrite){continue;}JSONObject profile=prefs.optJSONObject("profile");if(profile==null||profile.optJSONArray("list")==null)continue;JSONArray list=profile.getJSONArray("list");HashSet<String> actualNames=new HashSet<>();JSONObject original=null;for(int i=0;i<list.length();i++){JSONObject entry=list.getJSONObject(i);assertTrue("Duplicate Chromium profile registration",actualNames.add(entry.getString("name")));if(profileName.equals(entry.getString("name")))original=entry;}if(!actualNames.equals(expectedNames)||original==null)continue;return new JSONObject().put("name",original.getString("name")).put("path",original.getString("path"));}return null;
     }
+    /** Read-only API35 UI barrier; the seed and final cold-reader paths above stay unchanged. */
+    static JSONObject registry(JSONObject expected,boolean includeUi,JSONObject observation)throws Exception{
+        assertTrue("UI registration barrier requires the declared UI profile",includeUi);
+        String originalName=expected.getString("profile");JSONObject originalBinding=expected.getJSONObject("browserRegistry");
+        assertEquals(originalName,originalBinding.getString("name"));
+        JSONObject fixture=new JSONObject(new String(Files.readAllBytes(file("browser-chrome-profile.json").toPath()),StandardCharsets.UTF_8));assertEquals(1,fixture.getInt("schema"));
+        WorkspaceState state=new StateStore(context().getFilesDir()).load();WorkspaceState.Account owner=state.find(fixture.getString("accountId"));
+        assertNotEquals(expected.getString("accountId"),owner.id);assertFalse(owner.isEnvironment());assertEquals("网页测试",owner.name);assertEquals(fixture.getString("storageId"),owner.storageId);assertEquals(fixture.getString("profile"),WorkspaceState.profile(owner.storageId));
+        HashSet<String> expectedNames=new HashSet<>();expectedNames.add(originalName);expectedNames.add(fixture.getString("profile"));assertEquals(2,expectedNames.size());
+        java.util.ArrayList<String> sortedExpected=new java.util.ArrayList<>(expectedNames);java.util.Collections.sort(sortedExpected);observation.put("expectedProfileNames",new JSONArray(sortedExpected));
+        java.util.ArrayList<java.nio.file.Path> candidates=new java.util.ArrayList<>();registryCandidates(context().getDataDir(),4,candidates);
+        for(java.nio.file.Path path:candidates){
+            JSONObject prefs;try{prefs=new JSONObject(new String(Files.readAllBytes(path),StandardCharsets.UTF_8));}catch(org.json.JSONException pendingWrite){continue;}
+            JSONObject profile=prefs.optJSONObject("profile");if(profile==null||profile.optJSONArray("list")==null)continue;
+            JSONArray list=profile.getJSONArray("list");java.util.ArrayList<String> observedNames=new java.util.ArrayList<>();for(int i=0;i<list.length();i++)observedNames.add(list.getJSONObject(i).getString("name"));java.util.Collections.sort(observedNames);JSONArray actualNames=new JSONArray(observedNames);
+            if(!observation.has("firstObservedProfileNames")){observation.put("firstObservedProfileNames",actualNames);observation.put("firstPrefStore",context().getDataDir().toPath().relativize(path).toString());}
+            observation.put("lastObservedProfileNames",actualNames);
+            HashSet<String> names=new HashSet<>(),paths=new HashSet<>();JSONObject old=null,added=null;
+            for(int i=0;i<list.length();i++){
+                JSONObject entry=list.getJSONObject(i);String name=entry.getString("name"),directory=entry.getString("path");
+                assertTrue("Duplicate Chromium profile registration",names.add(name));assertFalse("Empty Chromium profile directory",directory.trim().isEmpty());assertTrue("Two profiles share one Chromium directory",paths.add(directory));
+                if(originalName.equals(name))old=entry;if(fixture.getString("profile").equals(name))added=entry;
+            }
+            if(old!=null){assertEquals("Original profile name changed",originalBinding.getString("name"),old.getString("name"));assertEquals("Original profile directory changed",originalBinding.getString("path"),old.getString("path"));}
+            if(!names.equals(expectedNames)||old==null||added==null)continue;
+            return new JSONObject().put("original",new JSONObject().put("name",old.getString("name")).put("path",old.getString("path")))
+                .put("ui",new JSONObject().put("name",added.getString("name")).put("path",added.getString("path")))
+                .put("accountId",owner.id).put("storageId",owner.storageId).put("profileNames",actualNames);
+        }
+        return null;
+    }
+    static JSONObject uiRegistryBarrier(JSONObject expected)throws Exception{
+        assertEquals("Only the API35 UI path changes",35,android.os.Build.VERSION.SDK_INT);
+        long start=android.os.SystemClock.elapsedRealtime(),deadline=start+20000;JSONObject observation=new JSONObject().put("schema",1).put("complete",false).put("api",35).put("readOnly",true);
+        try{
+            JSONObject registered=registry(expected,true,observation);
+            while(registered==null&&android.os.SystemClock.elapsedRealtime()<deadline){long remaining=deadline-android.os.SystemClock.elapsedRealtime();if(remaining<=0)break;Thread.sleep(Math.min(100,remaining));if(android.os.SystemClock.elapsedRealtime()>=deadline)break;registered=registry(expected,true,observation);}
+            assertNotNull("Exact original plus declared UI Chromium registrations must persist before process exit: "+observation,registered);
+            observation.put("bindings",registered).put("complete",true);return observation;
+        }finally{
+            try{observation.put("registryBarrierMillis",android.os.SystemClock.elapsedRealtime()-start);if(!observation.has("firstObservedProfileNames"))observation.put("firstObservedProfileNames",JSONObject.NULL);
+                Files.write(file("browser-chrome-registry-barrier.json").toPath(),observation.toString().getBytes(StandardCharsets.UTF_8));
+                System.out.println("BROWSER_CHROME_REGISTRY_OBSERVATION "+observation);
+                Bundle output=new Bundle();output.putString("browserChromeRegistryObservation",observation.toString());InstrumentationRegistry.getInstrumentation().addResults(output);
+            }catch(Exception evidenceError){android.util.Log.e("BrowserChromeAcceptance","Cannot retain registry barrier observation",evidenceError);}
+        }
+    }
     private static void registryCandidates(File directory,int depth,java.util.List<java.nio.file.Path> output)throws Exception{
         File[] children=directory.listFiles();
         if(children==null){if(!directory.exists())return;throw new java.io.IOException("Cannot enumerate owned registration directory: "+directory);}

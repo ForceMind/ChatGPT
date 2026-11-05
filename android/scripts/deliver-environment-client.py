@@ -5,6 +5,12 @@ assert os.environ.get('GITHUB_ACTIONS')=='true'
 root=Path('input');receipt=json.loads((root/'receipt.json').read_text())
 synthetic_hash=hashlib.sha256((root/'synthetic-x86.apk').read_bytes()).hexdigest()
 test_hash=hashlib.sha256((root/'upgrade-test.apk').read_bytes()).hexdigest()
+test35_hash=test_hash
+if (root/'api35-test-receipt.json').exists():
+    test35=json.loads((root/'api35-test-receipt.json').read_text())
+    assert test35['file']=='api35-upgrade-test.apk' and test35['applicationSourceSHA']==receipt['sourceSHA']
+    test35_hash=hashlib.sha256((root/test35['file']).read_bytes()).hexdigest()
+    assert test35_hash==test35['sha256'] and test35['signerSHA256']==receipt['signerSHA256']
 assert receipt['versionName']=='3.0.0-alpha.24-beta.6' and receipt['versionCode']==3000030
 assert receipt['package']=='com.forcemind.chatgpt.profiles.networkbeta'
 proofs=[]
@@ -14,7 +20,7 @@ for api in (28,35):
     a,b=json.loads(human.read_text()),json.loads(engine.read_text())
     assert a['complete'] and b['complete'] and a['api']==b['api']==api
     assert b['candidateScope']=='synthetic-x86-ci' and not b['originalHumanCandidateBytesInstalled']
-    assert b['candidateInstalledSHA256']==synthetic_hash and b['legacyUpgrade']['testAPK']['sha256']==test_hash
+    assert b['candidateInstalledSHA256']==synthetic_hash and b['legacyUpgrade']['testAPK']['sha256']==(test35_hash if api==35 else test_hash)
     assert b['legacyUpgrade']['humanCandidateSHA256']==receipt['sha256']
     for flag in ('languageTimeZoneAndWorkerVerified','httpAcceptLanguageVerified','cookieLocalStorageIndexedDBAccountIsolation',
                  'sameEnvironmentDifferentStorageContexts','trustedNativeTextareaAndContenteditableInput','realNativeReadingScroll',
@@ -24,6 +30,8 @@ for api in (28,35):
     assert b['legacyAfterEnvironmentUse']['complete'] and b['legacyAfterEnvironmentUse']['legacyAccountPreserved']
     assert b['conflictRecovery']['webDraftPreservedUntilNativeChoice'] and b['conflictRecovery']['nativeRestoreChosen']
     if api==35:
+        assert b['legacyChromeNavigation']['profileRegistryPersisted']
+        assert b['legacyChromeNavigation']['profileRegistryBarrier']['complete']
         cold=b['coldProcessExitReceipts']
         assert len(cold)==2
         for attempt in cold:

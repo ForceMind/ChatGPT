@@ -18,6 +18,8 @@
 
 42092833123（4c72fb0）Android9完整功能已通过：新旧内核标题热切换、后退/前进、普通/强刷、DOM与受控草稿、Cookie/存储、既有隔离/旋转/冷恢复/冲突及原账号数据全部收口。此证明绑定原synthetic/test/human包SHA，保留原源码身份，后续不重复该组。Android15在冷开时ADB报closed，仍未确定原因；继续复用相同APK，只复核15。该组模拟器改用项目此前恢复PoC已采用的4GiB / SwiftShader / 禁Vulkan配置（9已通过证明仍为3GiB原配置），不改App或行为断言、不宣称根因已证实；冷开前新增原目标进程退出确认，与唯一force-stop/open共用原60秒上限，并保留PID与轻量主客机资源证据。
 
+42096537620（5d0a26a）Android15全部UI/导航/草稿流程通过，冷开进程前置和20项业务字段不放宽；最终即时冷读的注册表集合断言失败。新建旧内核UI空间的用例8.055秒结束，怀疑早于Chromium注册表异步提交。只给API35测试增加退出前最多20秒只读注册屏障，记录首次实际names、原/新绑定与等待耗时，最终冷读仍即时严格执行；不写原EXPECTED或Chromium文件。客户端APK保持2b87381原字节，仅在Actions重编API35 instrumentation测试APK，并将其源码/签名/SHA与原App绑定；Android9继续使用已通过的原测试APK与证明。
+
 ## 交付状态
 
 已交付固定签名 **3.0.0-alpha.24-beta.5**（versionCode `3000029`），适用于 Android 9 及以上 arm64 设备。源码与验收仅在 `dev`；未合并 `main`、未创建公开 Release、未更新官网或个人设备。
