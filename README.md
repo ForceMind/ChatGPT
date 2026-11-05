@@ -125,7 +125,7 @@ Android 点击底部标签数量打开总览。“更多 → 保活与诊断”�
 | 草稿与阅读位置恢复 | 支持 | 支持 | 支持 |
 | 加密对话快照、离线阅读 | 已公开 | alpha.21 已公开 | alpha.22 已公开 |
 | 确认下载与退出 / 空闲安装 | 已公开 | alpha.21 当前用户 EXE；无空闲安装 | 后续 |
-| 每账号语言 / 时区选择 | 支持 | 支持 | 独立 PoC，尚未迁入普通 APK |
+| 每账号语言 / 时区选择 | 支持 | 支持 | 固定Beta.6候选；公开版后续迁入 |
 
 图片支持 PNG / JPEG / WebP、SVG 转图片；文档支持 HTML / Markdown 导出 PDF、PDF 选页转图片；数据支持 CSV 与 JSON 互转。具体选项和格式差异见[桌面说明](desktop/README.md)与[Android 说明](android/README.md)。
 
@@ -216,12 +216,12 @@ cd android
 | 已发布 | Android 加密离线快照与 121 Skill / 32 自有角色 | alpha.22 原证书 APK；[CI 与工件记录](docs/releases/3.0.0-alpha.22-android-candidate.json)，真实账号与设备待验 |
 | 已发布 | Mac 账号菜单淡遮罩、平滑交接与标签强制刷新 | alpha.22；[原包与原生验证](docs/releases/3.0.0-alpha.22-macos-candidate.json)，真实账号兼容待验 |
 | 已发布 | Mac 更新进度与手动更新 | alpha.23；下载、校验与准备状态清晰可见，支持手动检查、重试和立即安装；[发布与验证范围](docs/releases/3.0.0-alpha.23.json) |
-| 环境隔离 | Android 每账号语言 / 时区从独立 PoC 迁入日常客户端 | 独立三账号 / 四页恢复与触摸验证完成；非调试优化 release 的模拟器运行验证完成，实站 / 真机与正式接入待验，[运行证据](docs/benchmarks/android-optimized-release-runtime.json) |
+| 环境隔离 | Android 每账号语言 / 时区迁入客户端 | 已交固定Beta.6候选；三账号/四页隔离、热切换不重载、旋转、冷恢复和草稿冲突在Android9/15合成验收通过。旧账号原空间保留；公开版、实站/真机与正式接入仍待收口。[候选与准确范围](docs/android-environment-client.md) |
 | 系统集成 | 系统 / Chrome 通行密钥、真实 Touch ID 恢复与稳定签名 | 通行密钥未接入；Touch ID 受证书与实机验收条件限制 |
 | 已发布 | 自有智能体与设计补丁 Skill | alpha.21 桌面含 32 个角色，支持单独使用、组合 Skill、收藏与任务恢复 |
 | 移动网络 | 应用内代理与 VLESS 配置 | 正式代码候选 **3.0.0-alpha.24-candidate.1** 已在 dev 接入；Android 9/15 的账号、文件、HTTP/PAC、冷恢复、临时签名升级和完整 30 分钟后台已通过；CPU/PSS 有完整对照数据，后续两轮 Android 15 前台专项已通过，间歇失败根因仍待完整失败样本；报告保留旧失败与各轮来源。候选未签名、未公开发布，公开 Android 仍为 alpha.22。不提供免费节点。[实施记录](docs/android-network-integration-plan.md) · [验收与限制](docs/benchmarks/android-network-integration.json) |
 | 独立测试 | Android 网络测试安装包 | 已交付已签名 arm64 APK，名称“ChatGPT Studio 测试版”，包名及登录／恢复空间独立，与正式版并存。用户自行配置真实节点验收；临时测试签名不保证后续覆盖升级。已提供[GitHub 独立预发布](https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.24-candidate.1-standalone)，不替换正式版下载。[安装说明](docs/android-network-standalone-preview.md) · [构建收据](docs/releases/android-network-standalone-preview.1.json) · [发布记录](docs/releases/android-network-standalone-preview.1-publication.json) |
-| 长期测试 | Android 固定签名 Beta 候选 | Beta.4加入实时网络状态、原位线路增删改与重试，Android9/15原生功能和关闭清理通过。Beta.3浏览器升级及真实保活组件退出证据保留；Android9人用ARM、真实节点/手机与正式原签名仍待验。仅Actions候选。[Beta.4功能与安装](docs/android-network-panel.md) · [收据](docs/releases/android-network-fixed-beta.4.json) |
+| 长期测试 | Android 固定签名 Beta 候选 | Beta.6统一旧WebView/Gecko紧凑账号、真实标题标签与固定刷新，更多首排后退/前进及强刷；补导航草稿保存、按URL保留与受控输入同步。两端合成及Beta.5覆盖升级通过，仅Actions候选；真实业务/手机、正式原签名仍待验。[功能、安装与验收](docs/android-environment-client.md) |
 | 新平台 | iPhone / iPad 后续开发；Intel Mac、Linux 与商店发行 | 未纳入当前迭代，暂无对应安装包 |
 | 更新能力 | 差量下载 | 尚未实现；alpha.23 已提供下载进度与手动入口，完整原生程序更新仍需重启 |
 
