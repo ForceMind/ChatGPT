@@ -24,10 +24,10 @@
 ## 已有正确配置与未验证项
 
 - Windows productName、桌面/开始菜单shortcutName和uninstallDisplayName已为ChatGPT Studio；这只是源配置确认，不等同于逐个系统入口运行验收。
-- Mac主应用/DMG命名为Studio，main.ts:2456已设置AboutPanel applicationName=ChatGPT Studio，不能将内部app.setName旧值直接判成“关于”标题错误。
+- Mac主应用/DMG命名为Studio；main.ts:2456在桌面通用就绪流程显式设置AboutPanel applicationName=ChatGPT Studio，因此Windows/Mac“关于”的源配置都已覆盖旧内部名，不能将app.setName旧值直接判成“关于”标题错误。
 - Android正式manifest、临时测试版和固定Beta的显示名称、当前打包文件前缀已区分；内部包名含profiles是身份，不是旧品牌UI文案。
 - 官网普通下载中没有命中旧完整品牌名；Mac兼容更新URL和真实数据路径说明按兼容项保留。普通UI/Android标签的静态扫描没有发现其他旧完整品牌明文，不宣称全部系统通知、任务栏或图标视觉已验证。
-- 旧通用promote-validated-release脚本保留Profiles前缀断言；当前workflow在modern候选分支调用publish-desktop-candidate，后者支持Studio产物，旧脚本不能混同当前发布路径并全局替换。
+- 旧通用promote-validated-release脚本保留Profiles前缀断言；该workflow的modern候选分支调用publish-desktop-candidate，后者支持Studio产物，旧脚本不能混同当前发布路径并全局替换。
 
 ## 下一批修复建议（待确认，不是本次已实施）
 
