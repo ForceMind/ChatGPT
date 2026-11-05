@@ -249,6 +249,52 @@ public final class BetaBrowserUpgradeTest {
         assertFalse(KeepaliveService.enabled(context));
         assertEquals("preserved", context.getSharedPreferences("browser-preferences", 0).getString("beta-browser-marker", ""));
     }
+    private JSONObject persistedRegistry(JSONObject expected) throws Exception {
+        HashSet<String> names = new HashSet<>();
+        JSONArray accounts = expected.getJSONArray("accounts");
+        for (int i = 0; i < accounts.length(); i++) names.add(accounts.getJSONObject(i).getString("profile"));
+        try (java.util.stream.Stream<java.nio.file.Path> files = Files.walk(context.getDataDir().toPath(), 4)) {
+            for (java.nio.file.Path path : (Iterable<java.nio.file.Path>) files::iterator) {
+                if (!path.getFileName().toString().equals("pref_store")
+                    || !Files.isRegularFile(path, java.nio.file.LinkOption.NOFOLLOW_LINKS)
+                    || Files.size(path) > 1024 * 1024) continue;
+                JSONObject prefs;
+                try { prefs = new JSONObject(new String(Files.readAllBytes(path), StandardCharsets.UTF_8)); }
+                catch (org.json.JSONException pendingWrite) { continue; }
+                JSONObject profile = prefs.optJSONObject("profile");
+                if (profile == null || profile.optJSONArray("list") == null) continue;
+                JSONArray list = profile.getJSONArray("list");
+                JSONObject mappings = new JSONObject();
+                for (int i = 0; i < list.length(); i++) {
+                    JSONObject entry = list.getJSONObject(i);
+                    assertFalse("Duplicate persisted profile", mappings.has(entry.getString("name")));
+                    mappings.put(entry.getString("name"), entry.getString("path"));
+                }
+                if (mappings.length() != names.size() || !mappings.keySet().equals(names)) continue;
+                return mappings;
+            }
+        }
+        return null;
+    }
+    private long registryBarrier(JSONObject expected, boolean seed) throws Exception {
+        long start = android.os.SystemClock.elapsedRealtime();
+        JSONObject actual = persistedRegistry(expected);
+        // Establish a genuinely persisted old baseline before its process exits. Never write Chromium prefs.
+        while (seed && actual == null && android.os.SystemClock.elapsedRealtime() - start < 20000) {
+            Thread.sleep(100);
+            actual = persistedRegistry(expected);
+        }
+        assertNotNull("Three original profile registrations must exist on disk before process exit/reload", actual);
+        if (seed) {
+            expected.put("browserRegistry", actual);
+            Files.write(file("beta-browser-expected.json").toPath(), expected.toString().getBytes(StandardCharsets.UTF_8));
+        } else {
+            JSONObject old = expected.getJSONObject("browserRegistry");
+            assertEquals(old.keySet(), actual.keySet());
+            for (String key : old.keySet()) assertEquals("Profile directory mapping changed", old.getString(key), actual.getString(key));
+        }
+        return android.os.SystemClock.elapsedRealtime() - start;
+    }
     @Test public void originalDeliveredBetaBrowserStateSurvivesUpgrade() throws Exception {
         assertEquals(PACKAGE, context.getPackageName());
         assertEquals(35, android.os.Build.VERSION.SDK_INT);
@@ -264,7 +310,9 @@ public final class BetaBrowserUpgradeTest {
         JSONObject expected = "seed".equals(phase) ? seedNative(signer)
             : new JSONObject(new String(Files.readAllBytes(file("beta-browser-expected.json").toPath()), StandardCharsets.UTF_8));
         verifyNative(expected, signer);
+        if (!"seed".equals(phase)) registryBarrier(expected, false);
         browser(expected, "seed".equals(phase));
+        long registryMillis = registryBarrier(expected, "seed".equals(phase));
         verifyNative(expected, signer);
         main(() -> {
             for (Stage stage : Stage.values())
@@ -278,6 +326,7 @@ public final class BetaBrowserUpgradeTest {
             .put("persistentProfiles", 3).put("httpOnlySecureCookies", 3).put("localStorageProfiles", 3).put("indexedDBProfiles", 3)
             .put("encryptedRecoveryRecords", 4).put("defaultProfileEmpty", true).put("provider", provider.get())
             .put("workspaceSHA256", expected.getString("stateSHA")).put("expectedSHA256", hash(Files.readAllBytes(file("beta-browser-expected.json").toPath())))
+            .put("persistedRegistryVerified", true).put("registryBarrierMillis", registryMillis)
             .put("interceptedRequests", intercepted.get()).put("inlineDocumentCallbacks", inlineDocuments.get())
             .put("inlineIconCallbacks", inlineIcons.get()).put("inlineSyntheticPagesOnly", true).put("appActivityLaunched", false);
         Bundle result = new Bundle(); result.putString("betaBrowserUpgradeProof", proof.toString());

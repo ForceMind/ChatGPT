@@ -97,6 +97,7 @@ def main():
             assert proof[key] == count, (key, proof)
         assert proof['interceptedRequests'] == 0 and proof['inlineDocumentCallbacks'] == 5
         assert proof['inlineSyntheticPagesOnly'] and not proof['appActivityLaunched']
+        assert proof['persistedRegistryVerified']
         return proof
 
     seeded = phase('seed')
