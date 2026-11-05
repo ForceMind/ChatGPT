@@ -6,7 +6,9 @@ if (signingFile.exists()) signingFile.withInputStream { signing.load(it) }
 
 android {
     namespace 'com.forcemind.chatgpt.profiles'
-    compileSdk 36
+    if (project.hasProperty('environmentClient')) {
+        compileSdk { version = release(37) { minorApiLevel = 0 } }
+    } else compileSdk 36
     defaultConfig {
         applicationId 'com.forcemind.chatgpt.profiles'
         minSdk 28

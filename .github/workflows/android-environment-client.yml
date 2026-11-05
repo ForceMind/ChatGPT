@@ -43,9 +43,9 @@ jobs:
       - name: Client unit checks, lint and real ARM package
         run: |
           test ! -f android/keystore.properties
-          sdkmanager 'platforms;android-36' 'build-tools;35.0.0'
+          sdkmanager 'platforms;android-36' 'platforms;android-37.0' 'build-tools;35.0.0'
           bash android/gradlew -p android --no-daemon :app:testDebugUnitTest
-          bash android/gradlew -p android --no-daemon -PenvironmentClient -PbetaVersionCode=3000029 -PbetaVersionName=3.0.0-alpha.24-beta.5 :app:lintNetworkBeta :app:assembleNetworkBeta :app:assembleNetworkBetaAndroidTest
+          bash android/environment-poc/gradlew -p android --no-daemon -PenvironmentClient -PbetaVersionCode=3000029 -PbetaVersionName=3.0.0-alpha.24-beta.5 :app:lintNetworkBeta :app:assembleNetworkBeta :app:assembleNetworkBetaAndroidTest
           python3 android/scripts/package-network-preview.py
           python3 android/scripts/check-environment-package.py
           mkdir -p android/app/build/environment-client-input
@@ -53,9 +53,9 @@ jobs:
           cp android/app/build/outputs/apk/androidTest/networkBeta/app-networkBeta-androidTest.apk android/app/build/environment-client-input/upgrade-test.apk
       - name: Build x86 compatibility and separately marked synthetic target
         run: |
-          bash android/gradlew -p android --no-daemon -PenvironmentClient -PbetaAbi=x86_64 -PbetaVersionCode=3000029 -PbetaVersionName=3.0.0-alpha.24-beta.5 :app:assembleNetworkBeta
+          bash android/environment-poc/gradlew -p android --no-daemon -PenvironmentClient -PbetaAbi=x86_64 -PbetaVersionCode=3000029 -PbetaVersionName=3.0.0-alpha.24-beta.5 :app:assembleNetworkBeta
           cp android/app/build/outputs/apk/networkBeta/app-networkBeta.apk android/app/build/environment-client-input/human-x86.apk
-          bash android/gradlew -p android --no-daemon -PenvironmentClient -PenvironmentTest -PbetaAbi=x86_64 -PbetaVersionCode=3000029 -PbetaVersionName=3.0.0-alpha.24-beta.5 :app:assembleNetworkBeta
+          bash android/environment-poc/gradlew -p android --no-daemon -PenvironmentClient -PenvironmentTest -PbetaAbi=x86_64 -PbetaVersionCode=3000029 -PbetaVersionName=3.0.0-alpha.24-beta.5 :app:assembleNetworkBeta
           cp android/app/build/outputs/apk/networkBeta/app-networkBeta.apk android/app/build/environment-client-input/synthetic-x86.apk
       - uses: actions/upload-artifact@v4
         with:
