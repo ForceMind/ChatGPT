@@ -69,7 +69,7 @@ final class EnvironmentRouteController {
             JSONObject next=new JSONObject(message.getData().getString("state",""));String kind=next.getString("kind");long generation=next.getLong("generation");
             if(!java.util.Arrays.asList("system","direct","proxy","blocked").contains(kind)||generation<0||(kind.equals("proxy")&&(next.getInt("port")<1||next.getInt("port")>65535)))throw new IllegalArgumentException();
             boolean sameInstance=desired!=null&&desired.optString("instance").equals(next.optString("instance"));
-            if(sameInstance&&generation<desired.getLong("generation"))return;
+            if(sameInstance&&generation<desired.getLong("generation"))return true;
             boolean changed=!sameInstance||desired==null||generation!=desired.getLong("generation")||!kind.equals(desired.getString("kind"))||next.optInt("port")!=desired.optInt("port");
             desired=next;
             if(changed){acknowledged=-1;block("正在应用网络设置");apply();}

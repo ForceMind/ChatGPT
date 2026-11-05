@@ -1,7 +1,7 @@
 'use strict';
 (()=>{
   if(window.top!==window)return;
-  let port=null,auth=null,sequence=0,epoch=0,timer=null,maxTimer=null,last='',currentUrl=location.href,closed=false;
+  let port=null,auth=null,sequence=0,epoch=0,timer=null,maxTimer=null,last='',currentUrl=location.href,closed=false,activeRestore=null;
   const documentId=crypto.randomUUID();
   function eligible(){
     let u;try{u=new URL(location.href);}catch(_){return false;}
@@ -35,38 +35,39 @@
     if(!port||!auth||closed)return;
     port.postMessage(Object.assign({type,url:location.href,document:documentId,token:auth.token,epoch,sequence:++sequence,accountId:auth.accountId,storageId:auth.storageId,tabId:auth.tabId},extra));
   }
-  function capture(type='capture'){
+  function capture(type='capture',extra={}){
     if(location.href!==currentUrl){currentUrl=location.href;last='';auth=null;if(port)port.disconnect();return;}
     const state=snapshot();if(!state){send('ineligible');return;}
     const fingerprint=JSON.stringify({...state,capturedAt:0});
-    if(type==='capture'&&fingerprint===last)return;last=fingerprint;send(type,{snapshot:state});
+    if(type==='capture'&&fingerprint===last)return;last=fingerprint;send(type,{snapshot:state,...extra});
   }
   function queue(){if(timer!==null)clearTimeout(timer);if(maxTimer===null)maxTimer=setTimeout(()=>{maxTimer=null;if(timer!==null){clearTimeout(timer);timer=null;}capture();},5000);timer=setTimeout(()=>{timer=null;if(maxTimer!==null){clearTimeout(maxTimer);maxTimer=null;}capture();},1200);}
   function restore(message){
-    const before=snapshot(),n=composer();if(!before){send('restore-unavailable');return;}
-    if(before.draft!==message.expectedDraft){send('conflict',{snapshot:before});return;}
+    if(typeof message.request!=='string')return;const request=message.request;activeRestore=request;
+    const before=snapshot(),n=composer();if(!before){send('restore-unavailable',{request});return;}
+    if(before.draft!==message.expectedDraft){send('conflict',{snapshot:before,request});return;}
     const wanted=String(message.draft||'');if(wanted.length>100000)return;
     if(before.draft!==wanted){
-      if(!n){send('restore-unavailable');return;}
+      if(!n){send('restore-unavailable',{request});return;}
       // Only the exact composer is edited, after native conflict approval. Never submit.
       const event=new InputEvent('beforeinput',{bubbles:true,cancelable:true,inputType:'insertReplacementText',data:wanted});
-      if(!n.dispatchEvent(event)){send('restore-unavailable');return;}
+      if(!n.dispatchEvent(event)){send('restore-unavailable',{request});return;}
       n.focus();
       if('value'in n){const setter=Object.getOwnPropertyDescriptor(Object.getPrototypeOf(n),'value')?.set;if(setter)setter.call(n,wanted);else n.value=wanted;}
       else{
         const selection=getSelection(),range=document.createRange();range.selectNodeContents(n);selection.removeAllRanges();selection.addRange(range);
-        if(!document.execCommand('insertText',false,wanted)){send('restore-unavailable');return;}
+        if(!document.execCommand('insertText',false,wanted)){send('restore-unavailable',{request});return;}
       }
       n.dispatchEvent(new InputEvent('input',{bubbles:true,inputType:'insertReplacementText',data:wanted}));
     }
     const scroll=Number(message.scroll),ownAuth=auth,ownEpoch=epoch;
     function position(attempt){
-      if(auth!==ownAuth||epoch!==ownEpoch)return;
+      if(auth!==ownAuth||epoch!==ownEpoch||activeRestore!==request)return;
       const sc=scrollRoot(),max=Math.max(0,sc.scrollHeight-sc.clientHeight);
       if(Number.isFinite(scroll)&&scroll>max+80&&attempt<24){setTimeout(()=>position(attempt+1),250);return;}
       if(Number.isFinite(scroll)&&scroll>=0)sc.scrollTo({top:Math.min(scroll,max),behavior:'instant'});
-      if(Number.isFinite(scroll)&&scroll>max+80){send('restore-unavailable');return;}
-      last='';setTimeout(()=>capture('restored'),150);
+      if(Number.isFinite(scroll)&&scroll>max+80){send('restore-unavailable',{request});return;}
+      last='';setTimeout(()=>{if(activeRestore===request)capture('restored',{request});},150);
     }
     position(0);
   }
@@ -77,10 +78,10 @@
     port.onMessage.addListener(message=>{
       if(own!==port||!message)return;
       if(message.type==='auth'&&typeof message.token==='string'&&Number.isSafeInteger(message.epoch)){
-        auth=message;epoch=message.epoch;last='';capture('ready');
+        auth=message;epoch=message.epoch;activeRestore=null;last='';capture('ready');
       }else if(auth&&message.token===auth.token&&message.epoch===epoch){
         if(message.type==='capture')capture('checkpoint');
-        if(message.type==='restore')restore(message);
+        if(message.type==='restore')restore(message);if(message.type==='cancel-restore')activeRestore=null;
       }
     });
     port.onDisconnect.addListener(()=>{if(own===port){port=null;auth=null;if(!closed)setTimeout(connect,350);}});

@@ -35,7 +35,7 @@ final class EnvironmentDocumentBridge {
         try{send(e,new JSONObject().put("type","auth").put("accountId",e.accountId).put("storageId",e.storageId).put("tabId",e.tabId));}catch(Exception error){invalidate(e);return;}
         if(attempt<20)ui.postDelayed(()->authenticate(e,port,token,epoch,attempt+1),250);
     }
-    void invalidate(EnvironmentBrowserActivity.Entry e){e.epoch++;e.sequence=0;e.token="";e.documentId=null;if(e.port!=null){WebExtension.Port old=e.port;e.port=null;old.disconnect();}e.liveDocument=null;}
+    void invalidate(EnvironmentBrowserActivity.Entry e){if(e.restoringDocument!=null)e.pendingRestore=e.restoringDocument;e.restoringDocument=null;e.restoringDraft=null;e.restoreRequest=null;e.epoch++;e.sequence=0;e.token="";e.documentId=null;if(e.port!=null){WebExtension.Port old=e.port;e.port=null;old.disconnect();}e.liveDocument=null;}
     private void message(EnvironmentBrowserActivity.Entry e,WebExtension.Port source,Object raw){
         Host host=target.get();if(host==null)return;
         try{
@@ -44,10 +44,11 @@ final class EnvironmentDocumentBridge {
             if(value.toString().length()>240000||!e.url.equals(value.getString("url"))||!e.accountId.equals(value.getString("accountId"))||!e.storageId.equals(value.getString("storageId"))||!e.tabId.equals(value.getString("tabId"))||!e.token.equals(value.getString("token"))||e.epoch!=value.getLong("epoch"))return;
             Object rawSequence=value.get("sequence");if(!(rawSequence instanceof Number)||((Number)rawSequence).doubleValue()!=((Number)rawSequence).longValue())return;long sequence=((Number)rawSequence).longValue();if(sequence<=e.sequence)return;e.sequence=sequence;
             String document=value.getString("document");UUID.fromString(document);if(e.documentId!=null&&!e.documentId.equals(document))return;e.documentId=document;
-            String type=value.getString("type");if("ineligible".equals(type)){e.sensitive=true;e.pendingRestore=null;e.restoringDraft=null;return;}
-            if("restore-unavailable".equals(type)){host.notice("页面编辑器暂不能恢复，请保留本地草稿后重试");return;}
+            String type=value.getString("type");if("ineligible".equals(type)){e.sensitive=true;e.pendingRestore=null;e.restoringDraft=null;e.restoringDocument=null;e.restoreRequest=null;return;}
+            if(java.util.Arrays.asList("restore-unavailable","conflict","restored").contains(type)&&(e.restoreRequest==null||!e.restoreRequest.equals(value.optString("request"))))return;
+            if("restore-unavailable".equals(type)){e.conflictLocal=e.restoringDocument;e.restoringDocument=null;e.restoringDraft=null;e.restoreRequest=null;host.notice("页面暂不能完成恢复，本地草稿已保留，请从恢复草稿重试");return;}
             JSONObject snapshot=normalize(e,value.getJSONObject("snapshot"));e.liveDocument=snapshot;
-            if("conflict".equals(type)){host.conflict(e,snapshot);return;}
+            if("conflict".equals(type)){if(e.restoringDocument!=null)e.pendingRestore=e.restoringDocument;e.restoringDocument=null;e.restoringDraft=null;e.restoreRequest=null;host.conflict(e,snapshot);return;}
             if(!java.util.Arrays.asList("ready","capture","checkpoint","restored").contains(type))return;
             if(e.restoringDraft!=null&&!"restored".equals(type))return;
             if(e.pendingRestore!=null){
@@ -60,7 +61,7 @@ final class EnvironmentDocumentBridge {
             }
             if(e.conflictLocal!=null&& !"restored".equals(type)){host.conflict(e,snapshot);return;}
             if("restored".equals(type)&&e.restoringDraft!=null&&!e.restoringDraft.equals(snapshot.getString("draft"))){host.notice("页面未接受本地草稿，恢复副本已保留");return;}
-            e.restoringDraft=null;host.document(e,snapshot);
+            e.restoringDraft=null;e.restoringDocument=null;e.restoreRequest=null;host.document(e,snapshot);
         }catch(Exception rejected){/* Invalid or stale document messages never write a record. */}
     }
     private JSONObject normalize(EnvironmentBrowserActivity.Entry e,JSONObject raw)throws Exception{
@@ -70,8 +71,9 @@ final class EnvironmentDocumentBridge {
         return new JSONObject().put("url",EnvironmentUrls.recoverable(e.url)).put("draft",draft).put("preview",preview).put("scroll",scroll).put("ratio",ratio).put("capturedAt",System.currentTimeMillis());
     }
     void restore(EnvironmentBrowserActivity.Entry e,JSONObject local,JSONObject live)throws Exception{
-        e.restoringDraft=local.getString("draft");send(e,new JSONObject().put("type","restore").put("draft",e.restoringDraft).put("expectedDraft",live.getString("draft")).put("scroll",local.optDouble("scroll",0)));
+        e.restoringDraft=local.getString("draft");e.restoringDocument=new JSONObject(local.toString());e.restoreRequest=UUID.randomUUID().toString();send(e,new JSONObject().put("type","restore").put("request",e.restoreRequest).put("draft",e.restoringDraft).put("expectedDraft",live.getString("draft")).put("scroll",local.optDouble("scroll",0)));
     }
+    void cancelRestore(EnvironmentBrowserActivity.Entry e){try{send(e,new JSONObject().put("type","cancel-restore"));}catch(Exception ignored){}e.restoringDraft=null;e.restoringDocument=null;e.restoreRequest=null;}
     void request(EnvironmentBrowserActivity.Entry e){try{if(e.port!=null)send(e,new JSONObject().put("type","capture"));}catch(Exception ignored){}}
     private void send(EnvironmentBrowserActivity.Entry e,JSONObject value)throws Exception{if(e.port!=null)value.put("token",e.token).put("epoch",e.epoch);if(e.port!=null)e.port.postMessage(value);}
 }

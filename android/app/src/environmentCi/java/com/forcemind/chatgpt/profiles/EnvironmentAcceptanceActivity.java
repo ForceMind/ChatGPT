@@ -26,11 +26,16 @@ public final class EnvironmentAcceptanceActivity extends Activity {
         if(!BuildConfig.ENVIRONMENT_TEST||!BuildConfig.ENVIRONMENT_CLIENT)throw new SecurityException("Environment acceptance disabled");
         try{
             if(intent==null)throw new IllegalArgumentException("Missing explicit action");String action=intent.getStringExtra("action");
-            if(!"prepare".equals(action)&&!"open".equals(action))throw new IllegalArgumentException("Unknown action");
-            Bundle extras=intent.getExtras();if(extras!=null)for(String key:extras.keySet())if(!"action".equals(key)&&(!"open".equals(action)||!"account".equals(key)&&!"tab".equals(key)))throw new IllegalArgumentException("Unknown input");
-            if("prepare".equals(action))prepare();else open(intent);
+            if(!"prepare".equals(action)&&!"open".equals(action)&&!"record".equals(action))throw new IllegalArgumentException("Unknown action");
+            Bundle extras=intent.getExtras();if(extras!=null)for(String key:extras.keySet())if(!"action".equals(key)&&(!("open".equals(action)||"record".equals(action))||!"account".equals(key)&&!"tab".equals(key)))throw new IllegalArgumentException("Unknown input");
+            if("prepare".equals(action))prepare();else if("record".equals(action))record(intent);else open(intent);
             setResult(RESULT_OK);finish();
-        }catch(Exception error){android.util.Log.e("EnvironmentAcceptance","Acceptance command rejected",error);setResult(RESULT_CANCELED);finish();}
+        }catch(Exception error){
+            if(intent!=null&&"record".equals(intent.getStringExtra("action"))){
+                try{writeProbe(new JSONObject().put("schema",1).put("complete",false).put("errorClass",error.getClass().getName()).put("sampledAt",System.currentTimeMillis()));}catch(Exception writeError){android.util.Log.e("EnvironmentAcceptance","Probe output failed: "+writeError.getClass().getName());}
+            }else android.util.Log.e("EnvironmentAcceptance","Acceptance command rejected",error);
+            setResult(RESULT_CANCELED);finish();
+        }
     }
     private File manifest(){return new File(getFilesDir(),MANIFEST);}
     private static String origin(){
@@ -75,4 +80,42 @@ public final class EnvironmentAcceptanceActivity extends Activity {
         });
         EnvironmentLauncher.open(this,id);
     }
+    private void record(Intent intent)throws Exception{
+        String label=intent.getStringExtra("account");if(!"A".equals(label)&&!"B".equals(label)&&!"C".equals(label))throw new IllegalArgumentException("Unknown account");
+        Object input=intent.getExtras().get("tab");if(!(input instanceof Integer))throw new IllegalArgumentException("Tab must be an integer");int index=(Integer)input;
+        if(index<0||index>("A".equals(label)?1:0))throw new IllegalArgumentException("Unknown tab");
+        if(!manifest().isFile()||manifest().length()>65536)throw new IllegalStateException("Acceptance manifest missing or invalid");
+        JSONObject manifestRoot=new JSONObject(new String(Files.readAllBytes(manifest().toPath()),StandardCharsets.UTF_8));if(manifestRoot.getInt("schema")!=1)throw new IllegalStateException("Unsupported manifest");
+        JSONObject expected=manifestRoot.getJSONObject("accounts").getJSONObject(label),tab=expected.getJSONArray("tabs").getJSONObject(index);
+        String id=expected.getString("id"),storage=expected.getString("storageId"),tabId=tab.getString("id"),url=tab.getString("url");WorkspaceState.profile(id);WorkspaceState.profile(storage);WorkspaceState.profile(tabId);
+        requireCurrent(id,storage,tabId,url);
+        JSONObject saved=new EnvironmentRecoveryStore(getApplicationContext()).load(id,storage,tabId,url),document=saved==null?null:saved.optJSONObject("document");
+        String draft=document==null?"":document.getString("draft"),preview=document==null?"":document.getString("preview");
+        String relative="environment-recovery/"+id+"/"+storage+"/"+tabId+".bin";File primary=new File(getFilesDir(),relative),backup=new File(getFilesDir(),relative+".bak");
+        JSONObject result=new JSONObject().put("schema",1).put("complete",true).put("account",label).put("tab",index).put("accountId",id).put("storageId",storage).put("tabId",tabId).put("url",url)
+            .put("recordPresent",saved!=null).put("documentPresent",document!=null).put("draftSHA256",hash(draft.getBytes(StandardCharsets.UTF_8))).put("draftLength",draft.length()).put("previewLength",preview.length())
+            .put("scroll",document==null?JSONObject.NULL:document.getDouble("scroll")).put("ratio",document==null?JSONObject.NULL:document.getDouble("ratio"))
+            .put("nativeStatePresent",saved!=null&&!saved.optString("nativeSessionState","").isEmpty()).put("nativeStateLength",saved==null?0:saved.optString("nativeSessionState","").length())
+            .put("capturedAt",saved==null?JSONObject.NULL:saved.getLong("capturedAt")).put("documentCapturedAt",document==null?JSONObject.NULL:document.optLong("capturedAt",0))
+            .put("cipherSHA256",fileHash(primary)).put("backupCipherSHA256",fileHash(backup)).put("sampledAt",System.currentTimeMillis());
+        requireCurrent(id,storage,tabId,url);writeProbe(result);
+    }
+    private void requireCurrent(String id,String storage,String tabId,String url)throws Exception{
+        WorkspaceState state=new StateStore(getFilesDir()).load();WorkspaceState.Account account=state.find(id);
+        if(!state.activeAccount.equals(id)||!account.isEnvironment()||!account.storageId.equals(storage)||!account.activeTab.equals(tabId)||!account.current().url.equals(url))throw new IllegalStateException("Current account or tab differs from probe target");
+    }
+    private static Object fileHash(File file)throws Exception{
+        if(!Files.exists(file.toPath(),java.nio.file.LinkOption.NOFOLLOW_LINKS))return JSONObject.NULL;
+        if(!Files.isRegularFile(file.toPath(),java.nio.file.LinkOption.NOFOLLOW_LINKS)||Files.size(file.toPath())>1024*1024+32)throw new IllegalStateException("Invalid encrypted record file");
+        return hash(Files.readAllBytes(file.toPath()));
+    }
+    private static String hash(byte[] bytes)throws Exception{
+        StringBuilder result=new StringBuilder();for(byte value:java.security.MessageDigest.getInstance("SHA-256").digest(bytes))result.append(String.format(java.util.Locale.ROOT,"%02x",value&255));return result.toString();
+    }
+    private void writeProbe(JSONObject result)throws Exception{
+        File target=new File(getFilesDir(),"environment-record-probe.json"),temporary=new File(getFilesDir(),"environment-record-probe.json.new");
+        try(java.io.FileOutputStream out=new java.io.FileOutputStream(temporary)){out.write(result.toString().getBytes(StandardCharsets.UTF_8));out.getFD().sync();}
+        Files.move(temporary.toPath(),target.toPath(),StandardCopyOption.REPLACE_EXISTING,StandardCopyOption.ATOMIC_MOVE);
+    }
+
 }

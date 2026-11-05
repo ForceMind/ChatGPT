@@ -18,9 +18,9 @@ import org.mozilla.geckoview.*;
 public class EnvironmentBrowserActivity extends Activity implements EnvironmentDocumentBridge.Host {
     static final class Entry {
         final String accountId,storageId,tabId;final GeckoSession session;
-        String url,token="",documentId,restoringDraft,nativeState="";volatile String lastFingerprint="";
+        String url,requestedUrl,loadingUrl,token="",documentId,restoringDraft,restoreRequest,nativeState="";volatile String lastFingerprint="";
         long epoch,sequence,writeVersion;volatile boolean closed;boolean started,previewDismissed,sensitive,canBack,canForward;
-        JSONObject record,pendingRestore,liveDocument,conflictLocal;
+        JSONObject record,pendingRestore,liveDocument,conflictLocal,restoringDocument;
         WebExtension.Port port;Runnable saveTask;
         Entry(WorkspaceState.Account a,WorkspaceState.Tab tab){accountId=a.id;storageId=a.storageId;tabId=tab.id;url=tab.url.equals(NavigationPolicy.HOME)?CIBuild.home():tab.url;session=new GeckoSession(new GeckoSessionSettings.Builder().contextId("studio-"+a.storageId).build());}
     }
@@ -126,9 +126,9 @@ public class EnvironmentBrowserActivity extends Activity implements EnvironmentD
             @Override public GeckoResult<AllowOrDeny> onLoadRequest(GeckoSession session,LoadRequest request){EnvironmentBrowserActivity ownerActivity=target.get();if(ownerActivity==null||ownerActivity.destroyed){return GeckoResult.fromValue(AllowOrDeny.DENY);}
                 if(!ownerActivity.routeReady||!ownerActivity.owns(e))return GeckoResult.fromValue(AllowOrDeny.DENY);
                 if(!NavigationPolicy.internal(request.uri)&&!CIBuild.environmentUrl(request.uri)){if(e==ownerActivity.current)ownerActivity.external(request.uri);return GeckoResult.fromValue(AllowOrDeny.DENY);}
-                if(!request.uri.equals(e.url))ownerActivity.navigation(e,request.uri);return GeckoResult.fromValue(AllowOrDeny.ALLOW);
+                if(!request.uri.equals(e.url)){e.requestedUrl=request.uri;ownerActivity.documents.invalidate(e);}return GeckoResult.fromValue(AllowOrDeny.ALLOW);
             }
-            @Override public void onLocationChange(GeckoSession session,String url,List<GeckoSession.PermissionDelegate.ContentPermission> permissions,Boolean gesture){EnvironmentBrowserActivity ownerActivity=target.get();if(ownerActivity==null||ownerActivity.destroyed){return;}if(url!=null&&!url.equals(e.url))ownerActivity.navigation(e,url);}
+            @Override public void onLocationChange(GeckoSession session,String url,List<GeckoSession.PermissionDelegate.ContentPermission> permissions,Boolean gesture){EnvironmentBrowserActivity ownerActivity=target.get();if(ownerActivity==null||ownerActivity.destroyed){return;}if(url!=null&&(NavigationPolicy.internal(url)||CIBuild.environmentUrl(url))){e.requestedUrl=null;if(!url.equals(e.url))ownerActivity.navigation(e,url);}}
             @Override public void onCanGoBack(GeckoSession session,boolean value){e.canBack=value;}
             @Override public void onCanGoForward(GeckoSession session,boolean value){e.canForward=value;}
             @Override public GeckoResult<GeckoSession> onNewSession(GeckoSession session,String uri){EnvironmentBrowserActivity ownerActivity=target.get();if(ownerActivity==null||ownerActivity.destroyed){return GeckoResult.fromValue(null);}
@@ -137,8 +137,9 @@ public class EnvironmentBrowserActivity extends Activity implements EnvironmentD
             }
         });
         e.session.setProgressDelegate(new GeckoSession.ProgressDelegate(){
+            @Override public void onPageStart(GeckoSession session,String url){e.loadingUrl=url;}
             @Override public void onSessionStateChange(GeckoSession session,GeckoSession.SessionState value){EnvironmentBrowserActivity ownerActivity=target.get();if(ownerActivity==null||ownerActivity.destroyed){return;}if(!ownerActivity.owns(e)||e.sensitive||EnvironmentUrls.recoverable(e.url)==null||!e.url.equals(EnvironmentUrls.recoverable(e.url)))return;try{String nativeValue=ownerActivity.nativeState(e,value);if(nativeValue==null||nativeValue.length()>700000)return;e.nativeState=nativeValue;ownerActivity.queueSave(e);}catch(Exception ignored){}}
-            @Override public void onPageStop(GeckoSession session,boolean success){EnvironmentBrowserActivity ownerActivity=target.get();if(ownerActivity==null||ownerActivity.destroyed){return;}if(e==ownerActivity.current&&success&&ownerActivity.routeReady){ownerActivity.status.setVisibility(View.GONE);}else if(e==ownerActivity.current&&!success&&ownerActivity.routeReady){ownerActivity.status.setText("页面加载未完成，可在更多中刷新");ownerActivity.status.setVisibility(View.VISIBLE);}}
+            @Override public void onPageStop(GeckoSession session,boolean success){e.loadingUrl=null;e.requestedUrl=null;EnvironmentBrowserActivity ownerActivity=target.get();if(ownerActivity==null||ownerActivity.destroyed){return;}if(e==ownerActivity.current&&success&&ownerActivity.routeReady){ownerActivity.status.setVisibility(View.GONE);}else if(e==ownerActivity.current&&!success&&ownerActivity.routeReady){ownerActivity.status.setText("页面加载未完成，可在更多中刷新");ownerActivity.status.setVisibility(View.VISIBLE);}}
         });
         e.session.setContentDelegate(new GeckoSession.ContentDelegate(){
             @Override public void onTitleChange(GeckoSession session,String title){EnvironmentBrowserActivity ownerActivity=target.get();if(ownerActivity==null||ownerActivity.destroyed){return;}if(title==null||!ownerActivity.owns(e)||EnvironmentUrls.recoverable(e.url)==null)return;try{ownerActivity.state=ownerActivity.store.update(s->{WorkspaceState.Account a=s.find(e.accountId);if(!a.storageId.equals(e.storageId))return;for(WorkspaceState.Tab t:a.tabs)if(t.id.equals(e.tabId)&&!t.customTitle)t.title=title.substring(0,Math.min(120,title.length()));});}catch(Exception ignored){}}
@@ -169,7 +170,7 @@ public class EnvironmentBrowserActivity extends Activity implements EnvironmentD
         if(nextIndex<1)return null;history.put("entries",safe).put("index",nextIndex);return raw.toString();
     }
     private void navigation(Entry e,String url){
-        if(e.closed)return;if(fileOwner==e)cancelFile();documents.invalidate(e);e.url=url;e.sensitive=false;e.nativeState="";e.pendingRestore=null;e.conflictLocal=null;e.restoringDraft=null;
+        if(e.closed)return;if(fileOwner==e)cancelFile();documents.invalidate(e);e.url=url;e.sensitive=false;e.nativeState="";e.pendingRestore=null;e.conflictLocal=null;e.restoringDraft=null;e.restoringDocument=null;e.restoreRequest=null;
         String safe=EnvironmentUrls.recoverable(url);if(safe==null)return;
         try{
             state=store.update(s->{WorkspaceState.Account a=s.find(e.accountId);if(!a.storageId.equals(e.storageId))throw new IllegalStateException("登录空间已改变");for(WorkspaceState.Tab t:a.tabs)if(t.id.equals(e.tabId))t.url=safe;});
@@ -192,11 +193,12 @@ public class EnvironmentBrowserActivity extends Activity implements EnvironmentD
     }
     @Override public void conflict(Entry e,JSONObject live){
         if(e.conflictLocal==null)e.conflictLocal=e.pendingRestore!=null?e.pendingRestore:e.record.optJSONObject("document");
-        if(e!=current||conflictShowing||e.conflictLocal==null)return;conflictShowing=true;
+        if(e!=current||conflictShowing||e.conflictLocal==null)return;conflictShowing=true;final String approvedToken=e.token,approvedDraft=live.optString("draft");final long approvedEpoch=e.epoch;
         StudioSheet sheet=new StudioSheet(this,"发现两份草稿","网页和本地草稿不同，请选择。任何选择都不会发送消息。");TextView local=sheet.text("本地草稿\n"+e.conflictLocal.optString("draft"),14);local.setTextIsSelectable(true);sheet.body.addView(local);TextView webpage=sheet.text("\n网页草稿\n"+live.optString("draft"),14);webpage.setTextIsSelectable(true);sheet.body.addView(webpage);
-        sheet.action("保留网页草稿",false,()->{if(owns(e)&&e.liveDocument!=null){try{e.record.put("alternativeDraft",e.conflictLocal);e.pendingRestore=null;e.conflictLocal=null;document(e,e.liveDocument);}catch(Exception ignored){}}sheet.dismiss();});
-        sheet.action("恢复本地草稿",true,()->{if(owns(e)&&e.liveDocument!=null)try{JSONObject localCopy=e.conflictLocal;e.record.put("alternativeDraft",e.liveDocument);e.pendingRestore=null;e.conflictLocal=null;documents.restore(e,localCopy,e.liveDocument);}catch(Exception error){notice("草稿恢复未完成");}sheet.dismiss();});sheet.setOnDismissListener(d->conflictShowing=false);sheet.show();
+        sheet.action("保留网页草稿",false,()->{if(!conflictStillCurrent(e,approvedToken,approvedEpoch,approvedDraft)){sheet.dismiss();if(e==current&&e.liveDocument!=null)ui.post(()->conflict(e,e.liveDocument));return;}try{documents.cancelRestore(e);e.record.put("alternativeDraft",e.conflictLocal);e.pendingRestore=null;e.conflictLocal=null;document(e,e.liveDocument);}catch(Exception ignored){}sheet.dismiss();});
+        sheet.action("恢复本地草稿",true,()->{if(!conflictStillCurrent(e,approvedToken,approvedEpoch,approvedDraft)){sheet.dismiss();if(e==current&&e.liveDocument!=null)ui.post(()->conflict(e,e.liveDocument));return;}try{JSONObject localCopy=e.conflictLocal;documents.cancelRestore(e);e.record.put("alternativeDraft",e.liveDocument);e.pendingRestore=null;e.conflictLocal=null;documents.restore(e,localCopy,e.liveDocument);queueSave(e);}catch(Exception error){notice("草稿恢复未完成");}sheet.dismiss();});sheet.setOnDismissListener(d->conflictShowing=false);sheet.show();
     }
+    private boolean conflictStillCurrent(Entry e,String token,long epoch,String draft){return e==current&&owns(e)&&e.liveDocument!=null&&e.port!=null&&token.equals(e.token)&&epoch==e.epoch&&draft.equals(e.liveDocument.optString("draft"));}
     private void tabs(){
         try{reconcile();WorkspaceState.Account a=state.find(accountId);StudioSheet sheet=new StudioSheet(this,"标签页",a.name);for(WorkspaceState.Tab t:a.tabs){sheet.row((t.id.equals(a.activeTab)?"当前 · ":"")+t.title,"","",()->{sheet.dismiss();update(s->{WorkspaceState.Account owner=s.find(accountId);owner.activeTab=t.id;});});}sheet.action("新建标签页",true,()->{sheet.dismiss();newTab();});if(a.tabs.size()>1)sheet.action("关闭当前标签页",false,()->{sheet.dismiss();update(s->{WorkspaceState.Account owner=s.find(accountId);s.closeTab(owner,owner.activeTab);});});sheet.show();}catch(Exception error){notice("标签列表不可用");}
     }
@@ -214,6 +216,7 @@ public class EnvironmentBrowserActivity extends Activity implements EnvironmentD
     private void assets(boolean skills){startActivity(new Intent(this,AssetWorkbenchActivity.class).putExtra(AssetWorkbenchActivity.ACCOUNT,accountId).putExtra("skills",skills));}
     private void external(String url){if(!NavigationPolicy.https(url)){notice("此链接无法在应用中打开");return;}new AlertDialog.Builder(this).setTitle("在外部浏览器打开？").setMessage(Uri.parse(url).getHost()).setPositiveButton("打开",(d,w)->{try{startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(url)));}catch(Exception error){notice("没有可用的外部浏览器");}}).setNegativeButton("取消",null).show();}
     private void download(Entry e,WebResponse response){
+        e.requestedUrl=null;e.loadingUrl=null;
         if(response.body==null)return;if(!owns(e)||!routeReady||routes==null){try{response.body.close();}catch(Exception ignored){}return;}
         String mime=response.headers.get("Content-Type");if(mime==null)mime="application/octet-stream";String contentType=mime.split(";",2)[0].trim().toLowerCase(Locale.ROOT);if(!contentType.matches("[a-z0-9!#$&^_.+-]+/[a-z0-9!#$&^_.+-]+"))contentType="application/octet-stream";String name=android.webkit.URLUtil.guessFileName(response.uri,response.headers.get("Content-Disposition"),contentType);
         final String filename=AssetLedger.filename(name),type=contentType;long expected=-1;
