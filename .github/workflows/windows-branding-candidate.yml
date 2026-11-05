@@ -55,6 +55,7 @@ jobs:
         run: npx playwright test tests/windows-branding.e2e.ts --workers=1 --reporter=list,json
         env:
           PLAYWRIGHT_JSON_OUTPUT_FILE: test-results/windows-branding-playwright.json
+          DEBUG: pw:browser
       - uses: actions/upload-artifact@v4
         if: success()
         with:

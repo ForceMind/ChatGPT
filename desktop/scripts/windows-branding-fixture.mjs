@@ -100,6 +100,7 @@ export async function runWindowsBrandingMatrix() {
   let app;
   const cases = [];
   async function launch(executable, seed) {
+    console.log('Owned app launch', JSON.stringify({ executable, seed, exists: existsSync(executable) }));
     app = await electron.launch({
       executablePath: executable,
       args: [
