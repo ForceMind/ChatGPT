@@ -197,7 +197,7 @@ Cloudflare Pages uses Direct Upload; a Git push does not deploy the site automat
 | Android alpha.19 tab terminology | Published; layout/runtime retained; [publication/online record](docs/releases/3.0.0-alpha.19-publication.json) |
 | macOS alpha.20 complete Studio naming and legacy updater compatibility | App bundle, OS name and manual downloads use Studio; existing account and encryption identities retained. [Release record](docs/releases/3.0.0-alpha.20.json) |
 | Alpha.18 installers, immersive Android, readable UI and macOS menu bar | Published; [publication/online record](docs/releases/3.0.0-alpha.18-publication.json) |
-| Windows encrypted offline snapshots, current-user EXE updates and verified ZIP saving | Published alpha.21; [packages and verification scope](docs/releases/3.0.0-alpha.24-desktop-candidate.json) |
+| Windows encrypted offline snapshots, current-user EXE updates and verified ZIP saving | Published alpha.21; [packages and verification scope](docs/releases/3.0.0-alpha.21-desktop-candidate.json) |
 | Android encrypted offline snapshots and 121 Skills / 32 original roles | Published alpha.22 with the existing certificate; [CI/artifact receipt](docs/releases/3.0.0-alpha.22-android-candidate.json). Physical-device acceptance pending |
 | macOS account-menu backdrop, coordinated painting and tab force refresh | Published alpha.22; [packages and native acceptance](docs/releases/3.0.0-alpha.22-macos-candidate.json). Live-account compatibility remains pending |
 | macOS download progress and manual updates | Published alpha.23; transfer, verification/preparation states, checks, retries and immediate installation. [Packages and verification](docs/releases/3.0.0-alpha.23.json) |
