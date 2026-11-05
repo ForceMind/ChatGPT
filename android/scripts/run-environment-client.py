@@ -375,7 +375,7 @@ class Acceptance:
             lines = dump.splitlines()
             sections = []
             for index, line in enumerate(lines):
-                marker = re.match(r'^(\s*)(?:mCurAttribute|mCurEditorInfo)\s*[:=]', line)
+                marker = re.match(r'^(\s*)(?:mCurAttribute|mCurEditorInfo|mCurrentEditorInfo|mCurrentTextBoxAttribute)\s*[:=]', line)
                 if marker:
                     block = [line]
                     for following in lines[index+1:]:
