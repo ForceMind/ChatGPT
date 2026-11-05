@@ -47,7 +47,7 @@ jobs:
           bash android/gradlew -p android --no-daemon :app:testDebugUnitTest :app:lintNetworkBeta
           bash android/gradlew -p android --no-daemon -PbetaBrowserUpgrade -PbetaVersionCode=3000027 -PbetaVersionName=3.0.0-alpha.24-beta.3 :app:assembleNetworkBeta
           python3 android/scripts/package-network-preview.py
-          bash android/gradlew -p android --no-daemon -PbetaUpgrade -PbetaBrowserUpgrade -PbetaAbi=x86_64 -PbetaVersionCode=3000027 -PbetaVersionName=3.0.0-alpha.24-beta.3 :app:assembleNetworkBeta :app:assembleNetworkBetaAndroidTest
+          bash android/gradlew -p android --no-daemon -PbetaBrowserUpgrade -PbetaAbi=x86_64 -PbetaVersionCode=3000027 -PbetaVersionName=3.0.0-alpha.24-beta.3 :app:assembleNetworkBeta :app:assembleNetworkBetaAndroidTest
           cp android/app/build/outputs/apk/networkBeta/app-networkBeta.apk android/app/build/network-beta/candidate-x86.apk
           cp android/app/build/outputs/apk/androidTest/networkBeta/app-networkBeta-androidTest.apk android/app/build/network-beta/browser-test.apk
           python3 android/network-poc/scripts/prepare-webview.py --output android/app/build/network-beta/provider

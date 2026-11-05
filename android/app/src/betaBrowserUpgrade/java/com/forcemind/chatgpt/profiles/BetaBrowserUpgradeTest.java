@@ -45,6 +45,8 @@ public final class BetaBrowserUpgradeTest {
     private final AtomicInteger inlineIcons = new AtomicInteger();
     private final java.util.concurrent.ConcurrentLinkedQueue<String> requests = new java.util.concurrent.ConcurrentLinkedQueue<>();
     private Activity profileHost;
+    private BrowserMemory liveMemory;
+    private WorkspaceState.Account liveAccount;
     private File file(String name) { return new File(context.getFilesDir(), name); }
     private void main(Runnable action) { InstrumentationRegistry.getInstrumentation().runOnMainSync(action); }
     private String hash(byte[] bytes) throws Exception {
@@ -87,12 +89,15 @@ public final class BetaBrowserUpgradeTest {
             assertTrue("Provider must support real per-account profiles",
                 WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE));
             java.util.List<String> beforeStartup = ProfileStore.getInstance().getAllProfileNames();
-            WebView view = new WebView(profileHost == null ? context : profileHost);
+            WebView view = profileHost == null ? new WebView(context) : new RetainedWebView(profileHost);
+            if (view instanceof RetainedWebView) ((RetainedWebView) view).selectPage(true);
             java.util.List<String> afterStartup = ProfileStore.getInstance().getAllProfileNames();
             System.out.println("OWNED_PROFILE_STARTUP before=" + beforeStartup + " after=" + afterStartup + " expected=" + profile);
             if (mustExist) assertTrue("Original profile missing before load: " + profile,
                 afterStartup.contains(profile));
             if (profile != null) WebViewCompat.setProfile(view, profile);
+            if (liveMemory != null && view instanceof RetainedWebView)
+                liveMemory.register(liveAccount.current().id, liveAccount.id, liveAccount.storageId, view);
             view.getSettings().setJavaScriptEnabled(true);
             view.getSettings().setDomStorageEnabled(true);
             view.getSettings().setBlockNetworkLoads(true);
@@ -126,6 +131,10 @@ public final class BetaBrowserUpgradeTest {
     }
     private void close(WebView view) { main(() -> {
         WebViewCompat.getProfile(view).getCookieManager().flush();
+        if (liveMemory != null && view instanceof RetainedWebView) {
+            liveMemory.destroy(liveAccount.current().id);
+            return;
+        }
         if (view.getParent() instanceof android.view.ViewGroup) ((android.view.ViewGroup) view.getParent()).removeView(view);
         view.destroy();
     }); }
@@ -318,9 +327,9 @@ public final class BetaBrowserUpgradeTest {
         assertEquals(api, android.os.Build.VERSION.SDK_INT);
         boolean ciInput = "ci-x86-baseline".equals(args.getString("baselineScope"));
         assertTrue(!ciInput || api == 28);
-        assertEquals(ciInput ? PackageManager.PERMISSION_DENIED : PackageManager.PERMISSION_GRANTED,
-            context.checkSelfPermission(android.Manifest.permission.INTERNET));
         String phase = args.getString("phase");
+        assertEquals(ciInput && !phase.startsWith("upgraded") ? PackageManager.PERMISSION_DENIED : PackageManager.PERMISSION_GRANTED,
+            context.checkSelfPermission(android.Manifest.permission.INTERNET));
         assertTrue("seed".equals(phase) || "baseline-cold".equals(phase) || "upgraded".equals(phase) || "upgraded-cold".equals(phase));
         long version = context.getPackageManager().getPackageInfo(PACKAGE, 0).getLongVersionCode();
         long baselineCode = Long.parseLong(args.getString("baselineCode", "3000025"));
@@ -363,6 +372,7 @@ public final class BetaBrowserUpgradeTest {
         Bundle args = InstrumentationRegistry.getArguments();
         int api = Integer.parseInt(args.getString("expectedApi"));
         assertTrue(api == 28 || api == 35); assertEquals(api, android.os.Build.VERSION.SDK_INT);
+        assertEquals(PackageManager.PERMISSION_GRANTED, context.checkSelfPermission(android.Manifest.permission.INTERNET));
         assertEquals(3000027L, context.getPackageManager().getPackageInfo(PACKAGE, 0).getLongVersionCode());
         String signer = hash(context.getPackageManager().getPackageInfo(PACKAGE, PackageManager.GET_SIGNING_CERTIFICATES)
             .signingInfo.getApkContentsSigners()[0].toByteArray());
@@ -379,6 +389,8 @@ public final class BetaBrowserUpgradeTest {
             assertFalse(file("beta-quick-expected.json").exists());
             WorkspaceState state = new StateStore(context.getFilesDir()).load();
             WorkspaceState.Account fresh = new WorkspaceState.Account();
+            liveAccount = fresh;
+            main(() -> liveMemory = BrowserMemory.get(context));
             String profile = WorkspaceState.profile(fresh.storageId), marker = "owned-quick-" + fresh.id;
             Intent intent = new Intent(context, AssetWorkbenchActivity.class).putExtra(AssetWorkbenchActivity.ACCOUNT, state.current().id);
             try (ActivityScenario<AssetWorkbenchActivity> host = ActivityScenario.launch(intent)) {
@@ -394,6 +406,7 @@ public final class BetaBrowserUpgradeTest {
                         Thread.sleep(25);
                     } while (android.os.SystemClock.elapsedRealtime() < deadline);
                     assertTrue("New Profile must be in a focused real window before Home", visible.get());
+                    main(() -> assertTrue("Real foreground policy must retain execution", liveMemory.retainsExecution()));
                     setCookie(view, "studio_beta_auth=" + marker + "; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=86400");
                     setCookie(view, "studio_beta_account=" + marker + "; Path=/; Secure; SameSite=Lax; Max-Age=86400");
                     assertEquals("true", js(view, "localStorage.setItem('studio-beta-account'," + JSONObject.quote(marker) + ");true"));
@@ -412,7 +425,8 @@ public final class BetaBrowserUpgradeTest {
                     AtomicReference<Boolean> stopped = new AtomicReference<>(false);
                     JSONObject registry = null;
                     while (android.os.SystemClock.elapsedRealtime() - home < 2000) {
-                        main(() -> stopped.set(ActivityLifecycleMonitorRegistry.getInstance().getLifecycleStageOf(profileHost) == Stage.STOPPED));
+                        main(() -> stopped.set(ActivityLifecycleMonitorRegistry.getInstance().getLifecycleStageOf(profileHost) == Stage.STOPPED
+                            && !liveMemory.retainsExecution()));
                         registry = persistedRegistry(registryExpectation);
                         if (stopped.get() && registry != null) break;
                         Thread.sleep(25);
@@ -423,7 +437,10 @@ public final class BetaBrowserUpgradeTest {
                     quick = new JSONObject().put("profile", profile).put("marker", marker).put("registry", registry);
                     Files.write(file("beta-quick-expected.json").toPath(), quick.toString().getBytes(StandardCharsets.UTF_8));
                 } finally { close(view); }
-            } finally { profileHost = null; }
+            } finally {
+                main(() -> liveMemory.closeNetwork());
+                profileHost = null; liveMemory = null; liveAccount = null;
+            }
         } else {
             quick = new JSONObject(new String(Files.readAllBytes(file("beta-quick-expected.json").toPath()), StandardCharsets.UTF_8));
             JSONArray accounts = new JSONArray(original.getJSONArray("accounts").toString());
@@ -453,6 +470,7 @@ public final class BetaBrowserUpgradeTest {
             .put("existingProfilesAndNativeDataPreserved", true).put("profile", quick.getString("profile"))
             .put("visibleToHomeMillis", visibleToHome).put("homeToRegistryMillis", homeToDisk)
             .put("persistedBeforeHome", persistedBeforeHome).put("noManualChromiumPrefWrites", true)
+            .put("retainedWebViewAndRealMemoryPolicy", true)
             .put("httpRequests", intercepted.get()).put("inlineDocuments", inlineDocuments.get()).put("screenshots", false);
         Bundle result = new Bundle(); result.putString("betaQuickExitProof", proof.toString());
         InstrumentationRegistry.getInstrumentation().addResults(result);

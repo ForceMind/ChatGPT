@@ -115,6 +115,7 @@ def main():
         proof = json.loads(match[1]); assert proof['complete'] and proof['phase'] == name and proof['signerSHA256'] == signer
         if quick:
             assert proof['existingProfilesAndNativeDataPreserved'] and proof['noManualChromiumPrefWrites']
+            assert proof['retainedWebViewAndRealMemoryPolicy']
             assert proof['httpRequests'] == 0 and proof['inlineDocuments'] == 6 and not proof['screenshots']
             if name == 'quick-seed':
                 assert 0 <= proof['visibleToHomeMillis'] < 5000 and 0 <= proof['homeToRegistryMillis'] < 2000

@@ -22,3 +22,7 @@
 ## 当前诊断记录
 
 首轮fb0aced / Actions41991865116构建通过；API35在安装任何Beta之前因`adb root`返回`unable to connect for root: closed`停止，首错和原生日志已保留。将root切换的退出码/输出单独保留，只有该明确的transport关闭情形允许等待连接恢复；随后仍强制检查实际UID=0并验证两种防火墙规则，不能跳过隔离或把它计作App升级失败。
+
+首轮API28完整补充验证通过，原arm64包拒绝为INSTALL_FAILED_NO_MATCHING_ABIS；旧CI x86输入升级和普通WebView窗口Home/冷启动通过，样本464ms进入Home、233ms登记落盘。复核发现实际App使用RetainedWebView覆盖可见性回调，因此不把普通WebView结果外推为产品结论；下一轮改用原RetainedWebView和BrowserMemory.register及其真实ActivityLifecycleCallbacks，严格检查前台保留执行、Home后无后台服务时释放执行与登记落盘。没有修改保活实现，也不人工触发释放来代替系统回调。
+
+真实BrowserMemory会按系统网络状态设置WebView网络开关，因而新版x86验证输入改为正常Beta manifest（具有INTERNET，与人用ARM候选一致）；旧CI原包仍保持其历史无INTERNET manifest不改动。逐阶段精确断言旧CI权限拒绝、新版权限授予，整个模拟器仍防火墙拒绝出网；没有以移除真实组件或跳过权限断言让用例通过。
