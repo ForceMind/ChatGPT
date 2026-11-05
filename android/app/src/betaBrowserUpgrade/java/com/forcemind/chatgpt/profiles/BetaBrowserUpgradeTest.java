@@ -249,6 +249,12 @@ public final class BetaBrowserUpgradeTest {
         assertFalse(KeepaliveService.enabled(context));
         assertEquals("preserved", context.getSharedPreferences("browser-preferences", 0).getString("beta-browser-marker", ""));
     }
+    private HashSet<String> keys(JSONObject object) {
+        HashSet<String> result = new HashSet<>();
+        java.util.Iterator<String> names = object.keys();
+        while (names.hasNext()) result.add(names.next());
+        return result;
+    }
     private JSONObject persistedRegistry(JSONObject expected) throws Exception {
         HashSet<String> names = new HashSet<>();
         JSONArray accounts = expected.getJSONArray("accounts");
@@ -270,7 +276,7 @@ public final class BetaBrowserUpgradeTest {
                     assertFalse("Duplicate persisted profile", mappings.has(entry.getString("name")));
                     mappings.put(entry.getString("name"), entry.getString("path"));
                 }
-                if (mappings.length() != names.size() || !mappings.keySet().equals(names)) continue;
+                if (mappings.length() != names.size() || !keys(mappings).equals(names)) continue;
                 return mappings;
             }
         }
@@ -290,8 +296,8 @@ public final class BetaBrowserUpgradeTest {
             Files.write(file("beta-browser-expected.json").toPath(), expected.toString().getBytes(StandardCharsets.UTF_8));
         } else {
             JSONObject old = expected.getJSONObject("browserRegistry");
-            assertEquals(old.keySet(), actual.keySet());
-            for (String key : old.keySet()) assertEquals("Profile directory mapping changed", old.getString(key), actual.getString(key));
+            assertEquals(keys(old), keys(actual));
+            for (String key : keys(old)) assertEquals("Profile directory mapping changed", old.getString(key), actual.getString(key));
         }
         return android.os.SystemClock.elapsedRealtime() - start;
     }
