@@ -11,6 +11,7 @@ import zipfile
 assert os.environ.get('GITHUB_ACTIONS') == 'true'
 assert not Path('android/keystore.properties').exists(), 'No production signing inputs allowed'
 root=Path('android/app/build')
+(root/'reports').mkdir(parents=True,exist_ok=True)
 beta=os.environ.get('STUDIO_BETA_MODE')=='1'
 kind='networkBeta' if beta else 'networkPreview'
 apk=root/('outputs/apk/'+kind+'/app-'+kind+'.apk')
