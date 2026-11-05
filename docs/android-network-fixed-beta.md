@@ -1,5 +1,7 @@
 # Android 固定签名长期测试版候选
 
+**最新功能候选：[Beta.4实时网络管理](android-network-panel.md)。**面板实时状态、原位增删改/重试以及关闭清理已在Android9/15原生控件验证通过；沿用固定签名，可覆盖原固定Beta。仍只交付Actions候选，正式版与个人数据不变。
+
 **当前后续候选为[Beta.3兼容与快速退出验证版](android-beta-continuation.md)**，已验证实际RetainedWebView与BrowserMemory生命周期，并明确Android9 CI输入与人用ARM原包边界。下方Beta.1/Beta.2保留为历史升级基线；没有替换正式版或自动迁移数据。
 
 **后续 Beta.2 已完成浏览器状态覆盖升级验证。**以本页Beta.1已交付原APK为旧版，Android15合成Cookie/localStorage/IndexedDB及加密恢复数据升级通过；仍仅Actions候选。下载、安装和准确边界见[Beta.2报告](android-network-fixed-beta-browser-upgrade.md)，Beta.1原包作为可复核升级基线保留。Android9浏览器和真实设备仍待验收。
