@@ -6,6 +6,7 @@ from pathlib import Path
 import re
 import subprocess
 import traceback
+import zipfile
 
 PACKAGE = 'com.forcemind.chatgpt.profiles.networkbeta'
 ROOT = Path('android/app/build/beta-browser-evidence')
@@ -61,6 +62,9 @@ def main():
         signing = command([str(tools / 'apksigner'), 'verify', '--verbose', '--print-certs', str(apk)])
         assert 'Number of signers: 1' in signing
         assert re.findall(r'certificate SHA-256 digest: ([a-f0-9]+)', signing) == [expected_signer]
+    for apk in (old_apk, new_apk):
+        with zipfile.ZipFile(apk) as archive:
+            assert not any(b'BetaBrowserUpgradeTest' in archive.read(name) for name in archive.namelist() if name.endswith('.dex'))
     assert candidate['versionCode'] == 3000026 and candidate['package'] == baseline['package'] == PACKAGE
     # Unmodified human APKs keep INTERNET. Block all emulator egress before installing/running either.
     command(['adb', 'root'])
@@ -122,3 +126,9 @@ if __name__ == '__main__':
     except Exception:
         (ROOT / 'first-error.txt').write_text(traceback.format_exc())
         raise
+    finally:
+        # The emulator action terminates the guest before later workflow steps run.
+        try:
+            (ROOT / 'logcat.txt').write_text(command(['adb', 'logcat', '-d'], timeout=15))
+        except Exception:
+            (ROOT / 'logcat-error.txt').write_text(traceback.format_exc())

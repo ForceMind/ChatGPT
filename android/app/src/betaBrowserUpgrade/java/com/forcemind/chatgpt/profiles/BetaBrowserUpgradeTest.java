@@ -9,11 +9,14 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry;
+import androidx.test.runner.lifecycle.Stage;
 import androidx.webkit.ProfileStore;
 import androidx.webkit.WebViewCompat;
 import androidx.webkit.WebViewFeature;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.json.JSONTokener;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import java.io.ByteArrayInputStream;
@@ -97,7 +100,7 @@ public final class BetaBrowserUpgradeTest {
         });
         assertTrue("Offline fixture did not load", ready.await(25, TimeUnit.SECONDS));
         assertEquals("\"offline-only\"", js(result.get(), "document.getElementById('owned').textContent"));
-        assertEquals(JSONObject.quote(ORIGIN.substring(0, ORIGIN.length() - 1)), js(result.get(), "location.origin"));
+        assertEquals(ORIGIN.substring(0, ORIGIN.length() - 1), new JSONTokener(js(result.get(), "location.origin")).nextValue());
         return result.get();
     }
     private void close(WebView view) { main(() -> { WebViewCompat.getProfile(view).getCookieManager().flush(); view.destroy(); }); }
@@ -143,6 +146,9 @@ public final class BetaBrowserUpgradeTest {
         }
         WebView defaultPage = page(null, false);
         try {
+            AtomicReference<String> raw = new AtomicReference<>();
+            main(() -> raw.set(WebViewCompat.getProfile(defaultPage).getCookieManager().getCookie(ORIGIN)));
+            assertTrue("Default profile inherited another account's native cookies", raw.get() == null || raw.get().isEmpty());
             assertEquals("\"\"", js(defaultPage, "document.cookie"));
             assertEquals("null", js(defaultPage, "localStorage.getItem('studio-beta-account')"));
             // Do not open/create an IndexedDB in the default profile: the three originals are tested above.
@@ -243,6 +249,11 @@ public final class BetaBrowserUpgradeTest {
         verifyNative(expected, signer);
         browser(expected, "seed".equals(phase));
         verifyNative(expected, signer);
+        main(() -> {
+            for (Stage stage : Stage.values())
+                assertTrue("App Activity unexpectedly launched: " + stage,
+                    ActivityLifecycleMonitorRegistry.getInstance().getActivitiesInStage(stage).isEmpty());
+        });
         AtomicReference<String> provider = new AtomicReference<>();
         main(() -> provider.set(WebView.getCurrentWebViewPackage().packageName + " " + WebView.getCurrentWebViewPackage().versionName));
         JSONObject proof = new JSONObject().put("complete", true).put("phase", phase).put("versionCode", version)

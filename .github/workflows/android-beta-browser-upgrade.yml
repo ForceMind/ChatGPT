@@ -103,7 +103,7 @@ jobs:
         if: always()
         run: |
           mkdir -p android/app/build/beta-browser-evidence
-          timeout 15 adb logcat -d > android/app/build/beta-browser-evidence/logcat.txt 2>&1 || true
+          if [ ! -f android/app/build/beta-browser-evidence/logcat.txt ]; then timeout 15 adb logcat -d > android/app/build/beta-browser-evidence/logcat-fallback.txt 2>&1 || true; fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:

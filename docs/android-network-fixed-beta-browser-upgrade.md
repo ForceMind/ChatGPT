@@ -18,3 +18,5 @@
 - 使用持久 Cookie；不承诺会话 Cookie、sessionStorage 或进程内未提交任务在退出后恢复。真实网站登录有效性、通行密钥、真实节点、手机/OEM 行为另行验收。
 
 当前实施与 CI 结果将记入 `docs/releases/android-network-fixed-beta.2.json`。只有构建、签名、隔离检查与浏览器升级断言通过后才生成最终候选入口；不合并 main、不创建公开 Release、不更新官网或个人手机。
+
+首轮 `c8aa679` / Actions 41981565990：构建、检查和签名通过，原始 Beta.1 成功安装并执行测试。种子阶段在来源地址断言失败：Android JSONObject 对斜杠转义与 Chromium JSON 表示不同；尚未到 Cookie 保留断言，不能据此判登录丢失。修正为解码后的地址精确比较，并在模拟器退出前保存 logcat；默认空间原生 Cookie 与无 Activity 断言同时补齐，等待复验。
