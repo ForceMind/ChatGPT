@@ -68,9 +68,14 @@ public class EnvironmentBrowserActivity extends ComponentActivity implements Env
     private int slot(){String name=getClass().getSimpleName();if(!name.startsWith("Slot"))throw new IllegalStateException("缺少账号环境");return Integer.parseInt(name.substring(4));}
     private void buildUi(){
         LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setBackgroundColor(Color.WHITE);
+        root.setOnApplyWindowInsetsListener((v,insets)->{
+            if(Build.VERSION.SDK_INT>=30){android.graphics.Insets bars=insets.getInsets(WindowInsets.Type.systemBars()|WindowInsets.Type.displayCutout()),ime=insets.getInsets(WindowInsets.Type.ime());v.setPadding(bars.left,bars.top,bars.right,Math.max(bars.bottom,ime.bottom));}
+            else v.setPadding(insets.getSystemWindowInsetLeft(),insets.getSystemWindowInsetTop(),insets.getSystemWindowInsetRight(),insets.getSystemWindowInsetBottom());
+            return insets;
+        });
         LinearLayout head=new LinearLayout(this);head.setGravity(Gravity.CENTER_VERTICAL);head.setPadding(dp(10),dp(3),dp(8),dp(3));
-        accountButton=button("账号","选择或管理账号");accountButton.setMaxLines(1);accountButton.setEllipsize(android.text.TextUtils.TruncateAt.END);accountButton.setGravity(Gravity.CENTER_VERTICAL);head.addView(accountButton,new LinearLayout.LayoutParams(0,dp(52),1));accountButton.setOnClickListener(v->accounts());
-        tabButton=button("标签 1","切换标签页");head.addView(tabButton);tabButton.setOnClickListener(v->tabs());TextView more=button("•••","更多功能");head.addView(more,new LinearLayout.LayoutParams(dp(52),dp(52)));more.setOnClickListener(v->more());root.addView(head);
+        accountButton=button("账号","选择或管理账号");accountButton.setMaxLines(1);accountButton.setEllipsize(android.text.TextUtils.TruncateAt.END);accountButton.setGravity(Gravity.CENTER_VERTICAL);head.addView(accountButton,new LinearLayout.LayoutParams(0,StudioTypography.controlHeight(this),1));accountButton.setOnClickListener(v->accounts());
+        tabButton=button("标签 1","切换标签页");head.addView(tabButton);tabButton.setOnClickListener(v->tabs());TextView more=button("•••","更多功能");head.addView(more,new LinearLayout.LayoutParams(dp(52),StudioTypography.controlHeight(this)));more.setOnClickListener(v->more());root.addView(head);
         View divider=new View(this);divider.setBackgroundColor(0xffeeeeee);root.addView(divider,new LinearLayout.LayoutParams(-1,dp(1)));
         status=text("正在连接账号环境",12);status.setTextColor(0xff666666);status.setPadding(dp(16),dp(7),dp(16),dp(7));root.addView(status);
         canvas=new FrameLayout(this);browser=new GeckoView(this);canvas.addView(browser,new FrameLayout.LayoutParams(-1,-1));root.addView(canvas,new LinearLayout.LayoutParams(-1,0,1));setContentView(root);
@@ -128,7 +133,7 @@ public class EnvironmentBrowserActivity extends ComponentActivity implements Env
             @Override public GeckoResult<AllowOrDeny> onLoadRequest(GeckoSession session,LoadRequest request){EnvironmentBrowserActivity ownerActivity=target.get();if(ownerActivity==null||ownerActivity.destroyed){return GeckoResult.fromValue(AllowOrDeny.DENY);}
                 if(!ownerActivity.routeReady||!ownerActivity.owns(e))return GeckoResult.fromValue(AllowOrDeny.DENY);
                 if(!NavigationPolicy.internal(request.uri)&&!CIBuild.environmentUrl(request.uri)){if(e==ownerActivity.current)ownerActivity.external(request.uri);return GeckoResult.fromValue(AllowOrDeny.DENY);}
-                if(!request.uri.equals(e.url)){e.requestedUrl=request.uri;ownerActivity.documents.invalidate(e);}return GeckoResult.fromValue(AllowOrDeny.ALLOW);
+                if(!request.uri.equals(e.url))e.requestedUrl=request.uri;return GeckoResult.fromValue(AllowOrDeny.ALLOW);
             }
             @Override public void onLocationChange(GeckoSession session,String url,List<GeckoSession.PermissionDelegate.ContentPermission> permissions,Boolean gesture){EnvironmentBrowserActivity ownerActivity=target.get();if(ownerActivity==null||ownerActivity.destroyed){return;}if(url!=null&&(NavigationPolicy.internal(url)||CIBuild.environmentUrl(url))){e.requestedUrl=null;if(!url.equals(e.url))ownerActivity.navigation(e,url);}}
             @Override public void onCanGoBack(GeckoSession session,boolean value){e.canBack=value;}

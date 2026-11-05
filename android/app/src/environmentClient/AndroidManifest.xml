@@ -1,5 +1,5 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-  <application>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools">
+  <application android:label="ChatGPT Studio Beta" tools:replace="android:label">
     <service android:name=".EnvironmentBridgeService" android:exported="false" />
     <activity android:name=".EnvironmentBrowserActivity$Slot0" android:process=":environment_0" android:exported="false" android:launchMode="singleTask" android:taskAffinity="${applicationId}.environment_0" android:windowSoftInputMode="adjustResize" />
     <activity android:name=".EnvironmentBrowserActivity$Slot1" android:process=":environment_1" android:exported="false" android:launchMode="singleTask" android:taskAffinity="${applicationId}.environment_1" android:windowSoftInputMode="adjustResize" />
