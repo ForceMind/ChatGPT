@@ -145,8 +145,15 @@ export async function runWindowsBrandingMatrix() {
             name: 'studio_branding_owned',
             value: values.token,
             httpOnly: true,
-            secure: true
+            secure: true,
+            expirationDate: Date.now() / 1000 + 86400
           });
+          const stored = await page.session.cookies.get({
+            url: 'https://chatgpt.com/',
+            name: 'studio_branding_owned'
+          });
+          if (stored[0]?.session !== false || stored[0]?.value !== values.token)
+            throw Error('Persistent cookie fixture was not stored');
           await page.session.cookies.flushStore();
           await page.executeJavaScript(
             'localStorage.setItem("studio_branding_owned",' + JSON.stringify(values.token) + ')'

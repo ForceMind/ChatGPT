@@ -50,3 +50,5 @@
 实现首轮Actions41970512586的typecheck/lint通过，format:check报告124文件不符而停止；源Git blob为LF，正在固定Windows checkout的core.autocrlf=false并记录git ls-files --eol，保持原Prettier规则，不整体格式化或改blame忽略列表。补充保留Plan阶段错误及每次安装的迁移结果，避免失败时只留退出码。
 
 后续CI41971460871、41972291363均通过完整check、脚本解析和NSIS编译，但停在合成TLS准备（Cert驱动缺失、RSA KeySize只读），未执行安装；已用显式RSACng和临时JWK/DER替代证书存储依赖，增加提前TLS自检。41973125990进入实际安装前校验，因安装器PowerShell找不到Get-FileHash而退出3；迁移结果保留首错且未准备/卸载旧程序。现改为相同SHA256算法的.NET文件流，仍逐文件强制比对，不把这些失败当通过。
+
+41974018097通过完整check、新装及旧默认目录迁移、快捷方式目标和安装前后用户数据字节比对，随后Cookie读回失败。夹具设置的是无有效期的会话Cookie，不能据此判定持久登录数据丢失；补充明确有效期和session=false的种子前置断言，保留升级后原值与LocalStorage严格读回验收，等待重跑。
