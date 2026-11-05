@@ -140,6 +140,7 @@ public final class EnvironmentBridgeService extends Service implements Applicati
         boolean foreground = false;
         for (Client client : clients.values()) foreground |= client.foreground;
         memory.setEnvironmentForeground(foreground);
+        for(Import task:new ArrayList<>(incomingFiles.values()))if(!task.valid())task.cancel();
         NetworkRoute.Snapshot snapshot = network.routes.snapshot();
         String kind = !network.ready() ? "blocked" : snapshot.state == NetworkRoute.State.CONNECTED ? "proxy"
                 : snapshot.state == NetworkRoute.State.DIRECT ? "direct" : "system";
