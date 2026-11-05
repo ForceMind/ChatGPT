@@ -16,6 +16,7 @@ jobs:
         working-directory: desktop
     steps:
       - name: Keep committed LF on disposable Windows runner
+        working-directory: .
         run: git config --global core.autocrlf false
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
