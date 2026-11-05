@@ -3,10 +3,13 @@
 let blocked=true,port=null,latest=-1,instance="",latestToken="",serial=Promise.resolve();
 browser.webRequest.onBeforeRequest.addListener(()=>({cancel:blocked}),{urls:['<all_urls>']},['blocking']);
 function connect(){
+  if(port!==null)return;
   blocked=true;
   try{port=browser.runtime.connectNative('studioEnvironmentRoute');}catch(_){setTimeout(connect,1000);return;}
-  port.onDisconnect.addListener(()=>{blocked=true;port=null;setTimeout(connect,1000);});
-  port.onMessage.addListener(message=>{
+  const connection=port;
+  connection.onDisconnect.addListener(()=>{if(port!==connection)return;blocked=true;latestToken='';port=null;setTimeout(connect,1000);});
+  connection.onMessage.addListener(message=>{
+    if(port!==connection)return;
     if(message&&message.type==='suspend'){blocked=true;latestToken='';return;}
     if(!message||message.type!=='route'||!Number.isSafeInteger(message.generation)||typeof message.routeToken!=='string')return;
     if(message.instance===instance&&message.generation<latest)return;

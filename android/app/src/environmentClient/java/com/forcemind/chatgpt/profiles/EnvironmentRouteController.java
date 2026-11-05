@@ -54,7 +54,11 @@ final class EnvironmentRouteController {
         if(closed||sender.session!=null||sender.environmentType!=WebExtension.MessageSender.ENV_TYPE_EXTENSION||!EXTENSION.equals(sender.webExtension.id)){
             incoming.setDelegate(new WebExtension.PortDelegate(){});incoming.disconnect();return;
         }
-        WebExtension.Port previous=port;port=incoming;if(previous!=null)previous.disconnect();sent=-1;acknowledged=-1;block("正在应用网络设置");
+        // Private-browsing authorization restarts the extension and may queue its old
+        // disconnect before both pending Connect callbacks reach us. Gecko 158's remote
+        // disconnect path is not idempotent: let that owner finish the old port teardown.
+        // The source!=port checks below already revoke all superseded route messages.
+        port=incoming;sent=-1;acknowledged=-1;block("正在应用网络设置");
         incoming.setDelegate(new WebExtension.PortDelegate(){
             public void onPortMessage(Object raw,WebExtension.Port source){
                 try{
