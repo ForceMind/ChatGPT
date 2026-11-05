@@ -4,6 +4,11 @@ on:
     branches: [dev]
     paths: ['.github/workflows/android-environment-client.yml']
   workflow_dispatch:
+    inputs:
+      reuse_application_build:
+        description: Reuse immutable successful app build 42023266476 when only test fixtures changed
+        type: boolean
+        default: false
 permissions:
   contents: read
   actions: read
@@ -41,6 +46,7 @@ jobs:
           STUDIO_BETA_KEYSTORE_B64: ${{ secrets.STUDIO_BETA_KEYSTORE_B64 }}
         run: python3 android/scripts/restore-beta-signing.py
       - name: Client unit checks, lint and real ARM package
+        if: ${{ !inputs.reuse_application_build }}
         run: |
           test ! -f android/keystore.properties
           sdkmanager 'platforms;android-36' 'platforms;android-37.0' 'build-tools;35.0.0'
@@ -52,11 +58,34 @@ jobs:
           cp -R android/app/build/network-beta/. android/app/build/environment-client-input/
           cp android/app/build/outputs/apk/androidTest/networkBeta/app-networkBeta-androidTest.apk android/app/build/environment-client-input/upgrade-test.apk
       - name: Build x86 compatibility and separately marked synthetic target
+        if: ${{ !inputs.reuse_application_build }}
         run: |
           bash android/environment-poc/gradlew -p android --no-daemon -PenvironmentClient -PbetaAbi=x86_64 -PbetaVersionCode=3000029 -PbetaVersionName=3.0.0-alpha.24-beta.5 :app:assembleNetworkBeta
           cp android/app/build/outputs/apk/networkBeta/app-networkBeta.apk android/app/build/environment-client-input/human-x86.apk
           bash android/environment-poc/gradlew -p android --no-daemon -PenvironmentClient -PenvironmentTest -PbetaAbi=x86_64 -PbetaVersionCode=3000029 -PbetaVersionName=3.0.0-alpha.24-beta.5 :app:assembleNetworkBeta
           cp android/app/build/outputs/apk/networkBeta/app-networkBeta.apk android/app/build/environment-client-input/synthetic-x86.apk
+      - name: Authenticate reusable application source and completed build checks
+        if: inputs.reuse_application_build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          test "$(gh api repos/${{ github.repository }}/actions/runs/42023266476 --jq .head_sha)" = 5d0e70f57da462d2812e19f7ddca1ee969eb29ae
+          test "$(gh api repos/${{ github.repository }}/actions/runs/42023266476/jobs --jq '.jobs[]|select(.name=="build")|.conclusion')" = success
+          git fetch origin 5d0e70f57da462d2812e19f7ddca1ee969eb29ae --depth=1
+          git diff --exit-code 5d0e70f57da462d2812e19f7ddca1ee969eb29ae HEAD -- android/app/src/main android/app/src/environmentClient android/app/src/environmentProduction android/app/src/environmentCi android/app/build.gradle android/settings.gradle android/build.gradle android/network-poc/corebridge
+      - uses: actions/download-artifact@v4
+        if: inputs.reuse_application_build
+        with:
+          name: environment-client-input
+          run-id: 42023266476
+          github-token: ${{ github.token }}
+          path: android/app/build/environment-client-input
+      - name: Compile only the corrected test APK against unchanged app code
+        if: inputs.reuse_application_build
+        run: |
+          sdkmanager 'platforms;android-37.0' 'build-tools;35.0.0'
+          bash android/environment-poc/gradlew -p android --no-daemon -PenvironmentClient -PbetaVersionCode=3000029 -PbetaVersionName=3.0.0-alpha.24-beta.5 :app:assembleNetworkBetaAndroidTest
+          cp android/app/build/outputs/apk/androidTest/networkBeta/app-networkBeta-androidTest.apk android/app/build/environment-client-input/upgrade-test.apk
       - uses: actions/upload-artifact@v4
         with:
           name: environment-client-input
