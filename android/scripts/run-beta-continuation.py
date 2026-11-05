@@ -67,7 +67,11 @@ def main():
         with zipfile.ZipFile(apk) as archive:
             assert not any(b'BetaBrowserUpgradeTest' in archive.read(n) for n in archive.namelist() if n.endswith('.dex'))
     # No target or renderer traffic can leave this fresh emulator; only inline resources are used.
-    run(['adb', 'root']); run(['adb', 'wait-for-device'])
+    root_transition = run(['adb', 'root'], check=False)
+    (ROOT / 'root-transition.json').write_text(json.dumps({'exitCode': root_transition.returncode, 'output': root_transition.stdout}, indent=2) + '\n')
+    if root_transition.returncode and 'closed' not in root_transition.stdout:
+        raise RuntimeError('Root setup failed: ' + root_transition.stdout)
+    run(['adb', 'wait-for-device'])
     assert shell('id', '-u').strip() == '0'
     for binary in ('iptables', 'ip6tables'):
         shell(binary, '-I', 'OUTPUT', '1', '-j', 'REJECT')
