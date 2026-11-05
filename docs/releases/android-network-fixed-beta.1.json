@@ -1,0 +1,123 @@
+{
+  "run": 41959244766,
+  "candidateArtifact": 13384976249,
+  "receipt": {
+    "sourceSHA": "a2f36b32353d66dfa196a8b2bb7e5399571ace63",
+    "package": "com.forcemind.chatgpt.profiles.networkbeta",
+    "displayName": "ChatGPT Studio Beta",
+    "versionName": "3.0.0-alpha.24-beta.1",
+    "versionCode": 3000025,
+    "file": "ChatGPT-Studio-3.0.0-alpha.24-beta.1-android-arm64.apk",
+    "bytes": 40911377,
+    "sha256": "0696660be10705fd7e542cf8159a6b5a41a404501bd99585135c49c4ceb8f718",
+    "signerSHA256": "bd7b9c924795ec21d27c73f280b5fc71b83ffea950e36e05967b77f092056ac0",
+    "signing": "fixed dedicated beta key; not production",
+    "ciTrustIncluded": false,
+    "syntheticNodesIncluded": false,
+    "debuggable": false,
+    "testOnly": false,
+    "abi": [
+      "arm64-v8a"
+    ],
+    "minAndroid": 9,
+    "alignment16KiB": true,
+    "phoneInstalled": false,
+    "realServiceTested": false,
+    "publicRelease": false
+  },
+  "unit": {
+    "tests": 77,
+    "failures": 0
+  },
+  "upgrades": [
+    {
+      "api": 28,
+      "artifact": 13385480304,
+      "proof": {
+        "complete": true,
+        "sourceSHA": "a2f36b32353d66dfa196a8b2bb7e5399571ace63",
+        "before": {
+          "complete": true,
+          "phase": "seed",
+          "versionCode": 3000024,
+          "uid": 10067,
+          "signerSHA256": "bd7b9c924795ec21d27c73f280b5fc71b83ffea950e36e05967b77f092056ac0",
+          "accounts": 3,
+          "tabs": 4,
+          "encryptedRecoveryRecords": 4,
+          "browserStarted": false,
+          "targetInternetPermissionDenied": true
+        },
+        "after": {
+          "complete": true,
+          "phase": "verify",
+          "versionCode": 3000025,
+          "uid": 10067,
+          "signerSHA256": "bd7b9c924795ec21d27c73f280b5fc71b83ffea950e36e05967b77f092056ac0",
+          "accounts": 3,
+          "tabs": 4,
+          "encryptedRecoveryRecords": 4,
+          "browserStarted": false,
+          "targetInternetPermissionDenied": true
+        },
+        "uninstallOrClearBetweenVersions": false,
+        "nativeDataOnly": true,
+        "webViewCookiesExercised": false,
+        "personalData": false
+      }
+    },
+    {
+      "api": 35,
+      "artifact": 13384572684,
+      "proof": {
+        "complete": true,
+        "sourceSHA": "a2f36b32353d66dfa196a8b2bb7e5399571ace63",
+        "before": {
+          "complete": true,
+          "phase": "seed",
+          "versionCode": 3000024,
+          "uid": 10209,
+          "signerSHA256": "bd7b9c924795ec21d27c73f280b5fc71b83ffea950e36e05967b77f092056ac0",
+          "accounts": 3,
+          "tabs": 4,
+          "encryptedRecoveryRecords": 4,
+          "browserStarted": false,
+          "targetInternetPermissionDenied": true
+        },
+        "after": {
+          "complete": true,
+          "phase": "verify",
+          "versionCode": 3000025,
+          "uid": 10209,
+          "signerSHA256": "bd7b9c924795ec21d27c73f280b5fc71b83ffea950e36e05967b77f092056ac0",
+          "accounts": 3,
+          "tabs": 4,
+          "encryptedRecoveryRecords": 4,
+          "browserStarted": false,
+          "targetInternetPermissionDenied": true
+        },
+        "uninstallOrClearBetweenVersions": false,
+        "nativeDataOnly": true,
+        "webViewCookiesExercised": false,
+        "personalData": false
+      }
+    }
+  ],
+  "candidateManifest": {
+    "internetPermissionDeclared": true,
+    "noSharedUID": true,
+    "allowBackup": false,
+    "providerAuthorityIsolated": true
+  },
+  "artifactURL": "https://github.com/ForceMind/ChatGPT/actions/runs/41959244766/artifacts/13384976249",
+  "signingSecrets": [
+    "STUDIO_BETA_KEYSTORE_B64",
+    "STUDIO_BETA_STORE_PASSWORD"
+  ],
+  "localPrivateMaterialRemoved": true,
+  "publicCertificate": "docs/signing/android-network-beta.pem",
+  "publicRelease": false,
+  "productionDataTouched": false,
+  "mainMerged": false,
+  "scope": "First native same-source synthetic versionCode3000024→3000025 replacement in fresh API28/35 x86_64 emulators. Human candidate arm64 keeps INTERNET; CI target denies it. No WebView or real cookies/phone/node acceptance. Future code migrations must use prior delivered APK as baseline."
+}
