@@ -40,6 +40,7 @@ class Acceptance:
         self.touch_events = []
         self.keyboard_events = []
         self.navigation_row = None
+        self.cold_process_exits = []
 
     def command(self, args, timeout=60, check=True):
         self.sequence += 1
@@ -155,13 +156,22 @@ class Acceptance:
         self.shell('am', 'set-debug-app', '--persistent', PACKAGE)
         assert self.shell('settings', 'get', 'global', 'debug_app').strip() == PACKAGE
 
-    def control(self, action, account=None, tab=0):
+    def control(self, action, account=None, tab=0, deadline=None):
         assert action in ('prepare', 'open', 'record')
-        deadline = time.monotonic() + 60
+        shared_deadline = deadline is not None
+        if deadline is None:
+            deadline = time.monotonic() + 60
+        def budget(cap=None):
+            remaining = deadline-time.monotonic()
+            if shared_deadline:
+                if remaining <= 0:
+                    raise TimeoutError('Cold process exit/open exhausted its original 60-second deadline')
+                return min(cap, remaining) if cap is not None else remaining
+            return max(0.1, min(cap, remaining) if cap is not None else remaining)
         def private_result(relative):
             path = FILES + relative
             text = self.command(['adb', 'shell', 'cat', path],
-                                timeout=max(0.1, min(10, deadline-time.monotonic())), check=False)
+                                timeout=budget(10), check=False)
             if re.fullmatch(r'cat: ' + re.escape(path) + r': No such file or directory\s*', text):
                 return None
             if not text.lstrip().startswith('{'):
@@ -173,7 +183,7 @@ class Acceptance:
         if action == 'record':
             # Android wall time may differ from the runner. Pair the device's start-second
             # bound with a strict increase over the pre-command probe, so stale JSON cannot pass.
-            started_device_ms = int(self.shell('date', '+%s', timeout=10).strip()) * 1000
+            started_device_ms = int(self.shell('date', '+%s', timeout=budget(10)).strip()) * 1000
             previous = private_result('environment-record-probe.json')
             if previous is not None:
                 previous_sample = previous['sampledAt']
@@ -181,7 +191,7 @@ class Acceptance:
         if action != 'prepare':
             assert (account, tab) in PAGE
             args += ['--es', 'account', account, '--ei', 'tab', str(tab)]
-        text = self.shell(*args, timeout=max(0.1, deadline-time.monotonic()))
+        text = self.shell(*args, timeout=budget())
         assert not re.search(r'Error:|Exception|Permission Denial', text), text
         if action == 'prepare':
             self.wait('completed private acceptance manifest',
@@ -189,7 +199,7 @@ class Acceptance:
                       lambda value: isinstance(value, dict) and value.get('schema') == 1
                       and isinstance(value.get('accounts'), dict) and set(value['accounts']) == {'A', 'B', 'C'}
                       and isinstance(value.get('legacyAccounts'), list),
-                      timeout=max(0.1, deadline-time.monotonic()), interval=0.3)
+                      timeout=budget(), interval=0.3)
         elif action == 'record':
             result = self.wait('fresh native record probe',
                                lambda: private_result('environment-record-probe.json'),
@@ -197,7 +207,7 @@ class Acceptance:
                                and isinstance(value.get('sampledAt'), int)
                                and value['sampledAt'] >= started_device_ms
                                and value['sampledAt'] > previous_sample,
-                               timeout=max(0.1, deadline-time.monotonic()), interval=0.3)
+                               timeout=budget(), interval=0.3)
             assert result.get('schema') == 1, 'Invalid native record probe schema'
             assert result.get('complete') is True, 'Native record probe failed: ' + str(result.get('errorClass'))
         # open is accepted only by its existing real server/preview conditions in the caller.
@@ -689,10 +699,68 @@ class Acceptance:
         native._write_json(EVIDENCE / ('native-record-' + str(self.sequence) + '.json'), probe)
         return probe
 
+    def cold_open_api35(self):
+        assert self.api == 35, 'Process-exit preflight is limited to the failing API35 runner'
+        started = time.monotonic()
+        deadline = started + 60
+        receipt = {'api': 35, 'packagePrefix': PACKAGE, 'complete': False,
+                   'deadlineSeconds': 60, 'forceStopAttempts': 0, 'openAttempts': 0,
+                   'before': None, 'after': None, 'exitObservations': [], 'processExitVerified': False}
+        self.cold_process_exits.append(receipt)
+        index = len(self.cold_process_exits)
+        def remaining(cap=None):
+            value = deadline-time.monotonic()
+            if value <= 0:
+                raise TimeoutError('API35 cold exit/open exceeded the original 60-second deadline')
+            return min(value, cap) if cap is not None else value
+        def processes():
+            output = self.shell('ps', '-A', '-o', 'PID,NAME', timeout=remaining(10))
+            lines = output.strip().splitlines()
+            assert lines and re.fullmatch(r'\s*PID\s+NAME\s*', lines[0]), 'Unexpected ps PID,NAME header'
+            targets = []
+            for line in lines[1:]:
+                fields = line.strip().split(None, 1)
+                assert len(fields) == 2 and fields[0].isdigit(), 'Unexpected ps PID,NAME row'
+                if fields[1] == PACKAGE or fields[1].startswith(PACKAGE + ':'):
+                    targets.append({'pid': int(fields[0]), 'name': fields[1]})
+            return sorted(targets, key=lambda value: value['pid'])
+        try:
+            for name in ('meminfo', 'loadavg'):
+                (EVIDENCE / ('cold-' + str(index) + '-host-' + name + '.txt')).write_text(
+                    Path('/proc/' + name).read_text(encoding='utf-8'), encoding='utf-8')
+            receipt['before'] = processes()
+            assert receipt['before'], 'Cold restart must begin with live target processes'
+            guest = self.shell('cat', '/proc/meminfo', timeout=remaining(4))
+            (EVIDENCE / ('cold-' + str(index) + '-guest-meminfo.txt')).write_text(guest, encoding='utf-8')
+            receipt['forceStopAttempts'] = 1
+            self.shell('am', 'force-stop', PACKAGE, timeout=remaining())
+            while True:
+                after = processes()
+                receipt['after'] = after
+                receipt['exitObservations'].append({'elapsedMillis': int((time.monotonic()-started)*1000), 'processes': after})
+                if not after:
+                    break
+                time.sleep(min(0.25, remaining()))
+            receipt['processExitVerified'] = True
+            receipt['remainingMillisBeforeOpen'] = int(remaining()*1000)
+            receipt['openAttempts'] = 1
+            self.control('open', 'A', 0, deadline=deadline)
+            receipt['openCommandReturned'] = True
+            receipt['complete'] = True
+        except Exception as error:
+            receipt['errorClass'] = type(error).__name__
+            raise
+        finally:
+            receipt['elapsedMillis'] = int((time.monotonic()-started)*1000)
+            native._write_json(EVIDENCE / 'cold-process-exit-receipts.json', self.cold_process_exits)
+
     def cold(self, old, draft, saved_scroll, conflict=False):
         before = self.status()['pageCounts']['/c/a1']
-        self.shell('am', 'force-stop', PACKAGE)
-        self.control('open', 'A', 0)
+        if self.api == 35:
+            self.cold_open_api35()
+        else:
+            self.shell('am', 'force-stop', PACKAGE)
+            self.control('open', 'A', 0)
         self.node('本地恢复副本')
         assert self.status()['pageCounts']['/c/a1'] == before, 'Preview loaded a page before user consent'
         continued = int(time.time() * 1000)
@@ -831,6 +899,8 @@ def main():
                  'fixedFingerReceipts': acceptance.touch_events, 'nativeAsciiKeyboardReceipts': acceptance.keyboard_events, 'sendCount': 0,
                  'onlyEmulatorLoopbackEgressAllowed': True, 'testCAInjectedOnlyIntoCiProfiles': True,
                  'screenshots': False, 'realServicesAccessed': False}
+        if upgrade['api'] == 35:
+            proof['coldProcessExitReceipts'] = acceptance.cold_process_exits
         native._write_json(EVIDENCE / 'functional.json', proof)
         print(json.dumps(proof, indent=2), flush=True)
         return proof

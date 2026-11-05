@@ -3,6 +3,8 @@ import hashlib,json,os,shutil
 from pathlib import Path
 assert os.environ.get('GITHUB_ACTIONS')=='true'
 root=Path('input');receipt=json.loads((root/'receipt.json').read_text())
+synthetic_hash=hashlib.sha256((root/'synthetic-x86.apk').read_bytes()).hexdigest()
+test_hash=hashlib.sha256((root/'upgrade-test.apk').read_bytes()).hexdigest()
 assert receipt['versionName']=='3.0.0-alpha.24-beta.6' and receipt['versionCode']==3000030
 assert receipt['package']=='com.forcemind.chatgpt.profiles.networkbeta'
 proofs=[]
@@ -12,6 +14,8 @@ for api in (28,35):
     a,b=json.loads(human.read_text()),json.loads(engine.read_text())
     assert a['complete'] and b['complete'] and a['api']==b['api']==api
     assert b['candidateScope']=='synthetic-x86-ci' and not b['originalHumanCandidateBytesInstalled']
+    assert b['candidateInstalledSHA256']==synthetic_hash and b['legacyUpgrade']['testAPK']['sha256']==test_hash
+    assert b['legacyUpgrade']['humanCandidateSHA256']==receipt['sha256']
     for flag in ('languageTimeZoneAndWorkerVerified','httpAcceptLanguageVerified','cookieLocalStorageIndexedDBAccountIsolation',
                  'sameEnvironmentDifferentStorageContexts','trustedNativeTextareaAndContenteditableInput','realNativeReadingScroll',
                  'liveSwitchKeptDocumentAndDraftAndScroll','rotationNoReload'):
@@ -19,6 +23,12 @@ for api in (28,35):
     assert b['sendCount']==0 and not b['screenshots'] and not b['realServicesAccessed']
     assert b['legacyAfterEnvironmentUse']['complete'] and b['legacyAfterEnvironmentUse']['legacyAccountPreserved']
     assert b['conflictRecovery']['webDraftPreservedUntilNativeChoice'] and b['conflictRecovery']['nativeRestoreChosen']
+    if api==35:
+        cold=b['coldProcessExitReceipts']
+        assert len(cold)==2
+        for attempt in cold:
+            assert attempt['complete'] and attempt['processExitVerified'] and attempt['before'] and attempt['after']==[]
+            assert attempt['forceStopAttempts']==attempt['openAttempts']==1 and attempt['openCommandReturned']
     for key,engine in (('geckoChromeNavigation','gecko'),('legacyChromeNavigation','webview')):
         navigation=b[key]
         assert navigation['complete'] and navigation['engine']==engine
