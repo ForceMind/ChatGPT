@@ -40,10 +40,18 @@ switch($Operation){
   }
   Tls {
     $c=Get-Content -Raw -Encoding utf8 $Config|ConvertFrom-Json
-    $cert=New-SelfSignedCertificate -DnsName 'chatgpt.com','chatgpt.xincreates.com' -CertStoreLocation Cert:\CurrentUser\My -KeyExportPolicy Exportable -NotAfter (Get-Date).AddDays(1)
-    Export-PfxCertificate -Cert $cert -FilePath $c.pfx -CryptoAlgorithmOption AES256_SHA256 -Password (ConvertTo-SecureString $c.password -AsPlainText -Force)|Out-Null
-    Export-Certificate -Cert $cert -FilePath $c.cer|Out-Null
-    $cert.Thumbprint|Set-Content -Encoding ascii $Output
+    $rsa=[Security.Cryptography.RSA]::Create();$rsa.KeySize=2048
+    try {
+      $request=[Security.Cryptography.X509Certificates.CertificateRequest]::new('CN=chatgpt.com',$rsa,[Security.Cryptography.HashAlgorithmName]::SHA256,[Security.Cryptography.RSASignaturePadding]::Pkcs1)
+      $cert=$request.CreateSelfSigned([DateTimeOffset]::UtcNow.AddMinutes(-5),[DateTimeOffset]::UtcNow.AddHours(6))
+      try {
+        [IO.File]::WriteAllBytes($c.cer,$cert.Export([Security.Cryptography.X509Certificates.X509ContentType]::Cert))
+        $parameters=$rsa.ExportParameters($true);$jwk=@{kty='RSA'}
+        foreach($pair in @{n='Modulus';e='Exponent';d='D';p='P';q='Q';dp='DP';dq='DQ';qi='InverseQ'}.GetEnumerator()){$jwk[$pair.Key]=[Convert]::ToBase64String($parameters.($pair.Value)).Replace('+','-').Replace('/','_').TrimEnd('=')}
+        [IO.File]::WriteAllText($c.key,($jwk|ConvertTo-Json),[Text.UTF8Encoding]::new($false))
+        $cert.Thumbprint|Set-Content -Encoding ascii $Output
+      }finally{$cert.Dispose()}
+    }finally{$rsa.Dispose()}
+
   }
-  RemoveTls {Remove-Item -LiteralPath ('Cert:\CurrentUser\My\'+$File) -DeleteKey}
 }

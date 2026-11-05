@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { createHash, randomUUID, X509Certificate } from 'node:crypto';
+import { createHash, createPrivateKey, randomUUID, X509Certificate } from 'node:crypto';
 import { createServer } from 'node:https';
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync, existsSync, readdirSync, rmSync } from 'node:fs';
 import os from 'node:os';
@@ -64,8 +64,7 @@ export async function runWindowsBrandingMatrix() {
   assert(response.ok);
   writeFileSync(baseline, Buffer.from(await response.arrayBuffer()));
   assert.equal(sha(baseline), old.sha256);
-  const password = randomUUID();
-  const tlsConfig = { pfx: path.join(root, 'fixture.pfx'), cer: path.join(root, 'fixture.cer'), password };
+  const tlsConfig = { key: path.join(root, 'fixture-key.json'), cer: path.join(root, 'fixture.cer'), password };
   writeFileSync(path.join(root, 'tls.json'), JSON.stringify(tlsConfig));
   ps('Tls', { Config: path.join(root, 'tls.json'), Output: path.join(root, 'thumbprint') });
   const thumbprint = readFileSync(path.join(root, 'thumbprint'), 'utf8').trim();
@@ -75,19 +74,25 @@ export async function runWindowsBrandingMatrix() {
     .digest('base64');
   const nonce = randomUUID();
   const requests = [];
-  const server = createServer({ pfx: readFileSync(tlsConfig.pfx), passphrase: password }, (request, result) => {
-    requests.push({ host: request.headers.host, url: request.url });
-    result.setHeader('Cache-Control', 'no-store');
-    if (request.url?.startsWith('/updates/windows/')) {
-      result.setHeader('Content-Type', 'application/json');
-      result.end(readFileSync('../site/updates/windows/alpha.yml'));
-    } else {
-      result.setHeader('Content-Type', 'text/html; charset=utf-8');
-      result.end(
-        `<!doctype html><title>Owned local branding fixture</title><p id="owned">${nonce}</p><textarea id="prompt-textarea"></textarea>`
-      );
+  const server = createServer(
+    {
+      key: createPrivateKey({ key: readJSON(tlsConfig.key), format: 'jwk' }).export({ type: 'pkcs8', format: 'pem' }),
+      cert: cert.toString()
+    },
+    (request, result) => {
+      requests.push({ host: request.headers.host, url: request.url });
+      result.setHeader('Cache-Control', 'no-store');
+      if (request.url?.startsWith('/updates/windows/')) {
+        result.setHeader('Content-Type', 'application/json');
+        result.end(readFileSync('../site/updates/windows/alpha.yml'));
+      } else {
+        result.setHeader('Content-Type', 'text/html; charset=utf-8');
+        result.end(
+          `<!doctype html><title>Owned local branding fixture</title><p id="owned">${nonce}</p><textarea id="prompt-textarea"></textarea>`
+        );
+      }
     }
-  });
+  );
   await new Promise((resolve, reject) => {
     server.once('error', reject);
     server.listen(443, '127.0.0.1', resolve);
@@ -276,6 +281,7 @@ export async function runWindowsBrandingMatrix() {
       isolatedWindowsRunner: true,
       browser:
         'Packaged old/new Electron apps; all Chromium DNS mapped to owned loopback TLS/SPKI, no proxy; no real account or service',
+      fixtureCertificateThumbprint: thumbprint,
       pinnedScope: 'Synthetic pinned .lnk target, not Explorer taskbar visual cache'
     };
     writeFileSync(path.join(evidence, 'verified.json'), JSON.stringify(proof, null, 2));
@@ -283,7 +289,7 @@ export async function runWindowsBrandingMatrix() {
   } finally {
     await app?.close().catch(() => {});
     await new Promise((resolve) => server.close(resolve));
-    ps('RemoveTls', { File: thumbprint });
+    rmSync(tlsConfig.key, { force: true });
     writeFileSync(path.join(evidence, 'partial-cases.json'), JSON.stringify(cases, null, 2));
   }
 }
