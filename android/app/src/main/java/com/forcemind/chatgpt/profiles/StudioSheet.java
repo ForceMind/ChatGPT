@@ -14,6 +14,7 @@ import android.widget.*;
 final class StudioSheet extends Dialog {
     final LinearLayout body,footer;
     private final Context context;
+    private final TextView subtitleView;
     StudioSheet(Context context,String title,String subtitle){
         super(context);this.context=context;requestWindowFeature(Window.FEATURE_NO_TITLE);setCanceledOnTouchOutside(true);
         LinearLayout root=new LinearLayout(context){
@@ -23,13 +24,14 @@ final class StudioSheet extends Dialog {
             }
         };root.setOrientation(LinearLayout.VERTICAL);root.setBackground(shape(Color.WHITE,20));root.setPadding(0,0,0,dp(12));root.setClipToOutline(true);
         LinearLayout header=new LinearLayout(context);header.setGravity(Gravity.TOP);header.setPadding(dp(20),dp(20),dp(12),dp(14));root.addView(header,new LinearLayout.LayoutParams(-1,-2));
-        LinearLayout titles=new LinearLayout(context);titles.setOrientation(LinearLayout.VERTICAL);TextView name=text(title,19);name.setTypeface(null,android.graphics.Typeface.BOLD);name.setMaxLines(2);name.setEllipsize(TextUtils.TruncateAt.END);titles.addView(name);if(!subtitle.isEmpty()){TextView detail=text(subtitle,13);StudioTypography.meta(detail);detail.setPadding(0,dp(5),0,0);titles.addView(detail);}header.addView(titles,new LinearLayout.LayoutParams(0,-2,1));
+        LinearLayout titles=new LinearLayout(context);titles.setOrientation(LinearLayout.VERTICAL);TextView name=text(title,19);name.setTypeface(null,android.graphics.Typeface.BOLD);name.setMaxLines(2);name.setEllipsize(TextUtils.TruncateAt.END);titles.addView(name);subtitleView=text(subtitle,13);StudioTypography.meta(subtitleView);subtitleView.setPadding(0,dp(5),0,0);subtitleView.setVisibility(subtitle.isEmpty()?View.GONE:View.VISIBLE);titles.addView(subtitleView);header.addView(titles,new LinearLayout.LayoutParams(0,-2,1));
         Button done=button("完成",false);done.setContentDescription("关闭弹层");done.setOnClickListener(v->dismiss());header.addView(done,new LinearLayout.LayoutParams(-2,-2));
         ScrollView scroll=new ScrollView(context);scroll.setFillViewport(false);body=new LinearLayout(context);body.setOrientation(LinearLayout.VERTICAL);body.setPadding(dp(20),0,dp(20),dp(16));scroll.addView(body);root.addView(scroll,new LinearLayout.LayoutParams(-1,-2,1));
         footer=new LinearLayout(context);footer.setOrientation(LinearLayout.VERTICAL);footer.setPadding(dp(20),dp(10),dp(20),dp(6));root.addView(footer,new LinearLayout.LayoutParams(-1,-2));footer.setVisibility(View.GONE);setContentView(root);
         Window window=getWindow();if(window!=null){window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));window.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);window.setDimAmount(.24f);window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE|WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);}
     }
     @Override public void show(){super.show();Window window=getWindow();if(window!=null){boolean tablet=context.getResources().getConfiguration().screenWidthDp>=600;window.setGravity(tablet?Gravity.END|Gravity.CENTER_VERTICAL:Gravity.BOTTOM);window.setLayout(tablet?dp(420):WindowManager.LayoutParams.MATCH_PARENT,WindowManager.LayoutParams.WRAP_CONTENT);if(Build.VERSION.SDK_INT>=30)window.setDecorFitsSystemWindows(true);}}
+    void subtitle(String value){if(subtitleView.getText().toString().equals(value))return;subtitleView.setText(value);subtitleView.setVisibility(value.isEmpty()?View.GONE:View.VISIBLE);subtitleView.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);}
     TextView text(String value,int size){TextView view=new TextView(context);view.setText(value);StudioTypography.text(view,size);view.setTextColor(StudioTypography.INK);return view;}
     Button button(String label,boolean primary){Button button=new Button(context);StudioTypography.button(button);button.setText(label);button.setBackground(shape(primary?StudioTypography.INK:0xfff4f4f4,12));if(primary)button.setTextColor(Color.WHITE);return button;}
     void action(String label,boolean primary,Runnable action){footer.setVisibility(View.VISIBLE);Button button=button(label,primary);LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.topMargin=dp(8);footer.addView(button,p);button.setOnClickListener(v->action.run());}

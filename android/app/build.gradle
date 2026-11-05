@@ -75,7 +75,7 @@ android {
             buildConfigField 'String', 'NETWORK_PROBE_URL', '"https://network-fixture.test:18480/echo"'
         }
         }
-        testBuildType = (project.hasProperty('betaUpgrade') || project.hasProperty('betaBrowserUpgrade')) ? 'networkBeta' : project.hasProperty('networkIntegration') ? 'networkCi' : 'debug'
+        testBuildType = (project.hasProperty('betaUpgrade') || project.hasProperty('betaBrowserUpgrade') || project.hasProperty('betaNetworkUi')) ? 'networkBeta' : project.hasProperty('networkIntegration') ? 'networkCi' : 'debug'
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
     buildFeatures { buildConfig true }
     testOptions { unitTests.returnDefaultValues = true }
@@ -161,5 +161,9 @@ if (project.hasProperty('betaUpgrade')) {
 }
 if (project.hasProperty('betaBrowserUpgrade')) {
     android.sourceSets.androidTest.java.setSrcDirs(['src/betaBrowserUpgrade/java'])
+    android.sourceSets.androidTest.manifest.srcFile('src/betaUpgrade/AndroidManifest.xml')
+}
+if (project.hasProperty('betaNetworkUi')) {
+    android.sourceSets.androidTest.java.setSrcDirs(['src/betaNetworkUi/java'])
     android.sourceSets.androidTest.manifest.srcFile('src/betaUpgrade/AndroidManifest.xml')
 }

@@ -26,6 +26,7 @@ final class NetworkSession {
     private final Map<String, FileJob> jobs = new LinkedHashMap<>();
     private final Map<String, Long> epochs = new LinkedHashMap<>();
     private final Runnable observer;
+    private final java.util.Set<Runnable> panelObservers = new java.util.LinkedHashSet<>();
     private NetworkSettingsStore.Data settings = new NetworkSettingsStore.Data();
     private volatile boolean changing = true, saving, closed, unreadable;
     private boolean booted;
@@ -65,8 +66,26 @@ final class NetworkSession {
     List<NetworkNode> nodes() { return new ArrayList<>(settings.nodes); }
     int selected() { return settings.selected; }
     boolean enabled() { return settings.enabled; }
+    boolean controlsBusy() { return !booted || changing || saving || busy() || routes.activeTransfers() != 0 || HandoffRuntime.networkBusy(); }
+    boolean closed() { return closed; }
+    boolean connectedTo(int index) {
+        NetworkRoute.Snapshot actual = routes.snapshot();
+        return settings.enabled && index == settings.selected && index >= 0 && index < settings.nodes.size()
+                && actual.state == NetworkRoute.State.CONNECTED && actual.node == settings.nodes.get(index);
+    }
+    void observePanel(Runnable listener) {
+        if (Looper.myLooper() != main.getLooper()) throw new IllegalStateException("Network panel observers require the UI thread");
+        if (closed) return;
+        panelObservers.add(listener); listener.run();
+    }
+    void removePanelObserver(Runnable listener) {
+        if (Looper.myLooper() != main.getLooper()) { main.post(() -> removePanelObserver(listener)); return; }
+        panelObservers.remove(listener);
+    }
     String status() {
+        if (closed) return "网络已关闭";
         if (!booted) return "正在准备网络";
+        if (saving) return "正在保存线路";
         if (changing || routes.snapshot().state == NetworkRoute.State.CONNECTING) return "正在连接";
         switch (routes.snapshot().state) {
             case SYSTEM: return "使用系统网络";
@@ -79,6 +98,12 @@ final class NetworkSession {
     private void notifyChanged() {
         if (Looper.myLooper() != main.getLooper()) { main.post(this::notifyChanged); return; }
         if (!closed && observer != null) observer.run();
+        notifyPanelChanged();
+    }
+    private void notifyPanelChanged() {
+        if (Looper.myLooper() != main.getLooper()) { main.post(this::notifyPanelChanged); return; }
+        for (Runnable listener : new ArrayList<>(panelObservers)) if (panelObservers.contains(listener)) listener.run();
+        if (closed) panelObservers.clear();
     }
     private void apply(NetworkSettingsStore.Data value, NetworkRoute.Listener result) {
         NetworkRoute.Listener done = (success, message) -> {
@@ -151,11 +176,13 @@ final class NetworkSession {
         if (!ready()) throw new IllegalStateException("网络尚未就绪，请先选择线路或使用系统网络");
         WorkspaceState.Account account = WorkspaceFiles.read(context.getFilesDir()).find(accountId);
         if (!WorkspaceState.profile(account.storageId).equals(WebViewCompat.getProfile(web).getName())) throw new IllegalStateException("文件账号已改变，请重新发起");
+        FileJob job;
         synchronized (this) {
             if (jobs.size() >= 32) throw new IllegalStateException("文件任务数量已满");
-            FileJob job = new FileJob(accountId, account.storageId, epochs.getOrDefault(accountId, 0L), WebViewCompat.getProfile(web).getCookieManager(), routes.snapshot());
-            jobs.put(job.id, job); return job;
+            job = new FileJob(accountId, account.storageId, epochs.getOrDefault(accountId, 0L), WebViewCompat.getProfile(web).getCookieManager(), routes.snapshot());
+            jobs.put(job.id, job);
         }
+        notifyPanelChanged(); return job;
     }
     void invalidateAccount(String accountId) {
         List<FileJob> cancelled = new ArrayList<>();
@@ -167,6 +194,7 @@ final class NetworkSession {
         synchronized (this) { if (closed) return; closed = true; cancelled = new ArrayList<>(jobs.values()); }
         for (FileJob job : cancelled) job.cancel();
         routes.close(); settingsIO.shutdown();
+        notifyPanelChanged();
     }
     final class FileJob {
         final String id = UUID.randomUUID().toString();
@@ -190,6 +218,6 @@ final class NetworkSession {
             catch (Exception unavailable) { return false; }
         }
         void cancel() { cancelled = true; NetworkDownload.Handle current = download; if (current != null) current.cancel(); Runnable action = cancellation; if (action != null) main.post(action); }
-        void finish() { if (finished.compareAndSet(false, true)) synchronized (NetworkSession.this) { jobs.remove(id); } }
+        void finish() { if (finished.compareAndSet(false, true)) { synchronized (NetworkSession.this) { jobs.remove(id); } notifyPanelChanged(); } }
     }
 }
