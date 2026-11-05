@@ -4,11 +4,17 @@ on:
     branches: [dev]
     paths: ['.github/workflows/android-network-panel-candidate.yml']
   workflow_dispatch:
+    inputs:
+      deliver_verified_only:
+        description: Repackage the already verified run 42003462509 with current installation notes, without rebuilding
+        type: boolean
+        default: false
 permissions:
   contents: read
   actions: read
 jobs:
   build:
+    if: ${{ !inputs.deliver_verified_only }}
     runs-on: ubuntu-latest
     timeout-minutes: 40
     env:
@@ -122,20 +128,36 @@ jobs:
           path: android/app/build/network-panel-evidence/
   deliver:
     needs: native-ui
+    if: ${{ always() && (inputs.deliver_verified_only || needs.native-ui.result == 'success') }}
     runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
+      - name: Verify immutable prior acceptance and unchanged Android source for notes-only delivery
+        if: inputs.deliver_verified_only
+        run: |
+          test "$(gh api repos/${{ github.repository }}/actions/runs/42003462509 --jq .conclusion)" = success
+          test "$(gh api repos/${{ github.repository }}/actions/runs/42003462509 --jq .head_sha)" = b45a53f0d06b96a8ed9af9020d062ec537cfaea6
+          git fetch origin b45a53f0d06b96a8ed9af9020d062ec537cfaea6 --depth=1
+          git diff --exit-code b45a53f0d06b96a8ed9af9020d062ec537cfaea6 HEAD -- android
       - uses: actions/download-artifact@v4
         with:
           name: network-panel-input
+          run-id: ${{ inputs.deliver_verified_only && 42003462509 || github.run_id }}
+          github-token: ${{ github.token }}
           path: input
       - uses: actions/download-artifact@v4
         with:
           name: network-panel-api-28
+          run-id: ${{ inputs.deliver_verified_only && 42003462509 || github.run_id }}
+          github-token: ${{ github.token }}
           path: api28
       - uses: actions/download-artifact@v4
         with:
           name: network-panel-api-35
+          run-id: ${{ inputs.deliver_verified_only && 42003462509 || github.run_id }}
+          github-token: ${{ github.token }}
           path: api35
       - name: Gate real user candidate on native functionality and data checks
         run: |
@@ -150,7 +172,7 @@ jobs:
           for name in (receipt['file'], 'receipt.json', 'SHA256SUMS.txt', 'LICENSE', 'network-core-dependencies.json'):
               shutil.copyfile(pathlib.Path('input',name),out/name)
           shutil.copytree('input/licenses',out/'licenses')
-          shutil.copyfile('docs/android-network-panel.md',out/'INSTALL.md')
+          shutil.copyfile('docs/android-network-panel-install.md',out/'INSTALL.md')
           (out/'native-network-panel-acceptance.json').write_text(json.dumps(reports,indent=2)+'\n')
           PY
       - uses: actions/upload-artifact@v4
