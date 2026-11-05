@@ -22,6 +22,8 @@
 
 42099994705（329d734）测试APK编译通过，运行在首个编辑器被Pixel Launcher ANR遮挡，未到新增注册屏障。原始日志确认Launcher在20:12:14 UTC已ANR，而App进程首次出现在20:12:39 UTC；固定emulator-runner动作在开机标志出现后立即发送MENU键，不等待焦点窗口。API35改用已有PoC形式的手动AVD启动，避免早期按键，等待实际焦点窗口并保留启动/结束日志；若启动期已有Launcher ANR直接失败，不能关闭弹窗或忽略。App与测试业务断言不变，根因关联仍待复核。
 
+42103147903（648cab5）仅启动脚本在默认AVD目录假设处失败，未启动App；改为RUNNER_TEMP内显式AVD目录与路径，两条SDK命令使用同一ANDROID_AVD_HOME。该轮不能计为运行验收。
+
 ## 交付状态
 
 已交付固定签名 **3.0.0-alpha.24-beta.5**（versionCode `3000029`），适用于 Android 9 及以上 arm64 设备。源码与验收仅在 `dev`；未合并 `main`、未创建公开 Release、未更新官网或个人设备。

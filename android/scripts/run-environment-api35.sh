@@ -5,10 +5,12 @@ test "${GITHUB_ACTIONS:-}" = true
 studio_evidence=android/app/build/environment-client-evidence
 mkdir -p "$studio_evidence"
 sdkmanager 'emulator' 'system-images;android-35;google_apis;x86_64'
-echo no | avdmanager create avd --force -n studio-environment35 --package 'system-images;android-35;google_apis;x86_64' --device pixel_2
-studio_avd_home="${ANDROID_AVD_HOME:-$HOME/.android/avd}"
+studio_avd_home="$RUNNER_TEMP/studio-environment-avd"
+mkdir -p "$studio_avd_home"
+echo no | ANDROID_AVD_HOME="$studio_avd_home" avdmanager create avd --force -n studio-environment35 --path "$studio_avd_home/studio-environment35.avd" --package 'system-images;android-35;google_apis;x86_64' --device pixel_2
+test -f "$studio_avd_home/studio-environment35.avd/config.ini"
 printf '\nhw.cpu.ncore=2\n' >> "$studio_avd_home/studio-environment35.avd/config.ini"
-"$ANDROID_HOME/emulator/emulator" -avd studio-environment35 -port 5554 -memory 4096 -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader -feature -Vulkan -writable-system > "$studio_evidence/emulator.log" 2>&1 &
+ANDROID_AVD_HOME="$studio_avd_home" "$ANDROID_HOME/emulator/emulator" -avd studio-environment35 -port 5554 -memory 4096 -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader -feature -Vulkan -writable-system > "$studio_evidence/emulator.log" 2>&1 &
 studio_emulator_pid=$!
 studio_cleanup(){
   studio_exit=$?
