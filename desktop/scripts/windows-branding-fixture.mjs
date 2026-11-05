@@ -64,7 +64,7 @@ export async function runWindowsBrandingMatrix() {
   assert(response.ok);
   writeFileSync(baseline, Buffer.from(await response.arrayBuffer()));
   assert.equal(sha(baseline), old.sha256);
-  const tlsConfig = { key: path.join(root, 'fixture-key.json'), cer: path.join(root, 'fixture.cer'), password };
+  const tlsConfig = { key: path.join(root, 'fixture-key.json'), cer: path.join(root, 'fixture.cer') };
   writeFileSync(path.join(root, 'tls.json'), JSON.stringify(tlsConfig));
   ps('Tls', { Config: path.join(root, 'tls.json'), Output: path.join(root, 'thumbprint') });
   const thumbprint = readFileSync(path.join(root, 'thumbprint'), 'utf8').trim();
