@@ -25,3 +25,5 @@
 42028964766（源码1976fdc）构建、单元检查、lint、签名和人用包检查通过；Android 9/15的原固定Beta覆盖升级检查均通过，验证旧账号序列化、Cookie、localStorage、加密恢复记录、资产与密钥保留。合成功能检查仍未通过，因此尚未生成最终候选。
 
 合成检查的首个页面在两个系统上均触发Gecko扩展端口关闭异常：`WebExtension.Port.disconnectFromExtension → EventDispatcher.shutdownNative → NativeException NullHandle`。完整logcat与首个失败已保留在对应Actions产物，正在修复端口生命周期；不会以跳过页面恢复、放宽断言或吞掉异常替代验收。
+
+42031582616（a29668d）再次通过构建和两个系统的人用包升级检查，合成日志确认端口崩溃消失，页面仍被网络确认保护拦住。固定Gecko158的官方`ext-proxy.js`明确拒绝Android的`proxy.settings`读写；正在改用同版本支持的`proxy.onRequest`，保留未确认封锁及无直连回退，不把此前WebView网络验证当作Gecko验证。

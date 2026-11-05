@@ -64,7 +64,9 @@ final class EnvironmentRouteController {
                 try{
                     if(source!=port||!(raw instanceof JSONObject)||desired==null||routeToken.isEmpty())return;JSONObject value=(JSONObject)raw;
                     if(!"route-applied".equals(value.optString("type"))||value.getLong("generation")!=sent||sent!=desired.getLong("generation")||!routeToken.equals(value.optString("routeToken"))||!desired.optString("instance").equals(value.optString("instance")))return;
-                    if(!value.optBoolean("ok")||!desired.getString("kind").equals(value.getString("kind"))||desired.optInt("port")!=value.optInt("port")){block("网络设置未能生效，请重试");return;}
+                    if(BuildConfig.ENVIRONMENT_TEST)android.util.Log.i("StudioEnvironmentRoute","ack kind="+value.optString("kind")+" port="+value.optInt("port")+" generation="+sent+" implementation="+value.optString("implementation")+" handler="+value.optBoolean("handlerInstalled")+" guard="+value.optBoolean("guardInstalled")+" ok="+value.optBoolean("ok")+" error="+value.optString("error"));
+                    boolean needsHandler="direct".equals(desired.getString("kind"))||"proxy".equals(desired.getString("kind"));
+                    if(!value.optBoolean("ok")||!"proxy.onRequest".equals(value.optString("implementation"))||!value.optBoolean("guardInstalled")||value.optBoolean("handlerInstalled")!=needsHandler||!desired.getString("kind").equals(value.getString("kind"))||desired.optInt("port")!=value.optInt("port")){block("网络设置未能生效，请重试");return;}
                     acknowledged=sent;ready=!"blocked".equals(desired.getString("kind"));lastNotice=ready?"":"网络暂不可用";listener.route(ready,desired.optBoolean("foreground"),lastNotice);
                 }catch(Exception error){block("网络设置确认失败");}
             }
