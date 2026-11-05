@@ -38,6 +38,8 @@ public final class BetaBrowserUpgradeTest {
     private static final String ORIGIN = "https://beta-login-fixture.invalid/";
     private final Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
     private final AtomicInteger intercepted = new AtomicInteger();
+    private final AtomicInteger inlineDocuments = new AtomicInteger();
+    private final AtomicInteger inlineIcons = new AtomicInteger();
     private final java.util.concurrent.ConcurrentLinkedQueue<String> requests = new java.util.concurrent.ConcurrentLinkedQueue<>();
     private File file(String name) { return new File(context.getFilesDir(), name); }
     private void main(Runnable action) { InstrumentationRegistry.getInstrumentation().runOnMainSync(action); }
@@ -89,15 +91,24 @@ public final class BetaBrowserUpgradeTest {
             view.getSettings().setBlockNetworkLoads(true);
             view.setWebViewClient(new WebViewClient() {
                 @Override public WebResourceResponse shouldInterceptRequest(WebView v, WebResourceRequest request) {
+                    String url = request.getUrl().toString();
+                    requests.add(url + " mainFrame=" + request.isForMainFrame());
+                    if (request.isForMainFrame() && "data:text/html;charset=utf-8;base64,".equals(url)) {
+                        inlineDocuments.incrementAndGet();
+                        return null;
+                    }
+                    if (!request.isForMainFrame() && "data:,".equals(url)) {
+                        inlineIcons.incrementAndGet();
+                        return null;
+                    }
                     intercepted.incrementAndGet();
-                    requests.add(request.getUrl().toString() + " mainFrame=" + request.isForMainFrame());
                     return new WebResourceResponse("text/plain", "UTF-8",
                         new ByteArrayInputStream("Blocked by owned fixture".getBytes(StandardCharsets.UTF_8)));
                 }
                 @Override public void onPageFinished(WebView v, String url) { ready.countDown(); }
             });
             result.set(view);
-            view.loadDataWithBaseURL(ORIGIN, "<!doctype html><title>Owned offline Beta login fixture</title><p id='owned'>offline-only</p>",
+            view.loadDataWithBaseURL(ORIGIN, "<!doctype html><title>Owned offline Beta login fixture</title><link rel='icon' href='data:,'><p id='owned'>offline-only</p>",
                 "text/html", "UTF-8", null);
         });
         assertTrue("Offline fixture did not load", ready.await(25, TimeUnit.SECONDS));
@@ -155,7 +166,8 @@ public final class BetaBrowserUpgradeTest {
             assertEquals("null", js(defaultPage, "localStorage.getItem('studio-beta-account')"));
             // Do not open/create an IndexedDB in the default profile: the three originals are tested above.
         } finally { close(defaultPage); }
-        assertEquals("Fixture unexpectedly requested a network resource: " + requests, 0, intercepted.get());
+        assertEquals("Expected exactly five owned inline documents: " + requests, 5, inlineDocuments.get());
+        assertEquals("Fixture attempted HTTP or unknown resource: " + requests, 0, intercepted.get());
     }
     private JSONObject seedNative(String signer) throws Exception {
         assertFalse("Refuse to overwrite an existing fixture", file("beta-browser-expected.json").exists());
@@ -263,7 +275,8 @@ public final class BetaBrowserUpgradeTest {
             .put("persistentProfiles", 3).put("httpOnlySecureCookies", 3).put("localStorageProfiles", 3).put("indexedDBProfiles", 3)
             .put("encryptedRecoveryRecords", 4).put("defaultProfileEmpty", true).put("provider", provider.get())
             .put("workspaceSHA256", expected.getString("stateSHA")).put("expectedSHA256", hash(Files.readAllBytes(file("beta-browser-expected.json").toPath())))
-            .put("interceptedRequests", intercepted.get()).put("inlineSyntheticPagesOnly", true).put("appActivityLaunched", false);
+            .put("interceptedRequests", intercepted.get()).put("inlineDocumentCallbacks", inlineDocuments.get())
+            .put("inlineIconCallbacks", inlineIcons.get()).put("inlineSyntheticPagesOnly", true).put("appActivityLaunched", false);
         Bundle result = new Bundle(); result.putString("betaBrowserUpgradeProof", proof.toString());
         InstrumentationRegistry.getInstrumentation().addResults(result);
     }

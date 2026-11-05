@@ -95,7 +95,8 @@ def main():
         for key, count in [('accounts', 3), ('tabs', 4), ('persistentProfiles', 3), ('httpOnlySecureCookies', 3),
                            ('localStorageProfiles', 3), ('indexedDBProfiles', 3), ('encryptedRecoveryRecords', 4)]:
             assert proof[key] == count, (key, proof)
-        assert proof['interceptedRequests'] == 0 and proof['inlineSyntheticPagesOnly'] and not proof['appActivityLaunched']
+        assert proof['interceptedRequests'] == 0 and proof['inlineDocumentCallbacks'] == 5
+        assert proof['inlineSyntheticPagesOnly'] and not proof['appActivityLaunched']
         return proof
 
     seeded = phase('seed')
