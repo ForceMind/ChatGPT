@@ -358,7 +358,7 @@ class Acceptance:
     def ime_shown(dump):
         # Android 9/15's current service state is authoritative. The IME's cached
         # mIsInputViewShown can remain true with mWindowVisible=false after hiding.
-        values = re.findall(r'^\s*mInputShown\s*=\s*(true|false)\b', dump, re.MULTILINE)
+        values = re.findall(r'\bmInputShown\s*=\s*(true|false)\b', dump)
         assert len(values) == 1, 'Missing or ambiguous current system IME visibility'
         return values[0] == 'true'
 
