@@ -1,6 +1,6 @@
 {
   "name": "chatgpt-profiles",
-  "version": "3.0.0-alpha.23",
+  "version": "3.0.0-alpha.24",
   "private": true,
   "description": "ChatGPT Studio — independent accounts, immersive browsing and local asset workflows",
   "author": "ForceMind",
@@ -105,7 +105,7 @@
           ]
         }
       ],
-      "executableName": "ChatGPT Profiles",
+      "executableName": "ChatGPT Studio",
       "publish": [
         {
           "provider": "generic",
@@ -125,7 +125,8 @@
       "deleteAppDataOnUninstall": false,
       "runAfterFinish": false,
       "shortcutName": "ChatGPT Studio",
-      "uninstallDisplayName": "ChatGPT Studio"
+      "uninstallDisplayName": "ChatGPT Studio",
+      "include": "assets/windows-installer.nsh"
     },
     "extraResources": [
       {

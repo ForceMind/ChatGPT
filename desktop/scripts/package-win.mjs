@@ -10,19 +10,47 @@ if (process.platform !== 'win32' || process.arch !== 'x64') throw new Error('请
 const root = fileURLToPath(new URL('..', import.meta.url));
 const pkg = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8'));
 const output = path.join(root, 'release/windows');
+const builder = path.join(root, 'node_modules/electron-builder/out/cli/cli.js');
+const builderOptions = { cwd: root, stdio: 'inherit', env: { ...process.env, CSC_IDENTITY_AUTO_DISCOVERY: 'false' } };
+execFileSync(
+  process.execPath,
+  [builder, '--win', '--x64', '--dir', '--publish', 'never', `--config.directories.output=${output}`],
+  builderOptions
+);
+const unpacked = path.join(output, 'win-unpacked');
+const inventory = [];
+function inventoryFiles(directory) {
+  for (const item of readdirSync(directory, { withFileTypes: true })) {
+    const file = path.join(directory, item.name);
+    if (item.isSymbolicLink()) throw Error('Installer payload must not contain links');
+    if (item.isDirectory()) inventoryFiles(file);
+    else
+      inventory.push({
+        path: path.relative(unpacked, file).split(path.sep).join('/'),
+        sha256: createHash('sha256').update(readFileSync(file)).digest('hex')
+      });
+  }
+}
+inventoryFiles(unpacked);
+writeFileSync(
+  path.join(root, 'assets/windows-payload.generated.json'),
+  JSON.stringify({ version: pkg.version, files: inventory }, null, 2)
+);
 execFileSync(
   process.execPath,
   [
-    path.join(root, 'node_modules/electron-builder/out/cli/cli.js'),
+    builder,
     '--win',
     'nsis',
     'zip',
     '--x64',
+    '--prepackaged',
+    unpacked,
     '--publish',
     'never',
     `--config.directories.output=${output}`
   ],
-  { cwd: root, stdio: 'inherit', env: { ...process.env, CSC_IDENTITY_AUTO_DISCOVERY: 'false' } }
+  builderOptions
 );
 const executableName = pkg.build.win.executableName || pkg.build.productName;
 const exe = path.join(output, 'win-unpacked', executableName + '.exe');

@@ -1,0 +1,181 @@
+{
+  "run": 41975812832,
+  "sourceSHA": "6412dad85abeee8d889b628afb910e77da6117e4",
+  "candidateArtifact": 13392425702,
+  "evidenceArtifact": 13392445228,
+  "version": "3.0.0-alpha.24",
+  "platform": "windows-x64",
+  "signing": "unsigned",
+  "artifacts": [
+    {
+      "file": "ChatGPT-Studio-3.0.0-alpha.24-windows-x64-setup.exe",
+      "bytes": 131359974,
+      "sha256": "623b6f4784e54ef759ebce344b65fba3f3e6d6ceaa8d269fa919373d2ab4dfd2"
+    },
+    {
+      "file": "ChatGPT-Studio-3.0.0-alpha.24-windows-x64.zip",
+      "bytes": 181294882,
+      "sha256": "009fb5988890dcdd60b07eabd6d0c96b8dc2e56a6bf72658bc5423398520c80e"
+    }
+  ],
+  "check": {
+    "command": "npm run check",
+    "exitCode": 0,
+    "tests": 106,
+    "passed": 105,
+    "failed": 0,
+    "skipped": 1,
+    "skip": "macOS native installer test is platform-gated on Windows"
+  },
+  "syntheticAcceptance": {
+    "complete": true,
+    "sourceSHA": "6412dad85abeee8d889b628afb910e77da6117e4",
+    "version": "3.0.0-alpha.24",
+    "cases": [
+      {
+        "name": "new-default",
+        "complete": true,
+        "directory": "C:\\Users\\runneradmin\\AppData\\Local\\Programs\\ChatGPT Studio",
+        "links": [
+          {
+            "target": "C:\\Users\\runneradmin\\AppData\\Local\\Programs\\ChatGPT Studio\\ChatGPT Studio.exe",
+            "path": "C:\\Users\\runneradmin\\Desktop\\ChatGPT Studio.lnk"
+          },
+          {
+            "target": "C:\\Users\\runneradmin\\AppData\\Local\\Programs\\ChatGPT Studio\\ChatGPT Studio.exe",
+            "path": "C:\\Users\\runneradmin\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\ChatGPT Studio.lnk"
+          }
+        ],
+        "productName": "ChatGPT Studio",
+        "productVersion": "3.0.0.0",
+        "uninstaller": "\"C:\\Users\\runneradmin\\AppData\\Local\\Programs\\ChatGPT Studio\\Uninstall ChatGPT Studio.exe\" /currentuser"
+      },
+      {
+        "name": "legacy-default-migrated",
+        "complete": true,
+        "source": "C:\\Users\\runneradmin\\AppData\\Local\\Programs\\ChatGPT Profiles",
+        "target": "C:\\Users\\runneradmin\\AppData\\Local\\Programs\\ChatGPT Studio",
+        "cookieAndStoragePreserved": true,
+        "dataBytesUnchanged": true,
+        "pinnedLinkTargetUpdated": true,
+        "links": [
+          {
+            "target": "C:\\Users\\runneradmin\\AppData\\Local\\Programs\\ChatGPT Studio\\ChatGPT Studio.exe",
+            "path": "C:\\Users\\runneradmin\\Desktop\\ChatGPT Studio.lnk"
+          },
+          {
+            "target": "C:\\Users\\runneradmin\\AppData\\Local\\Programs\\ChatGPT Studio\\ChatGPT Studio.exe",
+            "path": "C:\\Users\\runneradmin\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\ChatGPT Studio.lnk"
+          }
+        ],
+        "productName": "ChatGPT Studio",
+        "productVersion": "3.0.0.0",
+        "uninstaller": "\"C:\\Users\\runneradmin\\AppData\\Local\\Programs\\ChatGPT Studio\\Uninstall ChatGPT Studio.exe\" /currentuser"
+      },
+      {
+        "name": "custom-kept",
+        "complete": true,
+        "source": "D:\\a\\_temp\\studio-branding-g2TXKL\\custom-location",
+        "target": "D:\\a\\_temp\\studio-branding-g2TXKL\\custom-location",
+        "cookieAndStoragePreserved": true,
+        "dataBytesUnchanged": true,
+        "pinnedLinkTargetUpdated": true,
+        "links": [
+          {
+            "target": "D:\\a\\_temp\\studio-branding-g2TXKL\\custom-location\\ChatGPT Studio.exe",
+            "path": "C:\\Users\\runneradmin\\Desktop\\ChatGPT Studio.lnk"
+          },
+          {
+            "target": "D:\\a\\_temp\\studio-branding-g2TXKL\\custom-location\\ChatGPT Studio.exe",
+            "path": "C:\\Users\\runneradmin\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\ChatGPT Studio.lnk"
+          }
+        ],
+        "productName": "ChatGPT Studio",
+        "productVersion": "3.0.0.0",
+        "uninstaller": "\"D:\\a\\_temp\\studio-branding-g2TXKL\\custom-location\\Uninstall ChatGPT Studio.exe\" /currentuser"
+      },
+      {
+        "name": "forced-post-uninstall-failure-rollback",
+        "complete": true,
+        "oldExeRestored": true,
+        "cookiesAndStoragePreserved": true
+      },
+      {
+        "name": "unknown-old-file-refused",
+        "complete": true
+      },
+      {
+        "name": "occupied-new-target-refused",
+        "complete": true
+      }
+    ],
+    "requests": [
+      {
+        "host": "chatgpt.com",
+        "url": "/"
+      },
+      {
+        "host": "chatgpt.xincreates.com",
+        "url": "/updates/windows/alpha.yml?noCache=1k6l3v393"
+      },
+      {
+        "host": "chatgpt.xincreates.com",
+        "url": "/updates/windows/alpha.yml?noCache=1k6l3vdp4"
+      },
+      {
+        "host": "chatgpt.com",
+        "url": "/"
+      },
+      {
+        "host": "chatgpt.com",
+        "url": "/"
+      },
+      {
+        "host": "chatgpt.xincreates.com",
+        "url": "/updates/windows/alpha.yml?noCache=1k6l3vu7t"
+      },
+      {
+        "host": "chatgpt.xincreates.com",
+        "url": "/updates/windows/alpha.yml?noCache=1k6l406ct"
+      },
+      {
+        "host": "chatgpt.com",
+        "url": "/"
+      },
+      {
+        "host": "chatgpt.com",
+        "url": "/"
+      },
+      {
+        "host": "chatgpt.xincreates.com",
+        "url": "/updates/windows/alpha.yml?noCache=1k6l40tkr"
+      },
+      {
+        "host": "chatgpt.com",
+        "url": "/"
+      },
+      {
+        "host": "chatgpt.com",
+        "url": "/"
+      },
+      {
+        "host": "chatgpt.xincreates.com",
+        "url": "/updates/windows/alpha.yml?noCache=1k6l41i3l"
+      }
+    ],
+    "screenshots": false,
+    "realChatGPT": false,
+    "isolatedWindowsRunner": true,
+    "browser": "Packaged old/new Electron apps; all Chromium DNS mapped to owned loopback TLS/SPKI, no proxy; no real account or service",
+    "fixtureCertificateThumbprint": "68F88811138879CEEC919D3102C105E13DD6B5FE",
+    "pinnedScope": "Synthetic pinned .lnk target, not Explorer taskbar visual cache"
+  },
+  "limits": {
+    "mainMerged": false,
+    "publicRelease": false,
+    "websiteDeployed": false,
+    "realAccountsTested": false,
+    "explorerTaskbarVisualCacheVerified": false,
+    "earlierGenericLaunchFailure": "41975077148 had one Process failed to launch without child details; not reproduced in the instrumented complete matrix, root cause remains unknown"
+  }
+}
