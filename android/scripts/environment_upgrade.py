@@ -1,4 +1,4 @@
-"""Fixed Beta.4 -> Beta.5 preservation proof on fresh, owned GitHub Actions emulators.
+"""Fixed Beta.5 -> Beta.6 preservation proof on fresh, owned GitHub Actions emulators.
 
 Importing this module does not invoke adb, create evidence, or alter a device.
 All browser documents in this phase are owned inline .invalid fixtures.
@@ -20,8 +20,8 @@ INPUT = Path('android/app/build/environment-client-input')
 OLD = Path('android/app/build/environment-client-baseline')
 OLD_CI = Path('android/app/build/environment-client-ci-baseline')
 EVIDENCE = Path('android/app/build/environment-client-evidence')
-OLD_CODE = 3000028
-NEW_CODE = 3000029
+OLD_CODE = 3000029
+NEW_CODE = 3000030
 EXPECTED_FILE = '/data/user/0/' + PACKAGE + '/files/environment-upgrade-expected.json'
 
 
@@ -219,7 +219,7 @@ def run_upgrade(target='human'):
         assert Path(receipt['file']).name == receipt['file'], 'Receipt APK must be a basename'
         human = INPUT / receipt['file']
         assert re.fullmatch(r'[a-f0-9]{64}', receipt['sha256']) and _sha(human) == receipt['sha256']
-        previous = _json(Path('docs/releases/android-network-fixed-beta.4.json'))
+        previous = _json(Path('docs/releases/android-environment-beta5-baseline.json'))
         baseline = previous['receipt']
         assert baseline['package'] == PACKAGE and baseline['versionCode'] == OLD_CODE
         signer = _json(Path('docs/signing/android-network-beta.json'))['certificateSHA256']
@@ -231,7 +231,7 @@ def run_upgrade(target='human'):
             old_hash = baseline['sha256']
             scope = 'original-delivered-arm64'
         else:
-            old = OLD_CI / 'candidate-x86.apk'
+            old = OLD_CI / 'human-x86.apk'
             records = [proof for proof in previous['deviceProofs'] if proof['api'] == 28]
             assert len(records) == 1
             old_hash = records[0]['candidateInstalledSHA256']
@@ -333,6 +333,42 @@ def verify_after_environment():
     finally:
         if guarded:
             _logcat('after-environment')
+
+
+def verify_browser_chrome():
+    """Native legacy UI on the installed synthetic target; all page requests are intercepted."""
+    try:
+        api = _guard()
+        context = _json(EVIDENCE / 'native-context.json')
+        assert context['target'] == 'synthetic'
+        previous = _json(EVIDENCE / 'verified-synthetic.json')
+        assert previous['complete'] and previous['api'] == api
+        _installed(previous['candidateInstalledSHA256'], 'legacy-chrome')
+        command = ['adb', 'shell', 'am', 'instrument', '-w', '-r', '-e', 'class',
+                   'com.forcemind.chatgpt.profiles.BrowserChromeNavigationTest',
+                   '-e', 'expectedApi', str(api), '-e', 'baselineScope', previous['baselineScope'],
+                   '-e', 'signer', previous['signerSHA256'], RUNNER]
+        result = _run(command, timeout=300, check=False)
+        (EVIDENCE / 'browser-chrome-legacy.txt').write_text(result.stdout, encoding='utf-8')
+        print(result.stdout, flush=True)
+        assert result.returncode == 0
+        assert re.findall(r'(?m)^OK \((\d+) test\)\s*$', result.stdout) == ['1']
+        assert not re.search(r'FAILED|FAILURES!!!|shortMsg=', result.stdout)
+        records = re.findall(r'(?m)^INSTRUMENTATION_RESULT: browserChromeProof=(\{[^\r\n]+\})\s*$', result.stdout)
+        assert len(records) == 1
+        proof = json.loads(records[0])
+        assert proof['schema'] == 1 and proof['complete'] and proof['api'] == api and proof['engine'] == 'webview'
+        for flag in ('nativeHeaderTitleSwitch', 'switchNoReload', 'disabledEmptyHistory', 'backForward',
+                     'normalAndForceRefresh', 'draftCookieStoragePreserved', 'allRequestsIntercepted'):
+            assert proof[flag], flag
+        assert proof['unexpectedRequests'] == 0 and not proof['screenshots'] and not proof['realServicesAccessed']
+        _write_json(EVIDENCE / 'browser-chrome-legacy.json', proof)
+        return proof
+    except Exception:
+        _record_failure()
+        raise
+    finally:
+        _logcat('legacy-chrome')
 
 
 if __name__ == '__main__':

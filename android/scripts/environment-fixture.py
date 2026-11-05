@@ -20,7 +20,7 @@ from urllib.parse import parse_qs, urlsplit
 import uuid
 
 HOST = "environment-fixture.test"
-PAGE_ACCOUNTS = {"/c/a1": "A", "/c/a2": "A", "/c/b1": "B", "/c/c1": "C"}
+PAGE_ACCOUNTS = {"/c/a1": "A", "/c/a2": "A", "/c/b1": "B", "/c/c1": "C", "/c/navigation": "A"}
 MARKERS = {account: "environment-" + account for account in ("A", "B", "C")}
 CONTENTEDITABLE = {"/c/a2", "/c/c1"}
 STORE_KEY = "environment_identity"
@@ -250,6 +250,7 @@ a,button{{font-size:14px}}button{{padding:10px 18px;border:0;border-radius:8px;b
 <header>合成环境 {html.escape(account)} · {html.escape(path)} · 无真实服务</header>
 <div id="reading" aria-label="合成对话阅读区">{messages}</div>
 <div id="composer">{editor}<div class="actions"><a id="download" aria-label="保存合成文件" href="/download?account={account}">下载合成文件</a>
+<a id="navigation" aria-label="进入合成下一页" href="/c/navigation">进入下一页</a>
 <button id="send" type="button">发送合成消息</button></div></div>
 </main><script>{script}</script></body></html>'''
     return body.encode("utf-8")

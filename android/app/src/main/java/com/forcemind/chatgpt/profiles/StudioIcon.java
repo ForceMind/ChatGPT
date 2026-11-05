@@ -13,6 +13,7 @@ final class StudioIcon extends Drawable {
             case "chevron"->path(canvas,7,10,12,15,17,10);case "back"->path(canvas,14,5,7,12,14,19);
             case "plus"->{path(canvas,12,5,12,19);path(canvas,5,12,19,12);}
             case "check"->path(canvas,5,12,9,16,19,6);
+            case "refresh"->{canvas.drawArc(4,4,20,20,-50,300,false,paint);path(canvas,20,4,20,10,14,10);}
             case "chat"->{path(canvas,3,4,21,4,21,17,9,17,4,21,4,17,3,17,3,4);path(canvas,7,9,17,9);}
             case "folder"->path(canvas,3,5,10,5,12,8,21,8,21,20,3,20,3,5);
             case "file"->{path(canvas,5,3,14,3,19,8,19,21,5,21,5,3);path(canvas,14,3,14,9,19,9);path(canvas,8,14,16,14);}

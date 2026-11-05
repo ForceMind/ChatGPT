@@ -69,8 +69,13 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
     private static final int INK = Color.rgb(23, 23, 23), GRAY = Color.rgb(244, 244, 244);
     private WorkspaceState state;
     private StateStore store;
-    private LinearLayout root, header, tabs;
-    private HorizontalScrollView tabScroll;
+    private LinearLayout root, header;
+    private StudioBrowserHeader browserHeader;
+    private final Map<WebView,Boolean> loadingPages=new java.util.IdentityHashMap<>();
+    private final Map<WebView,Integer> forcedCacheModes=new java.util.IdentityHashMap<>();
+    private boolean navigationPending;
+    private WebView navigationWeb;
+    private long navigationTicket;
     private FrameLayout content;
     private ProgressBar progress;
     private BrowserMemory memory;
@@ -78,7 +83,6 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
     private OfflineSnapshotView offlineSnapshot;
     private WebView snapshotOwner;
     private LinearLayout undoBar;
-    private TextView tabCounter;
     private TabOverview overview;
     private boolean keyboardVisible;
     private long undoSerial;
@@ -165,7 +169,15 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
             else{v.setPadding(insets.getSystemWindowInsetLeft(),insets.getSystemWindowInsetTop(),insets.getSystemWindowInsetRight(),insets.getSystemWindowInsetBottom());keyboardVisible=insets.getSystemWindowInsetBottom()>dp(150);}
             return insets;
         });
-        header=new LinearLayout(this);header.setGravity(Gravity.CENTER_VERTICAL);header.setPadding(dp(10),dp(6),dp(8),dp(6));header.setMinimumHeight(dp(56));header.setBackgroundColor(Color.WHITE);root.addView(header,new LinearLayout.LayoutParams(-1,-2));
+        header=new LinearLayout(this);header.setBackgroundColor(Color.WHITE);root.addView(header,new LinearLayout.LayoutParams(-1,-2));
+        browserHeader=new StudioBrowserHeader(this,new StudioBrowserHeader.Host(){
+            @Override public void accounts(){chooseAccount();}
+            @Override public void select(String tabId){selectHeaderTab(tabId);}
+            @Override public void tabs(){showTabOverview();}
+            @Override public void refresh(){refreshPage(false);}
+            @Override public void stop(){stopPage();}
+            @Override public void more(){showAccountMenu();}
+        });header.addView(browserHeader,new LinearLayout.LayoutParams(-1,-2));
         networkNotice=new LinearLayout(this);networkNotice.setGravity(Gravity.CENTER_VERTICAL);networkNotice.setPadding(dp(12),dp(4),dp(8),dp(4));networkNotice.setBackgroundColor(GRAY);networkNotice.setVisibility(View.GONE);
         networkNoticeText=text("",13);networkNotice.addView(networkNoticeText,new LinearLayout.LayoutParams(0,-2,1));TextView networkAction=button("网络","查看网络设置");networkAction.setOnClickListener(v->NetworkSheet.show(this,memory.network()));networkNotice.addView(networkAction);root.addView(networkNotice,new LinearLayout.LayoutParams(-1,-2));
         progress=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);progress.setProgressTintList(android.content.res.ColorStateList.valueOf(INK));progress.setVisibility(View.INVISIBLE);root.addView(progress,new LinearLayout.LayoutParams(-1,dp(2)));
@@ -174,14 +186,53 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
         setContentView(root);
     }
 
-    private ImageButton iconButton(String name,String label){ImageButton b=new ImageButton(this);b.setImageDrawable(new StudioIcon(name));b.setScaleType(android.widget.ImageView.ScaleType.FIT_CENTER);b.setBackgroundColor(Color.TRANSPARENT);b.setPadding(dp(13),dp(13),dp(13),dp(13));b.setContentDescription(label);b.setMinimumHeight(dp(48));return b;}
     private void renderHeader(){
-        if(!ready||fatal)return;WorkspaceState.Account account=state.current();header.removeAllViews();
-        LinearLayout select=new LinearLayout(this);select.setGravity(Gravity.CENTER_VERTICAL);select.setPadding(dp(6),0,dp(6),0);select.setMinimumHeight(dp(48));select.setClickable(true);select.setFocusable(true);select.setContentDescription("切换账号，当前："+account.name);select.setOnClickListener(v->chooseAccount());
-        View dot=new View(this);GradientDrawable point=new GradientDrawable();point.setColor(Color.parseColor(account.color));point.setShape(GradientDrawable.OVAL);dot.setBackground(point);LinearLayout.LayoutParams pointSize=new LinearLayout.LayoutParams(dp(6),dp(6));pointSize.rightMargin=dp(8);select.addView(dot,pointSize);
-        TextView name=text(account.name,15);name.setGravity(Gravity.START|Gravity.CENTER_VERTICAL);name.setTypeface(null,android.graphics.Typeface.BOLD);name.setMaxLines(2);name.setEllipsize(TextUtils.TruncateAt.END);select.addView(name,new LinearLayout.LayoutParams(0,-2,1));ImageView arrow=new ImageView(this);arrow.setImageDrawable(new StudioIcon("chevron"));LinearLayout.LayoutParams ap=new LinearLayout.LayoutParams(dp(14),dp(14));ap.leftMargin=dp(7);select.addView(arrow,ap);header.addView(select,new LinearLayout.LayoutParams(0,-2,1));
-        tabCounter=button("标签 "+account.tabs.size(),"标签页："+account.current().title+"，查看标签页");tabCounter.setBackground(round(GRAY));tabCounter.setOnClickListener(v->showTabOverview());tabCounter.setOnLongClickListener(v->{if(ready&&!fatal)showTabMenu(state.activeAccount,state.current().activeTab);return true;});LinearLayout.LayoutParams counterSize=new LinearLayout.LayoutParams(-2,-2);counterSize.leftMargin=dp(8);header.addView(tabCounter,counterSize);
-        ImageButton more=iconButton("more","更多功能");more.setOnClickListener(v->showAccountMenu());header.addView(more,new LinearLayout.LayoutParams(dp(44),StudioTypography.controlHeight(this)));
+        if(!ready||fatal||state==null||state.current().isEnvironment())return;
+        WebView web=currentWeb();browserHeader.render(state.current(),navigationPending||web!=null&&loadingPages.getOrDefault(web,web.getProgress()<100),web!=null&&overview==null&&offlineSnapshot==null&&!nativePageBusy(web));
+    }
+    private void selectHeaderTab(String tabId){
+        if(!ready||fatal||state.current().activeTab.equals(tabId))return;
+        if(change(next->{WorkspaceState.Account account=next.current();if(account.tabs.stream().noneMatch(tab->tab.id.equals(tabId)))throw new IllegalStateException("标签页已关闭");account.activeTab=tabId;})){closeOverview();showCurrent();}
+    }
+    private boolean nativePageBusy(WebView web){
+        HandoffController controller=handoffs==null?null:handoffs.controller();
+        return pendingJob!=null||fileCallback!=null||mediaRequest!=null||memory!=null&&memory.network().busy()||controller!=null&&controller.owns(web);
+    }
+    private void cancelPageNavigation(){navigationTicket++;navigationPending=false;WebView pending=navigationWeb;navigationWeb=null;if(pending!=null)selectPage(pending,currentWeb()==pending);}
+    private void restoreCacheMode(WebView web){Integer mode=forcedCacheModes.remove(web);if(mode!=null)web.getSettings().setCacheMode(mode);}
+    private boolean samePage(WebView web,String account,String storage,String tab,String url,long epoch){
+        if(!ready||fatal||!resumed||overview!=null||offlineSnapshot!=null||currentWeb()!=web||!state.activeAccount.equals(account)||!state.current().storageId.equals(storage)||!state.current().activeTab.equals(tab)||!java.util.Objects.equals(url,web.getUrl())||pageEpochs.getOrDefault(tab,-1L)!=epoch)return false;
+        try{WorkspaceState latest=store.load();WorkspaceState.Account owner=latest.find(account);return latest.activeAccount.equals(account)&&owner.storageId.equals(storage)&&owner.activeTab.equals(tab);}catch(Exception error){return false;}
+    }
+    private void pageAction(Consumer<WebView> action){
+        WebView web=currentWeb();if(web==null||!ready||fatal)return;
+        if(overview!=null||offlineSnapshot!=null){toast("请先返回原网页，再操作页面");return;}
+        if(navigationPending||nativePageBusy(web)){toast("页面或文件任务正在处理中，请完成后再操作");return;}
+        String account=state.activeAccount,storage=state.current().storageId,tab=state.current().activeTab,url=web.getUrl();long epoch=pageEpochs.getOrDefault(tab,-1L);
+        if(url==null)return;
+        navigationPending=true;navigationWeb=web;selectPage(web,true);long ticket=++navigationTicket;renderHeader();
+        recentHandler.postDelayed(()->{if(navigationPending&&navigationTicket==ticket){cancelPageNavigation();renderHeader();toast("页面暂未完成保护，请稍候重试");}},7000);
+        String check="(function(){try{var visible=function(e){return !!e&&!!e.getClientRects().length;};var busy=Array.from(document.querySelectorAll('[aria-busy=\"true\"],[role=\"progressbar\"],[data-testid=\"stop-button\"],[data-testid=\"remove-file-button\"],[data-testid=\"attachment\"],button[aria-label*=\"Remove file\" i],button[aria-label*=\"Remove attachment\" i],button[aria-label*=\"移除附件\"],button[aria-label*=\"删除附件\"]')).some(visible)||Array.from(document.querySelectorAll('input[type=file]')).some(function(e){return e.files&&e.files.length;});var e=Array.from(document.querySelectorAll('#prompt-textarea,textarea,[contenteditable=\"true\"]')).find(visible);return JSON.stringify({busy:busy,draft:!!e&&!!(e.value||e.innerText||'')});}catch(e){return JSON.stringify({busy:true});}})()";
+        try{web.evaluateJavascript(check,raw->{
+            if(navigationTicket!=ticket||!navigationPending)return;
+            if(!samePage(web,account,storage,tab,url,epoch)){cancelPageNavigation();renderHeader();return;}
+            try{
+                Object parsed=new org.json.JSONTokener(raw).nextValue();JSONObject value=parsed instanceof JSONObject?(JSONObject)parsed:new JSONObject(String.valueOf(parsed));
+                if(value.optBoolean("busy",true)||nativePageBusy(web)){cancelPageNavigation();renderHeader();toast("网页正在生成或处理附件，请完成后再操作");return;}
+                Runnable proceed=()->{if(navigationTicket!=ticket||!navigationPending)return;boolean current=samePage(web,account,storage,tab,url,epoch)&&!nativePageBusy(web);cancelPageNavigation();if(current){restoreCacheMode(web);try{action.accept(web);}catch(RuntimeException error){restoreCacheMode(web);loadingPages.put(web,false);toast("页面操作未完成，请重试");}}renderHeader();};
+                if(recovery!=null)recovery.beforeNavigation(web,proceed,()->{if(navigationTicket==ticket){cancelPageNavigation();renderHeader();}});
+                else if(!value.optBoolean("draft"))proceed.run();
+                else{cancelPageNavigation();renderHeader();toast("当前草稿暂不能保护，请先复制备份后再操作");}
+            }catch(Exception error){cancelPageNavigation();renderHeader();toast("无法确认页面状态，已保留当前页面");}
+        });}catch(RuntimeException error){cancelPageNavigation();renderHeader();toast("页面暂不能操作，请重试");}
+    }
+    private void refreshPage(boolean force){
+        pageAction(web->{String url=web.getUrl();if(!NavigationPolicy.internal(url)){toast("当前页面不能刷新，请重新打开原页面");return;}if(force){forcedCacheModes.put(web,web.getSettings().getCacheMode());web.getSettings().setCacheMode(WebSettings.LOAD_NO_CACHE);}loadingPages.put(web,true);web.loadUrl(url);});
+    }
+    private void historyPage(boolean forward){pageAction(web->{if(forward){if(web.canGoForward())web.goForward();}else if(web.canGoBack())web.goBack();});}
+    private void stopPage(){
+        cancelPageNavigation();WebView web=currentWeb();if(web==null)return;if(nativePageBusy(web)){toast("页面或文件任务正在处理中，请完成后再停止加载");renderHeader();return;}
+        web.stopLoading();loadingPages.put(web,false);restoreCacheMode(web);renderHeader();
     }
     private void rebindLivePages(){
         int retained=0;for(String id:new ArrayList<>(views.keySet())){String account=memory.accounts.get(id),storage=memory.storage.get(id);WorkspaceState.Account found=null;for(WorkspaceState.Account a:state.accounts)if(a.id.equals(account)&&a.storageId.equals(storage)&&(a.tabs.stream().anyMatch(t->t.id.equals(id))||a.closedTabs.stream().anyMatch(t->t.id.equals(id)))){found=a;break;}if(found==null){memory.destroy(id);continue;}
@@ -190,6 +241,7 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
     }
     private void showCurrent(){
         if(!ready||fatal)return;
+        cancelPageNavigation();
         if(networkSettingsPending&&!networkSettingsShowing)openRequestedNetworkSettings();
         if(state.current().isEnvironment()){
             if(networkSettingsShowing||networkSettingsPending)return;
@@ -206,7 +258,7 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
             if(created&&!memory.network().ready()){networkChanged();return;}
             if(created){web=makeWebView(account.id,tab.id,account.storageId);WebView fresh=web;String address=tab.url;if(recovery!=null)recovery.prepare(fresh,address,()->fresh.loadUrl(address));else fresh.loadUrl(address);}
             for(WorkspaceState.Account a:state.accounts)for(WorkspaceState.Tab t:a.tabs){WebView existing=views.get(t.id);if(existing==null)continue;if(existing.getParent()!=content){if(existing.getParent() instanceof ViewGroup)((ViewGroup)existing.getParent()).removeView(existing);content.addView(existing,new FrameLayout.LayoutParams(-1,-1));}selectPage(existing,t.id.equals(tab.id));}
-            web.bringToFront();if(overview==null&&offlineSnapshot==null)web.requestFocus();web.onResume();if(recovery!=null){if(!created&&web.getProgress()==100)recovery.ready(web);recovery.visible();}if(overview!=null)overview.refresh();
+            web.bringToFront();if(overview==null&&offlineSnapshot==null)web.requestFocus();web.onResume();if(recovery!=null){if(!created&&web.getProgress()==100)recovery.ready(web);recovery.visible();}if(overview!=null)overview.refresh();renderHeader();
         }catch(Exception e){fail("标签页暂时无法打开",e);}
     }
     void networkChanged(){
@@ -215,7 +267,7 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
         if(!waiting&&ready&&!fatal&&state!=null&&!views.containsKey(state.current().activeTab)&&(!state.current().isEnvironment()||resumed))showCurrent();
         if(!waiting)drainHandoff();
     }
-    private void selectPage(WebView web,boolean selected){if(web instanceof RetainedWebView){((RetainedWebView)web).blockInput(overview!=null||snapshotOwner==web);((RetainedWebView)web).selectPage(selected);}else web.setVisibility(selected?View.VISIBLE:View.INVISIBLE);}
+    private void selectPage(WebView web,boolean selected){if(web instanceof RetainedWebView){((RetainedWebView)web).blockInput(overview!=null||snapshotOwner==web||navigationPending&&navigationWeb==web);((RetainedWebView)web).selectPage(selected);}else web.setVisibility(selected?View.VISIBLE:View.INVISIBLE);}
 
     void recoveryShowSnapshot(WebView web,JSONObject page,String problem){
         if(page==null||!ready||fatal||isFinishing()||isDestroyed()||overview!=null||currentWeb()!=web)return;
@@ -225,12 +277,12 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
                 offlineSnapshot=new OfflineSnapshotView(this,page,()->{if(!ready||fatal||currentWeb()!=web||state==null)return;web.stopLoading();web.loadUrl(state.current().current().url);});
                 browserArea.addView(offlineSnapshot,new FrameLayout.LayoutParams(-1,-1));selectPage(web,true);web.clearFocus();
             }
-            if(!problem.isEmpty())offlineSnapshot.unavailable(problem);offlineSnapshot.bringToFront();
+            if(!problem.isEmpty())offlineSnapshot.unavailable(problem);offlineSnapshot.bringToFront();renderHeader();
         }catch(Exception error){if(snapshotOwner==web)recoveryHideSnapshot(web);recoveryNotice("已保存的页面暂不可查看；网页与本地记录保留。");}
     }
-    void recoveryHideSnapshot(WebView web){if(snapshotOwner!=web)return;OfflineSnapshotView old=offlineSnapshot;offlineSnapshot=null;snapshotOwner=null;if(old!=null)browserArea.removeView(old);if(web!=null)selectPage(web,currentWeb()==web);}
+    void recoveryHideSnapshot(WebView web){if(snapshotOwner!=web)return;OfflineSnapshotView old=offlineSnapshot;offlineSnapshot=null;snapshotOwner=null;if(old!=null)browserArea.removeView(old);if(web!=null)selectPage(web,currentWeb()==web);renderHeader();}
     boolean recoveryCanCapturePicture(WebView web){
-        if(BuildConfig.NETWORK_TEST)return false; // Authorized CI contains no image capture.
+        if(BuildConfig.NETWORK_TEST||BuildConfig.ENVIRONMENT_TEST)return false; // Authorized CI contains no image capture.
         if(!ready||fatal||!resumed||isFinishing()||isDestroyed()||keyboardVisible||overview!=null||offlineSnapshot!=null||undoBar!=null||currentWeb()!=web||!web.isShown()||web.getAlpha()<0.99f)return false;
         View decor=getWindow().peekDecorView();if(decor==null||!decor.hasWindowFocus())return false;Rect visible=new Rect();return web.getGlobalVisibleRect(visible)&&visible.width()==web.getWidth()&&visible.height()==web.getHeight();
     }
@@ -245,7 +297,7 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
     }
 
     private void showTabOverview(){
-        if(!ready||fatal||overview!=null)return;if(handoffs!=null&&handoffs.controller()!=null&&handoffs.controller().ownedBy(this))handoffs.controller().cancel("已打开标签总览，自动发送已停止，请检查目标对话");
+        if(!ready||fatal||overview!=null)return;cancelPageNavigation();if(handoffs!=null&&handoffs.controller()!=null&&handoffs.controller().ownedBy(this))handoffs.controller().cancel("已打开标签总览，自动发送已停止，请检查目标对话");
         ((InputMethodManager)getSystemService(INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(root.getWindowToken(),0);
         overview=new TabOverview(this,new TabOverview.Host(){
             public WorkspaceState state(){return state;}
@@ -257,9 +309,9 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
             public void rename(String account,String id,String title){if(change(next->{WorkspaceState.Tab tab=next.find(account).tabs.stream().filter(t->t.id.equals(id)).findFirst().orElseThrow();tab.title=title;tab.customTitle=true;}))refreshTabs();}
             public void move(String account,String id,int direction){if(change(next->{WorkspaceState.Account a=next.find(account);int from=-1;for(int n=0;n<a.tabs.size();n++)if(a.tabs.get(n).id.equals(id))from=n;int to=from+direction;if(from>=0&&to>=0&&to<a.tabs.size())java.util.Collections.swap(a.tabs,from,to);}))refreshTabs();}
             public void done(){closeOverview();}
-        });browserArea.addView(overview,new FrameLayout.LayoutParams(-1,-1));WebView behind=currentWeb();if(behind!=null)selectPage(behind,true);
+        });browserArea.addView(overview,new FrameLayout.LayoutParams(-1,-1));WebView behind=currentWeb();if(behind!=null)selectPage(behind,true);renderHeader();
     }
-    private void closeOverview(){if(overview==null)return;((InputMethodManager)getSystemService(INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(overview.getWindowToken(),0);browserArea.removeView(overview);overview=null;WebView web=currentWeb();if(web!=null){selectPage(web,true);if(offlineSnapshot==null)web.requestFocus();}if(recovery!=null)recovery.visible();}
+    private void closeOverview(){if(overview==null)return;((InputMethodManager)getSystemService(INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(overview.getWindowToken(),0);browserArea.removeView(overview);overview=null;WebView web=currentWeb();if(web!=null){selectPage(web,true);if(offlineSnapshot==null)web.requestFocus();}if(recovery!=null)recovery.visible();renderHeader();}
     private void refreshTabs(){renderHeader();if(overview!=null)overview.refresh();}
     private void restoreTab(String account,String id){if(change(next->{WorkspaceState.Account a=next.find(account);if(a.tabs.size()>=WorkspaceState.MAX_TABS)throw new IllegalStateException("标签页已达上限");WorkspaceState.Tab tab=a.closedTabs.stream().filter(t->t.id.equals(id)).findFirst().orElseThrow();a.closedTabs.remove(tab);a.tabs.add(tab);a.activeTab=id;next.activeAccount=account;})){if(undoBar!=null){browserArea.removeView(undoBar);undoBar=null;}closeOverview();showCurrent();}}
     private void showUndo(String account,String tab,String title){
@@ -289,10 +341,10 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
         settings.setSupportMultipleWindows(true); settings.setJavaScriptCanOpenWindowsAutomatically(false); settings.setMediaPlaybackRequiresUserGesture(true);
         settings.setSafeBrowsingEnabled(true); settings.setBuiltInZoomControls(true); settings.setDisplayZoomControls(false);
         web.setBackgroundColor(Color.WHITE);
-        web.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT,false);pageEpochs.putIfAbsent(tabId,0L);if(initial&&recovery!=null)recovery.bind(web,accountId,storageId,tabId);
+        loadingPages.putIfAbsent(web,web.getProgress()<100);web.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT,false);pageEpochs.putIfAbsent(tabId,0L);if(initial&&recovery!=null)recovery.bind(web,accountId,storageId,tabId);
         web.setWebViewClient(new WebViewClient() {
-            @Override public void onPageStarted(WebView view,String url,android.graphics.Bitmap icon){pageEpochs.put(tabId,pageEpochs.getOrDefault(tabId,0L)+1);if(recovery!=null)recovery.navigating(view,url);memory.diagnostics.event("page-load",accountId,tabId,null);}
-            @Override public WebResourceResponse shouldInterceptRequest(WebView view,WebResourceRequest request){if(!memory.networkReady())return null; /* WebSettings blocks network; preserve the native failure. */if(BuildConfig.DEBUG&&handoffFixture!=null)return handoffFixture.response(accountId,request);return null;}
+            @Override public void onPageStarted(WebView view,String url,android.graphics.Bitmap icon){pageEpochs.put(tabId,pageEpochs.getOrDefault(tabId,0L)+1);if(recovery!=null)recovery.navigating(view,url);memory.diagnostics.event("page-load",accountId,tabId,null);loadingPages.put(view,true);if(active(tabId)){cancelPageNavigation();renderHeader();}}
+            @Override public WebResourceResponse shouldInterceptRequest(WebView view,WebResourceRequest request){if(!memory.networkReady())return null; /* WebSettings blocks network; preserve the native failure. */if((BuildConfig.DEBUG||BuildConfig.ENVIRONMENT_TEST)&&handoffFixture!=null)return handoffFixture.response(accountId,request);return null;}
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 String url = request.getUrl().toString();
                 if (!request.isForMainFrame()) return !NavigationPolicy.https(url);
@@ -301,21 +353,21 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
                 return true;
             }
             @Override public void onPageFinished(WebView view, String url) {
-                rememberURL(accountId,tabId,url);if(recovery!=null)recovery.ready(view);
+                rememberURL(accountId,tabId,url);if(recovery!=null)recovery.ready(view);loadingPages.put(view,false);restoreCacheMode(view);if(active(tabId))renderHeader();
             }
-            @Override public void doUpdateVisitedHistory(WebView view,String url,boolean reload){rememberURL(accountId,tabId,url);if(recovery!=null)recovery.ready(view);}
+            @Override public void doUpdateVisitedHistory(WebView view,String url,boolean reload){rememberURL(accountId,tabId,url);if(recovery!=null)recovery.ready(view);if(active(tabId))renderHeader();}
             @Override public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
-                if(!request.isForMainFrame())return;memory.diagnostics.event("page-error",accountId,tabId,"code:"+error.getErrorCode());boolean saved=recovery!=null&&recovery.failed(view,request.getUrl().toString(),false);if(active(tabId)&&resumed&&!saved)showMessage("网页暂时无法加载", "请检查网络后重试。账号登录数据仍保留。", "重试", () -> { showCurrent(); currentWeb().loadUrl(state.current().current().url); });
+                if(!request.isForMainFrame())return;loadingPages.put(view,false);restoreCacheMode(view);if(active(tabId))renderHeader();memory.diagnostics.event("page-error",accountId,tabId,"code:"+error.getErrorCode());boolean saved=recovery!=null&&recovery.failed(view,request.getUrl().toString(),false);if(active(tabId)&&resumed&&!saved)showMessage("网页暂时无法加载", "请检查网络后重试。账号登录数据仍保留。", "重试", () -> { showCurrent(); currentWeb().loadUrl(state.current().current().url); });
             }
             @Override public void onReceivedHttpError(WebView view,WebResourceRequest request,WebResourceResponse response){
                 if(!request.isForMainFrame()||recovery==null)return;int code=response.getStatusCode();
                 if(code==401||code==403)recovery.revealForAuthentication(view);else if(code>=400)recovery.failed(view,request.getUrl().toString(),false);
             }
             @Override public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
-                handler.cancel();memory.diagnostics.event("ssl-error",accountId,tabId,null);boolean saved=recovery!=null&&recovery.failed(view,error.getUrl(),true);if(active(tabId)&&resumed&&!saved)showMessage("连接证书校验失败", "请检查设备时间与网络，确认后重新打开。", "重试", () -> { showCurrent(); currentWeb().reload(); });
+                handler.cancel();loadingPages.put(view,false);restoreCacheMode(view);if(active(tabId))renderHeader();memory.diagnostics.event("ssl-error",accountId,tabId,null);boolean saved=recovery!=null&&recovery.failed(view,error.getUrl(),true);if(active(tabId)&&resumed&&!saved)showMessage("连接证书校验失败", "请检查设备时间与网络，确认后重新打开。", "重试", () -> { showCurrent(); currentWeb().reload(); });
             }
             @Override public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
-                memory.diagnostics.event(detail.didCrash()?"renderer-crash":"renderer-reclaimed",accountId,tabId,"priority:"+detail.rendererPriorityAtExit());memory.destroy(tabId);if(overview!=null)overview.refresh();
+                memory.diagnostics.event(detail.didCrash()?"renderer-crash":"renderer-reclaimed",accountId,tabId,"priority:"+detail.rendererPriorityAtExit());restoreCacheMode(view);loadingPages.remove(view);memory.destroy(tabId);if(overview!=null)overview.refresh();if(active(tabId))renderHeader();
                 if (active(tabId)&&resumed) showMessage("网页进程已退出", "重新加载后会尝试恢复最近保存的阅读位置和草稿；网页附件及生成任务需手动检查。", "重新加载", MainActivity.this::showCurrent);
                 return true;
             }
@@ -326,7 +378,7 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
                 if (change(s -> s.find(accountId).tabs.stream().filter(t -> t.id.equals(tabId)).findFirst().orElseThrow(() -> new IllegalStateException("Missing account or tab")).title = title.substring(0, Math.min(120, title.length()))) && active(tabId)) renderHeader();
             }
             @Override public void onProgressChanged(WebView view, int value) {
-                if (active(tabId)) { progress.setProgress(value); progress.setVisibility(value >= 100 ? View.INVISIBLE : View.VISIBLE); }
+                loadingPages.put(view,value<100);if (active(tabId)) { progress.setProgress(value); progress.setVisibility(value >= 100 ? View.INVISIBLE : View.VISIBLE);renderHeader(); }
             }
             @Override public boolean onCreateWindow(WebView view, boolean dialog, boolean gesture, Message result) {
                 if (!gesture || !exists(accountId, tabId) || fatal || !memory.networkReady()) return false;
@@ -368,7 +420,10 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
     private DownloadHelper downloads() { if(memory.downloads==null)memory.downloads=new DownloadHelper(this);else memory.downloads.attach(this);downloadHelper=memory.downloads;return downloadHelper; }
     private void showAccountMenu(){
         if(!ready||fatal){toast("账号正在准备，请稍候");return;}
-        StudioSheet sheet=new StudioSheet(this,"更多","");
+        StudioSheet sheet=new StudioSheet(this,"更多","");WebView web=currentWeb();boolean enabled=web!=null&&overview==null&&offlineSnapshot==null&&!navigationPending&&!nativePageBusy(web);
+        StudioPageActions.navigation(sheet,enabled&&web.canGoBack(),enabled&&web.canGoForward(),()->{sheet.dismiss();historyPage(false);},()->{sheet.dismiss();historyPage(true);});
+        StudioPageActions.action(sheet,"强制刷新","绕过本页缓存，保留登录与本地草稿","refresh",enabled,()->{sheet.dismiss();refreshPage(true);});
+        sheet.row("标签管理","","",()->{sheet.dismiss();showTabOverview();});
         sheet.row("新建标签页","","plus",()->{sheet.dismiss();if(change(next->next.addTab(next.current())))showCurrent();});
         sheet.row("资产库","","folder",()->{sheet.dismiss();startActivity(new Intent(this,AssetWorkbenchActivity.class).putExtra(AssetWorkbenchActivity.ACCOUNT,state.activeAccount));});
         sheet.row("能力库","","spark",()->{sheet.dismiss();startActivity(new Intent(this,AssetWorkbenchActivity.class).putExtra(AssetWorkbenchActivity.ACCOUNT,state.activeAccount).putExtra("skills",true));});
@@ -432,7 +487,7 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
             if(evicted!=null){destroyView(evicted);if(recovery!=null)recovery.forget(accountId,storage,evicted);}
         }
     }
-    private void destroyView(String tabId){memory.destroy(tabId);}
+    private void destroyView(String tabId){WebView web=views.get(tabId);if(web!=null){if(navigationWeb==web)cancelPageNavigation();restoreCacheMode(web);loadingPages.remove(web);}memory.destroy(tabId);}
     private void pruneRecent(){memory.pruneRecent();}
     WebView recoveryCurrentWeb(){return currentWeb();}
     boolean recoveryValid(String account,String storage,String tab,WebView web){
@@ -502,7 +557,7 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
     private void navigateBack() {
         if(overview!=null){closeOverview();return;}
         WebView web = currentWeb();
-        if (web != null && web.canGoBack()) web.goBack();
+        if (web != null && web.canGoBack()) historyPage(false);
         else if (ready && !fatal && popupOwners.containsKey(state.current().activeTab)) closeTab(state.activeAccount, state.current().activeTab);
         else moveTaskToBack(true);
     }
@@ -523,7 +578,7 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
         for(WebView web:views.values())web.onResume();if(recovery!=null)recovery.resume();if(ready&&!fatal&&KeepaliveService.enabled(this)&&!KeepaliveService.running())enableKeepalive();drainHandoff();
     }
 
-    @Override protected void onPause(){environmentLaunchPending=false;if(recovery!=null)recovery.pause();resumed=false;if(handoffs!=null&&handoffs.controller()!=null&&handoffs.controller().ownedBy(this))handoffs.controller().cancel("应用已离开前台，已停止自动发送；请检查目标对话");if(memory==null||!memory.retainsExecution())for(WebView web:views.values())web.onPause();super.onPause();}
+    @Override protected void onPause(){cancelPageNavigation();for(WebView web:new ArrayList<>(forcedCacheModes.keySet()))restoreCacheMode(web);environmentLaunchPending=false;if(recovery!=null)recovery.pause();resumed=false;if(handoffs!=null&&handoffs.controller()!=null&&handoffs.controller().ownedBy(this))handoffs.controller().cancel("应用已离开前台，已停止自动发送；请检查目标对话");if(memory==null||!memory.retainsExecution())for(WebView web:views.values())web.onPause();super.onPause();}
     @Override protected void onStop(){try{if(WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE))for(WebView web:views.values())WebViewCompat.getProfile(web).getCookieManager().flush();}catch(RuntimeException ignored){}super.onStop();}
     @Override protected void onSaveInstanceState(Bundle bundle){bundle.putBoolean("networkSettingsOpen",networkSettingsShowing||networkSettingsPending);if(overview!=null){bundle.putBoolean("tabsOverview",true);bundle.putString("tabFilter",overview.filter());bundle.putString("tabQuery",overview.query());bundle.putInt("tabPosition",overview.position());}super.onSaveInstanceState(bundle);}
     @Override protected void onDestroy(){
@@ -555,7 +610,7 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
     }
     @Override public long epoch(HandoffController.Page page){return pageEpochs.getOrDefault(page.tab,-1L);}
     @Override public void changed(JSONObject job){
-        if(isFinishing()||isDestroyed())return;bannerJob=job;taskText.setText(HandoffStatus.name(job.optString("status"))+" · "+job.optString("label")+"\n"+job.optString("sourceName")+" → "+job.optString("targetName"));taskAction.setText(HandoffStore.active(job.optString("status"))?"停止":"关闭");taskBanner.setVisibility(View.VISIBLE);
+        if(isFinishing()||isDestroyed())return;bannerJob=job;taskText.setText(HandoffStatus.name(job.optString("status"))+" · "+job.optString("label")+"\n"+job.optString("sourceName")+" → "+job.optString("targetName"));taskAction.setText(HandoffStore.active(job.optString("status"))?"停止":"关闭");taskBanner.setVisibility(View.VISIBLE);renderHeader();
     }
     @Override public void failed(String message){if(!isFinishing()&&!isDestroyed())toast(message);}
     private void showHandoffHistory(){if(!ready||fatal)return;try{handoffs=HandoffRuntime.get(this);List<JSONObject> jobs=handoffs.store.list(state.activeAccount);String[] labels=new String[jobs.size()];for(int i=0;i<jobs.size();i++){JSONObject job=jobs.get(i);labels[i]=HandoffStatus.name(job.optString("status"))+" · "+job.optString("label")+"\n"+job.optString("sourceName")+" → "+job.optString("targetName");}

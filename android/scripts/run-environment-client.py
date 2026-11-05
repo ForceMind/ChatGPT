@@ -38,6 +38,7 @@ class Acceptance:
         self.ssl = None
         self.manifest = None
         self.touch_events = []
+        self.navigation_row = None
 
     def command(self, args, timeout=60, check=True):
         self.sequence += 1
@@ -256,7 +257,7 @@ class Acceptance:
                     while ancestor is not None and ancestor.attrib.get('class') != 'android.webkit.WebView':
                         ancestor = parents.get(ancestor)
                     nodes.append(dict(node.attrib, rectangle=[left, top, right, bottom],
-                                      nodeIndex=indices[node],
+                                      nodeIndex=indices[node], parentIndex=indices.get(parents.get(node)),
                                       webViewIndex=indices[ancestor] if ancestor is not None else None))
         return nodes
 
@@ -338,7 +339,10 @@ class Acceptance:
         assert value['sendClicks'] == 0
 
     def page(self, account, tab=0, excluded=None, minimum_received=0):
-        path = PAGE[(account, tab)]
+        return self.observed_path(PAGE[(account, tab)], account, excluded, minimum_received)
+
+    def observed_path(self, path, account='A', excluded=None, minimum_received=0):
+        assert path in set(PAGE.values()) | {'/c/navigation'}
         def ready(status):
             value = self.latest(status, path, excluded)
             return value and value.get('receivedAt', 0) >= minimum_received and value.get('worker') and value.get('indexedDB') is not None and value.get('envLogin') is not None
@@ -361,6 +365,139 @@ class Acceptance:
         values = re.findall(r'\bmInputShown\s*=\s*(true|false)\b', dump)
         assert len(values) == 1, 'Missing or ambiguous current system IME visibility'
         return values[0] == 'true'
+
+    def native_action(self, label, enabled=True, description=False):
+        def choose(nodes):
+            key = 'content-desc' if description else 'text'
+            targets = [node for node in nodes if node.get('package') == PACKAGE and node.get(key) == label]
+            if not targets:
+                return None
+            assert len(targets) == 1, 'Ambiguous native action: ' + label
+            by_index = {node['nodeIndex']: node for node in nodes}
+            target = targets[0]
+            while target.get('clickable') != 'true':
+                target = by_index.get(target.get('parentIndex'))
+                if target is None:
+                    return None
+            if target.get('visible-to-user', 'true') != 'true' or target.get('enabled') != str(enabled).lower():
+                return None
+            return target
+        nodes = self.wait('native action ' + label + ' enabled=' + str(enabled), self.ui,
+                          lambda value: choose(value) is not None, timeout=30, interval=0.3)
+        return choose(nodes)
+
+    def tap_native_action(self, label, description=False):
+        left, top, right, bottom = self.native_action(label, description=description)['rectangle']
+        self.shell('input', 'tap', (left+right)//2, (top+bottom)//2)
+
+    def header_switch(self, account, tab):
+        expected = self.manifest['accounts'][account]
+        state = self.json_file('workspace.json')
+        assert state['activeAccount'] == expected['id']
+        owner = next(value for value in state['accounts'] if value['id'] == expected['id'])
+        target_id = expected['tabs'][tab]['id']
+        assert owner['activeTab'] != target_id
+        source = next(value for value in owner['tabs'] if value['id'] == owner['activeTab'])
+        target = next(value for value in owner['tabs'] if value['id'] == target_id)
+        self.native_action('当前标签页：' + source['title'], description=True)
+        before = self.status()
+        started = int(time.time()*1000)
+        self.tap_native_action('切换标签页：' + target['title'], description=True)
+        status, page = self.page(account, tab, minimum_received=started)
+        self.native_action('当前标签页：合成对话 ' + PAGE[(account, tab)], description=True)
+        for path, documents in before['pages'].items():
+            if documents:
+                assert status['pageCounts'][path] == before['pageCounts'][path], 'Header switch reloaded ' + path
+                assert set(status['pages'][path]) == set(documents), 'Header switch replaced a document'
+                previous = self.latest(before, path)
+                current = status['pages'][path][previous['document']]
+                assert current['draft'] == current['modelDraft'] == previous['draft'] == previous['modelDraft']
+        return status, page
+
+    def more_navigation(self, can_back, can_forward, choose=None):
+        self.tap_native_action('更多功能', description=True)
+        back = self.native_action('后退', enabled=can_back)
+        forward = self.native_action('前进', enabled=can_forward)
+        if self.navigation_row is None:
+            refresh = self.node('强制刷新')
+            assert back['rectangle'][1] < refresh['rectangle'][1] and forward['rectangle'][1] < refresh['rectangle'][1]
+            self.navigation_row = {'back': back['rectangle'], 'forward': forward['rectangle'], 'forceRefresh': refresh['rectangle']}
+        if choose is None:
+            self.tap_native_action('关闭弹层', description=True)
+        else:
+            assert choose in ('后退', '前进')
+            assert can_back if choose == '后退' else can_forward
+            self.tap_native_action(choose)
+
+    def chrome_navigation(self, draft, current):
+        assert self.http('/configure', {'path': '/c/a1', 'initialDraft': ''})['appliesTo'] == 'future documents only'
+        self.more_navigation(False, False)
+        refreshes = []
+        for force in (False, True):
+            before = self.status()
+            old = self.latest(before, '/c/a1')
+            assert old['draft'] == old['modelDraft'] == draft
+            started = int(time.time()*1000)
+            if force:
+                self.tap_native_action('更多功能', description=True)
+                self.tap_native_action('强制刷新')
+            else:
+                self.tap_native_action('刷新页面', description=True)
+            def restored(status):
+                page = self.latest(status, '/c/a1', old['document'])
+                return page and page.get('receivedAt', 0) >= started and page.get('draft') == draft and page.get('modelDraft') == draft
+            status = self.wait('native ' + ('force refresh' if force else 'refresh') + ' preserves controlled draft', self.status, restored)
+            page = self.latest(status, '/c/a1', old['document'])
+            self.assert_environment(page, 'A')
+            assert page['url'] == 'https://' + HOST + ':' + str(PORT) + '/c/a1'
+            assert UUID.fullmatch(page['document']) and page['document'] != old['document']
+            counts = dict(before['pageCounts']);counts['/c/a1'] += 1
+            assert status['pageCounts'] == counts, 'Refresh must perform exactly one document GET'
+            self.native_action('当前标签页：合成对话 /c/a1', description=True)
+            refreshes.append({'force': force, 'beforeDocument': old['document'], 'afterDocument': page['document'], 'pageCounts': counts,
+                              'draftAndModelPreserved': True, 'cookieAndStoragePreserved': True})
+            current = page
+        self.more_navigation(False, False)
+        started = int(time.time()*1000)
+        self.tap_native_action('进入合成下一页', description=True)
+        status, navigation = self.observed_path('/c/navigation', minimum_received=started)
+        assert navigation['url'] == 'https://' + HOST + ':' + str(PORT) + '/c/navigation'
+        assert navigation['draft'] == navigation['modelDraft'] == ''
+        assert status['pageCounts']['/c/navigation'] == 1
+        self.native_action('当前标签页：合成对话 /c/navigation', description=True)
+        started = int(time.time()*1000)
+        self.more_navigation(True, False, '后退')
+        self.native_action('当前标签页：合成对话 /c/a1', description=True)
+        started = int(time.time()*1000)
+        def back_ready(status):
+            page = self.latest(status, '/c/a1')
+            return page and page['receivedAt'] >= started and page['draft'] == page['modelDraft'] == draft
+        back_status = self.wait('native history back restores original URL and local draft', self.status, back_ready)
+        back = self.latest(back_status, '/c/a1')
+        assert back['url'] == current['url']
+        self.assert_environment(back, 'A')
+        self.native_action('当前标签页：合成对话 /c/a1', description=True)
+        started = int(time.time()*1000)
+        self.more_navigation(False, True, '前进')
+        self.native_action('当前标签页：合成对话 /c/navigation', description=True)
+        started = int(time.time()*1000)
+        forward_status, forward = self.observed_path('/c/navigation', minimum_received=started)
+        assert forward['url'] == navigation['url'] and forward['draft'] == forward['modelDraft'] == ''
+        self.native_action('当前标签页：合成对话 /c/navigation', description=True)
+        self.more_navigation(True, False)
+        proof = {'complete': True, 'engine': 'gecko', 'nativeHeaderTitleSwitch': True, 'switchNoReload': True,
+                 'disabledEmptyHistory': True, 'backForward': True, 'normalAndForceRefresh': True,
+                 'draftCookieStoragePreserved': True, 'screenshots': False, 'realServicesAccessed': False,
+                 'realHeaderHotSwitch': True, 'headerHotSwitchNoReload': True, 'nativeNavigationFirstRowBounds': self.navigation_row,
+                 'disabledHistoryWithoutEntries': True, 'nativeMoreFirstRowHistory': True,
+                 'nativeRefreshDraftAndStoragePreserved': True, 'nativeForceRefreshDraftAndStoragePreserved': True,
+                 'refreshes': refreshes, 'realHrefNavigation': True, 'nativeBack': True, 'nativeForward': True,
+                 'historyUrlAndLocalDraftPreserved': True, 'historyAllowsBFCacheDocumentIdentity': True,
+                 'backDocument': back['document'], 'forwardDocument': forward['document'],
+                 'finalPageCounts': forward_status['pageCounts'], 'sendCount': forward_status['sendCount']}
+        assert proof['sendCount'] == 0
+        native._write_json(EVIDENCE / 'gecko-chrome-navigation.json', proof)
+        return proof
 
     def focus_editor(self, account, tab, before):
         target = self.editor(account, tab, before['document'])
@@ -602,16 +739,20 @@ def main():
         download = acceptance.download()
         baseline = acceptance.status()
         original_document = acceptance.latest(baseline, '/c/a1')['document']
-        acceptance.open('A', 1)
+        acceptance.header_switch('A', 1)
         second_draft = 'OwnedEnvA2-' + uuid.uuid4().hex
         second = acceptance.type_draft('A', 1, second_draft)
+        _, header_returned = acceptance.header_switch('A', 0)
+        assert header_returned['document'] == original_document
+        assert header_returned['draft'] == header_returned['modelDraft'] == draft
+        assert abs(header_returned['scroll'] - saved_scroll) <= 2 and header_returned['scroll'] > 200
         _, b = acceptance.open('B', 0)
         _, c = acceptance.open('C', 0)
         switched_status, returned = acceptance.open('A', 0)
         assert returned['document'] == original_document
         assert returned['draft'] == returned['modelDraft'] == draft
         assert abs(returned['scroll'] - saved_scroll) <= 2 and returned['scroll'] > 200
-        assert switched_status['pageCounts'] == {'/c/a1': 1, '/c/a2': 1, '/c/b1': 1, '/c/c1': 1}
+        assert switched_status['pageCounts'] == {'/c/a1': 1, '/c/a2': 1, '/c/b1': 1, '/c/c1': 1, '/c/navigation': 0}
         for path in PAGE.values():
             assert len(switched_status['pages'][path]) == 1
         assert second['localStorage'] == second['indexedDB'] == second['envLogin'] == 'environment-A'
@@ -624,10 +765,13 @@ def main():
         assert acceptance.http('/configure', {'path': '/c/a1', 'initialDraft': 'server-conflict'})['appliesTo'] == 'future documents only'
         conflict_restored = acceptance.cold(restored, draft, restored['scroll'], conflict=True)
         conflict_record = acceptance.record(draft, saved_scroll - 80)
+        gecko_chrome = acceptance.chrome_navigation(draft, conflict_restored)
         final_status = acceptance.status()
         assert final_status['sendCount'] == 0 and final_status['rejectedEventCount'] == 0
         native._write_json(EVIDENCE / 'server-final.json', final_status)
         # Instrumentation can end app processes; it deliberately runs after all live-switch checks.
+        legacy_chrome = native.verify_browser_chrome()
+        assert legacy_chrome['complete'] is True
         legacy = native.verify_after_environment()
         assert legacy['complete'] is True and legacy['legacyAccountPreserved'] is True
         assert acceptance.status()['sendCount'] == 0
@@ -646,7 +790,8 @@ def main():
                  'coldRecovery': {'document': restored['document'], 'scroll': restored['scroll'], 'native': restored_record},
                  'conflictRecovery': {'document': conflict_restored['document'], 'scroll': conflict_restored['scroll'], 'native': conflict_record,
                                       'webDraftPreservedUntilNativeChoice': True, 'nativeRestoreChosen': True},
-                 'download': download, 'legacyAfterEnvironmentUse': legacy,
+                 'download': download, 'geckoChromeNavigation': gecko_chrome,
+                 'legacyChromeNavigation': legacy_chrome, 'legacyAfterEnvironmentUse': legacy,
                  'fixedFingerReceipts': acceptance.touch_events, 'sendCount': 0,
                  'onlyEmulatorLoopbackEgressAllowed': True, 'testCAInjectedOnlyIntoCiProfiles': True,
                  'screenshots': False, 'realServicesAccessed': False}

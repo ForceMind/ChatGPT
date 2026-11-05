@@ -31,14 +31,14 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import static org.junit.Assert.*;
 
-/** This class references only APIs present in immutable Beta.4. */
+/** This class references only APIs present in immutable Beta.5. */
 @RunWith(AndroidJUnit4.class)
 public final class EnvironmentUpgradeSeedTest {
     static final String PACKAGE="com.forcemind.chatgpt.profiles.networkbeta";
     static final String SIGNER="bd7b9c924795ec21d27c73f280b5fc71b83ffea950e36e05967b77f092056ac0";
     static final String EXPECTED="environment-upgrade-expected.json";
     static final String ORIGIN="https://environment-upgrade-fixture.invalid/";
-    static final long OLD_CODE=3000028L, NEW_CODE=3000029L;
+    static final long OLD_CODE=3000029L, NEW_CODE=3000030L;
     static Context context(){return InstrumentationRegistry.getInstrumentation().getTargetContext();}
     static File file(String name){return new File(context().getFilesDir(),name);}
     static void main(Runnable action){InstrumentationRegistry.getInstrumentation().runOnMainSync(action);}

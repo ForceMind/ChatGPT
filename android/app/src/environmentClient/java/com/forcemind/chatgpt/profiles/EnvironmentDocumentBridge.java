@@ -12,6 +12,12 @@ final class EnvironmentDocumentBridge {
         void conflict(EnvironmentBrowserActivity.Entry entry,JSONObject live);
         void notice(String message);
     }
+    interface CheckpointCallback{void complete(JSONObject snapshot,String error);}
+    private static final class Checkpoint{
+        final EnvironmentBrowserActivity.Entry entry;final WebExtension.Port port;final String request,url,token,document;final long epoch;final CheckpointCallback callback;Runnable timeout;
+        Checkpoint(EnvironmentBrowserActivity.Entry e,String request,CheckpointCallback callback){entry=e;port=e.port;this.request=request;url=e.url;token=e.token;document=e.documentId;epoch=e.epoch;this.callback=callback;}
+    }
+    private final java.util.Map<String,Checkpoint> checkpoints=new java.util.HashMap<>();
     private final java.lang.ref.WeakReference<Host> target;
     private final android.os.Handler ui=new android.os.Handler(android.os.Looper.getMainLooper());
     EnvironmentDocumentBridge(Host host){target=new java.lang.ref.WeakReference<>(host);}
@@ -24,7 +30,7 @@ final class EnvironmentDocumentBridge {
                 invalidate(e);e.port=port;e.token=UUID.randomUUID().toString();e.sequence=0;
                 port.setDelegate(new WebExtension.PortDelegate(){
                     @Override public void onPortMessage(Object raw,WebExtension.Port source){message(e,source,raw);}
-                    @Override public void onDisconnect(WebExtension.Port source){if(e.port==source){e.port=null;e.token="";}}
+                    @Override public void onDisconnect(WebExtension.Port source){if(e.port==source){e.port=null;e.token="";cancelCheckpoint(e,null);}}
                 });
                 authenticate(e,port,e.token,e.epoch,0);
             }
@@ -35,7 +41,7 @@ final class EnvironmentDocumentBridge {
         try{send(e,new JSONObject().put("type","auth").put("accountId",e.accountId).put("storageId",e.storageId).put("tabId",e.tabId));}catch(Exception error){invalidate(e);return;}
         if(attempt<20)ui.postDelayed(()->authenticate(e,port,token,epoch,attempt+1),250);
     }
-    void invalidate(EnvironmentBrowserActivity.Entry e){if(e.restoringDocument!=null)e.pendingRestore=e.restoringDocument;e.restoringDocument=null;e.restoringDraft=null;e.restoreRequest=null;e.epoch++;e.sequence=0;e.token="";e.documentId=null;if(e.port!=null){WebExtension.Port old=e.port;e.port=null;old.disconnect();}e.liveDocument=null;}
+    void invalidate(EnvironmentBrowserActivity.Entry e){cancelCheckpoint(e,null);if(e.restoringDocument!=null)e.pendingRestore=e.restoringDocument;e.restoringDocument=null;e.restoringDraft=null;e.restoreRequest=null;e.epoch++;e.sequence=0;e.token="";e.documentId=null;if(e.port!=null){WebExtension.Port old=e.port;e.port=null;old.disconnect();}e.liveDocument=null;}
     private void message(EnvironmentBrowserActivity.Entry e,WebExtension.Port source,Object raw){
         Host host=target.get();if(host==null)return;
         try{
@@ -44,10 +50,20 @@ final class EnvironmentDocumentBridge {
             if(value.toString().length()>240000||!e.url.equals(value.getString("url"))||!e.accountId.equals(value.getString("accountId"))||!e.storageId.equals(value.getString("storageId"))||!e.tabId.equals(value.getString("tabId"))||!e.token.equals(value.getString("token"))||e.epoch!=value.getLong("epoch"))return;
             Object rawSequence=value.get("sequence");if(!(rawSequence instanceof Number)||((Number)rawSequence).doubleValue()!=((Number)rawSequence).longValue())return;long sequence=((Number)rawSequence).longValue();if(sequence<=e.sequence)return;e.sequence=sequence;
             String document=value.getString("document");UUID.fromString(document);if(e.documentId!=null&&!e.documentId.equals(document))return;e.documentId=document;
-            String type=value.getString("type");if("ineligible".equals(type)){e.sensitive=true;e.pendingRestore=null;e.restoringDraft=null;e.restoringDocument=null;e.restoreRequest=null;return;}
+            String type=value.getString("type");if("ineligible".equals(type)){cancelCheckpoint(e,null);e.sensitive=true;e.pendingRestore=null;e.restoringDraft=null;e.restoringDocument=null;e.restoreRequest=null;return;}
             if(java.util.Arrays.asList("restore-unavailable","conflict","restored").contains(type)&&(e.restoreRequest==null||!e.restoreRequest.equals(value.optString("request"))))return;
             if("restore-unavailable".equals(type)){e.conflictLocal=e.restoringDocument;e.restoringDocument=null;e.restoringDraft=null;e.restoreRequest=null;host.notice("页面暂不能完成恢复，本地草稿已保留，请从恢复草稿重试");return;}
+            // The departing document's pagehide checkpoint must not consume the target
+            // that was saved for its replacement during a same-URL refresh.
+            if(e.resumeAfterDocument!=null){if(e.resumeAfterDocument.equals(document))return;e.resumeAfterDocument=null;}
             JSONObject snapshot=normalize(e,value.getJSONObject("snapshot"));e.liveDocument=snapshot;
+            if("checkpoint".equals(type)&&value.has("request")){
+                Checkpoint pending=checkpoints.get(e.tabId);
+                if(pending==null||!pending.request.equals(value.getString("request"))||pending.entry!=e||pending.port!=source||pending.epoch!=e.epoch||!pending.url.equals(e.url)||!pending.token.equals(e.token)||!pending.document.equals(e.documentId))return;
+                Object busy=value.opt("busy");if(!(busy instanceof Boolean)||(Boolean)busy){finishCheckpoint(pending,null,"网页正在生成或处理附件，请完成后再操作");return;}
+                if(e.sensitive||e.pendingRestore!=null||e.conflictLocal!=null||e.restoringDraft!=null){finishCheckpoint(pending,null,"请先处理草稿恢复");return;}
+                finishCheckpoint(pending,snapshot,null);return;
+            }
             if("conflict".equals(type)){if(e.restoringDocument!=null)e.pendingRestore=e.restoringDocument;e.restoringDocument=null;e.restoringDraft=null;e.restoreRequest=null;host.conflict(e,snapshot);return;}
             if(!java.util.Arrays.asList("ready","capture","checkpoint","restored").contains(type))return;
             if(e.restoringDraft!=null&&!"restored".equals(type))return;
@@ -74,6 +90,17 @@ final class EnvironmentDocumentBridge {
         e.restoringDraft=local.getString("draft");e.restoringDocument=new JSONObject(local.toString());e.restoreRequest=UUID.randomUUID().toString();send(e,new JSONObject().put("type","restore").put("request",e.restoreRequest).put("draft",e.restoringDraft).put("expectedDraft",live.getString("draft")).put("scroll",local.optDouble("scroll",0)));
     }
     void cancelRestore(EnvironmentBrowserActivity.Entry e){try{send(e,new JSONObject().put("type","cancel-restore"));}catch(Exception ignored){}e.restoringDraft=null;e.restoringDocument=null;e.restoreRequest=null;}
+    void requestCheckpoint(EnvironmentBrowserActivity.Entry e,String request,CheckpointCallback callback){
+        Host host=target.get();
+        if(host==null||!host.owns(e)||e.closed||e.sensitive||e.port==null||e.documentId==null||e.liveDocument==null||EnvironmentUrls.recoverable(e.url)==null){callback.complete(null,"页面尚未准备好");return;}
+        UUID.fromString(request);cancelCheckpoint(e,null);Checkpoint pending=new Checkpoint(e,request,callback);checkpoints.put(e.tabId,pending);
+        pending.timeout=()->finishCheckpoint(pending,null,"草稿保存确认超时");ui.postDelayed(pending.timeout,5000);
+        try{send(e,new JSONObject().put("type","capture").put("request",request));}catch(Exception error){finishCheckpoint(pending,null,"无法读取当前草稿");}
+    }
+    void cancelCheckpoint(EnvironmentBrowserActivity.Entry e,String request){Checkpoint pending=checkpoints.get(e.tabId);if(pending!=null&&(request==null||request.equals(pending.request)))finishCheckpoint(pending,null,"页面操作已取消");}
+    private void finishCheckpoint(Checkpoint pending,JSONObject snapshot,String error){
+        if(checkpoints.get(pending.entry.tabId)!=pending)return;checkpoints.remove(pending.entry.tabId);if(pending.timeout!=null)ui.removeCallbacks(pending.timeout);pending.callback.complete(snapshot,error);
+    }
     void request(EnvironmentBrowserActivity.Entry e){try{if(e.port!=null)send(e,new JSONObject().put("type","capture"));}catch(Exception ignored){}}
     private void send(EnvironmentBrowserActivity.Entry e,JSONObject value)throws Exception{if(e.port!=null)value.put("token",e.token).put("epoch",e.epoch);if(e.port!=null)e.port.postMessage(value);}
 }

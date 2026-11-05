@@ -35,11 +35,20 @@
     if(!port||!auth||closed)return;
     port.postMessage(Object.assign({type,url:location.href,document:documentId,token:auth.token,epoch,sequence:++sequence,accountId:auth.accountId,storageId:auth.storageId,tabId:auth.tabId},extra));
   }
+  function pageBusy(){
+    try{
+      const visible=node=>!!node&&!!node.getClientRects().length;
+      const markers='[aria-busy="true"],[role="progressbar"],[data-testid="stop-button"],[data-testid="stop-generation"],[data-is-streaming="true"],[data-message-streaming="true"],[data-state="uploading"],[data-status="uploading"],[data-testid="remove-file-button"],[data-testid="attachment"],button[aria-label*="Stop generating" i],button[aria-label*="Stop response" i],button[aria-label*="停止生成"],button[aria-label*="停止回答"],button[aria-label*="Remove file" i],button[aria-label*="Remove attachment" i],button[aria-label*="移除附件"],button[aria-label*="删除附件"]';
+      return Array.from(document.querySelectorAll(markers)).some(visible)||Array.from(document.querySelectorAll('input[type="file"]')).some(node=>node.files&&node.files.length>0);
+    }catch(_){return true;}
+  }
   function capture(type='capture',extra={}){
     if(location.href!==currentUrl){currentUrl=location.href;last='';auth=null;if(port)port.disconnect();return;}
-    const state=snapshot();if(!state){send('ineligible');return;}
+    const state=snapshot();if(!state){send('ineligible',extra);return;}
     const fingerprint=JSON.stringify({...state,capturedAt:0});
-    if(type==='capture'&&fingerprint===last)return;last=fingerprint;send(type,{snapshot:state,...extra});
+    if(type==='capture'&&fingerprint===last)return;last=fingerprint;
+    const reply={snapshot:state,...extra};if(type==='checkpoint'&&typeof extra.request==='string')reply.busy=pageBusy();
+    send(type,reply);
   }
   function queue(){if(timer!==null)clearTimeout(timer);if(maxTimer===null)maxTimer=setTimeout(()=>{maxTimer=null;if(timer!==null){clearTimeout(timer);timer=null;}capture();},5000);timer=setTimeout(()=>{timer=null;if(maxTimer!==null){clearTimeout(maxTimer);maxTimer=null;}capture();},1200);}
   function restore(message){
@@ -80,7 +89,7 @@
       if(message.type==='auth'&&typeof message.token==='string'&&Number.isSafeInteger(message.epoch)){
         auth=message;epoch=message.epoch;activeRestore=null;last='';capture('ready');
       }else if(auth&&message.token===auth.token&&message.epoch===epoch){
-        if(message.type==='capture')capture('checkpoint');
+        if(message.type==='capture')capture('checkpoint',typeof message.request==='string'?{request:message.request}:{});
         if(message.type==='restore')restore(message);if(message.type==='cancel-restore')activeRestore=null;
       }
     });
