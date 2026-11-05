@@ -153,7 +153,7 @@ class Acceptance:
 
     def control(self, action, account=None, tab=0):
         assert action in ('prepare', 'open', 'record')
-        args = ['am', 'start', '-W', '-n', PACKAGE + '/.EnvironmentAcceptanceActivity', '--es', 'action', action]
+        args = ['am', 'start', '-W', '-n', PACKAGE + '/com.forcemind.chatgpt.profiles.EnvironmentAcceptanceActivity', '--es', 'action', action]
         if action != 'prepare':
             assert (account, tab) in PAGE
             args += ['--es', 'account', account, '--ei', 'tab', str(tab)]

@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       reuse_application_build:
-        description: Reuse immutable successful app build 42023266476 when only test fixtures changed
+        description: Reuse checked application/test bytes and human upgrades from 42025086453 when only the functional driver changed
         type: boolean
         default: false
 permissions:
@@ -23,17 +23,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
+        if: ${{ !inputs.reuse_application_build }}
         with:
           distribution: temurin
           java-version: '17'
       - uses: actions/setup-go@v5
+        if: ${{ !inputs.reuse_application_build }}
         with:
           go-version: '1.27.3'
           cache: false
       - uses: android-actions/setup-android@v3
+        if: ${{ !inputs.reuse_application_build }}
         with:
           packages: platform-tools
       - uses: actions/cache@v4
+        if: ${{ !inputs.reuse_application_build }}
         with:
           path: |
             android/network-poc/app/libs/
@@ -41,7 +45,9 @@ jobs:
             android/app/libs/licenses/
           key: formal-network-core-go1273-ndk282-${{ hashFiles('android/network-poc/corebridge/go.mod', 'android/network-poc/corebridge/go.sum', 'android/network-poc/corebridge/networkcore.go', 'android/network-poc/scripts/build-core.sh', 'android/scripts/prepare-network-core.sh') }}
       - run: bash android/scripts/prepare-network-core.sh
+        if: ${{ !inputs.reuse_application_build }}
       - name: Restore existing fixed Beta signer
+        if: ${{ !inputs.reuse_application_build }}
         env:
           STUDIO_BETA_KEYSTORE_B64: ${{ secrets.STUDIO_BETA_KEYSTORE_B64 }}
         run: python3 android/scripts/restore-beta-signing.py
@@ -69,30 +75,18 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          test "$(gh api repos/${{ github.repository }}/actions/runs/42023266476 --jq .head_sha)" = 5d0e70f57da462d2812e19f7ddca1ee969eb29ae
-          test "$(gh api repos/${{ github.repository }}/actions/runs/42023266476/jobs --jq '.jobs[]|select(.name=="build")|.conclusion')" = success
-          git fetch origin 5d0e70f57da462d2812e19f7ddca1ee969eb29ae --depth=1
-          git diff --exit-code 5d0e70f57da462d2812e19f7ddca1ee969eb29ae HEAD -- android/app/src/main android/app/src/environmentClient android/app/src/environmentProduction android/app/src/environmentCi android/app/build.gradle android/settings.gradle android/build.gradle android/network-poc/corebridge
-      - uses: actions/download-artifact@v4
-        if: inputs.reuse_application_build
-        with:
-          name: environment-client-input
-          run-id: 42023266476
-          github-token: ${{ github.token }}
-          path: android/app/build/environment-client-input
-      - name: Compile only the corrected test APK against unchanged app code
-        if: inputs.reuse_application_build
-        run: |
-          sdkmanager 'platforms;android-37.0' 'build-tools;35.0.0'
-          bash android/environment-poc/gradlew -p android --no-daemon -PenvironmentClient -PbetaVersionCode=3000029 -PbetaVersionName=3.0.0-alpha.24-beta.5 :app:assembleNetworkBetaAndroidTest
-          cp android/app/build/outputs/apk/androidTest/networkBeta/app-networkBeta-androidTest.apk android/app/build/environment-client-input/upgrade-test.apk
+          test "$(gh api repos/${{ github.repository }}/actions/runs/42025086453 --jq .head_sha)" = e55e133cfba9b094ac202a27f649658e9a9183df
+          test "$(gh api repos/${{ github.repository }}/actions/runs/42025086453/jobs --jq '.jobs[]|select(.name=="build")|.conclusion')" = success
+          git fetch origin e55e133cfba9b094ac202a27f649658e9a9183df --depth=1
+          git diff --exit-code e55e133cfba9b094ac202a27f649658e9a9183df HEAD -- android/app android/settings.gradle android/build.gradle android/network-poc/corebridge android/scripts/environment_upgrade.py
       - uses: actions/upload-artifact@v4
+        if: ${{ !inputs.reuse_application_build }}
         with:
           name: environment-client-input
           retention-days: 14
           path: android/app/build/environment-client-input/
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: ${{ always() && !inputs.reuse_application_build }}
         with:
           name: environment-client-build-evidence
           retention-days: 14
@@ -109,8 +103,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        api: [28, 35]
-        target: [human, synthetic]
+        include: ${{ fromJSON(inputs.reuse_application_build && '[{"api":28,"target":"synthetic"},{"api":35,"target":"synthetic"}]' || '[{"api":28,"target":"human"},{"api":35,"target":"human"},{"api":28,"target":"synthetic"},{"api":35,"target":"synthetic"}]') }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -127,6 +120,8 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: environment-client-input
+          run-id: ${{ inputs.reuse_application_build && 42025086453 || github.run_id }}
+          github-token: ${{ github.token }}
           path: android/app/build/environment-client-input
       - uses: actions/download-artifact@v4
         if: matrix.api == 35
@@ -174,14 +169,45 @@ jobs:
           name: environment-client-${{ matrix.api }}-${{ matrix.target }}
           retention-days: 14
           path: android/app/build/environment-client-evidence/
+  reuse-human:
+    if: inputs.reuse_application_build
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        api: [28,35]
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: environment-client-${{ matrix.api }}-human
+          run-id: 42025086453
+          github-token: ${{ github.token }}
+          path: evidence
+      - name: Require the existing human upgrade proof, without rewriting its source identity
+        run: |
+          python3 - <<'PY'
+          import json,pathlib
+          p=pathlib.Path('evidence/verified-human.json');r=json.loads(p.read_text())
+          assert r['complete'] and r['api']==${{ matrix.api }}
+          if r['api']==35: assert r['originalHumanCandidateBytesInstalled']
+          pathlib.Path('evidence/reused-human-source.json').write_text(json.dumps({'run':42025086453,'sourceSHA':r['sourceSHA'],'inputUnchanged':True})+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: environment-client-${{ matrix.api }}-human
+          retention-days: 14
+          path: evidence/
   deliver:
-    needs: accept
+    needs: [accept, reuse-human]
+    if: ${{ always() && needs.accept.result == 'success' && (needs.reuse-human.result == 'success' || needs.reuse-human.result == 'skipped') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           name: environment-client-input
+          run-id: ${{ inputs.reuse_application_build && 42025086453 || github.run_id }}
+          github-token: ${{ github.token }}
           path: input
       - uses: actions/download-artifact@v4
         with:
