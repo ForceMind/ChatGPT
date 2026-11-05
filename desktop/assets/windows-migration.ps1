@@ -175,4 +175,4 @@ try {
   }
   if($Mode -in @('Plan','Prepare')){[IO.File]::WriteAllText(($StateFile+'.ini'),("[migration]`r`nDestination="+$studioState.destination+"`r`n"),[Text.Encoding]::Unicode)}
   exit 0
-}catch {$message=$_.Exception.Message.Replace("`r",' ').Replace("`n",' ');[IO.File]::WriteAllText(($StateFile+'.error.ini'),("[migration]`r`nMessage="+$message+"`r`n"),[Text.Encoding]::Unicode);if($studioState){$studioState.error=$message;SaveState;Proof};Write-Output $message;exit 1}finally{$registry.Dispose()}
+}catch {$message=$_.Exception.Message.Replace("`r",' ').Replace("`n",' ');if(!$studioState){$studioState=@{schema=1;source=$null;destination=$Destination;active=$false;prepared=$false;committed=$false;rolledBack=$false;backup=$null;files=@();links=@();registry=@();newFiles=@();error=$null;mode=$Mode}};[IO.File]::WriteAllText(($StateFile+'.error.ini'),("[migration]`r`nMessage="+$message+"`r`n"),[Text.Encoding]::Unicode);if($studioState){$studioState.error=$message;SaveState;Proof};Write-Output $message;exit 1}finally{$registry.Dispose()}

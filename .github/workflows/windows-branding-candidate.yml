@@ -15,10 +15,14 @@ jobs:
       run:
         working-directory: desktop
     steps:
+      - name: Keep committed LF on disposable Windows runner
+        run: git config --global core.autocrlf false
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '26.7.0'
+      - name: Record checkout line endings
+        run: git ls-files --eol src/main/main.ts scripts/package-win.mjs scripts/windows-branding-fixture.mjs
       - run: npm ci
       - name: Full required desktop check
         run: npm run check

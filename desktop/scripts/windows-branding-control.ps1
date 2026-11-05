@@ -41,7 +41,7 @@ switch($Operation){
   Tls {
     $c=Get-Content -Raw -Encoding utf8 $Config|ConvertFrom-Json
     $cert=New-SelfSignedCertificate -DnsName 'chatgpt.com','chatgpt.xincreates.com' -CertStoreLocation Cert:\CurrentUser\My -KeyExportPolicy Exportable -NotAfter (Get-Date).AddDays(1)
-    Export-PfxCertificate -Cert $cert -FilePath $c.pfx -Password (ConvertTo-SecureString $c.password -AsPlainText -Force)|Out-Null
+    Export-PfxCertificate -Cert $cert -FilePath $c.pfx -CryptoAlgorithmOption AES256_SHA256 -Password (ConvertTo-SecureString $c.password -AsPlainText -Force)|Out-Null
     Export-Certificate -Cert $cert -FilePath $c.cer|Out-Null
     $cert.Thumbprint|Set-Content -Encoding ascii $Output
   }

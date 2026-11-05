@@ -46,3 +46,5 @@
 ## 已批准修复实施记录（2026-11-05）
 
 用户已确认完整方案：新装及旧默认程序目录Studio，安全回退、自定义目录保留，更新器兼容旧/新EXE、快捷方式及更新浮窗联动；数据目录/AppID/Mac兼容包不变。实现源码仅dev，完整npm run check和默认/旧默认/自定义安装、程序备份/注册信息回退、Cookie/LocalStorage保留等合成启动均在独立Windows Actions；不运行旧截图/真实网页检查，不发布或合并main。当前代码尚待CI，不将实现当作通过。
+
+实现首轮Actions41970512586的typecheck/lint通过，format:check报告124文件不符而停止；源Git blob为LF，正在固定Windows checkout的core.autocrlf=false并记录git ls-files --eol，保持原Prettier规则，不整体格式化或改blame忽略列表。补充保留Plan阶段错误及每次安装的迁移结果，避免失败时只留退出码。

@@ -98,6 +98,7 @@ export async function runWindowsBrandingMatrix() {
     app = await electron.launch({
       executablePath: executable,
       args: [
+        '--user-data-dir=' + data,
         '--host-resolver-rules=MAP * 127.0.0.1',
         '--no-proxy-server',
         '--ignore-certificate-errors-spki-list=' + spki
@@ -174,7 +175,10 @@ export async function runWindowsBrandingMatrix() {
       Evidence: proof,
       FailCommit: fail || undefined
     });
-    return { ...readJSON(output), proof: existsSync(proof) ? readJSON(proof) : undefined };
+    if (existsSync(proof)) writeFileSync(path.join(evidence, path.basename(proof)), readFileSync(proof));
+    const result = { ...readJSON(output), proof: existsSync(proof) ? readJSON(proof) : undefined };
+    if (result.exitCode !== 0) console.log(JSON.stringify(result));
+    return result;
   }
   function inspect(directory) {
     const output = path.join(root, 'inspection.json');
