@@ -75,7 +75,7 @@ android {
             buildConfigField 'String', 'NETWORK_PROBE_URL', '"https://network-fixture.test:18480/echo"'
         }
         }
-        testBuildType = project.hasProperty('betaUpgrade') ? 'networkBeta' : project.hasProperty('networkIntegration') ? 'networkCi' : 'debug'
+        testBuildType = (project.hasProperty('betaUpgrade') || project.hasProperty('betaBrowserUpgrade')) ? 'networkBeta' : project.hasProperty('networkIntegration') ? 'networkCi' : 'debug'
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
     buildFeatures { buildConfig true }
     testOptions { unitTests.returnDefaultValues = true }
@@ -148,7 +148,7 @@ if (project.hasProperty('networkIntegration')) {
 android.applicationVariants.all { variant ->
     if (variant.buildType.name == 'networkBeta') variant.outputs.each { output ->
         output.versionCodeOverride = (project.findProperty('betaVersionCode') ?: '3000025').toInteger()
-        output.versionNameOverride = '3.0.0-alpha.24-beta.1'
+        output.versionNameOverride = project.findProperty('betaVersionName') ?: '3.0.0-alpha.24-beta.1'
     }
 }
 tasks.matching { it.name == 'preNetworkBetaBuild' }.configureEach {
@@ -157,5 +157,9 @@ tasks.matching { it.name == 'preNetworkBetaBuild' }.configureEach {
 if (project.hasProperty('betaUpgrade')) {
     android.sourceSets.networkBeta.manifest.srcFile('src/betaUpgradeTarget/AndroidManifest.xml')
     android.sourceSets.androidTest.java.setSrcDirs(['src/betaUpgrade/java'])
+    android.sourceSets.androidTest.manifest.srcFile('src/betaUpgrade/AndroidManifest.xml')
+}
+if (project.hasProperty('betaBrowserUpgrade')) {
+    android.sourceSets.androidTest.java.setSrcDirs(['src/betaBrowserUpgrade/java'])
     android.sourceSets.androidTest.manifest.srcFile('src/betaUpgrade/AndroidManifest.xml')
 }

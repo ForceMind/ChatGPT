@@ -1,0 +1,140 @@
+# Original delivered baseline, isolated candidate only. No Release/main/device writes.
+name: Android Beta Browser State Upgrade Candidate
+on:
+  push:
+    branches: [dev]
+    paths: ['.github/workflows/android-beta-browser-upgrade.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      STUDIO_BETA_STORE_PASSWORD: ${{ secrets.STUDIO_BETA_STORE_PASSWORD }}
+      STUDIO_BETA_MODE: '1'
+      BETA_VERSION_CODE: '3000026'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.3'
+          cache: false
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - uses: actions/cache@v4
+        with:
+          path: |
+            android/network-poc/app/libs/
+            android/network-poc/corebridge/bin/
+            android/app/libs/licenses/
+          key: formal-network-core-go1273-ndk282-${{ hashFiles('android/network-poc/corebridge/go.mod', 'android/network-poc/corebridge/go.sum', 'android/network-poc/corebridge/networkcore.go', 'android/network-poc/scripts/build-core.sh', 'android/scripts/prepare-network-core.sh') }}
+      - run: bash android/scripts/prepare-network-core.sh
+      - name: Restore existing test-only signing key
+        env:
+          STUDIO_BETA_KEYSTORE_B64: ${{ secrets.STUDIO_BETA_KEYSTORE_B64 }}
+        run: python3 android/scripts/restore-beta-signing.py
+      - name: Build fixed-signer Beta.2 and same-signer instrumentation
+        run: |
+          test ! -f android/keystore.properties
+          sdkmanager 'platforms;android-36' 'build-tools;35.0.0'
+          bash android/gradlew -p android --no-daemon :app:testDebugUnitTest :app:lintNetworkBeta
+          bash android/gradlew -p android --no-daemon -PbetaBrowserUpgrade -PbetaVersionCode=3000026 -PbetaVersionName=3.0.0-alpha.24-beta.2 :app:assembleNetworkBeta :app:assembleNetworkBetaAndroidTest
+          python3 android/scripts/package-network-preview.py
+          cp android/app/build/outputs/apk/androidTest/networkBeta/app-networkBeta-androidTest.apk android/app/build/network-beta/browser-test.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: beta-browser-inputs
+          retention-days: 14
+          path: android/app/build/network-beta/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: beta-browser-build-evidence
+          retention-days: 14
+          path: |
+            android/app/build/reports/
+            android/app/build/test-results/
+      - name: Remove transient test signing material
+        if: always()
+        run: rm -f "$RUNNER_TEMP/studio-beta.p12"
+  browser-upgrade:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - run: sdkmanager 'build-tools;35.0.0'
+      - uses: actions/download-artifact@v4
+        with:
+          name: ChatGPT-Studio-Fixed-Beta-arm64-Candidate
+          run-id: 41959244766
+          github-token: ${{ github.token }}
+          path: android/app/build/beta-browser-baseline
+      - uses: actions/download-artifact@v4
+        with:
+          name: beta-browser-inputs
+          path: android/app/build/beta-browser-inputs
+      - run: sudo chmod a+rw /dev/kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect
+          script: python3 android/scripts/run-beta-browser-upgrade.py
+      - name: Preserve first error and native logs without screenshots
+        if: always()
+        run: |
+          mkdir -p android/app/build/beta-browser-evidence
+          timeout 15 adb logcat -d > android/app/build/beta-browser-evidence/logcat.txt 2>&1 || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: beta-browser-upgrade-evidence
+          retention-days: 14
+          path: android/app/build/beta-browser-evidence/
+  deliver:
+    needs: browser-upgrade
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: beta-browser-inputs
+          path: candidate
+      - uses: actions/download-artifact@v4
+        with:
+          name: beta-browser-upgrade-evidence
+          path: evidence
+      - name: Deliver only after strict browser upgrade acceptance
+        run: |
+          python3 - <<'PY'
+          import json, pathlib, shutil
+          proof = json.loads(pathlib.Path('evidence/verified.json').read_text())
+          assert proof['complete'] and proof['originalDeliveredBaseline'] and proof['webViewCookiesExercised']
+          pathlib.Path('candidate/browser-test.apk').unlink()
+          shutil.copyfile('evidence/verified.json', 'candidate/browser-upgrade-acceptance.json')
+          shutil.copyfile('docs/android-network-fixed-beta-browser-upgrade.md', 'candidate/INSTALL.md')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ChatGPT-Studio-Fixed-Beta2-Browser-Upgrade-Candidate
+          retention-days: 14
+          path: candidate/
