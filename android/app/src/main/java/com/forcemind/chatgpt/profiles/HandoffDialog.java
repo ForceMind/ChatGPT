@@ -75,6 +75,7 @@ final class HandoffDialog {
         if(preparing||!alive.get())return;
         try{
             WorkspaceState.Account destination=state.accounts.get(target.getSelectedItemPosition());int s=skill.getSelectedItemPosition(),a=agent.getSelectedItemPosition();
+            if(destination.isEnvironment()){status.setText("此账号请在网页手动添加附件；自动处理暂未接入。");return;}
             JSONObject request=new JSONObject().put("requestId",requestId).put("sourceAccountId",source.id).put("sourceStorageId",source.storageId).put("targetAccountId",destination.id).put("targetStorageId",destination.storageId)
                 .put("assetIds",new JSONArray(selected)).put("crossAccountConfirmed",cross.isChecked()).put("skillId",s==0?"":skills.get(s-1).getString("id")).put("agentId",a==0?"":agents.get(a-1).getString("id")).put("instructions",instructions.getText().toString()).put("language",language.getText().toString());
             request=HandoffRequest.normalize(request);HandoffRuntime runtime=HandoffRuntime.get(activity);JSONObject accepted=request;

@@ -90,6 +90,9 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
     private String mediaOwner;
     private boolean ready, fatal;
     private boolean resumed;
+    private String redirectedEnvironment;
+    private boolean returnedFromEnvironment;
+    private boolean networkSettingsPending,networkSettingsShowing;
     private LinearLayout networkNotice;
     private TextView networkNoticeText;
     private Map<String,Long> pageEpochs=new HashMap<>();
@@ -109,13 +112,16 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
         WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG);
         memory=BrowserMemory.get(this);views=memory.views;popupOwners=memory.popupOwners;pageEpochs=memory.epochs;recentClosed=memory.recentClosed;memory.attach(this);assetDownloads=memory.assetDownloads;downloadHelper=memory.downloads;
         buildLayout();
+        networkSettingsPending=bundle!=null&&bundle.getBoolean("networkSettingsOpen",false);consumeNetworkSettingsIntent(getIntent());
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override public void handleOnBackPressed() { navigateBack(); }
         });
+        try{store=new StateStore(getFilesDir());state=store.load();if(getIntent().hasExtra(EnvironmentLauncher.ACCOUNT_ID)){String accountId=getIntent().getStringExtra(EnvironmentLauncher.ACCOUNT_ID);state=store.update(next->{next.find(accountId);next.activeAccount=accountId;});getIntent().removeExtra(EnvironmentLauncher.ACCOUNT_ID);}}catch(Exception e){fail("无法读取账号记录",e);return;}
         boolean supportsProfiles;
         try { supportsProfiles = WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE); }
         catch (RuntimeException error) { supportsProfiles = false; }
         if (!supportsProfiles) {
+            if(state.current().isEnvironment()){memory.network();ready=true;showCurrent();return;}
             showMessage("请更新 Android System WebView", "此设备的网页组件不支持独立账号空间。请更新 Android System WebView / Chrome 后重新打开。", "打开更新页", () -> openExternal("https://play.google.com/store/apps/details?id=com.google.android.webview"));
             return;
         }
@@ -128,11 +134,28 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
                 try { ProfileStore.getInstance().deleteProfile(WorkspaceState.profile(id)); cleared.add(id); }
                 catch (IllegalStateException ignored) { /* retry at the next process start */ }
             }
-            if (!cleared.isEmpty()) { WorkspaceState next = state.copy(); next.pendingDeletes.removeAll(cleared); store.save(next); state = next; }
+            if (!cleared.isEmpty()) state=store.update(next->next.pendingDeletes.removeAll(cleared));
             try{if(memory.recovery==null)memory.recovery=new PageRecoveryManager(this);recovery=memory.recovery;recovery.attach(this);}catch(Exception e){toast("本地页面恢复暂不可用，网页可继续使用。请手动备份草稿。");}
             boolean retainedPages=!views.isEmpty();rebindLivePages();ready = true; showCurrent();acceptHandoffIntent(getIntent());
             if(retainedPages&&bundle!=null&&bundle.getBoolean("tabsOverview")){showTabOverview();overview.restoreUI(bundle.getString("tabFilter","all"),bundle.getString("tabQuery",""),bundle.getInt("tabPosition",0));}
         } catch (Exception e) { fail("无法读取账号记录", e); }
+    }
+
+    private void consumeNetworkSettingsIntent(Intent intent){
+        if(intent==null||!intent.hasExtra("networkSettings"))return;
+        if(intent.getBooleanExtra("networkSettings",false)&&!networkSettingsShowing)networkSettingsPending=true;
+        intent.removeExtra("networkSettings");
+    }
+    private void openRequestedNetworkSettings(){
+        networkSettingsPending=false;networkSettingsShowing=true;returnedFromEnvironment=false;
+        try{
+            NetworkSheet.show(this,memory.network(),()->{
+                networkSettingsShowing=false;
+                if(isFinishing()||isDestroyed()||isChangingConfigurations()||fatal||!ready)return;
+                try{state=store.load();returnedFromEnvironment=false;rebindLivePages();showCurrent();}
+                catch(Exception e){fail("无法读取账号记录",e);}
+            });
+        }catch(RuntimeException error){networkSettingsShowing=false;toast("网络设置暂时无法打开");}
     }
 
     private void buildLayout() {
@@ -166,7 +189,16 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
         }if(retained>0)memory.diagnostics.event("activity-retained",null,null,"pages:"+retained);
     }
     private void showCurrent(){
-        if(!ready||fatal)return;if(recovery!=null)recovery.checkpointVisible();if(snapshotOwner!=null)recoveryHideSnapshot(snapshotOwner);cancelRequests();renderHeader();WorkspaceState.Account account=state.current();WorkspaceState.Tab tab=account.current();recentClosed.remove(tab.id);pruneRecent();
+        if(!ready||fatal)return;
+        if(networkSettingsPending&&!networkSettingsShowing)openRequestedNetworkSettings();
+        if(state.current().isEnvironment()){
+            if(networkSettingsShowing||networkSettingsPending)return;
+            try{for(WebView held:views.values())selectPage(held,false);EnvironmentLauncher.open(this,state.activeAccount);redirectedEnvironment=state.activeAccount;}
+            catch(Exception e){toast(e.getMessage()==null?"账号环境暂不可用":e.getMessage());}
+            return;
+        }
+        redirectedEnvironment=null;returnedFromEnvironment=false;
+        if(recovery!=null)recovery.checkpointVisible();if(snapshotOwner!=null)recoveryHideSnapshot(snapshotOwner);cancelRequests();renderHeader();WorkspaceState.Account account=state.current();WorkspaceState.Tab tab=account.current();recentClosed.remove(tab.id);pruneRecent();
         try{
             for(Map.Entry<String,WebView> held:views.entrySet())selectPage(held.getValue(),held.getKey().equals(tab.id));memory.refreshExecutionPolicy();WebView web=views.get(tab.id);boolean created=web==null;
             if(created&&!memory.network().ready()){networkChanged();return;}
@@ -353,24 +385,9 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
         sheet.action("管理当前账号",false,()->{sheet.dismiss();manageAccount();});sheet.show();
     }
     private void editAccount(String accountId) {
-        WorkspaceState.Account old = accountId == null ? null : state.find(accountId);
-        LinearLayout fields = new LinearLayout(this); fields.setOrientation(LinearLayout.VERTICAL); fields.setPadding(dp(24), dp(8), dp(24), 0);
-        EditText name = field("账号名称", old == null ? "" : old.name, 40), email = field("邮箱备注（可选）", old == null ? "" : old.email, 120);
-        email.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
-        fields.addView(name); fields.addView(email);
-        LinearLayout colors = new LinearLayout(this); fields.addView(colors); String[] selected = {old == null ? WorkspaceState.COLORS[state.accounts.size() % WorkspaceState.COLORS.length] : old.color};
-        List<RadioButton> dots = new ArrayList<>();
-        for (String color : WorkspaceState.COLORS) {
-            RadioButton dot=new RadioButton(this);dot.setContentDescription("账号色点 "+color);dot.setButtonTintList(android.content.res.ColorStateList.valueOf(Color.parseColor(color)));dot.setChecked(color.equals(selected[0]));dot.setGravity(Gravity.CENTER);colors.addView(dot,new LinearLayout.LayoutParams(0,dp(48),1));dots.add(dot);
-            dot.setOnClickListener(v -> { selected[0] = color; for (int i = 0; i < dots.size(); i++) dots.get(i).setChecked(WorkspaceState.COLORS[i].equals(color)); });
-        }
-        ScrollView scroll=new ScrollView(this);scroll.addView(fields);
-        AlertDialog dialog = new AlertDialog.Builder(this).setTitle(old == null ? "添加账号" : "编辑账号").setView(scroll).setNegativeButton("取消", null).setPositiveButton("保存", null).create();
-        dialog.setOnShowListener(d -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
-            if (name.getText().toString().trim().isEmpty()) { name.setError("请填写名称"); return; }
-            if (change(s -> { if (accountId == null) s.addAccount(name.getText().toString(), email.getText().toString(), selected[0]); else { WorkspaceState.Account a = s.find(accountId); a.name = name.getText().toString().trim(); a.email = email.getText().toString().trim(); a.color = selected[0]; } })) { dialog.dismiss(); showCurrent(); }
-        })); dialog.show();
+        AccountEditor.show(this,store,accountId,saved->{state=saved;showCurrent();});
     }
+
     private void manageAccount() {
         String id = state.activeAccount;
         new AlertDialog.Builder(this).setTitle(state.current().name).setItems(new String[]{"编辑名称与邮箱备注", "向前移动账号", "向后移动账号", "清除本机登录数据", "移除账号", "本机草稿"}, (d, i) -> {
@@ -392,10 +409,11 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
     private void finishAccountChange(String id,boolean remove) {
         List<String> ids=new ArrayList<>();for(WorkspaceState.Tab t:state.find(id).tabs)ids.add(t.id);
         for(WorkspaceState.Tab t:state.find(id).closedTabs)ids.add(t.id);
+        String erasedStorage=state.find(id).storageId;
         memory.network().invalidateAccount(id);
         try{if(recovery!=null)recovery.clear(id,state.find(id).storageId);else new PageRecoveryStore(getFilesDir(),DevicePayloadKeys.recoveryCipher(getApplicationContext())).clear(id,state.find(id).storageId);store.revoke(state.find(id).storageId);}catch(Exception e){fail("无法保护账号清除记录",e);return;}
         cancelRequests();for(String tabId:ids)destroyView(tabId);
-        if(change(s->{if(remove)s.removeAccount(s.find(id));else s.clearAccount(s.find(id));}))showCurrent();
+        if(change(s->{if(remove)s.removeAccount(s.find(id));else if(s.find(id).storageId.equals(erasedStorage))s.clearAccount(s.find(id));}))showCurrent();
         else fail("账号记录无法保存",new IllegalStateException("已停止使用旧空间，请重新打开应用"));
     }
     private void showTabMenu(String accountId, String tabId) {
@@ -433,7 +451,7 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
     }
     private boolean change(Consumer<WorkspaceState> mutation) {
         if (fatal) return false;
-        try { WorkspaceState next = state.copy(); mutation.accept(next); store.save(next); state = next; return true; }
+        try { state=store.update(mutation); return true; }
         catch (Exception e) { toast("操作未保存：" + e.getMessage()); return false; }
     }
     private boolean exists(String accountId, String tabId) { return !fatal && state.accounts.stream().anyMatch(a -> a.id.equals(accountId) && a.tabs.stream().anyMatch(t -> t.id.equals(tabId))); }
@@ -486,10 +504,27 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
         else if (ready && !fatal && popupOwners.containsKey(state.current().activeTab)) closeTab(state.activeAccount, state.current().activeTab);
         else moveTaskToBack(true);
     }
-    @Override protected void onResume(){super.onResume();resumed=true;if(memory!=null&&ready&&!fatal)memory.network().routes.recheckCoreState();if(memory!=null&&memory.owner()!=this&&ready){memory.attach(this);try{state=store.load();rebindLivePages();showCurrent();}catch(Exception e){fail("无法读取账号记录",e);}}for(WebView web:views.values())web.onResume();if(recovery!=null)recovery.resume();if(ready&&!fatal&&KeepaliveService.enabled(this)&&!KeepaliveService.running())enableKeepalive();drainHandoff();}
-    @Override protected void onPause(){if(recovery!=null)recovery.pause();resumed=false;if(handoffs!=null&&handoffs.controller()!=null&&handoffs.controller().ownedBy(this))handoffs.controller().cancel("应用已离开前台，已停止自动发送；请检查目标对话");if(!KeepaliveService.running())for(WebView web:views.values())web.onPause();super.onPause();}
+    @Override protected void onResume(){
+        super.onResume();resumed=true;
+        if(memory!=null&&ready&&!fatal){
+            memory.network().routes.recheckCoreState();
+            try{
+                WorkspaceState latest=store.load();boolean selectionChanged=!latest.activeAccount.equals(state.activeAccount)||!latest.current().activeTab.equals(state.current().activeTab)||!latest.current().storageId.equals(state.current().storageId);
+                state=latest;
+                boolean reattach=memory.owner()!=this;if(reattach)memory.attach(this);
+                if(state.current().isEnvironment()){
+                    // Returning through Android Back must not immediately relaunch the same Activity.
+                    if(networkSettingsPending||!state.activeAccount.equals(redirectedEnvironment))showCurrent();
+                }else if(selectionChanged||reattach){rebindLivePages();showCurrent();}
+            }catch(Exception e){fail("无法读取账号记录",e);}
+        }
+        for(WebView web:views.values())web.onResume();if(recovery!=null)recovery.resume();if(ready&&!fatal&&KeepaliveService.enabled(this)&&!KeepaliveService.running())enableKeepalive();drainHandoff();
+    }
+    @Override public void onWindowFocusChanged(boolean focused){super.onWindowFocusChanged(focused);if(focused&&resumed&&ready&&!fatal&&!networkSettingsShowing&&!networkSettingsPending&&state.current().isEnvironment()&&returnedFromEnvironment&&state.activeAccount.equals(redirectedEnvironment))moveTaskToBack(true);}
+
+    @Override protected void onPause(){if(redirectedEnvironment!=null)returnedFromEnvironment=true;if(recovery!=null)recovery.pause();resumed=false;if(handoffs!=null&&handoffs.controller()!=null&&handoffs.controller().ownedBy(this))handoffs.controller().cancel("应用已离开前台，已停止自动发送；请检查目标对话");if(!KeepaliveService.running())for(WebView web:views.values())web.onPause();super.onPause();}
     @Override protected void onStop(){try{if(WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE))for(WebView web:views.values())WebViewCompat.getProfile(web).getCookieManager().flush();}catch(RuntimeException ignored){}super.onStop();}
-    @Override protected void onSaveInstanceState(Bundle bundle){if(overview!=null){bundle.putBoolean("tabsOverview",true);bundle.putString("tabFilter",overview.filter());bundle.putString("tabQuery",overview.query());bundle.putInt("tabPosition",overview.position());}super.onSaveInstanceState(bundle);}
+    @Override protected void onSaveInstanceState(Bundle bundle){bundle.putBoolean("networkSettingsOpen",networkSettingsShowing||networkSettingsPending);if(overview!=null){bundle.putBoolean("tabsOverview",true);bundle.putString("tabFilter",overview.filter());bundle.putString("tabQuery",overview.query());bundle.putInt("tabPosition",overview.position());}super.onSaveInstanceState(bundle);}
     @Override protected void onDestroy(){
         if(handoffs!=null&&handoffs.controller()!=null&&handoffs.controller().ownedBy(this))handoffs.controller().cancel("窗口已关闭，未确认的发送不会自动重试");recentHandler.removeCallbacksAndMessages(null);cancelRequests();
         if(memory!=null&&memory.owner()==this){if(!fatal&&(!isFinishing()||KeepaliveService.running()))memory.detach(this);else memory.clear();}ready=false;super.onDestroy();
@@ -502,7 +537,7 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
         if(!exists(account,tab))return;String clean=NavigationPolicy.restorable(url);WorkspaceState.Tab current=state.find(account).tabs.stream().filter(t->t.id.equals(tab)).findFirst().orElse(null);if(current==null||current.url.equals(clean))return;
         change(s->s.find(account).tabs.stream().filter(t->t.id.equals(tab)).findFirst().orElseThrow(IllegalStateException::new).url=clean);
     }
-    @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);setIntent(intent);acceptHandoffIntent(intent);}
+    @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);setIntent(intent);consumeNetworkSettingsIntent(intent);if(store!=null&&ready&&!fatal)try{state=store.load();if(intent.hasExtra(EnvironmentLauncher.ACCOUNT_ID)){String accountId=intent.getStringExtra(EnvironmentLauncher.ACCOUNT_ID);state=store.update(next->{next.find(accountId);next.activeAccount=accountId;});intent.removeExtra(EnvironmentLauncher.ACCOUNT_ID);}returnedFromEnvironment=false;showCurrent();}catch(Exception e){fail("无法读取账号记录",e);}acceptHandoffIntent(intent);}
     private void acceptHandoffIntent(Intent intent){
         if(intent==null||!intent.hasExtra("handoffJob"))return;
         try{pendingJob=intent.getStringExtra("handoffJob");pendingJobToken=intent.getStringExtra("handoffToken");WorkspaceState.profile(pendingJob);WorkspaceState.profile(pendingJobToken);}catch(Exception e){pendingJob=null;pendingJobToken=null;toast("任务授权参数无效");}

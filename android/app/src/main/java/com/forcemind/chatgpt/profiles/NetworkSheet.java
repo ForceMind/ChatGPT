@@ -15,8 +15,11 @@ import java.util.List;
 /** Event-driven controls keep the same sheet open across save, switch and failure transitions. */
 final class NetworkSheet {
     static StudioSheet show(Activity activity, NetworkSession session) {
+        return show(activity, session, null);
+    }
+    static StudioSheet show(Activity activity, NetworkSession session, Runnable dismissed) {
         if (activity.isFinishing() || activity.isDestroyed()) return null;
-        Panel panel = new Panel(activity, session);
+        Panel panel = new Panel(activity, session, dismissed);
         panel.sheet.show();
         return panel.sheet;
     }
@@ -29,7 +32,7 @@ final class NetworkSheet {
         AlertDialog prompt;
         String message = "";
         boolean registered;
-        Panel(Activity activity, NetworkSession session) {
+        Panel(Activity activity, NetworkSession session, Runnable dismissed) {
             this.activity = activity; this.session = session;
             sheet = new StudioSheet(activity, "网络", session.status() + " · 所有账号共用");
             sheet.setOnShowListener(dialog -> {
@@ -38,7 +41,10 @@ final class NetworkSheet {
                 session.observePanel(refresh);
                 if (session.closed()) sheet.dismiss();
             });
-            sheet.setOnDismissListener(dialog -> stop());
+            sheet.setOnDismissListener(dialog -> {
+                stop();
+                if (dismissed != null && !activity.isDestroyed() && !activity.isFinishing()) dismissed.run();
+            });
         }
         void stop() {
             session.removePanelObserver(refresh);

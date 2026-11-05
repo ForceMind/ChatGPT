@@ -53,7 +53,9 @@ final class BrowserMemory {
     }
     MainActivity owner(){return owner.get();}
     void attach(MainActivity activity){owner=new WeakReference<>(activity);if(recovery!=null)recovery.attach(activity);if(downloads!=null)downloads.attach(activity);}
-    boolean retainsExecution(){return !visibleActivities.isEmpty()||KeepaliveService.running();}
+    private volatile boolean environmentForeground;
+    void setEnvironmentForeground(boolean foreground){environmentForeground=foreground;refreshExecutionPolicy();}
+    boolean retainsExecution(){return environmentForeground||!visibleActivities.isEmpty()||KeepaliveService.running();}
     void refreshExecutionPolicy(){boolean retain=retainsExecution();for(Map.Entry<String,WebView> entry:new ArrayList<>(views.entrySet()))if(entry.getValue() instanceof RetainedWebView)((RetainedWebView)entry.getValue()).retainExecution(retain&&!recentClosed.containsKey(entry.getKey()));}
     void register(String tab,String account,String storageId,WebView web){views.put(tab,web);accounts.put(tab,account);storage.put(tab,storageId);epochs.putIfAbsent(tab,0L);web.getSettings().setBlockNetworkLoads(!network().ready());if(web instanceof RetainedWebView)((RetainedWebView)web).retainExecution(retainsExecution());}
     void detach(MainActivity activity){
@@ -77,7 +79,7 @@ final class BrowserMemory {
     }
     private void remember(String account,String tab,String url,String title){
         if(owner()!=null)return;
-        try{StateStore store=new StateStore(context.getFilesDir());WorkspaceState state=store.load();WorkspaceState.Account a=state.find(account);for(WorkspaceState.Tab t:a.tabs)if(t.id.equals(tab)){boolean changed=false;if(url!=null&&!t.url.equals(NavigationPolicy.restorable(url))){t.url=NavigationPolicy.restorable(url);changed=true;}if(!t.customTitle&&title!=null&&!title.trim().isEmpty()&&!t.title.equals(title.substring(0,Math.min(120,title.length())))){t.title=title.substring(0,Math.min(120,title.length()));changed=true;}if(changed)store.save(state);break;}}catch(Exception ignored){}
+        try{new StateStore(context.getFilesDir()).update(state->{WorkspaceState.Account a=null;for(WorkspaceState.Account candidate:state.accounts)if(candidate.id.equals(account)&&candidate.storageId.equals(storage.get(tab)))a=candidate;if(a==null||a.isEnvironment())return;for(WorkspaceState.Tab t:a.tabs)if(t.id.equals(tab)){if(url!=null)t.url=NavigationPolicy.restorable(url);if(!t.customTitle&&title!=null&&!title.trim().isEmpty())t.title=title.substring(0,Math.min(120,title.length()));break;}});}catch(Exception ignored){}
     }
     void destroy(String tab){
         WebView web=views.remove(tab);accounts.remove(tab);storage.remove(tab);epochs.remove(tab);popupOwners.remove(tab);recentClosed.remove(tab);thumbnails.remove(tab);thumbnailTimes.remove(tab);

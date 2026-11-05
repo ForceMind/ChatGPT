@@ -24,6 +24,7 @@ final class NetworkSession {
     private final Handler main = new Handler(Looper.getMainLooper());
     private final ExecutorService settingsIO = Executors.newSingleThreadExecutor();
     private final Map<String, FileJob> jobs = new LinkedHashMap<>();
+    private final java.util.Set<String> externalJobs = new java.util.HashSet<>();
     private final Map<String, Long> epochs = new LinkedHashMap<>();
     private final Runnable observer;
     private final java.util.Set<Runnable> panelObservers = new java.util.LinkedHashSet<>();
@@ -94,7 +95,18 @@ final class NetworkSession {
             default: return "网络已关闭";
         }
     }
-    synchronized boolean busy() { return !jobs.isEmpty(); }
+    synchronized boolean busy() { return !jobs.isEmpty() || !externalJobs.isEmpty(); }
+    NetworkRoute.Snapshot beginEnvironmentFile(String id) {
+        if (Looper.myLooper() != main.getLooper()) throw new IllegalStateException("File ownership requires UI thread");
+        synchronized (this) {
+            if (!ready() || jobs.size()+externalJobs.size()>=32 || !externalJobs.add(id)) throw new IllegalStateException("文件任务暂不可用");
+        }
+        notifyPanelChanged(); return routes.snapshot();
+    }
+    void finishEnvironmentFile(String id) {
+        synchronized (this) { externalJobs.remove(id); }
+        notifyPanelChanged();
+    }
     private void notifyChanged() {
         if (Looper.myLooper() != main.getLooper()) { main.post(this::notifyChanged); return; }
         if (!closed && observer != null) observer.run();

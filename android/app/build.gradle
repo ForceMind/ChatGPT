@@ -17,6 +17,9 @@ android {
         buildConfigField 'boolean', 'NETWORK_TEST', 'false'
         buildConfigField 'String', 'NETWORK_HOME_URL', '""'
         buildConfigField 'String', 'NETWORK_PROBE_URL', '""'
+        buildConfigField 'boolean', 'ENVIRONMENT_CLIENT', project.hasProperty('environmentClient').toString()
+        buildConfigField 'boolean', 'ENVIRONMENT_TEST', project.hasProperty('environmentTest').toString()
+        buildConfigField 'String', 'ENVIRONMENT_HOME_URL', project.hasProperty('environmentTest') ? '"https://environment-fixture.test:18480/c/environment"' : '""'
     }
     signingConfigs {
         if (System.getenv('STUDIO_BETA_KEYSTORE_PATH')) {
@@ -75,7 +78,7 @@ android {
             buildConfigField 'String', 'NETWORK_PROBE_URL', '"https://network-fixture.test:18480/echo"'
         }
         }
-        testBuildType = (project.hasProperty('betaUpgrade') || project.hasProperty('betaBrowserUpgrade') || project.hasProperty('betaNetworkUi')) ? 'networkBeta' : project.hasProperty('networkIntegration') ? 'networkCi' : 'debug'
+        testBuildType = (project.hasProperty('betaUpgrade') || project.hasProperty('betaBrowserUpgrade') || project.hasProperty('betaNetworkUi') || project.hasProperty('environmentClient')) ? 'networkBeta' : project.hasProperty('networkIntegration') ? 'networkCi' : 'debug'
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
     buildFeatures { buildConfig true }
     testOptions { unitTests.returnDefaultValues = true }
@@ -166,4 +169,45 @@ if (project.hasProperty('betaBrowserUpgrade')) {
 if (project.hasProperty('betaNetworkUi')) {
     android.sourceSets.androidTest.java.setSrcDirs(['src/betaNetworkUi/java'])
     android.sourceSets.androidTest.manifest.srcFile('src/betaUpgrade/AndroidManifest.xml')
+}
+if (project.hasProperty('environmentClient')) {
+    dependencies.add('networkBetaImplementation', 'org.mozilla.geckoview:geckoview:158.0.20261021001945')
+    android.sourceSets.networkBeta.java.srcDir('src/environmentClient/java')
+    android.sourceSets.networkBeta.java.srcDir(project.hasProperty('environmentTest') ? 'src/environmentCi/java' : 'src/environmentProduction/java')
+    def environmentAssets = layout.buildDirectory.dir('generated/environment-assets')
+    tasks.register('copyEnvironmentAssets', Sync) {
+        inputs.property('environmentTest', project.hasProperty('environmentTest'))
+        from 'src/environmentClient/assets'
+        into environmentAssets
+        doLast {
+            if (project.hasProperty('environmentTest')) {
+                def manifest = new File(environmentAssets.get().asFile,'studio-environment/manifest.json')
+                def value = new groovy.json.JsonSlurper().parse(manifest)
+                value.content_scripts[0].matches += ['https://environment-fixture.test/*']
+                manifest.setText(groovy.json.JsonOutput.toJson(value),'UTF-8')
+            }
+        }
+    }
+    android.sourceSets.networkBeta.assets.srcDir(environmentAssets)
+    tasks.matching { it.name == 'preNetworkBetaBuild' }.configureEach { dependsOn 'copyEnvironmentAssets' }
+    android.sourceSets.networkBeta.manifest.srcFile('src/environmentClient/AndroidManifest.xml')
+    android.sourceSets.androidTest.java.setSrcDirs(['src/environmentTest/java'])
+    android.sourceSets.androidTest.manifest.srcFile('src/betaUpgrade/AndroidManifest.xml')
+    if (project.hasProperty('environmentTest')) {
+        // Merge the CI-only activity into the generated environment manifest, never the human APK.
+        def generatedManifest = layout.buildDirectory.file('generated/environment-ci/AndroidManifest.xml')
+        tasks.register('prepareEnvironmentCiManifest') {
+            inputs.files('src/environmentClient/AndroidManifest.xml','src/environmentCi/AndroidManifest.xml')
+            outputs.file(generatedManifest)
+            doLast {
+                def base = file('src/environmentClient/AndroidManifest.xml').getText('UTF-8')
+                def extra = file('src/environmentCi/AndroidManifest.xml').getText('UTF-8')
+                def inner = extra.substring(extra.indexOf('<application>') + '<application>'.length(), extra.indexOf('</application>'))
+                def target = generatedManifest.get().asFile; target.parentFile.mkdirs()
+                target.setText(base.replace('</application>', inner + '</application>'),'UTF-8')
+            }
+        }
+        android.sourceSets.networkBeta.manifest.srcFile(generatedManifest.get().asFile)
+        tasks.matching { it.name == 'preNetworkBetaBuild' }.configureEach { dependsOn 'prepareEnvironmentCiManifest' }
+    }
 }
