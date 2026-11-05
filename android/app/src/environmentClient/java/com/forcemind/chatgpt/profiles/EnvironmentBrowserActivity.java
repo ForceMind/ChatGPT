@@ -45,7 +45,10 @@ public class EnvironmentBrowserActivity extends ComponentActivity implements Env
             String environment=a.language+"/"+a.timeZone;
             if(runtime==null){
                 Locale locale=Locale.forLanguageTag(a.language);Locale.setDefault(locale);LocaleList.setDefault(new LocaleList(locale));TimeZone.setDefault(TimeZone.getTimeZone(a.timeZone));Os.setenv("TZ",a.timeZone,true);
-                File profiles=new File(getFilesDir(),"environment-profiles");HandoffFiles.directory(profiles,true);File profile=new File(profiles,Integer.toString(slot()));HandoffFiles.directory(profile,true);
+                File privateFiles=getFilesDir().getCanonicalFile();
+                File profiles=new File(privateFiles,"environment-profiles");
+                if(BuildConfig.ENVIRONMENT_TEST)android.util.Log.i("StudioEnvironmentCI","private directory raw="+getFilesDir()+" canonical="+privateFiles);
+                HandoffFiles.directory(profiles,true);File profile=new File(profiles,Integer.toString(slot()));HandoffFiles.directory(profile,true);
                 Bundle env=new Bundle();env.putString("env0","TZ="+a.timeZone);
                 runtime=GeckoRuntime.create(getApplicationContext(),new GeckoRuntimeSettings.Builder().arguments(new String[]{"-profile",profile.getAbsolutePath()}).extras(env).locales(new String[]{a.language}).remoteDebuggingEnabled(false).consoleOutput(false).build());runtimeEnvironment=environment;
             }
