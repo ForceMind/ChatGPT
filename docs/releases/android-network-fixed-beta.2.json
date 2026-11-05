@@ -1,0 +1,187 @@
+{
+  "run": 41986549978,
+  "candidateArtifact": 13397180670,
+  "evidenceArtifact": 13396966033,
+  "buildEvidenceArtifact": 13396431283,
+  "receipt": {
+    "sourceSHA": "52684c241b0b04c0ee57525a8297e492dda3ca9a",
+    "package": "com.forcemind.chatgpt.profiles.networkbeta",
+    "displayName": "ChatGPT Studio Beta",
+    "versionName": "3.0.0-alpha.24-beta.2",
+    "versionCode": 3000026,
+    "file": "ChatGPT-Studio-3.0.0-alpha.24-beta.2-android-arm64.apk",
+    "bytes": 40911373,
+    "sha256": "c6a6154b85a33de8668e2a79b1a2dbfe8b86b2234883faccfb4677ac3a5b1d60",
+    "signerSHA256": "bd7b9c924795ec21d27c73f280b5fc71b83ffea950e36e05967b77f092056ac0",
+    "signing": "fixed dedicated beta key; not production",
+    "ciTrustIncluded": false,
+    "syntheticNodesIncluded": false,
+    "debuggable": false,
+    "testOnly": false,
+    "abi": [
+      "arm64-v8a"
+    ],
+    "minAndroid": 9,
+    "alignment16KiB": true,
+    "phoneInstalled": false,
+    "realServiceTested": false,
+    "publicRelease": false
+  },
+  "baseline": {
+    "run": 41959244766,
+    "artifact": 13384976249,
+    "versionName": "3.0.0-alpha.24-beta.1",
+    "versionCode": 3000025,
+    "sha256": "0696660be10705fd7e542cf8159a6b5a41a404501bd99585135c49c4ceb8f718",
+    "rebuilt": false,
+    "repacked": false,
+    "resigned": false
+  },
+  "phases": [
+    {
+      "complete": true,
+      "phase": "seed",
+      "versionCode": 3000025,
+      "uid": 10209,
+      "signerSHA256": "bd7b9c924795ec21d27c73f280b5fc71b83ffea950e36e05967b77f092056ac0",
+      "accounts": 3,
+      "tabs": 4,
+      "persistentProfiles": 3,
+      "httpOnlySecureCookies": 3,
+      "localStorageProfiles": 3,
+      "indexedDBProfiles": 3,
+      "encryptedRecoveryRecords": 4,
+      "defaultProfileEmpty": true,
+      "provider": "com.google.android.webview 124.0.6367.219",
+      "workspaceSHA256": "27508180b4822a4a90b2de1b3060b8c937e85bcd9c9d8e360e3415361b927730",
+      "expectedSHA256": "272d1ada95e1684891329ddd81f9148fc2f4612f665a01dcf9728b66fef872cd",
+      "persistedRegistryVerified": true,
+      "registryBarrierMillis": 2586,
+      "interceptedRequests": 0,
+      "inlineDocumentCallbacks": 5,
+      "inlineIconCallbacks": 0,
+      "inlineSyntheticPagesOnly": true,
+      "appActivityLaunched": false
+    },
+    {
+      "complete": true,
+      "phase": "baseline-cold",
+      "versionCode": 3000025,
+      "uid": 10209,
+      "signerSHA256": "bd7b9c924795ec21d27c73f280b5fc71b83ffea950e36e05967b77f092056ac0",
+      "accounts": 3,
+      "tabs": 4,
+      "persistentProfiles": 3,
+      "httpOnlySecureCookies": 3,
+      "localStorageProfiles": 3,
+      "indexedDBProfiles": 3,
+      "encryptedRecoveryRecords": 4,
+      "defaultProfileEmpty": true,
+      "provider": "com.google.android.webview 124.0.6367.219",
+      "workspaceSHA256": "27508180b4822a4a90b2de1b3060b8c937e85bcd9c9d8e360e3415361b927730",
+      "expectedSHA256": "272d1ada95e1684891329ddd81f9148fc2f4612f665a01dcf9728b66fef872cd",
+      "persistedRegistryVerified": true,
+      "registryBarrierMillis": 9,
+      "interceptedRequests": 0,
+      "inlineDocumentCallbacks": 5,
+      "inlineIconCallbacks": 0,
+      "inlineSyntheticPagesOnly": true,
+      "appActivityLaunched": false
+    },
+    {
+      "complete": true,
+      "phase": "upgraded",
+      "versionCode": 3000026,
+      "uid": 10209,
+      "signerSHA256": "bd7b9c924795ec21d27c73f280b5fc71b83ffea950e36e05967b77f092056ac0",
+      "accounts": 3,
+      "tabs": 4,
+      "persistentProfiles": 3,
+      "httpOnlySecureCookies": 3,
+      "localStorageProfiles": 3,
+      "indexedDBProfiles": 3,
+      "encryptedRecoveryRecords": 4,
+      "defaultProfileEmpty": true,
+      "provider": "com.google.android.webview 124.0.6367.219",
+      "workspaceSHA256": "27508180b4822a4a90b2de1b3060b8c937e85bcd9c9d8e360e3415361b927730",
+      "expectedSHA256": "272d1ada95e1684891329ddd81f9148fc2f4612f665a01dcf9728b66fef872cd",
+      "persistedRegistryVerified": true,
+      "registryBarrierMillis": 4,
+      "interceptedRequests": 0,
+      "inlineDocumentCallbacks": 5,
+      "inlineIconCallbacks": 0,
+      "inlineSyntheticPagesOnly": true,
+      "appActivityLaunched": false
+    },
+    {
+      "complete": true,
+      "phase": "upgraded-cold",
+      "versionCode": 3000026,
+      "uid": 10209,
+      "signerSHA256": "bd7b9c924795ec21d27c73f280b5fc71b83ffea950e36e05967b77f092056ac0",
+      "accounts": 3,
+      "tabs": 4,
+      "persistentProfiles": 3,
+      "httpOnlySecureCookies": 3,
+      "localStorageProfiles": 3,
+      "indexedDBProfiles": 3,
+      "encryptedRecoveryRecords": 4,
+      "defaultProfileEmpty": true,
+      "provider": "com.google.android.webview 124.0.6367.219",
+      "workspaceSHA256": "27508180b4822a4a90b2de1b3060b8c937e85bcd9c9d8e360e3415361b927730",
+      "expectedSHA256": "272d1ada95e1684891329ddd81f9148fc2f4612f665a01dcf9728b66fef872cd",
+      "persistedRegistryVerified": true,
+      "registryBarrierMillis": 3,
+      "interceptedRequests": 0,
+      "inlineDocumentCallbacks": 5,
+      "inlineIconCallbacks": 0,
+      "inlineSyntheticPagesOnly": true,
+      "appActivityLaunched": false
+    }
+  ],
+  "unit": {
+    "tests": 77,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "limits": {
+    "mainMerged": false,
+    "publicRelease": false,
+    "websiteUpdated": false,
+    "personalAppOrLoginDataTouched": false,
+    "api28BrowserAcceptance": false,
+    "physicalArmDeviceAcceptance": false,
+    "realChatGPT": false,
+    "realNodes": false,
+    "screenshots": false,
+    "existingPersistentStateOnly": true,
+    "rapidForceStopBeforeProfileMetadataFlushCovered": false
+  },
+  "failuresPreserved": [
+    {
+      "run": 41981565990,
+      "reason": "Fixture compared differently escaped JSON origin strings; no migration attempted"
+    },
+    {
+      "run": 41982461084,
+      "reason": "Inline/data and automatic favicon callbacks conflated with network; no migration attempted"
+    },
+    {
+      "run": 41983441875,
+      "reason": "Exact URI observation identified five data documents and five owned favicon callbacks"
+    },
+    {
+      "run": 41984284662,
+      "reason": "Old baseline cold start missing profile names before upgrade"
+    },
+    {
+      "run": 41985190404,
+      "reason": "Startup-order observation did not repair missing persisted registration; official WebView124 source identified delayed pref_store writes"
+    },
+    {
+      "run": 41986418152,
+      "reason": "Canceled own in-progress run after finding unsupported Android JSONObject keySet; switched to keys iterator"
+    }
+  ]
+}
