@@ -27,3 +27,5 @@
 合成检查的首个页面在两个系统上均触发Gecko扩展端口关闭异常：`WebExtension.Port.disconnectFromExtension → EventDispatcher.shutdownNative → NativeException NullHandle`。完整logcat与首个失败已保留在对应Actions产物，正在修复端口生命周期；不会以跳过页面恢复、放宽断言或吞掉异常替代验收。
 
 42031582616（a29668d）再次通过构建和两个系统的人用包升级检查，合成日志确认端口崩溃消失，页面仍被网络确认保护拦住。固定Gecko158的官方`ext-proxy.js`明确拒绝Android的`proxy.settings`读写；正在改用同版本支持的`proxy.onRequest`，保留未确认封锁及无直连回退，不把此前WebView网络验证当作Gecko验证。
+
+42034191686（f092bf8）通过完整构建及两个系统的人用包升级；合成首页已加载并通过该页环境与Worker检查，路由回执`system / proxy.onRequest / guard=true / ok=true`。后续真实输入定位停在Gecko无障碍树不导出空编辑器aria-label，正在按已确认合成文档下唯一可编辑节点修正测试驱动；保留原生输入、trusted事件、DOM与受控模型值断言。此类仅驱动修正通过源树无应用差异核验复用该轮原始APK及升级证明，避免重复构建。

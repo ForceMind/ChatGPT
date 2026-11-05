@@ -95,11 +95,13 @@ class Acceptance:
         return value
 
     def wait(self, description, sample, condition, timeout=75, interval=0.6):
+        print('[environment] waiting: ' + description, flush=True)
         deadline = time.monotonic() + timeout
         last = None
         while True:
             last = sample()
             if condition(last):
+                print('[environment] observed: ' + description, flush=True)
                 return last
             if time.monotonic() >= deadline:
                 native._write_json(EVIDENCE / 'last-timeout.json', {'description': description, 'last': last})
@@ -241,14 +243,60 @@ class Acceptance:
         self.sequence += 1
         (EVIDENCE / f'{self.sequence:04d}-ui.xml').write_text(xml, encoding='utf-8')
         root = ET.fromstring(xml)
+        parents = {child: parent for parent in root.iter() for child in parent}
+        elements = list(root.iter('node'))
+        indices = {node: index for index, node in enumerate(elements)}
         nodes = []
-        for node in root.iter('node'):
+        for node in elements:
             bounds = re.fullmatch(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]', node.attrib.get('bounds', ''))
             if bounds:
                 left, top, right, bottom = map(int, bounds.groups())
                 if right > left and bottom > top:
-                    nodes.append(dict(node.attrib, rectangle=[left, top, right, bottom]))
+                    ancestor = node
+                    while ancestor is not None and ancestor.attrib.get('class') != 'android.webkit.WebView':
+                        ancestor = parents.get(ancestor)
+                    nodes.append(dict(node.attrib, rectangle=[left, top, right, bottom],
+                                      nodeIndex=indices[node],
+                                      webViewIndex=indices[ancestor] if ancestor is not None else None))
         return nodes
+
+    def editor(self, account, tab, document):
+        path = PAGE[(account, tab)]
+        title = '合成对话 ' + path
+        def visible(node):
+            return node.get('package') == PACKAGE and node.get('enabled') == 'true' and node.get('visible-to-user', 'true') == 'true'
+        def choose(nodes):
+            pages = [node for node in nodes if node.get('class') == 'android.webkit.WebView'
+                     and node.get('text') == title and visible(node)]
+            if not pages:
+                return None
+            assert len(pages) == 1, 'Ambiguous native synthetic page title: ' + title
+            page = pages[0]
+            left, top, right, bottom = page['rectangle']
+            editable = []
+            for node in nodes:
+                if node['webViewIndex'] != page['nodeIndex'] or not visible(node):
+                    continue
+                if node.get('class') != 'android.widget.EditText' and node.get('editable') != 'true':
+                    continue
+                if node.get('focusable') != 'true' or node.get('clickable') != 'true' or node.get('password') != 'false':
+                    continue
+                x1, y1, x2, y2 = node['rectangle']
+                if left <= x1 < x2 <= right and top <= y1 < y2 <= bottom:
+                    editable.append(node)
+            if not editable:
+                return None
+            assert len(editable) == 1, 'Multiple visible editable descendants in ' + title
+            target = editable[0]
+            assert target.get('resource-id') == 'prompt-textarea', 'Editable node is not the owned fixture composer'
+            return target
+        nodes = self.wait('unique native composer in ' + title, self.ui,
+                          lambda value: choose(value) is not None, timeout=50, interval=0.3)
+        target = choose(nodes)
+        native._write_json(EVIDENCE / ('editor-target-' + str(self.sequence) + '.json'),
+                           {'path': path, 'exactNativeTitle': title, 'serverDocument': document,
+                            'nativeNode': target, 'uniqueEnabledVisibleEditableDescendant': True})
+        return target
 
     @staticmethod
     def labelled(nodes, label):
@@ -310,7 +358,9 @@ class Acceptance:
         assert re.fullmatch(r'[A-Za-z0-9-]+', draft)
         _, before = self.page(account, tab)
         assert before['draft'] == before['modelDraft'] == ''
-        self.click('合成编辑器')
+        target = self.editor(account, tab, before['document'])
+        left, top, right, bottom = target['rectangle']
+        self.shell('input', 'tap', (left + right)//2, (top + bottom)//2)
         self.shell('input', 'text', draft)
         path = PAGE[(account, tab)]
         status = self.wait('trusted native composer input', self.status,

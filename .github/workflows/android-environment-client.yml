@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       reuse_application_build:
-        description: Reuse checked application/test bytes and human upgrades from 42025086453 when only the functional driver changed
+        description: Reuse checked application/test bytes and human upgrades from 42034191686 when only the functional driver changed
         type: boolean
         default: false
 permissions:
@@ -75,10 +75,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          test "$(gh api repos/${{ github.repository }}/actions/runs/42025086453 --jq .head_sha)" = e55e133cfba9b094ac202a27f649658e9a9183df
-          test "$(gh api repos/${{ github.repository }}/actions/runs/42025086453/jobs --jq '.jobs[]|select(.name=="build")|.conclusion')" = success
-          git fetch origin e55e133cfba9b094ac202a27f649658e9a9183df --depth=1
-          git diff --exit-code e55e133cfba9b094ac202a27f649658e9a9183df HEAD -- android/app android/settings.gradle android/build.gradle android/network-poc/corebridge android/scripts/environment_upgrade.py
+          test "$(gh api repos/${{ github.repository }}/actions/runs/42034191686 --jq .head_sha)" = f092bf88d3b4efa9104276f03d3aa17cc438bb5e
+          test "$(gh api repos/${{ github.repository }}/actions/runs/42034191686/jobs --jq '.jobs[]|select(.name=="build")|.conclusion')" = success
+          git fetch origin f092bf88d3b4efa9104276f03d3aa17cc438bb5e --depth=1
+          git diff --exit-code f092bf88d3b4efa9104276f03d3aa17cc438bb5e HEAD -- android/app android/settings.gradle android/build.gradle android/network-poc/corebridge android/scripts/environment_upgrade.py
       - uses: actions/upload-artifact@v4
         if: ${{ !inputs.reuse_application_build }}
         with:
@@ -120,7 +120,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: environment-client-input
-          run-id: ${{ inputs.reuse_application_build && 42025086453 || github.run_id }}
+          run-id: ${{ inputs.reuse_application_build && 42034191686 || github.run_id }}
           github-token: ${{ github.token }}
           path: android/app/build/environment-client-input
       - uses: actions/download-artifact@v4
@@ -180,7 +180,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: environment-client-${{ matrix.api }}-human
-          run-id: 42025086453
+          run-id: 42034191686
           github-token: ${{ github.token }}
           path: evidence
       - name: Require the existing human upgrade proof, without rewriting its source identity
@@ -190,7 +190,7 @@ jobs:
           p=pathlib.Path('evidence/verified-human.json');r=json.loads(p.read_text())
           assert r['complete'] and r['api']==${{ matrix.api }}
           if r['api']==35: assert r['originalHumanCandidateBytesInstalled']
-          pathlib.Path('evidence/reused-human-source.json').write_text(json.dumps({'run':42025086453,'sourceSHA':r['sourceSHA'],'inputUnchanged':True})+'\n')
+          pathlib.Path('evidence/reused-human-source.json').write_text(json.dumps({'run':42034191686,'sourceSHA':r['sourceSHA'],'inputUnchanged':True})+'\n')
           PY
       - uses: actions/upload-artifact@v4
         with:
@@ -206,7 +206,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: environment-client-input
-          run-id: ${{ inputs.reuse_application_build && 42025086453 || github.run_id }}
+          run-id: ${{ inputs.reuse_application_build && 42034191686 || github.run_id }}
           github-token: ${{ github.token }}
           path: input
       - uses: actions/download-artifact@v4
