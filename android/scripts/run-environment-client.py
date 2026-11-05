@@ -1,0 +1,476 @@
+#!/usr/bin/env python3
+"""Owned CI environment acceptance through native controls and independent HTTPS observation."""
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import ssl
+import subprocess
+import sys
+import time
+import traceback
+import urllib.error
+import urllib.request
+import uuid
+import xml.etree.ElementTree as ET
+
+import environment_upgrade as native
+
+PACKAGE = native.PACKAGE
+EVIDENCE = native.EVIDENCE
+FILES = '/data/user/0/' + PACKAGE + '/files/'
+PORT = 18480
+HOST = 'environment-fixture.test'
+PAGE = {('A', 0): '/c/a1', ('A', 1): '/c/a2', ('B', 0): '/c/b1', ('C', 0): '/c/c1'}
+UUID = re.compile(r'[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}')
+
+
+class Acceptance:
+    def __init__(self, upgrade):
+        self.upgrade = upgrade
+        self.api = upgrade['api']
+        self.sequence = 0
+        self.server = None
+        self.server_log = None
+        self.certificates = Path(os.environ['RUNNER_TEMP']) / ('environment-fixture-' + uuid.uuid4().hex)
+        self.certificates.mkdir(mode=0o700)
+        self.ssl = None
+        self.manifest = None
+        self.touch_events = []
+
+    def command(self, args, timeout=60, check=True):
+        self.sequence += 1
+        label = f'{self.sequence:04d}-command'
+        try:
+            result = subprocess.run(args, text=True, stdout=subprocess.PIPE,
+                                    stderr=subprocess.STDOUT, timeout=timeout)
+        except subprocess.TimeoutExpired as error:
+            partial = error.stdout or ''
+            if isinstance(partial, bytes):
+                partial = partial.decode('utf-8', errors='replace')
+            (EVIDENCE / (label + '.txt')).write_text(partial, encoding='utf-8')
+            raise
+        native._write_json(EVIDENCE / (label + '.json'), {'command': args, 'exitCode': result.returncode})
+        (EVIDENCE / (label + '.txt')).write_text(result.stdout, encoding='utf-8')
+        if check and result.returncode:
+            raise RuntimeError(f'{args} exited {result.returncode}:\n{result.stdout}')
+        return result.stdout
+
+    def shell(self, *args, timeout=60):
+        return self.command(['adb', 'shell', *map(str, args)], timeout=timeout)
+
+    def json_file(self, relative):
+        assert relative and '..' not in relative and not relative.startswith('/')
+        return json.loads(self.shell('cat', FILES + relative))
+
+    def http(self, path, value=None):
+        self.sequence += 1
+        label = f'{self.sequence:04d}-https'
+        data = None if value is None else json.dumps(value).encode('utf-8')
+        request = urllib.request.Request('https://127.0.0.1:' + str(PORT) + path, data=data,
+                                        headers={'Host': HOST + ':' + str(PORT), 'Content-Type': 'application/json'})
+        # No proxy inheritance, even if the runner has HTTP(S)_PROXY configured.
+        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}),
+                                            urllib.request.HTTPSHandler(context=self.ssl))
+        try:
+            with opener.open(request, timeout=8) as response:
+                body = response.read()
+                status = response.status
+        except urllib.error.HTTPError as error:
+            body = error.read()
+            (EVIDENCE / (label + '.json')).write_bytes(body)
+            native._write_json(EVIDENCE / (label + '-response.json'), {'path': path, 'status': error.code})
+            raise
+        (EVIDENCE / (label + '.json')).write_bytes(body)
+        native._write_json(EVIDENCE / (label + '-response.json'), {'path': path, 'status': status})
+        assert status == 200, (path, status)
+        return json.loads(body)
+
+    def status(self):
+        value = self.http('/status')
+        assert value['schema'] == 1 and value['host'] == HOST
+        assert value['sendCount'] == 0, 'Unexpected send request'
+        assert value['rejectedEventCount'] == 0, 'Fixture rejected a document event'
+        return value
+
+    def wait(self, description, sample, condition, timeout=75, interval=0.6):
+        deadline = time.monotonic() + timeout
+        last = None
+        while True:
+            last = sample()
+            if condition(last):
+                return last
+            if time.monotonic() >= deadline:
+                native._write_json(EVIDENCE / 'last-timeout.json', {'description': description, 'last': last})
+                raise AssertionError('Timed out: ' + description)
+            time.sleep(interval)
+
+    def tls_server(self):
+        ca = self.certificates / 'ca.crt'
+        leaf = self.certificates / 'leaf.crt'
+        key = self.certificates / 'leaf.key'
+        self.command(['openssl', 'req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-sha256', '-days', '2',
+                      '-subj', '/CN=OwnedEnvCA', '-addext', 'basicConstraints=critical,CA:TRUE',
+                      '-addext', 'keyUsage=critical,keyCertSign,cRLSign', '-keyout', str(self.certificates / 'ca.key'), '-out', str(ca)])
+        self.command(['openssl', 'req', '-new', '-newkey', 'rsa:2048', '-nodes', '-sha256',
+                      '-subj', '/CN=' + HOST, '-keyout', str(key), '-out', str(self.certificates / 'leaf.csr')])
+        extensions = self.certificates / 'leaf.ext'
+        extensions.write_text('basicConstraints=critical,CA:FALSE\nkeyUsage=critical,digitalSignature,keyEncipherment\nextendedKeyUsage=serverAuth\nsubjectAltName=DNS:' + HOST + ',IP:127.0.0.1\n', encoding='utf-8')
+        self.command(['openssl', 'x509', '-req', '-sha256', '-days', '2', '-in', str(self.certificates / 'leaf.csr'),
+                      '-CA', str(ca), '-CAkey', str(self.certificates / 'ca.key'), '-CAcreateserial',
+                      '-extfile', str(extensions), '-out', str(leaf)])
+        for private in self.certificates.glob('*.key'):
+            private.chmod(0o600)
+        self.ssl = ssl.create_default_context(cafile=str(ca))
+        self.server_log = (EVIDENCE / 'fixture-process.txt').open('w', encoding='utf-8')
+        self.server = subprocess.Popen([sys.executable, 'android/scripts/environment-fixture.py', '--cert', str(leaf),
+                                        '--key', str(key), '--port', str(PORT), '--report', str(EVIDENCE / 'server.json')],
+                                       stdout=self.server_log, stderr=subprocess.STDOUT)
+        deadline = time.monotonic() + 20
+        while True:
+            assert self.server.poll() is None, 'Fixture server exited before ready'
+            try:
+                self.status()
+                break
+            except urllib.error.URLError:
+                if time.monotonic() >= deadline:
+                    raise
+                time.sleep(0.2)
+        self.shell('iptables', '-I', 'OUTPUT', '1', '-o', 'lo', '-j', 'ACCEPT')
+        self.shell('ip6tables', '-I', 'OUTPUT', '1', '-o', 'lo', '-j', 'ACCEPT')
+        self.command(['adb', 'reverse', 'tcp:' + str(PORT), 'tcp:' + str(PORT)])
+        self.shell('iptables', '-C', 'OUTPUT', '-j', 'REJECT')
+        self.shell('ip6tables', '-C', 'OUTPUT', '-j', 'REJECT')
+        (EVIDENCE / 'functional-egress.txt').write_text(self.shell('iptables-save') + self.shell('ip6tables-save'), encoding='utf-8')
+        config = self.certificates / (PACKAGE + '-geckoview-config.yaml')
+        config.write_text('prefs:\n  network.dns.localDomains: "' + HOST + '"\n  network.trr.mode: 5\n', encoding='utf-8')
+        target = '/data/local/tmp/' + config.name
+        self.command(['adb', 'push', str(config), target])
+        self.shell('chmod', '644', target)
+        self.shell('am', 'set-debug-app', '--persistent', PACKAGE)
+        assert self.shell('settings', 'get', 'global', 'debug_app').strip() == PACKAGE
+
+    def control(self, action, account=None, tab=0):
+        assert action in ('prepare', 'open', 'record')
+        args = ['am', 'start', '-W', '-n', PACKAGE + '/.EnvironmentAcceptanceActivity', '--es', 'action', action]
+        if action != 'prepare':
+            assert (account, tab) in PAGE
+            args += ['--es', 'account', account, '--ei', 'tab', str(tab)]
+        text = self.shell(*args)
+        assert not re.search(r'Error:|Exception|Permission Denial', text), text
+
+    def prepare_profiles(self):
+        self.control('prepare')
+        self.manifest = self.json_file('environment-acceptance.json')
+        assert self.manifest['schema'] == 1 and set(self.manifest['accounts']) == {'A', 'B', 'C'}
+        accounts = self.manifest['accounts']
+        assert len(self.manifest['legacyAccounts']) == 1
+        assert self.manifest['legacyAccounts'][0]['storageId'] == self.upgrade['seed']['storageId']
+        assert accounts['A']['environmentSlot'] == accounts['C']['environmentSlot']
+        assert accounts['A']['environmentSlot'] != accounts['B']['environmentSlot']
+        assert {accounts[label]['environmentSlot'] for label in accounts} == {0, 1}
+        assert len({accounts[label]['storageId'] for label in accounts}) == 3
+        for label, account in accounts.items():
+            assert UUID.fullmatch(account['id']) and UUID.fullmatch(account['storageId'])
+            assert len(account['tabs']) == (2 if label == 'A' else 1)
+            for index, tab in enumerate(account['tabs']):
+                assert UUID.fullmatch(tab['id']) and tab['url'] == 'https://' + HOST + ':' + str(PORT) + PAGE[(label, index)]
+        native._write_json(EVIDENCE / 'acceptance-manifest.json', self.manifest)
+        profile_root = FILES + 'environment-profiles'
+        self.shell('mkdir', '-p', profile_root)
+        for slot in (0, 1):
+            profile = self.certificates / ('profile-' + str(slot))
+            profile.mkdir(mode=0o700)
+            self.command(['certutil', '-N', '-d', 'sql:' + str(profile), '--empty-password'])
+            self.command(['certutil', '-A', '-d', 'sql:' + str(profile), '-n', 'OwnedEnvCA', '-t', 'C,,', '-i', str(self.certificates / 'ca.crt')])
+            destination = profile_root + '/' + str(slot)
+            self.shell('mkdir', '-p', destination)
+            for name in ('cert9.db', 'key4.db'):
+                assert (profile / name).is_file()
+                self.command(['adb', 'push', str(profile / name), destination + '/' + name])
+                self.shell('chmod', '600', destination + '/' + name)
+            self.shell('chown', '-R', str(self.upgrade['uid']) + ':' + str(self.upgrade['uid']), destination)
+            self.shell('chmod', '700', destination)
+        self.shell('chown', str(self.upgrade['uid']) + ':' + str(self.upgrade['uid']), profile_root)
+        self.shell('chmod', '700', profile_root)
+
+    def ui(self):
+        self.shell('uiautomator', 'dump', '/data/local/tmp/environment-ui.xml', timeout=25)
+        xml = self.shell('cat', '/data/local/tmp/environment-ui.xml')
+        self.sequence += 1
+        (EVIDENCE / f'{self.sequence:04d}-ui.xml').write_text(xml, encoding='utf-8')
+        root = ET.fromstring(xml)
+        nodes = []
+        for node in root.iter('node'):
+            bounds = re.fullmatch(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]', node.attrib.get('bounds', ''))
+            if bounds:
+                left, top, right, bottom = map(int, bounds.groups())
+                if right > left and bottom > top:
+                    nodes.append(dict(node.attrib, rectangle=[left, top, right, bottom]))
+        return nodes
+
+    @staticmethod
+    def labelled(nodes, label):
+        candidates = [node for node in nodes if label in node.get('content-desc', '') or label == node.get('text', '')]
+        candidates.sort(key=lambda node: (not node.get('class', '').endswith('EditText'),
+                                         (node['rectangle'][2]-node['rectangle'][0])*(node['rectangle'][3]-node['rectangle'][1])))
+        return candidates[0] if candidates else None
+
+    def node(self, label, timeout=50):
+        nodes = self.wait('native accessibility label ' + label, self.ui,
+                          lambda value: self.labelled(value, label) is not None, timeout=timeout, interval=0.3)
+        return self.labelled(nodes, label)
+
+    def click(self, label):
+        left, top, right, bottom = self.node(label)['rectangle']
+        self.shell('input', 'tap', (left + right)//2, (top + bottom)//2)
+
+    @staticmethod
+    def latest(status, path, excluded=None):
+        documents = status['pages'][path]
+        candidates = [value for key, value in documents.items() if key != excluded]
+        return max(candidates, key=lambda value: value['receivedAt']) if candidates else None
+
+    def assert_environment(self, value, account):
+        language, zone, offset = ('en-US', 'America/New_York', 300) if account == 'B' else ('zh-CN', 'Asia/Shanghai', -480)
+        assert value['account'] == account and UUID.fullmatch(value['document'])
+        assert value['language'].lower().startswith(language.lower())
+        assert value['languages'][0].lower().startswith(language.lower())
+        assert value['timeZone'] == zone and value['offsetMinutes'] == offset
+        worker = value['worker']
+        assert worker and not value['workerError']
+        assert worker['language'].lower().startswith(language.lower())
+        assert worker['languages'][0].lower().startswith(language.lower())
+        assert worker['timeZone'] == zone and worker['offsetMinutes'] == offset
+        assert value['acceptLanguage'].split(',')[0].split(';')[0].strip().lower() == language.lower()
+        assert value['localStorage'] == value['indexedDB'] == value['envLogin'] == 'environment-' + account
+        assert not value['localError'] and not value['idbError']
+        assert 'env_login=' not in value['visibleCookies'], 'Login fixture cookie must remain HttpOnly'
+        assert value['sendClicks'] == 0
+
+    def page(self, account, tab=0, excluded=None, minimum_received=0):
+        path = PAGE[(account, tab)]
+        def ready(status):
+            value = self.latest(status, path, excluded)
+            return value and value.get('receivedAt', 0) >= minimum_received and value.get('worker') and value.get('indexedDB') is not None and value.get('envLogin') is not None
+        status = self.wait('page observation ' + path, self.status, ready)
+        value = self.latest(status, path, excluded)
+        self.assert_environment(value, account)
+        expected_language = 'en-US' if account == 'B' else 'zh-CN'
+        assert status['requests'][path]['acceptLanguage'].split(',')[0].split(';')[0].strip().lower() == expected_language.lower()
+        return status, value
+
+    def open(self, account, tab=0):
+        started = int(time.time() * 1000)
+        self.control('open', account, tab)
+        return self.page(account, tab, minimum_received=started)
+
+    def type_draft(self, account, tab, draft):
+        assert re.fullmatch(r'[A-Za-z0-9-]+', draft)
+        _, before = self.page(account, tab)
+        assert before['draft'] == before['modelDraft'] == ''
+        self.click('合成编辑器')
+        self.shell('input', 'text', draft)
+        path = PAGE[(account, tab)]
+        status = self.wait('trusted native composer input', self.status,
+                           lambda value: (self.latest(value, path) or {}).get('draft') == draft
+                           and self.latest(value, path).get('modelDraft') == draft
+                           and self.latest(value, path).get('trustedInputCount', 0) > before['trustedInputCount'])
+        result = self.latest(status, path)
+        self.assert_environment(result, account)
+        ime = self.shell('dumpsys', 'input_method')
+        if re.search(r'(?:mInputShown|mIsInputViewShown|isInputViewShown)=true', ime):
+            self.shell('input', 'keyevent', '4')
+        return result
+
+    def scroll(self):
+        for _ in range(5):
+            left, top, right, bottom = self.node('合成对话阅读区')['rectangle']
+            x, start, end = (left+right)//2, top+(bottom-top)*4//5, top+(bottom-top)//5
+            assert start-end > 60, 'Reading area too small for a real gesture'
+            if self.api == 28:
+                output = self.shell('su', '2000', 'env', 'CLASSPATH=/data/local/tmp/studio-poc-input.jar',
+                                    'app_process', '/system/bin', 'com.forcemind.chatgpt.pocinput.TouchInput', x, start, x, end, '550')
+                receipt = json.loads(output.strip())
+                assert receipt['provider'] == 'ci-android9-shell-touchscreen'
+                events = receipt['events']
+                assert len(events) == 33 and events[0]['action'] == 0 and events[-1]['action'] == 1
+                assert len({event['downTime'] for event in events}) == 1
+                assert all(event['eventTime'] >= event['downTime'] for event in events)
+                assert [event['eventTime'] for event in events] == sorted(event['eventTime'] for event in events)
+                assert all(event['toolType'] == 1 and event['source'] == 4098 for event in events)
+                assert all(event['action'] == 2 for event in events[1:-1])
+                self.touch_events.append(receipt)
+            else:
+                self.shell('input', 'touchscreen', 'swipe', x, start, x, end, '550')
+            time.sleep(0.8)
+            value = self.latest(self.status(), '/c/a1')
+            if value['scroll'] > 200:
+                return value
+        raise AssertionError('Real native gestures did not scroll the reading area beyond 200px')
+
+    def record(self, draft, minimum_scroll):
+        digest = hashlib.sha256(draft.encode('utf-8')).hexdigest()
+        def sample():
+            self.control('record', 'A', 0)
+            return self.json_file('environment-record-probe.json')
+        def saved(value):
+            return value.get('complete') is True and value.get('account') == 'A' and value.get('tab') == 0 and value.get('recordPresent') is True and value.get('documentPresent') is True and value.get('nativeStatePresent') is True and value.get('draftSHA256') == digest and value.get('draftLength') == len(draft) and value.get('scroll', 0) >= minimum_scroll and bool(value.get('cipherSHA256'))
+        probe = self.wait('native encrypted recovery checkpoint', sample, saved, timeout=60, interval=0.8)
+        assert probe['previewLength'] > 0 and 0 <= probe['ratio'] <= 1 and probe['capturedAt'] > 0
+        native._write_json(EVIDENCE / 'native-record-' + str(self.sequence) + '.json', probe)
+        return probe
+
+    def cold(self, old, draft, saved_scroll, conflict=False):
+        before = self.status()['pageCounts']['/c/a1']
+        self.shell('am', 'force-stop', PACKAGE)
+        self.control('open', 'A', 0)
+        self.node('本地恢复副本')
+        assert self.status()['pageCounts']['/c/a1'] == before, 'Preview loaded a page before user consent'
+        continued = int(time.time() * 1000)
+        self.click('继续页面')
+        status, page = self.page('A', 0, excluded=old['document'], minimum_received=continued)
+        assert page['document'] != old['document']
+        if conflict:
+            status = self.wait('server draft remains before conflict choice', self.status,
+                               lambda value: (self.latest(value, '/c/a1', old['document']) or {}).get('draft') == 'server-conflict'
+                               and self.latest(value, '/c/a1', old['document']).get('modelDraft') == 'server-conflict')
+            self.node('保留网页草稿')
+            self.node('恢复本地草稿')
+            unchanged = self.latest(self.status(), '/c/a1', old['document'])
+            assert unchanged['draft'] == unchanged['modelDraft'] == 'server-conflict'
+            self.click('恢复本地草稿')
+        status = self.wait('controlled composer and scroll recovery', self.status,
+                           lambda value: (self.latest(value, '/c/a1', old['document']) or {}).get('draft') == draft
+                           and self.latest(value, '/c/a1', old['document']).get('modelDraft') == draft
+                           and abs(self.latest(value, '/c/a1', old['document']).get('scroll', -10000) - saved_scroll) <= 80)
+        page = self.latest(status, '/c/a1', old['document'])
+        self.assert_environment(page, 'A')
+        assert page['scroll'] > 200
+        assert status['pageCounts']['/c/a1'] == before + 1, 'Cold recovery loaded duplicate documents'
+        return page
+
+    def download(self):
+        self.click('保存合成文件')
+        account = self.manifest['accounts']['A']['id']
+        def index():
+            result = self.command(['adb', 'shell', 'cat', FILES + 'assets/' + account + '/index.json'], check=False)
+            return json.loads(result) if result.lstrip().startswith('{') else None
+        ledger = self.wait('production asset import', index,
+                           lambda value: value and any(record.get('status') == 'ready' and record.get('size') == 128 for record in value['records']), timeout=40)
+        matches = [record for record in ledger['records'] if record.get('status') == 'ready' and record.get('size') == 128]
+        assert len(matches) == 1
+        asset = matches[0]
+        assert UUID.fullmatch(asset['id']) and asset['accountId'] == account and asset['source'] == 'download'
+        result = subprocess.run(['adb', 'exec-out', 'cat', FILES + 'assets/' + account + '/' + asset['id'] + '.bin'],
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=20)
+        assert result.returncode == 0, result.stderr.decode('utf-8', errors='replace')
+        digest = hashlib.sha256(result.stdout).hexdigest()
+        status = self.status()
+        assert len(result.stdout) == status['downloadBytes'] == 128
+        assert digest == status['downloadSha256'] == asset['sha256']
+        assert any(event['account'] == 'A' and event['envLogin'] == 'environment-A' and event['sha256'] == digest for event in status['downloads'])
+        native._write_json(EVIDENCE / 'download-ledger.json', ledger)
+        return {'complete': True, 'accountId': account, 'assetId': asset['id'], 'bytes': 128, 'sha256': digest,
+                'nativeLinkClicked': True, 'productionAssetRouteUsed': True}
+
+    def close(self):
+        if self.server is not None:
+            self.server.terminate()
+            try:
+                self.server.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                self.server.kill()
+                self.server.wait(timeout=10)
+        if self.server_log is not None:
+            self.server_log.close()
+
+
+def main():
+    acceptance = None
+    guarded = False
+    try:
+        # Native helper performs the fresh emulator, identity, signer and immutable-byte guards.
+        upgrade = native.run_upgrade('synthetic')
+        guarded = True
+        acceptance = Acceptance(upgrade)
+        acceptance.tls_server()
+        acceptance.prepare_profiles()
+        first_status, first = acceptance.open('A', 0)
+        assert first_status['pageCounts']['/c/a1'] == 1
+        draft = 'OwnedEnvA1-' + uuid.uuid4().hex
+        acceptance.type_draft('A', 0, draft)
+        scrolled = acceptance.scroll()
+        assert scrolled['draft'] == scrolled['modelDraft'] == draft
+        saved_scroll = scrolled['scroll']
+        initial_record = acceptance.record(draft, saved_scroll - 2)
+        download = acceptance.download()
+        baseline = acceptance.status()
+        original_document = acceptance.latest(baseline, '/c/a1')['document']
+        acceptance.open('A', 1)
+        second_draft = 'OwnedEnvA2-' + uuid.uuid4().hex
+        second = acceptance.type_draft('A', 1, second_draft)
+        _, b = acceptance.open('B', 0)
+        _, c = acceptance.open('C', 0)
+        switched_status, returned = acceptance.open('A', 0)
+        assert returned['document'] == original_document
+        assert returned['draft'] == returned['modelDraft'] == draft
+        assert abs(returned['scroll'] - saved_scroll) <= 2 and returned['scroll'] > 200
+        assert switched_status['pageCounts'] == {'/c/a1': 1, '/c/a2': 1, '/c/b1': 1, '/c/c1': 1}
+        for path in PAGE.values():
+            assert len(switched_status['pages'][path]) == 1
+        assert second['localStorage'] == second['indexedDB'] == second['envLogin'] == 'environment-A'
+        assert b['timeZone'] != returned['timeZone'] and c['timeZone'] == returned['timeZone']
+        checkpoint = acceptance.record(draft, saved_scroll - 2)
+        restored = acceptance.cold(returned, draft, saved_scroll)
+        restored_record = acceptance.record(draft, saved_scroll - 80)
+        assert acceptance.http('/configure', {'path': '/c/a1', 'initialDraft': 'server-conflict'})['appliesTo'] == 'future documents only'
+        conflict_restored = acceptance.cold(restored, draft, restored['scroll'], conflict=True)
+        conflict_record = acceptance.record(draft, saved_scroll - 80)
+        final_status = acceptance.status()
+        assert final_status['sendCount'] == 0 and final_status['rejectedEventCount'] == 0
+        native._write_json(EVIDENCE / 'server-final.json', final_status)
+        # Instrumentation can end app processes; it deliberately runs after all live-switch checks.
+        legacy = native.verify_after_environment()
+        assert legacy['complete'] is True and legacy['legacyAccountPreserved'] is True
+        assert acceptance.status()['sendCount'] == 0
+        proof = {'schema': 1, 'complete': True, 'api': upgrade['api'], 'target': 'synthetic',
+                 'candidateScope': 'synthetic-x86-ci', 'originalHumanCandidateBytesInstalled': False,
+                 'candidateInstalledSHA256': upgrade['candidateInstalledSHA256'], 'uid': upgrade['uid'],
+                 'signerSHA256': upgrade['signerSHA256'], 'sourceSHA': os.environ.get('GITHUB_SHA'),
+                 'legacyUpgrade': upgrade, 'manifest': acceptance.manifest,
+                 'languageTimeZoneAndWorkerVerified': True, 'httpAcceptLanguageVerified': True,
+                 'cookieLocalStorageIndexedDBAccountIsolation': True, 'sameEnvironmentDifferentStorageContexts': True,
+                 'trustedNativeTextareaAndContenteditableInput': True, 'realNativeReadingScroll': True,
+                 'liveSwitchKeptDocumentAndDraftAndScroll': True, 'switchedPageCounts': switched_status['pageCounts'],
+                 'originalDocument': original_document, 'draftSHA256': hashlib.sha256(draft.encode()).hexdigest(),
+                 'savedScroll': saved_scroll, 'initialRecovery': initial_record, 'switchRecovery': checkpoint,
+                 'coldRecovery': {'document': restored['document'], 'scroll': restored['scroll'], 'native': restored_record},
+                 'conflictRecovery': {'document': conflict_restored['document'], 'scroll': conflict_restored['scroll'], 'native': conflict_record,
+                                      'webDraftPreservedUntilNativeChoice': True, 'nativeRestoreChosen': True},
+                 'download': download, 'legacyAfterEnvironmentUse': legacy,
+                 'fixedFingerReceipts': acceptance.touch_events, 'sendCount': 0,
+                 'onlyEmulatorLoopbackEgressAllowed': True, 'testCAInjectedOnlyIntoCiProfiles': True,
+                 'screenshots': False, 'realServicesAccessed': False}
+        native._write_json(EVIDENCE / 'functional.json', proof)
+        print(json.dumps(proof, indent=2), flush=True)
+        return proof
+    except Exception:
+        native._record_failure()
+        raise
+    finally:
+        if guarded:
+            native._logcat('functional')
+        if acceptance is not None:
+            original_exception = sys.exc_info()[0] is not None
+            try:
+                acceptance.close()
+            except Exception:
+                (EVIDENCE / 'server-cleanup-error.txt').write_text(traceback.format_exc(), encoding='utf-8')
+                if not original_exception:
+                    raise
+
+
+if __name__ == '__main__':
+    main()

@@ -28,5 +28,5 @@ final class HandoffRequest {
     }
     static String hash(byte[] bytes)throws Exception{StringBuilder result=new StringBuilder();for(byte value:MessageDigest.getInstance("SHA-256").digest(bytes))result.append(String.format(Locale.ROOT,"%02x",value&255));return result.toString();}
     static String fingerprint(JSONObject request)throws Exception{return hash(normalize(request).toString().getBytes(StandardCharsets.UTF_8));}
-    static void accounts(File files,JSONObject request)throws Exception{WorkspaceState state=WorkspaceFiles.read(files);WorkspaceState.Account source=state.find(request.getString("sourceAccountId")),target=state.find(request.getString("targetAccountId"));if(!source.storageId.equals(request.getString("sourceStorageId"))||!target.storageId.equals(request.getString("targetStorageId")))throw new IOException("账号登录空间已改变，请重新确认任务");}
+    static void accounts(File files,JSONObject request)throws Exception{WorkspaceState state=WorkspaceFiles.read(files);WorkspaceState.Account source=state.find(request.getString("sourceAccountId")),target=state.find(request.getString("targetAccountId"));if(!source.storageId.equals(request.getString("sourceStorageId"))||!target.storageId.equals(request.getString("targetStorageId")))throw new IOException("账号登录空间已改变，请重新确认任务");if(target.isEnvironment())throw new IOException("此账号请在网页手动添加附件；自动处理暂未接入。");}
 }

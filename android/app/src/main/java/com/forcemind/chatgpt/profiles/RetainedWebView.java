@@ -12,6 +12,7 @@ final class RetainedWebView extends WebView {
     RetainedWebView(Context context){super(context);}
     void retainExecution(boolean retain){
         if(executionRetained==retain)return;executionRetained=retain;
+        if(retain)super.onResume();else super.onPause();
         updatePresentation();
         super.onWindowVisibilityChanged(retain?View.VISIBLE:getWindowVisibility());
     }

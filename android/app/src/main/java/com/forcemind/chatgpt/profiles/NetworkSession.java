@@ -190,7 +190,7 @@ final class NetworkSession {
         if (!WorkspaceState.profile(account.storageId).equals(WebViewCompat.getProfile(web).getName())) throw new IllegalStateException("文件账号已改变，请重新发起");
         FileJob job;
         synchronized (this) {
-            if (jobs.size() >= 32) throw new IllegalStateException("文件任务数量已满");
+            if (jobs.size()+externalJobs.size() >= 32) throw new IllegalStateException("文件任务数量已满");
             job = new FileJob(accountId, account.storageId, epochs.getOrDefault(accountId, 0L), WebViewCompat.getProfile(web).getCookieManager(), routes.snapshot());
             jobs.put(job.id, job);
         }

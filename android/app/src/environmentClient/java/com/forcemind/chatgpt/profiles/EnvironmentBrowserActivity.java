@@ -8,6 +8,8 @@ import android.os.*;
 import android.system.Os;
 import android.view.*;
 import android.widget.*;
+import androidx.activity.ComponentActivity;
+import androidx.activity.OnBackPressedCallback;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -15,7 +17,7 @@ import org.json.*;
 import org.mozilla.geckoview.*;
 
 /** Real account browser. Each nested activity owns exactly one immutable environment process. */
-public class EnvironmentBrowserActivity extends Activity implements EnvironmentDocumentBridge.Host {
+public class EnvironmentBrowserActivity extends ComponentActivity implements EnvironmentDocumentBridge.Host {
     static final class Entry {
         final String accountId,storageId,tabId;final GeckoSession session;
         String url,requestedUrl,loadingUrl,token="",documentId,restoringDraft,restoreRequest,nativeState="";volatile String lastFingerprint="";
@@ -36,7 +38,7 @@ public class EnvironmentBrowserActivity extends Activity implements EnvironmentD
     private GeckoSession.PromptDelegate.FilePrompt filePrompt;private GeckoResult<GeckoSession.PromptDelegate.PromptResponse> fileResult;private Entry fileOwner;private long fileEpoch;private String fileUrl;
 
     @Override public void onCreate(Bundle saved){
-        super.onCreate(saved);getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);getWindow().setStatusBarColor(Color.WHITE);getWindow().setNavigationBarColor(Color.WHITE);getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR|View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
+        super.onCreate(saved);getOnBackPressedDispatcher().addCallback(this,new OnBackPressedCallback(true){@Override public void handleOnBackPressed(){if(current!=null&&!current.closed&&current.canBack&&routeReady)current.session.goBack();else moveTaskToBack(true);}});getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);getWindow().setStatusBarColor(Color.WHITE);getWindow().setNavigationBarColor(Color.WHITE);getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR|View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
         store=new StateStore(getFilesDir());accountId=getIntent().getStringExtra("accountId");
         try{
             state=store.load();WorkspaceState.Account a=state.find(accountId);if(!a.isEnvironment()||a.environmentSlot!=slot())throw new IOException("账号环境归属已改变");
@@ -203,7 +205,7 @@ public class EnvironmentBrowserActivity extends Activity implements EnvironmentD
         try{reconcile();WorkspaceState.Account a=state.find(accountId);StudioSheet sheet=new StudioSheet(this,"标签页",a.name);for(WorkspaceState.Tab t:a.tabs){sheet.row((t.id.equals(a.activeTab)?"当前 · ":"")+t.title,"","",()->{sheet.dismiss();update(s->{WorkspaceState.Account owner=s.find(accountId);owner.activeTab=t.id;});});}sheet.action("新建标签页",true,()->{sheet.dismiss();newTab();});if(a.tabs.size()>1)sheet.action("关闭当前标签页",false,()->{sheet.dismiss();update(s->{WorkspaceState.Account owner=s.find(accountId);s.closeTab(owner,owner.activeTab);});});sheet.show();}catch(Exception error){notice("标签列表不可用");}
     }
     private void accounts(){
-        try{reconcile();StudioSheet sheet=new StudioSheet(this,"账号空间","每个环境账号保留独立登录与标签");for(WorkspaceState.Account a:state.accounts)sheet.row(a.name,a.isEnvironment()?a.language+" · "+a.timeZone:"原网页登录空间","",()->{sheet.dismiss();EnvironmentLauncher.open(this,a.id);});sheet.action("创建账号",true,()->{sheet.dismiss();AccountEditor.show(this,store,null,saved->{state=saved;EnvironmentLauncher.open(this,saved.activeAccount);});});sheet.action("编辑当前账号",false,()->{sheet.dismiss();AccountEditor.show(this,store,accountId,saved->{state=saved;showCurrent();});});sheet.show();}catch(Exception error){notice("账号列表不可用");}
+        try{if(runtime!=null&&documents!=null)reconcile();else state=store.load();StudioSheet sheet=new StudioSheet(this,"账号空间","每个环境账号保留独立登录与标签");for(WorkspaceState.Account a:state.accounts)sheet.row(a.name,a.isEnvironment()?a.language+" · "+a.timeZone:"原网页登录空间","",()->{sheet.dismiss();EnvironmentLauncher.open(this,a.id);});sheet.action("创建账号",true,()->{sheet.dismiss();AccountEditor.show(this,store,null,saved->{state=saved;EnvironmentLauncher.open(this,saved.activeAccount);});});sheet.action("编辑当前账号",false,()->{sheet.dismiss();AccountEditor.show(this,store,accountId,saved->{state=saved;showCurrent();});});sheet.show();}catch(Exception error){notice("账号列表不可用");}
     }
     private void more(){
         StudioSheet sheet=new StudioSheet(this,"更多","");sheet.row("新建标签页","","plus",()->{sheet.dismiss();newTab();});sheet.row("账号管理","","user",()->{sheet.dismiss();accounts();});sheet.row("资产库","","folder",()->{sheet.dismiss();assets(false);});sheet.row("能力库","","spark",()->{sheet.dismiss();assets(true);});sheet.row("网络设置","","",()->{sheet.dismiss();startActivity(new Intent(this,MainActivity.class).putExtra("networkSettings",true));});sheet.row("刷新页面","","refresh",()->{sheet.dismiss();if(current!=null&&routeReady&&owns(current)){if(!current.started){current.previewDismissed=true;startCurrent();}else current.session.reload();}});sheet.row("恢复草稿","查看本地保存的草稿","",()->{sheet.dismiss();recoverySheet();});sheet.row("后退","","",()->{sheet.dismiss();if(current!=null&&routeReady&&current.canBack)current.session.goBack();});sheet.row("前进","","",()->{sheet.dismiss();if(current!=null&&routeReady&&current.canForward)current.session.goForward();});sheet.show();
@@ -234,9 +236,8 @@ public class EnvironmentBrowserActivity extends Activity implements EnvironmentD
     @Override protected void onPause(){resumed=false;if(current!=null&&!current.closed){documents.request(current);current.session.flushSessionState();current.session.setFocused(false);}for(Entry e:SESSIONS.values())if(e.saveTask!=null){ui.removeCallbacks(e.saveTask);e.saveTask.run();}if(routes!=null)routes.foreground(false);super.onPause();}
     @Override protected void onStop(){super.onStop();ui.post(()->{for(Entry e:SESSIONS.values())if(!e.closed&&e.session.isOpen())e.session.setActive(appForeground);});}
     @Override protected void onDestroy(){destroyed=true;for(Entry e:SESSIONS.values())if(e.saveTask!=null){ui.removeCallbacks(e.saveTask);e.saveTask=null;}cancelFile();if(browser!=null&&browser.getSession()!=null)browser.releaseSession();if(routes!=null){routes.foreground(false);routes.whenExtensionReady(null);routes.listener((ready,foreground,notice)->{for(Entry e:SESSIONS.values())if(!e.closed&&e.session.isOpen())e.session.setActive(foreground);});}super.onDestroy();}
-    @Override public void onBackPressed(){if(current!=null&&current.canBack&&routeReady)current.session.goBack();else{startActivity(new Intent(this,MainActivity.class));finish();}}
     @Override public void notice(String message){if(destroyed)return;Toast.makeText(this,message,Toast.LENGTH_SHORT).show();}
-    private void failure(String title,String message){LinearLayout pane=new LinearLayout(this);pane.setOrientation(LinearLayout.VERTICAL);pane.setPadding(dp(24),dp(32),dp(24),dp(24));pane.addView(text(title,20));pane.addView(text(message==null?"请保留应用数据后重新打开":message,14));Button back=new Button(this);back.setText("返回账号列表");back.setOnClickListener(v->{startActivity(new Intent(this,MainActivity.class));finish();});pane.addView(back);setContentView(pane);}
+    private void failure(String title,String message){LinearLayout pane=new LinearLayout(this);pane.setOrientation(LinearLayout.VERTICAL);pane.setPadding(dp(24),dp(32),dp(24),dp(24));pane.addView(text(title,20));pane.addView(text(message==null?"请保留应用数据后重新打开":message,14));Button back=new Button(this);back.setText("返回账号列表");back.setOnClickListener(v->accounts());pane.addView(back);setContentView(pane);}
     private TextView text(String value,int size){TextView view=new TextView(this);StudioTypography.text(view,size);view.setTextColor(StudioTypography.INK);view.setText(value);return view;}
     private TextView button(String value,String description){TextView view=text(value,14);view.setContentDescription(description);view.setGravity(Gravity.CENTER);view.setMinHeight(StudioTypography.controlHeight(this));view.setPadding(dp(12),dp(8),dp(12),dp(8));view.setBackgroundResource(android.R.drawable.list_selector_background);view.setClickable(true);view.setFocusable(true);return view;}
     private int dp(int value){return StudioTypography.dp(this,value);}

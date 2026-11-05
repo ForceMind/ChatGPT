@@ -307,7 +307,7 @@ def handler_for(evidence: Evidence):
                     initial = evidence.initial[path]
                 headers = {}
                 if not env_cookie(cookie)[0]:
-                    headers["Set-Cookie"] = "env_login=" + MARKERS[PAGE_ACCOUNTS[path]] + "; Path=/; Secure; HttpOnly; SameSite=Lax"
+                    headers["Set-Cookie"] = "env_login=" + MARKERS[PAGE_ACCOUNTS[path]] + "; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=86400"
                 self.send_bytes(200, page_html(path, initial), "text/html; charset=utf-8", headers)
             elif path == "/worker.js":
                 self.send_bytes(200, WORKER_JS.encode("utf-8"), "application/javascript; charset=utf-8")

@@ -28,14 +28,19 @@ final class EnvironmentRouteController {
     };
     EnvironmentRouteController(Context context,GeckoRuntime runtime,Listener listener){
         this.context=context.getApplicationContext();this.listener=listener;
-        runtime.getWebExtensionController().ensureBuiltIn("resource://android/assets/studio-environment/",EXTENSION).accept(extension->{
-            runtime.getWebExtensionController().setAllowedInPrivateBrowsing(extension,true).accept(allowed->{
-                allowed.setMessageDelegate(new WebExtension.MessageDelegate(){@Override public void onConnect(WebExtension.Port incoming){connect(incoming);}},"studioEnvironmentRoute");
-                // Recovery delegates are installed by the owner after the extension is ready.
-                extensionReady=allowed;if(readyListener!=null)readyListener.run();
-            },error->block("网络保护初始化失败，请重新打开账号"));
-        },error->block("页面组件初始化失败，请重新打开账号"));
-        bind();
+        ui.post(()->{
+            if(closed)return;
+            runtime.getWebExtensionController().ensureBuiltIn("resource://android/assets/studio-environment/",EXTENSION).accept(extension->ui.post(()->{
+                if(closed)return;
+                runtime.getWebExtensionController().setAllowedInPrivateBrowsing(extension,true).accept(allowed->ui.post(()->{
+                    if(closed)return;
+                    allowed.setMessageDelegate(new WebExtension.MessageDelegate(){@Override public void onConnect(WebExtension.Port incoming){connect(incoming);}},"studioEnvironmentRoute");
+                    // Recovery delegate installation and readiness share the route/lifecycle UI queue.
+                    extensionReady=allowed;if(readyListener!=null)readyListener.run();
+                }),error->ui.post(()->{if(!closed)block("网络保护初始化失败，请重新打开账号");}));
+            }),error->ui.post(()->{if(!closed)block("页面组件初始化失败，请重新打开账号");}));
+            bind();
+        });
     }
     private void bind(){
         Intent intent=new Intent().setClassName(context,"com.forcemind.chatgpt.profiles.EnvironmentBridgeService");

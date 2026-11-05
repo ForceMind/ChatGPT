@@ -91,7 +91,7 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
     private boolean ready, fatal;
     private boolean resumed;
     private String redirectedEnvironment;
-    private boolean returnedFromEnvironment;
+    private boolean environmentLaunchPending;
     private boolean networkSettingsPending,networkSettingsShowing;
     private LinearLayout networkNotice;
     private TextView networkNoticeText;
@@ -147,12 +147,12 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
         intent.removeExtra("networkSettings");
     }
     private void openRequestedNetworkSettings(){
-        networkSettingsPending=false;networkSettingsShowing=true;returnedFromEnvironment=false;
+        networkSettingsPending=false;networkSettingsShowing=true;environmentLaunchPending=false;
         try{
             NetworkSheet.show(this,memory.network(),()->{
                 networkSettingsShowing=false;
                 if(isFinishing()||isDestroyed()||isChangingConfigurations()||fatal||!ready)return;
-                try{state=store.load();returnedFromEnvironment=false;rebindLivePages();showCurrent();}
+                try{state=store.load();environmentLaunchPending=false;rebindLivePages();showCurrent();}
                 catch(Exception e){fail("无法读取账号记录",e);}
             });
         }catch(RuntimeException error){networkSettingsShowing=false;toast("网络设置暂时无法打开");}
@@ -193,11 +193,13 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
         if(networkSettingsPending&&!networkSettingsShowing)openRequestedNetworkSettings();
         if(state.current().isEnvironment()){
             if(networkSettingsShowing||networkSettingsPending)return;
-            try{for(WebView held:views.values())selectPage(held,false);EnvironmentLauncher.open(this,state.activeAccount);redirectedEnvironment=state.activeAccount;}
-            catch(Exception e){toast(e.getMessage()==null?"账号环境暂不可用":e.getMessage());}
+            if(environmentLaunchPending&&state.activeAccount.equals(redirectedEnvironment))return;
+            environmentLaunchPending=true;redirectedEnvironment=state.activeAccount;
+            try{for(WebView held:views.values())selectPage(held,false);EnvironmentLauncher.open(this,state.activeAccount);}
+            catch(Exception e){environmentLaunchPending=false;redirectedEnvironment=null;toast(e.getMessage()==null?"账号环境暂不可用":e.getMessage());}
             return;
         }
-        redirectedEnvironment=null;returnedFromEnvironment=false;
+        redirectedEnvironment=null;environmentLaunchPending=false;
         if(recovery!=null)recovery.checkpointVisible();if(snapshotOwner!=null)recoveryHideSnapshot(snapshotOwner);cancelRequests();renderHeader();WorkspaceState.Account account=state.current();WorkspaceState.Tab tab=account.current();recentClosed.remove(tab.id);pruneRecent();
         try{
             for(Map.Entry<String,WebView> held:views.entrySet())selectPage(held.getValue(),held.getKey().equals(tab.id));memory.refreshExecutionPolicy();WebView web=views.get(tab.id);boolean created=web==null;
@@ -210,7 +212,7 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
     void networkChanged(){
         if(memory==null||memory.owner()!=this||networkNotice==null)return;
         NetworkSession network=memory.network();boolean waiting=!network.ready();networkNotice.setVisibility(waiting?View.VISIBLE:View.GONE);networkNoticeText.setText(network.status()+" · 网页和草稿保留");
-        if(!waiting&&ready&&!fatal&&state!=null&&!views.containsKey(state.current().activeTab))showCurrent();
+        if(!waiting&&ready&&!fatal&&state!=null&&!views.containsKey(state.current().activeTab)&&(!state.current().isEnvironment()||resumed))showCurrent();
         if(!waiting)drainHandoff();
     }
     private void selectPage(WebView web,boolean selected){if(web instanceof RetainedWebView){((RetainedWebView)web).blockInput(overview!=null||snapshotOwner==web);((RetainedWebView)web).selectPage(selected);}else web.setVisibility(selected?View.VISIBLE:View.INVISIBLE);}
@@ -507,22 +509,21 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
     @Override protected void onResume(){
         super.onResume();resumed=true;
         if(memory!=null&&ready&&!fatal){
-            memory.network().routes.recheckCoreState();
             try{
                 WorkspaceState latest=store.load();boolean selectionChanged=!latest.activeAccount.equals(state.activeAccount)||!latest.current().activeTab.equals(state.current().activeTab)||!latest.current().storageId.equals(state.current().storageId);
                 state=latest;
                 boolean reattach=memory.owner()!=this;if(reattach)memory.attach(this);
+                memory.network().routes.recheckCoreState();
                 if(state.current().isEnvironment()){
-                    // Returning through Android Back must not immediately relaunch the same Activity.
-                    if(networkSettingsPending||!state.activeAccount.equals(redirectedEnvironment))showCurrent();
+                    // Initial creation already launches once; later Recents/app resumes reopen the selected environment.
+                    if(networkSettingsPending||!networkSettingsShowing&&!environmentLaunchPending)showCurrent();
                 }else if(selectionChanged||reattach){rebindLivePages();showCurrent();}
             }catch(Exception e){fail("无法读取账号记录",e);}
         }
         for(WebView web:views.values())web.onResume();if(recovery!=null)recovery.resume();if(ready&&!fatal&&KeepaliveService.enabled(this)&&!KeepaliveService.running())enableKeepalive();drainHandoff();
     }
-    @Override public void onWindowFocusChanged(boolean focused){super.onWindowFocusChanged(focused);if(focused&&resumed&&ready&&!fatal&&!networkSettingsShowing&&!networkSettingsPending&&state.current().isEnvironment()&&returnedFromEnvironment&&state.activeAccount.equals(redirectedEnvironment))moveTaskToBack(true);}
 
-    @Override protected void onPause(){if(redirectedEnvironment!=null)returnedFromEnvironment=true;if(recovery!=null)recovery.pause();resumed=false;if(handoffs!=null&&handoffs.controller()!=null&&handoffs.controller().ownedBy(this))handoffs.controller().cancel("应用已离开前台，已停止自动发送；请检查目标对话");if(!KeepaliveService.running())for(WebView web:views.values())web.onPause();super.onPause();}
+    @Override protected void onPause(){environmentLaunchPending=false;if(recovery!=null)recovery.pause();resumed=false;if(handoffs!=null&&handoffs.controller()!=null&&handoffs.controller().ownedBy(this))handoffs.controller().cancel("应用已离开前台，已停止自动发送；请检查目标对话");if(memory==null||!memory.retainsExecution())for(WebView web:views.values())web.onPause();super.onPause();}
     @Override protected void onStop(){try{if(WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE))for(WebView web:views.values())WebViewCompat.getProfile(web).getCookieManager().flush();}catch(RuntimeException ignored){}super.onStop();}
     @Override protected void onSaveInstanceState(Bundle bundle){bundle.putBoolean("networkSettingsOpen",networkSettingsShowing||networkSettingsPending);if(overview!=null){bundle.putBoolean("tabsOverview",true);bundle.putString("tabFilter",overview.filter());bundle.putString("tabQuery",overview.query());bundle.putInt("tabPosition",overview.position());}super.onSaveInstanceState(bundle);}
     @Override protected void onDestroy(){
@@ -537,7 +538,7 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
         if(!exists(account,tab))return;String clean=NavigationPolicy.restorable(url);WorkspaceState.Tab current=state.find(account).tabs.stream().filter(t->t.id.equals(tab)).findFirst().orElse(null);if(current==null||current.url.equals(clean))return;
         change(s->s.find(account).tabs.stream().filter(t->t.id.equals(tab)).findFirst().orElseThrow(IllegalStateException::new).url=clean);
     }
-    @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);setIntent(intent);consumeNetworkSettingsIntent(intent);if(store!=null&&ready&&!fatal)try{state=store.load();if(intent.hasExtra(EnvironmentLauncher.ACCOUNT_ID)){String accountId=intent.getStringExtra(EnvironmentLauncher.ACCOUNT_ID);state=store.update(next->{next.find(accountId);next.activeAccount=accountId;});intent.removeExtra(EnvironmentLauncher.ACCOUNT_ID);}returnedFromEnvironment=false;showCurrent();}catch(Exception e){fail("无法读取账号记录",e);}acceptHandoffIntent(intent);}
+    @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);setIntent(intent);consumeNetworkSettingsIntent(intent);if(store!=null&&ready&&!fatal)try{state=store.load();if(intent.hasExtra(EnvironmentLauncher.ACCOUNT_ID)){String accountId=intent.getStringExtra(EnvironmentLauncher.ACCOUNT_ID);state=store.update(next->{next.find(accountId);next.activeAccount=accountId;});intent.removeExtra(EnvironmentLauncher.ACCOUNT_ID);}environmentLaunchPending=false;showCurrent();}catch(Exception e){fail("无法读取账号记录",e);}acceptHandoffIntent(intent);}
     private void acceptHandoffIntent(Intent intent){
         if(intent==null||!intent.hasExtra("handoffJob"))return;
         try{pendingJob=intent.getStringExtra("handoffJob");pendingJobToken=intent.getStringExtra("handoffToken");WorkspaceState.profile(pendingJob);WorkspaceState.profile(pendingJobToken);}catch(Exception e){pendingJob=null;pendingJobToken=null;toast("任务授权参数无效");}
