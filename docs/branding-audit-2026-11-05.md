@@ -48,3 +48,5 @@
 用户已确认完整方案：新装及旧默认程序目录Studio，安全回退、自定义目录保留，更新器兼容旧/新EXE、快捷方式及更新浮窗联动；数据目录/AppID/Mac兼容包不变。实现源码仅dev，完整npm run check和默认/旧默认/自定义安装、程序备份/注册信息回退、Cookie/LocalStorage保留等合成启动均在独立Windows Actions；不运行旧截图/真实网页检查，不发布或合并main。当前代码尚待CI，不将实现当作通过。
 
 实现首轮Actions41970512586的typecheck/lint通过，format:check报告124文件不符而停止；源Git blob为LF，正在固定Windows checkout的core.autocrlf=false并记录git ls-files --eol，保持原Prettier规则，不整体格式化或改blame忽略列表。补充保留Plan阶段错误及每次安装的迁移结果，避免失败时只留退出码。
+
+后续CI41971460871、41972291363均通过完整check、脚本解析和NSIS编译，但停在合成TLS准备（Cert驱动缺失、RSA KeySize只读），未执行安装；已用显式RSACng和临时JWK/DER替代证书存储依赖，增加提前TLS自检。41973125990进入实际安装前校验，因安装器PowerShell找不到Get-FileHash而退出3；迁移结果保留首错且未准备/卸载旧程序。现改为相同SHA256算法的.NET文件流，仍逐文件强制比对，不把这些失败当通过。

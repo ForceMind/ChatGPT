@@ -10,7 +10,7 @@ $studioState = $null
 function Full([string]$Path) { [IO.Path]::GetFullPath($Path).TrimEnd('\') }
 function Same($A,$B) { [String]::Equals((Full $A),(Full $B),[StringComparison]::OrdinalIgnoreCase) }
 function Within($A,$B) { ((Full $A)+'\').StartsWith((Full $B)+'\',[StringComparison]::OrdinalIgnoreCase) }
-function Sha($Path) { (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant() }
+function Sha($Path) { $algorithm=[Security.Cryptography.SHA256]::Create();$stream=[IO.File]::OpenRead($Path);try{[BitConverter]::ToString($algorithm.ComputeHash($stream)).Replace('-','').ToLowerInvariant()}finally{$stream.Dispose();$algorithm.Dispose()} }
 function WriteJson($Path,$Value) { [IO.File]::WriteAllText($Path,($Value|ConvertTo-Json -Depth 50),[Text.UTF8Encoding]::new($false)) }
 function ReadJson($Path) { [IO.File]::ReadAllText($Path,[Text.Encoding]::UTF8)|ConvertFrom-Json }
 function Prop($Object,$Name) { $p=$Object.PSObject.Properties[$Name]; if($p){$p.Value} }
