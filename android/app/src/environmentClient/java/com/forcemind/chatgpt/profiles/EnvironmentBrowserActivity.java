@@ -18,11 +18,17 @@ import org.mozilla.geckoview.*;
 
 /** Real account browser. Each nested activity owns exactly one immutable environment process. */
 public class EnvironmentBrowserActivity extends ComponentActivity implements EnvironmentDocumentBridge.Host {
+    private static final int HISTORY_PAGES_PER_TAB=6,HISTORY_PAGES_PER_PROCESS=48,HISTORY_TEXT_BUDGET=256000;
+    private static final class HistoryDocument{
+        final JSONObject snapshot;final int size;long usedAt;
+        HistoryDocument(JSONObject snapshot){this.snapshot=snapshot;size=snapshot.toString().length();usedAt=SystemClock.uptimeMillis();}
+    }
     static final class Entry {
         final String accountId,storageId,tabId;final GeckoSession session;
         String url,requestedUrl,loadingUrl,token="",documentId,resumeAfterDocument,restoringDraft,restoreRequest,nativeState="";volatile String lastFingerprint="";
         long epoch,sequence,writeVersion;int activeTransfers;volatile boolean closed;boolean started,previewDismissed,sensitive,canBack,canForward;
         JSONObject record,pendingRestore,liveDocument,conflictLocal,restoringDocument;
+        final LinkedHashMap<String,HistoryDocument> historyDocuments=new LinkedHashMap<>(8,.75f,true);
         WebExtension.Port port;Runnable saveTask;
         Entry(WorkspaceState.Account a,WorkspaceState.Tab tab){accountId=a.id;storageId=a.storageId;tabId=tab.id;url=tab.url.equals(NavigationPolicy.HOME)?CIBuild.home():tab.url;session=new GeckoSession(new GeckoSessionSettings.Builder().contextId("studio-"+a.storageId).build());}
     }
@@ -110,7 +116,7 @@ public class EnvironmentBrowserActivity extends ComponentActivity implements Env
         String safe=EnvironmentUrls.recoverable(e.url);
         if(safe!=null)try{
             e.record=recovery.load(a.id,a.storageId,tab.id,safe);
-            if(e.record!=null){e.nativeState=e.record.optString("nativeSessionState","");e.pendingRestore=e.record.optJSONObject("document");}
+            if(e.record!=null){e.nativeState=e.record.optString("nativeSessionState","");e.pendingRestore=e.record.optJSONObject("document");rememberDocument(e,e.pendingRestore);}
         }catch(Exception error){notice("本地恢复记录暂不可读取，原件已保留");}
         if(e.record==null)e.record=freshRecord(e);
         if(routes!=null&&routes.extensionReady!=null)documents.attach(e,routes.extensionReady);
@@ -192,17 +198,43 @@ public class EnvironmentBrowserActivity extends ComponentActivity implements Env
         if(nextIndex<1)return null;history.put("entries",safe).put("index",nextIndex);return raw.toString();
     }
     private void navigation(Entry e,String url){
-        if(e.closed)return;if(pageOperation!=null&&pageOperation.entry==e)cancelPageOperation();if(fileOwner==e)cancelFile();documents.invalidate(e);e.url=url;e.resumeAfterDocument=null;e.sensitive=false;e.nativeState="";e.pendingRestore=null;e.conflictLocal=null;e.restoringDraft=null;e.restoringDocument=null;e.restoreRequest=null;
+        if(e.closed)return;if(pageOperation!=null&&pageOperation.entry==e)cancelPageOperation();if(fileOwner==e)cancelFile();if(e.record!=null)rememberDocument(e,e.record.optJSONObject("document"));documents.invalidate(e);e.url=url;e.resumeAfterDocument=null;e.sensitive=false;e.nativeState="";e.pendingRestore=null;e.conflictLocal=null;e.restoringDraft=null;e.restoringDocument=null;e.restoreRequest=null;
         String safe=EnvironmentUrls.recoverable(url);if(safe==null)return;
         try{
             state=store.update(s->{WorkspaceState.Account a=s.find(e.accountId);if(!a.storageId.equals(e.storageId))throw new IllegalStateException("登录空间已改变");for(WorkspaceState.Tab t:a.tabs)if(t.id.equals(e.tabId))t.url=safe;});
-            JSONObject saved=recovery.load(e.accountId,e.storageId,e.tabId,safe);e.record=saved==null?freshRecord(e):saved;e.pendingRestore=saved==null?null:saved.optJSONObject("document");renderHeader();
+            JSONObject saved=recovery.load(e.accountId,e.storageId,e.tabId,safe);e.record=saved==null?freshRecord(e):saved;
+            JSONObject remembered=historyDocument(e,safe);e.pendingRestore=remembered!=null?remembered:(saved==null?null:saved.optJSONObject("document"));
+            if(e.pendingRestore!=null)e.record.put("document",e.pendingRestore);renderHeader();
         }catch(Exception error){try{e.record=freshRecord(e);}catch(Exception ignored){}notice("此页面的本地恢复暂不可用");}
     }
     @Override public boolean owns(Entry e){
         if(e.closed)return false;try{WorkspaceState.Account a=store.load().find(e.accountId);return a.isEnvironment()&&a.environmentSlot==slot()&&a.storageId.equals(e.storageId)&&a.language.concat("/").concat(a.timeZone).equals(runtimeEnvironment)&&a.tabs.stream().anyMatch(t->t.id.equals(e.tabId));}catch(Exception error){return false;}
     }
-    @Override public void document(Entry e,JSONObject value){if(!owns(e)||e.sensitive)return;try{e.record.put("document",value);queueSave(e);renderHeader();}catch(Exception ignored){}}
+    @Override public void document(Entry e,JSONObject value){if(!owns(e)||e.sensitive)return;try{rememberDocument(e,value);e.record.put("document",value);queueSave(e);renderHeader();}catch(Exception ignored){}}
+    /** Runtime-only history drafts; persistent primary/backup still represent the current page. */
+    private void rememberDocument(Entry e,JSONObject value){
+        if(e.closed||e.sensitive||value==null)return;String address=value.optString("url"),safe=EnvironmentUrls.recoverable(e.url);
+        Object text=value.opt("draft");double scroll=value.optDouble("scroll",Double.NaN),ratio=value.optDouble("ratio",Double.NaN);
+        if(safe==null||!safe.equals(address)||!(text instanceof String)||((String)text).length()>100000||!Double.isFinite(scroll)||scroll<0||scroll>100000000||!Double.isFinite(ratio)||ratio<0||ratio>1)return;
+        Map<String,Object> fields=new LinkedHashMap<>();fields.put("url",address);fields.put("draft",text);fields.put("scroll",scroll);fields.put("ratio",ratio);fields.put("capturedAt",value.optLong("capturedAt",System.currentTimeMillis()));fields.put("preview","");
+        e.historyDocuments.put(address,new HistoryDocument(new JSONObject(fields)));
+        while(e.historyDocuments.size()>HISTORY_PAGES_PER_TAB)e.historyDocuments.remove(e.historyDocuments.keySet().iterator().next());
+        trimHistoryDocuments();
+    }
+    private JSONObject historyDocument(Entry e,String url)throws JSONException{
+        HistoryDocument remembered=e.historyDocuments.get(url);if(remembered==null)return null;remembered.usedAt=SystemClock.uptimeMillis();return new JSONObject(remembered.snapshot.toString());
+    }
+    private void trimHistoryDocuments(){
+        while(true){
+            int count=0,size=0;Entry oldestOwner=null;String oldestUrl=null;long oldest=Long.MAX_VALUE;
+            for(Entry owner:SESSIONS.values())for(Map.Entry<String,HistoryDocument> item:owner.historyDocuments.entrySet()){
+                count++;HistoryDocument document=item.getValue();size+=document.size;
+                if(document.usedAt<oldest){oldest=document.usedAt;oldestOwner=owner;oldestUrl=item.getKey();}
+            }
+            if(count<=HISTORY_PAGES_PER_PROCESS&&size<=HISTORY_TEXT_BUDGET||oldestOwner==null)return;
+            oldestOwner.historyDocuments.remove(oldestUrl);
+        }
+    }
     private void queueSave(Entry e){
         if(e.closed||e.sensitive||e.record==null||EnvironmentUrls.recoverable(e.url)==null)return;
         if(e.saveTask!=null)ui.removeCallbacks(e.saveTask);e.saveTask=()->{
@@ -255,7 +287,7 @@ public class EnvironmentBrowserActivity extends ComponentActivity implements Env
             if(pageOperation!=operation)return;
             if(error!=null||snapshot==null||!operationCurrent(operation)){cancelPageOperation();notice(error!=null?error:"草稿尚未保存，当前页面已保留");return;}
             try{
-                e.record.put("document",snapshot);
+                rememberDocument(e,snapshot);e.record.put("document",snapshot);
                 if(e.saveTask!=null){ui.removeCallbacks(e.saveTask);e.saveTask=null;}
                 JSONObject record=new JSONObject(e.record.toString()).put("nativeSessionState",e.nativeState).put("capturedAt",System.currentTimeMillis());
                 IO.execute(()->{
@@ -309,7 +341,7 @@ public class EnvironmentBrowserActivity extends ComponentActivity implements Env
     }
     private void cancelFile(){if(fileResult!=null){if(!filePrompt.isComplete())fileResult.complete(filePrompt.dismiss());fileResult=null;filePrompt=null;fileOwner=null;renderHeader();}}
     @Override protected void onActivityResult(int request,int result,Intent data){super.onActivityResult(request,result,data);if(request!=804||fileResult==null)return;GeckoResult<GeckoSession.PromptDelegate.PromptResponse> pending=fileResult;GeckoSession.PromptDelegate.FilePrompt prompt=filePrompt;Entry owner=fileOwner;fileResult=null;filePrompt=null;fileOwner=null;renderHeader();if(result!=RESULT_OK||data==null||owner!=current||!owns(owner)||owner.epoch!=fileEpoch||!owner.url.equals(fileUrl)){pending.complete(prompt.dismiss());return;}try{ArrayList<Uri> uris=new ArrayList<>();if(data.getClipData()!=null)for(int i=0;i<data.getClipData().getItemCount();i++)uris.add(data.getClipData().getItemAt(i).getUri());else if(data.getData()!=null)uris.add(data.getData());if(uris.isEmpty()||uris.size()>30)throw new IOException();for(Uri uri:uris)if(!"content".equals(uri.getScheme()))throw new IOException();pending.complete(prompt.confirm(getApplicationContext(),uris.toArray(new Uri[0])));}catch(Exception error){pending.complete(prompt.dismiss());notice("所选文件不可用");}}
-    private void close(Entry e){if(pageOperation!=null&&pageOperation.entry==e)cancelPageOperation();e.closed=true;if(e.saveTask!=null)ui.removeCallbacks(e.saveTask);if(documents!=null)documents.invalidate(e);if(e.session.isOpen())e.session.close();}
+    private void close(Entry e){if(pageOperation!=null&&pageOperation.entry==e)cancelPageOperation();e.closed=true;e.historyDocuments.clear();if(e.saveTask!=null)ui.removeCallbacks(e.saveTask);if(documents!=null)documents.invalidate(e);if(e.session.isOpen())e.session.close();}
     @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);cancelPageOperation();setIntent(intent);accountId=intent.getStringExtra("accountId");if(store!=null)showCurrent();}
     @Override protected void onResume(){super.onResume();resumed=true;if(routes!=null)routes.foreground(true);if(browser!=null){showCurrent();if(current!=null)current.session.setFocused(true);}}
     @Override protected void onPause(){cancelPageOperation();resumed=false;if(current!=null&&!current.closed){documents.request(current);current.session.flushSessionState();current.session.setFocused(false);}for(Entry e:SESSIONS.values())if(e.saveTask!=null){ui.removeCallbacks(e.saveTask);e.saveTask.run();}if(routes!=null)routes.foreground(false);super.onPause();}
