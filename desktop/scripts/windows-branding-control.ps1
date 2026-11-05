@@ -40,7 +40,7 @@ switch($Operation){
   }
   Tls {
     $c=Get-Content -Raw -Encoding utf8 $Config|ConvertFrom-Json
-    $rsa=[Security.Cryptography.RSA]::Create();$rsa.KeySize=2048
+    $rsa=[Security.Cryptography.RSACng]::new(2048)
     try {
       $request=[Security.Cryptography.X509Certificates.CertificateRequest]::new('CN=chatgpt.com',$rsa,[Security.Cryptography.HashAlgorithmName]::SHA256,[Security.Cryptography.RSASignaturePadding]::Pkcs1)
       $cert=$request.CreateSelfSigned([DateTimeOffset]::UtcNow.AddMinutes(-5),[DateTimeOffset]::UtcNow.AddHours(6))
