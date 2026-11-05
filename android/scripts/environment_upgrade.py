@@ -369,9 +369,10 @@ def verify_browser_chrome():
         raise
     finally:
         try:
-            tree = _run(['adb', 'shell', 'cat', '/data/user/0/' + PACKAGE + '/files/browser-chrome-native-tree.txt'], timeout=15, check=False)
-            if tree.returncode == 0:
-                (EVIDENCE / 'browser-chrome-native-tree.txt').write_text(tree.stdout, encoding='utf-8')
+            for name in ('browser-chrome-native-tree.txt', 'browser-chrome-document.json'):
+                tree = _run(['adb', 'shell', 'cat', '/data/user/0/' + PACKAGE + '/files/' + name], timeout=15, check=False)
+                if tree.returncode == 0:
+                    (EVIDENCE / name).write_text(tree.stdout, encoding='utf-8')
         except Exception:
             (EVIDENCE / 'browser-chrome-tree-read-error.txt').write_text(traceback.format_exc(), encoding='utf-8')
         _logcat('legacy-chrome')

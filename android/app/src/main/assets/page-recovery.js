@@ -2,7 +2,12 @@
   'use strict';
   if(window!==top||!/^https:\/\/(chatgpt\.com|chat\.openai\.com)$/.test(location.origin))return JSON.stringify({status:'skip'});
   var previous=window[config.key];if(previous)previous.cleanup();
-  var dirty=true,cancelled=false;
+  var dirty=true,cancelled=false,synchronizedComposer=null,synchronizedDraft=null;
+  var synchronizeInput=function(e,value){
+    if(synchronizedComposer===e&&synchronizedDraft===value)return;
+    e.dispatchEvent(new InputEvent('input',{bubbles:true,inputType:'insertReplacementText',data:value}));
+    synchronizedComposer=e;synchronizedDraft=value;
+  };
   var visible=function(e){return !!e&&!!e.getClientRects().length;};
   var composer=function(){return Array.from(document.querySelectorAll('#prompt-textarea,textarea[data-testid="prompt-textarea"],textarea[placeholder*="Message"],textarea[placeholder*="询问"]')).find(visible);};
   var sensitive='input[type="password" i],input[type="email" i],input[autocomplete="username" i],input[autocomplete="current-password" i],input[autocomplete="new-password" i],input[autocomplete="one-time-code" i]';
@@ -29,7 +34,7 @@
     return {title:(document.title||'ChatGPT').replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g,'').slice(0,240),messages:messages,truncated:truncated,capturedAt:Date.now()};
   };
   var scroller=function(e){var candidates=new Set();if(document.scrollingElement)candidates.add(document.scrollingElement);var parent=document.querySelector('[data-message-id],[data-message-author-role]')||e;while(parent){candidates.add(parent);parent=parent.parentElement;}return Array.from(candidates).filter(function(n){return visible(n)&&n.scrollHeight>n.clientHeight+40&&n.clientHeight>100;}).sort(function(a,b){return b.scrollHeight-a.scrollHeight;})[0]||document.documentElement;};
-  var changed=function(){dirty=true;};
+  var changed=function(event){dirty=true;if(event&&event.type==='input'){synchronizedComposer=null;synchronizedDraft=null;}};
   var observer=new MutationObserver(function(changes){
     for(var i=0;i<changes.length;i++){
       var target=changes[i].target.nodeType===1?changes[i].target:changes[i].target.parentElement;
@@ -64,13 +69,13 @@
       if(!force&&record.scroll>0&&!element&&max<record.scroll-5)return {status:'waiting'};
       if(element&&anchor){var top=container===document.scrollingElement?0:container.getBoundingClientRect().top;container.scrollTop+=element.getBoundingClientRect().top-top-anchor.offset;}
       else container.scrollTop=record.scroll<=max?record.scroll:record.ratio*max;
-      if(!record.draft)return {status:'restored'};if(!e)return {status:'waiting'};
-      var current=text(e);if(current.trim())return {status:current===record.draft?'restored':'conflict'};
+      if(!record.draft){if(e&&text(e)==='')synchronizeInput(e,'');return {status:'restored'};}if(!e)return {status:'waiting'};
+      var current=text(e);if(current===record.draft){synchronizeInput(e,record.draft);return {status:text(e)===record.draft?'restored':'conflict'};}if(current.trim())return {status:'conflict'};
       var users=document.querySelectorAll('[data-message-author-role=user]'),last=users.length?users[users.length-1].innerText:'';
       var normal=function(s){return String(s||'').replace(/\s+/g,' ').trim();};if(normal(last)===normal(record.draft))return {status:'already-sent'};
       if(document.querySelector('[data-testid=stop-button]'))return {status:'conflict'};
-      if(e.tagName==='TEXTAREA'){Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set.call(e,record.draft);e.dispatchEvent(new InputEvent('input',{bubbles:true,inputType:'insertText',data:record.draft}));}
-      else{var reading=container.scrollTop;e.focus({preventScroll:true});if(document.activeElement!==e&&!e.contains(document.activeElement))return {status:'conflict'};if(!document.execCommand('insertText',false,record.draft))return {status:'conflict'};container.scrollTop=reading;}
+      if(e.tagName==='TEXTAREA'){Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set.call(e,record.draft);synchronizeInput(e,record.draft);}
+      else{var reading=container.scrollTop;e.focus({preventScroll:true});if(document.activeElement!==e&&!e.contains(document.activeElement))return {status:'conflict'};if(!document.execCommand('insertText',false,record.draft))return {status:'conflict'};synchronizedComposer=e;synchronizedDraft=record.draft;container.scrollTop=reading;}
       return {status:text(e)===record.draft?'restored':'conflict'};
     },
     finish:function(){events.forEach(function(name){window.removeEventListener(name,interaction,true);});return {status:'finished'};},

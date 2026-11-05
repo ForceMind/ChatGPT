@@ -137,18 +137,22 @@ public final class EnvironmentUpgradeSeedTest {
             WorkspaceState.Account added=new StateStore(context().getFilesDir()).load().find(fixture.getString("accountId"));assertNotEquals(expected.getString("accountId"),added.id);assertFalse(added.isEnvironment());assertEquals("网页测试",added.name);assertEquals(fixture.getString("storageId"),added.storageId);assertEquals(fixture.getString("profile"),WorkspaceState.profile(added.storageId));expectedNames.add(fixture.getString("profile"));assertEquals(2,expectedNames.size());
         }
         java.util.ArrayList<java.nio.file.Path> candidates=new java.util.ArrayList<>();
-        Files.walkFileTree(context().getDataDir().toPath(),java.util.EnumSet.noneOf(java.nio.file.FileVisitOption.class),4,new java.nio.file.SimpleFileVisitor<java.nio.file.Path>(){
-            @Override public java.nio.file.FileVisitResult visitFile(java.nio.file.Path path,java.nio.file.attribute.BasicFileAttributes attributes){
-                if(path.getFileName().toString().equals("pref_store")&&attributes.isRegularFile()&&attributes.size()<=1024*1024)candidates.add(path);return java.nio.file.FileVisitResult.CONTINUE;
-            }
-            @Override public java.nio.file.FileVisitResult visitFileFailed(java.nio.file.Path path,java.io.IOException failure)throws java.io.IOException{
-                // Chromium atomically renames its temporary file while this read-only
-                // scan runs. This is not the stable pref_store registration evidence.
-                if(failure instanceof java.nio.file.NoSuchFileException&&path.getFileName().toString().startsWith(".com.google.Chrome."))return java.nio.file.FileVisitResult.CONTINUE;
-                throw failure;
-            }
-        });
+        registryCandidates(context().getDataDir(),4,candidates);
         for(java.nio.file.Path path:candidates){JSONObject prefs;try{prefs=new JSONObject(new String(Files.readAllBytes(path),StandardCharsets.UTF_8));}catch(org.json.JSONException pendingWrite){continue;}JSONObject profile=prefs.optJSONObject("profile");if(profile==null||profile.optJSONArray("list")==null)continue;JSONArray list=profile.getJSONArray("list");HashSet<String> actualNames=new HashSet<>();JSONObject original=null;for(int i=0;i<list.length();i++){JSONObject entry=list.getJSONObject(i);assertTrue("Duplicate Chromium profile registration",actualNames.add(entry.getString("name")));if(profileName.equals(entry.getString("name")))original=entry;}if(!actualNames.equals(expectedNames)||original==null)continue;return new JSONObject().put("name",original.getString("name")).put("path",original.getString("path"));}return null;
+    }
+    private static void registryCandidates(File directory,int depth,java.util.List<java.nio.file.Path> output)throws Exception{
+        File[] children=directory.listFiles();
+        if(children==null){if(!directory.exists())return;throw new java.io.IOException("Cannot enumerate owned registration directory: "+directory);}
+        for(File child:children){
+            java.nio.file.Path path=child.toPath();
+            if(child.getName().equals("pref_store")){
+                // Only the target registration file has strict file-read semantics.
+                // Session Storage/CURRENT and Chrome temp files are changing while
+                // Chromium runs; their existence is not a registration invariant.
+                java.nio.file.attribute.BasicFileAttributes attributes=Files.readAttributes(path,java.nio.file.attribute.BasicFileAttributes.class,java.nio.file.LinkOption.NOFOLLOW_LINKS);
+                if(attributes.isRegularFile()&&attributes.size()<=1024*1024)output.add(path);
+            }else if(depth>1&&Files.isDirectory(path,java.nio.file.LinkOption.NOFOLLOW_LINKS))registryCandidates(child,depth-1,output);
+        }
     }
     static long registryBarrier(JSONObject expected,boolean seed)throws Exception{
         long start=android.os.SystemClock.elapsedRealtime();JSONObject persisted=registry(expected);while(seed&&persisted==null&&android.os.SystemClock.elapsedRealtime()-start<20000){Thread.sleep(100);persisted=registry(expected);}assertNotNull("Original Chromium registration must persist before process exit",persisted);

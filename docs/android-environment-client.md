@@ -12,6 +12,8 @@
 
 42083532859（242f217）两端人用包升级及Android9完整Gecko导航/草稿验收通过，旧WebView测试在首个原生控件定位超时。日志显示无障碍服务在窗口已显示后才连接，现提前连接并在失败时保留文字树；仍要求实际控件点击。Android15测试工具首错为InputManager.getInstance在无Application的app_process中抛空指针，按固定AOSP源码使用InputManagerGlobal并核对回执类名。额外声明UI测试主动创建的合成Profile，收尾严格核对原Profile加该唯一已知Profile的集合及原注册路径，不把合法新增账号误判为旧账号变化。
 
+42086461399（796e562）两端Gecko完整功能通过；旧WebView的标题热切换、输入和空历史灰态通过，但回退受控草稿检查失败。原生树显示textarea已有原文字，结合相等DOM直接返回的恢复代码，推断模型未收到输入同步。补同样有界的按URL运行草稿缓存，并在DOM已相等时幂等同步input，不重复插字或发送，仍保留不同非空草稿冲突。Android9人用包冷验收另在注册扫描中遇到Session Storage/CURRENT被并发替换；扫描改为枚举目录并只严格读取pref_store目标文件，不改变Cookie/存储值、注册集合、注册路径和原20秒上限。
+
 ## 交付状态
 
 已交付固定签名 **3.0.0-alpha.24-beta.5**（versionCode `3000029`），适用于 Android 9 及以上 arm64 设备。源码与验收仅在 `dev`；未合并 `main`、未创建公开 Release、未更新官网或个人设备。
