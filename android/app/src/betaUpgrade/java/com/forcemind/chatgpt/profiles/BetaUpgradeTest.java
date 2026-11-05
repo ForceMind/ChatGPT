@@ -7,6 +7,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.json.JSONObject;
+import org.json.JSONArray;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -28,12 +29,20 @@ public final class BetaUpgradeTest {
         long version=context.getPackageManager().getPackageInfo(context.getPackageName(),0).getLongVersionCode();
         if("seed".equals(phase)){
             assertEquals(3000024L,version);
-            WorkspaceState state=WorkspaceState.fresh();state.addTab(state.current());state.addAccount("Synthetic B","",WorkspaceState.COLORS[1]);state.addAccount("Synthetic C","",WorkspaceState.COLORS[2]);new StateStore(context.getFilesDir()).save(state);
+            WorkspaceState state=WorkspaceState.fresh();state.addTab(state.current());state.addAccount("Synthetic B","",WorkspaceState.COLORS[1]);state.addAccount("Synthetic C","",WorkspaceState.COLORS[2]);for(WorkspaceState.Account account:state.accounts)for(WorkspaceState.Tab tab:account.tabs)tab.url="https://chatgpt.com/c/synthetic-beta-"+tab.id;new StateStore(context.getFilesDir()).save(state);
             WorkspaceState.Account a=state.current();String id=WorkspaceState.id();byte[] sealed=DevicePayloadKeys.cipher(context).seal(id,"synthetic protected draft");Files.write(file("beta-draft.bin").toPath(),sealed);
             AssetLedger ledger=new AssetLedger(context.getFilesDir(),a.id);JSONObject asset=ledger.importCopy(new ByteArrayInputStream("synthetic asset bytes".getBytes(StandardCharsets.UTF_8)),"preserved.txt","text/plain","import",null);
             NetworkSettingsStore.Data nodes=new NetworkSettingsStore.Data();nodes.nodes.add(NetworkNode.parse("vless://00000000-0000-4000-8000-000000000001@fixture.invalid:443?type=tcp&security=tls&sni=fixture.invalid","Synthetic node"));nodes.selected=0;nodes.enabled=true;new NetworkSettingsStore(context).write(nodes);
             context.getSharedPreferences("browser-preferences",0).edit().putBoolean("backgroundTasks",true).putString("beta-marker","preserved").commit();
             JSONObject expected=new JSONObject().put("uid",android.os.Process.myUid()).put("signer",signer).put("stateSHA",sha(Files.readAllBytes(file("workspace.json").toPath()))).put("draftId",id).put("draftSHA",sha(sealed)).put("assetAccount",a.id).put("assetId",asset.getString("id")).put("assetSHA",sha(Files.readAllBytes(ledger.verifiedFile(asset.getString("id")).toPath()))).put("nodeCipherSHA",sha(Files.readAllBytes(new File(context.getNoBackupFilesDir(),"studio-network-v1.enc").toPath())));
+            PageRecoveryStore recovery=new PageRecoveryStore(context.getFilesDir(),DevicePayloadKeys.recoveryCipher(context));JSONArray records=new JSONArray();
+            for(WorkspaceState.Account account:state.accounts)for(WorkspaceState.Tab tab:account.tabs){
+                String draft="synthetic recovery "+tab.id;
+                recovery.save(new JSONObject().put("schema",1).put("accountId",account.id).put("storageId",account.storageId).put("tabId",tab.id).put("url",tab.url).put("draft",draft).put("scroll",321).put("ratio",0.25).put("capturedAt",123456789),recovery.generation(account.id,account.storageId));
+                String path="page-recovery/"+account.id+"/"+account.storageId+"/"+tab.id+".bin";
+                records.put(new JSONObject().put("account",account.id).put("storage",account.storageId).put("tab",tab.id).put("url",tab.url).put("draft",draft).put("path",path).put("sha",sha(Files.readAllBytes(file(path).toPath()))));
+            }
+            expected.put("recoveries",records);
             Files.write(file("beta-expected.json").toPath(),expected.toString().getBytes(StandardCharsets.UTF_8));
         }else assertEquals(3000025L,version);
         JSONObject expected=new JSONObject(new String(Files.readAllBytes(file("beta-expected.json").toPath()),StandardCharsets.UTF_8));
@@ -41,7 +50,9 @@ public final class BetaUpgradeTest {
         byte[] sealed=Files.readAllBytes(file("beta-draft.bin").toPath());assertEquals(expected.getString("draftSHA"),sha(sealed));assertEquals("synthetic protected draft",DevicePayloadKeys.cipher(context).open(expected.getString("draftId"),sealed));
         AssetLedger ledger=new AssetLedger(context.getFilesDir(),expected.getString("assetAccount"));assertEquals(expected.getString("assetSHA"),sha(Files.readAllBytes(ledger.verifiedFile(expected.getString("assetId")).toPath())));
         assertEquals(expected.getString("nodeCipherSHA"),sha(Files.readAllBytes(new File(context.getNoBackupFilesDir(),"studio-network-v1.enc").toPath())));NetworkSettingsStore.Data nodes=new NetworkSettingsStore(context).read();assertEquals(1,nodes.nodes.size());assertEquals(0,nodes.selected);assertTrue(nodes.enabled);assertEquals("fixture.invalid",nodes.nodes.get(0).host);
+        PageRecoveryStore recovery=new PageRecoveryStore(context.getFilesDir(),DevicePayloadKeys.recoveryCipher(context));JSONArray records=expected.getJSONArray("recoveries");assertEquals(4,records.length());
+        for(int i=0;i<records.length();i++){JSONObject record=records.getJSONObject(i);JSONObject restored=recovery.load(record.getString("account"),record.getString("storage"),record.getString("tab"),record.getString("url"));assertNotNull(restored);assertEquals(record.getString("draft"),restored.getString("draft"));assertEquals(321,restored.getInt("scroll"));assertEquals(record.getString("sha"),sha(Files.readAllBytes(file(record.getString("path")).toPath())));}
         assertTrue(KeepaliveService.enabled(context));assertEquals("preserved",context.getSharedPreferences("browser-preferences",0).getString("beta-marker",""));
-        System.out.println("BETA_UPGRADE_RESULT "+new JSONObject().put("complete",true).put("phase",phase).put("versionCode",version).put("uid",android.os.Process.myUid()).put("signerSHA256",signer).put("accounts",3).put("tabs",4).put("browserStarted",false).put("realNetworkRequests",0));
+        System.out.println("BETA_UPGRADE_RESULT "+new JSONObject().put("complete",true).put("phase",phase).put("versionCode",version).put("uid",android.os.Process.myUid()).put("signerSHA256",signer).put("accounts",3).put("tabs",4).put("encryptedRecoveryRecords",4).put("browserStarted",false).put("realNetworkRequests",0));
     }
 }

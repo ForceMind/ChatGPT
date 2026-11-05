@@ -216,3 +216,5 @@ Android 9 取最新 `d0b8db4` / [41713812139](https://github.com/ForceMind/ChatG
 新包名com.forcemind.chatgpt.profiles.networkbeta、名称ChatGPT Studio Beta，与正式版及临时签名测试版并存；不迁入旧Cookie或节点，不要求卸载旧包。专用长期测试证书公钥指纹在docs/signing，私钥/密码仅持久保存在两个STUDIO_BETA_ Actions Secrets，原正式签名未用。App构建/签名/验证仅Actions，两个独立builder分别生成低版本种子和候选，核对同一固定证书；API28/35只做原生合成账号/加密载荷/资产/偏好/线路数据的install-r覆盖验证，不启动Activity/WebView，不实际验证浏览器Cookie，不进行后台长测或实站访问。仅交付候选，不合并main或自动发布。
 
 固定签名首轮41957716393：candidate构建、固定指纹检查和测试APK编译通过；seed在打包报告阶段因没有先跑lint而不存在build/reports目录，未进入升级测试。已读原始FileNotFoundError，打包器显式建报告目录后重验；不改任何升级或隔离断言，不重新生成证书。
+
+固定Beta升级验证补充：在自定义加密载荷之外，增加真实PageRecoveryStore/DevicePayloadKeys.recoveryCipher的四条合成标签草稿和阅读位置记录，逐条核对解密值及密文字节不变，不使用WebView或网络。
