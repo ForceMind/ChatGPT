@@ -38,6 +38,7 @@ class Acceptance:
         self.ssl = None
         self.manifest = None
         self.touch_events = []
+        self.keyboard_events = []
         self.navigation_row = None
 
     def command(self, args, timeout=60, check=True):
@@ -547,12 +548,46 @@ class Acceptance:
         ready = self.wait('owned native text connection and stable IME layout', sample, settled, timeout=30, interval=0.4)
         native._write_json(EVIDENCE / ('focus-ready-' + str(self.sequence) + '.json'), ready)
 
+    def native_ascii_batch(self, draft):
+        assert re.fullmatch(r'[A-Za-z0-9-]{1,128}', draft)
+        output = self.shell('su', '2000', 'env', 'CLASSPATH=/data/local/tmp/studio-poc-ascii-input.jar',
+                            'app_process', '/system/bin', 'com.forcemind.chatgpt.pocinput.AsciiInput', draft)
+        receipt = json.loads(output.strip())
+        native._write_json(EVIDENCE / ('ascii-keyboard-' + str(self.sequence) + '.json'), receipt)
+        assert receipt['provider'] == 'ci-paced-ascii-keyboard' and receipt['complete'] is True
+        assert receipt['api'] == self.api and receipt['uid'] == 2000 and receipt['qemu'] is True
+        assert receipt['injectionMode'] == 2 and receipt['paceMillis'] == 40
+        assert receipt['textLength'] == len(draft) and receipt['textSHA256'] == hashlib.sha256(draft.encode('utf-8')).hexdigest()
+        events = receipt['events']
+        assert events and [event['index'] for event in events] == list(range(len(events)))
+        assert all(event['accepted'] is True and event['waitForFinish'] is True and event['source'] == 257
+                   and event['deviceId'] == -1 and event['repeatCount'] == 0 for event in events)
+        down = {}
+        reconstructed = []
+        previous = None
+        for event in events:
+            assert event['action'] in (0, 1) and event['eventTime'] >= event['downTime']
+            assert event['completedAt'] >= event['eventTime']
+            if previous is not None:
+                assert event['eventTime'] >= previous['completedAt'] + receipt['paceMillis']
+            if event['action'] == 0:
+                assert event['keyCode'] not in down
+                assert event['downTime'] == event['eventTime']
+                down[event['keyCode']] = event['downTime']
+                if event['unicodeChar']:
+                    reconstructed.append(chr(event['unicodeChar']))
+            else:
+                assert down.pop(event['keyCode']) == event['downTime']
+            previous = event
+        assert not down and ''.join(reconstructed) == draft
+        self.keyboard_events.append(receipt)
+
     def type_draft(self, account, tab, draft):
         assert re.fullmatch(r'[A-Za-z0-9-]+', draft)
         _, before = self.page(account, tab)
         assert before['draft'] == before['modelDraft'] == ''
         self.focus_editor(account, tab, before)
-        self.shell('input', 'text', draft)
+        self.native_ascii_batch(draft)
         path = PAGE[(account, tab)]
         status = self.wait('trusted native composer input', self.status,
                            lambda value: (self.latest(value, path) or {}).get('draft') == draft
@@ -792,7 +827,7 @@ def main():
                                       'webDraftPreservedUntilNativeChoice': True, 'nativeRestoreChosen': True},
                  'download': download, 'geckoChromeNavigation': gecko_chrome,
                  'legacyChromeNavigation': legacy_chrome, 'legacyAfterEnvironmentUse': legacy,
-                 'fixedFingerReceipts': acceptance.touch_events, 'sendCount': 0,
+                 'fixedFingerReceipts': acceptance.touch_events, 'nativeAsciiKeyboardReceipts': acceptance.keyboard_events, 'sendCount': 0,
                  'onlyEmulatorLoopbackEgressAllowed': True, 'testCAInjectedOnlyIntoCiProfiles': True,
                  'screenshots': False, 'realServicesAccessed': False}
         native._write_json(EVIDENCE / 'functional.json', proof)

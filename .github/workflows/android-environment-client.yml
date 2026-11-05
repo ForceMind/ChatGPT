@@ -150,6 +150,12 @@ jobs:
           mkdir -p android/app/build/environment-touch/classes
           javac --release 8 -classpath "$ANDROID_HOME/platforms/android-36/android.jar" -d android/app/build/environment-touch/classes android/scripts/android/TouchInput.java
           "$ANDROID_HOME/build-tools/35.0.0/d8" --min-api 28 --lib "$ANDROID_HOME/platforms/android-36/android.jar" --output android/app/build/environment-touch/input.jar android/app/build/environment-touch/classes/com/forcemind/chatgpt/pocinput/TouchInput.class
+      - name: Compile the single-batch native ASCII input helper outside the APK
+        if: matrix.target == 'synthetic'
+        run: |
+          mkdir -p android/app/build/environment-ascii/classes
+          javac --release 8 -classpath "$ANDROID_HOME/platforms/android-36/android.jar" -d android/app/build/environment-ascii/classes android/scripts/android/AsciiInput.java
+          "$ANDROID_HOME/build-tools/35.0.0/d8" --min-api 28 --lib "$ANDROID_HOME/platforms/android-36/android.jar" --output android/app/build/environment-ascii/input.jar android/app/build/environment-ascii/classes/com/forcemind/chatgpt/pocinput/AsciiInput.class
       - run: sudo chmod a+rw /dev/kvm
       - uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -162,6 +168,7 @@ jobs:
           script: |
             if [ '${{ matrix.api }}' = 28 ]; then python3 android/network-poc/scripts/install-webview.py --provider android/app/build/environment-provider-input/provider --output android/app/build/environment-client-evidence/provider; fi
             if [ '${{ matrix.api }}' = 28 ] && [ '${{ matrix.target }}' = synthetic ]; then adb push android/app/build/environment-touch/input.jar /data/local/tmp/studio-poc-input.jar; fi
+            if [ '${{ matrix.target }}' = synthetic ]; then adb push android/app/build/environment-ascii/input.jar /data/local/tmp/studio-poc-ascii-input.jar; fi
             if [ '${{ matrix.target }}' = human ]; then python3 android/scripts/environment_upgrade.py --target human; else python3 android/scripts/run-environment-client.py; fi
       - uses: actions/upload-artifact@v4
         if: always()
