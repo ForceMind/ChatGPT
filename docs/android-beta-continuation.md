@@ -2,9 +2,30 @@
 
 当前迭代承接Beta.2，持续核实Android9浏览器兼容与新建Profile快速退出的持久化边界，再形成正式接入准备说明。不修改正式版/个人设备/现有登录，不合并main、不公开发布。全部构建与运行在Actions；仅合成数据，无截图或真实ChatGPT。
 
+**本批已交付：[下载固定签名 Beta.3 APK 与两端验收 JSON](https://github.com/ForceMind/ChatGPT/actions/runs/41993581770/artifacts/13399442541)**（需登录GitHub，保留14天）。[Actions41993581770](https://github.com/ForceMind/ChatGPT/actions/runs/41993581770)构建、API28、API35与候选交付四项任务通过。[完整收据](releases/android-network-fixed-beta.3.json)。
+
 ## 候选与安装
 
-计划候选为ChatGPT Studio Beta `3.0.0-alpha.24-beta.3` / 3000027，继续使用已有独立包名和固定测试证书。只有构建、签名、隔离及两端验收通过后才交付最终入口。安装时覆盖原固定Beta，不卸载、不清数据；正式版和临时测试版保留，各自数据不迁移。
+本批候选为ChatGPT Studio Beta `3.0.0-alpha.24-beta.3` / 3000027，继续使用已有独立包名和固定测试证书，已通过构建、签名、隔离及两端验收。安装时覆盖原固定Beta，不卸载、不清数据；正式版和临时测试版保留，各自数据不迁移。
+
+APK：`ChatGPT-Studio-3.0.0-alpha.24-beta.3-android-arm64.apk`，40,911,377字节，SHA-256：`2e4468dd243fc1266cc346330f104f5993dbec8b190a29421b4de2904126d17d`。
+
+## 已验证结果
+
+源码`a47eafa523b5e2c45b93ab095764f89dffe4f7ca`；77项单元测试通过，16份JUnit、0失败/错误/跳过；lint、签名、包隔离和16KiB检查通过。最终人用APK不包含测试程序、测试provider、合成节点或合成信任材料。
+
+| 项目 | Android9 / API28 | Android15 / API35 |
+|---|---|---|
+| 原始人用Beta.2安装 | x86模拟器明确拒绝，无匹配ABI；不计原包升级通过 | 原始arm64字节安装成功，使用系统ARM兼容桥，不是ARM真机 |
+| 浏览器覆盖升级 | 既有固定签名CI x86 Beta.1→新版x86输入通过 | 实际已交付Beta.2→Beta.3原包通过 |
+| 原包自冷启动、升级后及再冷启动 | 合成三账号持久Cookie/localStorage/IndexedDB、四条加密恢复记录等通过 | 同左，通过 |
+| 真实RetainedWebView与BrowserMemory策略 | 前台保留执行、真实Home后无后台服务时释放，通过 | 同左，通过 |
+| 新Profile可见到Home | 520ms | 393ms |
+| Home到真实登记落盘 | 209ms | 749ms |
+| Home前是否已周期落盘 | 否 | 否 |
+| 随后强停和冷启动 | 新Profile原值及原有三账号数据保持 | 同左，通过 |
+
+快速退出样本明显早于WebView10秒周期提交，直接只读确认真实内核登记，未手工写pref_store；结果支持正常窗口失去前台会触发及时提交，无需为该已验证路径新增写盘或改变保活策略。测试用原生资产窗口承载离线网页，未点选MainActivity的真实账号菜单，也未测试后台任务服务已开启或系统在生命周期回调之前直接杀进程。
 
 ## 当前验收范围
 
@@ -18,6 +39,15 @@
 ## 正式接入准备
 
 保持正式包名、账号/storage ID、加密格式、原签名及保活策略；网络默认关闭，复用既有同路由及文件故障证据。只有已批准的候选验证进入当前迭代；正式原证书升级、真实节点/手机及ARM设备兼容仍单列，不用模拟器或测试证书结果替代。版本与官网下载维持既有公开版本，后续发布需要明确授权。
+
+| 接入条件 | 当前结论与依据 |
+|---|---|
+| 正式业务源码和核心 | 亲自核对：自原正式接入候选`d0b8db4`以来，`android/app/src/main`、核心bridge及prepare-network-core.sh无差异；本批只改测试/CI/说明，因此复用原路由、文件故障及30分钟后台结果，不重复长测。 |
+| 数据与默认网络 | 从代码看：正式身份仍为com.forcemind.chatgpt.profiles；账号/storage ID与加密格式未更改。NetworkSettingsStore在无配置时返回enabled=false，读取失败保留旧文件；没有Beta数据复制到正式版。 |
+| 已交付Beta升级 | 本批实际原包、同证书、UID、Cookie/网页存储、加密记录与资产保持已验证，详见上述作用域。 |
+| 正式原签名升级 | 未完成。正式alpha.22证书SHA256为`8b6eef928fded91f291ad954e20976b2cc6011b55e8cbec0152695fe1f05cf19`，与Beta证书不同；不得用Beta结果冒充正式原签名验收。本批没有读取、移动或上传正式私钥。 |
+| Android9人用ARM包与真实业务 | 仍需对应ARM设备条件及真实登录/节点/语音/文件验收；当前CI的ABI拒绝不能推断手机不兼容，也不能宣称已通过。 |
+| 发布与部署 | 当前只交dev候选和报告；main、正式APK、官网下载与更新清单保持。正式签名接入与发布另行安排。 |
 
 ## 当前诊断记录
 

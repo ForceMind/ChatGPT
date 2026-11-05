@@ -1,5 +1,7 @@
 # Android 固定签名长期测试版候选
 
+**当前后续候选为[Beta.3兼容与快速退出验证版](android-beta-continuation.md)**，已验证实际RetainedWebView与BrowserMemory生命周期，并明确Android9 CI输入与人用ARM原包边界。下方Beta.1/Beta.2保留为历史升级基线；没有替换正式版或自动迁移数据。
+
 **后续 Beta.2 已完成浏览器状态覆盖升级验证。**以本页Beta.1已交付原APK为旧版，Android15合成Cookie/localStorage/IndexedDB及加密恢复数据升级通过；仍仅Actions候选。下载、安装和准确边界见[Beta.2报告](android-network-fixed-beta-browser-upgrade.md)，Beta.1原包作为可复核升级基线保留。Android9浏览器和真实设备仍待验收。
 
 [下载Actions候选](https://github.com/ForceMind/ChatGPT/actions/runs/41959244766/artifacts/13384976249)，解压安装APK。Android9+、arm64，名称 **ChatGPT Studio Beta**，包名 `com.forcemind.chatgpt.profiles.networkbeta`，版本 `3.0.0-alpha.24-beta.1` / 3000025。
