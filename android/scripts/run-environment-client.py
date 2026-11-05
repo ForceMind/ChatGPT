@@ -354,6 +354,14 @@ class Acceptance:
         self.control('open', account, tab)
         return self.page(account, tab, minimum_received=started)
 
+    @staticmethod
+    def ime_shown(dump):
+        # Android 9/15's current service state is authoritative. The IME's cached
+        # mIsInputViewShown can remain true with mWindowVisible=false after hiding.
+        values = re.findall(r'^\s*mInputShown\s*=\s*(true|false)\b', dump, re.MULTILINE)
+        assert len(values) == 1, 'Missing or ambiguous current system IME visibility'
+        return values[0] == 'true'
+
     def focus_editor(self, account, tab, before):
         target = self.editor(account, tab, before['document'])
         left, top, right, bottom = target['rectangle']
@@ -385,7 +393,7 @@ class Acceptance:
                     sections.append('\n'.join(block))
             owned = [section for section in sections if re.search(r'\bpackageName=' + re.escape(PACKAGE) + r'(?:\s|$)', section)]
             types = [int(value, 16) for section in owned for value in re.findall(r'\binputType=(?:0x)?([0-9a-fA-F]+)\b', section)]
-            shown = bool(re.search(r'(?:mInputShown|mIsInputViewShown|isInputViewShown)\s*=\s*true', dump))
+            shown = self.ime_shown(dump)
             signature = [page.get('viewportWidth'), page.get('viewportHeight')] + [round(page['inputRect'][key]) for key in ('x', 'y', 'width', 'height')]
             return {'ownedTextEditor': any(value & 15 == 1 for value in types), 'inputTypes': types,
                     'imeShown': shown, 'document': page['document'], 'receivedAt': page['receivedAt'],
@@ -416,8 +424,10 @@ class Acceptance:
         result = self.latest(status, path)
         self.assert_environment(result, account)
         ime = self.shell('dumpsys', 'input_method')
-        if re.search(r'(?:mInputShown|mIsInputViewShown|isInputViewShown)=true', ime):
+        if self.ime_shown(ime):
             self.shell('input', 'keyevent', '4')
+            self.wait('system IME hidden after typing', lambda: self.shell('dumpsys', 'input_method'),
+                      lambda value: not self.ime_shown(value), timeout=20)
         return result
 
     def scroll(self):
@@ -448,8 +458,10 @@ class Acceptance:
 
     def rotate_no_reload(self, before, draft):
         ime = self.shell('dumpsys', 'input_method')
-        if re.search(r'(?:mInputShown|mIsInputViewShown|isInputViewShown)=true', ime):
+        if self.ime_shown(ime):
             self.shell('input', 'keyevent', '4')
+            self.wait('system IME hidden before rotation', lambda: self.shell('dumpsys', 'input_method'),
+                      lambda value: not self.ime_shown(value), timeout=20)
         counts = self.status()['pageCounts']
         self.shell('settings', 'put', 'system', 'accelerometer_rotation', '0')
 
