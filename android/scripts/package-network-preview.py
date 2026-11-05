@@ -11,7 +11,9 @@ import zipfile
 assert os.environ.get('GITHUB_ACTIONS') == 'true'
 assert not Path('android/keystore.properties').exists(), 'No production signing inputs allowed'
 root=Path('android/app/build')
-apk=root/'outputs/apk/networkPreview/app-networkPreview.apk'
+beta=os.environ.get('STUDIO_BETA_MODE')=='1'
+kind='networkBeta' if beta else 'networkPreview'
+apk=root/('outputs/apk/'+kind+'/app-'+kind+'.apk')
 tools=Path(os.environ['ANDROID_HOME'])/'build-tools/35.0.0'
 def run(*args):
     return subprocess.check_output([str(x) for x in args],text=True)
@@ -20,9 +22,10 @@ manifest=run(tools/'aapt2','dump','xmltree',apk,'--file','AndroidManifest.xml')
 (root/'reports/preview-badging.txt').write_text(badging)
 (root/'reports/preview-manifest.txt').write_text(manifest)
 print(badging,flush=True)
-identity='com.forcemind.chatgpt.profiles.networkpreview'
+identity='com.forcemind.chatgpt.profiles.networkbeta' if beta else 'com.forcemind.chatgpt.profiles.networkpreview'
+label='ChatGPT Studio Beta' if beta else 'ChatGPT Studio 测试版'
 assert "name='"+identity+"'" in badging
-assert 'ChatGPT Studio 测试版' in badging
+assert label in badging
 sdk=re.search(r"^minSdkVersion:'([0-9]+)'$",badging,re.M)
 xml_sdk=re.search(r'android:minSdkVersion[^\n]*=([0-9]+)$',manifest,re.M)
 assert sdk and xml_sdk and int(sdk[1])==int(xml_sdk[1])==28, 'APK minSdk must remain exactly28'
@@ -32,7 +35,7 @@ for flag in ['android:debuggable','android:testOnly']:
     for line in manifest.splitlines():
         if flag in line:assert '0xffffffff' not in line and 'true' not in line
 assert identity+'.handoff' in manifest
-config=root/'generated/source/buildConfig/networkPreview/com/forcemind/chatgpt/profiles/BuildConfig.java'
+config=root/('generated/source/buildConfig/'+kind+'/com/forcemind/chatgpt/profiles/BuildConfig.java')
 source=config.read_text()
 assert 'NETWORK_TEST = false' in source
 assert 'NETWORK_HOME_URL = ""' in source and 'NETWORK_PROBE_URL = ""' in source
@@ -55,10 +58,16 @@ subprocess.run([str(tools/'zipalign'),'-c','-P','16','4',str(apk)],check=True,ca
 cert=run(tools/'apksigner','verify','--verbose','--print-certs',apk)
 assert 'Number of signers: 1' in cert
 version=re.search(r"versionName='([^']+)'",badging)[1]
-folder=root/'network-preview';folder.mkdir(exist_ok=True)
+folder=root/('network-beta' if beta else 'network-preview');folder.mkdir(exist_ok=True)
 name='ChatGPT-Studio-'+version+'-android-arm64.apk'
 shutil.copyfile(apk,folder/name)
-receipt={'sourceSHA':os.environ['GITHUB_SHA'],'package':identity,'displayName':'ChatGPT Studio 测试版','versionName':version,'versionCode':3000024,'file':name,'bytes':apk.stat().st_size,'sha256':hashlib.sha256(apk.read_bytes()).hexdigest(),'signerSHA256':re.search(r'certificate SHA-256 digest: ([0-9a-fA-F]+)',cert)[1],'signing':'temporary CI test key; not production; future overlay upgrades not guaranteed','ciTrustIncluded':False,'syntheticNodesIncluded':False,'debuggable':False,'testOnly':False,'abi':['arm64-v8a'],'minAndroid':9,'alignment16KiB':True,'phoneInstalled':False,'realServiceTested':False,'publicRelease':False}
+signer=re.search(r'certificate SHA-256 digest: ([0-9a-fA-F]+)',cert)[1].lower()
+if beta:
+    expected=json.loads(Path('docs/signing/android-network-beta.json').read_text())
+    assert identity==expected['package'] and signer==expected['certificateSHA256']
+code=int(re.search(r"versionCode='(\d+)'",badging)[1])
+if beta:assert code==int(os.environ['BETA_VERSION_CODE'])
+receipt={'sourceSHA':os.environ['GITHUB_SHA'],'package':identity,'displayName':label,'versionName':version,'versionCode':code,'file':name,'bytes':apk.stat().st_size,'sha256':hashlib.sha256(apk.read_bytes()).hexdigest(),'signerSHA256':signer,'signing':'fixed dedicated beta key; not production' if beta else 'temporary CI test key; not production; future overlay upgrades not guaranteed','ciTrustIncluded':False,'syntheticNodesIncluded':False,'debuggable':False,'testOnly':False,'abi':['arm64-v8a'],'minAndroid':9,'alignment16KiB':True,'phoneInstalled':False,'realServiceTested':False,'publicRelease':False}
 (folder/'receipt.json').write_text(json.dumps(receipt,ensure_ascii=False,indent=2)+'\n')
 (folder/'SHA256SUMS.txt').write_text(receipt['sha256']+'  '+name+'\n')
 (folder/'INSTALL.md').write_text('''# ChatGPT Studio 独立网络测试版
@@ -72,6 +81,15 @@ receipt={'sourceSHA':os.environ['GITHUB_SHA'],'package':identity,'displayName':'
 本包使用临时CI测试签名，无测试CA、合成节点或诊断入口，非调试构建。后续测试包签名可能不同，不保证覆盖升级；这不影响正式版。卸载本测试版会删除本测试版自己的登录和数据。
 
 请自行验收真实登录、线路切换、网页/文件、关闭恢复和日常体验。CI仅构建、单元测试和安装包静态校验，没有访问真实ChatGPT、测试真实节点或安装你的手机。只分发Actions产物，未创建公开Release。
+''')
+if beta:
+    (folder/'INSTALL.md').write_text('''# ChatGPT Studio Beta 固定签名候选
+
+Android9及以上arm64，独立包名com.forcemind.chatgpt.profiles.networkbeta，与当前临时签名测试版和正式版并存。请保留它们，不要卸载以迁移数据；本Beta需重新登录、自行配置节点，不自动复制旧应用Cookie或密钥。
+
+使用测试专用固定签名，后续同包名同证书、更高版本号的候选可按Android正常覆盖安装流程更新。本批仅验证合成原生账号、加密载荷、资产、偏好和线路配置跨版本保存，未启动WebView、验证真实Cookie、个人手机或真实节点。
+
+更多→网络添加自己的RAW/TCP none、TLS或REALITY VLESS配置，不提供免费节点。首轮交付仅Actions候选，不自动发布。证书公钥和SHA256见docs/signing/android-network-beta.json，私钥不在包或仓库中。
 ''')
 shutil.copyfile('LICENSE',folder/'LICENSE')
 shutil.copyfile('android/app/libs/dependencies.json',folder/'network-core-dependencies.json')

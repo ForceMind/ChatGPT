@@ -210,3 +210,7 @@ Android 9 取最新 `d0b8db4` / [41713812139](https://github.com/ForceMind/ChatG
 ## 初步使用反馈与后续签名范围（2026-11-05）
 
 用户反馈独立测试版暂未发现明显问题，并允许继续开发。该反馈作为初步使用结果保留，尚无逐项设备、线路协议、网页/文件、恢复验证记录，不据此宣称全面真机验收。下一步固定签名方案涉及长期测试版身份及测试专用私钥写入Actions Secret，正在等待明确授权；当前临时签名测试包与数据继续保留，未生成新证书、修改Secret、合并main或自动发布新包。
+
+## 固定签名长期测试版（2026-11-05，用户已批准，实施中）
+
+新包名com.forcemind.chatgpt.profiles.networkbeta、名称ChatGPT Studio Beta，与正式版及临时签名测试版并存；不迁入旧Cookie或节点，不要求卸载旧包。专用长期测试证书公钥指纹在docs/signing，私钥/密码仅持久保存在两个STUDIO_BETA_ Actions Secrets，原正式签名未用。App构建/签名/验证仅Actions，两个独立builder分别生成低版本种子和候选，核对同一固定证书；API28/35只做原生合成账号/加密载荷/资产/偏好/线路数据的install-r覆盖验证，不启动Activity/WebView，不实际验证浏览器Cookie，不进行后台长测或实站访问。仅交付候选，不合并main或自动发布。

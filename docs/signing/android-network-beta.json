@@ -1,0 +1,8 @@
+{
+  "package": "com.forcemind.chatgpt.profiles.networkbeta",
+  "certificateSHA256": "bd7b9c924795ec21d27c73f280b5fc71b83ffea950e36e05967b77f092056ac0",
+  "alias": "studio-beta",
+  "purpose": "Isolated long-lived test builds; never production",
+  "privateKeyLocation": "Actions Secret STUDIO_BETA_KEYSTORE_B64",
+  "passwordLocation": "Actions Secret STUDIO_BETA_STORE_PASSWORD"
+}

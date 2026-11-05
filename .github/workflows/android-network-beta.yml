@@ -1,0 +1,133 @@
+name: Android Fixed Signer Beta Candidate
+on:
+  push:
+    branches: [dev]
+    paths: ['.github/workflows/android-network-beta.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        kind: [seed, candidate]
+    env:
+      STUDIO_BETA_STORE_PASSWORD: ${{ secrets.STUDIO_BETA_STORE_PASSWORD }}
+      STUDIO_BETA_MODE: '1'
+      BETA_VERSION_CODE: ${{ matrix.kind == 'seed' && '3000024' || '3000025' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.3'
+          cache: false
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - uses: actions/cache@v4
+        with:
+          path: |
+            android/network-poc/app/libs/
+            android/network-poc/corebridge/bin/
+            android/app/libs/licenses/
+          key: formal-network-core-go1273-ndk282-${{ hashFiles('android/network-poc/corebridge/go.mod', 'android/network-poc/corebridge/go.sum', 'android/network-poc/corebridge/networkcore.go', 'android/network-poc/scripts/build-core.sh', 'android/scripts/prepare-network-core.sh') }}
+      - name: Build the exact validated core
+        run: bash android/scripts/prepare-network-core.sh
+      - name: Restore test-only signing key
+        env:
+          STUDIO_BETA_KEYSTORE_B64: ${{ secrets.STUDIO_BETA_KEYSTORE_B64 }}
+        run: python3 android/scripts/restore-beta-signing.py
+      - name: Build and verify arm64 beta
+        run: |
+          test ! -f android/keystore.properties
+          sdkmanager 'platforms;android-36' 'build-tools;35.0.0'
+          if [ '${{ matrix.kind }}' = candidate ]; then bash android/gradlew -p android --no-daemon :app:testDebugUnitTest :app:lintNetworkBeta; fi
+          bash android/gradlew -p android --no-daemon -PbetaVersionCode="$BETA_VERSION_CODE" :app:assembleNetworkBeta
+          python3 android/scripts/package-network-preview.py
+          mkdir -p android/app/build/beta-upgrade-inputs
+          cp android/app/build/network-beta/receipt.json android/app/build/beta-upgrade-inputs/${{ matrix.kind }}-receipt.json
+      - uses: actions/upload-artifact@v4
+        if: matrix.kind == 'candidate'
+        with:
+          name: ChatGPT-Studio-Fixed-Beta-arm64-Candidate
+          retention-days: 14
+          path: android/app/build/network-beta/
+      - name: Build same-signer native upgrade inputs
+        run: |
+          bash android/gradlew -p android --no-daemon -PbetaUpgrade -PbetaAbi=x86_64 -PbetaVersionCode="$BETA_VERSION_CODE" :app:assembleNetworkBeta :app:assembleNetworkBetaAndroidTest
+          cp android/app/build/outputs/apk/networkBeta/app-networkBeta.apk android/app/build/beta-upgrade-inputs/${{ matrix.kind }}-x86_64.apk
+          if [ '${{ matrix.kind }}' = candidate ]; then cp android/app/build/outputs/apk/androidTest/networkBeta/app-networkBeta-androidTest.apk android/app/build/beta-upgrade-inputs/candidate-test.apk; fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: beta-inputs-${{ matrix.kind }}
+          retention-days: 14
+          path: android/app/build/beta-upgrade-inputs/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: beta-build-evidence-${{ matrix.kind }}
+          retention-days: 14
+          path: |
+            android/app/build/reports/
+            android/app/build/test-results/
+      - name: Remove transient signing material
+        if: always()
+        run: rm -f "$RUNNER_TEMP/studio-beta.p12"
+  upgrade:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [28, 35]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: beta-inputs-*
+          merge-multiple: true
+          path: android/app/build/beta-upgrade-inputs
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - name: Check fixed identity across independent builders
+        run: |
+          python3 - <<'PYCHECK'
+          import json
+          from pathlib import Path
+          root=Path('android/app/build/beta-upgrade-inputs')
+          a=json.loads((root/'seed-receipt.json').read_text());b=json.loads((root/'candidate-receipt.json').read_text())
+          expected=json.loads(Path('docs/signing/android-network-beta.json').read_text())
+          assert a['package']==b['package']==expected['package']
+          assert a['signerSHA256']==b['signerSHA256']==expected['certificateSHA256']
+          assert a['versionCode']==3000024 and b['versionCode']==3000025
+          PYCHECK
+          sudo chmod a+rw /dev/kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          target: ${{ matrix.api == 28 && 'default' || 'google_apis' }}
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect
+          script: python3 android/scripts/run-beta-upgrade.py
+      - name: Preserve logs without screenshots
+        if: always()
+        run: |
+          mkdir -p android/app/build/beta-upgrade-evidence
+          timeout 15 adb logcat -d > android/app/build/beta-upgrade-evidence/logcat.txt 2>&1 || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: beta-upgrade-api-${{ matrix.api }}
+          retention-days: 14
+          path: android/app/build/beta-upgrade-evidence/

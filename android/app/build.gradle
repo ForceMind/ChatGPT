@@ -19,6 +19,15 @@ android {
         buildConfigField 'String', 'NETWORK_PROBE_URL', '""'
     }
     signingConfigs {
+        if (System.getenv('STUDIO_BETA_KEYSTORE_PATH')) {
+            networkBetaKey {
+                storeFile file(System.getenv('STUDIO_BETA_KEYSTORE_PATH'))
+                storeType 'PKCS12'
+                storePassword System.getenv('STUDIO_BETA_STORE_PASSWORD')
+                keyAlias 'studio-beta'
+                keyPassword System.getenv('STUDIO_BETA_STORE_PASSWORD')
+            }
+        }
         if (signingFile.exists()) {
             localRelease {
                 storeFile rootProject.file(signing.getProperty('storeFile'))
@@ -34,6 +43,15 @@ android {
             if (signingFile.exists()) signingConfig signingConfigs.localRelease
             minifyEnabled false
             ndk { abiFilters 'arm64-v8a' }
+        }
+        networkBeta {
+            initWith release
+            applicationIdSuffix '.networkbeta'
+            versionNameSuffix '-beta.1'
+            signingConfig System.getenv('STUDIO_BETA_KEYSTORE_PATH') ? signingConfigs.networkBetaKey : null
+            debuggable false
+            matchingFallbacks = ['release']
+            ndk { abiFilters.clear(); abiFilters(project.findProperty('betaAbi') ?: 'arm64-v8a') }
         }
         networkPreview {
             initWith release
@@ -57,7 +75,7 @@ android {
             buildConfigField 'String', 'NETWORK_PROBE_URL', '"https://network-fixture.test:18480/echo"'
         }
         }
-        testBuildType = project.hasProperty('networkIntegration') ? 'networkCi' : 'debug'
+        testBuildType = project.hasProperty('betaUpgrade') ? 'networkBeta' : project.hasProperty('networkIntegration') ? 'networkCi' : 'debug'
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
     buildFeatures { buildConfig true }
     testOptions { unitTests.returnDefaultValues = true }
@@ -124,4 +142,19 @@ if (project.hasProperty('networkIntegration')) {
     android.sourceSets.networkCi.java.srcDir(generated.map { it.dir('java') })
     android.sourceSets.networkCi.res.srcDir(generated.map { it.dir('res') })
     tasks.matching { it.name == 'preNetworkCiBuild' }.configureEach { dependsOn 'prepareNetworkCiTrust' }
+}
+
+// Only the isolated long-lived beta has its own monotonically increasing code.
+android.applicationVariants.all { variant ->
+    if (variant.buildType.name == 'networkBeta') variant.outputs.each { output ->
+        output.versionCodeOverride = (project.findProperty('betaVersionCode') ?: '3000025').toInteger()
+        output.versionNameOverride = '3.0.0-alpha.24-beta.1'
+    }
+}
+tasks.matching { it.name == 'preNetworkBetaBuild' }.configureEach {
+    doFirst { if (!System.getenv('STUDIO_BETA_KEYSTORE_PATH')) throw new GradleException('Fixed beta signing is required; no debug fallback') }
+}
+if (project.hasProperty('betaUpgrade')) {
+    android.sourceSets.androidTest.java.setSrcDirs(['src/betaUpgrade/java'])
+    android.sourceSets.androidTest.manifest.srcFile('src/betaUpgrade/AndroidManifest.xml')
 }
