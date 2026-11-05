@@ -76,12 +76,24 @@ def _inspect_apk(apk, tools, signer, package, code=None):
     output = _run([str(tools / 'apksigner'), 'verify', '--verbose', '--print-certs', str(apk)]).stdout
     assert re.findall(r'certificate SHA-256 digest: ([a-f0-9]+)', output) == [signer], str(apk)
     badging = _run([str(tools / 'aapt'), 'dump', 'badging', str(apk)]).stdout
-    match = re.search(r"(?m)^package: name='([^']+)' versionCode='(\d+)' versionName='([^']*)'", badging)
+    (EVIDENCE / (apk.stem + '-badging.txt')).write_text(badging,encoding='utf-8')
+    match = re.search(r"(?m)^package: name='([^']+)'", badging)
     assert match and match[1] == package, f'Unexpected package: {apk}'
+    version = re.search(r"versionCode='(\d+)'",badging)
+    name = re.search(r"versionName='([^']*)'",badging)
     if code is not None:
-        assert int(match[2]) == code, f'Unexpected versionCode: {apk}'
+        assert version and int(version[1]) == code and name, f'Unexpected application versionCode: {apk}'
+    else:
+        # AGP9 instrumentation APKs legitimately omit application version fields.
+        # Authenticate the exact runner/target instead; never relax the actual app version checks.
+        assert package == TEST_PACKAGE
+        xml = _run([str(tools / 'aapt'),'dump','xmltree',str(apk),'AndroidManifest.xml']).stdout
+        (EVIDENCE / (apk.stem + '-manifest.txt')).write_text(xml,encoding='utf-8')
+        assert xml.count('E: instrumentation ') == 1
+        assert any('android:targetPackage' in line and '"'+PACKAGE+'"' in line for line in xml.splitlines())
+        assert any('android:name' in line and '"androidx.test.runner.AndroidJUnitRunner"' in line for line in xml.splitlines())
     return {'file': apk.name, 'sha256': _sha(apk), 'package': match[1],
-            'versionCode': int(match[2]), 'versionName': match[3], 'signerSHA256': signer}
+            'versionCode': int(version[1]) if version else None, 'versionName': name[1] if name else None, 'signerSHA256': signer}
 
 
 def _installed(expected_hash, label):

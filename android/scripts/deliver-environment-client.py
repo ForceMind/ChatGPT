@@ -14,7 +14,7 @@ for api in (28,35):
     assert b['candidateScope']=='synthetic-x86-ci' and not b['originalHumanCandidateBytesInstalled']
     for flag in ('languageTimeZoneAndWorkerVerified','httpAcceptLanguageVerified','cookieLocalStorageIndexedDBAccountIsolation',
                  'sameEnvironmentDifferentStorageContexts','trustedNativeTextareaAndContenteditableInput','realNativeReadingScroll',
-                 'liveSwitchKeptDocumentAndDraftAndScroll'):
+                 'liveSwitchKeptDocumentAndDraftAndScroll','rotationNoReload'):
         assert b[flag], flag
     assert b['sendCount']==0 and not b['screenshots'] and not b['realServicesAccessed']
     assert b['legacyAfterEnvironmentUse']['complete'] and b['legacyAfterEnvironmentUse']['legacyAccountPreserved']

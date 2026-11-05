@@ -10,6 +10,7 @@ import org.json.JSONObject;
 
 /** All native history, draft and text preview bytes are authenticated and encrypted. */
 final class EnvironmentRecoveryStore {
+    private static final Object PROCESS_LOCK=new Object();
     private final File files,root;
     private final EncryptedPayloads cipher;
     EnvironmentRecoveryStore(Context context)throws Exception{
@@ -36,8 +37,10 @@ final class EnvironmentRecoveryStore {
         byte[] bytes=Files.readAllBytes(HandoffFiles.regular(dir,name,1024*1024+32).toPath());
         JSONObject raw=new JSONObject(cipher.open(tab,bytes));String savedUrl=raw.getString("url");if(!savedUrl.equals(EnvironmentUrls.recoverable(savedUrl)))throw new IOException("恢复地址无效");return normalize(raw,account,storage,tab,savedUrl);
     }
-    synchronized JSONObject load(String account,String storage,String tab,String url)throws Exception{
-        try(FileChannel lock=FileChannel.open(new File(root,".recovery.lock").toPath(),StandardOpenOption.CREATE,StandardOpenOption.WRITE,LinkOption.NOFOLLOW_LINKS);FileLock held=lock.lock()){return loadLocked(account,storage,tab,url);}
+    JSONObject load(String account,String storage,String tab,String url)throws Exception{
+        synchronized(PROCESS_LOCK){
+            try(FileChannel lock=FileChannel.open(new File(root,".recovery.lock").toPath(),StandardOpenOption.CREATE,StandardOpenOption.WRITE,LinkOption.NOFOLLOW_LINKS);FileLock held=lock.lock()){return loadLocked(account,storage,tab,url);}
+        }
     }
     private JSONObject loadLocked(String account,String storage,String tab,String url)throws Exception{
         owner(account,storage,tab,url);File a=new File(root,account),s=new File(a,storage);if(!a.exists()||!s.exists())return null;
@@ -46,8 +49,10 @@ final class EnvironmentRecoveryStore {
         if(new File(dir,name+".bak").exists())try{JSONObject value=decode(dir,name+".bak",account,storage,tab,url);return url.equals(value.getString("url"))?value:null;}catch(Exception e){if(rejected==null)rejected=e;}
         if(rejected!=null)throw new IOException("本地恢复记录不可读取，已保留原件",rejected);return null;
     }
-    synchronized void save(JSONObject raw)throws Exception{
-        try(FileChannel lock=FileChannel.open(new File(root,".recovery.lock").toPath(),StandardOpenOption.CREATE,StandardOpenOption.WRITE,LinkOption.NOFOLLOW_LINKS);FileLock held=lock.lock()){saveLocked(raw);}
+    void save(JSONObject raw)throws Exception{
+        synchronized(PROCESS_LOCK){
+            try(FileChannel lock=FileChannel.open(new File(root,".recovery.lock").toPath(),StandardOpenOption.CREATE,StandardOpenOption.WRITE,LinkOption.NOFOLLOW_LINKS);FileLock held=lock.lock()){saveLocked(raw);}
+        }
     }
     private void saveLocked(JSONObject raw)throws Exception{
         String account=raw.getString("accountId"),storage=raw.getString("storageId"),tab=raw.getString("tabId"),url=raw.getString("url");

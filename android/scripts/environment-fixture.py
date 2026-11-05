@@ -180,7 +180,7 @@ function sample() {
     worker:workerState,workerError,
     draft:readDraft(),modelDraft,scroll:reading.scrollTop,
     scrollHeight:reading.scrollHeight,clientHeight:reading.clientHeight,
-    windowScroll:window.scrollY,devicePixelRatio:window.devicePixelRatio,
+    windowScroll:window.scrollY,devicePixelRatio:window.devicePixelRatio,viewportWidth:window.innerWidth,viewportHeight:window.innerHeight,
     inputRect:{x:rect.x,y:rect.y,left:rect.left,top:rect.top,right:rect.right,bottom:rect.bottom,width:rect.width,height:rect.height},
     localStorage:localValue,indexedDB:idbValue,localError,idbError,
     // HttpOnly login bytes are observed independently by the server, never by page script.

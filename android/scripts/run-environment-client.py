@@ -310,6 +310,52 @@ class Acceptance:
                 return value
         raise AssertionError('Real native gestures did not scroll the reading area beyond 200px')
 
+    def rotate_no_reload(self, before, draft):
+        ime = self.shell('dumpsys', 'input_method')
+        if re.search(r'(?:mInputShown|mIsInputViewShown|isInputViewShown)=true', ime):
+            self.shell('input', 'keyevent', '4')
+        counts = self.status()['pageCounts']
+        self.shell('settings', 'put', 'system', 'accelerometer_rotation', '0')
+
+        def observation(rotation, landscape):
+            changed = int(time.time() * 1000)
+            self.shell('settings', 'put', 'system', 'user_rotation', str(rotation))
+            def oriented(status):
+                page = self.latest(status, '/c/a1')
+                if not page or page.get('receivedAt', 0) < changed:
+                    return False
+                width, height = page.get('viewportWidth', 0), page.get('viewportHeight', 0)
+                return width > 0 and height > 0 and (width > height if landscape else height > width)
+            status = self.wait('real viewport ' + ('landscape' if landscape else 'portrait'),
+                               self.status, oriented, timeout=45)
+            page = self.latest(status, '/c/a1')
+            self.assert_environment(page, 'A')
+            assert page['document'] == before['document'], 'Rotation replaced the live document'
+            assert status['pageCounts'] == counts, 'Rotation reloaded a document'
+            assert page['draft'] == page['modelDraft'] == draft, 'Rotation changed the composer'
+            assert page['scroll'] > 200, 'Rotation lost the reading position'
+            assert self.shell('settings', 'get', 'system', 'user_rotation').strip() == str(rotation)
+            return page
+
+        portrait_before = observation(0, False)
+        landscape = observation(1, True)
+        portrait_after = observation(0, False)
+        assert landscape['viewportWidth'] > portrait_before['viewportWidth']
+        assert landscape['viewportHeight'] < portrait_before['viewportHeight']
+        assert portrait_after['viewportWidth'] == portrait_before['viewportWidth']
+        assert portrait_after['viewportHeight'] == portrait_before['viewportHeight']
+        def measured(page):
+            return {key: page[key] for key in ('document', 'viewportWidth', 'viewportHeight',
+                                               'scroll', 'receivedAt', 'trustedInputCount')}
+        proof = {'complete': True, 'rotationNoReload': True, 'systemRotations': [0, 1, 0],
+                 'actualViewportDirections': ['portrait', 'landscape', 'portrait'],
+                 'before': measured(portrait_before), 'landscape': measured(landscape),
+                 'after': measured(portrait_after), 'pageCounts': counts,
+                 'draftSHA256': hashlib.sha256(draft.encode('utf-8')).hexdigest(),
+                 'domAndModelPreserved': True, 'readingScrollRemainedAbove200': True}
+        native._write_json(EVIDENCE / 'rotation.json', proof)
+        return proof, portrait_after
+
     def record(self, draft, minimum_scroll):
         digest = hashlib.sha256(draft.encode('utf-8')).hexdigest()
         def sample():
@@ -422,6 +468,8 @@ def main():
             assert len(switched_status['pages'][path]) == 1
         assert second['localStorage'] == second['indexedDB'] == second['envLogin'] == 'environment-A'
         assert b['timeZone'] != returned['timeZone'] and c['timeZone'] == returned['timeZone']
+        rotation, returned = acceptance.rotate_no_reload(returned, draft)
+        saved_scroll = returned['scroll']
         checkpoint = acceptance.record(draft, saved_scroll - 2)
         restored = acceptance.cold(returned, draft, saved_scroll)
         restored_record = acceptance.record(draft, saved_scroll - 80)
@@ -444,6 +492,7 @@ def main():
                  'cookieLocalStorageIndexedDBAccountIsolation': True, 'sameEnvironmentDifferentStorageContexts': True,
                  'trustedNativeTextareaAndContenteditableInput': True, 'realNativeReadingScroll': True,
                  'liveSwitchKeptDocumentAndDraftAndScroll': True, 'switchedPageCounts': switched_status['pageCounts'],
+                 'rotationNoReload': True, 'rotation': rotation,
                  'originalDocument': original_document, 'draftSHA256': hashlib.sha256(draft.encode()).hexdigest(),
                  'savedScroll': saved_scroll, 'initialRecovery': initial_record, 'switchRecovery': checkpoint,
                  'coldRecovery': {'document': restored['document'], 'scroll': restored['scroll'], 'native': restored_record},
