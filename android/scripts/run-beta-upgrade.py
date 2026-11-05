@@ -10,6 +10,7 @@ for name in ['seed-x86_64.apk','candidate-test.apk']:run(['adb','install','-r','
 def phase(name):
  text=run(['adb','shell','am','instrument','-w','-r','-e','class','com.forcemind.chatgpt.profiles.BetaUpgradeTest','-e','phase',name,'-e','signer',signer,package+'.test/androidx.test.runner.AndroidJUnitRunner']);(root/(name+'.txt')).write_text(text);print(text)
  assert re.findall(r'(?m)^OK \((\d+) test\)\s*$',text)==['1'];assert not re.search(r'FAILURES!!!|INSTRUMENTATION_FAILED|shortMsg=',text)
- proof=json.loads(re.search(r'BETA_UPGRADE_RESULT (\{[^\n]+\})',text)[1]);assert proof['complete'] and proof['phase']==name and proof['signerSHA256']==signer and proof['encryptedRecoveryRecords']==4 and proof['browserStarted'] is False and proof['realNetworkRequests']==0;return proof
+ match=re.search(r'(?m)^INSTRUMENTATION_RESULT: betaUpgradeProof=(\{[^\n]+\})\s*$',text);assert match,'Missing structured upgrade proof'
+ proof=json.loads(match[1]);assert proof['complete'] and proof['phase']==name and proof['signerSHA256']==signer and proof['encryptedRecoveryRecords']==4 and proof['browserStarted'] is False and proof['targetInternetPermissionDenied'] is True;return proof
 before=phase('seed');run(['adb','shell','am','force-stop',package]);run(['adb','install','-r',str(inputs/'candidate-x86_64.apk')]);after=phase('verify');assert before['uid']==after['uid'] and before['versionCode']==3000024 and after['versionCode']==3000025
 (root/'verified.json').write_text(json.dumps({'complete':True,'sourceSHA':os.environ['GITHUB_SHA'],'before':before,'after':after,'uninstallOrClearBetweenVersions':False,'nativeDataOnly':True,'webViewCookiesExercised':False,'personalData':False},indent=2)+'\n')

@@ -1,6 +1,7 @@
 package com.forcemind.chatgpt.profiles;
 
 import android.content.Context;
+import android.os.Bundle;
 import android.content.pm.PackageManager;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -23,6 +24,7 @@ public final class BetaUpgradeTest {
     private String sha(byte[] data)throws Exception{StringBuilder out=new StringBuilder();for(byte b:MessageDigest.getInstance("SHA-256").digest(data))out.append(String.format(java.util.Locale.ROOT,"%02x",b&255));return out.toString();}
     @Test public void fixedSignerAndPrivateDataSurviveReplacement()throws Exception{
         assertEquals("com.forcemind.chatgpt.profiles.networkbeta",context.getPackageName());
+        assertEquals(PackageManager.PERMISSION_DENIED,context.checkSelfPermission(android.Manifest.permission.INTERNET));
         String phase=InstrumentationRegistry.getArguments().getString("phase");assertTrue("seed".equals(phase)||"verify".equals(phase));
         String signer=sha(context.getPackageManager().getPackageInfo(context.getPackageName(),PackageManager.GET_SIGNING_CERTIFICATES).signingInfo.getApkContentsSigners()[0].toByteArray());
         assertEquals(InstrumentationRegistry.getArguments().getString("signer"),signer);
@@ -53,6 +55,7 @@ public final class BetaUpgradeTest {
         PageRecoveryStore recovery=new PageRecoveryStore(context.getFilesDir(),DevicePayloadKeys.recoveryCipher(context));JSONArray records=expected.getJSONArray("recoveries");assertEquals(4,records.length());
         for(int i=0;i<records.length();i++){JSONObject record=records.getJSONObject(i);JSONObject restored=recovery.load(record.getString("account"),record.getString("storage"),record.getString("tab"),record.getString("url"));assertNotNull(restored);assertEquals(record.getString("draft"),restored.getString("draft"));assertEquals(321,restored.getInt("scroll"));assertEquals(record.getString("sha"),sha(Files.readAllBytes(file(record.getString("path")).toPath())));}
         assertTrue(KeepaliveService.enabled(context));assertEquals("preserved",context.getSharedPreferences("browser-preferences",0).getString("beta-marker",""));
-        System.out.println("BETA_UPGRADE_RESULT "+new JSONObject().put("complete",true).put("phase",phase).put("versionCode",version).put("uid",android.os.Process.myUid()).put("signerSHA256",signer).put("accounts",3).put("tabs",4).put("encryptedRecoveryRecords",4).put("browserStarted",false).put("realNetworkRequests",0));
+        JSONObject proof=new JSONObject().put("complete",true).put("phase",phase).put("versionCode",version).put("uid",android.os.Process.myUid()).put("signerSHA256",signer).put("accounts",3).put("tabs",4).put("encryptedRecoveryRecords",4).put("browserStarted",false).put("targetInternetPermissionDenied",true);
+        Bundle result=new Bundle();result.putString("betaUpgradeProof",proof.toString());InstrumentationRegistry.getInstrumentation().addResults(result);
     }
 }

@@ -218,3 +218,5 @@ Android 9 取最新 `d0b8db4` / [41713812139](https://github.com/ForceMind/ChatG
 固定签名首轮41957716393：candidate构建、固定指纹检查和测试APK编译通过；seed在打包报告阶段因没有先跑lint而不存在build/reports目录，未进入升级测试。已读原始FileNotFoundError，打包器显式建报告目录后重验；不改任何升级或隔离断言，不重新生成证书。
 
 固定Beta升级验证补充：在自定义加密载荷之外，增加真实PageRecoveryStore/DevicePayloadKeys.recoveryCipher的四条合成标签草稿和阅读位置记录，逐条核对解密值及密文字节不变，不使用WebView或网络。
+
+固定Beta第二轮41958373916：两个独立builder完成固定签名及输入构建；两端种子测试OK(1 test)，host因System.out未进入instrumentation结果而在解析报告处停止，尚未执行覆盖安装。改用API26起的Instrumentation.addResults结构化结果，不跳过结果断言；CI专用x86目标通过manifest移除INTERNET并在测试中断言拒绝，ARM候选仍保留正常网络权限，避免将常量0当作实际网络观测。合成测试不启动网页，真实Cookie仍未验证。

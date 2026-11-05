@@ -155,6 +155,7 @@ tasks.matching { it.name == 'preNetworkBetaBuild' }.configureEach {
     doFirst { if (!System.getenv('STUDIO_BETA_KEYSTORE_PATH')) throw new GradleException('Fixed beta signing is required; no debug fallback') }
 }
 if (project.hasProperty('betaUpgrade')) {
+    android.sourceSets.networkBeta.manifest.srcFile('src/betaUpgradeTarget/AndroidManifest.xml')
     android.sourceSets.androidTest.java.setSrcDirs(['src/betaUpgrade/java'])
     android.sourceSets.androidTest.manifest.srcFile('src/betaUpgrade/AndroidManifest.xml')
 }
