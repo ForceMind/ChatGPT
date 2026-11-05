@@ -1,0 +1,58 @@
+name: Windows Studio Branding Candidate
+on:
+  push:
+    branches: [dev]
+    paths: ['.github/workflows/windows-branding-candidate.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-2025
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '26.7.0'
+      - run: npm ci
+      - name: Full required desktop check
+        run: npm run check
+      - name: Parse native migration scripts
+        shell: pwsh
+        run: |
+          foreach($file in @('assets/windows-migration.ps1','scripts/windows-branding-control.ps1')) {
+            $tokens=$null; $errors=$null
+            [void][Management.Automation.Language.Parser]::ParseFile((Resolve-Path $file),[ref]$tokens,[ref]$errors)
+            if($errors.Count){$errors|Format-List;throw "PowerShell parse failed: $file"}
+          }
+      - name: Build Studio installer and ZIP without publishing
+        run: |
+          node scripts/icon.mjs
+          node scripts/package-win.mjs
+      - name: Default/custom install, legacy migration, rollback and owned startup
+        run: npx playwright test tests/windows-branding.e2e.ts --workers=1 --reporter=list,json
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_FILE: test-results/windows-branding-playwright.json
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: ChatGPT-Studio-Windows-Branding-Candidate
+          retention-days: 14
+          path: |
+            desktop/release/windows/*-setup.exe
+            desktop/release/windows/*.zip
+            desktop/release/windows/SHA256SUMS.txt
+            desktop/release/windows/windows-build-info.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-branding-evidence
+          retention-days: 14
+          path: |
+            desktop/test-results/
+            desktop/assets/windows-payload.generated.json
+            desktop/release/windows/windows-build-info.json

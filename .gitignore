@@ -24,3 +24,6 @@ __pycache__/
 
 # Generated only by the pinned Actions network-core build.
 android/app/libs/
+
+# CI-generated Windows installer payload inventory
+desktop/assets/windows-payload.generated.json

@@ -42,3 +42,7 @@
 读取项目package-lock锁定的官方npm源码包，SHA512与锁文件integrity一致，未安装依赖或上传第三方源码：
 
 [app-builder-lib26.15.3分发源码](https://registry.npmjs.org/app-builder-lib/-/app-builder-lib-26.15.3.tgz)。关键位置为out/appInfo.js:54-57、out/targets/targetUtil.js:40-41、out/targets/nsis/NsisTarget.js:165-166、templates/nsis/common.nsh:17及multiUser.nsh:25-47。它们分别证明EXE/productFilename关系、默认目录选择、卸载EXE名以及旧InstallLocation优先复用。
+
+## 已批准修复实施记录（2026-11-05）
+
+用户已确认完整方案：新装及旧默认程序目录Studio，安全回退、自定义目录保留，更新器兼容旧/新EXE、快捷方式及更新浮窗联动；数据目录/AppID/Mac兼容包不变。实现源码仅dev，完整npm run check和默认/旧默认/自定义安装、程序备份/注册信息回退、Cookie/LocalStorage保留等合成启动均在独立Windows Actions；不运行旧截图/真实网页检查，不发布或合并main。当前代码尚待CI，不将实现当作通过。
