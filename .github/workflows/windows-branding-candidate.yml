@@ -1,3 +1,4 @@
+# Candidate and synthetic acceptance only; no publishing job.
 name: Windows Studio Branding Candidate
 on:
   push:
