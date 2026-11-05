@@ -24,7 +24,7 @@ export function registeredWindowsDirectory(
     directory.startsWith('\\\\') ||
     protectedDirectories.some((p) => same(p, directory)) ||
     path.win32.parse(directory).root === directory ||
-    path.win32.basename(executable).toLowerCase() !== 'chatgpt profiles.exe'
+    !['chatgpt profiles.exe', 'chatgpt studio.exe'].includes(path.win32.basename(executable).toLowerCase())
   )
     return;
   for (const record of Array.isArray(records) ? records : []) {

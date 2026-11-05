@@ -1,0 +1,77 @@
+# Candidate and synthetic acceptance only; no publishing job.
+name: Windows Studio Branding Candidate
+on:
+  push:
+    branches: [dev]
+    paths: ['.github/workflows/windows-branding-candidate.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-2025
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - name: Keep committed LF on disposable Windows runner
+        working-directory: .
+        run: git config --global core.autocrlf false
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '26.7.0'
+      - name: Record checkout line endings
+        run: git ls-files --eol src/main/main.ts scripts/package-win.mjs scripts/windows-branding-fixture.mjs
+      - name: Validate owned TLS material before expensive build
+        shell: pwsh
+        run: |
+          $folder=Join-Path $env:RUNNER_TEMP 'studio-tls-preflight'
+          New-Item -ItemType Directory -Path $folder | Out-Null
+          @{key=(Join-Path $folder 'key.json');cer=(Join-Path $folder 'cert.cer')} | ConvertTo-Json | Set-Content -Encoding utf8 (Join-Path $folder 'config.json')
+          & powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File scripts/windows-branding-control.ps1 -Operation Tls -Config (Join-Path $folder 'config.json') -Output (Join-Path $folder 'thumbprint')
+          if($LASTEXITCODE -ne 0){throw 'Owned TLS fixture failed'}
+          $env:STUDIO_TLS_PREFLIGHT=$folder
+          node --input-type=module -e "import fs from 'node:fs'; import path from 'node:path'; import crypto from 'node:crypto'; import tls from 'node:tls'; const root=process.env.STUDIO_TLS_PREFLIGHT; const key=crypto.createPrivateKey({key:JSON.parse(fs.readFileSync(path.join(root,'key.json'),'utf8').replace(/^\uFEFF/,'')),format:'jwk'}); const cert=new crypto.X509Certificate(fs.readFileSync(path.join(root,'cert.cer'))); tls.createSecureContext({key:key.export({type:'pkcs8',format:'pem'}),cert:cert.toString()}); console.log('Owned TLS key/certificate context valid');"
+          if($LASTEXITCODE -ne 0){throw 'Node TLS context failed'}
+          Remove-Item -LiteralPath $folder -Recurse -Force
+      - run: npm ci
+      - name: Full required desktop check
+        run: npm run check
+      - name: Parse native migration scripts
+        shell: pwsh
+        run: |
+          foreach($file in @('assets/windows-migration.ps1','scripts/windows-branding-control.ps1')) {
+            $tokens=$null; $errors=$null
+            [void][Management.Automation.Language.Parser]::ParseFile((Resolve-Path $file),[ref]$tokens,[ref]$errors)
+            if($errors.Count){$errors|Format-List;throw "PowerShell parse failed: $file"}
+          }
+      - name: Build Studio installer and ZIP without publishing
+        run: |
+          node scripts/icon.mjs
+          node scripts/package-win.mjs
+      - name: Default/custom install, legacy migration, rollback and owned startup
+        run: npx playwright test tests/windows-branding.e2e.ts --workers=1 --reporter=list,json
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_FILE: test-results/windows-branding-playwright.json
+          DEBUG: pw:browser
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: ChatGPT-Studio-Windows-Branding-Candidate
+          retention-days: 14
+          path: |
+            desktop/release/windows/*-setup.exe
+            desktop/release/windows/*.zip
+            desktop/release/windows/SHA256SUMS.txt
+            desktop/release/windows/windows-build-info.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-branding-evidence
+          retention-days: 14
+          path: |
+            desktop/test-results/
+            desktop/assets/windows-payload.generated.json
+            desktop/release/windows/windows-build-info.json

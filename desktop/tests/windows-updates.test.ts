@@ -149,6 +149,10 @@ test('registered installers must match this executable directory and never claim
     exe = dir + '\\ChatGPT Profiles.exe',
     record = { InstallLocation: dir, UninstallString: '"' + dir + '\\Uninstall ChatGPT Studio.exe"' };
   assert.equal(registeredWindowsDirectory(exe, [record], ['C:\\Users\\测试']), dir);
+  const studioExe = dir + '\\ChatGPT Studio.exe';
+  assert.equal(registeredWindowsDirectory(studioExe, [record], []), dir);
+  assert.equal(registeredWindowsDirectory(studioExe, [record], [dir]), undefined);
+  assert.equal(registeredWindowsDirectory(dir + '\\Other.exe', [record], []), undefined);
   assert.equal(registeredWindowsDirectory(exe, [{ ...record, InstallLocation: 'C:\\other' }], []), undefined);
   assert.equal(registeredWindowsDirectory(exe, [record], [dir]), undefined);
   assert.equal(

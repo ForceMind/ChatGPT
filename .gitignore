@@ -21,3 +21,6 @@ android/release/
 .wrangler/
 __pycache__/
 .codex-attachments/
+
+# CI-generated Windows installer payload inventory
+desktop/assets/windows-payload.generated.json

@@ -3,21 +3,21 @@
   "appId": "com.forcemind.chatgpt.profiles",
   "platform": "win32",
   "architecture": "x64",
-  "version": "3.0.0-alpha.21",
-  "releaseDate": "2026-10-27T04:07:36Z",
-  "releaseNotes": "alpha.21：121 个 Skill、32 个自有角色（24 个互联网相关优先），加入设计补丁任务；Windows 加密离线快照、确认后台下载与退出安装。当前用户 EXE 可自动更新，免安装 ZIP 提供校验与另存；保留登录和恢复数据。完整 App 更新需要重启，不支持差量或 Windows 空闲安装。",
+  "version": "3.0.0-alpha.24",
+  "releaseDate": "2026-11-05T06:04:07.334Z",
+  "releaseNotes": "# ChatGPT Studio · Windows alpha.24\n\n本次仅更新 Windows x64，macOS 继续 alpha.23，Android 继续 alpha.22。\n\n- 新装默认目录、主程序和卸载程序统一使用 ChatGPT Studio。\n- 经过身份与文件校验的旧默认程序目录安全迁移到 Studio；自定义安装目录保留原位置。\n- 同步更新桌面、开始菜单和已有快捷方式目标，更新器兼容旧、新程序名。\n- 修正更新提示中的旧品牌文案，保留既有登录、加密恢复身份及标签保活策略。\n- 安装遇到目标占用或未知文件时拒绝覆盖；迁移失败支持程序和注册信息回退。\n\n安装前从应用菜单退出旧版，无需卸载或删除账号数据。用户数据目录仍使用 `ChatGPT Profiles`，这是保留登录和恢复数据的兼容身份，不是遗漏更名。EXE 支持当前用户安装后的确认更新；ZIP 为免安装手动替换。完整应用更新需要重启。\n\n安装包未做 Windows 代码签名，可能出现 SmartScreen 或未知发布者提示。请核对 `SHA256SUMS.windows.txt`。\n\n验证：复用 Actions 41975812832 的原始 EXE/ZIP；完整 `npm run check` 通过，106 项单元测试中 105 通过、1 项平台跳过。六项安装、升级、合成页面存储与失败回退验收通过。没有截图、真实 ChatGPT 或真实账号验收；任务栏固定快捷方式目标已验证，Explorer 图标缓存外观未验证。\n",
   "files": [
     {
-      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.21/ChatGPT-Studio-3.0.0-alpha.21-windows-x64-setup.exe",
-      "size": 131340242,
-      "sha256": "6e2a433bc3ff3a61981c5173ce4a1a5b96c1a4263b7e6cbac80682c653fb2999",
-      "sha512": "uW4K8HfY7njeqSIkl8g9i9a05I4GTZwk8KdCu5CNEssmnGR5JC14KXUNz45qot3d6BllGT6cPHkii92NkMDrKQ=="
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.24/ChatGPT-Studio-3.0.0-alpha.24-windows-x64-setup.exe",
+      "size": 131359974,
+      "sha256": "623b6f4784e54ef759ebce344b65fba3f3e6d6ceaa8d269fa919373d2ab4dfd2",
+      "sha512": "9/z2F3vKfUHgnGQP2y5bDSibfkonx9VpnpZCQxjSWPccOXqu9w+j/gW8PnsdtUkyfVx3c/nzVS+mJfER1c4dNQ=="
     },
     {
-      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.21/ChatGPT-Studio-3.0.0-alpha.21-windows-x64.zip",
-      "size": 181273668,
-      "sha256": "f0748d8683a0431f49d32cd2d2c9a95cdfbda95bdb273c20efdfd0ce2e22854d",
-      "sha512": "ChhcgJNgbOQMk/8Khx5aJQRqNP80KB3Im7LXK5vGzdlfqO7ca7CXEtPvdRTLCJUpaomFwVvUFqGKJ01DfSB1Yw=="
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.24/ChatGPT-Studio-3.0.0-alpha.24-windows-x64.zip",
+      "size": 181294882,
+      "sha256": "009fb5988890dcdd60b07eabd6d0c96b8dc2e56a6bf72658bc5423398520c80e",
+      "sha512": "4t6/jrKHgtQhveAl93gH65W+r0fpLmyyDqIdCLihQbq/i3i99ZgIdsFMAKi4X3fUhOXuGZexkKBOx39q97oF3Q=="
     }
   ]
 }

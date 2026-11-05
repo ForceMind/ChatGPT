@@ -1,0 +1,71 @@
+name: Publish verified Windows alpha.24 prerelease
+on: workflow_dispatch
+permissions:
+  contents: write
+  actions: read
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '26.7.0'
+      - name: Full required desktop check on release source
+        working-directory: desktop
+        run: |
+          npm ci
+          npm run check
+      - uses: actions/download-artifact@v4
+        with:
+          name: ChatGPT-Studio-Windows-Branding-Candidate
+          run-id: 41975812832
+          github-token: ${{ github.token }}
+          path: promotion/windows
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows-branding-evidence
+          run-id: 41975812832
+          github-token: ${{ github.token }}
+          path: promotion/evidence
+      - name: Verify frozen bytes, source and all six acceptance cases
+        run: |
+          python3 - <<'PY'
+          import base64, hashlib, json, pathlib, subprocess
+          def gh(*args):
+              return json.loads(subprocess.check_output(['gh', *args]))
+          assert gh('api', 'repos/ForceMind/ChatGPT/actions/runs/41975812832')['conclusion'] == 'success'
+          receipt = json.loads(pathlib.Path('docs/releases/windows-branding-alpha.24-candidate.json').read_text())
+          source = receipt['sourceSHA']
+          assert gh('api', 'repos/ForceMind/ChatGPT/actions/runs/41975812832')['head_sha'] == source
+          subprocess.run(['git', 'fetch', 'origin', source, '--depth=1'], check=True)
+          subprocess.run(['git', 'diff', '--exit-code', source, 'HEAD', '--', 'desktop'], check=True)
+          root = pathlib.Path('promotion/windows')
+          info = json.loads((root / 'windows-build-info.json').read_text())
+          assert (info['sourceCommit'], info['version'], info['platform'], info['architecture']) == (source, '3.0.0-alpha.24', 'win32', 'x64')
+          proof = json.loads(pathlib.Path('promotion/evidence/test-results/windows-branding/verified.json').read_text())
+          assert proof['complete'] and proof['sourceSHA'] == source
+          assert not proof['screenshots'] and not proof['realChatGPT']
+          expected = {'new-default', 'legacy-default-migrated', 'custom-kept', 'forced-post-uninstall-failure-rollback', 'unknown-old-file-refused', 'occupied-new-target-refused'}
+          assert len(proof['cases']) == 6 and {c['name'] for c in proof['cases'] if c['complete']} == expected
+          sums = []
+          for frozen in receipt['artifacts']:
+              body = (root / frozen['file']).read_bytes()
+              assert len(body) == frozen['bytes']
+              assert hashlib.sha256(body).hexdigest() == frozen['sha256']
+              entry = next(a for a in info['artifacts'] if a['file'] == frozen['file'])
+              assert entry['bytes'] == frozen['bytes'] and entry['sha256'] == frozen['sha256']
+              assert base64.b64encode(hashlib.sha512(body).digest()).decode() == entry['sha512']
+              sums.append(frozen['sha256'] + '  ' + frozen['file'])
+          (root / 'SHA256SUMS.windows.txt').write_text('\n'.join(sums) + '\n')
+          (root / 'windows-branding-acceptance.json').write_text(json.dumps(proof, indent=2) + '\n')
+          release = gh('release', 'view', 'v3.0.0-alpha.24', '--json', 'isDraft,assets')
+          assert release['isDraft'] and not release['assets'], 'Refuse nonempty or published release'
+          PY
+      - name: Upload original verified packages to existing draft without overwriting
+        run: |
+          gh release upload v3.0.0-alpha.24 promotion/windows/*-setup.exe promotion/windows/*.zip promotion/windows/windows-build-info.json promotion/windows/SHA256SUMS.windows.txt promotion/windows/windows-branding-acceptance.json
