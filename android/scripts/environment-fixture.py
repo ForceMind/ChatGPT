@@ -369,7 +369,7 @@ def handler_for(evidence: Evidence):
                     # Keep only the documented synthetic evidence fields, not arbitrary posted data.
                     allowed = ("path", "account", "document", "url", "language", "languages", "timeZone",
                         "offsetMinutes", "fixedDate", "worker", "workerError", "draft", "modelDraft",
-                        "scroll", "scrollHeight", "clientHeight", "windowScroll", "devicePixelRatio",
+                        "scroll", "scrollHeight", "clientHeight", "windowScroll", "devicePixelRatio", "viewportWidth", "viewportHeight",
                         "inputRect", "localStorage", "indexedDB", "localError", "idbError", "visibleCookies",
                         "inputCount", "trustedInputCount", "sendClicks", "focused", "visibility",
                         "eventSequence", "sentEvents", "capturedAt")

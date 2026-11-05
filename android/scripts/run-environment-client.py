@@ -354,13 +354,59 @@ class Acceptance:
         self.control('open', account, tab)
         return self.page(account, tab, minimum_received=started)
 
+    def focus_editor(self, account, tab, before):
+        target = self.editor(account, tab, before['document'])
+        left, top, right, bottom = target['rectangle']
+        tapped = int(time.time() * 1000)
+        self.shell('input', 'tap', (left + right)//2, (top + bottom)//2)
+        path = PAGE[(account, tab)]
+        def focused(status):
+            page = self.latest(status, path)
+            assert page['document'] == before['document'], 'Composer document changed before typing'
+            assert page['draft'] == page['modelDraft'] == '', 'Composer changed before native input'
+            return page['receivedAt'] >= tapped and page['focused'] is True and page['visibility'] == 'visible'
+        self.wait('same-document empty composer has actual DOM focus', self.status, focused, timeout=20)
+        stable = {'signature': None, 'since': None, 'firstReceivedAt': None}
+        def sample():
+            status = self.status()
+            assert focused(status), 'Composer lost focus before native typing'
+            page = self.latest(status, path)
+            dump = self.shell('dumpsys', 'input_method')
+            lines = dump.splitlines()
+            sections = []
+            for index, line in enumerate(lines):
+                marker = re.match(r'^(\s*)(?:mCurAttribute|mCurEditorInfo)\s*[:=]', line)
+                if marker:
+                    block = [line]
+                    for following in lines[index+1:]:
+                        if re.match(r'^\s{0,' + str(len(marker[1])) + r'}m[A-Z]\w*\s*[:=]', following):
+                            break
+                        block.append(following)
+                    sections.append('\n'.join(block))
+            owned = [section for section in sections if re.search(r'\bpackageName=' + re.escape(PACKAGE) + r'(?:\s|$)', section)]
+            types = [int(value, 16) for section in owned for value in re.findall(r'\binputType=(?:0x)?([0-9a-fA-F]+)\b', section)]
+            shown = bool(re.search(r'(?:mInputShown|mIsInputViewShown|isInputViewShown)\s*=\s*true', dump))
+            signature = [page.get('viewportWidth'), page.get('viewportHeight')] + [round(page['inputRect'][key]) for key in ('x', 'y', 'width', 'height')]
+            return {'ownedTextEditor': any(value & 15 == 1 for value in types), 'inputTypes': types,
+                    'imeShown': shown, 'document': page['document'], 'receivedAt': page['receivedAt'],
+                    'viewportAndEditorGeometry': signature, 'draftStillEmpty': True, 'focused': True}
+        def settled(value):
+            signature = value['viewportAndEditorGeometry']
+            if not value['ownedTextEditor'] or not value['imeShown']:
+                stable.update(signature=None, since=None, firstReceivedAt=None)
+                return False
+            if signature != stable['signature']:
+                stable.update(signature=signature, since=time.monotonic(), firstReceivedAt=value['receivedAt'])
+                return False
+            return time.monotonic()-stable['since'] >= 1.5 and value['receivedAt'] > stable['firstReceivedAt']
+        ready = self.wait('owned native text connection and stable IME layout', sample, settled, timeout=30, interval=0.4)
+        native._write_json(EVIDENCE / ('focus-ready-' + str(self.sequence) + '.json'), ready)
+
     def type_draft(self, account, tab, draft):
         assert re.fullmatch(r'[A-Za-z0-9-]+', draft)
         _, before = self.page(account, tab)
         assert before['draft'] == before['modelDraft'] == ''
-        target = self.editor(account, tab, before['document'])
-        left, top, right, bottom = target['rectangle']
-        self.shell('input', 'tap', (left + right)//2, (top + bottom)//2)
+        self.focus_editor(account, tab, before)
         self.shell('input', 'text', draft)
         path = PAGE[(account, tab)]
         status = self.wait('trusted native composer input', self.status,
@@ -455,7 +501,7 @@ class Acceptance:
             return value.get('complete') is True and value.get('account') == 'A' and value.get('tab') == 0 and value.get('recordPresent') is True and value.get('documentPresent') is True and value.get('nativeStatePresent') is True and value.get('draftSHA256') == digest and value.get('draftLength') == len(draft) and value.get('scroll', 0) >= minimum_scroll and bool(value.get('cipherSHA256'))
         probe = self.wait('native encrypted recovery checkpoint', sample, saved, timeout=60, interval=0.8)
         assert probe['previewLength'] > 0 and 0 <= probe['ratio'] <= 1 and probe['capturedAt'] > 0
-        native._write_json(EVIDENCE / 'native-record-' + str(self.sequence) + '.json', probe)
+        native._write_json(EVIDENCE / ('native-record-' + str(self.sequence) + '.json'), probe)
         return probe
 
     def cold(self, old, draft, saved_scroll, conflict=False):
