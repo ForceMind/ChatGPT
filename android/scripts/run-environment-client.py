@@ -153,12 +153,50 @@ class Acceptance:
 
     def control(self, action, account=None, tab=0):
         assert action in ('prepare', 'open', 'record')
-        args = ['am', 'start', '-W', '-n', PACKAGE + '/com.forcemind.chatgpt.profiles.EnvironmentAcceptanceActivity', '--es', 'action', action]
+        deadline = time.monotonic() + 60
+        def private_result(relative):
+            path = FILES + relative
+            text = self.command(['adb', 'shell', 'cat', path],
+                                timeout=max(0.1, min(10, deadline-time.monotonic())), check=False)
+            if re.fullmatch(r'cat: ' + re.escape(path) + r': No such file or directory\s*', text):
+                return None
+            if not text.lstrip().startswith('{'):
+                raise RuntimeError('Private JSON read failed: ' + text)
+            return json.loads(text)
+
+        previous_sample = -1
+        started_device_ms = -1
+        if action == 'record':
+            # Android wall time may differ from the runner. Pair the device's start-second
+            # bound with a strict increase over the pre-command probe, so stale JSON cannot pass.
+            started_device_ms = int(self.shell('date', '+%s', timeout=10).strip()) * 1000
+            previous = private_result('environment-record-probe.json')
+            if previous is not None:
+                previous_sample = previous['sampledAt']
+        args = ['am', 'start', '-n', PACKAGE + '/com.forcemind.chatgpt.profiles.EnvironmentAcceptanceActivity', '--es', 'action', action]
         if action != 'prepare':
             assert (account, tab) in PAGE
             args += ['--es', 'account', account, '--ei', 'tab', str(tab)]
-        text = self.shell(*args)
+        text = self.shell(*args, timeout=max(0.1, deadline-time.monotonic()))
         assert not re.search(r'Error:|Exception|Permission Denial', text), text
+        if action == 'prepare':
+            self.wait('completed private acceptance manifest',
+                      lambda: private_result('environment-acceptance.json'),
+                      lambda value: isinstance(value, dict) and value.get('schema') == 1
+                      and isinstance(value.get('accounts'), dict) and set(value['accounts']) == {'A', 'B', 'C'}
+                      and isinstance(value.get('legacyAccounts'), list),
+                      timeout=max(0.1, deadline-time.monotonic()), interval=0.3)
+        elif action == 'record':
+            result = self.wait('fresh native record probe',
+                               lambda: private_result('environment-record-probe.json'),
+                               lambda value: isinstance(value, dict)
+                               and isinstance(value.get('sampledAt'), int)
+                               and value['sampledAt'] >= started_device_ms
+                               and value['sampledAt'] > previous_sample,
+                               timeout=max(0.1, deadline-time.monotonic()), interval=0.3)
+            assert result.get('schema') == 1, 'Invalid native record probe schema'
+            assert result.get('complete') is True, 'Native record probe failed: ' + str(result.get('errorClass'))
+        # open is accepted only by its existing real server/preview conditions in the caller.
 
     def prepare_profiles(self):
         self.control('prepare')
@@ -194,6 +232,8 @@ class Acceptance:
             self.shell('chmod', '700', destination)
         self.shell('chown', str(self.upgrade['uid']) + ':' + str(self.upgrade['uid']), profile_root)
         self.shell('chmod', '700', profile_root)
+        self.shell('readlink','-f',profile_root)
+        self.shell('ls','-ldZ',profile_root,profile_root+'/0',profile_root+'/1')
 
     def ui(self):
         self.shell('uiautomator', 'dump', '/data/local/tmp/environment-ui.xml', timeout=25)
@@ -507,6 +547,12 @@ def main():
         return proof
     except Exception:
         native._record_failure()
+        if acceptance is not None:
+            try:
+                acceptance.ui()
+                acceptance.shell('dumpsys','activity','activities',timeout=20)
+            except Exception:
+                (EVIDENCE/'failure-ui-inspection-error.txt').write_text(traceback.format_exc(),encoding='utf-8')
         raise
     finally:
         if guarded:
