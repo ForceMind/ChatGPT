@@ -117,7 +117,7 @@ tasks.register('copyProjectCapabilities', Sync) {
     include 'manifest.json', 'skills.json', 'desktop-manifest.json', 'desktop-capabilities.json'
     into capabilityAssets.map { it.dir('capabilities') }
 }
-android.sourceSets.main.assets.srcDir(capabilityAssets)
+android.sourceSets.main.assets.srcDir(capabilityAssets.get().asFile)
 tasks.named('preBuild').configure { dependsOn 'copyProjectCapabilities' }
 
 android.testOptions.unitTests.all {
@@ -150,10 +150,10 @@ if (project.hasProperty('networkIntegration')) {
 }
 
 // Only the isolated long-lived beta has its own monotonically increasing code.
-android.applicationVariants.all { variant ->
-    if (variant.buildType.name == 'networkBeta') variant.outputs.each { output ->
-        output.versionCodeOverride = (project.findProperty('betaVersionCode') ?: '3000025').toInteger()
-        output.versionNameOverride = project.findProperty('betaVersionName') ?: '3.0.0-alpha.24-beta.1'
+androidComponents.onVariants(androidComponents.selector().withBuildType('networkBeta')) { variant ->
+    variant.outputs.each { output ->
+        output.versionCode.set((project.findProperty('betaVersionCode') ?: '3000025').toInteger())
+        output.versionName.set(project.findProperty('betaVersionName') ?: '3.0.0-alpha.24-beta.1')
     }
 }
 tasks.matching { it.name == 'preNetworkBetaBuild' }.configureEach {
@@ -190,7 +190,7 @@ if (project.hasProperty('environmentClient')) {
             }
         }
     }
-    android.sourceSets.networkBeta.assets.srcDir(environmentAssets)
+    android.sourceSets.networkBeta.assets.srcDir(environmentAssets.get().asFile)
     tasks.matching { it.name == 'preNetworkBetaBuild' }.configureEach { dependsOn 'copyEnvironmentAssets' }
     android.sourceSets.networkBeta.manifest.srcFile('src/environmentClient/AndroidManifest.xml')
     android.sourceSets.androidTest.java.setSrcDirs(['src/environmentTest/java'])
