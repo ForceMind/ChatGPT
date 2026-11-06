@@ -1,4 +1,4 @@
-# ChatGPT Studio Beta.6：账号环境与页面恢复
+# ChatGPT Studio Beta.7：账号环境与页面恢复
 
 这是独立固定签名测试版，Android9及以上arm64设备。已有固定Beta的用户直接覆盖安装，不卸载、不清除数据。正式版和临时测试版使用不同包名，保持各自登录和资产，不自动迁入Beta。
 

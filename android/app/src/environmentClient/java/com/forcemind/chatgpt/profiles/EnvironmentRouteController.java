@@ -12,6 +12,7 @@ import org.mozilla.geckoview.*;
 final class EnvironmentRouteController {
     static final String EXTENSION="studio-environment@local.invalid";
     interface Listener{void route(boolean ready,boolean foreground,String notice);}
+    final int slot;final EnvironmentTransferController transfers;
     private final Context context;private Listener listener;private String lastNotice="正在连接账号环境";
     private final Handler ui=new Handler(Looper.getMainLooper());
     private final Messenger inbox=new Messenger(new Handler(Looper.getMainLooper(),this::receive));
@@ -19,6 +20,7 @@ final class EnvironmentRouteController {
     interface ImportCompletion{void complete(boolean success,String message);}
     private static final ExecutorService FILE_IO=Executors.newSingleThreadExecutor();
     private final Map<String,ImportCompletion> imports=new HashMap<>();
+    private final Map<String,java.util.function.Consumer<JSONObject>> calls=new HashMap<>();
     private String routeToken="";private boolean bound,foreground,ready,closed;private long sent=-1,acknowledged=-1;
     private final ServiceConnection connection=new ServiceConnection(){
         public void onServiceConnected(ComponentName name,IBinder binder){service=new Messenger(binder);send(1,0);send(2,foreground?1:0);}
@@ -26,8 +28,8 @@ final class EnvironmentRouteController {
         public void onBindingDied(ComponentName name){service=null;block("网络连接正在恢复");if(bound){context.unbindService(this);bound=false;}ui.postDelayed(()->{if(!closed)bind();},500);}
         public void onNullBinding(ComponentName name){block("网络服务不可用");}
     };
-    EnvironmentRouteController(Context context,GeckoRuntime runtime,Listener listener){
-        this.context=context.getApplicationContext();this.listener=listener;
+    EnvironmentRouteController(Context context,GeckoRuntime runtime,int slot,Listener listener){
+        this.context=context.getApplicationContext();this.slot=slot;this.listener=listener;transfers=new EnvironmentTransferController(context,this);
         ui.post(()->{
             if(closed)return;
             runtime.getWebExtensionController().ensureBuiltIn("resource://android/assets/studio-environment/",EXTENSION).accept(extension->ui.post(()->{
@@ -62,7 +64,7 @@ final class EnvironmentRouteController {
         incoming.setDelegate(new WebExtension.PortDelegate(){
             public void onPortMessage(Object raw,WebExtension.Port source){
                 try{
-                    if(source!=port||!(raw instanceof JSONObject)||desired==null||routeToken.isEmpty())return;JSONObject value=(JSONObject)raw;
+                    if(source!=port||!(raw instanceof JSONObject)||desired==null||routeToken.isEmpty())return;JSONObject value=(JSONObject)raw;if(transfers.message(value,source))return;
                     if(!"route-applied".equals(value.optString("type"))||value.getLong("generation")!=sent||sent!=desired.getLong("generation")||!routeToken.equals(value.optString("routeToken"))||!desired.optString("instance").equals(value.optString("instance")))return;
                     if(BuildConfig.ENVIRONMENT_TEST)android.util.Log.i("StudioEnvironmentRoute","ack kind="+value.optString("kind")+" port="+value.optInt("port")+" generation="+sent+" implementation="+value.optString("implementation")+" handler="+value.optBoolean("handlerInstalled")+" guard="+value.optBoolean("guardInstalled")+" ok="+value.optBoolean("ok")+" error="+value.optString("error"));
                     boolean needsHandler="direct".equals(desired.getString("kind"))||"proxy".equals(desired.getString("kind"));
@@ -74,6 +76,8 @@ final class EnvironmentRouteController {
         });apply();
     }
     private boolean receive(Message message){
+        if(message.what==12){try{JSONObject result=new JSONObject(message.getData().getString("payload",""));java.util.function.Consumer<JSONObject> callback=calls.remove(result.optString("call"));if(callback!=null)callback.accept(result);}catch(Exception invalid){block("文件线路确认失败");}return true;}
+        if(message.what==13){transfers.expired(message.getData().getString("lease",""));return true;}
         if(message.what==11){String operation=message.getData().getString("operation","");ImportCompletion callback=imports.remove(operation);if(callback!=null)callback.complete(message.getData().getBoolean("success"),message.getData().getString("message","文件保存未完成"));return true;}
         if(message.what!=10||closed)return false;
         try{
@@ -88,13 +92,15 @@ final class EnvironmentRouteController {
         }catch(Exception error){block("网络配置无效，已停止加载");}
         return true;
     }
-    void importAsset(String accountId,String storageId,String tabId,String url,String name,String mime,InputStream body,long expectedLength,ImportCompletion completion){
+    void importAsset(EnvironmentTransferController.Lease ticket,String name,String mime,InputStream body,long expectedLength,ImportCompletion completion){
+        String accountId=ticket.owner.accountId,storageId=ticket.owner.storageId,tabId=ticket.owner.tabId,url=ticket.owner.url;
         if(body==null){completion.complete(false,"下载内容不可用");return;}
-        if(!ready||service==null||desired==null||closed||expectedLength>256L*1024*1024){try{body.close();}catch(IOException ignored){}completion.complete(false,"当前网络无法保存文件，请重试");return;}
+        if(!ready||service==null||desired==null||closed||ticket.closed||!matches(ticket.instance,ticket.generation)||expectedLength>256L*1024*1024){try{body.close();}catch(IOException ignored){}transfers.release(ticket,"cancel");completion.complete(false,"当前网络无法保存文件，请重试");return;}
+        ImportCompletion finished=(success,message)->{transfers.imported(ticket);completion.complete(success,message);};
         final String operation=UUID.randomUUID().toString();final Messenger destination=service;ParcelFileDescriptor[] pipe=null;
         try{
-            pipe=ParcelFileDescriptor.createPipe();Bundle data=new Bundle();data.putString("operation",operation);data.putString("accountId",accountId);data.putString("storageId",storageId);data.putString("tabId",tabId);data.putString("url",url);data.putString("name",name);data.putString("mime",mime);data.putString("instance",desired.getString("instance"));data.putLong("generation",desired.getLong("generation"));data.putLong("expectedLength",expectedLength);data.putParcelable("pipe",pipe[0]);
-            Message begin=Message.obtain(null,4);begin.replyTo=inbox;begin.setData(data);imports.put(operation,completion);destination.send(begin);pipe[0].close();final ParcelFileDescriptor writer=pipe[1];
+            pipe=ParcelFileDescriptor.createPipe();Bundle data=new Bundle();data.putString("operation",operation);data.putString("accountId",accountId);data.putString("storageId",storageId);data.putString("tabId",tabId);data.putString("url",url);data.putString("name",name);data.putString("mime",mime);data.putString("instance",ticket.instance);data.putLong("generation",ticket.generation);data.putString("ticket",ticket.id);data.putString("uri",ticket.uri);data.putLong("expectedLength",expectedLength);data.putParcelable("pipe",pipe[0]);
+            Message begin=Message.obtain(null,4);begin.replyTo=inbox;begin.setData(data);imports.put(operation,finished);destination.send(begin);pipe[0].close();final ParcelFileDescriptor writer=pipe[1];
             ui.postDelayed(()->{ImportCompletion callback=imports.remove(operation);if(callback!=null){try{writer.close();}catch(IOException ignored){}try{body.close();}catch(IOException ignored){}callback.complete(false,"文件保存尚未确认，请到资产库核对");}},600000);
             FILE_IO.execute(()->{
                 boolean success=false;
@@ -106,15 +112,26 @@ final class EnvironmentRouteController {
                 });
             });
         }catch(Exception failed){
-            imports.remove(operation);if(pipe!=null)for(ParcelFileDescriptor descriptor:pipe)try{descriptor.close();}catch(IOException ignored){}try{body.close();}catch(IOException ignored){}completion.complete(false,"文件保存未能开始，请重试");
+            imports.remove(operation);if(pipe!=null)for(ParcelFileDescriptor descriptor:pipe)try{descriptor.close();}catch(IOException ignored){}try{body.close();}catch(IOException ignored){}transfers.release(ticket,"cancel");finished.complete(false,"文件保存未能开始，请重试");
         }
+    }
+    boolean ready(){return ready&&!closed;}
+    JSONObject tuple()throws Exception{if(!ready())throw new IllegalStateException("Route is blocked");return new JSONObject(desired.toString()).put("routeToken",routeToken);}
+    boolean matches(String instance,long generation){return ready()&&desired!=null&&instance.equals(desired.optString("instance"))&&generation==desired.optLong("generation",-1);}
+    boolean matches(JSONObject value){return matches(value.optString("instance"),value.optLong("generation",-1))&&routeToken.equals(value.optString("routeToken"));}
+    void post(WebExtension.Port source,JSONObject value){if(source==port)source.postMessage(value);}
+    void sendPayload(int what,JSONObject value)throws Exception{if(service==null)throw new RemoteException();Message message=Message.obtain(null,what);message.replyTo=inbox;Bundle data=new Bundle();data.putString("payload",value.toString());message.setData(data);service.send(message);}
+    void broker(int what,JSONObject value,java.util.function.Consumer<JSONObject> callback)throws Exception{
+        String call=UUID.randomUUID().toString();value.put("call",call);calls.put(call,callback);
+        try{sendPayload(what,value);}catch(Exception disconnected){calls.remove(call);callback.accept(new JSONObject());return;}
+        ui.postDelayed(()->{java.util.function.Consumer<JSONObject> pending=calls.remove(call);if(pending!=null)pending.accept(new JSONObject());},5000);
     }
     private void apply(){
         if(port==null||desired==null||closed)return;
         try{routeToken=java.util.UUID.randomUUID().toString();JSONObject value=new JSONObject(desired.toString()).put("type","route").put("routeToken",routeToken);sent=value.getLong("generation");port.postMessage(value);long wanted=sent;String wantedToken=routeToken;ui.postDelayed(()->{if(!closed&&sent==wanted&&wantedToken.equals(routeToken)&&acknowledged!=wanted)block("网络设置尚未确认，请稍后重试");},12000);}catch(Exception error){block("网络设置发送失败");}
     }
-    private void block(String notice){lastNotice=notice;ready=false;acknowledged=-1;routeToken="";if(port!=null)try{port.postMessage(new JSONObject().put("type","suspend"));}catch(Exception ignored){}listener.route(false,desired!=null&&desired.optBoolean("foreground"),notice);}
-    private void send(int what,int value){if(service==null)return;try{Message message=Message.obtain(null,what,value,0);message.replyTo=inbox;service.send(message);}catch(RemoteException e){block("网络服务连接中断");}}
+    private void block(String notice){transfers.revoke();for(java.util.function.Consumer<JSONObject> callback:new ArrayList<>(calls.values()))callback.accept(new JSONObject());calls.clear();lastNotice=notice;ready=false;acknowledged=-1;routeToken="";if(port!=null)try{port.postMessage(new JSONObject().put("type","suspend"));}catch(Exception ignored){}listener.route(false,desired!=null&&desired.optBoolean("foreground"),notice);}
+    private void send(int what,int value){if(service==null)return;try{Message message=Message.obtain(null,what,value,0);message.replyTo=inbox;if(what==1){Bundle data=new Bundle();data.putInt("slot",slot);message.setData(data);}service.send(message);}catch(RemoteException e){block("网络服务连接中断");}}
     void foreground(boolean value){foreground=value;send(2,value?1:0);}
     void close(){closed=true;foreground(false);if(port!=null){port.disconnect();port=null;}if(bound){context.unbindService(connection);bound=false;}}
 }

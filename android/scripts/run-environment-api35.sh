@@ -4,7 +4,12 @@ set -euo pipefail
 test "${GITHUB_ACTIONS:-}" = true
 command -v grep >/dev/null
 command -v timeout >/dev/null
-studio_evidence=android/app/build/environment-client-evidence
+studio_validation_script="${1:-android/scripts/run-environment-client.py}"
+case "$studio_validation_script" in
+  android/scripts/run-environment-client.py) studio_evidence=android/app/build/environment-client-evidence ;;
+  android/scripts/run-gecko-network.py) studio_evidence="${STUDIO_GECKO_OUTPUT:-android/app/build/gecko-network-evidence}" ;;
+  *) echo 'Only the approved owned validation scripts may run.' >&2; exit 1 ;;
+esac
 mkdir -p "$studio_evidence"
 sdkmanager 'emulator' 'system-images;android-35;google_apis;x86_64'
 studio_avd_home="$RUNNER_TEMP/studio-environment-avd"
@@ -50,4 +55,4 @@ if grep -Eq 'ANR in com.google.android.apps.nexuslauncher' "$studio_evidence/emu
   exit 1
 fi
 adb push android/app/build/environment-ascii/input.jar /data/local/tmp/studio-poc-ascii-input.jar
-python3 android/scripts/run-environment-client.py
+python3 "$studio_validation_script"

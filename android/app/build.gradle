@@ -21,7 +21,8 @@ android {
         buildConfigField 'String', 'NETWORK_PROBE_URL', '""'
         buildConfigField 'boolean', 'ENVIRONMENT_CLIENT', project.hasProperty('environmentClient').toString()
         buildConfigField 'boolean', 'ENVIRONMENT_TEST', project.hasProperty('environmentTest').toString()
-        buildConfigField 'String', 'ENVIRONMENT_HOME_URL', project.hasProperty('environmentTest') ? '"https://environment-fixture.test:18480/c/environment"' : '""'
+        buildConfigField 'boolean', 'ENVIRONMENT_NETWORK_TEST', project.hasProperty('environmentNetworkTest').toString()
+        buildConfigField 'String', 'ENVIRONMENT_HOME_URL', project.hasProperty('environmentTest') ? (project.hasProperty('environmentNetworkTest') ? '"https://network-fixture.test:18480/c/a1"' : '"https://environment-fixture.test:18480/c/environment"') : '""'
     }
     signingConfigs {
         if (System.getenv('STUDIO_BETA_KEYSTORE_PATH')) {
@@ -179,13 +180,14 @@ if (project.hasProperty('environmentClient')) {
     def environmentAssets = layout.buildDirectory.dir('generated/environment-assets')
     tasks.register('copyEnvironmentAssets', Sync) {
         inputs.property('environmentTest', project.hasProperty('environmentTest'))
+        inputs.property('environmentNetworkTest', project.hasProperty('environmentNetworkTest'))
         from 'src/environmentClient/assets'
         into environmentAssets
         doLast {
             if (project.hasProperty('environmentTest')) {
                 def manifest = new File(environmentAssets.get().asFile,'studio-environment/manifest.json')
                 def value = new groovy.json.JsonSlurper().parse(manifest)
-                value.content_scripts[0].matches += ['https://environment-fixture.test/*']
+                value.content_scripts[0].matches += [project.hasProperty('environmentNetworkTest') ? 'https://network-fixture.test/*' : 'https://environment-fixture.test/*']
                 manifest.setText(groovy.json.JsonOutput.toJson(value),'UTF-8')
             }
         }
@@ -200,11 +202,17 @@ if (project.hasProperty('environmentClient')) {
         def generatedManifest = layout.buildDirectory.file('generated/environment-ci/AndroidManifest.xml')
         tasks.register('prepareEnvironmentCiManifest') {
             inputs.files('src/environmentClient/AndroidManifest.xml','src/environmentCi/AndroidManifest.xml')
+            inputs.property('environmentNetworkTest', project.hasProperty('environmentNetworkTest'))
             outputs.file(generatedManifest)
             doLast {
                 def base = file('src/environmentClient/AndroidManifest.xml').getText('UTF-8')
                 def extra = file('src/environmentCi/AndroidManifest.xml').getText('UTF-8')
                 def inner = extra.substring(extra.indexOf('<application>') + '<application>'.length(), extra.indexOf('</application>'))
+                if (project.hasProperty('environmentNetworkTest')) {
+                    base=base.replace('<application ', '<application android:networkSecurityConfig="@xml/studio_environment_network_security" ')
+                    base=base.replace('tools:replace="android:label"','tools:replace="android:label,android:networkSecurityConfig"')
+                    inner += '<provider android:name=".EnvironmentNetworkFilesProvider" android:authorities="${applicationId}.network-docs" android:exported="true" android:permission="android.permission.MANAGE_DOCUMENTS" android:grantUriPermissions="true"><intent-filter><action android:name="android.content.action.DOCUMENTS_PROVIDER" /></intent-filter></provider>'
+                }
                 def target = generatedManifest.get().asFile; target.parentFile.mkdirs()
                 target.setText(base.replace('</application>', inner + '</application>'),'UTF-8')
             }
@@ -212,4 +220,32 @@ if (project.hasProperty('environmentClient')) {
         android.sourceSets.networkBeta.manifest.srcFile(generatedManifest.get().asFile)
         tasks.matching { it.name == 'preNetworkBetaBuild' }.configureEach { dependsOn 'prepareEnvironmentCiManifest' }
     }
+}
+
+// Exact owned CA/probe only in the Gecko network fixture. Human builds never add
+// these sources, resources, destinations, or document-provider permissions.
+if (project.hasProperty('environmentNetworkTest')) {
+    if (!project.hasProperty('environmentClient') || !project.hasProperty('environmentTest')) throw new GradleException('Gecko network acceptance requires the isolated environment client fixture')
+    android.buildTypes.networkBeta.buildConfigField 'boolean', 'NETWORK_TEST', 'true'
+    android.buildTypes.networkBeta.buildConfigField 'String', 'NETWORK_HOME_URL', '"https://network-fixture.test:18480/c/a1"'
+    android.buildTypes.networkBeta.buildConfigField 'String', 'NETWORK_PROBE_URL', '"https://network-fixture.test:18480/echo"'
+    def ownedCa = rootProject.file('network-poc/secure-fixture/ca.pem')
+    def trustRoot = layout.buildDirectory.dir('generated/environment-network-ci').get().asFile
+    tasks.register('prepareEnvironmentNetworkTrust') {
+        inputs.file ownedCa
+        outputs.dir trustRoot
+        doLast {
+            def pem=ownedCa.getText('UTF-8')
+            if (!pem.startsWith('-----BEGIN CERTIFICATE-----')) throw new GradleException('Missing owned Gecko network CA')
+            def javaFile=new File(trustRoot,'java/com/forcemind/chatgpt/profiles/GeneratedNetworkTrust.java')
+            javaFile.parentFile.mkdirs()
+            javaFile.text='package com.forcemind.chatgpt.profiles; public final class GeneratedNetworkTrust { public static final String PEM = ' + groovy.json.JsonOutput.toJson(pem) + '; }'
+            def ca=new File(trustRoot,'res/raw/studio_environment_network_ci_ca.pem');ca.parentFile.mkdirs();ca.text=pem
+            def config=new File(trustRoot,'res/xml/studio_environment_network_security.xml');config.parentFile.mkdirs()
+            config.text='<network-security-config><base-config cleartextTrafficPermitted="false" /><domain-config><domain>network-fixture.test</domain><domain>files.network-fixture.test</domain><trust-anchors><certificates src="system" /><certificates src="@raw/studio_environment_network_ci_ca" /></trust-anchors></domain-config></network-security-config>'
+        }
+    }
+    android.sourceSets.networkBeta.java.srcDir(new File(trustRoot,'java'))
+    android.sourceSets.networkBeta.res.srcDir(new File(trustRoot,'res'))
+    tasks.matching { it.name == 'preNetworkBetaBuild' }.configureEach { dependsOn 'prepareEnvironmentNetworkTrust' }
 }

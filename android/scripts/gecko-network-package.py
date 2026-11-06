@@ -1,0 +1,29 @@
+"""Receipt for the separately marked CI target; never distribute it as a human APK."""
+import hashlib, json, os, re, subprocess, zipfile
+from pathlib import Path
+
+assert os.environ.get('GITHUB_ACTIONS') == 'true'
+root = Path('android/app/build')
+apk = root / 'environment-client-input/gecko-network-x86.apk'
+source = (root / 'generated/source/buildConfig/networkBeta/com/forcemind/chatgpt/profiles/BuildConfig.java').read_text()
+for flag in ('ENVIRONMENT_CLIENT', 'ENVIRONMENT_TEST', 'ENVIRONMENT_NETWORK_TEST', 'NETWORK_TEST'):
+    assert flag + ' = true' in source, flag
+tools = Path(os.environ['ANDROID_HOME']) / 'build-tools/35.0.0'
+badging = subprocess.check_output([str(tools/'aapt2'), 'dump', 'badging', str(apk)], text=True)
+assert "name='com.forcemind.chatgpt.profiles.networkbeta'" in badging
+assert "versionCode='3000031'" in badging and "versionName='3.0.0-alpha.24-beta.7'" in badging
+cert = subprocess.check_output([str(tools/'apksigner'), 'verify', '--print-certs', str(apk)], text=True)
+signer = re.search(r'certificate SHA-256 digest: ([0-9a-fA-F]+)', cert)[1].lower()
+assert signer == json.loads(Path('docs/signing/android-network-beta.json').read_text())['certificateSHA256']
+with zipfile.ZipFile(apk) as archive:
+    manifest = json.loads(archive.read('assets/studio-environment/manifest.json'))
+    assert 'https://network-fixture.test/*' in manifest['content_scripts'][0]['matches']
+    assert any('studio_environment_network_ci_ca' in name for name in archive.namelist())
+    dex = b''.join(archive.read(name) for name in archive.namelist() if name.endswith('.dex'))
+    assert b'EnvironmentNetworkFilesProvider' in dex and b'GeneratedNetworkTrust' in dex
+receipt = {'schema':1,'file':apk.name,'bytes':apk.stat().st_size,
+           'sha256':hashlib.sha256(apk.read_bytes()).hexdigest(),'sourceSHA':os.environ['GITHUB_SHA'],
+           'package':'com.forcemind.chatgpt.profiles.networkbeta','versionCode':3000031,
+           'versionName':'3.0.0-alpha.24-beta.7','signerSHA256':signer,'ciOnly':True}
+(apk.parent/'gecko-network-receipt.json').write_text(json.dumps(receipt, indent=2)+'\n')
+print(json.dumps(receipt))

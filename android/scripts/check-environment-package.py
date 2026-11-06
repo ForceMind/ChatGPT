@@ -6,6 +6,7 @@ root=Path('android/app/build')
 source=(root/'generated/source/buildConfig/networkBeta/com/forcemind/chatgpt/profiles/BuildConfig.java').read_text()
 assert 'ENVIRONMENT_CLIENT = true' in source
 assert 'ENVIRONMENT_TEST = false' in source and 'ENVIRONMENT_HOME_URL = ""' in source
+assert 'ENVIRONMENT_NETWORK_TEST = false' in source and 'NETWORK_TEST = false' in source
 apk=root/'outputs/apk/networkBeta/app-networkBeta.apk'
 with zipfile.ZipFile(apk) as z:
     manifest=json.loads(z.read('assets/studio-environment/manifest.json'))
@@ -13,8 +14,9 @@ with zipfile.ZipFile(apk) as z:
     for name in z.namelist():
         if name.endswith('.dex'):
             data=z.read(name)
-            for forbidden in (b'EnvironmentAcceptanceActivity',b'EnvironmentUpgradeSeedTest',b'environment-fixture.test'):
+            for forbidden in (b'EnvironmentAcceptanceActivity',b'EnvironmentUpgradeSeedTest',b'environment-fixture.test',b'EnvironmentNetworkFilesProvider',b'EnvironmentNetworkControl',b'GeneratedNetworkTrust',b'network-fixture.test'):
                 assert forbidden not in data, 'Synthetic control leaked into human APK'
+    assert not any('studio_environment_network_ci_ca' in name or 'studio_environment_network_security' in name for name in z.namelist())
     assert any(name.endswith('/libxul.so') for name in z.namelist())
 folder=root/'network-beta'
 (folder/'GECKO-NOTICE.txt').write_text('GeckoView 158.0.20261021001945, Mozilla Public License 2.0 and bundled third-party notices.\nExact SDK and source archive: https://maven.mozilla.org/maven2/org/mozilla/geckoview/geckoview/158.0.20261021001945/\nMozilla source and licensing: https://firefox-source-docs.mozilla.org/\nThe complete Gecko runtime license resources remain in the unmodified upstream runtime assets.\n')

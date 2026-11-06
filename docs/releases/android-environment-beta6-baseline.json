@@ -1,0 +1,21 @@
+{
+  "sourceSHA": "2b8738187ca7d02e83700334859ba77acd32f87a",
+  "sourceRun": 42090385251,
+  "deliveredRun": 42107129970,
+  "receipt": {
+    "package": "com.forcemind.chatgpt.profiles.networkbeta",
+    "versionCode": 3000030,
+    "versionName": "3.0.0-alpha.24-beta.6",
+    "file": "ChatGPT-Studio-3.0.0-alpha.24-beta.6-android-arm64.apk",
+    "bytes": 241735569,
+    "sha256": "54c1c80e8b6695501802567318ef2caa945f1cd48248acce41fe3f0c68ae15d4",
+    "signerSHA256": "bd7b9c924795ec21d27c73f280b5fc71b83ffea950e36e05967b77f092056ac0"
+  },
+  "deviceProofs": [
+    {
+      "api": 28,
+      "candidateInstalledSHA256": "8e0fb7b25475e017c5da88b851d37e43e1333f1fffadca7634eb68c87f1183c3",
+      "proofSourceRun": 42090385251
+    }
+  ]
+}

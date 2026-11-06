@@ -657,7 +657,7 @@ def wait_ready(children, folder, timeout=20):
     return ports
 
 
-def run(core, folder, manifest):
+def run(core, folder, manifest, gecko_network=False):
     marker = folder / 'ready.json'
     marker.unlink(missing_ok=True)
     manifest['ready'] = False
@@ -668,10 +668,14 @@ def run(core, folder, manifest):
     try:
         for signum in (signal.SIGTERM, signal.SIGINT):
             old_handlers[signum] = signal.signal(signum, lambda *_: stopped.set())
-        origin = http.server.ThreadingHTTPServer(('0.0.0.0', ORIGIN_PORT), Origin)
+        handler = Origin
+        if gecko_network:
+            from gecko_fixture_page import handler_for
+            handler = handler_for(Origin, route_name)
+        origin = http.server.ThreadingHTTPServer(('0.0.0.0', ORIGIN_PORT), handler)
         servers.append(origin)
         threading.Thread(target=origin.serve_forever, daemon=True).start()
-        https = http.server.ThreadingHTTPServer(('0.0.0.0', HTTPS_ORIGIN_PORT), Origin)
+        https = http.server.ThreadingHTTPServer(('0.0.0.0', HTTPS_ORIGIN_PORT), handler)
         https.socket = tls_context(folder).wrap_socket(https.socket, server_side=True)
         servers.append(https)
         threading.Thread(target=https.serve_forever, daemon=True).start()
@@ -726,6 +730,7 @@ def main():
     parser.add_argument('--core', help='Pinned Xray binary; required when starting fixtures')
     parser.add_argument('--output', required=True)
     parser.add_argument('--prepare-only', action='store_true')
+    parser.add_argument('--gecko-network', action='store_true', help='Owned Gecko file-picker page extension only')
     args = parser.parse_args()
     if os.environ.get('GITHUB_ACTIONS') != 'true':
         raise SystemExit('CI only')
@@ -736,7 +741,7 @@ def main():
         if not args.core:
             parser.error('--core is required when starting fixtures')
         # Never rotate the CA after the Android CI build has embedded its public trust.
-        run(args.core, folder, load_prepared(folder))
+        run(args.core, folder, load_prepared(folder), args.gecko_network)
 
 
 if __name__ == '__main__':

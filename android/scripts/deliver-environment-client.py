@@ -11,7 +11,7 @@ if (root/'api35-test-receipt.json').exists():
     assert test35['file']=='api35-upgrade-test.apk' and test35['applicationSourceSHA']==receipt['sourceSHA']
     test35_hash=hashlib.sha256((root/test35['file']).read_bytes()).hexdigest()
     assert test35_hash==test35['sha256'] and test35['signerSHA256']==receipt['signerSHA256']
-assert receipt['versionName']=='3.0.0-alpha.24-beta.6' and receipt['versionCode']==3000030
+assert receipt['versionName']=='3.0.0-alpha.24-beta.7' and receipt['versionCode']==3000031
 assert receipt['package']=='com.forcemind.chatgpt.profiles.networkbeta'
 proofs=[]
 for api in (28,35):

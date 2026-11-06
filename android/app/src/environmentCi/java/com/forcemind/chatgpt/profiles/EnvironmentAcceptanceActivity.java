@@ -14,6 +14,7 @@ import org.json.JSONObject;
 /** DUMP-protected CI control only. Never loads a page or injects a test marker. */
 public final class EnvironmentAcceptanceActivity extends Activity {
     private static final String MANIFEST="environment-acceptance.json";
+    private EnvironmentNetworkControl networkControl;
     @Override public void onCreate(Bundle saved){
         if(!BuildConfig.ENVIRONMENT_TEST)throw new SecurityException("Environment acceptance disabled");
         super.onCreate(saved);dispatch(getIntent());
@@ -26,6 +27,7 @@ public final class EnvironmentAcceptanceActivity extends Activity {
         if(!BuildConfig.ENVIRONMENT_TEST||!BuildConfig.ENVIRONMENT_CLIENT)throw new SecurityException("Environment acceptance disabled");
         try{
             if(intent==null)throw new IllegalArgumentException("Missing explicit action");String action=intent.getStringExtra("action");
+            if(action!=null&&action.startsWith("network-")){if(!BuildConfig.ENVIRONMENT_NETWORK_TEST)throw new SecurityException("Network fixture disabled");networkControl=new EnvironmentNetworkControl(this);networkControl.run(intent);return;}
             if(!"prepare".equals(action)&&!"open".equals(action)&&!"record".equals(action))throw new IllegalArgumentException("Unknown action");
             Bundle extras=intent.getExtras();if(extras!=null)for(String key:extras.keySet())if(!"action".equals(key)&&(!("open".equals(action)||"record".equals(action))||!"account".equals(key)&&!"tab".equals(key)))throw new IllegalArgumentException("Unknown input");
             if("prepare".equals(action))prepare();else if("record".equals(action))record(intent);else open(intent);
@@ -40,7 +42,8 @@ public final class EnvironmentAcceptanceActivity extends Activity {
     private File manifest(){return new File(getFilesDir(),MANIFEST);}
     private static String origin(){
         URI home=URI.create(BuildConfig.ENVIRONMENT_HOME_URL);
-        if(!"https".equals(home.getScheme())||!"environment-fixture.test".equals(home.getHost())||home.getPort()!=18480||home.getRawUserInfo()!=null||home.getRawQuery()!=null||home.getRawFragment()!=null)throw new SecurityException("Unexpected acceptance origin");
+        String host=BuildConfig.ENVIRONMENT_NETWORK_TEST?"network-fixture.test":"environment-fixture.test";
+        if(!"https".equals(home.getScheme())||!host.equals(home.getHost())||home.getPort()!=18480||home.getRawUserInfo()!=null||home.getRawQuery()!=null||home.getRawFragment()!=null)throw new SecurityException("Unexpected acceptance origin");
         return home.getScheme()+"://"+home.getHost()+":"+home.getPort();
     }
     private void prepare()throws Exception{
@@ -117,5 +120,6 @@ public final class EnvironmentAcceptanceActivity extends Activity {
         try(java.io.FileOutputStream out=new java.io.FileOutputStream(temporary)){out.write(result.toString().getBytes(StandardCharsets.UTF_8));out.getFD().sync();}
         Files.move(temporary.toPath(),target.toPath(),StandardCopyOption.REPLACE_EXISTING,StandardCopyOption.ATOMIC_MOVE);
     }
+    @Override public void onDestroy(){if(networkControl!=null)networkControl.close();super.onDestroy();}
 
 }

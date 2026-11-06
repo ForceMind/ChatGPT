@@ -47,7 +47,7 @@ public class EnvironmentBrowserActivity extends ComponentActivity implements Env
         PageOperation(Entry e,PageCommand command){entry=e;url=e.url;token=e.token;epoch=e.epoch;this.command=command;}
     }
     private PageOperation pageOperation;
-    private GeckoSession.PromptDelegate.FilePrompt filePrompt;private GeckoResult<GeckoSession.PromptDelegate.PromptResponse> fileResult;private Entry fileOwner;private long fileEpoch;private String fileUrl;
+    private GeckoSession.PromptDelegate.FilePrompt filePrompt;private GeckoResult<GeckoSession.PromptDelegate.PromptResponse> fileResult;private Entry fileOwner;private long fileEpoch;private String fileUrl;private EnvironmentTransferController.Lease fileLease;
 
     @Override public void onCreate(Bundle saved){
         super.onCreate(saved);getOnBackPressedDispatcher().addCallback(this,new OnBackPressedCallback(true){@Override public void handleOnBackPressed(){if(current!=null&&!current.closed&&current.canBack&&routeReady)pageAction(current,PageCommand.BACK);else moveTaskToBack(true);}});getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);getWindow().setStatusBarColor(Color.WHITE);getWindow().setNavigationBarColor(Color.WHITE);getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR|View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
@@ -69,14 +69,14 @@ public class EnvironmentBrowserActivity extends ComponentActivity implements Env
             // Reattach delegates to this Activity after Android recreates the window.
             reconcile();for(Entry e:SESSIONS.values())configure(e,this);
             EnvironmentRouteController.Listener routeListener=(ready,foreground,notice)->{
-                boolean wasReady=routeReady;routeReady=ready;appForeground=foreground;if(!ready)cancelPageOperation();
+                boolean wasReady=routeReady;routeReady=ready;appForeground=foreground;if(!ready){cancelPageOperation();cancelFile();}
                 if(status!=null){status.setText(notice);status.setVisibility(notice.isEmpty()?View.GONE:View.VISIBLE);}
                 for(Entry e:SESSIONS.values())if(!e.closed){e.session.setActive(foreground);if(wasReady&&!ready&&e.started)e.session.stop();}
                 if(ready)startCurrent();renderHeader();
             };
-            if(processRoutes==null)processRoutes=new EnvironmentRouteController(getApplicationContext(),runtime,routeListener);
+            if(processRoutes==null)processRoutes=new EnvironmentRouteController(getApplicationContext(),runtime,slot(),routeListener);
             routes=processRoutes;routes.listener(routeListener);
-            routes.whenExtensionReady(()->{for(Entry e:SESSIONS.values())documents.attach(e,routes.extensionReady);startCurrent();});
+            routes.whenExtensionReady(()->{for(Entry e:SESSIONS.values()){documents.attach(e,routes.extensionReady);routes.transfers.attach(e,routes.extensionReady);}startCurrent();});
             showCurrent();
         }catch(Exception error){failure("账号页面暂时无法打开",error.getMessage());}
     }
@@ -119,7 +119,7 @@ public class EnvironmentBrowserActivity extends ComponentActivity implements Env
             if(e.record!=null){e.nativeState=e.record.optString("nativeSessionState","");e.pendingRestore=e.record.optJSONObject("document");rememberDocument(e,e.pendingRestore);}
         }catch(Exception error){notice("本地恢复记录暂不可读取，原件已保留");}
         if(e.record==null)e.record=freshRecord(e);
-        if(routes!=null&&routes.extensionReady!=null)documents.attach(e,routes.extensionReady);
+        if(routes!=null&&routes.extensionReady!=null){documents.attach(e,routes.extensionReady);routes.transfers.attach(e,routes.extensionReady);}
         return e;
     }
     private JSONObject freshRecord(Entry e)throws Exception{return new JSONObject().put("schema",1).put("accountId",e.accountId).put("storageId",e.storageId).put("tabId",e.tabId).put("url",EnvironmentUrls.recoverable(e.url));}
@@ -177,8 +177,14 @@ public class EnvironmentBrowserActivity extends ComponentActivity implements Env
         e.session.setPromptDelegate(new GeckoSession.PromptDelegate(){
             @Override public GeckoResult<PromptResponse> onFilePrompt(GeckoSession session,FilePrompt prompt){EnvironmentBrowserActivity ownerActivity=target.get();if(ownerActivity==null||ownerActivity.destroyed){return GeckoResult.fromValue(prompt.dismiss());}
                 if(e!=ownerActivity.current||!ownerActivity.owns(e)||!ownerActivity.routeReady||ownerActivity.fileResult!=null||prompt.type==FilePrompt.Type.FOLDER){ownerActivity.notice("当前页面无法选择文件");return GeckoResult.fromValue(prompt.dismiss());}
-                ownerActivity.fileOwner=e;ownerActivity.fileEpoch=e.epoch;ownerActivity.fileUrl=e.url;ownerActivity.filePrompt=prompt;ownerActivity.fileResult=new GeckoResult<>();ownerActivity.renderHeader();GeckoResult<PromptResponse> selected=ownerActivity.fileResult;Intent pick=new Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("*/*").putExtra(Intent.EXTRA_ALLOW_MULTIPLE,prompt.type==FilePrompt.Type.MULTIPLE);
-                if(prompt.mimeTypes!=null&&prompt.mimeTypes.length>0)pick.putExtra(Intent.EXTRA_MIME_TYPES,prompt.mimeTypes);try{ownerActivity.startActivityForResult(pick,804);}catch(Exception error){ownerActivity.cancelFile();ownerActivity.notice("系统文件选择器不可用");}return selected;
+                ownerActivity.fileOwner=e;ownerActivity.fileEpoch=e.epoch;ownerActivity.fileUrl=e.url;ownerActivity.filePrompt=prompt;ownerActivity.fileResult=new GeckoResult<>();ownerActivity.renderHeader();GeckoResult<PromptResponse> selected=ownerActivity.fileResult;
+                ownerActivity.routes.transfers.acquirePicker(e,lease->{
+                    if(lease==null||ownerActivity.destroyed||ownerActivity.fileResult!=selected||e!=ownerActivity.current||!ownerActivity.owns(e)||e.epoch!=ownerActivity.fileEpoch||!e.url.equals(ownerActivity.fileUrl)){
+                        if(lease!=null)ownerActivity.routes.transfers.release(lease,"cancel");if(ownerActivity.fileResult==selected){ownerActivity.cancelFile();ownerActivity.notice("当前线路暂不能选择文件，请重试");}return;
+                    }
+                    ownerActivity.fileLease=lease;Intent pick=new Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("*/*").putExtra(Intent.EXTRA_ALLOW_MULTIPLE,prompt.type==FilePrompt.Type.MULTIPLE);
+                    if(prompt.mimeTypes!=null&&prompt.mimeTypes.length>0)pick.putExtra(Intent.EXTRA_MIME_TYPES,prompt.mimeTypes);try{ownerActivity.startActivityForResult(pick,804);}catch(Exception error){ownerActivity.cancelFile();ownerActivity.notice("系统文件选择器不可用");}
+                });return selected;
             }
             @Override public GeckoResult<PromptResponse> onAlertPrompt(GeckoSession session,AlertPrompt prompt){EnvironmentBrowserActivity ownerActivity=target.get();if(ownerActivity==null||ownerActivity.destroyed){return GeckoResult.fromValue(prompt.dismiss());}GeckoResult<PromptResponse> result=new GeckoResult<>();new AlertDialog.Builder(ownerActivity).setTitle("页面提示").setMessage(prompt.message).setPositiveButton("好",(d,w)->result.complete(prompt.dismiss())).setOnCancelListener(d->result.complete(prompt.dismiss())).show();return result;}
             @Override public GeckoResult<PromptResponse> onRepostConfirmPrompt(GeckoSession session,RepostConfirmPrompt prompt){EnvironmentBrowserActivity ownerActivity=target.get();if(ownerActivity!=null&&!ownerActivity.destroyed){e.loadingUrl=null;e.resumeAfterDocument=null;ownerActivity.documents.request(e);ownerActivity.renderHeader();ownerActivity.notice("为避免重复提交，已取消重新发送");}return GeckoResult.fromValue(prompt.confirm(AllowOrDeny.DENY));}
@@ -334,15 +340,36 @@ public class EnvironmentBrowserActivity extends ComponentActivity implements Env
         final String filename=AssetLedger.filename(name),type=contentType;long expected=-1;
         try{String header=response.headers.get("Content-Length");if(header!=null){expected=Long.parseLong(header);if(expected<0)expected=-1;}}catch(NumberFormatException ignored){}
         java.lang.ref.WeakReference<EnvironmentBrowserActivity> target=new java.lang.ref.WeakReference<>(this);
+        EnvironmentTransferController.Lease ticket=routes.transfers.claim(e,response.headers.get(EnvironmentTransferController.HEADER),response.uri);
+        if(ticket==null){try{response.body.close();}catch(IOException ignored){}notice("此下载的原线路无法确认，请重新从页面发起");return;}
         e.activeTransfers++;renderHeader();
-        routes.importAsset(e.accountId,e.storageId,e.tabId,e.url,filename,type,response.body,expected,(success,message)->{
+        routes.importAsset(ticket,filename,type,response.body,expected,(success,message)->{
             e.activeTransfers=Math.max(0,e.activeTransfers-1);EnvironmentBrowserActivity activity=target.get();if(activity!=null&&!activity.destroyed){activity.renderHeader();activity.notice(message);}
         });
     }
-    private void cancelFile(){if(fileResult!=null){if(!filePrompt.isComplete())fileResult.complete(filePrompt.dismiss());fileResult=null;filePrompt=null;fileOwner=null;renderHeader();}}
-    @Override protected void onActivityResult(int request,int result,Intent data){super.onActivityResult(request,result,data);if(request!=804||fileResult==null)return;GeckoResult<GeckoSession.PromptDelegate.PromptResponse> pending=fileResult;GeckoSession.PromptDelegate.FilePrompt prompt=filePrompt;Entry owner=fileOwner;fileResult=null;filePrompt=null;fileOwner=null;renderHeader();if(result!=RESULT_OK||data==null||owner!=current||!owns(owner)||owner.epoch!=fileEpoch||!owner.url.equals(fileUrl)){pending.complete(prompt.dismiss());return;}try{ArrayList<Uri> uris=new ArrayList<>();if(data.getClipData()!=null)for(int i=0;i<data.getClipData().getItemCount();i++)uris.add(data.getClipData().getItemAt(i).getUri());else if(data.getData()!=null)uris.add(data.getData());if(uris.isEmpty()||uris.size()>30)throw new IOException();for(Uri uri:uris)if(!"content".equals(uri.getScheme()))throw new IOException();pending.complete(prompt.confirm(getApplicationContext(),uris.toArray(new Uri[0])));}catch(Exception error){pending.complete(prompt.dismiss());notice("所选文件不可用");}}
-    private void close(Entry e){if(pageOperation!=null&&pageOperation.entry==e)cancelPageOperation();e.closed=true;e.historyDocuments.clear();if(e.saveTask!=null)ui.removeCallbacks(e.saveTask);if(documents!=null)documents.invalidate(e);if(e.session.isOpen())e.session.close();}
-    @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);cancelPageOperation();setIntent(intent);accountId=intent.getStringExtra("accountId");if(store!=null)showCurrent();}
+    private void cancelFile(){
+        EnvironmentTransferController.Lease lease=fileLease;fileLease=null;if(lease!=null&&routes!=null)routes.transfers.release(lease,"cancel");
+        if(fileResult!=null){if(!filePrompt.isComplete())fileResult.complete(filePrompt.dismiss());fileResult=null;filePrompt=null;fileOwner=null;renderHeader();}
+    }
+    @Override protected void onActivityResult(int request,int result,Intent data){
+        super.onActivityResult(request,result,data);if(request!=804||fileResult==null)return;
+        GeckoResult<GeckoSession.PromptDelegate.PromptResponse> pending=fileResult;GeckoSession.PromptDelegate.FilePrompt prompt=filePrompt;Entry owner=fileOwner;EnvironmentTransferController.Lease lease=fileLease;
+        if(result!=RESULT_OK||data==null||owner!=current||!owns(owner)||owner.epoch!=fileEpoch||!owner.url.equals(fileUrl)||!routeReady){cancelFile();return;}
+        ArrayList<Uri> uris=new ArrayList<>();try{
+            if(data.getClipData()!=null)for(int i=0;i<data.getClipData().getItemCount();i++)uris.add(data.getClipData().getItemAt(i).getUri());else if(data.getData()!=null)uris.add(data.getData());
+            if(uris.isEmpty()||uris.size()>30)throw new IOException();for(Uri uri:uris)if(!"content".equals(uri.getScheme()))throw new IOException();
+        }catch(Exception invalid){cancelFile();notice("所选文件不可用");return;}
+        routes.transfers.validatePicker(lease,valid->{
+            if(fileResult!=pending)return;
+            if(!valid||destroyed||owner!=current||!owns(owner)||owner.epoch!=fileEpoch||!owner.url.equals(fileUrl)||!routeReady){cancelFile();notice("线路或账号已改变，请重新选择文件");return;}
+            fileResult=null;filePrompt=null;fileOwner=null;fileLease=null;renderHeader();
+            try{if(!prompt.isComplete())pending.complete(prompt.confirm(getApplicationContext(),uris.toArray(new Uri[0])));}
+            catch(Exception unavailable){if(!prompt.isComplete())pending.complete(prompt.dismiss());notice("所选文件不可用");}
+            finally{routes.transfers.selected(lease);}
+        });
+    }
+    private void close(Entry e){if(fileOwner==e)cancelFile();if(routes!=null)routes.transfers.closeEntry(e);if(pageOperation!=null&&pageOperation.entry==e)cancelPageOperation();e.closed=true;e.historyDocuments.clear();if(e.saveTask!=null)ui.removeCallbacks(e.saveTask);if(documents!=null)documents.invalidate(e);if(e.session.isOpen())e.session.close();}
+    @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);cancelPageOperation();cancelFile();setIntent(intent);accountId=intent.getStringExtra("accountId");if(store!=null)showCurrent();}
     @Override protected void onResume(){super.onResume();resumed=true;if(routes!=null)routes.foreground(true);if(browser!=null){showCurrent();if(current!=null)current.session.setFocused(true);}}
     @Override protected void onPause(){cancelPageOperation();resumed=false;if(current!=null&&!current.closed){documents.request(current);current.session.flushSessionState();current.session.setFocused(false);}for(Entry e:SESSIONS.values())if(e.saveTask!=null){ui.removeCallbacks(e.saveTask);e.saveTask.run();}if(routes!=null)routes.foreground(false);super.onPause();}
     @Override protected void onStop(){super.onStop();ui.post(()->{for(Entry e:SESSIONS.values())if(!e.closed&&e.session.isOpen())e.session.setActive(appForeground);});}

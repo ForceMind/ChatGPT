@@ -103,6 +103,11 @@ final class NetworkSession {
         }
         notifyPanelChanged(); return routes.snapshot();
     }
+    NetworkRoute.Snapshot beginEnvironmentRequest(String id) {
+        if (Looper.myLooper() != main.getLooper()) throw new IllegalStateException("Request ownership requires UI thread");
+        synchronized(this){if(!ready()||jobs.size()+externalJobs.size()>=256||!externalJobs.add(id))throw new IllegalStateException("网页请求暂不可用");}
+        notifyPanelChanged();return routes.snapshot();
+    }
     void finishEnvironmentFile(String id) {
         synchronized (this) { externalJobs.remove(id); }
         notifyPanelChanged();
