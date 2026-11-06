@@ -162,8 +162,11 @@ class NetworkAcceptance(common.Acceptance):
         assert self.shell('settings', 'get', 'global', 'debug_app').strip() == PACKAGE
 
     def route_page(self, route, document=None, draft=None):
-        status = self.wait('actual browser HTTP exit '+route, self.status,
-            lambda value: (self.latest(value, '/c/a1') or {}).get('route') == route)
+        def complete_observation(value):
+            row = self.latest(value, '/c/a1')
+            return (row and row.get('route') == route and row.get('worker')
+                    and row.get('indexedDB') is not None and row.get('envLogin') is not None)
+        status = self.wait('actual browser HTTP exit '+route, self.status, complete_observation)
         row = self.latest(status, '/c/a1');self.assert_environment(row, 'A')
         assert row['ciIdentity'] == 'A' and row['url'] == 'https://' + HOST + ':18480/c/a1'
         if document is not None:
@@ -333,8 +336,8 @@ def main():
         uid=int(match[1]);assert native._shell('id','-u').strip()=='0'
         acceptance=NetworkAcceptance(api,uid,args.fixture,args.output,args.transport)
         assert acceptance.owned_http('/gecko-network/control/configure',{'transport':args.transport,'runId':str(uuid.uuid4())})['ok'] is True
-        connected,node_count=acceptance.configure(manifest)
         acceptance.prepare(args.fixture.parent/'ca.pem')
+        connected,node_count=acceptance.configure(manifest)
         acceptance.control('open','A',0)
         _,first=acceptance.route_page('A')
         draft='OwnedNetworkDraft-'+uuid.uuid4().hex;acceptance.type_draft('A',0,draft)

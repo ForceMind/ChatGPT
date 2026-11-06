@@ -124,7 +124,13 @@ final class EnvironmentRouteController {
     void broker(int what,JSONObject value,java.util.function.Consumer<JSONObject> callback)throws Exception{
         String call=UUID.randomUUID().toString();value.put("call",call);calls.put(call,callback);
         try{sendPayload(what,value);}catch(Exception disconnected){calls.remove(call);callback.accept(new JSONObject());return;}
-        ui.postDelayed(()->{java.util.function.Consumer<JSONObject> pending=calls.remove(call);if(pending!=null)pending.accept(new JSONObject());},5000);
+        ui.postDelayed(()->{
+            java.util.function.Consumer<JSONObject> pending=calls.remove(call);
+            if(pending!=null){
+                if(what==6)try{sendPayload(7,new JSONObject().put("lease",value.getString("operation")).put("status","cancel"));}catch(Exception disconnected){/* A dead broker owns no surviving lease; binder death revokes the client. */}
+                pending.accept(new JSONObject());
+            }
+        },5000);
     }
     private void apply(){
         if(port==null||desired==null||closed)return;
