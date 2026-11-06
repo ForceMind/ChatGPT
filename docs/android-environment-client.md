@@ -20,7 +20,23 @@
 
 定点修复已改为原文档本地保存通道，待 Actions 运行：只接管同一 Window、真实激活的 `anchor[download]` 本地意图；窄化的 Gecko `exportFunction` click 包装覆盖 detached 锚，普通 click 调用原方法。原文档的保留 `content.fetch` 只读捕获的 blob/data，确认保存后才读取正文；每次最多 16 KiB，Native 实际消费后 ACK，再沿原 InputStream/PFD/主进程 Ledger 校验 EOF、大小与所属。普通 blob/data 顶层导航继续拒绝；没有改 HTTP 原方法、线路票据、数据格式或原验收断言。失败取证另增加 Android9 runner 内核与进程内存快照，用于定位前述模拟器断连。
 
-## 当前已交付：Beta.7 Gecko VLESS 同路由
+## 最新交付：2026.11.06-2024 本地导出候选
+
+第一阶段已完成，第二阶段的新 Gecko 资产/Skill 自动任务继续开发，不以本阶段代替完整主线交付。
+
+- [下载日期版候选：APK、安装说明、SHA-256 与验收证据](https://github.com/ForceMind/ChatGPT/actions/runs/42217329731/artifacts/13503110551)
+- [Actions 完整验收：42217329731，全部通过](https://github.com/ForceMind/ChatGPT/actions/runs/42217329731)
+- 源码 `82e5015dd141630b3c9619ac61b27167d80f82ff`；版本 `2026.11.06-2024`，上海时区，内部序号 `3000032`。
+- APK `ChatGPT-Studio-2026.11.06-2024-android-arm64.apk`，241,805,521 字节；SHA-256 `9a730594220d14c0a4a9abc540eba4c5d1343e1d0b393e5f5a3cb948784687d8`。
+- 包名与固定 Beta 证书保持不变；通过 Beta.7 的同签覆盖升级。人用包非 debug、非 testOnly、16 KiB 对齐，无测试 CA、合成节点或 CI Probe。
+
+Actions 实际 17 份 JUnit XML 合计 85 项测试，0 失败、错误、跳过，原 16 项网络夹具测试、lint 和全部打包检查通过。两端同签升级、登录/密文/恢复/热标签完整回归以及六组 RAW/TLS/REALITY 网页和文件同路由全部通过。
+
+本地保存新增 API28/35 各 9 次操作：在线与核心停止后的离线 HTML、PNG、data 文本共六次原字节核对，前台切到 B 后文件仍归 A，保存 Sheet 取消、EOF 后关闭源标签均不发布；普通 HTTP 下载票据仍通过。每端实际保留 8 个 ready 资产（7 个本地导入和1个 HTTP 下载），取消不留下 `.bin/.part`。独立交付门禁复核 Native 双进程阶段、EOF/长度/哈希/归属及真实账本，全部退出 0。
+
+已在线范围读取候选 ZIP：82 项、仅一个人用 APK，压缩包 111,701,706 字节；只读取 8,332 字节的目录、receipt、日期元数据和验收摘要，未下载大型 APK 到本机。该候选仅通过 Actions 分发，产物保留14天；主线仍在 dev，未合并 main、公开发布、部署或更新个人设备。所有浏览器验证限合成数据，没有截图、真实 ChatGPT、真实节点或 OEM 手机验收。新 Gecko 的资产/Skill 自动任务尚未交付。
+
+## 上一交付基线：Beta.7 Gecko VLESS 同路由
 
 本轮已完成固定签名 **3.0.0-alpha.24-beta.7**（versionCode `3000031`）候选，适用于 Android 9 及以上 arm64 设备。只交付 Actions 候选，不合并 main、不公开 Release、不部署官网、不更新个人设备。
 
