@@ -622,7 +622,7 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
     }catch(Exception e){toast("无法读取任务，请保留数据");}}
     private void openHandoffJob(JSONObject job){try{String target=job.getString("targetAccountId");if(!state.find(target).storageId.equals(job.getString("targetStorageId")))throw new IllegalStateException();String tab=job.optString("tabId"),url=job.optString("conversationURL");boolean existing=state.find(target).tabs.stream().anyMatch(t->t.id.equals(tab));
         if(!existing&&url.isEmpty()){toast("目标标签页已关闭，请手动检查原对话");return;}
-        if(!change(s->{s.activeAccount=target;WorkspaceState.Account account=s.find(target);if(existing)account.activeTab=tab;else{s.addTab(account).url=url;}}))return;showCurrent();if(!url.isEmpty()&&!NavigationPolicy.restorable(currentWeb().getUrl()==null?"":currentWeb().getUrl()).equals(url))currentWeb().loadUrl(url);
+        if(!change(s->{s.activeAccount=target;WorkspaceState.Account account=s.find(target);if(existing)account.activeTab=tab;else{s.addTab(account).url=url;}}))return;if(state.find(target).isEnvironment()){EnvironmentLauncher.open(this,target);return;}showCurrent();if(!url.isEmpty()&&!NavigationPolicy.restorable(currentWeb().getUrl()==null?"":currentWeb().getUrl()).equals(url))currentWeb().loadUrl(url);
     }catch(Exception e){toast("目标账号已改变或清理，不能在新的登录空间自动打开旧任务");}}
     private void showMessage(String title, String body, String action, Runnable onClick) {
         content.removeAllViews(); progress.setVisibility(View.INVISIBLE);

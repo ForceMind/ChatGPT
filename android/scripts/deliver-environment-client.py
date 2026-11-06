@@ -23,7 +23,7 @@ for api in (28,35):
     a,b=json.loads(human.read_text()),json.loads(engine.read_text())
     assert a['complete'] and b['complete'] and a['api']==b['api']==api
     for native_proof in (a,b['legacyUpgrade']):
-        assert native_proof['fromVersionCode']==3000031 and native_proof['toVersionCode']==version_metadata['versionCode']
+        assert native_proof['fromVersionCode']==3000032 and native_proof['toVersionCode']==version_metadata['versionCode']
         assert native_proof['versionMetadata']==version_metadata and native_proof['applicationSourceSHA']==receipt['sourceSHA']
         for descriptor in (native_proof['humanAPK'],native_proof['candidateAPK']):
             assert descriptor['versionCode']==version_metadata['versionCode'] and descriptor['versionName']==version_metadata['versionName']

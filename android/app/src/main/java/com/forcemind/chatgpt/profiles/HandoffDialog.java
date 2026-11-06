@@ -75,7 +75,7 @@ final class HandoffDialog {
         if(preparing||!alive.get())return;
         try{
             WorkspaceState.Account destination=state.accounts.get(target.getSelectedItemPosition());int s=skill.getSelectedItemPosition(),a=agent.getSelectedItemPosition();
-            if(destination.isEnvironment()){status.setText("此账号请在网页手动添加附件；自动处理暂未接入。");return;}
+            if(destination.isEnvironment()&&!BuildConfig.ENVIRONMENT_CLIENT){status.setText("请使用环境客户端打开此账号。");return;}
             JSONObject request=new JSONObject().put("requestId",requestId).put("sourceAccountId",source.id).put("sourceStorageId",source.storageId).put("targetAccountId",destination.id).put("targetStorageId",destination.storageId)
                 .put("assetIds",new JSONArray(selected)).put("crossAccountConfirmed",cross.isChecked()).put("skillId",s==0?"":skills.get(s-1).getString("id")).put("agentId",a==0?"":agents.get(a-1).getString("id")).put("instructions",instructions.getText().toString()).put("language",language.getText().toString());
             request=HandoffRequest.normalize(request);HandoffRuntime runtime=HandoffRuntime.get(activity);JSONObject accepted=request;
@@ -83,7 +83,7 @@ final class HandoffDialog {
             runtime.io.execute(()->{
                 try{JSONObject launch=runtime.prepare(accepted,catalog,alive::get);
                     runtime.handler.post(()->{if(!alive.get()||activity.isFinishing()||activity.isDestroyed()){cancelReady(runtime);return;}
-                        try{activity.startActivity(new Intent(activity,MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP).putExtra("handoffJob",launch.getString("id")).putExtra("handoffToken",launch.getString("token")));dialog.dismiss();activity.finish();}
+                        try{WorkspaceState.Account targetAccount=WorkspaceFiles.read(activity.getFilesDir()).find(accepted.getString("targetAccountId"));if(!targetAccount.storageId.equals(accepted.getString("targetStorageId")))throw new IllegalStateException("目标登录空间已改变");Intent open;if(targetAccount.isEnvironment()){EnvironmentConfig.validateSlot(targetAccount.environmentSlot);open=new Intent().setClassName(activity.getPackageName(),"com.forcemind.chatgpt.profiles.EnvironmentBrowserActivity$Slot"+targetAccount.environmentSlot).putExtra(EnvironmentLauncher.ACCOUNT_ID,targetAccount.id).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);}else open=new Intent(activity,MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP);activity.startActivity(open.putExtra("handoffJob",launch.getString("id")).putExtra("handoffToken",launch.getString("token")));dialog.dismiss();activity.finish();}
                         catch(Exception e){cancelReady(runtime);status.setText("无法打开目标网页，任务已停止，请重新发起。");}
                     });
                 }catch(Exception e){runtime.handler.post(()->{if(alive.get()){status.setText(e.getMessage()==null?"任务准备失败，请关闭后重新发起。":e.getMessage()+"。请关闭后重新发起。");dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setText("关闭");}});}

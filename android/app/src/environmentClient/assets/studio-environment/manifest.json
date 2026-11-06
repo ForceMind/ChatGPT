@@ -31,7 +31,8 @@
         "https://chat.openai.com/*"
       ],
       "js": [
-        "recovery.js"
+        "recovery.js",
+        "handoff.js"
       ],
       "run_at": "document_idle",
       "all_frames": false

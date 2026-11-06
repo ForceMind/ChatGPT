@@ -18,10 +18,11 @@ final class HandoffStore {
         NEXT.put("preparing",Arrays.asList("ready","failed","cancelled","interrupted"));NEXT.put("ready",Arrays.asList("opening","failed","cancelled","interrupted"));NEXT.put("opening",Arrays.asList("uploading","drafting","failed","cancelled","interrupted"));NEXT.put("uploading",Arrays.asList("drafting","failed","cancelled","interrupted"));NEXT.put("drafting",Arrays.asList("sending","failed","cancelled","interrupted"));NEXT.put("sending",Arrays.asList("submitted","uncertain"));
         for(String terminal:new String[]{"submitted","failed","cancelled","interrupted","uncertain"})NEXT.put(terminal,Collections.emptyList());
     }
-    private final File root,index,backup,payloads,fences;
+    private final File files,root,index,backup,payloads,fences;
     private final EncryptedPayloads cipher;
     HandoffStore(File files,EncryptedPayloads cipher)throws Exception{
-        this.cipher=cipher;root=HandoffFiles.root(files,true);index=new File(root,"jobs.json");backup=new File(root,"jobs.backup.json");payloads=new File(root,"payloads");fences=new File(root,"sent");HandoffFiles.directory(payloads,true);HandoffFiles.directory(fences,true);
+        EnvironmentHandoffChecks.initialize(files);
+        this.files=files;this.cipher=cipher;root=HandoffFiles.root(files,true);index=new File(root,"jobs.json");backup=new File(root,"jobs.backup.json");payloads=new File(root,"payloads");fences=new File(root,"sent");HandoffFiles.directory(payloads,true);HandoffFiles.directory(fences,true);
         synchronized(LOCK){read();}
     }
     private static JSONObject clone(JSONObject value)throws JSONException{return new JSONObject(value.toString());}
@@ -34,7 +35,7 @@ final class HandoffStore {
             for(String key:new String[]{"fingerprint","promptSha256","launchHash"})if(!job.getString(key).matches("[a-f0-9]{64}"))throw new IOException("任务摘要无效");
             for(String key:new String[]{"sourceName","targetName","label","message"})HandoffRequest.string(job,key,key.equals("message")?1000:200,true);
             if(integer(job,"updatedAt")<integer(job,"createdAt"))throw new IOException("任务时间无效");if(job.has("tabId"))WorkspaceState.profile(job.getString("tabId"));
-            if(job.has("conversationURL")){String url=job.getString("conversationURL");if(!NavigationPolicy.chat(url)||!NavigationPolicy.restorable(url).equals(url))throw new IOException("任务对话地址无效");}
+            if(job.has("conversationURL")){String url=job.getString("conversationURL");if(!(NavigationPolicy.chat(url)&&NavigationPolicy.restorable(url).equals(url))&&!environmentTestConversation(job,url))throw new IOException("任务对话地址无效");}
             JSONArray files=job.getJSONArray("files");if(files.length()>20)throw new IOException("任务附件过多");Set<String> assets=new HashSet<>(),stages=new HashSet<>(),names=new HashSet<>();long total=0;
             for(int j=0;j<files.length();j++){
                 JSONObject file=files.getJSONObject(j);String asset=file.getString("assetId"),stage=file.getString("stageId"),name=file.getString("uploadName");WorkspaceState.profile(asset);WorkspaceState.profile(stage);
@@ -60,7 +61,7 @@ final class HandoffStore {
         HandoffFiles.directory(destination.getParentFile(),false);if(Files.isSymbolicLink(destination.toPath()))throw new IOException("任务文件不能是链接");File temporary=new File(destination.getParentFile(),destination.getName()+"."+WorkspaceState.id()+".tmp");
         try{try(FileChannel channel=FileChannel.open(temporary.toPath(),StandardOpenOption.CREATE_NEW,StandardOpenOption.WRITE,LinkOption.NOFOLLOW_LINKS)){ByteBuffer bytes=ByteBuffer.wrap(data);while(bytes.hasRemaining())channel.write(bytes);channel.force(true);}Files.move(temporary.toPath(),destination.toPath(),StandardCopyOption.ATOMIC_MOVE,StandardCopyOption.REPLACE_EXISTING);}finally{Files.deleteIfExists(temporary.toPath());}
     }
-    private void save(JSONObject data)throws Exception{byte[] next=data.toString().getBytes(StandardCharsets.UTF_8);validate(next);if(index.exists()){byte[] previous=bytes(index);validate(previous);atomic(backup,previous);}atomic(index,next);}
+    private void save(JSONObject data)throws Exception{byte[] next=data.toString().getBytes(StandardCharsets.UTF_8);validate(next);if(index.exists()){byte[] previous=bytes(index);validate(previous);atomic(backup,previous);}atomic(index,next);EnvironmentHandoffChecks.saved(data);}
     private JSONObject record(JSONObject data,String id)throws Exception{WorkspaceState.profile(id);JSONArray jobs=data.getJSONArray("jobs");for(int i=0;i<jobs.length();i++)if(jobs.getJSONObject(i).getString("id").equals(id))return jobs.getJSONObject(i);throw new IOException("处理任务不存在");}
     JSONObject get(String id)throws Exception{synchronized(LOCK){return clone(record(read(),id));}}
     List<JSONObject> list(String account)throws Exception{synchronized(LOCK){WorkspaceState.profile(account);JSONArray jobs=read().getJSONArray("jobs");List<JSONObject> result=new ArrayList<>();for(int i=0;i<jobs.length();i++){JSONObject job=jobs.getJSONObject(i);if(job.getString("sourceAccountId").equals(account)||job.getString("targetAccountId").equals(account))result.add(clone(job));}result.sort((a,b)->Long.compare(b.optLong("createdAt"),a.optLong("createdAt")));return result;}}
@@ -103,6 +104,32 @@ final class HandoffStore {
         synchronized(LOCK){JSONObject data=read(),job=record(data,id);if(job.getString("status").equals("submitted"))return;boolean uncertain=fenced(job)||job.getString("status").equals("sending");if(!uncertain&&!ACTIVE.contains(job.getString("status")))return;job.put("status",uncertain?"uncertain":cancelled?"cancelled":"failed").put("message",uncertain?"发送结果待确认，请检查目标对话；应用不会自动重发":message).put("updatedAt",System.currentTimeMillis());save(data);}
     }
     void submitted(String id,String url)throws Exception{synchronized(LOCK){if(!NavigationPolicy.chat(url))throw new IOException("目标对话地址无效");JSONObject data=read(),job=record(data,id);if(!job.getString("status").equals("sending"))throw new IOException("任务不处于发送阶段");job.put("status","submitted").put("conversationURL",NavigationPolicy.restorable(url)).put("message","网页已显示本次用户消息；模型结果请在对话中查看").put("updatedAt",System.currentTimeMillis());save(data);}}
+    private boolean environmentTestConversation(JSONObject job,String url) {
+        if(!BuildConfig.ENVIRONMENT_CLIENT||!BuildConfig.ENVIRONMENT_TEST||!EnvironmentPolicy.testUrl(url))return false;
+        try {
+            String path=java.net.URI.create(url).getPath();
+            if(!"/".equals(path)&&(path==null||!path.matches("/c/handoff-[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}")))return false;
+            return environmentTarget(job);
+        }catch(Exception invalid){return false;}
+    }
+    private boolean environmentTarget(JSONObject job)throws Exception {
+        WorkspaceState.Account target=WorkspaceFiles.read(files).find(job.getString("targetAccountId"));
+        if(!target.isEnvironment()||!target.storageId.equals(job.getString("targetStorageId"))||!job.has("tabId"))return false;
+        for(WorkspaceState.Tab tab:target.tabs)if(tab.id.equals(job.getString("tabId")))return true;
+        return false;
+    }
+    /** Gecko keeps the original journal format; CI accepts only its exact owned HTTPS origin. */
+    void submittedEnvironment(String id,String url)throws Exception {
+        synchronized(LOCK) {
+            JSONObject data=read(),job=record(data,id);
+            if(!environmentTarget(job)||!job.getString("status").equals("sending"))throw new IOException("目标任务或登录空间已改变");
+            String accepted;
+            if(NavigationPolicy.chat(url))accepted=NavigationPolicy.restorable(url);
+            else if(environmentTestConversation(job,url))accepted=url;
+            else throw new IOException("目标对话地址无效");
+            job.put("status","submitted").put("conversationURL",accepted).put("message","网页已显示完整的本次用户消息；模型结果请在对话中查看").put("updatedAt",System.currentTimeMillis());save(data);
+        }
+    }
     List<String> recover()throws Exception{
         synchronized(LOCK){JSONObject data=read();JSONArray jobs=data.getJSONArray("jobs");List<String> ids=new ArrayList<>();
             for(int i=0;i<jobs.length();i++){JSONObject job=jobs.getJSONObject(i);boolean sent=fenced(job);if(ACTIVE.contains(job.getString("status"))||sent&&!job.getString("status").equals("submitted")&&!job.getString("status").equals("uncertain")){boolean sending=sent||job.getString("status").equals("sending");if(sent&&!job.has("tabId")){JSONObject fence=new JSONObject(new String(Files.readAllBytes(HandoffFiles.regular(fences,job.getString("id")+".json",2048).toPath()),StandardCharsets.UTF_8));WorkspaceState.profile(fence.getString("tabId"));job.put("tabId",fence.getString("tabId"));}job.put("status",sending?"uncertain":"interrupted").put("message",sending?"上次发送结果不确定，请检查目标对话；不会自动重发":"上次任务已中断，原始文件保留；不会自动继续发送").put("updatedAt",System.currentTimeMillis());ids.add(job.getString("id"));}}

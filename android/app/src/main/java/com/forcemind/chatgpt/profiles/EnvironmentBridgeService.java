@@ -31,12 +31,106 @@ public final class EnvironmentBridgeService extends Service implements Applicati
     private final Map<String, Import> incomingFiles = new LinkedHashMap<>();
     private final Map<String,Lease> leases=new LinkedHashMap<>();
     private final Map<String,LocalExport> localExports=new LinkedHashMap<>();
+    private final Map<IBinder,HandoffHandle> handoffs=new LinkedHashMap<>();
+    private volatile boolean handoffClosed;
     private BrowserMemory memory;
     private final Messenger incoming = new Messenger(new Handler(Looper.getMainLooper(), this::message));
     private final class Client implements IBinder.DeathRecipient {
         final Messenger destination; final IBinder token;final int slot;volatile boolean alive=true;boolean foreground;
         Client(Messenger destination,int slot) { this.destination = destination; token = destination.getBinder();this.slot=slot; }
         @Override public void binderDied() { main.post(() -> remove(token)); }
+    }
+    /** One central task authority, bound to its registered slot connection. */
+    private final class HandoffHandle {
+        final Client client;final String claimCall,id;volatile String capability="";volatile boolean cancelled;
+        HandoffHandle(Client client,String call,String id){this.client=client;claimCall=call;this.id=id;}
+    }
+    private interface HandoffWork {JSONObject run(HandoffRuntime runtime)throws Exception;}
+    private void handoffReply(Client client,String call,JSONObject result,String error) {
+        if(handoffClosed||!client.alive)return;
+        if(error!=null){HandoffHandle handle=handoffs.get(client.token);if(handle!=null&&handle.claimCall.equals(call))abandonHandoff(handle);}
+        try {
+            JSONObject value=new JSONObject().put("call",call).put("ok",error==null);
+            if(result!=null)value.put("result",result);if(error!=null)value.put("message",error);
+            Message reply=Message.obtain(null,18);Bundle data=new Bundle();data.putString("payload",value.toString());reply.setData(data);client.destination.send(reply);
+        }catch(Exception disconnected){remove(client.token);}
+    }
+    private void handoffEvent(HandoffHandle handle,JSONObject job,String message) {
+        if(handoffClosed||!handle.client.alive)return;
+        try {
+            JSONObject value=new JSONObject().put("id",handle.id);if(job!=null)value.put("job",job);if(message!=null)value.put("message",message);
+            Message reply=Message.obtain(null,19);Bundle data=new Bundle();data.putString("payload",value.toString());reply.setData(data);handle.client.destination.send(reply);
+        }catch(Exception disconnected){remove(handle.client.token);}
+    }
+    private void handoffIo(Client client,String call,HandoffWork work) {
+        HandoffRuntime existing=HandoffRuntime.existing();
+        if(existing==null) {
+            // Claims follow main-process preparation, so normally Runtime already exists.
+            // A cold history read may initialize it on existing background workers.
+            imports.execute(()->{try{enqueueHandoff(HandoffRuntime.get(this),client,call,work);}catch(Exception unavailable){main.post(()->handoffReply(client,call,null,"任务记录暂不可读取，请保留应用数据"));}});
+        }else enqueueHandoff(existing,client,call,work);
+    }
+    private void enqueueHandoff(HandoffRuntime runtime,Client client,String call,HandoffWork work) {
+        runtime.io.execute(()->{
+            JSONObject result=null;String error=null;
+            try{if(handoffClosed||!client.alive)throw new java.io.InterruptedIOException();result=work.run(runtime);}
+            catch(Exception failed){error="任务授权已失效或网页任务未能完成；不会自动重发";}
+            JSONObject completed=result;String failure=error;main.post(()->handoffReply(client,call,completed,failure));
+        });
+    }
+    private void abandonHandoff(HandoffHandle handle) {
+        if(handle==null||handle.cancelled)return;handle.cancelled=true;
+        if(handoffs.get(handle.client.token)==handle)handoffs.remove(handle.client.token);
+        HandoffRuntime runtime=HandoffRuntime.existing();
+        if(runtime!=null)runtime.io.execute(()->{try{if(!handle.capability.isEmpty())runtime.environmentDisconnected(handle.client.slot,handle.capability);}catch(Exception unavailable){android.util.Log.w("StudioHandoff","Task disconnect could not update journal");}});
+    }
+    private void handoffRpc(Client client,Bundle bundle) {
+        if(client==null||handoffClosed)return;String call="";
+        try {
+            String raw=bundle.getString("payload","");if(raw.length()>65536)throw new IllegalArgumentException();JSONObject envelope=new JSONObject(raw);
+            call=envelope.getString("call");WorkspaceState.profile(call);String action=envelope.getString("action");JSONObject data=envelope.getJSONObject("data");String operation=call;
+            if("abandon".equals(action)) {
+                HandoffHandle handle=handoffs.get(client.token);
+                if(handle!=null&&(handle.claimCall.equals(data.optString("claimCall"))||!handle.capability.isEmpty()&&handle.capability.equals(data.optString("capability"))))abandonHandoff(handle);
+                handoffReply(client,call,new JSONObject(),null);return;
+            }
+            if("claim".equals(action)) {
+                if(handoffs.containsKey(client.token))throw new IllegalArgumentException();String id=data.getString("id"),launch=data.getString("token");WorkspaceState.profile(id);WorkspaceState.profile(launch);
+                HandoffHandle handle=new HandoffHandle(client,call,id);handoffs.put(client.token,handle);
+                handoffIo(client,call,runtime->{
+                    if(handle.cancelled||!client.alive)throw new java.io.InterruptedIOException();
+                    try {
+                        JSONObject result=runtime.startEnvironment(id,launch,client.slot,new HandoffEnvironmentTask.Listener(){
+                            public void changed(JSONObject job){if(!handle.cancelled)handoffEvent(handle,job,null);}
+                            public void stopped(String reason){if(handoffs.get(client.token)==handle)handoffs.remove(client.token);if(reason!=null)handoffEvent(handle,null,reason);}
+                        });
+                        handle.capability=result.getString("capability");
+                        if(handle.cancelled||!client.alive||handoffClosed){runtime.environmentDisconnected(client.slot,handle.capability);throw new java.io.InterruptedIOException();}
+                        return result;
+                    }catch(Exception failed){main.post(()->{if(handoffs.get(client.token)==handle)handoffs.remove(client.token);});throw failed;}
+                });return;
+            }
+            if(java.util.Arrays.asList("list","get","cancel").contains(action)) {
+                String accountId=data.getString("accountId");WorkspaceState.profile(accountId);
+                handoffIo(client,call,runtime->{
+                    WorkspaceState.Account account=new StateStore(getFilesDir()).load().find(accountId);
+                    if(!account.isEnvironment()||account.environmentSlot!=client.slot)throw new java.io.IOException();
+                    if("list".equals(action)){
+                        int offset=data.optInt("offset",0);if(offset<0||offset>1000)throw new java.io.IOException();java.util.List<JSONObject> jobs=runtime.store.list(accountId);org.json.JSONArray page=new org.json.JSONArray();int end=Math.min(jobs.size(),offset+20);
+                        for(int index=offset;index<end;index++){JSONObject job=jobs.get(index),summary=new JSONObject();for(String key:new String[]{"id","status","label","sourceName","targetName"})summary.put(key,job.getString(key));page.put(summary);}
+                        return new JSONObject().put("jobs",page).put("more",end<jobs.size());
+                    }
+                    String id=data.getString("id");WorkspaceState.profile(id);JSONObject job=runtime.store.get(id);
+                    if(!accountId.equals(job.getString("sourceAccountId"))&&!accountId.equals(job.getString("targetAccountId")))throw new java.io.IOException();
+                    if("cancel".equals(action)){runtime.cancel(id,accountId);job=runtime.store.get(id);}
+                    return new JSONObject().put("job",job);
+                });return;
+            }
+            if(!java.util.Arrays.asList("bound","files","drafting","before-send","submitted","failed","cancelled").contains(action))throw new IllegalArgumentException();
+            HandoffHandle handle=handoffs.get(client.token);
+            if(handle==null||handle.cancelled||handle.capability.isEmpty()||!handle.capability.equals(data.getString("capability"))||!handle.id.equals(data.getString("id")))throw new IllegalArgumentException();
+            handoffIo(client,operation,runtime->{if(handle.cancelled||!client.alive)throw new java.io.InterruptedIOException();return runtime.environmentCommand(client.slot,handle.capability,action,data);});
+        }catch(Exception rejected){handoffReply(client,call,null,"任务参数或目标环境无效；未开始新的发送");}
     }
     private final class Lease {
         final String id,purpose,account,storage,tab,url;String uri;final Client client;final NetworkRoute.Snapshot route;
@@ -201,6 +295,7 @@ public final class EnvironmentBridgeService extends Service implements Applicati
         else if(message.what==5){Import task=incomingFiles.get(message.getData().getString("operation"));if(task!=null&&task.client.token.equals(token)&&task.completed.getCount()>0){task.success.set(message.getData().getBoolean("success"));if(!task.success.get())task.failed.set(true);task.completed.countDown();}return true;}
         else if(message.what==14||message.what==16){localControl(message.what,clients.get(token),message.getData());return true;}
         else if(message.what==15){beginLocal(clients.get(token),message.getData());return true;}
+        else if(message.what==17){handoffRpc(clients.get(token),message.getData());return true;}
         else if(message.what>=6&&message.what<=9){leaseMessage(message.what,clients.get(token),message.getData());return true;}
         else return true;
         broadcast(); return true;
@@ -208,6 +303,7 @@ public final class EnvironmentBridgeService extends Service implements Applicati
     private void remove(IBinder token) {
         Client client = clients.remove(token);
         if (client != null) {client.alive=false;token.unlinkToDeath(client, 0);}
+        abandonHandoff(handoffs.get(token));
         for(Import task:new ArrayList<>(incomingFiles.values()))if(task.client.token.equals(token))task.cancel();
         for(Lease lease:new ArrayList<>(leases.values()))if(lease.client.token.equals(token))finishLease(lease,true);
         for(LocalExport task:new ArrayList<>(localExports.values()))if(task.client.token.equals(token))finishLocal(task,false,"本地文件保存已中断");
@@ -277,6 +373,7 @@ public final class EnvironmentBridgeService extends Service implements Applicati
         } catch (org.json.JSONException impossible) { throw new IllegalStateException("Invalid internal route state", impossible); }
     }
     @Override public void onDestroy() {
+        handoffClosed=true;for(HandoffHandle handle:new ArrayList<>(handoffs.values()))abandonHandoff(handle);
         if (network != null) network.removePanelObserver(changed);
         getApplication().unregisterActivityLifecycleCallbacks(this);
         for (Client client : new ArrayList<>(clients.values())) {client.alive=false;client.token.unlinkToDeath(client, 0);}

@@ -19,7 +19,7 @@ import org.json.*;
 import org.mozilla.geckoview.*;
 
 /** Real account browser. Each nested activity owns exactly one immutable environment process. */
-public class EnvironmentBrowserActivity extends ComponentActivity implements EnvironmentDocumentBridge.Host {
+public class EnvironmentBrowserActivity extends ComponentActivity implements EnvironmentDocumentBridge.Host,EnvironmentHandoffController.Host {
     private static final int HISTORY_PAGES_PER_TAB=6,HISTORY_PAGES_PER_PROCESS=48,HISTORY_TEXT_BUDGET=256000;
     private static final class HistoryDocument{
         final JSONObject snapshot;final int size;long usedAt;
@@ -45,6 +45,12 @@ public class EnvironmentBrowserActivity extends ComponentActivity implements Env
     private WorkspaceState state;private String accountId;private Entry current;private GeckoView browser;
     private StudioBrowserHeader header;private TextView status;private FrameLayout canvas;private View preview;
     private boolean routeReady,appForeground,destroyed,resumed,conflictShowing;
+    private EnvironmentHandoffController handoff;
+    private JSONObject handoffJob;
+    private String pendingHandoff,pendingHandoffToken;
+    private boolean startingHandoff;
+    private long handoffAttempt;
+    private LinearLayout handoffBanner;private TextView handoffStatus,handoffStop;
     private enum PageCommand { REFRESH, FORCE_REFRESH, BACK, FORWARD }
     private static final class PageOperation {
         final Entry entry;final String request=UUID.randomUUID().toString(),url,token;final long epoch;final PageCommand command;
@@ -60,13 +66,14 @@ public class EnvironmentBrowserActivity extends ComponentActivity implements Env
         void cancel(){if(ready)return;cancelled=true;signal.cancel();InputStream in=input;OutputStream out=output;try{if(in!=null)in.close();}catch(IOException ignored){}try{if(out!=null)out.close();}catch(IOException ignored){}}
     }
     @Override public void onCreate(Bundle saved){
-        super.onCreate(saved);getOnBackPressedDispatcher().addCallback(this,new OnBackPressedCallback(true){@Override public void handleOnBackPressed(){if(current!=null&&!current.closed&&current.canBack&&routeReady)pageAction(current,PageCommand.BACK);else moveTaskToBack(true);}});getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);getWindow().setStatusBarColor(Color.WHITE);getWindow().setNavigationBarColor(Color.WHITE);getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR|View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
-        store=new StateStore(getFilesDir());accountId=getIntent().getStringExtra("accountId");CIBuild.installLocalExportProbe(getFilesDir());
+        super.onCreate(saved);getOnBackPressedDispatcher().addCallback(this,new OnBackPressedCallback(true){@Override public void handleOnBackPressed(){if(handoffBusy()){cancelHandoff("已离开任务页面；不会自动重发");moveTaskToBack(true);}else if(current!=null&&!current.closed&&current.canBack&&routeReady)pageAction(current,PageCommand.BACK);else moveTaskToBack(true);}});getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);getWindow().setStatusBarColor(Color.WHITE);getWindow().setNavigationBarColor(Color.WHITE);getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR|View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
+        store=new StateStore(getFilesDir());accountId=getIntent().getStringExtra("accountId");CIBuild.installLocalExportProbe(getFilesDir());CIBuild.installHandoffProbe(getFilesDir());captureHandoff(getIntent());
         try{
             state=store.load();WorkspaceState.Account a=state.find(accountId);if(!a.isEnvironment()||a.environmentSlot!=slot())throw new IOException("账号环境归属已改变");
             String environment=a.language+"/"+a.timeZone;
             if(runtime==null){
                 cleanColdPickerCache();
+                EnvironmentHandoffController.cleanColdCache(this,slot());
                 Locale locale=Locale.forLanguageTag(a.language);Locale.setDefault(locale);LocaleList.setDefault(new LocaleList(locale));TimeZone.setDefault(TimeZone.getTimeZone(a.timeZone));Os.setenv("TZ",a.timeZone,true);
                 File privateFiles=getFilesDir().getCanonicalFile();
                 File profiles=new File(privateFiles,"environment-profiles");
@@ -83,11 +90,12 @@ public class EnvironmentBrowserActivity extends ComponentActivity implements Env
                 boolean wasReady=routeReady;routeReady=ready;appForeground=foreground;if(!ready){cancelPageOperation();cancelFile();}
                 if(status!=null){status.setText(notice);status.setVisibility(notice.isEmpty()?View.GONE:View.VISIBLE);}
                 for(Entry e:SESSIONS.values())if(!e.closed){e.session.setActive(foreground);if(wasReady&&!ready&&e.started)e.session.stop();}
-                if(ready)startCurrent();renderHeader();
+                if(ready){drainHandoff();startCurrent();}else if(handoffBusy())cancelHandoff("网络连接已失效；不会自动重发");renderHeader();
             };
             if(processRoutes==null)processRoutes=new EnvironmentRouteController(getApplicationContext(),runtime,slot(),routeListener);
             routes=processRoutes;routes.localExports.host(this);routes.listener(routeListener);
-            routes.whenExtensionReady(()->{for(Entry e:SESSIONS.values()){documents.attach(e,routes.extensionReady);routes.transfers.attach(e,routes.extensionReady);}startCurrent();});
+            routes.handoffListener(new EnvironmentRouteController.HandoffListener(){public void changed(JSONObject job){EnvironmentBrowserActivity.this.changed(job);if(handoff!=null)handoff.remoteJob(job);}public void lost(String message){cancelHandoff(message);}});
+            routes.whenExtensionReady(()->{for(Entry e:SESSIONS.values()){documents.attach(e,routes.extensionReady);routes.transfers.attach(e,routes.extensionReady);}drainHandoff();startCurrent();});
             showCurrent();
         }catch(Exception error){failure("账号页面暂时无法打开",error.getMessage());}
     }
@@ -109,7 +117,8 @@ public class EnvironmentBrowserActivity extends ComponentActivity implements Env
         });root.addView(header,new LinearLayout.LayoutParams(-1,-2));
         View divider=new View(this);divider.setBackgroundColor(0xffeeeeee);root.addView(divider,new LinearLayout.LayoutParams(-1,dp(1)));
         status=text("正在连接账号环境",12);status.setTextColor(0xff666666);status.setPadding(dp(16),dp(7),dp(16),dp(7));root.addView(status);
-        canvas=new FrameLayout(this);browser=new GeckoView(this);canvas.addView(browser,new FrameLayout.LayoutParams(-1,-1));root.addView(canvas,new LinearLayout.LayoutParams(-1,0,1));setContentView(root);
+        handoffBanner=new LinearLayout(this);handoffBanner.setGravity(Gravity.CENTER_VERTICAL);handoffBanner.setPadding(dp(16),dp(5),dp(8),dp(5));handoffBanner.setBackgroundColor(0xfff6f6f6);handoffBanner.setVisibility(View.GONE);handoffStatus=text("",13);handoffStatus.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);handoffStatus.setPadding(0,dp(6),dp(8),dp(6));handoffBanner.addView(handoffStatus,new LinearLayout.LayoutParams(0,-2,1));handoffStatus.setOnClickListener(v->{if(handoffJob!=null)showHandoffJob(handoffJob.optString("id"));});handoffStop=button("停止","停止自动任务");handoffStop.setOnClickListener(v->cancelHandoff("已停止自动发送；请检查目标网页"));handoffBanner.addView(handoffStop,new LinearLayout.LayoutParams(-2,-2));root.addView(handoffBanner,new LinearLayout.LayoutParams(-1,-2));
+        canvas=new FrameLayout(this);browser=new GeckoView(this);browser.setOnTouchListener((view,event)->handoff!=null&&handoff.active()&&!handoff.dispatching());canvas.addView(browser,new FrameLayout.LayoutParams(-1,-1));root.addView(canvas,new LinearLayout.LayoutParams(-1,0,1));setContentView(root);
     }
     private void reconcile()throws Exception{
         state=store.load();Iterator<Entry> it=SESSIONS.values().iterator();while(it.hasNext()){
@@ -138,14 +147,14 @@ public class EnvironmentBrowserActivity extends ComponentActivity implements Env
         try{
             reconcile();WorkspaceState.Account a=state.find(accountId);if(!a.isEnvironment()||a.environmentSlot!=slot()){EnvironmentLauncher.open(this,a.id);finish();return;}
             if(a.current().url.equals(NavigationPolicy.HOME)&&!CIBuild.home().equals(NavigationPolicy.HOME)){state=store.update(s->{WorkspaceState.Account owner=s.find(accountId);owner.current().url=CIBuild.home();});a=state.find(accountId);}
-            Entry next=entry(a,a.current());if(current!=next){cancelPageOperation();cancelFile();if(current!=null&&!current.closed){documents.request(current);current.session.flushSessionState();current.session.setFocused(false);}if(browser.getSession()!=null)browser.releaseSession();if(current!=null&&!current.closed)current.session.setActive(appForeground||resumed);current=next;if(!next.session.isOpen())next.session.open(runtime);browser.setSession(next.session);next.session.setActive(appForeground||resumed);next.session.setFocused(resumed);}
+            Entry next=entry(a,a.current());if(current!=next){if(handoff!=null&&handoff.entry!=next)cancelHandoff("目标标签已切换，已停止自动发送");cancelPageOperation();cancelFile();if(current!=null&&!current.closed){documents.request(current);current.session.flushSessionState();current.session.setFocused(false);}if(browser.getSession()!=null)browser.releaseSession();if(current!=null&&!current.closed)current.session.setActive(appForeground||resumed);current=next;if(!next.session.isOpen())next.session.open(runtime);browser.setSession(next.session);next.session.setActive(appForeground||resumed);next.session.setFocused(resumed);}
             renderHeader();
             if(preview!=null){canvas.removeView(preview);preview=null;}
             if(!next.started&&!next.previewDismissed&&next.record.optJSONObject("document")!=null)showPreview(next);else startCurrent();
         }catch(Exception error){failure("账号已改变",error.getMessage());}
     }
     private void startCurrent(){
-        if(destroyed||current==null||current.closed||current.started||!routeReady||routes==null||routes.extensionReady==null)return;
+        if(destroyed||pendingHandoff!=null||startingHandoff||current==null||current.closed||current.started||!routeReady||routes==null||routes.extensionReady==null)return;
         if(!owns(current))return;if(!current.previewDismissed&&current.record.optJSONObject("document")!=null)return;
         current.started=true;renderHeader();current.session.setActive(appForeground||resumed);current.session.setFocused(resumed);
         GeckoSession.SessionState restored=null;try{if(!current.nativeState.isEmpty()){GeckoSession.SessionState parsed=GeckoSession.SessionState.fromString(current.nativeState);if(parsed!=null){String checked=nativeState(current,parsed);if(checked!=null)restored=GeckoSession.SessionState.fromString(checked);}}}catch(Exception rejected){}
@@ -176,18 +185,19 @@ public class EnvironmentBrowserActivity extends ComponentActivity implements Env
             }
         });
         e.session.setProgressDelegate(new GeckoSession.ProgressDelegate(){
-            @Override public void onPageStart(GeckoSession session,String url){e.loadingUrl=url;EnvironmentBrowserActivity host=target.get();if(host!=null&&!host.destroyed){if(host.pageOperation!=null&&host.pageOperation.entry==e)host.cancelPageOperation();host.renderHeader();}}
+            @Override public void onPageStart(GeckoSession session,String url){e.loadingUrl=url;EnvironmentBrowserActivity host=target.get();if(host!=null&&!host.destroyed){if(host.handoff!=null&&host.handoff.entry==e)host.handoff.pageStarted();if(host.pageOperation!=null&&host.pageOperation.entry==e)host.cancelPageOperation();host.renderHeader();}}
             @Override public void onSessionStateChange(GeckoSession session,GeckoSession.SessionState value){EnvironmentBrowserActivity ownerActivity=target.get();if(ownerActivity==null||ownerActivity.destroyed){return;}if(!ownerActivity.owns(e)||e.sensitive||EnvironmentUrls.recoverable(e.url)==null||!e.url.equals(EnvironmentUrls.recoverable(e.url)))return;try{String nativeValue=ownerActivity.nativeState(e,value);if(nativeValue==null||nativeValue.length()>700000)return;e.nativeState=nativeValue;ownerActivity.queueSave(e);}catch(Exception ignored){}}
             @Override public void onPageStop(GeckoSession session,boolean success){e.loadingUrl=null;e.requestedUrl=null;if(!success)e.resumeAfterDocument=null;EnvironmentBrowserActivity ownerActivity=target.get();if(ownerActivity==null||ownerActivity.destroyed){return;}if(!success)ownerActivity.documents.request(e);ownerActivity.renderHeader();if(e==ownerActivity.current&&success&&ownerActivity.routeReady){ownerActivity.status.setVisibility(View.GONE);}else if(e==ownerActivity.current&&!success&&ownerActivity.routeReady){ownerActivity.status.setText("页面加载未完成，可在更多中刷新");ownerActivity.status.setVisibility(View.VISIBLE);}}
         });
         e.session.setContentDelegate(new GeckoSession.ContentDelegate(){
             @Override public void onTitleChange(GeckoSession session,String title){EnvironmentBrowserActivity ownerActivity=target.get();if(ownerActivity==null||ownerActivity.destroyed){return;}if(title==null||!ownerActivity.owns(e)||EnvironmentUrls.recoverable(e.url)==null)return;try{ownerActivity.state=ownerActivity.store.update(s->{WorkspaceState.Account a=s.find(e.accountId);if(!a.storageId.equals(e.storageId))return;for(WorkspaceState.Tab t:a.tabs)if(t.id.equals(e.tabId)&&!t.customTitle)t.title=title.substring(0,Math.min(120,title.length()));});ownerActivity.renderHeader();}catch(Exception ignored){}}
             @Override public void onExternalResponse(GeckoSession session,WebResponse response){EnvironmentBrowserActivity ownerActivity=target.get();if(ownerActivity==null||ownerActivity.destroyed){try{if(response.body!=null)response.body.close();}catch(Exception ignored){}return;}ownerActivity.download(e,response);}
-            @Override public void onCrash(GeckoSession session){EnvironmentBrowserActivity ownerActivity=target.get();if(ownerActivity==null||ownerActivity.destroyed){return;}e.started=false;ownerActivity.documents.invalidate(e);ownerActivity.renderHeader();ownerActivity.notice("页面进程已停止，本地恢复副本已保留");}
-            @Override public void onKill(GeckoSession session){EnvironmentBrowserActivity ownerActivity=target.get();if(ownerActivity==null||ownerActivity.destroyed){return;}e.started=false;ownerActivity.documents.invalidate(e);ownerActivity.renderHeader();ownerActivity.notice("页面已释放，可重新打开恢复");}
+            @Override public void onCrash(GeckoSession session){EnvironmentBrowserActivity ownerActivity=target.get();if(ownerActivity==null||ownerActivity.destroyed){return;}if(ownerActivity.handoff!=null&&ownerActivity.handoff.entry==e)ownerActivity.cancelHandoff("目标页面进程已停止；不会自动重发");e.started=false;ownerActivity.documents.invalidate(e);ownerActivity.renderHeader();ownerActivity.notice("页面进程已停止，本地恢复副本已保留");}
+            @Override public void onKill(GeckoSession session){EnvironmentBrowserActivity ownerActivity=target.get();if(ownerActivity==null||ownerActivity.destroyed){return;}if(ownerActivity.handoff!=null&&ownerActivity.handoff.entry==e)ownerActivity.cancelHandoff("目标页面已释放；不会自动重发");e.started=false;ownerActivity.documents.invalidate(e);ownerActivity.renderHeader();ownerActivity.notice("页面已释放，可重新打开恢复");}
         });
         e.session.setPromptDelegate(new GeckoSession.PromptDelegate(){
             @Override public GeckoResult<PromptResponse> onFilePrompt(GeckoSession session,FilePrompt prompt){EnvironmentBrowserActivity ownerActivity=target.get();if(ownerActivity==null||ownerActivity.destroyed){return GeckoResult.fromValue(prompt.dismiss());}
+                if(ownerActivity.handoff!=null&&ownerActivity.handoff.active()){GeckoResult<PromptResponse> task=ownerActivity.handoff.chooser(session,prompt);return task==null?GeckoResult.fromValue(prompt.dismiss()):task;}
                 if(e!=ownerActivity.current||!ownerActivity.owns(e)||!ownerActivity.routeReady||ownerActivity.fileResult!=null||prompt.type==FilePrompt.Type.FOLDER){ownerActivity.notice("当前页面无法选择文件");return GeckoResult.fromValue(prompt.dismiss());}
                 ownerActivity.fileOwner=e;ownerActivity.fileEpoch=e.epoch;ownerActivity.fileUrl=e.url;ownerActivity.filePrompt=prompt;ownerActivity.fileResult=new GeckoResult<>();ownerActivity.renderHeader();GeckoResult<PromptResponse> selected=ownerActivity.fileResult;
                 ownerActivity.routes.transfers.acquirePicker(e,lease->{
@@ -216,6 +226,7 @@ public class EnvironmentBrowserActivity extends ComponentActivity implements Env
         if(nextIndex<1)return null;history.put("entries",safe).put("index",nextIndex);return raw.toString();
     }
     private void navigation(Entry e,String url){
+        if(handoff!=null&&handoff.entry==e)handoff.locationChanged(url);
         if(e.closed)return;if(pageOperation!=null&&pageOperation.entry==e)cancelPageOperation();if(fileOwner==e)cancelFile();if(e.record!=null)rememberDocument(e,e.record.optJSONObject("document"));documents.invalidate(e);e.url=url;e.resumeAfterDocument=null;e.sensitive=false;e.nativeState="";e.pendingRestore=null;e.conflictLocal=null;e.restoringDraft=null;e.restoringDocument=null;e.restoreRequest=null;
         String safe=EnvironmentUrls.recoverable(url);if(safe==null)return;
         try{
@@ -280,12 +291,13 @@ public class EnvironmentBrowserActivity extends ComponentActivity implements Env
     private void renderHeader(){
         if(header==null||state==null)return;
         try{header.render(state.find(accountId),pageOperation!=null||current!=null&&current.started&&current.loadingUrl!=null,pageOperation!=null||pageActionsEnabled(current));}catch(IllegalStateException missing){/* A deleted account is handled by showCurrent. */}
+        renderHandoff();
     }
     private void selectTab(String tabId){
         cancelPageOperation();cancelFile();update(s->{WorkspaceState.Account a=s.find(accountId);if(a.tabs.stream().noneMatch(t->t.id.equals(tabId)))throw new IllegalStateException("标签页已关闭");a.activeTab=tabId;});
     }
     private boolean pageTargetAvailable(Entry e){
-        return !destroyed&&e!=null&&e==current&&!e.closed&&e.started&&e.session.isOpen()&&routeReady&&owns(e)&&fileResult==null&&e.activeTransfers==0&&!conflictShowing&&(e.pendingRestore==null||e.loadingUrl!=null)&&e.conflictLocal==null&&e.restoringDraft==null;
+        return !destroyed&&!handoffBusy()&&e!=null&&e==current&&!e.closed&&e.started&&e.session.isOpen()&&routeReady&&owns(e)&&fileResult==null&&e.activeTransfers==0&&!conflictShowing&&(e.pendingRestore==null||e.loadingUrl!=null)&&e.conflictLocal==null&&e.restoringDraft==null;
     }
     private boolean pageActionsEnabled(Entry e){return pageOperation==null&&pageTargetAvailable(e);}
     private boolean operationCurrent(PageOperation operation){
@@ -335,6 +347,7 @@ public class EnvironmentBrowserActivity extends ComponentActivity implements Env
         StudioPageActions.navigation(sheet,enabled&&target!=null&&target.canBack,enabled&&target!=null&&target.canForward,
             ()->{sheet.dismiss();pageAction(target,PageCommand.BACK);},()->{sheet.dismiss();pageAction(target,PageCommand.FORWARD);});
         StudioPageActions.action(sheet,"强制刷新","重新获取当前页面内容","refresh",enabled,()->{sheet.dismiss();pageAction(target,PageCommand.FORCE_REFRESH);});
+        sheet.row("查看网页任务","进度、结果和目标对话","",()->{sheet.dismiss();showHandoffHistory();}).setContentDescription("查看网页任务");
         sheet.row("标签管理","切换或关闭标签页","",()->{sheet.dismiss();tabs();});
         sheet.row("新建标签页","","plus",()->{sheet.dismiss();newTab();});sheet.row("账号管理","","user",()->{sheet.dismiss();accounts();});sheet.row("资产库","","folder",()->{sheet.dismiss();assets(false);});sheet.row("能力库","","spark",()->{sheet.dismiss();assets(true);});sheet.row("网络设置","","",()->{sheet.dismiss();startActivity(new Intent(this,MainActivity.class).putExtra("networkSettings",true));});sheet.row("恢复草稿","查看本地保存的草稿","",()->{sheet.dismiss();recoverySheet();});sheet.show();
     }
@@ -344,6 +357,78 @@ public class EnvironmentBrowserActivity extends ComponentActivity implements Env
     private void newTab(){update(s->{WorkspaceState.Account a=s.find(accountId);s.addTab(a);});}
     private void update(java.util.function.Consumer<WorkspaceState> change){try{state=store.update(change);showCurrent();}catch(Exception error){notice(error.getMessage()==null?"操作未完成":error.getMessage());}}
     private void assets(boolean skills){startActivity(new Intent(this,AssetWorkbenchActivity.class).putExtra(AssetWorkbenchActivity.ACCOUNT,accountId).putExtra("skills",skills));}
+    private boolean handoffBusy(){return pendingHandoff!=null||startingHandoff||handoff!=null&&handoff.active();}
+    private void captureHandoff(Intent intent){
+        if(intent==null||!intent.hasExtra("handoffJob"))return;
+        try{pendingHandoff=intent.getStringExtra("handoffJob");pendingHandoffToken=intent.getStringExtra("handoffToken");WorkspaceState.profile(pendingHandoff);WorkspaceState.profile(pendingHandoffToken);handoffJob=null;}
+        catch(Exception invalid){pendingHandoff=null;pendingHandoffToken=null;notice("任务授权参数无效");}
+        intent.removeExtra("handoffJob");intent.removeExtra("handoffToken");
+    }
+    private void drainHandoff(){
+        if(destroyed||!resumed||!routeReady||routes==null||routes.extensionReady==null||pendingHandoff==null||startingHandoff||handoff!=null&&handoff.active())return;
+        String id=pendingHandoff,launch=pendingHandoffToken,expectedAccount=accountId;pendingHandoff=null;pendingHandoffToken=null;startingHandoff=true;long attempt=++handoffAttempt;cancelPageOperation();cancelFile();renderHeader();
+        try{routes.handoff("claim",new JSONObject().put("id",id).put("token",launch),(result,error)->{
+            if(attempt!=handoffAttempt||destroyed)return;startingHandoff=false;
+            if(error!=null||result==null||!resumed||!expectedAccount.equals(accountId)){routes.cancelHandoff();renderHeader();notice(error==null?"目标环境已改变，任务未发送":error);return;}
+            try{
+                state=store.load();WorkspaceState.Account account=state.find(result.getString("accountId"));
+                if(!account.id.equals(accountId)||!account.storageId.equals(result.getString("storageId"))||!account.isEnvironment()||account.environmentSlot!=slot()||!account.current().id.equals(result.getString("tabId")))throw new IOException("任务目标已改变");
+                Entry entry=entry(account,account.current());if(entry.started)throw new IOException("任务必须使用新的空标签页");
+                handoff=new EnvironmentHandoffController(this,this,entry,result);handoff.attach(routes.extensionReady);showCurrent();
+            }catch(Exception invalid){routes.cancelHandoff();if(handoff!=null)handoff.invalidated("目标网页无法启动，任务未发送");handoff=null;renderHeader();notice("目标账号或新标签页无法确认，任务未发送");}
+        });}catch(Exception invalid){startingHandoff=false;routes.cancelHandoff();renderHeader();notice("任务无法启动；不会自动重发");}
+    }
+    private void cancelHandoff(String reason){
+        String pending=pendingHandoff;boolean claimed=startingHandoff;pendingHandoff=null;pendingHandoffToken=null;startingHandoff=false;handoffAttempt++;
+        EnvironmentHandoffController task=handoff;if(task!=null&&task.active())task.cancel();
+        else if(claimed&&routes!=null)routes.cancelHandoff();
+        if(pending!=null&&routes!=null)try{routes.handoff("cancel",new JSONObject().put("accountId",accountId).put("id",pending),(result,error)->{if(result!=null&&result.optJSONObject("job")!=null)changed(result.optJSONObject("job"));});}catch(Exception ignored){/* The durable ready task remains visible in task history. */}
+        renderHandoff();
+    }
+    @Override public boolean valid(Entry entry){
+        if(destroyed||!resumed||!routeReady||entry!=current||entry.closed||browser==null||browser.getSession()!=entry.session||!entry.session.isOpen()||!owns(entry))return false;
+        try{WorkspaceState latest=store.load();return latest.activeAccount.equals(entry.accountId)&&latest.find(entry.accountId).activeTab.equals(entry.tabId);}catch(Exception invalid){return false;}
+    }
+    @Override public GeckoView view(Entry entry){return valid(entry)?browser:null;}
+    @Override public void command(String action,JSONObject data,java.util.function.BiConsumer<JSONObject,String> callback){if(routes==null){callback.accept(null,"任务服务不可用");return;}routes.handoff(action,data,callback);}
+    @Override public void changed(JSONObject job){if(destroyed)return;try{handoffJob=new JSONObject(job.toString());renderHandoff();}catch(Exception invalid){notice("任务进度暂不可读，请查看任务记录");}}
+    @Override public void stopped(EnvironmentHandoffController task,String message){if(handoff==task)handoff=null;renderHeader();if(message!=null&&!message.isEmpty())notice(message);}
+    private void renderHandoff(){
+        if(handoffBanner==null)return;
+        if(handoffJob==null&&handoffBusy()){handoffBanner.setVisibility(View.VISIBLE);handoffStatus.setText("等待打开 · 网页任务");handoffStop.setVisibility(View.VISIBLE);return;}
+        boolean visible=handoffJob!=null&&(accountId.equals(handoffJob.optString("sourceAccountId"))||accountId.equals(handoffJob.optString("targetAccountId")));
+        handoffBanner.setVisibility(visible?View.VISIBLE:View.GONE);if(!visible)return;
+        handoffStatus.setText(HandoffStatus.name(handoffJob.optString("status"))+" · "+handoffJob.optString("label"));
+        handoffStop.setVisibility(handoffBusy()?View.VISIBLE:View.GONE);
+    }
+    private void showHandoffHistory(){showHandoffHistory(0);}
+    private void showHandoffHistory(int offset){
+        if(routes==null)return;String owner=accountId;
+        try{routes.handoff("list",new JSONObject().put("accountId",owner).put("offset",offset),(result,error)->{
+            if(destroyed||!owner.equals(accountId))return;if(error!=null||result==null){notice("任务记录暂不可读取，请保留应用数据");return;}
+            try{JSONArray jobs=result.getJSONArray("jobs");String[] labels=new String[jobs.length()];for(int i=0;i<jobs.length();i++){JSONObject job=jobs.getJSONObject(i);labels[i]=HandoffStatus.name(job.getString("status"))+" · "+job.getString("label")+"\n"+job.getString("sourceName")+" → "+job.getString("targetName");}
+                if(labels.length==0){new AlertDialog.Builder(this).setTitle("当前账号的网页任务").setMessage("暂无网页任务").setNegativeButton("关闭",null).show();return;}
+                AlertDialog.Builder dialog=new AlertDialog.Builder(this).setTitle("当前账号的网页任务").setItems(labels,(parent,index)->showHandoffJob(jobs.optJSONObject(index).optString("id"))).setNegativeButton("关闭",null);if(result.optBoolean("more"))dialog.setPositiveButton("较早任务",(parent,which)->showHandoffHistory(offset+20));if(offset>0)dialog.setNeutralButton("较新任务",(parent,which)->showHandoffHistory(Math.max(0,offset-20)));dialog.show();
+            }catch(Exception invalid){notice("任务记录暂不可读，请保留应用数据");}
+        });}catch(Exception invalid){notice("任务服务暂不可用");}
+    }
+    private void showHandoffJob(String id){
+        if(routes==null)return;String owner=accountId;
+        try{routes.handoff("get",new JSONObject().put("accountId",owner).put("id",id),(result,error)->{
+            if(destroyed||!owner.equals(accountId))return;if(error!=null||result==null){notice("任务记录暂不可读取");return;}
+            try{JSONObject job=result.getJSONObject("job");StringBuilder detail=new StringBuilder(job.getString("sourceName")).append(" → ").append(job.getString("targetName")).append("\n\n").append(job.getString("message")).append("\n\n附件：\n");JSONArray files=job.getJSONArray("files");for(int i=0;i<files.length();i++)detail.append("- ").append(files.getJSONObject(i).getString("uploadName")).append('\n');
+                AlertDialog.Builder dialog=new AlertDialog.Builder(this).setTitle(HandoffStatus.name(job.getString("status"))+" · "+job.getString("label")).setMessage(detail.toString()).setNegativeButton("关闭",null).setPositiveButton("打开目标对话",(d,w)->openHandoffJob(job));
+                if(HandoffStore.active(job.getString("status")))dialog.setNeutralButton("停止自动处理",(d,w)->{try{routes.handoff("cancel",new JSONObject().put("accountId",owner).put("id",id),(updated,failure)->{if(updated!=null&&updated.optJSONObject("job")!=null)changed(updated.optJSONObject("job"));else notice("任务未能停止，请检查目标网页");});}catch(Exception invalid){notice("任务未能停止，请检查目标网页");}});dialog.show();
+            }catch(Exception invalid){notice("任务详情暂不可读");}
+        });}catch(Exception invalid){notice("任务服务暂不可用");}
+    }
+    private void openHandoffJob(JSONObject job){
+        try{String target=job.getString("targetAccountId"),storage=job.getString("targetStorageId"),tab=job.optString("tabId"),url=job.optString("conversationURL");WorkspaceState latest=store.load();WorkspaceState.Account destination=latest.find(target);if(!destination.storageId.equals(storage))throw new IOException();boolean exists=destination.tabs.stream().anyMatch(candidate->candidate.id.equals(tab));
+            if(!exists&&(url.isEmpty()||(!NavigationPolicy.chat(url)&&!CIBuild.environmentUrl(url)))){notice("目标标签页已关闭，请手动检查原对话");return;}
+            store.update(state->{WorkspaceState.Account account=state.find(target);if(!account.storageId.equals(storage))throw new IllegalStateException("目标登录空间已改变");state.activeAccount=target;if(exists){if(account.tabs.stream().noneMatch(candidate->candidate.id.equals(tab)))throw new IllegalStateException("目标标签页已关闭");account.activeTab=tab;}else state.addTab(account).url=url;});
+            EnvironmentLauncher.open(this,target);
+        }catch(Exception invalid){notice("目标账号或登录空间已改变，不能自动打开旧任务");}
+    }
     private void external(String url){if(!NavigationPolicy.https(url)){notice("此链接无法在应用中打开");return;}new AlertDialog.Builder(this).setTitle("在外部浏览器打开？").setMessage(Uri.parse(url).getHost()).setPositiveButton("打开",(d,w)->{try{startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(url)));}catch(Exception error){notice("没有可用的外部浏览器");}}).setNegativeButton("取消",null).show();}
     private void download(Entry e,WebResponse response){
         e.requestedUrl=null;e.loadingUrl=null;renderHeader();
@@ -455,12 +540,12 @@ public class EnvironmentBrowserActivity extends ComponentActivity implements Env
             });
         });
     }
-    private void close(Entry e){if(routes!=null)routes.localExports.invalidated(e);if(fileOwner==e)cancelFile();if(routes!=null)routes.transfers.closeEntry(e);if(pageOperation!=null&&pageOperation.entry==e)cancelPageOperation();e.closed=true;e.historyDocuments.clear();for(File directory:e.pickerDirectories)discardPickerDirectory(directory);e.pickerDirectories.clear();if(e.saveTask!=null)ui.removeCallbacks(e.saveTask);if(documents!=null)documents.invalidate(e);if(e.session.isOpen())e.session.close();}
-    @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);cancelPageOperation();cancelFile();setIntent(intent);accountId=intent.getStringExtra("accountId");if(store!=null)showCurrent();}
-    @Override protected void onResume(){super.onResume();resumed=true;if(routes!=null)routes.foreground(true);if(browser!=null){showCurrent();if(current!=null)current.session.setFocused(true);}}
-    @Override protected void onPause(){cancelPageOperation();resumed=false;if(current!=null&&!current.closed){documents.request(current);current.session.flushSessionState();current.session.setFocused(false);}for(Entry e:SESSIONS.values())if(e.saveTask!=null){ui.removeCallbacks(e.saveTask);e.saveTask.run();}if(routes!=null)routes.foreground(false);super.onPause();}
+    private void close(Entry e){if(handoff!=null&&handoff.entry==e)cancelHandoff("任务标签页已关闭；不会自动重发");if(routes!=null)routes.localExports.invalidated(e);if(fileOwner==e)cancelFile();if(routes!=null)routes.transfers.closeEntry(e);if(pageOperation!=null&&pageOperation.entry==e)cancelPageOperation();e.closed=true;e.historyDocuments.clear();for(File directory:e.pickerDirectories)discardPickerDirectory(directory);e.pickerDirectories.clear();if(e.saveTask!=null)ui.removeCallbacks(e.saveTask);if(documents!=null)documents.invalidate(e);if(e.session.isOpen())e.session.close();}
+    @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);cancelHandoff("目标账号或任务已切换；不会自动重发");cancelPageOperation();cancelFile();setIntent(intent);accountId=intent.getStringExtra("accountId");captureHandoff(intent);if(store!=null)showCurrent();drainHandoff();}
+    @Override protected void onResume(){super.onResume();resumed=true;if(routes!=null)routes.foreground(true);if(browser!=null){showCurrent();if(current!=null)current.session.setFocused(true);}drainHandoff();}
+    @Override protected void onPause(){cancelHandoff("已离开目标网页，已停止自动发送");cancelPageOperation();resumed=false;if(current!=null&&!current.closed){documents.request(current);current.session.flushSessionState();current.session.setFocused(false);}for(Entry e:SESSIONS.values())if(e.saveTask!=null){ui.removeCallbacks(e.saveTask);e.saveTask.run();}if(routes!=null)routes.foreground(false);super.onPause();}
     @Override protected void onStop(){super.onStop();ui.post(()->{for(Entry e:SESSIONS.values())if(!e.closed&&e.session.isOpen())e.session.setActive(appForeground);});}
-    @Override protected void onDestroy(){destroyed=true;if(routes!=null)routes.localExports.detach(this);cancelPageOperation();for(Entry e:SESSIONS.values())if(e.saveTask!=null){ui.removeCallbacks(e.saveTask);e.saveTask=null;}cancelFile();if(browser!=null&&browser.getSession()!=null)browser.releaseSession();if(routes!=null){routes.foreground(false);routes.whenExtensionReady(null);routes.listener((ready,foreground,notice)->{for(Entry e:SESSIONS.values())if(!e.closed&&e.session.isOpen())e.session.setActive(foreground);});}super.onDestroy();}
+    @Override protected void onDestroy(){cancelHandoff("目标窗口已关闭；不会自动重发");destroyed=true;if(routes!=null)routes.localExports.detach(this);cancelPageOperation();for(Entry e:SESSIONS.values())if(e.saveTask!=null){ui.removeCallbacks(e.saveTask);e.saveTask=null;}cancelFile();if(browser!=null&&browser.getSession()!=null)browser.releaseSession();if(routes!=null){routes.cancelHandoff();routes.handoffListener(null);routes.foreground(false);routes.whenExtensionReady(null);routes.listener((ready,foreground,notice)->{for(Entry e:SESSIONS.values())if(!e.closed&&e.session.isOpen())e.session.setActive(foreground);});}super.onDestroy();}
     @Override public void notice(String message){if(destroyed)return;Toast.makeText(this,message,Toast.LENGTH_SHORT).show();}
     private void failure(String title,String message){LinearLayout pane=new LinearLayout(this);pane.setOrientation(LinearLayout.VERTICAL);pane.setPadding(dp(24),dp(32),dp(24),dp(24));pane.addView(text(title,20));pane.addView(text(message==null?"请保留应用数据后重新打开":message,14));Button back=new Button(this);back.setText("返回账号列表");back.setOnClickListener(v->accounts());pane.addView(back);setContentView(pane);}
     private TextView text(String value,int size){TextView view=new TextView(this);StudioTypography.text(view,size);view.setTextColor(StudioTypography.INK);view.setText(value);return view;}

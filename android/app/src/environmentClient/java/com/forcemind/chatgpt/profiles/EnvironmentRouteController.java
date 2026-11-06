@@ -23,6 +23,14 @@ final class EnvironmentRouteController {
     private final Map<String,ImportCompletion> imports=new HashMap<>();
     private final Map<String,java.util.function.Consumer<JSONObject>> calls=new HashMap<>();
     private final Set<String> localCalls=new HashSet<>();private final Map<String,LocalPipe> localPipes=new HashMap<>();
+    interface HandoffListener{void changed(JSONObject job);void lost(String message);}
+    private HandoffListener handoffListener;
+    private static final class HandoffCall {
+        final String action;final java.util.function.BiConsumer<JSONObject,String> callback;
+        HandoffCall(String action,java.util.function.BiConsumer<JSONObject,String> callback){this.action=action;this.callback=callback;}
+    }
+    private final Map<String,HandoffCall> handoffCalls=new HashMap<>();
+    private String handoffClaimCall="",handoffCapability="",handoffId="";
     private String routeToken="";private boolean bound,foreground,ready,closed;private long sent=-1,acknowledged=-1;
     private final ServiceConnection connection=new ServiceConnection(){
         public void onServiceConnected(ComponentName name,IBinder binder){service=new Messenger(binder);send(1,0);send(2,foreground?1:0);}
@@ -78,6 +86,8 @@ final class EnvironmentRouteController {
         });apply();
     }
     private boolean receive(Message message){
+        if(message.what==18){receiveHandoffReply(message.getData());return true;}
+        if(message.what==19){receiveHandoffEvent(message.getData());return true;}
         if(message.what==12){try{JSONObject result=new JSONObject(message.getData().getString("payload",""));java.util.function.Consumer<JSONObject> callback=calls.remove(result.optString("call"));if(callback!=null)callback.accept(result);}catch(Exception invalid){block("文件线路确认失败");}return true;}
         if(message.what==13){transfers.expired(message.getData().getString("lease",""));return true;}
         if(message.what==11){String operation=message.getData().getString("operation","");ImportCompletion callback=imports.remove(operation);if(callback!=null)callback.complete(message.getData().getBoolean("success"),message.getData().getString("message","文件保存未完成"));else localExports.brokerEnded(operation,message.getData().getString("message","本地保存已取消"));return true;}
@@ -153,6 +163,62 @@ final class EnvironmentRouteController {
     private void localBrokerLost(){
         localExports.brokerLost();for(String call:new ArrayList<>(localCalls)){java.util.function.Consumer<JSONObject> callback=calls.remove(call);if(callback!=null)callback.accept(new JSONObject());}localCalls.clear();
     }
+    void handoffListener(HandoffListener next){handoffListener=next;}
+    void cancelHandoff(){handoffLost("已停止自动发送；请查看网页任务记录");}
+    /** Independent task RPCs never enter the HTTP/local-file callback tables. */
+    void handoff(String action,JSONObject data,java.util.function.BiConsumer<JSONObject,String> callback) {
+        if(closed||service==null||handoffCalls.size()>=16){callback.accept(null,"任务服务暂不可用");return;}
+        boolean mutates=!java.util.Arrays.asList("list","get","cancel","failed","cancelled").contains(action);
+        if(mutates&&!ready()){callback.accept(null,"网络尚未就绪，任务未发送");return;}
+        String call=UUID.randomUUID().toString();
+        if("claim".equals(action)){
+            if(!handoffClaimCall.isEmpty()||!handoffCapability.isEmpty()){callback.accept(null,"已有网页任务正在运行");return;}
+            handoffClaimCall=call;
+        }
+        handoffCalls.put(call,new HandoffCall(action,callback));
+        try{sendPayload(17,new JSONObject().put("call",call).put("action",action).put("data",data));}
+        catch(Exception unavailable){handoffCalls.remove(call);if(call.equals(handoffClaimCall))handoffClaimCall="";callback.accept(null,"任务服务连接已中断");return;}
+        ui.postDelayed(()->{
+            HandoffCall pending=handoffCalls.remove(call);if(pending==null)return;
+            if(!java.util.Arrays.asList("list","get","cancel").contains(action))abandonHandoff(call);
+            pending.callback.accept(null,"任务服务确认超时；不会自动重发");
+        },5000);
+    }
+    private void abandonHandoff(String claimCall) {
+        try{sendPayload(17,new JSONObject().put("call",UUID.randomUUID().toString()).put("action","abandon").put("data",new JSONObject().put("claimCall",claimCall.isEmpty()?handoffClaimCall:claimCall).put("capability",handoffCapability)));}
+        catch(Exception disconnected){/* Broker/client death owns central task termination. */}
+        handoffClaimCall="";handoffCapability="";handoffId="";
+    }
+    private void handoffLost(String message) {
+        boolean active=!handoffClaimCall.isEmpty()||!handoffCapability.isEmpty();
+        if(active)abandonHandoff("");
+        ArrayList<HandoffCall> cancelled=new ArrayList<>(handoffCalls.values());handoffCalls.clear();
+        for(HandoffCall call:cancelled)call.callback.accept(null,message);
+        if(active&&handoffListener!=null)handoffListener.lost(message);
+    }
+    private void receiveHandoffReply(Bundle bundle) {
+        HandoffCall pending=null;boolean delivered=false;
+        try {
+            String raw=bundle.getString("payload","");if(raw.length()>600000)throw new IllegalArgumentException();JSONObject value=new JSONObject(raw);String call=value.getString("call");pending=handoffCalls.remove(call);
+            JSONObject result=value.optJSONObject("result");
+            if(pending==null){if(result!=null&&result.has("capability"))try{sendPayload(17,new JSONObject().put("call",UUID.randomUUID().toString()).put("action","abandon").put("data",new JSONObject().put("claimCall",call).put("capability",result.getString("capability"))));}catch(Exception disconnected){/* Late claims cannot reopen a local task. */}return;}
+            if(!value.optBoolean("ok")||result==null){if(call.equals(handoffClaimCall))handoffClaimCall="";delivered=true;pending.callback.accept(null,value.optString("message","任务未能完成；不会自动重发"));return;}
+            if("claim".equals(pending.action)) {
+                if(closed||!ready()||!call.equals(handoffClaimCall)){abandonHandoff(call);delivered=true;pending.callback.accept(null,"目标环境已失效，任务未发送");return;}
+                String capability=result.getString("capability"),id=result.getString("id");WorkspaceState.profile(capability);WorkspaceState.profile(id);handoffCapability=capability;handoffId=id;
+            }
+            delivered=true;pending.callback.accept(result,null);
+        }catch(Exception invalid){if(pending!=null&&!delivered)pending.callback.accept(null,"任务服务返回无效状态；已停止自动发送");handoffLost("任务服务返回无效状态；已停止自动发送");}
+    }
+    private void receiveHandoffEvent(Bundle bundle) {
+        try {
+            String raw=bundle.getString("payload","");if(raw.length()>65536)throw new IllegalArgumentException();JSONObject value=new JSONObject(raw);
+            if(handoffId.isEmpty()||!handoffId.equals(value.getString("id")))return;
+            JSONObject job=value.optJSONObject("job");
+            if(job!=null){if(!handoffId.equals(job.getString("id")))throw new IllegalArgumentException();if(!HandoffStore.active(job.getString("status"))){handoffCapability="";handoffId="";handoffClaimCall="";}if(handoffListener!=null)handoffListener.changed(job);}
+            else if(value.has("message"))handoffLost(value.getString("message"));
+        }catch(Exception invalid){handoffLost("任务状态返回无效；已停止自动发送");}
+    }
     boolean ready(){return ready&&!closed;}
     JSONObject tuple()throws Exception{if(!ready())throw new IllegalStateException("Route is blocked");return new JSONObject(desired.toString()).put("routeToken",routeToken);}
     boolean matches(String instance,long generation){return ready()&&desired!=null&&instance.equals(desired.optString("instance"))&&generation==desired.optLong("generation",-1);}
@@ -174,8 +240,8 @@ final class EnvironmentRouteController {
         if(port==null||desired==null||closed)return;
         try{routeToken=java.util.UUID.randomUUID().toString();JSONObject value=new JSONObject(desired.toString()).put("type","route").put("routeToken",routeToken);sent=value.getLong("generation");port.postMessage(value);long wanted=sent;String wantedToken=routeToken;ui.postDelayed(()->{if(!closed&&sent==wanted&&wantedToken.equals(routeToken)&&acknowledged!=wanted)block("网络设置尚未确认，请稍后重试");},12000);}catch(Exception error){block("网络设置发送失败");}
     }
-    private void block(String notice){transfers.revoke();for(String call:new ArrayList<>(calls.keySet()))if(!localCalls.contains(call)){java.util.function.Consumer<JSONObject> callback=calls.remove(call);if(callback!=null)callback.accept(new JSONObject());}lastNotice=notice;ready=false;acknowledged=-1;routeToken="";if(port!=null)try{port.postMessage(new JSONObject().put("type","suspend"));}catch(Exception ignored){}listener.route(false,desired!=null&&desired.optBoolean("foreground"),notice);}
+    private void block(String notice){handoffLost("网络连接已失效，已停止自动发送；不会自动重发");transfers.revoke();for(String call:new ArrayList<>(calls.keySet()))if(!localCalls.contains(call)){java.util.function.Consumer<JSONObject> callback=calls.remove(call);if(callback!=null)callback.accept(new JSONObject());}lastNotice=notice;ready=false;acknowledged=-1;routeToken="";if(port!=null)try{port.postMessage(new JSONObject().put("type","suspend"));}catch(Exception ignored){}listener.route(false,desired!=null&&desired.optBoolean("foreground"),notice);}
     private void send(int what,int value){if(service==null)return;try{Message message=Message.obtain(null,what,value,0);message.replyTo=inbox;if(what==1){Bundle data=new Bundle();data.putInt("slot",slot);message.setData(data);}service.send(message);}catch(RemoteException e){block("网络服务连接中断");}}
     void foreground(boolean value){foreground=value;send(2,value?1:0);}
-    void close(){closed=true;localBrokerLost();foreground(false);if(port!=null){port.disconnect();port=null;}if(bound){context.unbindService(connection);bound=false;}}
+    void close(){closed=true;handoffLost("目标环境已关闭；不会自动重发");localBrokerLost();foreground(false);if(port!=null){port.disconnect();port=null;}if(bound){context.unbindService(connection);bound=false;}}
 }

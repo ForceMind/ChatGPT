@@ -7,7 +7,7 @@ from pathlib import Path
 import re
 from zoneinfo import ZoneInfo
 
-VERSION_CODE = 3000032
+VERSION_CODE = 3000033
 TIME_ZONE = 'Asia/Shanghai'
 DEFAULT_FILE = Path('android/app/build/android-version.json')
 

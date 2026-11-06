@@ -1,4 +1,4 @@
-"""Fixed Beta.7 -> date-stamped candidate preservation proof on fresh, owned GitHub Actions emulators.
+"""Last delivered date-stamped -> next date-stamped candidate preservation proof on fresh, owned GitHub Actions emulators.
 
 Importing this module does not invoke adb, create evidence, or alter a device.
 All browser documents in this phase are owned inline .invalid fixtures.
@@ -21,7 +21,7 @@ INPUT = Path('android/app/build/environment-client-input')
 OLD = Path('android/app/build/environment-client-baseline')
 OLD_CI = Path('android/app/build/environment-client-ci-baseline')
 EVIDENCE = Path('android/app/build/environment-client-evidence')
-OLD_CODE = 3000031
+OLD_CODE = 3000032
 NEW_CODE = VERSION_CODE
 EXPECTED_FILE = '/data/user/0/' + PACKAGE + '/files/environment-upgrade-expected.json'
 
@@ -221,7 +221,7 @@ def run_upgrade(target='human'):
         assert Path(receipt['file']).name == receipt['file'], 'Receipt APK must be a basename'
         human = INPUT / receipt['file']
         assert re.fullmatch(r'[a-f0-9]{64}', receipt['sha256']) and _sha(human) == receipt['sha256']
-        previous = _json(Path('docs/releases/android-environment-beta7-baseline.json'))
+        previous = _json(Path('docs/releases/android-environment-upgrade-baseline.json'))
         baseline = previous['receipt']
         assert baseline['package'] == PACKAGE and baseline['versionCode'] == OLD_CODE
         signer = _json(Path('docs/signing/android-network-beta.json'))['certificateSHA256']

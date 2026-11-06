@@ -6,5 +6,8 @@ final class CIBuild {
     static void installLocalExportProbe(java.io.File files) {
         if(BuildConfig.ENVIRONMENT_TEST&&BuildConfig.ENVIRONMENT_NETWORK_TEST)EnvironmentLocalExportProbe.install(files);
     }
+    static void installHandoffProbe(java.io.File files) {
+        if(BuildConfig.ENVIRONMENT_TEST&&BuildConfig.ENVIRONMENT_NETWORK_TEST)EnvironmentHandoffProbe.install(files);
+    }
     private CIBuild() {}
 }
