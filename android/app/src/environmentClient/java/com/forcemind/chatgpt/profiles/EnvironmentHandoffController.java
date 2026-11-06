@@ -36,7 +36,9 @@ final class EnvironmentHandoffController {
     final EnvironmentBrowserActivity.Entry entry;
     final String id;
     private final int slot;
-    private final String capability,prompt,token=WorkspaceState.id(),mimeMarker="application/x-studio-"+WorkspaceState.id();
+    // Gecko drops MIME tokens without known filename extensions before appendRawFilter.
+    // A legal extension token is preserved verbatim in FilePrompt.mimeTypes.
+    private final String capability,prompt,token=WorkspaceState.id(),mimeMarker=".studio-"+WorkspaceState.id();
     private final JSONArray metadata;
     private final List<String> names=new ArrayList<>();
     private final Handler ui=new Handler(Looper.getMainLooper());
@@ -53,6 +55,10 @@ final class EnvironmentHandoffController {
     private GeckoSession.PromptDelegate.FilePrompt activePrompt;
     private GeckoResult<GeckoSession.PromptDelegate.PromptResponse> activeResult;
     private volatile InputStream copyInput;
+    private String lastAttachmentDiagnostic="";
+    private static boolean diagnostics(){return BuildConfig.ENVIRONMENT_TEST&&BuildConfig.ENVIRONMENT_NETWORK_TEST;}
+    private static void diagnostic(String stage){if(diagnostics())android.util.Log.i("StudioHandoff",stage);}
+    private static String failureClass(Exception error){if(error instanceof InterruptedIOException||error instanceof OperationCanceledException)return "cancelled";if(error instanceof IOException)return "io";if(error instanceof SecurityException)return "security";if(error instanceof IllegalArgumentException)return "argument";if(error instanceof IllegalStateException)return "state";return "other";}
 
     EnvironmentHandoffController(Context context,Host host,EnvironmentBrowserActivity.Entry entry,JSONObject launch)throws Exception {
         this.context=context.getApplicationContext();target=new WeakReference<>(host);this.entry=entry;
@@ -107,7 +113,7 @@ final class EnvironmentHandoffController {
                 Uri url=Uri.parse(boundUrl);if(!(url.getPath()==null||url.getPath().isEmpty()||"/".equals(url.getPath())))throw new IOException();
                 rpc("bound",new JSONObject(),ignored->{
                     try {boolean images=!names.isEmpty();for(int i=0;i<metadata.length();i++)images&=metadata.getJSONObject(i).getString("uploadMime").startsWith("image/");
-                        post(new JSONObject().put("type","auth").put("request",WorkspaceState.id()).put("url",boundUrl).put("names",new JSONArray(names)).put("mimeMarker",mimeMarker).put("allImages",images));
+                        post(new JSONObject().put("type","auth").put("request",WorkspaceState.id()).put("url",boundUrl).put("names",new JSONArray(names)).put("mimeMarker",mimeMarker).put("allImages",images).put("diagnostics",diagnostics()));
                         ui.postDelayed(()->{if(!closed&&!authenticated)fail("目标网页未确认任务授权，任务未发送");},5000);
                     }catch(Exception failed){fail("无法验证目标网页，任务未发送");}
                 });return;
@@ -169,15 +175,20 @@ final class EnvironmentHandoffController {
     }
     GeckoResult<GeckoSession.PromptDelegate.PromptResponse> chooser(GeckoSession session,GeckoSession.PromptDelegate.FilePrompt selected) {
         if(session!=entry.session)return null;
-        if(!valid()||!pickerArmed||chooserUsed||activeResult!=null||selected.type!=GeckoSession.PromptDelegate.FilePrompt.Type.MULTIPLE||selected.mimeTypes==null||!Arrays.asList(selected.mimeTypes).contains(mimeMarker))return GeckoResult.fromValue(selected.dismiss());
+        boolean validNow=valid(),marker=selected.mimeTypes!=null&&Arrays.asList(selected.mimeTypes).contains(mimeMarker);
+        if(diagnostics())diagnostic("chooser valid="+validNow+" armed="+pickerArmed+" used="+chooserUsed+" pending="+(activeResult!=null)+" mode="+selected.type+" marker="+marker);
+        if(!validNow||!pickerArmed||chooserUsed||activeResult!=null)return GeckoResult.fromValue(selected.dismiss());
+        if(selected.type!=GeckoSession.PromptDelegate.FilePrompt.Type.MULTIPLE||!marker){GeckoSession.PromptDelegate.PromptResponse response=selected.dismiss();fail("网页文件选择器未能匹配本次附件授权，任务未发送");return GeckoResult.fromValue(response);}
         chooserUsed=true;pickerArmed=false;activePrompt=selected;activeResult=new GeckoResult<>();GeckoResult<GeckoSession.PromptDelegate.PromptResponse> result=activeResult;
         FILES.execute(()->{
             try {
+                if(diagnostics())diagnostic("copy-start files="+granted.length);
                 Uri[] files=copyFiles();ui.post(()->{
-                    if(activeResult!=result||!valid()||selected.isComplete()){dismissPrompt();fail("目标网页或附件授权已失效，任务未发送");return;}
-                    try{GeckoSession.PromptDelegate.PromptResponse response=selected.confirm(context,files);activeResult=null;activePrompt=null;filesConfirmed=true;result.complete(response);}catch(Exception invalid){dismissPrompt();fail("无法交付原生附件，任务未发送");}
+                    boolean current=valid();if(diagnostics())diagnostic("confirm-ready valid="+current+" pending="+(activeResult==result)+" complete="+selected.isComplete()+" files="+files.length);
+                    if(activeResult!=result||!current||selected.isComplete()){dismissPrompt();fail("目标网页或附件授权已失效，任务未发送");return;}
+                    try{GeckoSession.PromptDelegate.PromptResponse response=selected.confirm(context,files);activeResult=null;activePrompt=null;filesConfirmed=true;result.complete(response);if(diagnostics())diagnostic("confirm success=true");}catch(Exception invalid){if(diagnostics())diagnostic("confirm success=false class="+failureClass(invalid));dismissPrompt();fail("无法交付原生附件，任务未发送");}
                 });
-            }catch(Exception failed){ui.post(()->{dismissPrompt();fail("附件读取或校验失败，任务未发送");});}
+            }catch(Exception failed){if(diagnostics())diagnostic("copy-failed class="+failureClass(failed));ui.post(()->{dismissPrompt();fail("附件读取或校验失败，任务未发送");});}
         });
         return result;
     }
@@ -197,9 +208,10 @@ final class EnvironmentHandoffController {
                 }finally{copyInput=null;}
             }
             StringBuilder hash=new StringBuilder();for(byte value:digest.digest())hash.append(String.format(Locale.ROOT,"%02x",value&255));
+            if(diagnostics())diagnostic("copy-file index="+i+" lengthMatch="+(count==expected.getLong("size"))+" hashMatch="+hash.toString().equals(expected.getString("sha256")));
             if(count!=expected.getLong("size")||!hash.toString().equals(expected.getString("sha256")))throw new IOException();checkCopy();result[i]=Uri.fromFile(file);
         }
-        checkCopy();return result;
+        checkCopy();if(diagnostics())diagnostic("copy-complete files="+result.length);return result;
     }
     private void checkCopy()throws Exception {
         if(closed||copySignal.isCanceled()||entry.closed||entry.epoch!=epoch)throw new InterruptedIOException("附件任务已取消");
@@ -208,7 +220,14 @@ final class EnvironmentHandoffController {
     }
     private void attachments() {
         if(timedOut()){fail("未能确认全部附件上传完成，任务未发送");return;}
-        page("state",state->{if(state.optBoolean("error")){fail("网页提示附件上传失败，任务未发送");return;}stable=chooserUsed&&activeResult==null&&filesReady(state)?stable+1:0;if(stable>=3)page("restore",ignored->draft());else later(this::attachments);});
+        page("state",state->{
+            if(diagnostics()){
+                JSONObject page=state.optJSONObject("diagnostics");JSONArray attachments=state.optJSONArray("attachments");
+                String value="attachments chosen="+chooserUsed+" confirmed="+filesConfirmed+" prompt="+(activeResult!=null)+" removers="+state.optInt("removers")+" labels="+(attachments==null?0:attachments.length())+" namesMatch="+filesReady(state)+" busy="+state.optBoolean("busy")+" error="+state.optBoolean("error")+" selectedFiles="+(page==null?-1:page.optInt("selectedFiles",-1))+" pageErrors="+(page==null?-1:page.optInt("pageErrors",-1))+" rejections="+(page==null?-1:page.optInt("rejections",-1));
+                if(!value.equals(lastAttachmentDiagnostic)){lastAttachmentDiagnostic=value;diagnostic(value);}
+            }
+            if(state.optBoolean("error")){fail("网页提示附件上传失败，任务未发送");return;}stable=chooserUsed&&activeResult==null&&filesReady(state)?stable+1:0;if(stable>=3)page("restore",ignored->draft());else later(this::attachments);
+        });
     }
     private void draft(){rpc("drafting",new JSONObject(),ignored->page("focus",value->{deadline=SystemClock.elapsedRealtime()+5000;later(this::insert);}));}
     private void insert() {
@@ -259,7 +278,7 @@ final class EnvironmentHandoffController {
     private void stop(String action,String message) {
         if(closed)return;
         Host host=target.get();if(!terminalReported&&host!=null) {
-            terminalReported=true;try{host.command(action,new JSONObject().put("id",id).put("capability",capability).put("sequence",++rpcSequence).put("document",document).put("epoch",epoch),(result,error)->{if(result!=null&&result.optJSONObject("job")!=null)ui.post(()->host.changed(result.optJSONObject("job")));});}catch(Exception ignored){/* Broker disconnect owns durable termination. */}
+            terminalReported=true;try{host.command(action,new JSONObject().put("id",id).put("capability",capability).put("sequence",++rpcSequence).put("document",document).put("epoch",epoch).put("reason",message),(result,error)->{if(result!=null&&result.optJSONObject("job")!=null)ui.post(()->host.changed(result.optJSONObject("job")));});}catch(Exception ignored){/* Broker disconnect owns durable termination. */}
         }
         finish(message);
     }

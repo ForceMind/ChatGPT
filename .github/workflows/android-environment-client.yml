@@ -316,24 +316,9 @@ jobs:
           javac --release 8 -classpath "$ANDROID_HOME/platforms/android-36/android.jar" -d android/app/build/environment-ascii/classes android/scripts/android/AsciiInput.java
           "$ANDROID_HOME/build-tools/35.0.0/d8" --min-api 28 --lib "$ANDROID_HOME/platforms/android-36/android.jar" --output android/app/build/environment-ascii/input.jar android/app/build/environment-ascii/classes/com/forcemind/chatgpt/pocinput/AsciiInput.class
       - run: sudo chmod a+rw /dev/kvm
-      - uses: reactivecircus/android-emulator-runner@v2
-        if: matrix.api != 35
-        with:
-          api-level: ${{ matrix.api }}
-          target: ${{ matrix.api == 28 && 'default' || 'google_apis' }}
-          arch: x86_64
-          profile: pixel_2
-          disable-animations: true
-          emulator-options: >-
-            -no-window -no-audio -no-boot-anim -no-snapshot
-            -gpu ${{ matrix.api == 35 && 'swiftshader' || 'swiftshader_indirect' }}
-            -writable-system -memory ${{ matrix.api == 35 && 4096 || 3072 }}
-            ${{ matrix.api == 35 && '-feature -Vulkan' || '' }}
-          script: |
-            if [ '${{ matrix.api }}' = 28 ]; then python3 android/network-poc/scripts/install-webview.py --provider android/app/build/environment-provider-input/provider --output android/app/build/environment-client-evidence/provider; fi
-            if [ '${{ matrix.api }}' = 28 ] && [ '${{ matrix.target }}' = synthetic ]; then adb push android/app/build/environment-touch/input.jar /data/local/tmp/studio-poc-input.jar; fi
-            if [ '${{ matrix.target }}' = synthetic ]; then adb push android/app/build/environment-ascii/input.jar /data/local/tmp/studio-poc-ascii-input.jar; fi
-            if [ '${{ matrix.target }}' = human ]; then python3 android/scripts/environment_upgrade.py --target human; else python3 android/scripts/run-environment-client.py; fi
+      - name: Run the same Android9 cases with retained emulator exit evidence
+        if: matrix.api == 28
+        run: bash android/scripts/run-environment-api28.sh '${{ matrix.target }}'
       - name: Boot Android15 without an early Launcher key event
         if: matrix.api == 35 && matrix.target == 'synthetic'
         run: bash android/scripts/run-environment-api35.sh
@@ -636,7 +621,7 @@ jobs:
         run: |
           mkdir -p "$STUDIO_GECKO_OUTPUT"
           chmod +x android/network-poc/corebridge/bin/xray
-          python3 android/network-poc/scripts/fixture.py --core android/network-poc/corebridge/bin/xray --output android/network-poc/secure-fixture --gecko-handoff > "$STUDIO_GECKO_OUTPUT/host-fixture.log" 2>&1 &
+          python3 -u android/network-poc/scripts/fixture.py --core android/network-poc/corebridge/bin/xray --output android/network-poc/secure-fixture --gecko-handoff > "$RUNNER_TEMP/studio-gecko-handoff-host.log" 2>&1 &
           for attempt in $(seq 1 40); do
             if [ -f android/network-poc/secure-fixture/ready.json ]; then break; fi
             sleep 1
@@ -676,6 +661,11 @@ jobs:
         if: always()
         run: |
           mkdir -p "$STUDIO_GECKO_OUTPUT/node-logs"
+          if [ -f "$RUNNER_TEMP/studio-gecko-handoff-host.log" ]; then
+            cp "$RUNNER_TEMP/studio-gecko-handoff-host.log" "$STUDIO_GECKO_OUTPUT/host-fixture.log"
+          else
+            echo 'Owned host fixture log was not created before the failure.' > "$STUDIO_GECKO_OUTPUT/host-fixture-log-unavailable.txt"
+          fi
           if compgen -G 'android/network-poc/secure-fixture/fixture-*.log' > /dev/null; then
             cp android/network-poc/secure-fixture/fixture-*.log "$STUDIO_GECKO_OUTPUT/node-logs/"
           fi

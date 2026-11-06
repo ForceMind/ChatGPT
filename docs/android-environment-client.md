@@ -22,7 +22,13 @@
 
 定点修复已改为原文档本地保存通道，待 Actions 运行：只接管同一 Window、真实激活的 `anchor[download]` 本地意图；窄化的 Gecko `exportFunction` click 包装覆盖 detached 锚，普通 click 调用原方法。原文档的保留 `content.fetch` 只读捕获的 blob/data，确认保存后才读取正文；每次最多 16 KiB，Native 实际消费后 ACK，再沿原 InputStream/PFD/主进程 Ledger 校验 EOF、大小与所属。普通 blob/data 顶层导航继续拒绝；没有改 HTTP 原方法、线路票据、数据格式或原验收断言。失败取证另增加 Android9 runner 内核与进程内存快照，用于定位前述模拟器断连。
 
-第二阶段接线已写入、尚待编译与运行：主进程统一保留 HandoffStore/附件授权/一次发送落盘栅栏，Gecko 槽只持有绑定具体账号、标签和文档的短期执行能力；进度、停止、历史及打开原标签复用已有流程。下一交付内部序号 `3000033`，用户可见日期由该批 Actions 生成；同签升级基线改为刚交付的 `2026.11.06-2024` / `3000032` 原包，Beta.7 记录原样保留。已批准的两端五项任务验收为成功、上传中取消、上传失败、明确新任务恢复、发送 ACK 丢失后结果待确认且重开不重发。只有完整指令、真实 multipart 字节与归属、实际主进程阶段、发送栅栏及原登录/恢复/热标签同时通过才交付。
+第二阶段接线已写入，首轮构建通过，仍需运行验收：主进程统一保留 HandoffStore/附件授权/一次发送落盘栅栏，Gecko 槽只持有绑定具体账号、标签和文档的短期执行能力；进度、停止、历史及打开原标签复用已有流程。下一交付内部序号 `3000033`，用户可见日期由该批 Actions 生成；同签升级基线改为刚交付的 `2026.11.06-2024` / `3000032` 原包，Beta.7 记录原样保留。已批准的两端五项任务验收为成功、上传中取消、上传失败、明确新任务恢复、发送 ACK 丢失后结果待确认且重开不重发。只有完整指令、真实 multipart 字节与归属、实际主进程阶段、发送栅栏及原登录/恢复/热标签同时通过才交付。
+
+第二阶段首轮 `42221239120` / `f923b90913dcb57e434e9c3acd3fb9de6f04003d` 构建与包检查、两端本地导出及六组网络通过，human35 和 synthetic35 通过。任务两端都完成源资产下载、原生50字草稿、热页、双附件/Skill/目标B及跨账号拒绝/确认；首正常任务在 `uploading` 等待90秒后失败，未进入发送阶段。原产物没有最终 server/AX/Probe 回读，不能把刚 GET 后的早期 upload0 样本当最终状态；驱动已补失败后单次只读取证，保留首错，不重试输入或发送。
+
+固定 Gecko158 源码确认一处协议缺口：`HTMLInputElement.cpp:7359–7399` 会先查询 MIME 的扩展列表，未知随机 MIME 没有扩展时跳过，故不能依赖它出现在 FilePrompt；扩展名分支与 `AppendRawFilter(token)` 则原样传递点号 token。两端原日志已出现 `Prompts handleEvent file`。最小修正改为合法随机 `.studio-UUID`，Java 仍精确校验该 token、MULTIPLE、Session 与原文档；不匹配立即明确终止。Native 中文白名单失败原因进入原任务记录，fenced 失败仍为 uncertain。新增诊断仅双测试旗标开启，记录 chooser/copy校验/confirm/附件计数，不输出正文、URI 或 nonce。实际上传/发送仍待下一轮原五场景验收。
+
+同轮 synthetic28 在 cold 的 `am force-stop` 退出255，随后 QEMU TCP5554拒绝连接；runner ps 已无模拟器，内核没有 OOM、QEMU或segfault条目，退出原因未知。human28 在启动的第二次 `adb getprop sys.boot_completed` 挂住至40分钟取消，Python升级用例根本未开始，不能记为数据保留通过。下一轮 Android9 改用自管启动器：沿原 API28/default/pixel2/2CPU/3072MiB/swiftshader_indirect，保留真实 PID/退出码/原始stderr；每次启动期 adb 读取有界，仍运行原 human/synthetic 用例及全部原断言，不修改产品恢复或保活策略。
 
 ## 最新交付：2026.11.06-2024 本地导出候选
 

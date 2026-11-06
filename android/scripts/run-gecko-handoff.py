@@ -258,7 +258,7 @@ def main():
     parser.add_argument('--apk',type=Path,default=Path(os.environ.get('STUDIO_GECKO_APK','android/app/build/environment-client-input/gecko-network-x86.apk')))
     parser.add_argument('--receipt',type=Path,default=Path(os.environ.get('STUDIO_GECKO_RECEIPT','android/app/build/environment-client-input/gecko-network-receipt.json')))
     parser.add_argument('--output',type=Path,default=Path(os.environ.get('STUDIO_GECKO_OUTPUT','android/app/build/gecko-handoff-evidence')))
-    args=parser.parse_args();acceptance=None;guarded=False
+    args=parser.parse_args();acceptance=None;guarded=False;capture_failure=False;main_pid=None
     native.EVIDENCE=args.output;common.EVIDENCE=args.output
     try:
         api=native._guard();guarded=True
@@ -364,9 +364,20 @@ def main():
         print(json.dumps({'complete':True,'api':api,'cases':5,'sendCount':3,'proofFile':str(args.output/'gecko-handoff.json')}),flush=True)
         return proof
     except Exception:
-        native._record_failure();raise
+        capture_failure=True;native._record_failure();raise
     finally:
         if acceptance is not None:
+            if capture_failure:
+                # Observe the failed attempt once. Never tap, resume, retry or replace its first error.
+                observations=[('server',lambda:acceptance.http('/status')),
+                              ('journal',acceptance.jobs),
+                              ('workspace',lambda:acceptance.json_file('workspace.json')),
+                              ('native-ui',acceptance.ui)]
+                if main_pid is not None:
+                    observations.append(('native-task-events',lambda:acceptance.task_events(int(main_pid))))
+                for label,observe in observations:
+                    try:native._write_json(args.output/('failure-final-'+label+'.json'),observe())
+                    except Exception:(args.output/('failure-final-'+label+'-error.txt')).write_text(traceback.format_exc())
             for document in list(acceptance.pending_tasks):
                 try:acceptance.release_task(document)
                 except Exception:(args.output/'task-release-cleanup-error.txt').write_text(traceback.format_exc())

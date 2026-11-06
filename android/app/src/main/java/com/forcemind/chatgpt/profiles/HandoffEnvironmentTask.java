@@ -9,6 +9,20 @@ import org.json.*;
 
 /** Main-process authority for one Gecko task. The slot never opens the central task store. */
 final class HandoffEnvironmentTask {
+    /** Native-owned user explanations only; remote exceptions and page text never enter the journal. */
+    private static final java.util.Set<String> FAILURE_REASONS=java.util.Collections.unmodifiableSet(new java.util.HashSet<>(java.util.Arrays.asList(
+        "未能确认全部附件上传完成，任务未发送","网页提示附件上传失败，任务未发送","附件读取或校验失败，任务未发送",
+        "原生附件授权无效，任务未发送","网页未提供可用的文件选择控件，任务未发送","无法操作网页文件选择器，任务未发送",
+        "网页文件选择器未能匹配本次附件授权，任务未发送","无法交付原生附件，任务未发送","目标网页或附件授权已失效，任务未发送",
+        "未找到聊天输入框，请先登录","目标页面已有内容，为避免覆盖或重复发送已停止","输入框尚未就绪，任务未发送",
+        "目标输入框已改变，任务未发送","目标网页当前不可操作，任务未发送","完整处理要求已尝试输入，不会重复输入",
+        "无法确认完整处理要求已输入，任务未发送","网页未完整接收处理要求，任务未发送","网页提示附件或输入错误，任务未发送",
+        "发送前网页内容已改变；不会自动重发","本任务已尝试发送，不会重复发送","发送结果待确认，请检查目标对话；不会自动重发",
+        "发送许可无法记录，任务未发送","无法确认网页收到完整消息；不会自动重发","发送结果待确认；不会自动重发",
+        "网页控件不兼容，已停止自动发送","无法确认目标网页状态，已停止自动发送","目标网页未确认任务授权，任务未发送",
+        "未找到可用的目标聊天页面，任务未发送","目标文档已重新加载；不会自动重发","目标网页已改变，已停止自动发送",
+        "目标网页连接已中断；不会自动重发","网页确认超时，已停止自动发送","目标账号、标签或网页已改变"
+    )));
     interface Listener {
         void changed(JSONObject job);
         void stopped(String reason);
@@ -105,7 +119,8 @@ final class HandoffEnvironmentTask {
                 if(!job.getString("status").equals("sending"))throw new IOException("任务尚未发送");
                 runtime.store.submittedEnvironment(id,data.getString("url"));job=runtime.store.get(id);finish(null,false,false);break;
             case "failed":case "cancelled":
-                finish("cancelled".equals(action)?"已停止自动发送；请检查目标网页中已有的附件和草稿":"网页任务未能完成；请检查任务记录和目标网页",true,"cancelled".equals(action));break;
+                String reason=data.optString("reason");
+                finish("cancelled".equals(action)?"已停止自动发送；请检查目标网页中已有的附件和草稿":FAILURE_REASONS.contains(reason)?reason:"网页任务未能完成；请检查任务记录和目标网页",true,"cancelled".equals(action));break;
             default:throw new IOException("任务命令无效");
         }
         return result();
