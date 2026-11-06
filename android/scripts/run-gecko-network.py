@@ -2,12 +2,14 @@
 """Fresh CI Gecko/VLESS route acceptance. Real picker, native clicks, independent origin bytes."""
 import argparse
 import hashlib
+import http.client
 import importlib.util
 import json
 import os
 from pathlib import Path
 import re
 import ssl
+import socket
 import subprocess
 import time
 import traceback
@@ -51,6 +53,28 @@ class NetworkAcceptance(common.Acceptance):
         self.probe_operations = []
         self.failed_operations = []
         self.network_observations = []
+
+    def http(self, path, value=None):
+        # TCP stays on the runner loopback; SNI and hostname verification use the
+        # certificate's exact DNS SAN. A Host header alone never changes TLS SNI.
+        assert path == '/status', 'Network observations use only the owned status endpoint'
+        self.sequence += 1
+        label = str(self.sequence) + '-https'
+        connection = http.client.HTTPSConnection(HOST, 18480, timeout=8, context=self.ssl)
+        try:
+            with socket.create_connection(('127.0.0.1', 18480), timeout=8) as raw:
+                connection.sock = self.ssl.wrap_socket(raw, server_hostname=HOST)
+                connection.request('GET' if value is None else 'POST', path,
+                                   body=None if value is None else json.dumps(value).encode('utf-8'),
+                                   headers={'Host': HOST+':18480', 'Content-Type': 'application/json'})
+                response = connection.getresponse();body = response.read()
+                (self.output / (label + '.json')).write_bytes(body)
+                native._write_json(self.output / (label+'-response.json'),
+                                   {'path':path,'status':response.status,'tcpHost':'127.0.0.1','tlsServerName':HOST,'certificateVerified':True})
+                assert response.status == 200, (path, response.status)
+                return json.loads(body)
+        finally:
+            connection.close()
 
     def owned_http(self, path, value=None, pending=False):
         assert path.startswith(('/transfer-control/', '/gecko-network/control/'))
@@ -317,7 +341,9 @@ def main():
         receipt = native._json(args.receipt)
         assert receipt['ciOnly'] is True and receipt['package'] == PACKAGE and receipt['versionCode'] == 3000031
         assert receipt['versionName'] == '3.0.0-alpha.24-beta.7' and receipt['signerSHA256'] == signer
-        assert receipt['sourceSHA'] == os.environ['GITHUB_SHA'] and receipt['file'] == args.apk.name
+        application_sha = os.environ.get('STUDIO_GECKO_APPLICATION_SHA', os.environ['GITHUB_SHA'])
+        assert re.fullmatch(r'[a-f0-9]{40}', application_sha)
+        assert receipt['sourceSHA'] == application_sha and receipt['file'] == args.apk.name
         assert receipt['bytes'] == args.apk.stat().st_size and receipt['sha256'] == native._sha(args.apk)
         apk = native._inspect_apk(args.apk,native._tools(),signer,PACKAGE,3000031)
         assert apk['versionName']=='3.0.0-alpha.24-beta.7' and apk['sha256'] == receipt['sha256']
@@ -334,6 +360,11 @@ def main():
         uid_text=native._shell('pm','list','packages','-U',PACKAGE).strip()
         match=re.fullmatch(r'package:'+re.escape(PACKAGE)+r' uid:(\d+)',uid_text);assert match
         uid=int(match[1]);assert native._shell('id','-u').strip()=='0'
+        origin_tls=native._json(args.fixture.parent/'gecko-origin-tls.json')
+        assert origin_tls['caUnchanged'] is True and origin_tls['leafIsCA'] is False
+        assert origin_tls['caCertificateSha256']==manifest['certificateSha256']
+        assert origin_tls['dnsSANs']==[HOST,'files.network-fixture.test'] and origin_tls['purpose']=='sslserver'
+        native._write_json(args.output/'origin-tls.json',origin_tls)
         acceptance=NetworkAcceptance(api,uid,args.fixture,args.output,args.transport)
         assert acceptance.owned_http('/gecko-network/control/configure',{'transport':args.transport,'runId':str(uuid.uuid4())})['ok'] is True
         acceptance.prepare(args.fixture.parent/'ca.pem')
@@ -364,7 +395,7 @@ def main():
         assert final['pageCounts']['/c/a1']==1 and last['document']==first['document']
         assert len(final['uploads'])==2 and {row['operation'] for row in final['uploads']}=={upload_a['operation'],upload_b['operation']}
         proof={'schema':1,'complete':True,'api':api,'transport':args.transport,'engine':'gecko','candidateAPK':apk,
-               'candidateInstalledSHA256':installed,'ciReceipt':receipt,'uid':uid,'sourceSHA':os.environ.get('GITHUB_SHA'),
+               'candidateInstalledSHA256':installed,'ciReceipt':receipt,'applicationSourceSHA':application_sha,'originTLS':origin_tls,'uid':uid,'sourceSHA':os.environ.get('GITHUB_SHA'),
                'picker':picker,'routeA':{'upload':upload_a,'download':download_a},'routeB':{'probe':probe_b,'upload':upload_b,'download':download_b},
                'busySelectRejected':True,'idleSwitchNoReload':True,'sameDocument':last['document'],
                'coreFailure':failed,'failedOperations':failures,'explicitRecovery':{'state':recovered,'probe':recovery_probe},'negatives':negatives,

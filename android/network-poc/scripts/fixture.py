@@ -670,13 +670,13 @@ def run(core, folder, manifest, gecko_network=False):
             old_handlers[signum] = signal.signal(signum, lambda *_: stopped.set())
         handler = Origin
         if gecko_network:
-            from gecko_fixture_page import handler_for
+            from gecko_fixture_page import handler_for, gecko_tls_context
             handler = handler_for(Origin, route_name)
         origin = http.server.ThreadingHTTPServer(('0.0.0.0', ORIGIN_PORT), handler)
         servers.append(origin)
         threading.Thread(target=origin.serve_forever, daemon=True).start()
         https = http.server.ThreadingHTTPServer(('0.0.0.0', HTTPS_ORIGIN_PORT), handler)
-        https.socket = tls_context(folder).wrap_socket(https.socket, server_side=True)
+        https.socket = (gecko_tls_context(folder) if gecko_network else tls_context(folder)).wrap_socket(https.socket, server_side=True)
         servers.append(https)
         threading.Thread(target=https.serve_forever, daemon=True).start()
         system_proxy = http.server.ThreadingHTTPServer(('0.0.0.0', SYSTEM_PROXY_PORT), OwnedSystemProxy)

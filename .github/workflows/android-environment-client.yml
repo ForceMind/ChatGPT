@@ -5,6 +5,10 @@ on:
     paths: ['.github/workflows/android-environment-client.yml']
   workflow_dispatch:
     inputs:
+      reuse_beta7_checks:
+        description: Reuse immutable Beta7 build and complete client regressions from 42151389890 for network-fixture-only fixes
+        type: boolean
+        default: false
       reuse_application_build:
         description: Reuse checked application/test bytes and human upgrades from 42090385251 when only the functional driver changed
         type: boolean
@@ -39,21 +43,21 @@ jobs:
           test '${{ inputs.reuse_application_build }}' = true
           test '${{ inputs.reuse_android9_acceptance }}' = true
       - uses: actions/setup-java@v4
-        if: ${{ !inputs.reuse_application_build }}
+        if: ${{ !inputs.reuse_application_build && !inputs.reuse_beta7_checks }}
         with:
           distribution: temurin
           java-version: '17'
       - uses: actions/setup-go@v5
-        if: ${{ !inputs.reuse_application_build }}
+        if: ${{ !inputs.reuse_application_build && !inputs.reuse_beta7_checks }}
         with:
           go-version: '1.27.3'
           cache: false
       - uses: android-actions/setup-android@v3
-        if: ${{ !inputs.reuse_application_build }}
+        if: ${{ !inputs.reuse_application_build && !inputs.reuse_beta7_checks }}
         with:
           packages: platform-tools
       - uses: actions/cache@v4
-        if: ${{ !inputs.reuse_application_build }}
+        if: ${{ !inputs.reuse_application_build && !inputs.reuse_beta7_checks }}
         with:
           path: |
             android/network-poc/app/libs/
@@ -61,19 +65,19 @@ jobs:
             android/app/libs/licenses/
           key: formal-network-core-go1273-ndk282-${{ hashFiles('android/network-poc/corebridge/go.mod', 'android/network-poc/corebridge/go.sum', 'android/network-poc/corebridge/networkcore.go', 'android/network-poc/scripts/build-core.sh', 'android/scripts/prepare-network-core.sh') }}
       - run: bash android/scripts/prepare-network-core.sh
-        if: ${{ !inputs.reuse_application_build }}
+        if: ${{ !inputs.reuse_application_build && !inputs.reuse_beta7_checks }}
       - name: Prepare the owned network trust and node inputs
-        if: ${{ !inputs.reuse_application_build }}
+        if: ${{ !inputs.reuse_application_build && !inputs.reuse_beta7_checks }}
         run: |
           python3 -m unittest discover -s android/network-poc/scripts/tests -p test_secure_fixture.py
           python3 android/network-poc/scripts/fixture.py --prepare-only --output android/network-poc/secure-fixture
       - name: Restore existing fixed Beta signer
-        if: ${{ !inputs.reuse_application_build }}
+        if: ${{ !inputs.reuse_application_build && !inputs.reuse_beta7_checks }}
         env:
           STUDIO_BETA_KEYSTORE_B64: ${{ secrets.STUDIO_BETA_KEYSTORE_B64 }}
         run: python3 android/scripts/restore-beta-signing.py
       - name: Client unit checks, lint and real ARM package
-        if: ${{ !inputs.reuse_application_build }}
+        if: ${{ !inputs.reuse_application_build && !inputs.reuse_beta7_checks }}
         run: |
           test ! -f android/keystore.properties
           sdkmanager 'platforms;android-36' 'platforms;android-37.0' 'build-tools;35.0.0'
@@ -85,7 +89,7 @@ jobs:
           cp -R android/app/build/network-beta/. android/app/build/environment-client-input/
           cp android/app/build/outputs/apk/androidTest/networkBeta/app-networkBeta-androidTest.apk android/app/build/environment-client-input/upgrade-test.apk
       - name: Build x86 compatibility and separately marked synthetic target
-        if: ${{ !inputs.reuse_application_build }}
+        if: ${{ !inputs.reuse_application_build && !inputs.reuse_beta7_checks }}
         run: |
           bash android/environment-poc/gradlew -p android --no-daemon -PenvironmentClient -PbetaAbi=x86_64 -PbetaVersionCode=3000031 -PbetaVersionName=3.0.0-alpha.24-beta.7 :app:assembleNetworkBeta
           cp android/app/build/outputs/apk/networkBeta/app-networkBeta.apk android/app/build/environment-client-input/human-x86.apk
@@ -95,17 +99,36 @@ jobs:
           cp android/app/build/outputs/apk/networkBeta/app-networkBeta.apk android/app/build/environment-client-input/gecko-network-x86.apk
           python3 android/scripts/gecko-network-package.py
       - uses: actions/upload-artifact@v4
-        if: ${{ !inputs.reuse_application_build }}
+        if: ${{ !inputs.reuse_application_build && !inputs.reuse_beta7_checks }}
         with:
           name: gecko-network-fixture
           retention-days: 1
           path: android/network-poc/secure-fixture/
       - uses: actions/upload-artifact@v4
-        if: ${{ !inputs.reuse_application_build }}
+        if: ${{ !inputs.reuse_application_build && !inputs.reuse_beta7_checks }}
         with:
           name: gecko-network-host-core
           retention-days: 14
           path: android/network-poc/corebridge/bin/xray
+      - name: Authenticate immutable Beta7 APKs and completed client checks
+        if: inputs.reuse_beta7_checks
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          test '${{ inputs.reuse_application_build }}' != true
+          test '${{ inputs.reuse_android9_acceptance }}' != true
+          test '${{ inputs.rebuild_api35_acceptance_test }}' != true
+          test "$(gh api repos/${{ github.repository }}/actions/runs/42151389890 --jq .head_sha)" = 407bca267f2bf12a7af0b5aaa3f13b8b46424c7c
+          gh api repos/${{ github.repository }}/actions/runs/42151389890/jobs --paginate --jq '.jobs[]|select(.name=="build" or (.name|startswith("accept (")))|[.name,.conclusion]|@tsv' > "$RUNNER_TEMP/beta7-checks.tsv"
+          python3 - <<'PY_CHECK'
+          import os,pathlib
+          rows=dict(line.split('\t') for line in pathlib.Path(os.environ['RUNNER_TEMP'],'beta7-checks.tsv').read_text().splitlines())
+          expected={'build',*(f'accept ({api}, {target})' for api in (28,35) for target in ('human','synthetic'))}
+          assert set(rows)==expected and all(value=='success' for value in rows.values()),rows
+          PY_CHECK
+          git fetch origin 407bca267f2bf12a7af0b5aaa3f13b8b46424c7c --depth=1
+          git diff --exit-code 407bca267f2bf12a7af0b5aaa3f13b8b46424c7c HEAD -- android/app android/settings.gradle android/build.gradle android/gradle android/environment-poc/gradle android/network-poc/corebridge android/network-poc/scripts/build-core.sh android/scripts/prepare-network-core.sh android/scripts/environment_upgrade.py android/scripts/run-environment-client.py android/scripts/environment-fixture.py android/scripts/android desktop/resources/capabilities
+          python3 -m unittest discover -s android/network-poc/scripts/tests -p test_secure_fixture.py
       - name: Authenticate reusable application source and completed build checks
         if: inputs.reuse_application_build
         env:
@@ -120,13 +143,13 @@ jobs:
             git diff --exit-code 2b8738187ca7d02e83700334859ba77acd32f87a HEAD -- android/app android/settings.gradle android/build.gradle android/network-poc/corebridge android/scripts/environment_upgrade.py
           fi
       - uses: actions/upload-artifact@v4
-        if: ${{ !inputs.reuse_application_build }}
+        if: ${{ !inputs.reuse_application_build && !inputs.reuse_beta7_checks }}
         with:
           name: environment-client-input
           retention-days: 14
           path: android/app/build/environment-client-input/
       - uses: actions/upload-artifact@v4
-        if: ${{ always() && !inputs.reuse_application_build }}
+        if: ${{ always() && !inputs.reuse_application_build && !inputs.reuse_beta7_checks }}
         with:
           name: environment-client-build-evidence
           retention-days: 14
@@ -195,7 +218,7 @@ jobs:
         run: rm -f "$RUNNER_TEMP/studio-beta.p12"
   accept:
     needs: [build, api35-test-build]
-    if: ${{ always() && needs.build.result == 'success' && (needs.api35-test-build.result == 'success' || needs.api35-test-build.result == 'skipped') }}
+    if: ${{ always() && !inputs.reuse_beta7_checks && needs.build.result == 'success' && (needs.api35-test-build.result == 'success' || needs.api35-test-build.result == 'skipped') }}
     runs-on: ubuntu-latest
     timeout-minutes: 40
     strategy:
@@ -308,6 +331,7 @@ jobs:
         api: [28,35]
         transport: [raw,tls,reality]
     env:
+      STUDIO_GECKO_APPLICATION_SHA: ${{ inputs.reuse_beta7_checks && '407bca267f2bf12a7af0b5aaa3f13b8b46424c7c' || github.sha }}
       STUDIO_GECKO_TRANSPORT: ${{ matrix.transport }}
       STUDIO_GECKO_FIXTURE: android/network-poc/secure-fixture/fixture.json
       STUDIO_GECKO_APK: android/app/build/environment-client-input/gecko-network-x86.apk
@@ -329,14 +353,20 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: environment-client-input
+          run-id: ${{ inputs.reuse_beta7_checks && 42151389890 || github.run_id }}
+          github-token: ${{ github.token }}
           path: android/app/build/environment-client-input
       - uses: actions/download-artifact@v4
         with:
           name: gecko-network-fixture
+          run-id: ${{ inputs.reuse_beta7_checks && 42151389890 || github.run_id }}
+          github-token: ${{ github.token }}
           path: android/network-poc/secure-fixture
       - uses: actions/download-artifact@v4
         with:
           name: gecko-network-host-core
+          run-id: ${{ inputs.reuse_beta7_checks && 42151389890 || github.run_id }}
+          github-token: ${{ github.token }}
           path: android/network-poc/corebridge/bin
       - uses: actions/download-artifact@v4
         if: matrix.api == 28
@@ -452,16 +482,46 @@ jobs:
           name: environment-client-28-synthetic
           retention-days: 14
           path: evidence/
+  reuse-beta7:
+    if: inputs.reuse_beta7_checks
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        api: [28,35]
+        target: [human,synthetic]
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: environment-client-${{ matrix.api }}-${{ matrix.target }}
+          run-id: 42151389890
+          github-token: ${{ github.token }}
+          path: evidence
+      - name: Keep complete proofs and original source identity unchanged
+        run: |
+          python3 - <<'PY_PROOF'
+          import json,pathlib
+          name='verified-human.json' if '${{ matrix.target }}'=='human' else 'functional.json'
+          r=json.loads(pathlib.Path('evidence',name).read_text())
+          assert r['complete'] and r['api']==${{ matrix.api }}
+          assert r['sourceSHA']=='407bca267f2bf12a7af0b5aaa3f13b8b46424c7c'
+          pathlib.Path('evidence/reused-beta7-source.json').write_text(json.dumps({'run':42151389890,'sourceSHA':r['sourceSHA'],'applicationAndAcceptanceInputsUnchanged':True})+'\n')
+          PY_PROOF
+      - uses: actions/upload-artifact@v4
+        with:
+          name: environment-client-${{ matrix.api }}-${{ matrix.target }}
+          retention-days: 14
+          path: evidence/
   deliver:
-    needs: [accept, gecko-network, reuse-human, reuse-android9]
-    if: ${{ always() && needs.accept.result == 'success' && needs.gecko-network.result == 'success' && (needs.reuse-human.result == 'success' || needs.reuse-human.result == 'skipped') && (needs.reuse-android9.result == 'success' || needs.reuse-android9.result == 'skipped') }}
+    needs: [accept, gecko-network, reuse-human, reuse-android9, reuse-beta7]
+    if: ${{ always() && (needs.accept.result == 'success' || needs.reuse-beta7.result == 'success') && needs.gecko-network.result == 'success' && (needs.reuse-human.result == 'success' || needs.reuse-human.result == 'skipped') && (needs.reuse-android9.result == 'success' || needs.reuse-android9.result == 'skipped') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           name: environment-client-input
-          run-id: ${{ inputs.reuse_application_build && 42090385251 || github.run_id }}
+          run-id: ${{ inputs.reuse_beta7_checks && 42151389890 || (inputs.reuse_application_build && 42090385251 || github.run_id) }}
           github-token: ${{ github.token }}
           path: input
       - uses: actions/download-artifact@v4

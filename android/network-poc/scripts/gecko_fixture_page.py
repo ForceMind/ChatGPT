@@ -4,6 +4,9 @@ import email.policy
 import hashlib
 import importlib.util
 import json
+import os
+import ssl
+import subprocess
 from pathlib import Path
 import re
 import threading
@@ -13,6 +16,59 @@ import uuid
 UPLOAD_BYTES = b'owned-gecko-network-upload\n' * 1024
 HOST = 'network-fixture.test'
 PAGES = {'/c/a1': 'A', '/c/a2': 'A', '/c/b1': 'B', '/c/c1': 'C'}
+
+
+
+def gecko_tls_context(folder):
+    """Keep the prepared CA immutable; Mozilla requires a CA:FALSE TLS end entity."""
+    if os.environ.get('GITHUB_ACTIONS') != 'true':
+        raise RuntimeError('Owned CI TLS fixture only')
+    ca, ca_key = folder / 'ca.pem', folder / 'key.pem'
+    ca_bytes = hashlib.sha256(ca.read_bytes()).digest()
+    key_bytes = hashlib.sha256(ca_key.read_bytes()).digest()
+    leaf, key = folder / 'gecko-origin-cert.pem', folder / 'gecko-origin-key.pem'
+    csr, extension = folder / 'gecko-origin.csr', folder / 'gecko-origin.ext'
+    def openssl(*arguments):
+        result = subprocess.run(['openssl', *map(str, arguments)], text=True,
+                                stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=30)
+        if result.returncode:
+            raise RuntimeError('Owned origin certificate command failed: ' + result.stdout)
+        return result.stdout
+    openssl('req', '-new', '-newkey', 'rsa:2048', '-nodes', '-sha256',
+            '-keyout', key, '-out', csr, '-subj', '/CN='+HOST+'/O=Owned Gecko origin')
+    key.chmod(0o600)
+    extension.write_text('basicConstraints=critical,CA:FALSE\n'
+                         'keyUsage=critical,digitalSignature,keyEncipherment\n'
+                         'extendedKeyUsage=serverAuth\n'
+                         'subjectAltName=DNS:network-fixture.test,DNS:files.network-fixture.test\n', encoding='utf-8')
+    openssl('x509', '-req', '-in', csr, '-CA', ca, '-CAkey', ca_key,
+            '-set_serial', str(uuid.uuid4().int), '-days', '2', '-sha256', '-extfile', extension, '-out', leaf)
+    verification = []
+    for host in (HOST, 'files.network-fixture.test'):
+        verification.append(openssl('verify', '-CAfile', ca, '-purpose', 'sslserver', '-verify_hostname', host, leaf).strip())
+    constraints = openssl('x509', '-in', leaf, '-noout', '-ext', 'basicConstraints')
+    if 'CA:FALSE' not in constraints or 'CA:TRUE' in constraints:
+        raise RuntimeError('Origin leaf must be an end-entity certificate')
+    sans = re.findall(r'DNS:([^,\s]+)', openssl('x509', '-in', leaf, '-noout', '-ext', 'subjectAltName'))
+    if sans != [HOST, 'files.network-fixture.test']:
+        raise RuntimeError('Origin SAN differs from the two owned DNS names')
+    if hashlib.sha256(ca.read_bytes()).digest() != ca_bytes or hashlib.sha256(ca_key.read_bytes()).digest() != key_bytes:
+        raise RuntimeError('Prepared CA or private key changed')
+    def fingerprint(path):
+        match = re.search(r'Fingerprint=([A-Fa-f0-9:]+)', openssl('x509', '-in', path, '-noout', '-fingerprint', '-sha256'))
+        if not match:
+            raise RuntimeError('Certificate fingerprint missing')
+        return match[1].replace(':', '').lower()
+    proof = {'event': 'owned-gecko-origin-tls', 'caUnchanged': True, 'caCertificateSha256': fingerprint(ca),
+             'leafCertificateSha256': fingerprint(leaf), 'leafIsCA': False, 'dnsSANs': sans,
+             'purpose': 'sslserver', 'verification': verification}
+    (folder / 'gecko-origin-tls.json').write_text(json.dumps(proof, indent=2)+'\n', encoding='utf-8')
+    print(json.dumps(proof, sort_keys=True), flush=True)
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    context.minimum_version = ssl.TLSVersion.TLSv1_2
+    context.set_alpn_protocols(['http/1.1'])
+    context.load_cert_chain(str(leaf), str(key))
+    return context
 
 
 def handler_for(base, route_name):

@@ -12,6 +12,10 @@
 
 42150503896的完整build已通过，确认两类包的资源/字节检查及编译、lint通过。设备准备阶段主动取消此旧驱动批次，合入静态发现的必要修正后重跑：fresh install先初始化私有目录再写线路配置；等待Worker/IndexedDB/Cookie完整观测后断言；请求broker超时按原operation撤销lease，晚到回复不能放行请求。未改变超时或业务断言，取消批次不记为设备验收通过。
 
+42151389890（407bca2）build及四组原客户端/升级回归全通过；新增六组网络均停在首个Gecko页面，无网页/文件同路由通过证据。RAW35原站仅收到核心/echo探测A，Gecko绑定及lease已批准，随后OnLoadError、原站/c/a1计数0。代码确认原夹具将CA:TRUE证书直接用于HTTPS站点，Mozilla PKIX会拒绝该叶证书；先仅修--gecko-network原站为同一CA签发的CA:FALSE/serverAuth/精确DNS SAN叶证书，保留CA/节点/负例，不关闭证书验证或修改客户端策略。
+
+纯网络夹具复测可使用reuse_beta7_checks：固定复用42151389890/407bca267f2bf12a7af0b5aaa3f13b8b46424c7c原APK、信任CA与主机核心，以及四份原验收JSON。工作流须先核对build/4accept成功、App及原验收输入无差异，最终门槛再次核对原APK哈希；原证据sourceSHA保持不变，新网络证据同时记录driver和application来源。每次重新执行六组网络实际交互，不把原失败标为通过。人用ARM APK SHA-256为fe5514d7a924a18cfd9be5551bcdb40d0e8af7b8fa94311078e8b3a861085bd0。
+
 ## 当前交付
 
 本批已完成，交付固定签名 **3.0.0-alpha.24-beta.6**（versionCode `3000030`），Android9及以上arm64候选。仅推送dev、通过Actions分发；未合并main、未创建公开Release、未改官网或个人设备。
