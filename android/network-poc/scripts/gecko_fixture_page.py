@@ -86,6 +86,15 @@ def handler_for(base, route_name):
     upload_pattern = re.compile(r'/gecko-network/((?:raw|tls|reality)-https-[a-z][a-z0-9-]{0,47})/upload')
 
     class Handler(base):
+        def request_metadata(self, path):
+            now = int(time.time()*1000)
+            cookie = self.headers.get('Cookie', '')
+            with lock:
+                row = evidence.state['requests'].setdefault(path, {'count': 0, 'firstAt': now})
+                row.update(count=row['count']+1, lastAt=now,
+                           acceptLanguage=self.headers.get('Accept-Language', ''),
+                           cookie=cookie, envLogin=page.env_cookie(cookie)[1])
+
         def record(self, **fields):
             event = dict(event='gecko-origin-access', method=self.command, path=self.path.partition('?')[0],
                          route=route_name(self.client_address[0]), identity=self.joint_account(),
@@ -138,6 +147,7 @@ def handler_for(base, route_name):
 
         def do_GET(self):
             path = self.path.partition('?')[0]
+            self.request_metadata(path)
             if path == '/status':
                 with lock:
                     self.transfer_json(200, evidence.state, route_name(self.client_address[0]))
@@ -191,6 +201,7 @@ document.getElementById('network-probe').addEventListener('click',async()=>{cons
 
         def do_POST(self):
             path = self.path.partition('?')[0]
+            self.request_metadata(path)
             if path == '/gecko-network/control/configure':
                 if self.server.server_port != 18080 or route_name(self.client_address[0]) != 'direct':
                     self.transfer_json(403, {'error': 'host-only control'}, 'direct');return

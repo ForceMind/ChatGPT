@@ -16,6 +16,8 @@
 
 纯网络夹具复测可使用reuse_beta7_checks：固定复用42151389890/407bca267f2bf12a7af0b5aaa3f13b8b46424c7c原APK、信任CA与主机核心，以及四份原验收JSON。工作流须先核对build/4accept成功、App及原验收输入无差异，最终门槛再次核对原APK哈希；原证据sourceSHA保持不变，新网络证据同时记录driver和application来源。每次重新执行六组网络实际交互，不把原失败标为通过。人用ARM APK SHA-256为fe5514d7a924a18cfd9be5551bcdb40d0e8af7b8fa94311078e8b3a861085bd0。
 
+42153825249（1d23b02）的来源校验及四份原证据复用通过；Android9/15 RAW的Gecko首屏、Worker/IndexedDB已观测，证书修正消除了此前首屏阻塞。新首错发生于type_draft调用原page检查时，网络handler未写requests[/c/a1]导致Accept-Language读取KeyError；补记录真实请求头以满足原契约，不填预期值、不去掉语言隔离断言，六组继续复测。
+
 ## 当前交付
 
 本批已完成，交付固定签名 **3.0.0-alpha.24-beta.6**（versionCode `3000030`），Android9及以上arm64候选。仅推送dev、通过Actions分发；未合并main、未创建公开Release、未改官网或个人设备。
