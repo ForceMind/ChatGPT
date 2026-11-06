@@ -140,7 +140,7 @@ public final class EnvironmentUpgradeSeedTest {
         registryCandidates(context().getDataDir(),4,candidates);
         for(java.nio.file.Path path:candidates){JSONObject prefs;try{prefs=new JSONObject(new String(Files.readAllBytes(path),StandardCharsets.UTF_8));}catch(org.json.JSONException pendingWrite){continue;}JSONObject profile=prefs.optJSONObject("profile");if(profile==null||profile.optJSONArray("list")==null)continue;JSONArray list=profile.getJSONArray("list");HashSet<String> actualNames=new HashSet<>();JSONObject original=null;for(int i=0;i<list.length();i++){JSONObject entry=list.getJSONObject(i);assertTrue("Duplicate Chromium profile registration",actualNames.add(entry.getString("name")));if(profileName.equals(entry.getString("name")))original=entry;}if(!actualNames.equals(expectedNames)||original==null)continue;return new JSONObject().put("name",original.getString("name")).put("path",original.getString("path"));}return null;
     }
-    /** Read-only API35 UI barrier; the seed and final cold-reader paths above stay unchanged. */
+    /** Read-only UI barrier; the seed and final cold-reader paths above stay unchanged. */
     static JSONObject registry(JSONObject expected,boolean includeUi,JSONObject observation)throws Exception{
         assertTrue("UI registration barrier requires the declared UI profile",includeUi);
         String originalName=expected.getString("profile");JSONObject originalBinding=expected.getJSONObject("browserRegistry");
@@ -172,8 +172,8 @@ public final class EnvironmentUpgradeSeedTest {
         return null;
     }
     static JSONObject uiRegistryBarrier(JSONObject expected)throws Exception{
-        assertEquals("Only the API35 UI path changes",35,android.os.Build.VERSION.SDK_INT);
-        long start=android.os.SystemClock.elapsedRealtime(),deadline=start+20000;JSONObject observation=new JSONObject().put("schema",1).put("complete",false).put("api",35).put("readOnly",true);
+        int api=android.os.Build.VERSION.SDK_INT;assertTrue("Owned API28/API35 UI path only",api==28||api==35);
+        long start=android.os.SystemClock.elapsedRealtime(),deadline=start+20000;JSONObject observation=new JSONObject().put("schema",1).put("complete",false).put("api",api).put("readOnly",true);
         try{
             JSONObject registered=registry(expected,true,observation);
             while(registered==null&&android.os.SystemClock.elapsedRealtime()<deadline){long remaining=deadline-android.os.SystemClock.elapsedRealtime();if(remaining<=0)break;Thread.sleep(Math.min(100,remaining));if(android.os.SystemClock.elapsedRealtime()>=deadline)break;registered=registry(expected,true,observation);}

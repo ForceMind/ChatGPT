@@ -29,9 +29,10 @@ for api in (28,35):
     assert b['sendCount']==0 and not b['screenshots'] and not b['realServicesAccessed']
     assert b['legacyAfterEnvironmentUse']['complete'] and b['legacyAfterEnvironmentUse']['legacyAccountPreserved']
     assert b['conflictRecovery']['webDraftPreservedUntilNativeChoice'] and b['conflictRecovery']['nativeRestoreChosen']
+    assert b['legacyChromeNavigation']['profileRegistryPersisted']
+    assert b['legacyChromeNavigation']['profileRegistryBarrier']['complete']
+    assert b['legacyChromeNavigation']['profileRegistryBarrier']['readOnly']
     if api==35:
-        assert b['legacyChromeNavigation']['profileRegistryPersisted']
-        assert b['legacyChromeNavigation']['profileRegistryBarrier']['complete']
         cold=b['coldProcessExitReceipts']
         assert len(cold)==2
         for attempt in cold:

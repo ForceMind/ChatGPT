@@ -19,6 +19,12 @@ for api in (28,35):
         assert proof['ciReceipt']==receipt and proof['applicationSourceSHA']==receipt['sourceSHA']
         assert proof['idleSwitchWaited'] is True and proof['idleSwitchSelectCalls']==1
         assert proof['idleSwitchState']['waitIdleRequested'] is True and proof['idleSwitchState']['networkSelectCalls']==1
+        schedule=proof['nativeInputSchedule'];prefixes=proof['nativePrefixReceipts']
+        assert schedule['mode']=='single-native-character-then-exact-prefix-ack' and schedule['totalDeadlineSeconds']==75
+        assert schedule['commonBatchHelperUnchanged'] is True and schedule['claimsBatchOrderingFixed'] is False
+        assert len(prefixes)==len(proof['nativeAsciiKeyboardReceipts'])==len(prefixes[-1]['expectedPrefix'])==50
+        for index,prefix in enumerate(prefixes):
+            assert prefix['index']==index and prefix['draft']==prefix['modelDraft']==prefixes[-1]['expectedPrefix'][:index+1]
         for flag in ('busySelectRejected','idleSwitchNoReload','noDirect','noReplay','draftCookieIdentityPreserved'):
             assert proof[flag], (api,transport,flag)
         assert proof['sendCount']==0 and not proof['screenshots'] and not proof['realServicesAccessed'] and not proof['adbReverseOriginUsed']

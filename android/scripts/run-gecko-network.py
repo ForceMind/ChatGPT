@@ -53,6 +53,95 @@ class NetworkAcceptance(common.Acceptance):
         self.probe_operations = []
         self.failed_operations = []
         self.network_observations = []
+        self._input_deadline = None
+        self.input_prefix_receipts = []
+
+    def input_timeout(self, timeout):
+        if self._input_deadline is None:
+            return timeout
+        remaining = self._input_deadline-time.monotonic()
+        if remaining <= 0:
+            raise TimeoutError('Network native input exceeded its original 75-second deadline')
+        return min(timeout, remaining)
+
+    def command(self, args, timeout=60, check=True):
+        result = super().command(args, timeout=self.input_timeout(timeout), check=check)
+        self.input_timeout(timeout)
+        return result
+
+    def wait(self, description, sample, condition, timeout=75, interval=0.6):
+        if self._input_deadline is None:
+            return super().wait(description, sample, condition, timeout=timeout, interval=interval)
+        original = self._input_deadline
+        self._input_deadline = min(original, time.monotonic()+timeout)
+        last = None
+        try:
+            while True:
+                self.input_timeout(timeout)
+                last = sample()
+                self.input_timeout(timeout)
+                if condition(last):
+                    return last
+                time.sleep(self.input_timeout(interval))
+        except TimeoutError:
+            native._write_json(self.output/'last-timeout.json', {'description':description,'last':last})
+            raise
+        finally:
+            self._input_deadline = original
+
+    def type_draft(self, account, tab, draft):
+        assert self._input_deadline is None
+        self._input_deadline = time.monotonic()+75
+        try:
+            return super().type_draft(account, tab, draft)
+        finally:
+            self._input_deadline = None
+
+    def native_ascii_batch(self, draft):
+        # Network acceptance serializes native input only. It does not fix or qualify batch ordering.
+        assert self._input_deadline is not None and re.fullmatch(r'[A-Za-z0-9-]{1,128}', draft)
+        path = common.PAGE[('A',0)]
+        baseline = self.latest(self.status(), path)
+        assert baseline and baseline['draft'] == baseline['modelDraft'] == '' and baseline['focused'] is True
+        document, route = baseline['document'], baseline['route']
+        counts = (baseline['inputCount'], baseline['trustedInputCount'])
+        receipts_before = len(self.keyboard_events)
+        reconstructed = []
+        for index, character in enumerate(draft):
+            self.input_timeout(75)
+            super().native_ascii_batch(character)  # One original native invocation, with all original receipt assertions.
+            receipt = self.keyboard_events[-1]
+            if index:
+                assert receipt['events'][0]['eventTime'] >= self.keyboard_events[-2]['events'][-1]['completedAt']+receipt['paceMillis'], 'Native character batches overlap'
+            reconstructed.extend(chr(event['unicodeChar']) for event in receipt['events'] if event['action']==0 and event['unicodeChar'])
+            prefix, previous = draft[:index+1], draft[:index]
+            wanted = (counts[0]+index+1,counts[1]+index+1)
+            def acknowledged(status):
+                row = self.latest(status,path)
+                assert row and row['document']==document and row['route']==route, 'Input document or route changed'
+                assert row['draft'] in (previous,prefix) and row['modelDraft'] in (previous,prefix), 'Illegal native input prefix'
+                assert wanted[0]-1 <= row['inputCount'] <= wanted[0], 'Unexpected input event count'
+                assert wanted[1]-1 <= row['trustedInputCount'] <= wanted[1], 'Unexpected trusted input event count'
+                return row['draft']==row['modelDraft']==prefix and (row['inputCount'],row['trustedInputCount'])==wanted
+            proof = {'index':index,'expectedPrefix':prefix,'document':document,'route':route,
+                     'keyboardReceiptIndex':len(self.keyboard_events)-1,'complete':False}
+            evidence = self.output/('native-prefix-'+str(index+1)+'.json')
+            native._write_json(evidence,proof)
+            try:
+                status = self.wait('exact trusted native prefix '+str(index+1),self.status,acknowledged)
+            except Exception as failure:
+                proof['errorClass']=type(failure).__name__;native._write_json(evidence,proof)
+                raise
+            row = self.latest(status,path)
+            proof.update(complete=True,draft=row['draft'],modelDraft=row['modelDraft'],inputCount=row['inputCount'],
+                         trustedInputCount=row['trustedInputCount'],receivedAt=row['receivedAt'],
+                         elapsedMillis=int((75-self.input_timeout(75))*1000))
+            self.input_prefix_receipts.append(proof)
+            native._write_json(evidence,proof)
+        assert len(self.keyboard_events)-receipts_before == len(draft)
+        assert ''.join(reconstructed)==draft, 'Combined native Unicode receipt differs from complete draft'
+        assert row['draft']==row['modelDraft']==draft and (row['inputCount'],row['trustedInputCount'])==(counts[0]+len(draft),counts[1]+len(draft))
+        self.assert_environment(row,'A')
 
     def http(self, path, value=None):
         # TCP stays on the runner loopback; SNI and hostname verification use the
@@ -60,19 +149,37 @@ class NetworkAcceptance(common.Acceptance):
         assert path == '/status', 'Network observations use only the owned status endpoint'
         self.sequence += 1
         label = str(self.sequence) + '-https'
-        connection = http.client.HTTPSConnection(HOST, 18480, timeout=8, context=self.ssl)
+        connection = http.client.HTTPSConnection(HOST, 18480, timeout=self.input_timeout(8), context=self.ssl)
         try:
-            with socket.create_connection(('127.0.0.1', 18480), timeout=8) as raw:
-                connection.sock = self.ssl.wrap_socket(raw, server_hostname=HOST)
+            with socket.create_connection(('127.0.0.1', 18480), timeout=self.input_timeout(8)) as raw:
+                raw.settimeout(self.input_timeout(8))
+                secured = self.ssl.wrap_socket(raw, server_hostname=HOST)
+                connection.sock = secured
+                secured.settimeout(self.input_timeout(8))
                 connection.request('GET' if value is None else 'POST', path,
                                    body=None if value is None else json.dumps(value).encode('utf-8'),
                                    headers={'Host': HOST+':18480', 'Content-Type': 'application/json'})
-                response = connection.getresponse();body = response.read()
+                secured.settimeout(self.input_timeout(8))
+                response = connection.getresponse()
+                if self._input_deadline is None:
+                    body = response.read()
+                else:
+                    chunks=[]
+                    while True:
+                        secured.settimeout(self.input_timeout(8))
+                        chunk=response.read1(65536)
+                        self.input_timeout(8)
+                        if not chunk:break
+                        chunks.append(chunk)
+                        if response.isclosed():break
+                    body=b''.join(chunks)
                 (self.output / (label + '.json')).write_bytes(body)
                 native._write_json(self.output / (label+'-response.json'),
                                    {'path':path,'status':response.status,'tcpHost':'127.0.0.1','tlsServerName':HOST,'certificateVerified':True})
                 assert response.status == 200, (path, response.status)
-                return json.loads(body)
+                result=json.loads(body)
+                self.input_timeout(8)
+                return result
         finally:
             connection.close()
 
@@ -231,9 +338,32 @@ class NetworkAcceptance(common.Acceptance):
         def system_nodes():
             return [row for row in self.ui() if row.get('package') in PICKER_PACKAGES and row.get('enabled') == 'true']
         def find(rows, label):
-            found = [row for row in rows if row.get('text') == label or row.get('content-desc') == label]
-            assert len(found) <= 1, 'Ambiguous real picker target: '+label
-            return found[0] if found else None
+            by_index = {row['nodeIndex']: row for row in rows}
+            drawer_ids = (':id/roots_list', ':id/drawer_roots')
+            def in_drawer(row):
+                while row is not None:
+                    if row.get('resource-id', '').endswith(drawer_ids):
+                        return True
+                    row = by_index.get(row.get('parentIndex'))
+                return False
+            drawer_open = any(row.get('resource-id', '').endswith(drawer_ids) for row in rows)
+            targets = {}
+            for row in rows:
+                if row.get('text') != label and row.get('content-desc') != label:
+                    continue
+                if drawer_open and not in_drawer(row):
+                    continue  # AX also exposes the provider tile behind an open drawer.
+                owner = row
+                while owner is not None and owner.get('clickable') != 'true':
+                    owner = by_index.get(owner.get('parentIndex'))
+                if owner is None or owner.get('enabled') != 'true' or owner.get('visible-to-user', 'true') != 'true':
+                    continue
+                # Labels/descendants of one clickable row, or duplicate AX nodes
+                # for its identical physical bounds, represent the same tap target.
+                key = (owner['package'], tuple(owner['rectangle']))
+                targets[key] = owner
+            assert len(targets) <= 1, 'Ambiguous real picker tap targets: '+label
+            return next(iter(targets.values())) if targets else None
         rows = self.wait('actual Android document picker', system_nodes, lambda value: bool(value), timeout=40)
         root = find(rows, 'Owned Gecko files')
         if root is None:
@@ -430,7 +560,9 @@ def main():
                'idleSwitchSelectCalls':switched['networkSelectCalls'],'idleSwitchState':switched,'sameDocument':last['document'],
                'coreFailure':failed,'failedOperations':failures,'explicitRecovery':{'state':recovered,'probe':recovery_probe},'negatives':negatives,
                'noDirect':True,'noReplay':True,'draftCookieIdentityPreserved':True,'networkStates':acceptance.network_observations,
-               'origin':final,'nativeAsciiKeyboardReceipts':acceptance.keyboard_events,'sendCount':final['sendCount'],
+               'origin':final,'nativeAsciiKeyboardReceipts':acceptance.keyboard_events,
+               'nativePrefixReceipts':acceptance.input_prefix_receipts,
+               'nativeInputSchedule':{'mode':'single-native-character-then-exact-prefix-ack','totalDeadlineSeconds':75,'commonBatchHelperUnchanged':True,'claimsBatchOrderingFixed':False},'sendCount':final['sendCount'],
                'screenshots':False,'realServicesAccessed':False,'adbReverseOriginUsed':False}
         native._write_json(args.output/'gecko-network.json',proof);print(json.dumps(proof,indent=2),flush=True);return proof
     except Exception:

@@ -26,6 +26,10 @@ provider适配已实现，待全量Actions验证：独立picker单线程使用64
 
 42157104403（08bee00）完整build通过；Android9 RAW/TLS/REALITY与Android15 RAW/REALITY共五组网络完整通过，确认真实provider文件适配、双出口上传/下载、字节与账号归属、保留document/草稿、核心停止阻断及恢复。Android15 TLS在A传输完成后的切B仍收到busy=true/CONNECTED/selected=0/generation=2，原保护正常，正向驱动未建立空闲边界。仅CI控制增加显式waitIdle：原45秒截止内等待controlsBusy=false，在同一UI tick只调用一次select，回执记录调用次数；在途拒绝用例仍立即调用一次且断言拒绝，身份负例先等待空闲再单次选择，不重试切线。原恢复/升级三组通过，API28 synthetic在WebView provider adb install 90秒超时（客户端未启动），保留原错及日志，下一完整批次仍保持原超时。
 
+42158765402（a17961c）Android9全部三协议及Android15 TLS通过，确认空闲单次选择/在途立即拒绝均有效。另两首错分别为：RAW35原生106事件全部accepted且顺序可重建50字，首个DOM/model完整样本却有两字符后移（同document、50次trusted input）；REALITY35系统抽屉与其后方tile均导出同provider名称。仅网络驱动按实际抽屉祖先限定真实点击目标，且逐字单次注入/精确前缀ACK、所有输入共用原75秒期限，不清稿、替换或重发；helper和共同恢复驱动保留批输入，此调度不表示Gecko/IME内部批量乱序已修复。
+
+该轮API28原恢复用例在UI之后冷读注册表失败，API35及两组human通过。从代码看，已有严格只读20秒注册落盘屏障此前仅运行于API35；将原屏障同样运行于API28，检查精确的原账号与声明UI账号、各自原路径、无重复/未知注册，不改seed/Golden或最终退出后即时冷读断言。实际落盘观测与完整结果仍待下一Actions批次。
+
 ## 当前交付
 
 本批已完成，交付固定签名 **3.0.0-alpha.24-beta.6**（versionCode `3000030`），Android9及以上arm64候选。仅推送dev、通过Actions分发；未合并main、未创建公开Release、未改官网或个人设备。
