@@ -8,6 +8,8 @@
 
 首轮42148393692（8e86909）单元、人用包、Java与普通合成包编译通过，网络合成包在NetworkSecurityConfig lint要求显式includeSubdomains处停止，设备用例尚未运行。生成XML改为两个精确owned域的includeSubdomains=false，不加基线或关闭规则。
 
+42149349987网络合成包编译成功，包检查未找到原始CA文件路径而停止。检查改为同时验证编译资源表、application的networkSecurityConfig及APK内精确CA字节，兼容AGP优化后的资源路径；人用包同步从编译资源表证明不包含测试信任配置。设备矩阵仍未运行。
+
 ## 当前交付
 
 本批已完成，交付固定签名 **3.0.0-alpha.24-beta.6**（versionCode `3000030`），Android9及以上arm64候选。仅推送dev、通过Actions分发；未合并main、未创建公开Release、未改官网或个人设备。

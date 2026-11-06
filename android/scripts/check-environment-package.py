@@ -1,5 +1,5 @@
 """Human environment package constraints, in Actions only. Never starts an app."""
-import json, os, zipfile
+import json, os, subprocess, zipfile
 from pathlib import Path
 assert os.environ.get('GITHUB_ACTIONS') == 'true'
 root=Path('android/app/build')
@@ -8,6 +8,8 @@ assert 'ENVIRONMENT_CLIENT = true' in source
 assert 'ENVIRONMENT_TEST = false' in source and 'ENVIRONMENT_HOME_URL = ""' in source
 assert 'ENVIRONMENT_NETWORK_TEST = false' in source and 'NETWORK_TEST = false' in source
 apk=root/'outputs/apk/networkBeta/app-networkBeta.apk'
+resources=subprocess.check_output([str(Path(os.environ['ANDROID_HOME'])/'build-tools/35.0.0/aapt2'),'dump','resources',str(apk)],text=True)
+assert 'raw/studio_environment_network_ci_ca' not in resources and 'xml/studio_environment_network_security' not in resources
 with zipfile.ZipFile(apk) as z:
     manifest=json.loads(z.read('assets/studio-environment/manifest.json'))
     assert set(manifest['content_scripts'][0]['matches'])=={'https://chatgpt.com/*','https://chat.openai.com/*'}

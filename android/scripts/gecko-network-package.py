@@ -15,10 +15,18 @@ assert "versionCode='3000031'" in badging and "versionName='3.0.0-alpha.24-beta.
 cert = subprocess.check_output([str(tools/'apksigner'), 'verify', '--print-certs', str(apk)], text=True)
 signer = re.search(r'certificate SHA-256 digest: ([0-9a-fA-F]+)', cert)[1].lower()
 assert signer == json.loads(Path('docs/signing/android-network-beta.json').read_text())['certificateSHA256']
+resources = subprocess.check_output([str(tools/'aapt2'), 'dump', 'resources', str(apk)], text=True)
+compiled_manifest = subprocess.check_output([str(tools/'aapt2'), 'dump', 'xmltree', str(apk), '--file', 'AndroidManifest.xml'], text=True)
+assert 'raw/studio_environment_network_ci_ca' in resources, 'Owned CA resource missing from the compiled resource table'
+assert 'xml/studio_environment_network_security' in resources, 'Owned trust policy missing from the compiled resource table'
+assert 'android:networkSecurityConfig' in compiled_manifest, 'Owned trust policy is not attached to the application'
 with zipfile.ZipFile(apk) as archive:
     manifest = json.loads(archive.read('assets/studio-environment/manifest.json'))
     assert 'https://network-fixture.test/*' in manifest['content_scripts'][0]['matches']
-    assert any('studio_environment_network_ci_ca' in name for name in archive.namelist())
+    # AGP resource optimization can shorten ZIP paths. Verify the resource table
+    # and the exact owned CA bytes instead of assuming the source filename survives.
+    owned_ca = Path('android/network-poc/secure-fixture/ca.pem').read_bytes()
+    assert any(archive.read(name) == owned_ca for name in archive.namelist() if name.startswith('res/')), 'Owned CA bytes missing from APK'
     dex = b''.join(archive.read(name) for name in archive.namelist() if name.endswith('.dex'))
     assert b'EnvironmentNetworkFilesProvider' in dex and b'GeneratedNetworkTrust' in dex
 receipt = {'schema':1,'file':apk.name,'bytes':apk.stat().st_size,
