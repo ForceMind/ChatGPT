@@ -221,7 +221,7 @@ cd android
 | 已发布 | 自有智能体与设计补丁 Skill | alpha.21 桌面含 32 个角色，支持单独使用、组合 Skill、收藏与任务恢复 |
 | 移动网络 | 应用内代理与 VLESS 配置 | 固定签名 **2026.11.06-2024** 保留 Gecko HTTP(S) 网页、真实系统选文件上传与下载同路由；RAW、TLS、REALITY 在 Android 9/15 的六组矩阵通过，核对 A/B 出口、文件字节与账号归属，并验证在途保护、错误身份、核心停止阻断及恢复。候选仅通过 Actions 分发，公开 Android 仍为 alpha.22；真实节点、服务与手机待验收，不提供免费节点。[候选与完整证据](docs/android-environment-client.md) · [原网络基线与性能限制](docs/benchmarks/android-network-integration.json) |
 | 独立测试 | Android 网络测试安装包 | 已交付已签名 arm64 APK，名称“ChatGPT Studio 测试版”，包名及登录／恢复空间独立，与正式版并存。用户自行配置真实节点验收；临时测试签名不保证后续覆盖升级。已提供[GitHub 独立预发布](https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.24-candidate.1-standalone)，不替换正式版下载。[安装说明](docs/android-network-standalone-preview.md) · [构建收据](docs/releases/android-network-standalone-preview.1.json) · [发布记录](docs/releases/android-network-standalone-preview.1-publication.json) |
-| 长期测试 | Android 固定签名 Beta 候选 | 日期候选 `2026.11.06-2024` 保留紧凑标题标签、刷新、前后退与恢复，新增 Gecko 本地 Blob/HTML/PNG 和 data 文本保存，在线/断网原字节、账号归属与取消在 Android 9/15 通过。Beta.7 同签升级、旧登录与密文、热标签和恢复回归通过；真实业务、手机及正式原签名升级待验收，新 Gecko 的资产/Skill 自动任务继续开发。[下载、安装与边界](docs/android-environment-client.md) |
+| 长期测试 | Android 固定签名 Beta 候选 | 历史日期候选 `2026.11.06-2024` 保留紧凑标题标签、刷新、前后退与恢复，新增 Gecko 本地 Blob/HTML/PNG 和 data 文本保存，在线/断网原字节、账号归属与取消在 Android 9/15 通过。Beta.7 同签升级、旧登录与密文、热标签和恢复回归通过；真实业务、手机及正式原签名升级待验收，新 Gecko 的资产/Skill 自动任务继续开发。该历史包含已确认的共享恢复端口关闭竞争，建议等待修复后的完整候选。[下载、安装与边界](docs/android-environment-client.md) |
 | 新平台 | iPhone / iPad 后续开发；Intel Mac、Linux 与商店发行 | 未纳入当前迭代，暂无对应安装包 |
 | 更新能力 | 差量下载 | 尚未实现；alpha.23 已提供下载进度与手动入口，完整原生程序更新仍需重启 |
 
