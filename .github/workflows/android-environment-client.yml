@@ -348,6 +348,17 @@ jobs:
           disable-animations: true
           emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader -feature -Vulkan -writable-system -memory 4096
           script: python3 android/scripts/environment_upgrade.py --target human
+      - name: Preserve Android9 runner failure evidence
+        if: failure() && matrix.api == 28 && matrix.target == 'synthetic'
+        run: |
+          mkdir -p android/app/build/environment-client-evidence
+          if sudo dmesg --ctime > android/app/build/environment-client-evidence/runner-kernel.txt 2>&1; then
+            echo 'Kernel diagnostic read succeeded.'
+          else
+            studio_kernel_exit=$?
+            echo "Kernel diagnostic read exited $studio_kernel_exit; original validation failure is preserved."
+          fi
+          ps -eo pid,ppid,comm,rss > android/app/build/environment-client-evidence/runner-process-memory.txt
       - uses: actions/upload-artifact@v4
         if: always()
         with:

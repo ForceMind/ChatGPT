@@ -16,6 +16,10 @@
 
 首轮完整验收 `42210340687` / `2ecb2a1045c841f39a711f7a344888b818ab538d` 使用日期 `2026.11.06-1927`：Actions 构建、lint、签名/隔离/包检查通过；实际 17 份 JUnit XML 合计 **85 测试、0 失败/错误/跳过**，16 项原网络夹具测试通过。两端 human 同签升级与 synthetic 完整登录/恢复/热标签回归均通过；六组网络通过五组，RAW35 在初始 `probe-owned-target` 的 `SocketException` 后返回失败，尚未进入页面。本地导出两端均实际点中首个 HTML 按钮，但未出现保存 Sheet；当前没有新导出成功证据，交付门禁已停止，没有生成对外候选。保留首错及日志，定点修正后继续原断言验收。
 
+取证轮 `42212998959` / `ed3518ece3ddc2436cc42fa8c0b77094ed0f53dd` 的两端日志均为真实 click 激活、eligible/source/owned/route/gesture 全部 true，随后进入本地 `onLoadRequest`，没有 external-response，末态 export events 为空。对照现有 DENY 分支，已确定本地下载在原始流回调前被导航规则拒绝；不能只放开所有 blob/data 来让 HTML 进入页面。接下来接通单独的本地保存渠道，保持普通本地导航拒绝和原字节/归属/取消断言。本轮完整构建和六组网络通过，RAW35 初次探测失败没有复现，仍保留原错；human 两端及 synthetic35 通过。synthetic28 冷恢复重新启动时 `am start` 退出 255，随后模拟器 TCP5554 拒绝连接，退出原因尚未查明，不记为恢复通过，也未改变断言。
+
+定点修复已改为原文档本地保存通道，待 Actions 运行：只接管同一 Window、真实激活的 `anchor[download]` 本地意图；窄化的 Gecko `exportFunction` click 包装覆盖 detached 锚，普通 click 调用原方法。原文档的保留 `content.fetch` 只读捕获的 blob/data，确认保存后才读取正文；每次最多 16 KiB，Native 实际消费后 ACK，再沿原 InputStream/PFD/主进程 Ledger 校验 EOF、大小与所属。普通 blob/data 顶层导航继续拒绝；没有改 HTTP 原方法、线路票据、数据格式或原验收断言。失败取证另增加 Android9 runner 内核与进程内存快照，用于定位前述模拟器断连。
+
 ## 当前已交付：Beta.7 Gecko VLESS 同路由
 
 本轮已完成固定签名 **3.0.0-alpha.24-beta.7**（versionCode `3000031`）候选，适用于 Android 9 及以上 arm64 设备。只交付 Actions 候选，不合并 main、不公开 Release、不部署官网、不更新个人设备。
