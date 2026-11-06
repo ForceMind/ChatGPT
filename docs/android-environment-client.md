@@ -62,6 +62,12 @@
 
 同五case成功结束前新增必要崩溃回归门：只读原crash buffer，按完整包名/子进程名识别owned Java/native fatal，原字节/命令/exit/SHA留证，Gate重读重算。owned fatal或无唯一归属的native fatal均拒绝交付；没有清log、补UI动作或降低文件/全文/一次发送/fence/hot断言。关闭修正与完整五case仍待下一轮Actions。
 
+`42254916165` / `2bc002f29f7424e0413c335721d61b09a320c4b7` 的 build、两端本地导出、六组网络及两端human/synthetic完整升级恢复均通过。两端任务也已走到 submitted/cancelled/failed/submitted/uncertain，真实双附件/891字完整指令与前四项检查通过；第五项 server 实际各收到同一文档两次 POST（间隔约2063ms），DOM sendClicks仍1、原生输入仍1。总sendCount4/rejected1，原断言正确失败；uncertain重开及末尾owned-crash门尚未执行，未生成完整候选。
+
+固定158 `nsHttpTransaction.cpp:1560–1640` 允许某些连接复用且完全无响应的事务重启，`2007–2051` 会回卷可seek请求体再 Restart。夹具当前已真实commit后直接TCP shutdown、无任何HTTP头；route/core只转发HTTPS密文，没有生成第二份有效JSON请求的逻辑，证据指向浏览器运输层重放，但未单独记录本次具体restart reason。App的一次Native点击/持久fence无法单方面证明第三方服务只收到一次，真实ChatGPT服务端幂等亦未验证；没有偷偷启用影响全runtime/其它热标签的max-attempts设置。
+
+**等待范围确认（2026-11-07）**：已向用户说明两种边界。可继续验证应用层“真实commit、完整HTTP framing但无业务ACK”，仍严格一次发送、结果待确认、不自动再执行，并披露原TCP断流2POST为已发现运输层限制；或继续研究可靠单事务禁止底层重传方案并暂不交付。未获确认前不替换故障模式、不删除原失败产物、不放宽次数、也不把现第五项改成已通过。当前源码/记录都保存在dev。
+
 ## 最新交付：2026.11.06-2024 本地导出候选
 
 **已知限制（2026-11-07）**：已对照该包源码，恢复桥同样包含本轮发现的 Native/JS 双主动 Port 关闭逻辑。它通过了当时的文件与恢复矩阵，但没有覆盖此次竞争崩溃；当前不建议将它作为日常主版本。最新单关闭方修复与完整任务候选仍在 Actions 验收，未将历史包描述为已修复。
