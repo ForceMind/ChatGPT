@@ -18,6 +18,8 @@
 
 42153825249（1d23b02）的来源校验及四份原证据复用通过；Android9/15 RAW的Gecko首屏、Worker/IndexedDB已观测，证书修正消除了此前首屏阻塞。新首错发生于type_draft调用原page检查时，网络handler未写requests[/c/a1]导致Accept-Language读取KeyError；补记录真实请求头以满足原契约，不填预期值、不去掉语言隔离断言，六组继续复测。
 
+42154517285（f8b99c6）RAW35已通过实际请求头、环境及可信草稿输入，首错转为文件输入按钮定位超时。原生XML证明文件输入可见且可点击，其名称在Button.text（含浏览器Browse/未选文件状态）而非content-desc；上传/出口按钮也使用text，下载链接使用content-desc。驱动据实区分定位字段，保留唯一性、可用性及原生input tap，不增加JS点击或伪造文件。
+
 ## 当前交付
 
 本批已完成，交付固定签名 **3.0.0-alpha.24-beta.6**（versionCode `3000030`），Android9及以上arm64候选。仅推送dev、通过Actions分发；未合并main、未创建公开Release、未改官网或个人设备。

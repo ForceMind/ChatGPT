@@ -200,7 +200,29 @@ class NetworkAcceptance(common.Acceptance):
         return status, row
 
     def picker_file(self):
-        self.tap_native_action('选择合成上传文件', description=True)
+        def file_input(nodes):
+            pages = [row for row in nodes if row.get('package') == PACKAGE
+                     and row.get('class') == 'android.webkit.WebView'
+                     and row.get('text') == '合成对话 /c/a1' and row.get('enabled') == 'true']
+            if not pages:
+                return None
+            assert len(pages) == 1, 'Ambiguous owned page for real file input'
+            page = pages[0];left, top, right, bottom = page['rectangle']
+            candidates = [row for row in nodes if row.get('package') == PACKAGE
+                          and row.get('class') == 'android.widget.Button'
+                          and row.get('text', '').startswith('选择合成上传文件 ')
+                          and row.get('enabled') == 'true' and row.get('clickable') == 'true'
+                          and row.get('visible-to-user', 'true') == 'true'
+                          and row.get('webViewIndex') == page['nodeIndex']
+                          and left <= row['rectangle'][0] < row['rectangle'][2] <= right
+                          and top <= row['rectangle'][1] < row['rectangle'][3] <= bottom]
+            assert len(candidates) <= 1, 'Ambiguous real native file chooser button'
+            return candidates[0] if candidates else None
+        nodes = self.wait('visible enabled real native file input', self.ui,
+                          lambda value: file_input(value) is not None, timeout=30, interval=0.3)
+        target = file_input(nodes)
+        native._write_json(self.output / ('file-input-target-' + str(self.sequence) + '.json'), target)
+        self.tap_node(target)
         def system_nodes():
             return [row for row in self.ui() if row.get('package') in PICKER_PACKAGES and row.get('enabled') == 'true']
         def find(rows, label):
@@ -230,7 +252,7 @@ class NetworkAcceptance(common.Acceptance):
     def upload(self, route, busy_probe=False):
         before = self.latest(self.status(), '/c/a1')['network']
         old_count = before['uploadRequests']
-        self.tap_native_action('上传合成文件', description=True)
+        self.tap_native_action('上传合成文件')
         status = self.wait('single real multipart request', self.status,
             lambda value: (self.latest(value, '/c/a1')['network']['uploadRequests'] == old_count+1))
         operation = self.latest(status, '/c/a1')['network']['uploadOperation'];assert OPERATION.fullmatch(operation)
@@ -286,7 +308,7 @@ class NetworkAcceptance(common.Acceptance):
 
     def probe(self, route):
         previous = self.latest(self.status(), '/c/a1')['network'].get('probeOperation')
-        self.tap_native_action('验证网页出口', description=True)
+        self.tap_native_action('验证网页出口')
         def current_response(value):
             network = self.latest(value, '/c/a1')['network'];response = network.get('probe') or {}
             return response.get('operation') not in (None, previous) and response.get('operation') == network.get('probeOperation')
@@ -299,7 +321,7 @@ class NetworkAcceptance(common.Acceptance):
     def blocked_attempt(self, kind):
         labels = {'probe': ('验证网页出口','网页已阻止 '), 'upload': ('上传合成文件','上传已阻止 '), 'download': ('保存合成文件','下载请求 ')}
         label, prefix = labels[kind]
-        self.tap_native_action(label, description=True)
+        self.tap_native_action(label, description=kind=='download')
         rows = self.wait('actual browser '+kind+' blocked state', self.ui,
             lambda value: any(row.get('text','').startswith(prefix) for row in value), timeout=30)
         matches = {row['text'][len(prefix):] for row in rows if row.get('text','').startswith(prefix)}
