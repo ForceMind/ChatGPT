@@ -27,7 +27,7 @@ public class EnvironmentBrowserActivity extends ComponentActivity implements Env
     }
     static final class Entry {
         final String accountId,storageId,tabId;final GeckoSession session;
-        String url,requestedUrl,loadingUrl,token="",documentId,resumeAfterDocument,restoringDraft,restoreRequest,nativeState="";volatile String lastFingerprint="";
+        String url,committedUri,requestedUrl,loadingUrl,token="",documentId,resumeAfterDocument,restoringDraft,restoreRequest,nativeState="";volatile String lastFingerprint="";
         volatile long epoch;long sequence,writeVersion;int activeTransfers;volatile boolean closed;boolean started,previewDismissed,sensitive,canBack,canForward;
         JSONObject record,pendingRestore,liveDocument,conflictLocal,restoringDocument;
         final List<File> pickerDirectories=new ArrayList<>();
@@ -61,7 +61,7 @@ public class EnvironmentBrowserActivity extends ComponentActivity implements Env
     }
     @Override public void onCreate(Bundle saved){
         super.onCreate(saved);getOnBackPressedDispatcher().addCallback(this,new OnBackPressedCallback(true){@Override public void handleOnBackPressed(){if(current!=null&&!current.closed&&current.canBack&&routeReady)pageAction(current,PageCommand.BACK);else moveTaskToBack(true);}});getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);getWindow().setStatusBarColor(Color.WHITE);getWindow().setNavigationBarColor(Color.WHITE);getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR|View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
-        store=new StateStore(getFilesDir());accountId=getIntent().getStringExtra("accountId");
+        store=new StateStore(getFilesDir());accountId=getIntent().getStringExtra("accountId");CIBuild.installLocalExportProbe(getFilesDir());
         try{
             state=store.load();WorkspaceState.Account a=state.find(accountId);if(!a.isEnvironment()||a.environmentSlot!=slot())throw new IOException("账号环境归属已改变");
             String environment=a.language+"/"+a.timeZone;
@@ -86,7 +86,7 @@ public class EnvironmentBrowserActivity extends ComponentActivity implements Env
                 if(ready)startCurrent();renderHeader();
             };
             if(processRoutes==null)processRoutes=new EnvironmentRouteController(getApplicationContext(),runtime,slot(),routeListener);
-            routes=processRoutes;routes.listener(routeListener);
+            routes=processRoutes;routes.localExports.host(this);routes.listener(routeListener);
             routes.whenExtensionReady(()->{for(Entry e:SESSIONS.values()){documents.attach(e,routes.extensionReady);routes.transfers.attach(e,routes.extensionReady);}startCurrent();});
             showCurrent();
         }catch(Exception error){failure("账号页面暂时无法打开",error.getMessage());}
@@ -166,7 +166,7 @@ public class EnvironmentBrowserActivity extends ComponentActivity implements Env
                 if(!NavigationPolicy.internal(request.uri)&&!CIBuild.environmentUrl(request.uri)){if(e==ownerActivity.current)ownerActivity.external(request.uri);return GeckoResult.fromValue(AllowOrDeny.DENY);}
                 if(!request.uri.equals(e.url))e.requestedUrl=request.uri;return GeckoResult.fromValue(AllowOrDeny.ALLOW);
             }
-            @Override public void onLocationChange(GeckoSession session,String url,List<GeckoSession.PermissionDelegate.ContentPermission> permissions,Boolean gesture){EnvironmentBrowserActivity ownerActivity=target.get();if(ownerActivity==null||ownerActivity.destroyed){return;}if(url!=null&&(NavigationPolicy.internal(url)||CIBuild.environmentUrl(url))){e.requestedUrl=null;if(!url.equals(e.url))ownerActivity.navigation(e,url);}}
+            @Override public void onLocationChange(GeckoSession session,String url,List<GeckoSession.PermissionDelegate.ContentPermission> permissions,Boolean gesture){EnvironmentBrowserActivity ownerActivity=target.get();if(ownerActivity==null||ownerActivity.destroyed){return;}if(url!=null&&!url.equals(e.committedUri)){if(ownerActivity.routes!=null)ownerActivity.routes.localExports.invalidated(e);e.committedUri=url;}if(url!=null&&(NavigationPolicy.internal(url)||CIBuild.environmentUrl(url))){e.requestedUrl=null;if(!url.equals(e.url))ownerActivity.navigation(e,url);}}
             @Override public void onCanGoBack(GeckoSession session,boolean value){e.canBack=value;EnvironmentBrowserActivity host=target.get();if(host!=null&&!host.destroyed)host.renderHeader();}
             @Override public void onCanGoForward(GeckoSession session,boolean value){e.canForward=value;EnvironmentBrowserActivity host=target.get();if(host!=null&&!host.destroyed)host.renderHeader();}
             @Override public GeckoResult<GeckoSession> onNewSession(GeckoSession session,String uri){EnvironmentBrowserActivity ownerActivity=target.get();if(ownerActivity==null||ownerActivity.destroyed){return GeckoResult.fromValue(null);}
@@ -346,7 +346,7 @@ public class EnvironmentBrowserActivity extends ComponentActivity implements Env
     private void external(String url){if(!NavigationPolicy.https(url)){notice("此链接无法在应用中打开");return;}new AlertDialog.Builder(this).setTitle("在外部浏览器打开？").setMessage(Uri.parse(url).getHost()).setPositiveButton("打开",(d,w)->{try{startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(url)));}catch(Exception error){notice("没有可用的外部浏览器");}}).setNegativeButton("取消",null).show();}
     private void download(Entry e,WebResponse response){
         e.requestedUrl=null;e.loadingUrl=null;renderHeader();
-        if(response.body==null)return;if(!owns(e)||!routeReady||routes==null){try{response.body.close();}catch(Exception ignored){}return;}
+        if(response.body==null)return;if(EnvironmentLocalExports.kind(response.uri)!=null){if(routes!=null)routes.localExports.accept(e,response);else try{response.body.close();}catch(IOException ignored){}return;}if(!owns(e)||!routeReady||routes==null){try{response.body.close();}catch(Exception ignored){}return;}
         String mime=response.headers.get("Content-Type");if(mime==null)mime="application/octet-stream";String contentType=mime.split(";",2)[0].trim().toLowerCase(Locale.ROOT);if(!contentType.matches("[a-z0-9!#$&^_.+-]+/[a-z0-9!#$&^_.+-]+"))contentType="application/octet-stream";String name=android.webkit.URLUtil.guessFileName(response.uri,response.headers.get("Content-Disposition"),contentType);
         final String filename=AssetLedger.filename(name),type=contentType;long expected=-1;
         try{String header=response.headers.get("Content-Length");if(header!=null){expected=Long.parseLong(header);if(expected<0)expected=-1;}}catch(NumberFormatException ignored){}
@@ -357,6 +357,17 @@ public class EnvironmentBrowserActivity extends ComponentActivity implements Env
         routes.importAsset(ticket,filename,type,response.body,expected,(success,message)->{
             e.activeTransfers=Math.max(0,e.activeTransfers-1);EnvironmentBrowserActivity activity=target.get();if(activity!=null&&!activity.destroyed){activity.renderHeader();activity.notice(message);}
         });
+    }
+    @Override public void localActivation(Entry e,JSONObject value)throws Exception{if(routes!=null)routes.localExports.activation(e,value);}
+    @Override public void localProof(Entry e,JSONObject value)throws Exception{if(routes!=null)routes.localExports.proof(e,value);}
+    @Override public void localSourceInvalidated(Entry e){if(routes!=null)routes.localExports.invalidated(e);}
+    void localExportChanged(Entry e){if(!destroyed)renderHeader();}
+    StudioSheet confirmLocalExport(Entry e,String filename,Runnable save,Runnable cancel){
+        if(destroyed||isFinishing()){cancel.run();return null;}
+        String name;try{name=store.load().find(e.accountId).name;}catch(Exception unavailable){cancel.run();return null;}
+        StudioSheet sheet=new StudioSheet(this,"保存网页文件",name);sheet.body.addView(sheet.text(filename,15));final boolean[] decided={false};
+        sheet.action("保存到资产库",true,()->{decided[0]=true;save.run();});sheet.action("取消",false,()->{decided[0]=true;cancel.run();});
+        sheet.setOnDismissListener(dialog->{if(!decided[0])cancel.run();});sheet.show();return sheet;
     }
     private void cancelFile(){
         PickerCopy copying=fileCopy;fileCopy=null;if(copying!=null){copying.cancel();discardPickerDirectory(copying.directory);}
@@ -442,12 +453,12 @@ public class EnvironmentBrowserActivity extends ComponentActivity implements Env
             });
         });
     }
-    private void close(Entry e){if(fileOwner==e)cancelFile();if(routes!=null)routes.transfers.closeEntry(e);if(pageOperation!=null&&pageOperation.entry==e)cancelPageOperation();e.closed=true;e.historyDocuments.clear();for(File directory:e.pickerDirectories)discardPickerDirectory(directory);e.pickerDirectories.clear();if(e.saveTask!=null)ui.removeCallbacks(e.saveTask);if(documents!=null)documents.invalidate(e);if(e.session.isOpen())e.session.close();}
+    private void close(Entry e){if(routes!=null)routes.localExports.invalidated(e);if(fileOwner==e)cancelFile();if(routes!=null)routes.transfers.closeEntry(e);if(pageOperation!=null&&pageOperation.entry==e)cancelPageOperation();e.closed=true;e.historyDocuments.clear();for(File directory:e.pickerDirectories)discardPickerDirectory(directory);e.pickerDirectories.clear();if(e.saveTask!=null)ui.removeCallbacks(e.saveTask);if(documents!=null)documents.invalidate(e);if(e.session.isOpen())e.session.close();}
     @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);cancelPageOperation();cancelFile();setIntent(intent);accountId=intent.getStringExtra("accountId");if(store!=null)showCurrent();}
     @Override protected void onResume(){super.onResume();resumed=true;if(routes!=null)routes.foreground(true);if(browser!=null){showCurrent();if(current!=null)current.session.setFocused(true);}}
     @Override protected void onPause(){cancelPageOperation();resumed=false;if(current!=null&&!current.closed){documents.request(current);current.session.flushSessionState();current.session.setFocused(false);}for(Entry e:SESSIONS.values())if(e.saveTask!=null){ui.removeCallbacks(e.saveTask);e.saveTask.run();}if(routes!=null)routes.foreground(false);super.onPause();}
     @Override protected void onStop(){super.onStop();ui.post(()->{for(Entry e:SESSIONS.values())if(!e.closed&&e.session.isOpen())e.session.setActive(appForeground);});}
-    @Override protected void onDestroy(){destroyed=true;cancelPageOperation();for(Entry e:SESSIONS.values())if(e.saveTask!=null){ui.removeCallbacks(e.saveTask);e.saveTask=null;}cancelFile();if(browser!=null&&browser.getSession()!=null)browser.releaseSession();if(routes!=null){routes.foreground(false);routes.whenExtensionReady(null);routes.listener((ready,foreground,notice)->{for(Entry e:SESSIONS.values())if(!e.closed&&e.session.isOpen())e.session.setActive(foreground);});}super.onDestroy();}
+    @Override protected void onDestroy(){destroyed=true;if(routes!=null)routes.localExports.detach(this);cancelPageOperation();for(Entry e:SESSIONS.values())if(e.saveTask!=null){ui.removeCallbacks(e.saveTask);e.saveTask=null;}cancelFile();if(browser!=null&&browser.getSession()!=null)browser.releaseSession();if(routes!=null){routes.foreground(false);routes.whenExtensionReady(null);routes.listener((ready,foreground,notice)->{for(Entry e:SESSIONS.values())if(!e.closed&&e.session.isOpen())e.session.setActive(foreground);});}super.onDestroy();}
     @Override public void notice(String message){if(destroyed)return;Toast.makeText(this,message,Toast.LENGTH_SHORT).show();}
     private void failure(String title,String message){LinearLayout pane=new LinearLayout(this);pane.setOrientation(LinearLayout.VERTICAL);pane.setPadding(dp(24),dp(32),dp(24),dp(24));pane.addView(text(title,20));pane.addView(text(message==null?"请保留应用数据后重新打开":message,14));Button back=new Button(this);back.setText("返回账号列表");back.setOnClickListener(v->accounts());pane.addView(back);setContentView(pane);}
     private TextView text(String value,int size){TextView view=new TextView(this);StudioTypography.text(view,size);view.setTextColor(StudioTypography.INK);view.setText(value);return view;}

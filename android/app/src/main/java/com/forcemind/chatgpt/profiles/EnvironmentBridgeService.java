@@ -30,6 +30,7 @@ public final class EnvironmentBridgeService extends Service implements Applicati
     private final java.util.concurrent.ExecutorService imports = java.util.concurrent.Executors.newFixedThreadPool(2);
     private final Map<String, Import> incomingFiles = new LinkedHashMap<>();
     private final Map<String,Lease> leases=new LinkedHashMap<>();
+    private final Map<String,LocalExport> localExports=new LinkedHashMap<>();
     private BrowserMemory memory;
     private final Messenger incoming = new Messenger(new Handler(Looper.getMainLooper(), this::message));
     private final class Client implements IBinder.DeathRecipient {
@@ -81,6 +82,74 @@ public final class EnvironmentBridgeService extends Service implements Applicati
             throw new IllegalArgumentException();
         }catch(Exception rejected){leaseReply(client,call,false,null);}
     }
+    /** Local bytes have source ownership, not a network route or HTTP completion signal. */
+    private final class LocalExport {
+        final String id,account,storage,tab,source,document,kind,fingerprint,cancelKey,capability=UUID.randomUUID().toString();final long epoch;final Client client;
+        final java.util.concurrent.atomic.AtomicBoolean failed=new java.util.concurrent.atomic.AtomicBoolean(),held=new java.util.concurrent.atomic.AtomicBoolean();
+        final java.util.concurrent.CountDownLatch finished=new java.util.concurrent.CountDownLatch(1);
+        volatile boolean childSuccess,eof,published;volatile long bytes;boolean started;java.io.InputStream pipe;
+        LocalExport(JSONObject data,Client client)throws Exception{
+            id=data.getString("operation");account=data.getString("accountId");storage=data.getString("storageId");tab=data.getString("tabId");source=data.getString("source");document=data.getString("document");epoch=data.getLong("epoch");kind=data.getString("kind");fingerprint=data.getString("fingerprint");cancelKey=data.getString("cancelKey");WorkspaceState.profile(cancelKey);if(cancelKey.equals(id))throw new IllegalArgumentException();this.client=client;
+            for(String value:new String[]{id,account,storage,tab,document})WorkspaceState.profile(value);
+            if(epoch<0||!java.util.Arrays.asList("blob","data").contains(kind)||!fingerprint.matches("[a-f0-9]{64}")||source.length()>8192||localSource(source)==null||!valid())throw new IllegalArgumentException();
+        }
+        boolean valid(){if(failed.get()||!client.alive)return false;try{WorkspaceState.Account a=new StateStore(getFilesDir()).load().find(account);String canonical=localSource(source);return canonical!=null&&a.isEnvironment()&&a.environmentSlot==client.slot&&a.storageId.equals(storage)&&a.tabs.stream().anyMatch(t->t.id.equals(tab)&&t.url.equals(canonical));}catch(Exception unavailable){return false;}}
+        boolean publishAllowed(){
+            if(!valid())return false;
+            if(eof&&held.compareAndSet(false,true))try{EnvironmentLocalExportChecks.beforePublish(id,account,tab,bytes,this::valid);}catch(java.io.IOException rejected){failed.set(true);return false;}
+            return valid();
+        }
+        void cancel(){failed.set(true);finished.countDown();try{if(pipe!=null)pipe.close();}catch(java.io.IOException ignored){}}
+    }
+    private static String localSource(String value){String safe=PageRecoveryRecord.url(value);return safe!=null?safe:(EnvironmentPolicy.testUrl(value)?value:null);}
+    private void localReply(Client client,String call,boolean ok,String operation){
+        try{JSONObject result=new JSONObject().put("call",call).put("ok",ok).put("localExport",true);if(ok){result.put("operation",operation).put("capability",localExports.get(operation).capability);}Message message=Message.obtain(null,12);Bundle data=new Bundle();data.putString("payload",result.toString());message.setData(data);client.destination.send(message);}catch(Exception disconnected){remove(client.token);}
+    }
+    private void finishLocal(LocalExport task,boolean success,String message){
+        if(localExports.remove(task.id)!=task)return;success=success||task.published;if(!success)task.cancel();
+        EnvironmentLocalExportChecks.stage(success?"publish":"cancel",task.id,task.account,task.tab,task.bytes);
+        importReply(task.client,task.id,success,message);
+    }
+    private void localControl(int what,Client client,Bundle bundle){
+        if(client==null)return;String call="";
+        try{
+            String raw=bundle.getString("payload","");if(raw.length()>32768)throw new IllegalArgumentException();JSONObject data=new JSONObject(raw);call=data.optString("call");
+            if(what==14){if(localExports.size()>=32||localExports.containsKey(data.getString("operation")))throw new IllegalArgumentException();LocalExport task=new LocalExport(data,client);localExports.put(task.id,task);main.postDelayed(()->finishLocal(task,false,"本地文件保存已取消"),600000);EnvironmentLocalExportChecks.stage("claimed",task.id,task.account,task.tab,0);localReply(client,call,true,task.id);return;}
+            LocalExport task=localExports.get(data.getString("operation"));if(task==null||task.client!=client)return;
+            boolean permitted=task.capability.equals(data.optString("capability"));if(!permitted&&!("cancel".equals(data.optString("action"))&&task.cancelKey.equals(data.optString("cancelKey"))))return;
+            if("complete".equals(data.optString("action"))&&task.started&&task.finished.getCount()>0){task.childSuccess=data.optBoolean("success");if(!task.childSuccess)task.failed.set(true);task.finished.countDown();}
+            else finishLocal(task,false,"本地文件保存已取消");
+        }catch(Exception rejected){localReply(client,call,false,null);}
+    }
+    private void beginLocal(Client client,Bundle data){
+        ParcelFileDescriptor descriptor=data.getParcelable("pipe");LocalExport task=localExports.get(data.getString("operation"));
+        boolean authorized=client!=null&&task!=null&&task.client==client&&task.capability.equals(data.getString("capability"));
+        if(!authorized||task.started||!task.valid()){
+            if(descriptor!=null)try{descriptor.close();}catch(java.io.IOException ignored){}if(authorized&&!task.started)finishLocal(task,false,"本地文件来源已失效");return;
+        }
+        try{
+            long expected=data.getLong("expectedLength",-1);if(descriptor==null||expected < -1||expected>AssetLedger.MAX_FILE)throw new IllegalArgumentException();
+            String name=AssetLedger.filename(data.getString("name","网页文件")),mime=data.getString("mime","application/octet-stream");
+            if(mime.length()>150||!mime.matches("[a-z0-9!#$&^_.+-]+/[a-z0-9!#$&^_.+-]+"))throw new IllegalArgumentException();
+            task.started=true;task.pipe=new ParcelFileDescriptor.AutoCloseInputStream(descriptor);EnvironmentLocalExportChecks.stage("confirm",task.id,task.account,task.tab,0);
+            imports.execute(()->{
+                boolean success=false;
+                try(java.io.InputStream input=new java.io.FilterInputStream(task.pipe){
+                    boolean ended;
+                    private int check(int count)throws java.io.IOException{
+                        if(!task.valid())throw new java.io.IOException("本地导出已失效");
+                        if(count>0){task.bytes+=count;if(task.bytes>AssetLedger.MAX_FILE||expected>=0&&task.bytes>expected)throw new java.io.IOException("本地文件长度无效");}
+                        if(count<0&&!ended){ended=true;try{if(!task.finished.await(30,java.util.concurrent.TimeUnit.SECONDS)||!task.childSuccess||expected>=0&&task.bytes!=expected||!task.valid())throw new java.io.IOException("本地文件未完整读取");}catch(InterruptedException interrupted){Thread.currentThread().interrupt();throw new java.io.IOException(interrupted);}task.eof=true;EnvironmentLocalExportChecks.stage("copy-eof",task.id,task.account,task.tab,task.bytes);}
+                        return count;
+                    }
+                    @Override public int read()throws java.io.IOException{int count=in.read();check(count<0?-1:1);return count;}
+                    @Override public int read(byte[] bytes,int offset,int length)throws java.io.IOException{return check(in.read(bytes,offset,length));}
+                }){new AssetLedger(getFilesDir(),task.account).importCopy(input,name,mime,"import",null,task::publishAllowed);task.published=true;success=true;}
+                catch(Exception failed){task.cancel();EnvironmentLocalExportChecks.stage("error",task.id,task.account,task.tab,task.bytes);}
+                boolean done=success;main.post(()->finishLocal(task,done,done?"已保存到原账号资产库":"本地文件未保存，可从原页面重试"));
+            });
+        }catch(Exception rejected){if(descriptor!=null)try{descriptor.close();}catch(java.io.IOException ignored){}finishLocal(task,false,"本地文件暂不可保存");}
+    }
     private final class Import {
         final String id,account,storage,tab; final Client client; final NetworkRoute.Snapshot route;final Lease lease;
         final java.util.concurrent.CountDownLatch completed = new java.util.concurrent.CountDownLatch(1);
@@ -109,6 +178,7 @@ public final class EnvironmentBridgeService extends Service implements Applicati
         super.onCreate();
         if (!BuildConfig.ENVIRONMENT_CLIENT) { stopSelf(); return; }
         current = new WeakReference<>(this);
+        EnvironmentLocalExportChecks.initialize(getFilesDir());
         memory = BrowserMemory.get(this); network = memory.network();
         getApplication().registerActivityLifecycleCallbacks(this);
         network.observePanel(changed);
@@ -129,6 +199,8 @@ public final class EnvironmentBridgeService extends Service implements Applicati
         } else if (message.what == 3) { remove(token); return true; }
         else if(message.what==4){beginImport(clients.get(token),message.getData());return true;}
         else if(message.what==5){Import task=incomingFiles.get(message.getData().getString("operation"));if(task!=null&&task.client.token.equals(token)&&task.completed.getCount()>0){task.success.set(message.getData().getBoolean("success"));if(!task.success.get())task.failed.set(true);task.completed.countDown();}return true;}
+        else if(message.what==14||message.what==16){localControl(message.what,clients.get(token),message.getData());return true;}
+        else if(message.what==15){beginLocal(clients.get(token),message.getData());return true;}
         else if(message.what>=6&&message.what<=9){leaseMessage(message.what,clients.get(token),message.getData());return true;}
         else return true;
         broadcast(); return true;
@@ -138,6 +210,7 @@ public final class EnvironmentBridgeService extends Service implements Applicati
         if (client != null) {client.alive=false;token.unlinkToDeath(client, 0);}
         for(Import task:new ArrayList<>(incomingFiles.values()))if(task.client.token.equals(token))task.cancel();
         for(Lease lease:new ArrayList<>(leases.values()))if(lease.client.token.equals(token))finishLease(lease,true);
+        for(LocalExport task:new ArrayList<>(localExports.values()))if(task.client.token.equals(token))finishLocal(task,false,"本地文件保存已中断");
         broadcast();
     }
     private void importReply(Client client,String id,boolean success,String message){
@@ -188,6 +261,7 @@ public final class EnvironmentBridgeService extends Service implements Applicati
         memory.setEnvironmentForeground(foreground);
         for(Import task:new ArrayList<>(incomingFiles.values()))if(!task.valid())task.cancel();
         for(Lease lease:new ArrayList<>(leases.values()))if(!lease.valid())finishLease(lease,true);
+        for(LocalExport task:new ArrayList<>(localExports.values()))if(!task.valid())finishLocal(task,false,"本地文件来源已失效");
         NetworkRoute.Snapshot snapshot = network.routes.snapshot();
         String kind = !network.ready() ? "blocked" : snapshot.state == NetworkRoute.State.CONNECTED ? "proxy"
                 : snapshot.state == NetworkRoute.State.DIRECT ? "direct" : "system";
@@ -208,6 +282,7 @@ public final class EnvironmentBridgeService extends Service implements Applicati
         for (Client client : new ArrayList<>(clients.values())) {client.alive=false;client.token.unlinkToDeath(client, 0);}
         clients.clear();
         for(Lease lease:new ArrayList<>(leases.values()))finishLease(lease,true);
+        for(LocalExport task:new ArrayList<>(localExports.values()))finishLocal(task,false,"本地文件保存已中断");
         for(Import task:new ArrayList<>(incomingFiles.values()))task.cancel();incomingFiles.clear();imports.shutdown();
         if (memory != null) memory.setEnvironmentForeground(false);
         if (current.get() == this) current = new WeakReference<>(null);

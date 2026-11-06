@@ -12,24 +12,26 @@ import org.mozilla.geckoview.*;
 final class EnvironmentRouteController {
     static final String EXTENSION="studio-environment@local.invalid";
     interface Listener{void route(boolean ready,boolean foreground,String notice);}
-    final int slot;final EnvironmentTransferController transfers;
+    final int slot;final EnvironmentTransferController transfers;final EnvironmentLocalExports localExports;
     private final Context context;private Listener listener;private String lastNotice="正在连接账号环境";
     private final Handler ui=new Handler(Looper.getMainLooper());
     private final Messenger inbox=new Messenger(new Handler(Looper.getMainLooper(),this::receive));
     private Messenger service;private WebExtension.Port port;private JSONObject desired;
     interface ImportCompletion{void complete(boolean success,String message);}
     private static final ExecutorService FILE_IO=Executors.newSingleThreadExecutor();
+    private static final ExecutorService LOCAL_FILE_IO=Executors.newSingleThreadExecutor();
     private final Map<String,ImportCompletion> imports=new HashMap<>();
     private final Map<String,java.util.function.Consumer<JSONObject>> calls=new HashMap<>();
+    private final Set<String> localCalls=new HashSet<>();private final Map<String,LocalPipe> localPipes=new HashMap<>();
     private String routeToken="";private boolean bound,foreground,ready,closed;private long sent=-1,acknowledged=-1;
     private final ServiceConnection connection=new ServiceConnection(){
         public void onServiceConnected(ComponentName name,IBinder binder){service=new Messenger(binder);send(1,0);send(2,foreground?1:0);}
-        public void onServiceDisconnected(ComponentName name){service=null;block("网络连接正在恢复");}
-        public void onBindingDied(ComponentName name){service=null;block("网络连接正在恢复");if(bound){context.unbindService(this);bound=false;}ui.postDelayed(()->{if(!closed)bind();},500);}
-        public void onNullBinding(ComponentName name){block("网络服务不可用");}
+        public void onServiceDisconnected(ComponentName name){service=null;localBrokerLost();block("网络连接正在恢复");}
+        public void onBindingDied(ComponentName name){service=null;localBrokerLost();block("网络连接正在恢复");if(bound){context.unbindService(this);bound=false;}ui.postDelayed(()->{if(!closed)bind();},500);}
+        public void onNullBinding(ComponentName name){localBrokerLost();block("网络服务不可用");}
     };
     EnvironmentRouteController(Context context,GeckoRuntime runtime,int slot,Listener listener){
-        this.context=context.getApplicationContext();this.slot=slot;this.listener=listener;transfers=new EnvironmentTransferController(context,this);
+        this.context=context.getApplicationContext();this.slot=slot;this.listener=listener;transfers=new EnvironmentTransferController(context,this);localExports=new EnvironmentLocalExports(context,this);
         ui.post(()->{
             if(closed)return;
             runtime.getWebExtensionController().ensureBuiltIn("resource://android/assets/studio-environment/",EXTENSION).accept(extension->ui.post(()->{
@@ -78,7 +80,7 @@ final class EnvironmentRouteController {
     private boolean receive(Message message){
         if(message.what==12){try{JSONObject result=new JSONObject(message.getData().getString("payload",""));java.util.function.Consumer<JSONObject> callback=calls.remove(result.optString("call"));if(callback!=null)callback.accept(result);}catch(Exception invalid){block("文件线路确认失败");}return true;}
         if(message.what==13){transfers.expired(message.getData().getString("lease",""));return true;}
-        if(message.what==11){String operation=message.getData().getString("operation","");ImportCompletion callback=imports.remove(operation);if(callback!=null)callback.complete(message.getData().getBoolean("success"),message.getData().getString("message","文件保存未完成"));return true;}
+        if(message.what==11){String operation=message.getData().getString("operation","");ImportCompletion callback=imports.remove(operation);if(callback!=null)callback.complete(message.getData().getBoolean("success"),message.getData().getString("message","文件保存未完成"));else localExports.brokerEnded(operation,message.getData().getString("message","本地保存已取消"));return true;}
         if(message.what!=10||closed)return false;
         try{
             JSONObject next=new JSONObject(message.getData().getString("state",""));String kind=next.getString("kind");long generation=next.getLong("generation");
@@ -115,6 +117,42 @@ final class EnvironmentRouteController {
             imports.remove(operation);if(pipe!=null)for(ParcelFileDescriptor descriptor:pipe)try{descriptor.close();}catch(IOException ignored){}try{body.close();}catch(IOException ignored){}transfers.release(ticket,"cancel");finished.complete(false,"文件保存未能开始，请重试");
         }
     }
+    private static final class LocalPipe {
+        final InputStream body;volatile boolean cancelled;volatile ParcelFileDescriptor writer;
+        LocalPipe(InputStream body){this.body=body;}
+        void cancel(){cancelled=true;try{body.close();}catch(IOException ignored){}try{if(writer!=null)writer.close();}catch(IOException ignored){}}
+    }
+    void localBroker(int what,JSONObject value,java.util.function.Consumer<JSONObject> callback)throws Exception{
+        String call=UUID.randomUUID().toString();value.put("call",call);localCalls.add(call);calls.put(call,result->{localCalls.remove(call);callback.accept(result);});
+        try{sendPayload(what,value);}catch(Exception disconnected){java.util.function.Consumer<JSONObject> failed=calls.remove(call);if(failed!=null)failed.accept(new JSONObject());return;}
+        ui.postDelayed(()->{java.util.function.Consumer<JSONObject> pending=calls.remove(call);if(pending!=null){if(what==14)cancelLocal(value.optString("operation"),value.optString("cancelKey"),null);pending.accept(new JSONObject());}},5000);
+    }
+    void cancelLocal(String operation,String cancelKey,String capability){
+        LocalPipe pipe=localPipes.remove(operation);if(pipe!=null)pipe.cancel();
+        try{JSONObject value=new JSONObject().put("operation",operation).put("action","cancel");if(capability!=null)value.put("capability",capability);else value.put("cancelKey",cancelKey);sendPayload(16,value);}catch(Exception disconnected){/* The old broker revokes all local exports when the client dies. */}
+        ImportCompletion callback=imports.remove(operation);if(callback!=null)callback.complete(false,"本地文件保存已取消");
+    }
+    void importLocal(String operation,String capability,String cancelKey,String name,String mime,InputStream body,long expected,java.util.function.BooleanSupplier valid,ImportCompletion completion){
+        LocalPipe copy=new LocalPipe(body);localPipes.put(operation,copy);ParcelFileDescriptor[] pipe=null;
+        try{
+            if(service==null||closed||expected < -1||expected>256L*1024*1024||!valid.getAsBoolean())throw new IOException("Local export unavailable");
+            pipe=ParcelFileDescriptor.createPipe();copy.writer=pipe[1];Bundle data=new Bundle();data.putString("operation",operation);data.putString("capability",capability);data.putString("name",name);data.putString("mime",mime);data.putLong("expectedLength",expected);data.putParcelable("pipe",pipe[0]);
+            imports.put(operation,(success,message)->{localPipes.remove(operation);copy.cancel();completion.complete(success,message);});Message begin=Message.obtain(null,15);begin.replyTo=inbox;begin.setData(data);service.send(begin);pipe[0].close();
+            LOCAL_FILE_IO.execute(()->{
+                boolean copied=false;
+                try(InputStream input=body;OutputStream output=new ParcelFileDescriptor.AutoCloseOutputStream(copy.writer)){
+                    byte[] buffer=new byte[32768];long count=0;int read;while((read=input.read(buffer))!=-1){if(copy.cancelled||!valid.getAsBoolean())throw new IOException("Local source revoked");if(read>0){count+=read;if(count>256L*1024*1024||expected>=0&&count>expected)throw new IOException("Local length invalid");output.write(buffer,0,read);}}output.flush();if(expected>=0&&count!=expected)throw new IOException("Local stream incomplete");copied=true;
+                }catch(Exception interrupted){copy.cancel();}
+                boolean sourceRead=copied;ui.post(()->{
+                    try{boolean success=sourceRead&&!copy.cancelled&&valid.getAsBoolean();sendPayload(16,new JSONObject().put("operation",operation).put("capability",capability).put("action","complete").put("success",success));}
+                    catch(Exception unavailable){cancelLocal(operation,cancelKey,capability);}
+                });
+            });
+        }catch(Exception unavailable){if(pipe!=null)for(ParcelFileDescriptor descriptor:pipe)try{descriptor.close();}catch(IOException ignored){}copy.cancel();boolean registered=imports.containsKey(operation);cancelLocal(operation,cancelKey,capability);if(!registered)completion.complete(false,"本地文件暂不可保存");}
+    }
+    private void localBrokerLost(){
+        localExports.brokerLost();for(String call:new ArrayList<>(localCalls)){java.util.function.Consumer<JSONObject> callback=calls.remove(call);if(callback!=null)callback.accept(new JSONObject());}localCalls.clear();
+    }
     boolean ready(){return ready&&!closed;}
     JSONObject tuple()throws Exception{if(!ready())throw new IllegalStateException("Route is blocked");return new JSONObject(desired.toString()).put("routeToken",routeToken);}
     boolean matches(String instance,long generation){return ready()&&desired!=null&&instance.equals(desired.optString("instance"))&&generation==desired.optLong("generation",-1);}
@@ -136,8 +174,8 @@ final class EnvironmentRouteController {
         if(port==null||desired==null||closed)return;
         try{routeToken=java.util.UUID.randomUUID().toString();JSONObject value=new JSONObject(desired.toString()).put("type","route").put("routeToken",routeToken);sent=value.getLong("generation");port.postMessage(value);long wanted=sent;String wantedToken=routeToken;ui.postDelayed(()->{if(!closed&&sent==wanted&&wantedToken.equals(routeToken)&&acknowledged!=wanted)block("网络设置尚未确认，请稍后重试");},12000);}catch(Exception error){block("网络设置发送失败");}
     }
-    private void block(String notice){transfers.revoke();for(java.util.function.Consumer<JSONObject> callback:new ArrayList<>(calls.values()))callback.accept(new JSONObject());calls.clear();lastNotice=notice;ready=false;acknowledged=-1;routeToken="";if(port!=null)try{port.postMessage(new JSONObject().put("type","suspend"));}catch(Exception ignored){}listener.route(false,desired!=null&&desired.optBoolean("foreground"),notice);}
+    private void block(String notice){transfers.revoke();for(String call:new ArrayList<>(calls.keySet()))if(!localCalls.contains(call)){java.util.function.Consumer<JSONObject> callback=calls.remove(call);if(callback!=null)callback.accept(new JSONObject());}lastNotice=notice;ready=false;acknowledged=-1;routeToken="";if(port!=null)try{port.postMessage(new JSONObject().put("type","suspend"));}catch(Exception ignored){}listener.route(false,desired!=null&&desired.optBoolean("foreground"),notice);}
     private void send(int what,int value){if(service==null)return;try{Message message=Message.obtain(null,what,value,0);message.replyTo=inbox;if(what==1){Bundle data=new Bundle();data.putInt("slot",slot);message.setData(data);}service.send(message);}catch(RemoteException e){block("网络服务连接中断");}}
     void foreground(boolean value){foreground=value;send(2,value?1:0);}
-    void close(){closed=true;foreground(false);if(port!=null){port.disconnect();port=null;}if(bound){context.unbindService(connection);bound=false;}}
+    void close(){closed=true;localBrokerLost();foreground(false);if(port!=null){port.disconnect();port=null;}if(bound){context.unbindService(connection);bound=false;}}
 }

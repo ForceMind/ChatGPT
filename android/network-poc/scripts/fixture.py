@@ -657,7 +657,7 @@ def wait_ready(children, folder, timeout=20):
     return ports
 
 
-def run(core, folder, manifest, gecko_network=False):
+def run(core, folder, manifest, gecko_network=False, gecko_local_exports=False):
     marker = folder / 'ready.json'
     marker.unlink(missing_ok=True)
     manifest['ready'] = False
@@ -669,15 +669,18 @@ def run(core, folder, manifest, gecko_network=False):
         for signum in (signal.SIGTERM, signal.SIGINT):
             old_handlers[signum] = signal.signal(signum, lambda *_: stopped.set())
         handler = Origin
-        if gecko_network:
+        if gecko_network or gecko_local_exports:
             from gecko_fixture_page import handler_for, gecko_tls_context
             handler = handler_for(Origin, route_name)
+            if gecko_local_exports:
+                from gecko_local_exports_fixture import handler_for as local_exports_handler
+                handler = local_exports_handler(handler, route_name)
         origin = http.server.ThreadingHTTPServer(('0.0.0.0', ORIGIN_PORT), handler)
         servers.append(origin)
         threading.Thread(target=origin.serve_forever, daemon=True).start()
         https = http.server.ThreadingHTTPServer(('0.0.0.0', HTTPS_ORIGIN_PORT), handler)
-        https.socket = (gecko_tls_context(folder) if gecko_network else tls_context(folder)).wrap_socket(
-            https.socket, server_side=True, do_handshake_on_connect=not gecko_network)
+        https.socket = (gecko_tls_context(folder) if gecko_network or gecko_local_exports else tls_context(folder)).wrap_socket(
+            https.socket, server_side=True, do_handshake_on_connect=not (gecko_network or gecko_local_exports))
         servers.append(https)
         threading.Thread(target=https.serve_forever, daemon=True).start()
         system_proxy = http.server.ThreadingHTTPServer(('0.0.0.0', SYSTEM_PROXY_PORT), OwnedSystemProxy)
@@ -732,7 +735,10 @@ def main():
     parser.add_argument('--output', required=True)
     parser.add_argument('--prepare-only', action='store_true')
     parser.add_argument('--gecko-network', action='store_true', help='Owned Gecko file-picker page extension only')
+    parser.add_argument('--gecko-local-exports', action='store_true', help='Owned stage-one browser Blob/data exports only')
     args = parser.parse_args()
+    if args.gecko_network and args.gecko_local_exports:
+        parser.error('Choose one optional Gecko fixture mode')
     if os.environ.get('GITHUB_ACTIONS') != 'true':
         raise SystemExit('CI only')
     folder = Path(args.output)
@@ -742,7 +748,7 @@ def main():
         if not args.core:
             parser.error('--core is required when starting fixtures')
         # Never rotate the CA after the Android CI build has embedded its public trust.
-        run(args.core, folder, load_prepared(folder), args.gecko_network)
+        run(args.core, folder, load_prepared(folder), args.gecko_network, args.gecko_local_exports)
 
 
 if __name__ == '__main__':

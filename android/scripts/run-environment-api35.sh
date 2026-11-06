@@ -8,6 +8,7 @@ studio_validation_script="${1:-android/scripts/run-environment-client.py}"
 case "$studio_validation_script" in
   android/scripts/run-environment-client.py) studio_evidence=android/app/build/environment-client-evidence ;;
   android/scripts/run-gecko-network.py) studio_evidence="${STUDIO_GECKO_OUTPUT:-android/app/build/gecko-network-evidence}" ;;
+  android/scripts/run-gecko-local-exports.py) studio_evidence="${STUDIO_GECKO_OUTPUT:-android/app/build/gecko-local-exports-evidence}" ;;
   *) echo 'Only the approved owned validation scripts may run.' >&2; exit 1 ;;
 esac
 mkdir -p "$studio_evidence"

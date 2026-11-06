@@ -59,3 +59,8 @@ for api in (28,35):
 (out/'gecko-vless-route-acceptance.json').write_text(json.dumps(proofs,indent=2)+'\n')
 # The synthetic APK, test CA, server credentials, and test document provider stay out.
 assert not any('gecko-network-x86' in p.name or 'ca.pem' in p.name for p in out.iterdir())
+# Local streams are an additional mandatory gate after the unchanged route/client gates.
+import importlib.util
+local_spec=importlib.util.spec_from_file_location('owned_local_exports_delivery',Path(__file__).with_name('deliver-gecko-local-exports.py'))
+local_delivery=importlib.util.module_from_spec(local_spec);local_spec.loader.exec_module(local_delivery)
+local_delivery.deliver(root,out)

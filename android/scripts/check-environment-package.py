@@ -21,7 +21,7 @@ with zipfile.ZipFile(apk) as z:
     for name in z.namelist():
         if name.endswith('.dex'):
             data=z.read(name)
-            for forbidden in (b'EnvironmentAcceptanceActivity',b'EnvironmentUpgradeSeedTest',b'environment-fixture.test',b'EnvironmentNetworkFilesProvider',b'EnvironmentNetworkControl',b'GeneratedNetworkTrust',b'network-fixture.test'):
+            for forbidden in (b'EnvironmentAcceptanceActivity',b'EnvironmentUpgradeSeedTest',b'environment-fixture.test',b'EnvironmentNetworkFilesProvider',b'EnvironmentNetworkControl',b'EnvironmentLocalExportProbe',b'GeneratedNetworkTrust',b'network-fixture.test'):
                 assert forbidden not in data, 'Synthetic control leaked into human APK'
     assert not any('studio_environment_network_ci_ca' in name or 'studio_environment_network_security' in name for name in z.namelist())
     assert any(name.endswith('/libxul.so') for name in z.namelist())
