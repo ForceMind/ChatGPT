@@ -86,6 +86,26 @@ def handler_for(base, route_name):
     upload_pattern = re.compile(r'/gecko-network/((?:raw|tls|reality)-https-[a-z][a-z0-9-]{0,47})/upload')
 
     class Handler(base):
+        def setup(self):
+            # The listening SSLSocket accepts without a handshake. This method
+            # runs only after ThreadingHTTPServer has started the client worker.
+            if isinstance(self.request, ssl.SSLSocket):
+                started = time.monotonic()
+                event = {'event': 'owned-gecko-tls-handshake', 'peer': self.client_address[0],
+                         'thread': threading.get_ident(), 'deadlineSeconds': 8}
+                print(json.dumps(dict(event, phase='accepted'), sort_keys=True), flush=True)
+                self.request.settimeout(8)
+                try:
+                    self.request.do_handshake()
+                except Exception as error:
+                    print(json.dumps(dict(event, phase='failed', ok=False,
+                        elapsedMillis=int((time.monotonic()-started)*1000), errorClass=type(error).__name__), sort_keys=True), flush=True)
+                    raise
+                print(json.dumps(dict(event, phase='complete', ok=True,
+                    elapsedMillis=int((time.monotonic()-started)*1000)), sort_keys=True), flush=True)
+                self.request.settimeout(10)  # Existing bounded HTTP/body I/O, after TLS.
+            super().setup()
+
         def request_metadata(self, path):
             now = int(time.time()*1000)
             cookie = self.headers.get('Cookie', '')

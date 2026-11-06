@@ -12,7 +12,7 @@ final class EnvironmentTransferController {
     interface LeaseCallback{void complete(Lease lease);}
     interface CheckCallback{void complete(boolean valid);}
     static final class Lease {
-        final String id,instance,purpose;final long generation;final EnvironmentBrowserActivity.Entry owner;String uri,call;boolean closed,claimed,selected,downloadCandidate,completed;
+        final String id,instance,purpose;final long generation;final EnvironmentBrowserActivity.Entry owner;String uri,call;volatile boolean closed;boolean claimed,selected,downloadCandidate,completed;Runnable onRevoke;
         Lease(String id,String purpose,EnvironmentBrowserActivity.Entry owner,String uri,JSONObject route)throws Exception{this.id=id;this.purpose=purpose;this.owner=owner;this.uri=uri;instance=route.getString("instance");generation=route.getLong("generation");}
     }
     private static final class Binding {
@@ -95,11 +95,12 @@ final class EnvironmentTransferController {
     void selected(Lease lease){if(lease!=null){lease.selected=true;pickers.remove(lease.owner);release(lease,"cancel");}}
     Lease claim(EnvironmentBrowserActivity.Entry e,String ticket,String uri){Lease lease=leases.get(ticket);if(lease==null||lease.closed||lease.claimed||!"request".equals(lease.purpose)||lease.owner!=e||!lease.uri.equals(uri)||!owns(e)||!routes.matches(lease.instance,lease.generation))return null;lease.claimed=true;return lease;}
     void release(Lease lease,String status){
-        if(lease==null)return;if("completed".equals(status)&&"request".equals(lease.purpose)&&(lease.downloadCandidate||lease.claimed)){lease.completed=true;if(!lease.claimed)ui.postDelayed(()->{if(!lease.claimed&&lease.completed)release(lease,"cancel");},30000);}else{lease.closed=true;leases.remove(lease.id);if(pickers.get(lease.owner)==lease)pickers.remove(lease.owner);}releaseRemote(lease.id,status);
+        if(lease==null)return;if("completed".equals(status)&&"request".equals(lease.purpose)&&(lease.downloadCandidate||lease.claimed)){lease.completed=true;if(!lease.claimed)ui.postDelayed(()->{if(!lease.claimed&&lease.completed)release(lease,"cancel");},30000);}else{revokeLease(lease);leases.remove(lease.id);if(pickers.get(lease.owner)==lease)pickers.remove(lease.owner);}releaseRemote(lease.id,status);
     }
     private void releaseRemote(String id,String status){try{routes.sendPayload(7,new JSONObject().put("lease",id).put("status",status));}catch(Exception ignored){/* Binder loss is handled by broker death and route revocation. */}}
-    void imported(Lease lease){if(lease!=null){lease.closed=true;leases.remove(lease.id);releaseRemote(lease.id,"cancel");}}
-    void expired(String id){Lease lease=leases.remove(id);if(lease!=null){lease.closed=true;if(pickers.get(lease.owner)==lease)pickers.remove(lease.owner);}}
+    private void revokeLease(Lease lease){lease.closed=true;Runnable callback=lease.onRevoke;lease.onRevoke=null;if(callback!=null)callback.run();}
+    void imported(Lease lease){if(lease!=null){revokeLease(lease);leases.remove(lease.id);releaseRemote(lease.id,"cancel");}}
+    void expired(String id){Lease lease=leases.remove(id);if(lease!=null){revokeLease(lease);if(pickers.get(lease.owner)==lease)pickers.remove(lease.owner);}}
     void closeEntry(EnvironmentBrowserActivity.Entry e){for(Lease lease:new ArrayList<>(leases.values()))if(lease.owner==e)release(lease,"cancel");pickers.remove(e);}
-    void revoke(){for(Binding binding:new ArrayList<>(bindings.values()))reply(binding,null);bindings.clear();bindingCalls.clear();for(Lease lease:leases.values())lease.closed=true;leases.clear();pickers.clear();try{routes.sendPayload(9,new JSONObject());}catch(Exception ignored){/* Dead broker revokes its leases independently. */}}
+    void revoke(){for(Binding binding:new ArrayList<>(bindings.values()))reply(binding,null);bindings.clear();bindingCalls.clear();for(Lease lease:leases.values())revokeLease(lease);leases.clear();pickers.clear();try{routes.sendPayload(9,new JSONObject());}catch(Exception ignored){/* Dead broker revokes its leases independently. */}}
 }

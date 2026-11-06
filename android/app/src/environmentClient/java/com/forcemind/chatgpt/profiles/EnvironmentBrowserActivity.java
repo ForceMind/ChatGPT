@@ -11,6 +11,8 @@ import android.widget.*;
 import androidx.activity.ComponentActivity;
 import androidx.activity.OnBackPressedCallback;
 import java.io.*;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.concurrent.*;
 import org.json.*;
@@ -26,8 +28,9 @@ public class EnvironmentBrowserActivity extends ComponentActivity implements Env
     static final class Entry {
         final String accountId,storageId,tabId;final GeckoSession session;
         String url,requestedUrl,loadingUrl,token="",documentId,resumeAfterDocument,restoringDraft,restoreRequest,nativeState="";volatile String lastFingerprint="";
-        long epoch,sequence,writeVersion;int activeTransfers;volatile boolean closed;boolean started,previewDismissed,sensitive,canBack,canForward;
+        volatile long epoch;long sequence,writeVersion;int activeTransfers;volatile boolean closed;boolean started,previewDismissed,sensitive,canBack,canForward;
         JSONObject record,pendingRestore,liveDocument,conflictLocal,restoringDocument;
+        final List<File> pickerDirectories=new ArrayList<>();
         final LinkedHashMap<String,HistoryDocument> historyDocuments=new LinkedHashMap<>(8,.75f,true);
         WebExtension.Port port;Runnable saveTask;
         Entry(WorkspaceState.Account a,WorkspaceState.Tab tab){accountId=a.id;storageId=a.storageId;tabId=tab.id;url=tab.url.equals(NavigationPolicy.HOME)?CIBuild.home():tab.url;session=new GeckoSession(new GeckoSessionSettings.Builder().contextId("studio-"+a.storageId).build());}
@@ -36,6 +39,7 @@ public class EnvironmentBrowserActivity extends ComponentActivity implements Env
     private static final Set<String> REQUESTED_DELETES=new HashSet<>();
     static final Map<String,Entry> SESSIONS=new LinkedHashMap<>();
     private static final ExecutorService IO=Executors.newSingleThreadExecutor();
+    private static final ExecutorService PICKER_IO=Executors.newSingleThreadExecutor();
     private final Handler ui=new Handler(Looper.getMainLooper());
     private StateStore store;private EnvironmentRecoveryStore recovery;private EnvironmentDocumentBridge documents;private EnvironmentRouteController routes;
     private WorkspaceState state;private String accountId;private Entry current;private GeckoView browser;
@@ -47,8 +51,14 @@ public class EnvironmentBrowserActivity extends ComponentActivity implements Env
         PageOperation(Entry e,PageCommand command){entry=e;url=e.url;token=e.token;epoch=e.epoch;this.command=command;}
     }
     private PageOperation pageOperation;
-    private GeckoSession.PromptDelegate.FilePrompt filePrompt;private GeckoResult<GeckoSession.PromptDelegate.PromptResponse> fileResult;private Entry fileOwner;private long fileEpoch;private String fileUrl;private EnvironmentTransferController.Lease fileLease;
+    private GeckoSession.PromptDelegate.FilePrompt filePrompt;private GeckoResult<GeckoSession.PromptDelegate.PromptResponse> fileResult;private Entry fileOwner;private long fileEpoch;private String fileUrl;private EnvironmentTransferController.Lease fileLease;private PickerCopy fileCopy;
 
+    private static final class PickerCopy {
+        final Entry owner;final EnvironmentTransferController.Lease lease;final long epoch;final String url;final CancellationSignal signal=new CancellationSignal();
+        volatile boolean cancelled,ready;volatile InputStream input;volatile OutputStream output;volatile File directory;
+        PickerCopy(Entry owner,EnvironmentTransferController.Lease lease,long epoch,String url){this.owner=owner;this.lease=lease;this.epoch=epoch;this.url=url;}
+        void cancel(){if(ready)return;cancelled=true;signal.cancel();InputStream in=input;OutputStream out=output;try{if(in!=null)in.close();}catch(IOException ignored){}try{if(out!=null)out.close();}catch(IOException ignored){}}
+    }
     @Override public void onCreate(Bundle saved){
         super.onCreate(saved);getOnBackPressedDispatcher().addCallback(this,new OnBackPressedCallback(true){@Override public void handleOnBackPressed(){if(current!=null&&!current.closed&&current.canBack&&routeReady)pageAction(current,PageCommand.BACK);else moveTaskToBack(true);}});getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);getWindow().setStatusBarColor(Color.WHITE);getWindow().setNavigationBarColor(Color.WHITE);getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR|View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
         store=new StateStore(getFilesDir());accountId=getIntent().getStringExtra("accountId");
@@ -56,6 +66,7 @@ public class EnvironmentBrowserActivity extends ComponentActivity implements Env
             state=store.load();WorkspaceState.Account a=state.find(accountId);if(!a.isEnvironment()||a.environmentSlot!=slot())throw new IOException("账号环境归属已改变");
             String environment=a.language+"/"+a.timeZone;
             if(runtime==null){
+                cleanColdPickerCache();
                 Locale locale=Locale.forLanguageTag(a.language);Locale.setDefault(locale);LocaleList.setDefault(new LocaleList(locale));TimeZone.setDefault(TimeZone.getTimeZone(a.timeZone));Os.setenv("TZ",a.timeZone,true);
                 File privateFiles=getFilesDir().getCanonicalFile();
                 File profiles=new File(privateFiles,"environment-profiles");
@@ -127,7 +138,7 @@ public class EnvironmentBrowserActivity extends ComponentActivity implements Env
         try{
             reconcile();WorkspaceState.Account a=state.find(accountId);if(!a.isEnvironment()||a.environmentSlot!=slot()){EnvironmentLauncher.open(this,a.id);finish();return;}
             if(a.current().url.equals(NavigationPolicy.HOME)&&!CIBuild.home().equals(NavigationPolicy.HOME)){state=store.update(s->{WorkspaceState.Account owner=s.find(accountId);owner.current().url=CIBuild.home();});a=state.find(accountId);}
-            Entry next=entry(a,a.current());if(current!=next){cancelPageOperation();if(current!=null&&!current.closed){documents.request(current);current.session.flushSessionState();current.session.setFocused(false);}if(browser.getSession()!=null)browser.releaseSession();if(current!=null&&!current.closed)current.session.setActive(appForeground||resumed);current=next;if(!next.session.isOpen())next.session.open(runtime);browser.setSession(next.session);next.session.setActive(appForeground||resumed);next.session.setFocused(resumed);}
+            Entry next=entry(a,a.current());if(current!=next){cancelPageOperation();cancelFile();if(current!=null&&!current.closed){documents.request(current);current.session.flushSessionState();current.session.setFocused(false);}if(browser.getSession()!=null)browser.releaseSession();if(current!=null&&!current.closed)current.session.setActive(appForeground||resumed);current=next;if(!next.session.isOpen())next.session.open(runtime);browser.setSession(next.session);next.session.setActive(appForeground||resumed);next.session.setFocused(resumed);}
             renderHeader();
             if(preview!=null){canvas.removeView(preview);preview=null;}
             if(!next.started&&!next.previewDismissed&&next.record.optJSONObject("document")!=null)showPreview(next);else startCurrent();
@@ -270,7 +281,7 @@ public class EnvironmentBrowserActivity extends ComponentActivity implements Env
         try{header.render(state.find(accountId),pageOperation!=null||current!=null&&current.started&&current.loadingUrl!=null,pageOperation!=null||pageActionsEnabled(current));}catch(IllegalStateException missing){/* A deleted account is handled by showCurrent. */}
     }
     private void selectTab(String tabId){
-        cancelPageOperation();update(s->{WorkspaceState.Account a=s.find(accountId);if(a.tabs.stream().noneMatch(t->t.id.equals(tabId)))throw new IllegalStateException("标签页已关闭");a.activeTab=tabId;});
+        cancelPageOperation();cancelFile();update(s->{WorkspaceState.Account a=s.find(accountId);if(a.tabs.stream().noneMatch(t->t.id.equals(tabId)))throw new IllegalStateException("标签页已关闭");a.activeTab=tabId;});
     }
     private boolean pageTargetAvailable(Entry e){
         return !destroyed&&e!=null&&e==current&&!e.closed&&e.started&&e.session.isOpen()&&routeReady&&owns(e)&&fileResult==null&&e.activeTransfers==0&&!conflictShowing&&(e.pendingRestore==null||e.loadingUrl!=null)&&e.conflictLocal==null&&e.restoringDraft==null;
@@ -348,6 +359,7 @@ public class EnvironmentBrowserActivity extends ComponentActivity implements Env
         });
     }
     private void cancelFile(){
+        PickerCopy copying=fileCopy;fileCopy=null;if(copying!=null){copying.cancel();discardPickerDirectory(copying.directory);}
         EnvironmentTransferController.Lease lease=fileLease;fileLease=null;if(lease!=null&&routes!=null)routes.transfers.release(lease,"cancel");
         if(fileResult!=null){if(!filePrompt.isComplete())fileResult.complete(filePrompt.dismiss());fileResult=null;filePrompt=null;fileOwner=null;renderHeader();}
     }
@@ -362,13 +374,75 @@ public class EnvironmentBrowserActivity extends ComponentActivity implements Env
         routes.transfers.validatePicker(lease,valid->{
             if(fileResult!=pending)return;
             if(!valid||destroyed||owner!=current||!owns(owner)||owner.epoch!=fileEpoch||!owner.url.equals(fileUrl)||!routeReady){cancelFile();notice("线路或账号已改变，请重新选择文件");return;}
-            fileResult=null;filePrompt=null;fileOwner=null;fileLease=null;renderHeader();
-            try{if(!prompt.isComplete())pending.complete(prompt.confirm(getApplicationContext(),uris.toArray(new Uri[0])));}
-            catch(Exception unavailable){if(!prompt.isComplete())pending.complete(prompt.dismiss());notice("所选文件不可用");}
-            finally{routes.transfers.selected(lease);}
+            stagePickerFiles(owner,lease,uris,prompt,pending);
         });
     }
-    private void close(Entry e){if(fileOwner==e)cancelFile();if(routes!=null)routes.transfers.closeEntry(e);if(pageOperation!=null&&pageOperation.entry==e)cancelPageOperation();e.closed=true;e.historyDocuments.clear();if(e.saveTask!=null)ui.removeCallbacks(e.saveTask);if(documents!=null)documents.invalidate(e);if(e.session.isOpen())e.session.close();}
+    private File pickerSlot()throws IOException{return new File(new File(getCacheDir().getCanonicalFile(),"environment-picker"),Integer.toString(slot()));}
+    private void cleanColdPickerCache(){
+        PICKER_IO.execute(()->{try{File slot=pickerSlot(),base=slot.getParentFile();if(!base.exists())return;HandoffFiles.directory(base,false);if(slot.exists()){HandoffFiles.directory(slot,false);deletePickerTree(slot);}}catch(Exception unavailable){pickerLog("cold-cleanup-failed");}});
+    }
+    private static void discardPickerDirectory(File directory){if(directory!=null)PICKER_IO.execute(()->deletePickerTree(directory));}
+    private static void deletePickerTree(File directory){
+        if(directory==null||!Files.exists(directory.toPath(),LinkOption.NOFOLLOW_LINKS))return;
+        try{Files.walkFileTree(directory.toPath(),new SimpleFileVisitor<Path>(){
+            @Override public FileVisitResult visitFile(Path file,BasicFileAttributes attributes)throws IOException{Files.delete(file);return FileVisitResult.CONTINUE;}
+            @Override public FileVisitResult postVisitDirectory(Path dir,IOException error)throws IOException{if(error!=null)throw error;Files.delete(dir);return FileVisitResult.CONTINUE;}
+        });}catch(IOException cleanup){pickerLog("cleanup-failed");}
+    }
+    private static void pickerLog(String reason){if(BuildConfig.ENVIRONMENT_NETWORK_TEST)android.util.Log.i("StudioEnvironmentPicker","reason="+reason);}
+    private void requirePickerCopy(PickerCopy copy)throws IOException{
+        if(copy.cancelled||copy.lease.closed||copy.owner.closed||copy.owner.epoch!=copy.epoch||!copy.url.equals(copy.owner.url)||!owns(copy.owner))throw new IOException("文件选择已失效");
+    }
+    private String pickerFilename(Uri uri,int index,CancellationSignal signal){
+        String label=null;
+        try(android.database.Cursor cursor=getContentResolver().query(uri,new String[]{android.provider.OpenableColumns.DISPLAY_NAME},null,null,null,signal)){
+            if(cursor!=null&&cursor.moveToFirst()){int column=cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME);if(column>=0&&!cursor.isNull(column))label=cursor.getString(column);}
+        }catch(OperationCanceledException cancelled){throw cancelled;}catch(RuntimeException unsupported){signal.throwIfCanceled();pickerLog("display-name-unavailable");}
+        return AssetLedger.filename(label==null?"文件"+(index+1):label);
+    }
+    private void stagePickerFiles(Entry owner,EnvironmentTransferController.Lease lease,List<Uri> sources,GeckoSession.PromptDelegate.FilePrompt prompt,GeckoResult<GeckoSession.PromptDelegate.PromptResponse> pending){
+        if(fileCopy!=null){cancelFile();return;}
+        PickerCopy copy=new PickerCopy(owner,lease,fileEpoch,fileUrl);fileCopy=copy;lease.onRevoke=copy::cancel;
+        PICKER_IO.execute(()->{
+            ArrayList<Uri> staged=new ArrayList<>();boolean copied=false;
+            try{
+                requirePickerCopy(copy);File slot=pickerSlot(),base=slot.getParentFile();HandoffFiles.directory(base,true);HandoffFiles.directory(slot,true);
+                File entry=new File(slot,owner.storageId+"-"+owner.tabId);HandoffFiles.directory(entry,true);copy.directory=new File(entry,UUID.randomUUID().toString());HandoffFiles.directory(copy.directory,true);
+                for(int i=0;i<sources.size();i++){
+                    requirePickerCopy(copy);Uri source=sources.get(i);String name=pickerFilename(source,i,copy.signal);File part=new File(copy.directory,Integer.toString(i));HandoffFiles.directory(part,true);File destination=new File(part,name);
+                    try(android.content.res.AssetFileDescriptor asset=getContentResolver().openAssetFileDescriptor(source,"r",copy.signal)){
+                        if(asset==null)throw new IOException("无法读取所选文件");
+                        try(InputStream input=asset.createInputStream();OutputStream output=Files.newOutputStream(destination.toPath(),StandardOpenOption.CREATE_NEW,StandardOpenOption.WRITE,LinkOption.NOFOLLOW_LINKS)){
+                            copy.input=input;copy.output=output;requirePickerCopy(copy);byte[] buffer=new byte[65536];int count;
+                            while((count=input.read(buffer))!=-1){requirePickerCopy(copy);if(count>0)output.write(buffer,0,count);}output.flush();requirePickerCopy(copy);
+                        }finally{copy.input=null;copy.output=null;}
+                    }
+                    staged.add(Uri.fromFile(destination));
+                }
+                requirePickerCopy(copy);copied=true;
+            }catch(Exception failure){copy.cancel();pickerLog("copy-failed-"+failure.getClass().getSimpleName());}
+            finally{if(!copied)deletePickerTree(copy.directory);}
+            final boolean complete=copied;ui.post(()->{
+                if(fileResult!=pending||fileCopy!=copy){copy.cancel();discardPickerDirectory(copy.directory);return;}
+                if(!complete){cancelFile();notice("所选文件未能读取，请重新选择");return;}
+                // Recheck the original broker lease after all real provider bytes have been copied.
+                routes.transfers.validatePicker(lease,valid->{
+                    if(fileResult!=pending||fileCopy!=copy){copy.cancel();discardPickerDirectory(copy.directory);return;}
+                    if(!valid||copy.cancelled||destroyed||owner!=current||!owns(owner)||owner.epoch!=copy.epoch||!owner.url.equals(copy.url)||!routeReady||prompt.isComplete()){
+                        cancelFile();discardPickerDirectory(copy.directory);pickerLog("confirm-rejected");notice("线路或账号已改变，请重新选择文件");return;
+                    }
+                    fileResult=null;filePrompt=null;fileOwner=null;fileLease=null;fileCopy=null;lease.onRevoke=null;
+                    try{
+                        copy.ready=true;owner.pickerDirectories.add(copy.directory);
+                        pending.complete(prompt.confirm(getApplicationContext(),staged.toArray(new Uri[0])));pickerLog("confirmed-private-copy");
+                    }catch(Exception unavailable){
+                        owner.pickerDirectories.remove(copy.directory);copy.ready=false;copy.cancel();discardPickerDirectory(copy.directory);if(!prompt.isComplete())pending.complete(prompt.dismiss());pickerLog("confirm-failed");notice("所选文件不可用");
+                    }finally{routes.transfers.selected(lease);renderHeader();}
+                });
+            });
+        });
+    }
+    private void close(Entry e){if(fileOwner==e)cancelFile();if(routes!=null)routes.transfers.closeEntry(e);if(pageOperation!=null&&pageOperation.entry==e)cancelPageOperation();e.closed=true;e.historyDocuments.clear();for(File directory:e.pickerDirectories)discardPickerDirectory(directory);e.pickerDirectories.clear();if(e.saveTask!=null)ui.removeCallbacks(e.saveTask);if(documents!=null)documents.invalidate(e);if(e.session.isOpen())e.session.close();}
     @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);cancelPageOperation();cancelFile();setIntent(intent);accountId=intent.getStringExtra("accountId");if(store!=null)showCurrent();}
     @Override protected void onResume(){super.onResume();resumed=true;if(routes!=null)routes.foreground(true);if(browser!=null){showCurrent();if(current!=null)current.session.setFocused(true);}}
     @Override protected void onPause(){cancelPageOperation();resumed=false;if(current!=null&&!current.closed){documents.request(current);current.session.flushSessionState();current.session.setFocused(false);}for(Entry e:SESSIONS.values())if(e.saveTask!=null){ui.removeCallbacks(e.saveTask);e.saveTask.run();}if(routes!=null)routes.foreground(false);super.onPause();}

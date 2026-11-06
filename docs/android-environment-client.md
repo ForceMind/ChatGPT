@@ -20,6 +20,10 @@
 
 42154517285（f8b99c6）RAW35已通过实际请求头、环境及可信草稿输入，首错转为文件输入按钮定位超时。原生XML证明文件输入可见且可点击，其名称在Button.text（含浏览器Browse/未选文件状态）而非content-desc；上传/出口按钮也使用text，下载链接使用content-desc。驱动据实区分定位字段，保留唯一性、可用性及原生input tap，不增加JS点击或伪造文件。
 
+42155283165（5f7c939）RAW28及TLS35已打开真实DocumentsUI并点选owned文件，但Gecko未返回File；RAW28日志5842为NS_ERROR_FILE_UNRECOGNIZED_PATH。固定158源码的FilePrompt URI解析不能解析普通DocumentsProvider，需在有效picker lease内用ContentResolver读取真实字节，后台暂存私有cache后复核owner/epoch/route，再交受支持文件URI；失败取消清理，不动原登录/恢复路径。此生产修正完成后须完整重建及回归，不沿用407 APK。另RAW35出现host /status TLS握手8秒超时，网络夹具的TLS listening accept会阻塞接收线程；仅网络模式将握手移至有界worker，保留原8秒驱动超时和首错，不重试掩盖。
+
+provider适配已实现，待全量Actions验证：独立picker单线程使用64KiB缓冲，不占恢复落盘IO；元数据查询/读取共用取消信号，复制前后复核原owner/storage/epoch/lease。私有cache按槽/Entry/随机任务分目录，保留原安全文件名；失败取消清本批目录，成功保留到Entry关闭或下次本槽冷启动。没有增加权限、配额、超时、数据格式或UI。
+
 ## 当前交付
 
 本批已完成，交付固定签名 **3.0.0-alpha.24-beta.6**（versionCode `3000030`），Android9及以上arm64候选。仅推送dev、通过Actions分发；未合并main、未创建公开Release、未改官网或个人设备。
