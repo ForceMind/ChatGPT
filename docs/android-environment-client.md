@@ -68,6 +68,10 @@
 
 **等待范围确认（2026-11-07）**：已向用户说明两种边界。可继续验证应用层“真实commit、完整HTTP framing但无业务ACK”，仍严格一次发送、结果待确认、不自动再执行，并披露原TCP断流2POST为已发现运输层限制；或继续研究可靠单事务禁止底层重传方案并暂不交付。未获确认前不替换故障模式、不删除原失败产物、不放宽次数、也不把现第五项改成已通过。当前源码/记录都保存在dev。
 
+原范围只读续查（2026-11-07）：未把自动Goal续跑当作范围变更批准，继续核对固定158的窄作用域方案。`nsHttpChannel.cpp` 在 BeginConnect 先按原请求头调整 keep-alive 能力，随后 PrepareToConnect 才触发普通 webRequest 的修改阶段；`HttpBaseChannel::SetRequestHeaderInternal` 只改请求头，不回写连接能力。因此没有把扩展晚加 `Connection: close` 当作可证的单请求禁重传修复。公开 `proxy.ProxyInfo.connectionIsolationKey` 只承诺代理连接隔离，direct 模式忽略其它字段，不能据此宣称覆盖系统直连或所有事务重启。固定158的流式请求体会拒绝已消费后的回卷，但要求HTTP2/3，且强改网页fetch/请求体并非当前已核实的透明兼容路径。未写入全runtime max-attempts、未修改网页fetch或夹具，没有新增测试场景或候选发布。
+
+依据：[固定158 channel顺序](https://github.com/mozilla-firefox/firefox/blob/FIREFOX_158_0_RELEASE/netwerk/protocol/http/nsHttpChannel.cpp)、[请求头修改实现](https://github.com/mozilla-firefox/firefox/blob/FIREFOX_158_0_RELEASE/netwerk/protocol/http/HttpBaseChannel.cpp)、[事务重启与流式请求体](https://github.com/mozilla-firefox/firefox/blob/FIREFOX_158_0_RELEASE/netwerk/protocol/http/nsHttpTransaction.cpp)、[Mozilla代理隔离API](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/proxy/ProxyInfo)。结论为尚未找到可靠且不改变其它热标签行为的公开单事务禁重传路径，不是对所有可能实现作不可能性证明；验收范围问题仍待用户答复。
+
 ## 最新交付：2026.11.06-2024 本地导出候选
 
 **已知限制（2026-11-07）**：已对照该包源码，恢复桥同样包含本轮发现的 Native/JS 双主动 Port 关闭逻辑。它通过了当时的文件与恢复矩阵，但没有覆盖此次竞争崩溃；当前不建议将它作为日常主版本。最新单关闭方修复与完整任务候选仍在 Actions 验收，未将历史包描述为已修复。
