@@ -36,6 +36,8 @@ provider适配已实现，待全量Actions验证：独立picker单线程使用64
 
 42164399330（493464b）六组网络全部通过：24次A/B文件传输、8个TLS/REALITY身份负例、18个核心停止后阻断动作均保持原断言，单JVM退出0、每组50个可信前缀确认。API28完整环境/恢复通过，只读注册屏障942ms，旧账号及密文冷读通过；两份human证明沿原字节复用。最后API35旧WebView UI在首次composer focus超时，实际AX显示唯一可见EditText及正常页面，尚不能实证popup内部原因。仅API35测试在原30秒总期限内先确认窗口/布局，按唯一当前WebView原生EditText坐标tap一次，再执行原DOM焦点/InputConnection/trusted/fulltext断言；不重发tap、不改生产或Golden。重编API35 test APK，原App、API28及六组网络证据按源码/哈希护栏复用，保留原sourceSHA，不重复已通过网络矩阵。
 
+42169784548（b53aabb）在测试前被旧复用分支残留的互斥开关阻止，未进入源码差异校验或设备验证。将该互斥限制限定回其所属历史复用模式，当前API35单测试包重编仍须通过预先的API28复用依赖检查，以及精确App/fixture源码和原APK哈希门槛；未改变数据或运行断言。
+
 ## 当前交付
 
 本批已完成，交付固定签名 **3.0.0-alpha.24-beta.6**（versionCode `3000030`），Android9及以上arm64候选。仅推送dev、通过Actions分发；未合并main、未创建公开Release、未改官网或个人设备。

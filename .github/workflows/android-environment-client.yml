@@ -120,6 +120,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           test '${{ inputs.reuse_application_build }}' != true
+          test '${{ inputs.reuse_android9_acceptance }}' != true
+          test '${{ inputs.rebuild_api35_acceptance_test }}' != true
           test "$(gh api repos/${{ github.repository }}/actions/runs/42151389890 --jq .head_sha)" = 407bca267f2bf12a7af0b5aaa3f13b8b46424c7c
           gh api repos/${{ github.repository }}/actions/runs/42151389890/jobs --paginate --jq '.jobs[]|select(.name=="build" or (.name|startswith("accept (")))|[.name,.conclusion]|@tsv' > "$RUNNER_TEMP/beta7-checks.tsv"
           python3 - <<'PY_CHECK'
@@ -136,8 +138,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          test '${{ inputs.reuse_android9_acceptance }}' != true
-          test '${{ inputs.rebuild_api35_acceptance_test }}' != true
           test "$(gh api repos/${{ github.repository }}/actions/runs/42161704887 --jq .head_sha)" = 1f32390332b2d510f561db241f47068a34568a1e
           test "$(gh api repos/${{ github.repository }}/actions/runs/42161704887/jobs --jq '.jobs[]|select(.name=="build")|.conclusion')" = success
           git fetch origin 1f32390332b2d510f561db241f47068a34568a1e --depth=1
