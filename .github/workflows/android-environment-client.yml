@@ -10,7 +10,7 @@ on:
         type: boolean
         default: false
       reuse_application_build:
-        description: Reuse checked application/test bytes and human upgrades from 42090385251 when only the functional driver changed
+        description: Reuse immutable Beta7 APKs and human upgrades from 42161704887; rerun both environment drivers and every network case
         type: boolean
         default: false
       reuse_android9_acceptance:
@@ -134,14 +134,17 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          test "$(gh api repos/${{ github.repository }}/actions/runs/42090385251 --jq .head_sha)" = 2b8738187ca7d02e83700334859ba77acd32f87a
-          test "$(gh api repos/${{ github.repository }}/actions/runs/42090385251/jobs --jq '.jobs[]|select(.name=="build")|.conclusion')" = success
-          git fetch origin 2b8738187ca7d02e83700334859ba77acd32f87a --depth=1
+          test '${{ inputs.reuse_android9_acceptance }}' != true
+          test '${{ inputs.rebuild_api35_acceptance_test }}' != true
+          test "$(gh api repos/${{ github.repository }}/actions/runs/42161704887 --jq .head_sha)" = 1f32390332b2d510f561db241f47068a34568a1e
+          test "$(gh api repos/${{ github.repository }}/actions/runs/42161704887/jobs --jq '.jobs[]|select(.name=="build")|.conclusion')" = success
+          git fetch origin 1f32390332b2d510f561db241f47068a34568a1e --depth=1
           if [ '${{ inputs.rebuild_api35_acceptance_test }}' = true ]; then
-            git diff --exit-code 2b8738187ca7d02e83700334859ba77acd32f87a HEAD -- android/app ':(exclude)android/app/src/environmentTest/**' android/settings.gradle android/build.gradle android/network-poc/corebridge
+            git diff --exit-code 1f32390332b2d510f561db241f47068a34568a1e HEAD -- android/app ':(exclude)android/app/src/environmentTest/**' android/settings.gradle android/build.gradle android/network-poc/corebridge
           else
-            git diff --exit-code 2b8738187ca7d02e83700334859ba77acd32f87a HEAD -- android/app android/settings.gradle android/build.gradle android/network-poc/corebridge android/scripts/environment_upgrade.py
+            git diff --exit-code 1f32390332b2d510f561db241f47068a34568a1e HEAD -- android/app android/settings.gradle android/build.gradle android/network-poc/corebridge android/scripts/environment_upgrade.py
           fi
+          git diff --exit-code 1f32390332b2d510f561db241f47068a34568a1e HEAD -- android/scripts/android/AsciiInput.java android/scripts/android/TouchInput.java android/network-poc/scripts/fixture.py android/network-poc/scripts/gecko_fixture_page.py desktop/resources/capabilities
       - uses: actions/upload-artifact@v4
         if: ${{ !inputs.reuse_application_build && !inputs.reuse_beta7_checks }}
         with:
@@ -241,7 +244,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: environment-client-input
-          run-id: ${{ inputs.reuse_application_build && 42090385251 || github.run_id }}
+          run-id: ${{ inputs.reuse_application_build && 42161704887 || github.run_id }}
           github-token: ${{ github.token }}
           path: android/app/build/environment-client-input
       - uses: actions/download-artifact@v4
@@ -331,7 +334,7 @@ jobs:
         api: [28,35]
         transport: [raw,tls,reality]
     env:
-      STUDIO_GECKO_APPLICATION_SHA: ${{ inputs.reuse_beta7_checks && '407bca267f2bf12a7af0b5aaa3f13b8b46424c7c' || github.sha }}
+      STUDIO_GECKO_APPLICATION_SHA: ${{ inputs.reuse_beta7_checks && '407bca267f2bf12a7af0b5aaa3f13b8b46424c7c' || (inputs.reuse_application_build && '1f32390332b2d510f561db241f47068a34568a1e' || github.sha) }}
       STUDIO_GECKO_TRANSPORT: ${{ matrix.transport }}
       STUDIO_GECKO_FIXTURE: android/network-poc/secure-fixture/fixture.json
       STUDIO_GECKO_APK: android/app/build/environment-client-input/gecko-network-x86.apk
@@ -353,19 +356,19 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: environment-client-input
-          run-id: ${{ inputs.reuse_beta7_checks && 42151389890 || github.run_id }}
+          run-id: ${{ inputs.reuse_beta7_checks && 42151389890 || (inputs.reuse_application_build && 42161704887 || github.run_id) }}
           github-token: ${{ github.token }}
           path: android/app/build/environment-client-input
       - uses: actions/download-artifact@v4
         with:
           name: gecko-network-fixture
-          run-id: ${{ inputs.reuse_beta7_checks && 42151389890 || github.run_id }}
+          run-id: ${{ inputs.reuse_beta7_checks && 42151389890 || (inputs.reuse_application_build && 42161704887 || github.run_id) }}
           github-token: ${{ github.token }}
           path: android/network-poc/secure-fixture
       - uses: actions/download-artifact@v4
         with:
           name: gecko-network-host-core
-          run-id: ${{ inputs.reuse_beta7_checks && 42151389890 || github.run_id }}
+          run-id: ${{ inputs.reuse_beta7_checks && 42151389890 || (inputs.reuse_application_build && 42161704887 || github.run_id) }}
           github-token: ${{ github.token }}
           path: android/network-poc/corebridge/bin
       - uses: actions/download-artifact@v4
@@ -390,8 +393,8 @@ jobs:
       - name: Compile the existing native input helper outside the app
         run: |
           mkdir -p android/app/build/environment-ascii/classes
-          javac --release 8 -classpath "$ANDROID_HOME/platforms/android-36/android.jar" -d android/app/build/environment-ascii/classes android/scripts/android/AsciiInput.java
-          "$ANDROID_HOME/build-tools/35.0.0/d8" --min-api 28 --lib "$ANDROID_HOME/platforms/android-36/android.jar" --output android/app/build/environment-ascii/input.jar android/app/build/environment-ascii/classes/com/forcemind/chatgpt/pocinput/AsciiInput.class
+          javac --release 8 -classpath "$ANDROID_HOME/platforms/android-36/android.jar" -d android/app/build/environment-ascii/classes android/scripts/android/AsciiInput.java android/scripts/android/AsciiInputStream.java
+          "$ANDROID_HOME/build-tools/35.0.0/d8" --min-api 28 --lib "$ANDROID_HOME/platforms/android-36/android.jar" --output android/app/build/environment-ascii/input.jar android/app/build/environment-ascii/classes/com/forcemind/chatgpt/pocinput/*.class
       - name: Compile the existing Android9 touch helper
         if: matrix.api == 28
         run: |
@@ -432,7 +435,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: environment-client-${{ matrix.api }}-human
-          run-id: 42090385251
+          run-id: 42161704887
           github-token: ${{ github.token }}
           path: evidence
       - name: Require the existing human upgrade proof, without rewriting its source identity
@@ -440,9 +443,9 @@ jobs:
           python3 - <<'PY'
           import json,pathlib
           p=pathlib.Path('evidence/verified-human.json');r=json.loads(p.read_text())
-          assert r['complete'] and r['api']==${{ matrix.api }}
+          assert r['complete'] and r['api']==${{ matrix.api }} and r['sourceSHA']=='1f32390332b2d510f561db241f47068a34568a1e'
           if r['api']==35: assert r['originalHumanCandidateBytesInstalled']
-          pathlib.Path('evidence/reused-human-source.json').write_text(json.dumps({'run':42090385251,'sourceSHA':r['sourceSHA'],'inputUnchanged':True})+'\n')
+          pathlib.Path('evidence/reused-human-source.json').write_text(json.dumps({'run':42161704887,'sourceSHA':r['sourceSHA'],'inputUnchanged':True})+'\n')
           PY
       - uses: actions/upload-artifact@v4
         with:
@@ -521,7 +524,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: environment-client-input
-          run-id: ${{ inputs.reuse_beta7_checks && 42151389890 || (inputs.reuse_application_build && 42090385251 || github.run_id) }}
+          run-id: ${{ inputs.reuse_beta7_checks && 42151389890 || (inputs.reuse_application_build && 42161704887 || github.run_id) }}
           github-token: ${{ github.token }}
           path: input
       - uses: actions/download-artifact@v4

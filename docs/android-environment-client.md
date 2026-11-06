@@ -30,6 +30,10 @@ provider适配已实现，待全量Actions验证：独立picker单线程使用64
 
 该轮API28原恢复用例在UI之后冷读注册表失败，API35及两组human通过。从代码看，已有严格只读20秒注册落盘屏障此前仅运行于API35；将原屏障同样运行于API28，检查精确的原账号与声明UI账号、各自原路径、无重复/未知注册，不改seed/Golden或最终退出后即时冷读断言。实际落盘观测与完整结果仍待下一Actions批次。
 
+42161704887（1f32390）完整APK构建及两组human、API35环境回归通过。网络逐字ACK在API28完成50字耗时28,651ms；API35 TLS在75秒总期限后段反复启动app_process耗尽剩余0.956s，保留TimeoutExpired。仅CI改为一个常驻原生进程逐字调用原AsciiInput.main并返回原receipt，不重发/改字符、仍共用75秒；原helper与App字节不变。API28 DocumentsUI文件卡可见但Recycler不声明clickable，按实际目录/唯一卡片与bounds执行一次原生tap，不改变provider/真实文件断言。
+
+同轮API28环境回归尚未到注册屏障，首错是强刷后的环境检查：0285-https中draft/model和IndexedDB已恢复，worker=null、workerError为空。原刷新等待只等草稿，补入与原page相同的Worker/IndexedDB/登录就绪条件，再执行原环境断言，不改变超时或seed。后续可固定复用42161704887/1f32390332b2d510f561db241f47068a34568a1e的App/test APK与两份human证明；源码差异门槛保证App、原helper、fixture不变，两个环境回归及六组网络均实际重跑。
+
 ## 当前交付
 
 本批已完成，交付固定签名 **3.0.0-alpha.24-beta.6**（versionCode `3000030`），Android9及以上arm64候选。仅推送dev、通过Actions分发；未合并main、未创建公开Release、未改官网或个人设备。

@@ -20,11 +20,17 @@ for api in (28,35):
         assert proof['idleSwitchWaited'] is True and proof['idleSwitchSelectCalls']==1
         assert proof['idleSwitchState']['waitIdleRequested'] is True and proof['idleSwitchState']['networkSelectCalls']==1
         schedule=proof['nativeInputSchedule'];prefixes=proof['nativePrefixReceipts']
-        assert schedule['mode']=='single-native-character-then-exact-prefix-ack' and schedule['totalDeadlineSeconds']==75
+        assert schedule['mode']=='single-jvm-native-character-then-exact-prefix-ack' and schedule['totalDeadlineSeconds']==75
         assert schedule['commonBatchHelperUnchanged'] is True and schedule['claimsBatchOrderingFixed'] is False
         assert len(prefixes)==len(proof['nativeAsciiKeyboardReceipts'])==len(prefixes[-1]['expectedPrefix'])==50
         for index,prefix in enumerate(prefixes):
             assert prefix['index']==index and prefix['draft']==prefix['modelDraft']==prefixes[-1]['expectedPrefix'][:index+1]
+        streams=proof['nativeInputStreams'];assert len(streams)==1
+        stream=streams[0];assert stream['complete'] and stream['exitCode']==0 and len(stream['dispatches'])==50
+        assert stream['ready']['qemu'] is True and stream['ready']['pid']==stream['devicePID']
+        for index,dispatch in enumerate(stream['dispatches']):
+            assert dispatch['validated'] and dispatch['dispatch']['dispatch']==dispatch['done']['dispatch']==index
+            assert dispatch['dispatch']['pid']==dispatch['done']['pid']==prefixes[index]['streamPID']==stream['devicePID']
         for flag in ('busySelectRejected','idleSwitchNoReload','noDirect','noReplay','draftCookieIdentityPreserved'):
             assert proof[flag], (api,transport,flag)
         assert proof['sendCount']==0 and not proof['screenshots'] and not proof['realServicesAccessed'] and not proof['adbReverseOriginUsed']

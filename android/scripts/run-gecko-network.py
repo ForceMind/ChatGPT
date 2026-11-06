@@ -8,6 +8,7 @@ import json
 import os
 from pathlib import Path
 import re
+import selectors
 import ssl
 import socket
 import subprocess
@@ -55,6 +56,7 @@ class NetworkAcceptance(common.Acceptance):
         self.network_observations = []
         self._input_deadline = None
         self.input_prefix_receipts = []
+        self.input_stream_receipts = []
 
     def input_timeout(self, timeout):
         if self._input_deadline is None:
@@ -97,6 +99,133 @@ class NetworkAcceptance(common.Acceptance):
         finally:
             self._input_deadline = None
 
+    def stream_json(self, stream):
+        while b'\n' not in stream['buffer']:
+            ready=stream['selector'].select(self.input_timeout(75))
+            if not ready:raise TimeoutError('Native stream receipt exceeded the shared input deadline')
+            chunk=os.read(stream['process'].stdout.fileno(),65536)
+            if not chunk:raise AssertionError('Native input stream ended before its receipt')
+            stream['stdout'].write(chunk);stream['stdout'].flush();stream['buffer']+=chunk
+            assert len(stream['buffer'])<=1024*1024, 'Native stream line exceeded its bounded protocol'
+        line,stream['buffer']=stream['buffer'].split(b'\n',1)
+        self.input_timeout(75)
+        return json.loads(line.decode('utf-8'))
+
+    def stream_state(self, value, phase, dispatch, pid=None):
+        assert value['provider']=='ci-native-ascii-stream' and value['phase']==phase
+        assert value['api']==self.api and value['uid']==2000 and value['dispatch']==dispatch
+        assert isinstance(value['pid'],int) and value['pid']>0 and (pid is None or value['pid']==pid)
+        return value['pid']
+
+    def start_input_stream(self):
+        self.sequence+=1;label=str(self.sequence)+'-native-ascii-stream'
+        args=['adb','shell','-T','su','2000','env','CLASSPATH=/data/local/tmp/studio-poc-ascii-input.jar',
+              'app_process','/system/bin','com.forcemind.chatgpt.pocinput.AsciiInputStream']
+        proof={'command':args,'complete':False,'dispatches':[],'devicePID':None,'exitCode':None}
+        self.input_stream_receipts.append(proof)
+        stream={'proof':proof,'path':self.output/(label+'.json'),'buffer':b'',
+                'stdout':(self.output/(label+'-stdout.txt')).open('wb'),
+                'stderr':(self.output/(label+'-stderr.txt')).open('wb'),
+                'selector':selectors.DefaultSelector(),'process':None}
+        try:
+            self.input_timeout(75)
+            process=subprocess.Popen(args,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=stream['stderr'],bufsize=0)
+            stream['process']=process;proof['hostPID']=process.pid
+            stream['selector'].register(process.stdout,selectors.EVENT_READ)
+            ready=self.stream_json(stream);proof['devicePID']=self.stream_state(ready,'ready',0)
+            assert ready['qemu'] is True;proof['ready']=ready
+            native._write_json(stream['path'],proof)
+            return stream
+        except BaseException as failure:
+            proof['errorClass']=type(failure).__name__
+            try:self.stop_input_stream(stream,False)
+            except BaseException as cleanup:proof['cleanupErrorClass']=type(cleanup).__name__
+            raise
+
+    def dispatch_input_character(self, stream, character, index):
+        self.input_timeout(75)
+        process=stream['process'];assert process.poll() is None
+        assert process.stdin.write((character+'\n').encode('ascii'))==2
+        process.stdin.flush();self.input_timeout(75)
+        dispatched=self.stream_json(stream);self.stream_state(dispatched,'dispatch',index,stream['proof']['devicePID'])
+        assert dispatched['unicodeChar']==ord(character)
+        proof={'dispatch':dispatched,'validated':False};stream['proof']['dispatches'].append(proof)
+        receipt=self.stream_json(stream);self.sequence+=1
+        name='ascii-keyboard-'+str(self.sequence)+'.json';native._write_json(self.output/name,receipt)
+        proof['nativeReceipt']=name
+        self.validate_stream_keyboard_receipt(receipt,character)
+        done=self.stream_json(stream);self.stream_state(done,'done',index,stream['proof']['devicePID'])
+        proof.update(done=done,validated=True);native._write_json(stream['path'],stream['proof'])
+        return receipt
+
+    def stop_input_stream(self, stream, success):
+        process=stream['process'];proof=stream['proof']
+        try:
+            if process is not None:
+                try:process.stdin.close()
+                except OSError:
+                    if success:raise
+                if success:
+                    closed=self.stream_json(stream);self.stream_state(closed,'closed',len(proof['dispatches']),proof['devicePID'])
+                    assert closed['complete'] is True;proof['closed']=closed
+                    assert process.wait(timeout=self.input_timeout(75))==0
+                    self.input_timeout(75);proof['complete']=True
+        finally:
+            if process is not None:
+                if process.poll() is None:
+                    # Failure cleanup sends no keyboard events and cannot turn a failed deadline into success.
+                    pid=proof.get('devicePID')
+                    if pid is not None:
+                        command=['adb','shell','su','2000','kill','-KILL',str(pid)]
+                        proof['cleanupCommand']=command
+                        try:
+                            result=subprocess.run(command,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=1)
+                            proof['cleanupExitCode']=result.returncode;proof['cleanupOutput']=result.stdout.decode('utf-8',errors='replace')
+                        except subprocess.TimeoutExpired:proof['cleanupTimedOut']=True
+                    process.kill()
+                    try:process.wait(timeout=1)
+                    except subprocess.TimeoutExpired:proof['hostExitUnconfirmed']=True
+                proof['exitCode']=process.poll()
+                # Keep every available original line, including a failed receipt and its stderr first error.
+                while stream['selector'].select(0):
+                    chunk=os.read(process.stdout.fileno(),65536)
+                    if not chunk:break
+                    stream['stdout'].write(chunk)
+                process.stdout.close()
+            stream['selector'].close();stream['stdout'].close();stream['stderr'].close()
+            native._write_json(stream['path'],proof)
+
+    def validate_stream_keyboard_receipt(self, receipt, draft):
+        # Same native receipt assertions as the unchanged common batch driver.
+        assert receipt['provider'] == 'ci-paced-ascii-keyboard' and receipt['complete'] is True
+        assert receipt['api'] == self.api and receipt['uid'] == 2000 and receipt['qemu'] is True
+        assert receipt['managerClass'] == ('android.hardware.input.InputManagerGlobal' if self.api == 35 else 'android.hardware.input.InputManager')
+        assert receipt['injectionMode'] == 2 and receipt['paceMillis'] == 40
+        assert receipt['textLength'] == len(draft) and receipt['textSHA256'] == hashlib.sha256(draft.encode('utf-8')).hexdigest()
+        events = receipt['events']
+        assert events and [event['index'] for event in events] == list(range(len(events)))
+        assert all(event['accepted'] is True and event['waitForFinish'] is True and event['source'] == 257
+                   and event['deviceId'] == -1 and event['repeatCount'] == 0 for event in events)
+        down = {}
+        reconstructed = []
+        previous = None
+        for event in events:
+            assert event['action'] in (0, 1) and event['eventTime'] >= event['downTime']
+            assert event['completedAt'] >= event['eventTime']
+            if previous is not None:
+                assert event['eventTime'] >= previous['completedAt'] + receipt['paceMillis']
+            if event['action'] == 0:
+                assert event['keyCode'] not in down
+                assert event['downTime'] == event['eventTime']
+                down[event['keyCode']] = event['downTime']
+                if event['unicodeChar']:
+                    reconstructed.append(chr(event['unicodeChar']))
+            else:
+                assert down.pop(event['keyCode']) == event['downTime']
+            previous = event
+        assert not down and ''.join(reconstructed) == draft
+        self.keyboard_events.append(receipt)
+
     def native_ascii_batch(self, draft):
         # Network acceptance serializes native input only. It does not fix or qualify batch ordering.
         assert self._input_deadline is not None and re.fullmatch(r'[A-Za-z0-9-]{1,128}', draft)
@@ -107,41 +236,52 @@ class NetworkAcceptance(common.Acceptance):
         counts = (baseline['inputCount'], baseline['trustedInputCount'])
         receipts_before = len(self.keyboard_events)
         reconstructed = []
-        for index, character in enumerate(draft):
-            self.input_timeout(75)
-            super().native_ascii_batch(character)  # One original native invocation, with all original receipt assertions.
-            receipt = self.keyboard_events[-1]
-            if index:
-                assert receipt['events'][0]['eventTime'] >= self.keyboard_events[-2]['events'][-1]['completedAt']+receipt['paceMillis'], 'Native character batches overlap'
-            reconstructed.extend(chr(event['unicodeChar']) for event in receipt['events'] if event['action']==0 and event['unicodeChar'])
-            prefix, previous = draft[:index+1], draft[:index]
-            wanted = (counts[0]+index+1,counts[1]+index+1)
-            def acknowledged(status):
+        stream=self.start_input_stream();failure=None
+        try:
+            for index, character in enumerate(draft):
+                self.input_timeout(75)
+                receipt = self.dispatch_input_character(stream,character,index)
+                if index:
+                    assert receipt['events'][0]['eventTime'] >= self.keyboard_events[-2]['events'][-1]['completedAt']+receipt['paceMillis'], 'Native character batches overlap'
+                reconstructed.extend(chr(event['unicodeChar']) for event in receipt['events'] if event['action']==0 and event['unicodeChar'])
+                prefix, previous = draft[:index+1], draft[:index]
+                wanted = (counts[0]+index+1,counts[1]+index+1)
+                def acknowledged(status):
+                    row = self.latest(status,path)
+                    assert row and row['document']==document and row['route']==route, 'Input document or route changed'
+                    assert row['draft'] in (previous,prefix) and row['modelDraft'] in (previous,prefix), 'Illegal native input prefix'
+                    assert wanted[0]-1 <= row['inputCount'] <= wanted[0], 'Unexpected input event count'
+                    assert wanted[1]-1 <= row['trustedInputCount'] <= wanted[1], 'Unexpected trusted input event count'
+                    return row['draft']==row['modelDraft']==prefix and (row['inputCount'],row['trustedInputCount'])==wanted
+                proof = {'index':index,'expectedPrefix':prefix,'document':document,'route':route,
+                         'keyboardReceiptIndex':len(self.keyboard_events)-1,'streamPID':stream['proof']['devicePID'],'streamDispatch':index,'complete':False}
+                evidence = self.output/('native-prefix-'+str(index+1)+'.json')
+                native._write_json(evidence,proof)
+                try:
+                    status = self.wait('exact trusted native prefix '+str(index+1),self.status,acknowledged)
+                except Exception as prefix_failure:
+                    proof['errorClass']=type(prefix_failure).__name__;native._write_json(evidence,proof)
+                    raise
                 row = self.latest(status,path)
-                assert row and row['document']==document and row['route']==route, 'Input document or route changed'
-                assert row['draft'] in (previous,prefix) and row['modelDraft'] in (previous,prefix), 'Illegal native input prefix'
-                assert wanted[0]-1 <= row['inputCount'] <= wanted[0], 'Unexpected input event count'
-                assert wanted[1]-1 <= row['trustedInputCount'] <= wanted[1], 'Unexpected trusted input event count'
-                return row['draft']==row['modelDraft']==prefix and (row['inputCount'],row['trustedInputCount'])==wanted
-            proof = {'index':index,'expectedPrefix':prefix,'document':document,'route':route,
-                     'keyboardReceiptIndex':len(self.keyboard_events)-1,'complete':False}
-            evidence = self.output/('native-prefix-'+str(index+1)+'.json')
-            native._write_json(evidence,proof)
-            try:
-                status = self.wait('exact trusted native prefix '+str(index+1),self.status,acknowledged)
-            except Exception as failure:
-                proof['errorClass']=type(failure).__name__;native._write_json(evidence,proof)
-                raise
-            row = self.latest(status,path)
-            proof.update(complete=True,draft=row['draft'],modelDraft=row['modelDraft'],inputCount=row['inputCount'],
-                         trustedInputCount=row['trustedInputCount'],receivedAt=row['receivedAt'],
-                         elapsedMillis=int((75-self.input_timeout(75))*1000))
-            self.input_prefix_receipts.append(proof)
-            native._write_json(evidence,proof)
-        assert len(self.keyboard_events)-receipts_before == len(draft)
-        assert ''.join(reconstructed)==draft, 'Combined native Unicode receipt differs from complete draft'
-        assert row['draft']==row['modelDraft']==draft and (row['inputCount'],row['trustedInputCount'])==(counts[0]+len(draft),counts[1]+len(draft))
-        self.assert_environment(row,'A')
+                proof.update(complete=True,draft=row['draft'],modelDraft=row['modelDraft'],inputCount=row['inputCount'],
+                             trustedInputCount=row['trustedInputCount'],receivedAt=row['receivedAt'],
+                             elapsedMillis=int((75-self.input_timeout(75))*1000))
+                self.input_prefix_receipts.append(proof)
+                native._write_json(evidence,proof)
+            assert len(self.keyboard_events)-receipts_before == len(draft)
+            assert ''.join(reconstructed)==draft, 'Combined native Unicode receipt differs from complete draft'
+            assert row['draft']==row['modelDraft']==draft and (row['inputCount'],row['trustedInputCount'])==(counts[0]+len(draft),counts[1]+len(draft))
+            self.assert_environment(row,'A')
+        except BaseException as error:
+            failure=error;stream['proof']['errorClass']=type(error).__name__
+            raise
+        finally:
+            try:self.stop_input_stream(stream,failure is None)
+            except BaseException as cleanup:
+                if failure is None:raise
+                stream['proof']['cleanupErrorClass']=type(cleanup).__name__
+                native._write_json(stream['path'],stream['proof'])
+
 
     def http(self, path, value=None):
         # TCP stays on the runner loopback; SNI and hostname verification use the
@@ -347,6 +487,31 @@ class NetworkAcceptance(common.Acceptance):
                     row = by_index.get(row.get('parentIndex'))
                 return False
             drawer_open = any(row.get('resource-id', '').endswith(drawer_ids) for row in rows)
+            def api28_file_card(row):
+                if self.api != 28 or label != 'gecko-upload.bin' or drawer_open or row.get('resource-id') != 'android:id/title':
+                    return None
+                def under_toolbar(node):
+                    while node is not None:
+                        if node.get('resource-id', '').endswith(':id/toolbar'):
+                            return True
+                        node = by_index.get(node.get('parentIndex'))
+                    return False
+                if not any(node.get('text') == 'Owned Gecko files' and under_toolbar(node) for node in rows):
+                    return None
+                card = row
+                while card is not None:
+                    parent = by_index.get(card.get('parentIndex'))
+                    if parent is not None and parent.get('resource-id', '').endswith(':id/dir_list'):
+                        left, top, right, bottom = parent['rectangle']
+                        x1, y1, x2, y2 = card['rectangle']
+                        tx1, ty1, tx2, ty2 = row['rectangle']
+                        if (card.get('enabled') == 'true' and left <= x1 < x2 <= right
+                                and top <= y1 < y2 <= bottom and x1 <= tx1 < tx2 <= x2
+                                and y1 <= ty1 < ty2 <= y2):
+                            return card
+                        return None
+                    card = parent
+                return None
             targets = {}
             for row in rows:
                 if row.get('text') != label and row.get('content-desc') != label:
@@ -356,12 +521,18 @@ class NetworkAcceptance(common.Acceptance):
                 owner = row
                 while owner is not None and owner.get('clickable') != 'true':
                     owner = by_index.get(owner.get('parentIndex'))
+                tap_target = owner
+                if owner is None:
+                    # Android9's real DocumentsUI handles its grid item touch in
+                    # RecyclerView: this observed file card has no clickable AX ancestor.
+                    owner = api28_file_card(row)
+                    tap_target = row
                 if owner is None or owner.get('enabled') != 'true' or owner.get('visible-to-user', 'true') != 'true':
                     continue
                 # Labels/descendants of one clickable row, or duplicate AX nodes
                 # for its identical physical bounds, represent the same tap target.
                 key = (owner['package'], tuple(owner['rectangle']))
-                targets[key] = owner
+                targets[key] = tap_target
             assert len(targets) <= 1, 'Ambiguous real picker tap targets: '+label
             return next(iter(targets.values())) if targets else None
         rows = self.wait('actual Android document picker', system_nodes, lambda value: bool(value), timeout=40)
@@ -562,7 +733,8 @@ def main():
                'noDirect':True,'noReplay':True,'draftCookieIdentityPreserved':True,'networkStates':acceptance.network_observations,
                'origin':final,'nativeAsciiKeyboardReceipts':acceptance.keyboard_events,
                'nativePrefixReceipts':acceptance.input_prefix_receipts,
-               'nativeInputSchedule':{'mode':'single-native-character-then-exact-prefix-ack','totalDeadlineSeconds':75,'commonBatchHelperUnchanged':True,'claimsBatchOrderingFixed':False},'sendCount':final['sendCount'],
+               'nativeInputStreams':acceptance.input_stream_receipts,
+               'nativeInputSchedule':{'mode':'single-jvm-native-character-then-exact-prefix-ack','totalDeadlineSeconds':75,'commonBatchHelperUnchanged':True,'claimsBatchOrderingFixed':False},'sendCount':final['sendCount'],
                'screenshots':False,'realServicesAccessed':False,'adbReverseOriginUsed':False}
         native._write_json(args.output/'gecko-network.json',proof);print(json.dumps(proof,indent=2),flush=True);return proof
     except Exception:

@@ -456,7 +456,9 @@ class Acceptance:
                 self.tap_native_action('刷新页面', description=True)
             def restored(status):
                 page = self.latest(status, '/c/a1', old['document'])
-                return page and page.get('receivedAt', 0) >= started and page.get('draft') == draft and page.get('modelDraft') == draft
+                return (page and page.get('receivedAt', 0) >= started and page.get('draft') == draft
+                        and page.get('modelDraft') == draft and page.get('worker')
+                        and page.get('indexedDB') is not None and page.get('envLogin') is not None)
             status = self.wait('native ' + ('force refresh' if force else 'refresh') + ' preserves controlled draft', self.status, restored)
             page = self.latest(status, '/c/a1', old['document'])
             self.assert_environment(page, 'A')
