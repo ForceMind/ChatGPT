@@ -58,6 +58,7 @@ final class EnvironmentHandoffController {
     private GeckoResult<GeckoSession.PromptDelegate.PromptResponse> activeResult;
     private volatile InputStream copyInput;
     private String lastAttachmentDiagnostic="";
+    private String lastInputDiagnostic="";
     private boolean keyboardHidden;
     private float[] preparedSendPoint;
     private static boolean diagnostics(){return BuildConfig.ENVIRONMENT_TEST&&BuildConfig.ENVIRONMENT_NETWORK_TEST;}
@@ -242,13 +243,37 @@ final class EnvironmentHandoffController {
             view.requestFocus();EditorInfo info=new EditorInfo();InputConnection connection=view.onCreateInputConnection(info);
             if(connection==null||(info.inputType&InputType.TYPE_MASK_CLASS)!=InputType.TYPE_CLASS_TEXT){later(this::insert);return;}
             if(insertIssued){fail("完整处理要求已尝试输入，不会重复输入");return;}insertIssued=true;
-            if(!connection.commitText(prompt,1)){fail("无法确认完整处理要求已输入，任务未发送");return;}
-            deadline=SystemClock.elapsedRealtime()+15000;verifyDraft();
+            Handler supplied=connection.getHandler(),input=supplied==null?ui:supplied;long inputDeadline=deadline;
+            java.util.concurrent.atomic.AtomicBoolean finished=new java.util.concurrent.atomic.AtomicBoolean();
+            if(diagnostics())diagnostic("input-dispatch handlerPresent="+(supplied!=null)+" handlerUi="+(input.getLooper()==Looper.getMainLooper()));
+            // Gecko 158 ignores editable operations on the wrong IC thread, while Android
+            // BaseInputConnection may still return true. Always enqueue on its own Handler:
+            // getHandler also queues Gecko's thread-switch barrier before this operation.
+            ui.postDelayed(()->{if(finished.compareAndSet(false,true)&&!closed)fail("输入框尚未就绪，任务未发送");},Math.max(1,inputDeadline-SystemClock.elapsedRealtime()));
+            boolean posted=input.post(()->{
+                boolean accepted=false;String failure="none";
+                try{if(closed||SystemClock.elapsedRealtime()>=inputDeadline)throw new InterruptedIOException();checkCopy();if(SystemClock.elapsedRealtime()>=inputDeadline)throw new InterruptedIOException();accepted=connection.commitText(prompt,1);}
+                catch(Exception invalid){failure=failureClass(invalid);}
+                boolean committed=accepted;String category=failure;
+                ui.post(()->{
+                    if(!finished.compareAndSet(false,true)||closed)return;
+                    if(diagnostics())diagnostic("input-commit accepted="+committed+" category="+category);
+                    if(!valid()){fail("目标账号、标签或网页已改变");return;}
+                    if(!committed){fail("无法确认完整处理要求已输入，任务未发送");return;}
+                    deadline=SystemClock.elapsedRealtime()+15000;verifyDraft();
+                });
+            });
+            if(!posted&&finished.compareAndSet(false,true))fail("无法确认完整处理要求已输入，任务未发送");
         });
     }
     private void verifyDraft() {
         if(timedOut()){fail("网页未完整接收处理要求，任务未发送");return;}
-        page("state",state->{if(state.optBoolean("error")){fail("网页提示附件或输入错误，任务未发送");return;}
+        page("state",state->{
+            if(diagnostics()){
+                JSONObject page=state.optJSONObject("diagnostics");String value="input-readback match="+normal(prompt).equals(normal(state.optString("text")))+" empty="+state.optString("text").isEmpty()+" focused="+state.optBoolean("focused")+" send="+state.optBoolean("send")+" events="+(page==null?-1:page.optInt("inputEvents",-1))+" trusted="+(page==null?-1:page.optInt("trustedInputEvents",-1));
+                if(!value.equals(lastInputDiagnostic)){lastInputDiagnostic=value;diagnostic(value);}
+            }
+            if(state.optBoolean("error")){fail("网页提示附件或输入错误，任务未发送");return;}
             if(normal(prompt).equals(normal(state.optString("text")))&&state.optBoolean("send")&&filesReady(state))prepareSend();else later(this::verifyDraft);
         });
     }

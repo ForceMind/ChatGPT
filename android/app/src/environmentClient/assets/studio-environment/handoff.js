@@ -3,7 +3,7 @@
   if (window !== top) return;
   const channel = 'studioEnvironmentHandoff', documentId = crypto.randomUUID();
   let port, auth = null, sequence = 0, previous = null, menuOpened = false, uploadMenuOpened = false, closed = false;
-  let pageErrors = 0, rejections = 0;
+  let pageErrors = 0, rejections = 0, inputEvents = 0, trustedInputEvents = 0;
   const visible = node => !!node && !!node.getClientRects().length && getComputedStyle(node).visibility !== 'hidden';
   const editor = () => Array.from(document.querySelectorAll('textarea#prompt-textarea,#prompt-textarea[contenteditable="true"],textarea[data-testid="prompt-textarea"]')).find(node => visible(node) && !node.closest('[data-private],[autocomplete="one-time-code"]') && !['password','email'].includes(node.getAttribute('type')) && node.getAttribute('autocomplete') !== 'one-time-code');
   const scope = node => node && (node.closest('form') || node.closest('[data-type="unified-composer"]') || node.parentElement?.parentElement);
@@ -37,7 +37,7 @@
     const error = !!Array.from((form || document).querySelectorAll('[role="alert"]')).find(visible);
     const generating = !!Array.from(document.querySelectorAll('[data-testid="stop-button"],[data-testid="stop-generation-button"],button[aria-label="Stop generating"],button[aria-label="停止生成"]')).find(visible);
     const result = {composer: !!input, focused: !!input && (document.activeElement === input || input.contains(document.activeElement)), text: value, messages: messages.length, last, attachments, removers: removers.length, busy, error, generating, fresh: location.pathname === '/', send: visible(send) && !send.disabled};
-    if (auth?.diagnostics) {const selected = document.querySelector('input[type="file"]');result.diagnostics = {selectedFiles:selected?.files?.length || 0,pageErrors,rejections};}
+    if (auth?.diagnostics) {const selected = document.querySelector('input[type="file"]');result.diagnostics = {selectedFiles:selected?.files?.length || 0,pageErrors,rejections,inputEvents,trustedInputEvents};}
     return result;
   }
   function filesReady(value) {
@@ -107,7 +107,7 @@
       if (!message || typeof message !== 'object') return;
       if (message.type === 'auth' && !auth && message.document === documentId && message.url === location.href && typeof message.token === 'string' && Number.isSafeInteger(message.epoch) && Array.isArray(message.names) && message.names.length <= 20 && message.names.every(name => typeof name === 'string') && typeof message.mimeMarker === 'string') {
         auth = message;
-        if (auth.diagnostics) {addEventListener('error',()=>{pageErrors++;},true);addEventListener('unhandledrejection',()=>{rejections++;},true);}
+        if (auth.diagnostics) {addEventListener('error',()=>{pageErrors++;},true);addEventListener('unhandledrejection',()=>{rejections++;},true);addEventListener('input',event=>{const node=editor();if(node&&(node===event.target||node.contains(event.target))){inputEvents++;if(event.isTrusted)trustedInputEvents++;}},true);}
         reply('ready', message.request, {value:state()});
       } else if (message.type === 'command') command(message);
     });

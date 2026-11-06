@@ -156,6 +156,7 @@ public final class NetworkRoute {
             if (closed || current != pending) return;
             int port = 0;
             String stage = "stop-previous-core";
+            long startedAt = BuildConfig.NETWORK_TEST ? android.os.SystemClock.elapsedRealtime() : 0;
             try {
                 stopCore();
                 if (node != null) {
@@ -180,7 +181,14 @@ public final class NetworkRoute {
             } catch (Exception | LinkageError e) {
                 if (BuildConfig.NETWORK_TEST) {
                     // Owned CI needs the failing call site. Omit messages, configuration and node credentials.
-                    StringBuilder details = new StringBuilder("startup stage=").append(stage);
+                    String running = "unavailable";
+                    try { running = Boolean.toString(coreLoaded && Networkcore.isRunning()); } catch (Exception | LinkageError unavailable) { /* Report unavailable, not a fabricated running state. */ }
+                    String message = e.getMessage() == null ? "" : e.getMessage().toLowerCase(java.util.Locale.ROOT);
+                    String category = message.contains("reset") ? "reset" : message.contains("closed") ? "closed" : message.contains("refused") ? "refused" : message.contains("timed out") ? "timeout" : message.contains("broken pipe") ? "broken-pipe" : "other";
+                    StringBuilder details = new StringBuilder("startup stage=").append(stage)
+                            .append(" elapsedMillis=").append(android.os.SystemClock.elapsedRealtime() - startedAt)
+                            .append(" coreRunning=").append(running).append(" originalGeneration=").append(current == pending)
+                            .append(" category=").append(category);
                     Throwable cause = e;
                     for (int depth = 0; cause != null && depth < 8; depth++, cause = cause.getCause()) {
                         details.append("\ncause=").append(cause.getClass().getName());

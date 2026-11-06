@@ -14,6 +14,7 @@ import traceback
 import urllib.parse
 import urllib.request
 import uuid
+import xml.etree.ElementTree as ET
 import zipfile
 
 from android_version import VERSION_CODE, validate_receipt
@@ -28,6 +29,64 @@ class HandoffAcceptance(network.NetworkAcceptance):
     def __init__(self,api,uid,fixture,output):
         super().__init__(api,uid,fixture,output,'raw')
         self.pending_tasks=set();self.cases=[];self.reviews={}
+        self._ui_read_deadline=None
+        self.last_ui_receipt=None
+
+    def wait(self,description,sample,condition,timeout=75,interval=.6):
+        previous=self._ui_read_deadline
+        deadline=time.monotonic()+timeout
+        self._ui_read_deadline=min(previous,deadline) if previous is not None else deadline
+        try:return super().wait(description,sample,condition,timeout=timeout,interval=interval)
+        finally:self._ui_read_deadline=previous
+
+    def ui(self,deadline=None):
+        # uiautomator can report an idle error with exit 0 and leave its old XML untouched.
+        # Absence before this dump and its explicit success are both required before reading.
+        limits=[time.monotonic()+25]
+        if deadline is not None:limits.append(deadline)
+        if self._ui_read_deadline is not None:limits.append(self._ui_read_deadline)
+        deadline=min(limits)
+        def budget(cap):
+            remaining=deadline-time.monotonic()
+            if remaining<=0:raise TimeoutError('Fresh native AX exceeded its current read-only deadline')
+            return self.input_timeout(min(cap,remaining))
+        path='/data/local/tmp/handoff-ui.xml'
+        self.sequence+=1;receipt_path=self.output/(f'{self.sequence:04d}-ui-snapshot.json')
+        receipt={'available':False,'devicePath':path,'previousFileAbsent':False,'dumpOutput':None}
+        self.last_ui_receipt=receipt_path.name
+        try:
+            self.shell('rm','-f',path,timeout=budget(5))
+            self.shell('test','!','-e',path,timeout=budget(5));receipt['previousFileAbsent']=True
+            output=self.shell('uiautomator','dump',path,timeout=budget(25));receipt['dumpOutput']=output
+            if output.strip()!='UI hierchary dumped to: '+path:
+                receipt['errorClass']='UiautomatorDumpUnavailable'
+                return []
+            xml=self.shell('cat',path,timeout=budget(5))
+            root=ET.fromstring(xml);assert root.tag=='hierarchy'
+            self.sequence+=1;xml_path=self.output/(f'{self.sequence:04d}-ui.xml')
+            xml_path.write_text(xml,encoding='utf-8')
+            receipt.update(available=True,xmlFile=xml_path.name,xmlSHA256=hashlib.sha256(xml.encode('utf-8')).hexdigest())
+            parents={child:parent for parent in root.iter() for child in parent}
+            elements=list(root.iter('node'));indices={node:index for index,node in enumerate(elements)};nodes=[]
+            for node in elements:
+                bounds=re.fullmatch(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]',node.attrib.get('bounds',''))
+                if not bounds:continue
+                left,top,right,bottom=map(int,bounds.groups())
+                if right<=left or bottom<=top:continue
+                ancestor=node
+                while ancestor is not None and ancestor.attrib.get('class')!='android.webkit.WebView':ancestor=parents.get(ancestor)
+                nodes.append(dict(node.attrib,rectangle=[left,top,right,bottom],nodeIndex=indices[node],
+                    parentIndex=indices.get(parents.get(node)),webViewIndex=indices[ancestor] if ancestor is not None else None))
+            return nodes
+        except Exception as error:
+            receipt.update(available=False,errorClass=type(error).__name__,error=traceback.format_exc())
+            return []
+        finally:native._write_json(receipt_path,receipt)
+
+    def failure_ui(self):
+        nodes=self.ui()
+        if not nodes:raise RuntimeError('Fresh native AX unavailable; see '+str(self.last_ui_receipt))
+        return nodes
 
     def selected_spinner(self,label,value):
         def choose(rows):
@@ -98,12 +157,14 @@ class HandoffAcceptance(network.NetworkAcceptance):
     def tap_label(self,label,description=False,prefix=False,scroll=False,backward=False,popup=False):
         deadline=time.monotonic()+45;swipes=0
         while True:
-            rows=self.ui();target=self.action_node(rows,label,description,prefix,popup)
+            rows=self.ui(deadline=deadline);target=self.action_node(rows,label,description,prefix,popup)
             if target:
                 x1,y1,x2,y2=target['rectangle'];assert 0<=x1<x2 and 0<=y1<y2
                 self.shell('input','tap',(x1+x2)//2,(y1+y2)//2,timeout=max(.1,deadline-time.monotonic()))
                 return target
             if time.monotonic()>=deadline:raise AssertionError('Native task action not ready: '+label)
+            if not rows:
+                time.sleep(min(.2,max(0,deadline-time.monotonic())));continue
             if scroll:
                 containers=[row for row in rows if row.get('package')==PACKAGE and row.get('scrollable')=='true'
                             and row['rectangle'][3]-row['rectangle'][1]>180
@@ -138,12 +199,11 @@ class HandoffAcceptance(network.NetworkAcceptance):
 
     def readable_status(self,status):
         label={'submitted':'已发送','cancelled':'已取消','failed':'未能发送','uncertain':'结果待确认'}[status]
-        tasks=self.native_action('查看网页任务',description=True)
         rows=self.wait('native readable terminal status '+status,self.ui,
             lambda rows:any(row.get('text','').startswith(label+' · ') for row in rows),timeout=15)
         matches=[row for row in rows if row.get('text','').startswith(label+' · ')]
-        assert len(matches)==1
-        return {'status':status,'statusNode':matches[0],'tasksButton':tasks}
+        assert len(matches)==1 and matches[0].get('clickable')=='true' and matches[0].get('enabled')=='true'
+        return {'status':status,'statusNode':matches[0]}
 
     def asset_bytes(self,row):
         owner=self.manifest['accounts']['A']['id'];assert row['accountId']==owner and row['status']=='ready'
@@ -344,6 +404,7 @@ def main():
         assert acceptance.job(failed['id'])['status']=='failed'
         identifier,document=acceptance.launch('send-ack-drop')
         uncertain=acceptance.validate_sent(identifier,document,'uncertain');uncertain['stagingAfter']=acceptance.cleanup(identifier)
+        acceptance.tap_native_action('更多功能',description=True)
         acceptance.tap_native_action('查看网页任务',description=True)
         acceptance.tap_label('结果待确认 · '+uncertain['job']['label'],prefix=True)
         acceptance.tap_label('打开目标对话')
@@ -382,7 +443,7 @@ def main():
                 observations=[('server',lambda:acceptance.http('/status')),
                               ('journal',acceptance.jobs),
                               ('workspace',lambda:acceptance.json_file('workspace.json')),
-                              ('native-ui',acceptance.ui)]
+                              ('native-ui',acceptance.failure_ui)]
                 if main_pid is not None:
                     observations.append(('native-task-events',lambda:acceptance.task_events(int(main_pid))))
                 for label,observe in observations:

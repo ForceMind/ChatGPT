@@ -99,10 +99,10 @@ def verify(proof,api,receipt,metadata,definitions,skill):
         assert before['text']==after['text']=='我确认将所选文件发送到另一个账号'
         assert before['checked']=='false' and after['checked']=='true' and before['enabled']==after['enabled']=='true'
         status=case['nativeStatus'];assert status['status']==terminal
-        native_node(status['statusNode'],package);native_node(status['tasksButton'],package)
+        native_node(status['statusNode'],package)
         label={'submitted':'已发送','cancelled':'已取消','failed':'未能发送','uncertain':'结果待确认'}[terminal]
         assert status['statusNode']['text'].startswith(label+' · '+job['label'])
-        assert status['tasksButton']['content-desc']=='查看网页任务' and status['tasksButton']['enabled']=='true'
+        assert status['statusNode']['clickable']==status['statusNode']['enabled']=='true'
         history=by_job[job['id']];compressed=[]
         for event in history:
             assert event['promptSha256']==job['promptSha256']

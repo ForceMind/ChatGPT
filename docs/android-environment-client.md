@@ -34,6 +34,12 @@
 
 同轮 Android9 任务尚未创建：Spinner 首次点击后仍是原表单，旧驱动直接在表单滚动寻找B，缺少真实 ListView popup 门。驱动已限定为原45秒内等实际 popup 后才在该列表定位/滚动，保留各一次点击和原账号/Skill/跨账号断言。另两份 Android9 回归因新增启动器漏装宿主 `libpulse.so.0`，在模拟器版本读取时退出127，App未启动；真实stderr已保存，启动器已定点补 `libpulse0`，不改应用或恢复断言。以上修正仍待下一轮完整验收。
 
+`42232590081` / `dfa3c4aa19a6312062141e955d33d6908af9da47` 的 Android15 首例已真实发送一次：server sendAttempts=1、891字整文 SHA 匹配、网页完整 user ACK、主进程 submitted 均通过。之后驱动错误地把仅在“更多”里的任务入口当作常显按钮，尚未执行其余四项；已改为读实际可点击状态 banner，重开任务先走真实“更多→查看网页任务”入口。该修正不降低正文、次数、状态、fence、staging 或热页门槛。
+
+同轮 Android9 上传通过后，原唯一 commitText 返回成功，但 DOM input/send均0，15秒后失败。原“末态源HandoffDialog”推断已撤回：0400 dump虽exit0却明确报告 cannot get idle state，0401 cat的是旧XML。新驱动每次先删除专用目标XML并确认不存在，只有本次 dump 明确成功才解析新XML；失败记录快照不可用，在原期限内只读等待，绝不使用缓存或增加点击。固定158 `GeckoEditable.getEditable():1354–1362` 在非IC线程返回null，Android9 BaseInputConnection 的空editable路径仍返回true；因此唯一 commit 改为始终向 connection.getHandler 排队（null才UI默认），跨Gecko切换屏障，沿原5秒就绪截止并回UI复核身份与全文。该线程分支及修复效果仍待运行证据。
+
+该轮 build、两端本地导出、五组网络及 human/synthetic 两端完整升级恢复均通过；Android15 TLS初始探测仍在进入网页前失败。已保留跨 RAW/TLS/REALITY 的 HTTPS SocketInputStream/Conscrypt handshake 栈及原站/节点日志，尚无可证网络根因；下一轮仅追加闭门耗时、coreRunning、原代次与安全错误枚举，不重试探测、不改目标/超时/路由断言。不会以首例成功代替两端五场景交付。
+
 ## 最新交付：2026.11.06-2024 本地导出候选
 
 第一阶段已完成，第二阶段的新 Gecko 资产/Skill 自动任务继续开发，不以本阶段代替完整主线交付。
