@@ -34,6 +34,8 @@ provider适配已实现，待全量Actions验证：独立picker单线程使用64
 
 同轮API28环境回归尚未到注册屏障，首错是强刷后的环境检查：0285-https中draft/model和IndexedDB已恢复，worker=null、workerError为空。原刷新等待只等草稿，补入与原page相同的Worker/IndexedDB/登录就绪条件，再执行原环境断言，不改变超时或seed。后续可固定复用42161704887/1f32390332b2d510f561db241f47068a34568a1e的App/test APK与两份human证明；源码差异门槛保证App、原helper、fixture不变，两个环境回归及六组网络均实际重跑。
 
+42164399330（493464b）六组网络全部通过：24次A/B文件传输、8个TLS/REALITY身份负例、18个核心停止后阻断动作均保持原断言，单JVM退出0、每组50个可信前缀确认。API28完整环境/恢复通过，只读注册屏障942ms，旧账号及密文冷读通过；两份human证明沿原字节复用。最后API35旧WebView UI在首次composer focus超时，实际AX显示唯一可见EditText及正常页面，尚不能实证popup内部原因。仅API35测试在原30秒总期限内先确认窗口/布局，按唯一当前WebView原生EditText坐标tap一次，再执行原DOM焦点/InputConnection/trusted/fulltext断言；不重发tap、不改生产或Golden。重编API35 test APK，原App、API28及六组网络证据按源码/哈希护栏复用，保留原sourceSHA，不重复已通过网络矩阵。
+
 ## 当前交付
 
 本批已完成，交付固定签名 **3.0.0-alpha.24-beta.6**（versionCode `3000030`），Android9及以上arm64候选。仅推送dev、通过Actions分发；未合并main、未创建公开Release、未改官网或个人设备。

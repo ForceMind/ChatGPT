@@ -5,16 +5,20 @@ on:
     paths: ['.github/workflows/android-environment-client.yml']
   workflow_dispatch:
     inputs:
+      reuse_gecko_acceptance:
+        description: Reuse the complete six-case Gecko matrix from 42164399330 when its APK and network fixtures are unchanged
+        type: boolean
+        default: false
       reuse_beta7_checks:
         description: Reuse immutable Beta7 build and complete client regressions from 42151389890 for network-fixture-only fixes
         type: boolean
         default: false
       reuse_application_build:
-        description: Reuse immutable Beta7 APKs and human upgrades from 42161704887; rerun both environment drivers and every network case
+        description: Reuse immutable Beta7 APKs and human upgrades from 42161704887
         type: boolean
         default: false
       reuse_android9_acceptance:
-        description: Reuse complete API28 proof from 42092833123 for the identical application and test bytes
+        description: Reuse complete API28 proof from 42164399330 for the identical application and test bytes
         type: boolean
         default: false
       rebuild_api35_acceptance_test:
@@ -116,8 +120,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           test '${{ inputs.reuse_application_build }}' != true
-          test '${{ inputs.reuse_android9_acceptance }}' != true
-          test '${{ inputs.rebuild_api35_acceptance_test }}' != true
           test "$(gh api repos/${{ github.repository }}/actions/runs/42151389890 --jq .head_sha)" = 407bca267f2bf12a7af0b5aaa3f13b8b46424c7c
           gh api repos/${{ github.repository }}/actions/runs/42151389890/jobs --paginate --jq '.jobs[]|select(.name=="build" or (.name|startswith("accept (")))|[.name,.conclusion]|@tsv' > "$RUNNER_TEMP/beta7-checks.tsv"
           python3 - <<'PY_CHECK'
@@ -140,7 +142,7 @@ jobs:
           test "$(gh api repos/${{ github.repository }}/actions/runs/42161704887/jobs --jq '.jobs[]|select(.name=="build")|.conclusion')" = success
           git fetch origin 1f32390332b2d510f561db241f47068a34568a1e --depth=1
           if [ '${{ inputs.rebuild_api35_acceptance_test }}' = true ]; then
-            git diff --exit-code 1f32390332b2d510f561db241f47068a34568a1e HEAD -- android/app ':(exclude)android/app/src/environmentTest/**' android/settings.gradle android/build.gradle android/network-poc/corebridge
+            git diff --exit-code 1f32390332b2d510f561db241f47068a34568a1e HEAD -- android/app ':(exclude)android/app/src/environmentTest/java/com/forcemind/chatgpt/profiles/BrowserChromeNavigationTest.java' android/settings.gradle android/build.gradle android/network-poc/corebridge
           else
             git diff --exit-code 1f32390332b2d510f561db241f47068a34568a1e HEAD -- android/app android/settings.gradle android/build.gradle android/network-poc/corebridge android/scripts/environment_upgrade.py
           fi
@@ -208,7 +210,7 @@ jobs:
           cert=subprocess.check_output([os.environ['ANDROID_HOME']+'/build-tools/35.0.0/apksigner','verify','--print-certs',str(apk)],text=True)
           signer=re.search(r'certificate SHA-256 digest: ([0-9a-fA-F]+)',cert)[1].lower()
           assert signer==json.loads(pathlib.Path('docs/signing/android-network-beta.json').read_text())['certificateSHA256']
-          receipt={'file':apk.name,'sha256':hashlib.sha256(apk.read_bytes()).hexdigest(),'sourceSHA':os.environ['GITHUB_SHA'],'applicationSourceSHA':'2b8738187ca7d02e83700334859ba77acd32f87a','targetVersionCode':3000031,'targetPackage':'com.forcemind.chatgpt.profiles.networkbeta','signerSHA256':signer}
+          receipt={'file':apk.name,'sha256':hashlib.sha256(apk.read_bytes()).hexdigest(),'sourceSHA':os.environ['GITHUB_SHA'],'applicationSourceSHA':'1f32390332b2d510f561db241f47068a34568a1e','targetVersionCode':3000031,'targetPackage':'com.forcemind.chatgpt.profiles.networkbeta','signerSHA256':signer}
           (root/'api35-test-receipt.json').write_text(json.dumps(receipt,indent=2)+'\n')
           PY
       - uses: actions/upload-artifact@v4
@@ -325,6 +327,7 @@ jobs:
           retention-days: 14
           path: android/app/build/environment-client-evidence/
   gecko-network:
+    if: ${{ !inputs.reuse_gecko_acceptance }}
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 35
@@ -461,24 +464,24 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: environment-client-28-synthetic
-          run-id: 42092833123
+          run-id: 42164399330
           github-token: ${{ github.token }}
           path: evidence
       - name: Authenticate the complete Android9 proof and its unchanged fixture inputs
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          git fetch origin 4c72fb051e8f4e973ddfe831e0d7b4c628158c52 --depth=1
-          git diff --exit-code 4c72fb051e8f4e973ddfe831e0d7b4c628158c52 HEAD -- android/scripts/environment-fixture.py android/scripts/android/AsciiInput.java android/scripts/android/TouchInput.java
+          git fetch origin 493464bc58e1ec2414fc25535fc9d856620d645c --depth=1
+          git diff --exit-code 493464bc58e1ec2414fc25535fc9d856620d645c HEAD -- android/scripts/environment-fixture.py android/scripts/android/AsciiInput.java android/scripts/android/TouchInput.java android/scripts/run-environment-client.py android/scripts/environment_upgrade.py
           python3 - <<'PY'
           import json,pathlib
           r=json.loads(pathlib.Path('evidence/functional.json').read_text())
-          assert r['complete'] and r['api']==28 and r['sourceSHA']=='4c72fb051e8f4e973ddfe831e0d7b4c628158c52'
-          assert r['candidateInstalledSHA256']=='dda91b62b0ee5e0e90cc18eb66846f00786127189a16e98e8cdc0efe666a7793'
-          assert r['legacyUpgrade']['testAPK']['sha256']=='79a5f371bb4679c2d6e0881d05a41a715b3a5de564d1863b3218ba24de255d1a'
-          assert r['legacyUpgrade']['humanCandidateSHA256']=='54c1c80e8b6695501802567318ef2caa945f1cd48248acce41fe3f0c68ae15d4'
+          assert r['complete'] and r['api']==28 and r['sourceSHA']=='493464bc58e1ec2414fc25535fc9d856620d645c'
+          assert r['candidateInstalledSHA256']=='8c5c2a1bd6a4c3f3fb2dad01333cd777d753be565a69c99a895e80ba95472462'
+          assert r['legacyUpgrade']['testAPK']['sha256']=='47112aff4feb3330dcb1870613d6363a3798175ff26c1382e0aaf90bf05ffa79'
+          assert r['legacyUpgrade']['humanCandidateSHA256']=='361c4b7120a62f5da632fd4a8d86db937a94741043a80f84e9522eb2dd883173'
           assert r['legacyChromeNavigation']['complete'] and r['geckoChromeNavigation']['complete'] and r['legacyAfterEnvironmentUse']['complete']
-          pathlib.Path('evidence/reused-android9-source.json').write_text(json.dumps({'run':42092833123,'sourceSHA':r['sourceSHA'],'applicationAndTestBytesUnchanged':True,'api35OnlyDriverPreconditionChange':True})+'\n')
+          pathlib.Path('evidence/reused-android9-source.json').write_text(json.dumps({'run':42164399330,'sourceSHA':r['sourceSHA'],'applicationAndTestBytesUnchanged':True,'api35OnlyDriverPreconditionChange':True})+'\n')
           PY
       - uses: actions/upload-artifact@v4
         with:
@@ -515,9 +518,50 @@ jobs:
           name: environment-client-${{ matrix.api }}-${{ matrix.target }}
           retention-days: 14
           path: evidence/
+  reuse-gecko:
+    if: inputs.reuse_gecko_acceptance
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        api: [28,35]
+        transport: [raw,tls,reality]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Authenticate the complete matrix and unchanged network inputs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          test '${{ inputs.reuse_application_build }}' = true
+          test "$(gh api repos/${{ github.repository }}/actions/runs/42164399330 --jq .head_sha)" = 493464bc58e1ec2414fc25535fc9d856620d645c
+          test "$(gh api repos/${{ github.repository }}/actions/runs/42164399330/jobs --jq '.jobs[]|select(.name=="gecko-network (${{ matrix.api }}, ${{ matrix.transport }})")|.conclusion')" = success
+          git fetch origin 493464bc58e1ec2414fc25535fc9d856620d645c --depth=1
+          git diff --exit-code 493464bc58e1ec2414fc25535fc9d856620d645c HEAD -- android/app ':(exclude)android/app/src/environmentTest/**' android/scripts/run-gecko-network.py android/scripts/android android/network-poc/scripts/fixture.py android/network-poc/scripts/gecko_fixture_page.py android/scripts/run-environment-api35.sh
+      - uses: actions/download-artifact@v4
+        with:
+          name: gecko-network-${{ matrix.api }}-${{ matrix.transport }}
+          run-id: 42164399330
+          github-token: ${{ github.token }}
+          path: evidence
+      - name: Keep the original successful network proof unchanged
+        run: |
+          python3 - <<'PY_NETWORK'
+          import json,pathlib
+          p=json.loads(pathlib.Path('evidence/gecko-network.json').read_text())
+          assert p['complete'] and p['api']==${{ matrix.api }} and p['transport']=='${{ matrix.transport }}'
+          assert p['sourceSHA']=='493464bc58e1ec2414fc25535fc9d856620d645c'
+          assert p['applicationSourceSHA']=='1f32390332b2d510f561db241f47068a34568a1e'
+          assert p['candidateInstalledSHA256']=='5d0f4b76168a2af4ef48ef5511e901d82d66c995a4e6eb48dc89b36dcaa93d38'
+          pathlib.Path('evidence/reused-network-source.json').write_text(json.dumps({'run':42164399330,'sourceSHA':p['sourceSHA'],'apkAndNetworkInputsUnchanged':True})+'\n')
+          PY_NETWORK
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gecko-network-${{ matrix.api }}-${{ matrix.transport }}
+          retention-days: 14
+          path: evidence/
   deliver:
-    needs: [accept, gecko-network, reuse-human, reuse-android9, reuse-beta7]
-    if: ${{ always() && (needs.accept.result == 'success' || needs.reuse-beta7.result == 'success') && needs.gecko-network.result == 'success' && (needs.reuse-human.result == 'success' || needs.reuse-human.result == 'skipped') && (needs.reuse-android9.result == 'success' || needs.reuse-android9.result == 'skipped') }}
+    needs: [accept, gecko-network, reuse-human, reuse-android9, reuse-beta7, reuse-gecko]
+    if: ${{ always() && (needs.accept.result == 'success' || needs.reuse-beta7.result == 'success') && (needs.gecko-network.result == 'success' || needs.reuse-gecko.result == 'success') && (needs.reuse-human.result == 'success' || needs.reuse-human.result == 'skipped') && (needs.reuse-android9.result == 'success' || needs.reuse-android9.result == 'skipped') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

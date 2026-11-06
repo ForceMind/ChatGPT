@@ -74,8 +74,50 @@ public final class BrowserChromeNavigationTest {
         assertTrue(latch.await(5,TimeUnit.SECONDS));JSONObject point=new JSONObject(String.valueOf(new JSONTokener(result.get()).nextValue()));
         shell("input tap "+(location[0]+Math.round(point.getDouble("x")*point.getDouble("dpr")))+" "+(location[1]+Math.round(point.getDouble("y")*point.getDouble("dpr"))));
     }
+    private void waitUntil(String label,Check check,long deadline)throws Exception{
+        while(android.os.SystemClock.elapsedRealtime()<deadline){
+            if(check.ready()&&android.os.SystemClock.elapsedRealtime()<deadline)return;
+            long remaining=deadline-android.os.SystemClock.elapsedRealtime();if(remaining>0)Thread.sleep(Math.min(150,remaining));
+        }
+        saveNativeTree();throw new AssertionError("Timed out: "+label);
+    }
+    private void nativeEditors(AccessibilityNodeInfo node,AccessibilityNodeInfo host,boolean inside,Rect viewport,java.util.List<Rect> matches){
+        if(node==null)return;inside=inside||node.equals(host);
+        if(inside&&EnvironmentUpgradeSeedTest.PACKAGE.contentEquals(node.getPackageName()==null?"":node.getPackageName())
+                &&"android.widget.EditText".contentEquals(node.getClassName()==null?"":node.getClassName())&&node.isVisibleToUser()&&node.isEnabled()){
+            Rect box=new Rect();node.getBoundsInScreen(box);if(box.width()>0&&box.height()>0&&viewport.contains(box))matches.add(box);
+        }
+        for(int i=0;i<node.getChildCount();i++){AccessibilityNodeInfo child=node.getChild(i);try{nativeEditors(child,host,inside,viewport,matches);}finally{if(child!=null)child.recycle();}}
+    }
+    private void focusApi35(WebView view)throws Exception{
+        final long deadline=android.os.SystemClock.elapsedRealtime()+30000;AtomicReference<Rect> target=new AtomicReference<>();
+        waitUntil("API35 focused window and unique native composer layout",()->{
+            AtomicReference<AccessibilityNodeInfo> host=new AtomicReference<>();Rect viewport=new Rect();
+            main(()->{if(activity.hasWindowFocus()&&activity.recoveryCurrentWeb()==view&&view.hasWindowFocus()&&view.isAttachedToWindow()
+                    &&view.isLaidOut()&&!view.isLayoutRequested()&&view.isShown()&&view.isEnabled()&&view.getAlpha()>=.99f
+                    &&view.getWidth()>0&&view.getHeight()>0&&view.getGlobalVisibleRect(viewport)
+                    &&viewport.width()==view.getWidth()&&viewport.height()==view.getHeight())host.set(view.createAccessibilityNodeInfo());});
+            if(host.get()==null)return false;
+            AccessibilityNodeInfo root=instrumentation.getUiAutomation().getRootInActiveWindow();java.util.ArrayList<Rect> matches=new java.util.ArrayList<>();
+            try{if(root==null||root.getWindowId()!=host.get().getWindowId())return false;nativeEditors(root,host.get(),false,viewport,matches);}
+            finally{if(root!=null)root.recycle();host.get().recycle();}
+            assertTrue("Only one visible native EditText in the current WebView",matches.size()<=1);if(matches.isEmpty())return false;
+            AtomicReference<Boolean> unchanged=new AtomicReference<>(false);main(()->{Rect latest=new Rect();unchanged.set(activity.hasWindowFocus()&&activity.recoveryCurrentWeb()==view&&view.hasWindowFocus()
+                    &&!view.isLayoutRequested()&&view.getGlobalVisibleRect(latest)&&latest.equals(viewport));});
+            if(!unchanged.get())return false;target.set(new Rect(matches.get(0)));return true;
+        },deadline);
+        assertTrue("Native tap must remain inside the shared focus deadline",android.os.SystemClock.elapsedRealtime()<deadline);
+        Rect box=target.get();shell("input tap "+box.centerX()+" "+box.centerY());
+        waitUntil("real composer focus",()->{
+            long remaining=deadline-android.os.SystemClock.elapsedRealtime();if(remaining<=0)return false;
+            AtomicReference<String> observed=new AtomicReference<>();CountDownLatch done=new CountDownLatch(1);
+            main(()->view.evaluateJavascript("JSON.stringify({focused:document.activeElement===document.querySelector('#prompt-textarea')})",raw->{observed.set(raw);done.countDown();}));
+            remaining=deadline-android.os.SystemClock.elapsedRealtime();if(remaining<=0||!done.await(Math.min(5000,remaining),TimeUnit.MILLISECONDS))return false;
+            Object decoded=new JSONTokener(observed.get()).nextValue();return decoded!=JSONObject.NULL&&new JSONObject(String.valueOf(decoded)).getBoolean("focused");
+        },deadline);
+    }
     private void type(String draft)throws Exception{
-        WebView view=web();tapWeb("prompt-textarea");waitFor("real composer focus",()->snapshot(view).getBoolean("focused"));
+        WebView view=web();if(android.os.Build.VERSION.SDK_INT==35)focusApi35(view);else{tapWeb("prompt-textarea");waitFor("real composer focus",()->snapshot(view).getBoolean("focused"));}
         AtomicReference<InputConnection> connection=new AtomicReference<>();waitFor("native text connection",()->{main(()->{EditorInfo editor=new EditorInfo();InputConnection input=view.onCreateInputConnection(editor);connection.set((editor.inputType&15)==1?input:null);});return connection.get()!=null;});
         main(()->assertTrue(connection.get().commitText(draft,1)));waitFor("trusted DOM and model text",()->{JSONObject value=snapshot(view);return draft.equals(value.getString("draft"))&&draft.equals(value.getString("model"))&&value.getInt("trusted")>0;});
         main(()->((android.view.inputmethod.InputMethodManager)activity.getSystemService(android.content.Context.INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(view.getWindowToken(),0));
