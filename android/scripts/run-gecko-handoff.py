@@ -76,7 +76,7 @@ class HandoffAcceptance(network.NetworkAcceptance):
         assert result['released'] is True and result['document']==document
         self.pending_tasks.discard(document)
 
-    def action_node(self,rows,label,description=False,prefix=False):
+    def action_node(self,rows,label,description=False,prefix=False,popup=False):
         key='content-desc' if description else 'text'
         matches=[row for row in rows if row.get('package')==PACKAGE
                  and (row.get(key,'').startswith(label) if prefix else row.get(key)==label)
@@ -84,16 +84,21 @@ class HandoffAcceptance(network.NetworkAcceptance):
         if not matches:return None
         assert len(matches)==1,'Ambiguous native task action: '+label
         target=matches[0];by_index={row['nodeIndex']:row for row in rows};cursor=target
+        if popup:
+            while cursor is not None and cursor.get('class')!='android.widget.ListView':
+                cursor=by_index.get(cursor.get('parentIndex'))
+            if cursor is None:return None
+            cursor=target
         while cursor is not None:
             if cursor.get('clickable')=='true' or cursor.get('class') in ('android.widget.ListView','android.widget.AbsListView'):
                 return target
             cursor=by_index.get(cursor.get('parentIndex'))
         return None
 
-    def tap_label(self,label,description=False,prefix=False,scroll=False,backward=False):
+    def tap_label(self,label,description=False,prefix=False,scroll=False,backward=False,popup=False):
         deadline=time.monotonic()+45;swipes=0
         while True:
-            rows=self.ui();target=self.action_node(rows,label,description,prefix)
+            rows=self.ui();target=self.action_node(rows,label,description,prefix,popup)
             if target:
                 x1,y1,x2,y2=target['rectangle'];assert 0<=x1<x2 and 0<=y1<y2
                 self.shell('input','tap',(x1+x2)//2,(y1+y2)//2,timeout=max(.1,deadline-time.monotonic()))
@@ -101,7 +106,12 @@ class HandoffAcceptance(network.NetworkAcceptance):
             if time.monotonic()>=deadline:raise AssertionError('Native task action not ready: '+label)
             if scroll:
                 containers=[row for row in rows if row.get('package')==PACKAGE and row.get('scrollable')=='true'
-                            and row['rectangle'][3]-row['rectangle'][1]>180]
+                            and row['rectangle'][3]-row['rectangle'][1]>180
+                            and (not popup or row.get('class')=='android.widget.ListView')]
+                if popup and not containers:
+                    # A dismissed attachment dialog can expose the form before the spinner popup.
+                    # Await the actual option list; never scroll the underlying review form for an option.
+                    time.sleep(.2);continue
                 assert len(containers)==1,'Missing or ambiguous native task scroll container'
                 assert swipes<20,'Native task action absent after bounded scroll: '+label
                 x1,y1,x2,y2=containers[0]['rectangle'];x=(x1+x2)//2
@@ -179,9 +189,9 @@ class HandoffAcceptance(network.NetworkAcceptance):
         self.tap_label('owned-image.png · ',prefix=True)
         self.wait('real PNG checkbox checked',self.ui,lambda rows:any(row.get('text','').startswith('owned-image.png · ') and row.get('checked')=='true' for row in rows),timeout=15)
         self.tap_label('确定')
-        self.tap_label('目标账号',description=True,scroll=True,backward=True);self.tap_label('环境 B',scroll=True)
+        self.tap_label('目标账号',description=True,scroll=True,backward=True);self.tap_label('环境 B',scroll=True,popup=True)
         target_selection=self.selected_spinner('目标账号','环境 B')
-        self.tap_label('处理 Skill',description=True,scroll=True);self.tap_label(self.skill['name'],scroll=True)
+        self.tap_label('处理 Skill',description=True,scroll=True);self.tap_label(self.skill['name'],scroll=True,popup=True)
         skill_selection=self.selected_spinner('处理 Skill',self.skill['name'])
         guard=None
         if verify_cross:

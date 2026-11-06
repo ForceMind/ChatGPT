@@ -30,6 +30,10 @@
 
 同轮 synthetic28 在 cold 的 `am force-stop` 退出255，随后 QEMU TCP5554拒绝连接；runner ps 已无模拟器，内核没有 OOM、QEMU或segfault条目，退出原因未知。human28 在启动的第二次 `adb getprop sys.boot_completed` 挂住至40分钟取消，Python升级用例根本未开始，不能记为数据保留通过。下一轮 Android9 改用自管启动器：沿原 API28/default/pixel2/2CPU/3072MiB/swiftshader_indirect，保留真实 PID/退出码/原始stderr；每次启动期 adb 读取有界，仍运行原 human/synthetic 用例及全部原断言，不修改产品恢复或保活策略。
 
+修正轮 `42228848160` / `fddfb693abbfb12f71920a5deff2ff161593c76a` 的 Android15 已通过真实双附件 FilePrompt、复制哈希及网页附件确认：一次 multipart 的 HTML 113字节、PNG 70字节正确；Native AX 的完整891字指令 SHA 等于任务 promptSha256。随后 `sending→uncertain` 仅270ms，server sendAttempts=0，未进入25秒 ACK 超时。AX 中按钮中心1057超出 Gecko canvas 的底1048，直接暴露发送几何/可见区域问题，尚未声称旧错误枚举已实测。最小修正沿已有15秒指令验证总期限收起键盘、滚动并用固定158矩阵读取真实可见点，连续两次稳定才写一次发送栅栏，栅栏后再次核对全文/附件/文档/点位，再 Native tap 一次；原上传 tap、location 注入与全文 SPA ACK 保留。
+
+同轮 Android9 任务尚未创建：Spinner 首次点击后仍是原表单，旧驱动直接在表单滚动寻找B，缺少真实 ListView popup 门。驱动已限定为原45秒内等实际 popup 后才在该列表定位/滚动，保留各一次点击和原账号/Skill/跨账号断言。另两份 Android9 回归因新增启动器漏装宿主 `libpulse.so.0`，在模拟器版本读取时退出127，App未启动；真实stderr已保存，启动器已定点补 `libpulse0`，不改应用或恢复断言。以上修正仍待下一轮完整验收。
+
 ## 最新交付：2026.11.06-2024 本地导出候选
 
 第一阶段已完成，第二阶段的新 Gecko 资产/Skill 自动任务继续开发，不以本阶段代替完整主线交付。

@@ -89,7 +89,11 @@
           const current = state();
           if (!current.fresh || !current.send || current.messages || current.generating || !filesReady(current)) throw new Error('changed');
           const form = scope(editor());
-          value = Object.assign({state:current}, point(form.querySelector('button[data-testid="send-button"],button[aria-label="Send prompt"],button[aria-label="Send message"],button[aria-label="发送提示"],button[aria-label="发送消息"]'))); break;
+          const button=form.querySelector('button[data-testid="send-button"],button[aria-label="Send prompt"],button[aria-label="Send message"],button[aria-label="发送提示"],button[aria-label="发送消息"]');
+          button.scrollIntoView({block:'center',inline:'nearest',behavior:'instant'});
+          try {value=Object.assign({state:current},point(button));}
+          catch (error) {if(error.message!=='control-covered'&&error.message!=='control-hidden')throw error;value={state:current,wait:true};}
+          break;
         }
         case 'cleanup': restore(); value = {ok:true}; break;
         default: throw new Error('command');

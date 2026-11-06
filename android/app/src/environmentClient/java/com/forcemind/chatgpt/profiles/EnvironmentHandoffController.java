@@ -2,6 +2,8 @@ package com.forcemind.chatgpt.profiles;
 
 import android.content.Context;
 import android.content.res.AssetFileDescriptor;
+import android.graphics.Matrix;
+import android.graphics.RectF;
 import android.net.Uri;
 import android.os.*;
 import android.text.InputType;
@@ -56,6 +58,8 @@ final class EnvironmentHandoffController {
     private GeckoResult<GeckoSession.PromptDelegate.PromptResponse> activeResult;
     private volatile InputStream copyInput;
     private String lastAttachmentDiagnostic="";
+    private boolean keyboardHidden;
+    private float[] preparedSendPoint;
     private static boolean diagnostics(){return BuildConfig.ENVIRONMENT_TEST&&BuildConfig.ENVIRONMENT_NETWORK_TEST;}
     private static void diagnostic(String stage){if(diagnostics())android.util.Log.i("StudioHandoff",stage);}
     private static String failureClass(Exception error){if(error instanceof InterruptedIOException||error instanceof OperationCanceledException)return "cancelled";if(error instanceof IOException)return "io";if(error instanceof SecurityException)return "security";if(error instanceof IllegalArgumentException)return "argument";if(error instanceof IllegalStateException)return "state";return "other";}
@@ -122,7 +126,7 @@ final class EnvironmentHandoffController {
             Object rawSequence=value.get("sequence");long next=value.getLong("sequence");if(!(rawSequence instanceof Number)||value.getDouble("sequence")!=next||next!=sequence+1)throw new IOException();sequence=next;
             if("ready".equals(value.getString("type"))){if(authenticated)throw new IOException();authenticated=true;ready(value.getJSONObject("value"));return;}
             String request=value.getString("request");Consumer<JSONObject> callback=pending.remove(request);if(callback==null)return;
-            if(!"result".equals(value.getString("type"))){fail("网页控件不兼容，已停止自动发送");return;}
+            if(!"result".equals(value.getString("type"))){if(diagnostics()){String reason=value.optString("reason");diagnostic("page-error reason="+(Arrays.asList("control-hidden","control-covered","existing-content","changed","document","file-input-changed","text-limit","command","page").contains(reason)?reason:"other"));}fail("网页控件不兼容，已停止自动发送");return;}
             callback.accept(value.getJSONObject("value").put("location",reportedUrl));
         }catch(Exception invalid){fail("无法确认目标网页状态，已停止自动发送");}
     }
@@ -245,14 +249,41 @@ final class EnvironmentHandoffController {
     private void verifyDraft() {
         if(timedOut()){fail("网页未完整接收处理要求，任务未发送");return;}
         page("state",state->{if(state.optBoolean("error")){fail("网页提示附件或输入错误，任务未发送");return;}
-            if(normal(prompt).equals(normal(state.optString("text")))&&state.optBoolean("send")&&filesReady(state))beforeSend();else later(this::verifyDraft);
+            if(normal(prompt).equals(normal(state.optString("text")))&&state.optBoolean("send")&&filesReady(state))prepareSend();else later(this::verifyDraft);
         });
+    }
+    private void prepareSend() {
+        // Use the original draft-verification deadline. Waiting for layout never retries input/send.
+        if(timedOut()){fail("发送按钮尚不可操作，任务未发送");return;}
+        Host host=target.get();GeckoView view=host==null?null:host.view(entry);
+        if(view==null){fail("目标网页当前不可操作，任务未发送");return;}
+        if(!keyboardHidden){keyboardHidden=true;InputMethodManager keyboard=(InputMethodManager)context.getSystemService(Context.INPUT_METHOD_SERVICE);if(keyboard!=null)keyboard.hideSoftInputFromWindow(view.getWindowToken(),0);}
+        page("send-point",value->{
+            JSONObject state=value.optJSONObject("state");if(state==null||!normal(prompt).equals(normal(state.optString("text")))||!filesReady(state)||state.optInt("messages")!=0){fail("发送前网页内容已改变；不会自动重发");return;}
+            float[] point=value.optBoolean("wait")?null:sendCoordinates(value);
+            if(diagnostics())diagnostic("send-prepare wait="+value.optBoolean("wait")+" inView="+(point!=null)+" stable="+samePoint(preparedSendPoint,point));
+            if(point==null){preparedSendPoint=null;later(this::prepareSend);return;}
+            if(!samePoint(preparedSendPoint,point)){preparedSendPoint=point;later(this::prepareSend);return;}
+            beforeSend();
+        });
+    }
+    private static boolean samePoint(float[] first,float[] second){if(first==null||second==null)return false;for(int i=0;i<first.length;i++)if(Math.abs(first[i]-second[i])>1)return false;return true;}
+    private float[] sendCoordinates(JSONObject geometry){
+        try{
+            if(!valid())return null;Host host=target.get();GeckoView view=host==null?null:host.view(entry);if(view==null||!view.isShown()||view.getWindowToken()==null)return null;
+            double x=geometry.getDouble("x"),y=geometry.getDouble("y");if(!Double.isFinite(x)||!Double.isFinite(y))return null;
+            RectF client=new RectF();entry.session.getClientBounds(client);if(!Float.isFinite(client.width())||!Float.isFinite(client.height())||client.width()<=0||client.height()<=0||x<client.left||y<client.top||x>=client.right||y>=client.bottom)return null;
+            Matrix transform=new Matrix();entry.session.getClientToSurfaceMatrix(transform);float[] point={(float)x,(float)y};transform.mapPoints(point);
+            if(!Float.isFinite(point[0])||!Float.isFinite(point[1])||point[0]<0||point[1]<0||point[0]>=view.getWidth()||point[1]>=view.getHeight())return null;
+            return new float[]{point[0],point[1],view.getWidth(),view.getHeight()};
+        }catch(Exception invalid){return null;}
     }
     private void beforeSend() {
         try {rpc("before-send",new JSONObject().put("promptSha256",HandoffRequest.hash(prompt.getBytes(java.nio.charset.StandardCharsets.UTF_8))),ignored->page("send-point",value->{
-            JSONObject state=value.optJSONObject("state");if(state==null||!normal(prompt).equals(normal(state.optString("text")))||!filesReady(state)||state.optInt("messages")!=0){fail("发送前网页内容已改变；不会自动重发");return;}
+            JSONObject state=value.optJSONObject("state");float[] point=value.optBoolean("wait")?null:sendCoordinates(value);if(diagnostics())diagnostic("send-final inView="+(point!=null)+" stable="+samePoint(preparedSendPoint,point));
+            if(state==null||!normal(prompt).equals(normal(state.optString("text")))||!filesReady(state)||state.optInt("messages")!=0||!samePoint(preparedSendPoint,point)){fail("发送前网页内容已改变；不会自动重发");return;}
             if(sendIssued){fail("本任务已尝试发送，不会重复发送");return;}sendIssued=true;
-            try{tap(value);deadline=SystemClock.elapsedRealtime()+25000;acknowledge();}catch(Exception invalid){fail("发送结果待确认，请检查目标对话；不会自动重发");}
+            try{tapSend(value);deadline=SystemClock.elapsedRealtime()+25000;acknowledge();}catch(Exception invalid){fail("发送结果待确认，请检查目标对话；不会自动重发");}
         }));}catch(Exception invalid){fail("发送许可无法记录，任务未发送");}
     }
     private void acknowledge() {
@@ -271,6 +302,11 @@ final class EnvironmentHandoffController {
         if(!Float.isFinite(x)||!Float.isFinite(y)||x<0||y<0||x>=view.getWidth()||y>=view.getHeight())throw new IOException();
         long now=SystemClock.uptimeMillis();MotionEvent down=MotionEvent.obtain(now,now,MotionEvent.ACTION_DOWN,x,y,0),up=MotionEvent.obtain(now,now,MotionEvent.ACTION_UP,x,y,0);down.setSource(InputDevice.SOURCE_TOUCHSCREEN);up.setSource(InputDevice.SOURCE_TOUCHSCREEN);dispatching=true;
         try{view.requestFocus();if(!view.dispatchTouchEvent(down)||!view.dispatchTouchEvent(up))throw new IOException();}finally{dispatching=false;down.recycle();up.recycle();}
+    }
+    private void tapSend(JSONObject geometry)throws Exception {
+        float[] point=sendCoordinates(geometry);if(!samePoint(preparedSendPoint,point))throw new IOException();Host host=target.get();GeckoView view=host==null?null:host.view(entry);if(view==null)throw new IOException();
+        long now=SystemClock.uptimeMillis();MotionEvent down=MotionEvent.obtain(now,now,MotionEvent.ACTION_DOWN,point[0],point[1],0),up=MotionEvent.obtain(now,now,MotionEvent.ACTION_UP,point[0],point[1],0);down.setSource(InputDevice.SOURCE_TOUCHSCREEN);up.setSource(InputDevice.SOURCE_TOUCHSCREEN);dispatching=true;
+        try{view.requestFocus();boolean accepted=view.dispatchTouchEvent(down)&&view.dispatchTouchEvent(up);if(diagnostics())diagnostic("send-tap accepted="+accepted);if(!accepted)throw new IOException();}finally{dispatching=false;down.recycle();up.recycle();}
     }
     void invalidated(String reason){if(!closed)fail(reason);}
     void cancel(){stop("cancelled","已停止自动发送；请检查目标网页中已有的附件和草稿");}

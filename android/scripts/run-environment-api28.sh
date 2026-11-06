@@ -6,6 +6,9 @@ studio_target="${1:-synthetic}"
 case "$studio_target" in human|synthetic) ;; *) echo 'Only the approved human/synthetic upgrade targets may run.' >&2; exit 1 ;; esac
 studio_evidence=android/app/build/environment-client-evidence
 mkdir -p "$studio_evidence"
+# The emulator executable links libpulse even with -no-audio. The previous runner installed it implicitly.
+sudo apt-get update -qq
+sudo apt-get install -y --no-install-recommends libpulse0
 sdkmanager 'emulator' 'system-images;android-28;default;x86_64'
 studio_avd_home="$RUNNER_TEMP/studio-environment28-avd"
 mkdir -p "$studio_avd_home"
