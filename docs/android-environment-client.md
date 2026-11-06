@@ -56,6 +56,12 @@
 
 同轮本地导出35已过在线/离线六格式及HTTP，在EOF暂停的前台B核对处遇原uiautomator idle等待超时；本次只更换AX来源，18秒操作截止、20秒EOF控制、9operation与字节/归属/取消不改。human两端及六组网络通过；synthetic35在SDK Emulator下载准备时报ZipFile unknown archive，App尚未运行；synthetic28仍以本轮实际结果为准。以上原始日志/产物保留，下一轮不把缺失focus或SDK准备失败记成业务通过。
 
+`42249616228` / `d42de4c8b534876f1c7a71929b81df3265845cd8` Android9 的真实 focused AX 已推动首正常、上传中取消、上传错误、源热标签与明确新任务恢复；恢复任务也已实际第二次发送891字整文并ACK。之后 focused 窗口是 TYPE_SYSTEM，WM明确为 Application Error；这是App崩溃，取证没有将它伪装成业务页。slot6350在16:21:02.998的Java主线程栈为 `EventDispatcher.shutdownNative→WebExtension.Port.disconnected→disconnectFromExtension` 的 NullHandle；更早slot3743的libxul SIGSEGV只有地址，未确定同根。Android15仍在业务前 probe reset，尚未检验focused/helper或五case。
+
+固定158源码与6350的 `/c/` LocationChange→Recovery Connect→崩溃时序确认存在双主动关闭竞争：Native invalidate 调 Port.disconnect，JS URL变化也 disconnect；已排入main的远端回调随后再shutdown，SDK并非幂等。最小修正只改恢复桥关闭方法：Native先同步撤销旧epoch/token/port/能力，旧Port只通知JS；JS每连接先清引用并标关闭，再唯一调用disconnect，URL/pagehide/revoke共用单次关闭。身份门、原local流/EOF、保活和重载不变，不全局捕获或抑制异常；更早原生SIGSEGV仍独立未知。
+
+同五case成功结束前新增必要崩溃回归门：只读原crash buffer，按完整包名/子进程名识别owned Java/native fatal，原字节/命令/exit/SHA留证，Gate重读重算。owned fatal或无唯一归属的native fatal均拒绝交付；没有清log、补UI动作或降低文件/全文/一次发送/fence/hot断言。关闭修正与完整五case仍待下一轮Actions。
+
 ## 最新交付：2026.11.06-2024 本地导出候选
 
 第一阶段已完成，第二阶段的新 Gecko 资产/Skill 自动任务继续开发，不以本阶段代替完整主线交付。

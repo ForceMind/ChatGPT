@@ -58,6 +58,55 @@ class HandoffAcceptance(NativeAXMixin,network.NetworkAcceptance):
         assert value['events'] and all(row['pid']==main_pid for row in value['events'])
         return value
 
+    def owned_crash_check(self):
+        started=time.monotonic();deadline=started+25
+        command=['adb','shell','logcat','-b','crash','-d','-v','threadtime']
+        raw_path=self.output/'owned-app-crash-buffer.txt';stderr_path=self.output/'owned-app-crash-buffer.stderr.txt'
+        source={'command':command,'buffer':'crash','cleared':False,'complete':False,
+                'file':raw_path.name,'stderrFile':stderr_path.name,'timeBudgetMillis':25000,
+                'startedMonotonicMillis':int(started*1000)}
+        check={'schema':1,'package':PACKAGE,'passed':False,'source':source,'analysis':None,
+               'ownedFatalCount':None,'unresolvedNativeFatalCount':None,'pidMap':None}
+        try:
+            result=subprocess.run(command,stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=min(20,deadline-time.monotonic()))
+            raw_path.write_bytes(result.stdout);stderr_path.write_bytes(result.stderr)
+            source.update(exitCode=result.returncode,bytes=len(result.stdout),sha256=hashlib.sha256(result.stdout).hexdigest(),
+                stderrBytes=len(result.stderr),stderrSHA256=hashlib.sha256(result.stderr).hexdigest())
+            assert result.returncode==0 and result.stderr==b'','Owned crash buffer was unavailable'
+            text=result.stdout.decode('utf-8')
+            assert not re.search(r'(?m)^(?:logcat:|Permission Denial|Error:)',text),'Owned crash buffer returned an error'
+            spec=importlib.util.spec_from_file_location('owned_handoff_crash_rule',Path(__file__).with_name('deliver-gecko-handoff.py'))
+            rule=importlib.util.module_from_spec(spec);spec.loader.exec_module(rule)
+            analysis=rule.analyse_crash_buffer(text,PACKAGE)
+            check.update(analysis=analysis,ownedFatalCount=len(analysis['ownedFatalRecords']),
+                         unresolvedNativeFatalCount=len(analysis['unresolvedNativeSignals']))
+            if analysis['unresolvedNativeSignals']:
+                # A current PID list is retained only as a diagnostic; it cannot prove historical
+                # identity or make an unresolved fatal signal safe to ignore.
+                mapping={'command':['adb','shell','ps','-A','-o','PID,NAME'],'complete':False}
+                check['pidMap']=mapping
+                try:
+                    remaining=deadline-time.monotonic()
+                    if remaining<=0:raise TimeoutError('Owned crash read exceeded its original budget')
+                    process=subprocess.run(mapping['command'],stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=min(5,remaining))
+                    path=self.output/'owned-app-crash-pids.txt';path.write_bytes(process.stdout)
+                    pids={row['pid'] for row in analysis['unresolvedNativeSignals'] if row['pid'] is not None}
+                    lines=process.stdout.decode('utf-8').splitlines()
+                    mapping.update(file=path.name,exitCode=process.returncode,bytes=len(process.stdout),
+                        sha256=hashlib.sha256(process.stdout).hexdigest(),stderr=process.stderr.decode('utf-8'),
+                        matchingLines=[line for line in lines if re.match(r'^\s*\d+\s+',line) and int(line.split()[0]) in pids])
+                    mapping['complete']=process.returncode==0 and process.stderr==b''
+                except Exception as error:mapping.update(errorClass=type(error).__name__,error=traceback.format_exc())
+            source['complete']=time.monotonic()<=deadline
+            check['passed']=source['complete'] and check['ownedFatalCount']==0 and check['unresolvedNativeFatalCount']==0
+        except Exception as error:
+            source.update(errorClass=type(error).__name__,error=traceback.format_exc())
+            if isinstance(error,subprocess.TimeoutExpired):
+                raw_path.write_bytes(error.stdout or b'');stderr_path.write_bytes(error.stderr or b'')
+        source['finishedMonotonicMillis']=int(time.monotonic()*1000)
+        native._write_json(self.output/'owned-app-crash-check.json',check)
+        return check
+
     def failure_focus(self):
         deadline=time.monotonic()+25;observations=[]
         pattern=re.compile(r'\b(?:mCurrentFocus|mFocusedApp|mTopFocusedDisplayId|mFocusedWindow|mInputMethodTarget|mImeInputTarget|mImeLayeringTarget|topResumedActivity|mTopResumedActivity|mResumedActivity|ResumedActivity|mFocusedActivity)\b')
@@ -417,6 +466,9 @@ def main():
             'nativeAsciiKeyboardReceipts':acceptance.keyboard_events,'nativePrefixReceipts':acceptance.input_prefix_receipts,
             'nativeInputStreams':acceptance.input_stream_receipts,'sendCount':3,'noDirect':True,
             'screenshots':False,'realServicesAccessed':False,'adbReverseOriginUsed':False}
+        crash=acceptance.owned_crash_check()
+        assert crash['passed'] is True,('Owned App crash gate failed',crash['ownedFatalCount'],crash['unresolvedNativeFatalCount'])
+        proof['ownedAppCrashCheck']=crash
         native._write_json(args.output/'gecko-handoff.json',proof)
         print(json.dumps({'complete':True,'api':api,'cases':5,'sendCount':3,'proofFile':str(args.output/'gecko-handoff.json')}),flush=True)
         return proof

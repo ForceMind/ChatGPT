@@ -22,6 +22,35 @@ def identifier(value):
     return value
 
 
+def analyse_crash_buffer(text,package):
+    """Only full process labels establish ownership; short native thread names never do."""
+    owned=re.compile(re.escape(package)+r'(?::[A-Za-z0-9_.$:-]+)?')
+    records=[];signals=[]
+    for number,line in enumerate(text.splitlines(),1):
+        java=re.search(r'\bProcess:\s*([^,\s]+)(?:,\s*PID:\s*(\d+))?',line)
+        tombstone=re.search(r'>>>\s*(\S+)\s*<<<',line)
+        if java:
+            records.append({'kind':'java','lineNumber':number,'process':java[1],
+                            'pid':int(java[2]) if java[2] else None,'owned':owned.fullmatch(java[1]) is not None,'line':line})
+        if tombstone:
+            pid=re.search(r'\bpid:\s*(\d+)',line)
+            records.append({'kind':'native','lineNumber':number,'process':tombstone[1],
+                            'pid':int(pid[1]) if pid else None,'owned':owned.fullmatch(tombstone[1]) is not None,'line':line})
+        if re.search(r'\bFatal signal\s+\d+',line):
+            pid=re.search(r'\bpid\s+(\d+)',line)
+            prefix=re.match(r'^\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\.\d+\s+(\d+)\s+\d+\s+[VDIWEF]\s+',line)
+            signals.append({'lineNumber':number,'pid':int(pid[1]) if pid else int(prefix[1]) if prefix else None,'line':line})
+    names={}
+    for record in records:
+        if record['pid'] is not None:names.setdefault(record['pid'],set()).add(record['process'])
+    unresolved=[]
+    for signal in signals:
+        labels=sorted(names.get(signal['pid'],set()))
+        if len(labels)!=1:unresolved.append(dict(signal,observedProcessLabels=labels))
+    return {'fatalRecords':records,'ownedFatalRecords':[row for row in records if row['owned']],
+            'nativeSignals':signals,'unresolvedNativeSignals':unresolved}
+
+
 def native_node(value,package,api):
     assert value['package']==package and value.get('visible-to-user','true')=='true'
     x1,y1,x2,y2=value['rectangle'];assert 0<=x1<x2 and 0<=y1<y2
@@ -40,7 +69,7 @@ def native_node(value,package,api):
     active=source['activeRoot'];assert active['allowedPackage'] in ('',package) and type(active['id']) is int
 
 
-def verify(proof,api,receipt,metadata,definitions,skill):
+def verify(proof,api,receipt,metadata,definitions,skill,artifact):
     assert proof['schema']==1 and proof['complete'] is True and proof['api']==api
     assert proof['engine']=='gecko' and proof['transport']=='raw'
     assert proof['ciReceipt']==receipt and proof['versionMetadata']==metadata
@@ -49,6 +78,21 @@ def verify(proof,api,receipt,metadata,definitions,skill):
     assert proof['candidateInstalledSHA256']==receipt['sha256']
     assert proof['screenshots'] is proof['realServicesAccessed'] is proof['adbReverseOriginUsed'] is False
     assert proof['noDirect'] is True and proof['sendCount']==3
+    crash=proof['ownedAppCrashCheck'];crash_source=crash['source']
+    assert crash['schema']==1 and crash['package']==receipt['package'] and crash['passed'] is True
+    assert crash_source['command']==['adb','shell','logcat','-b','crash','-d','-v','threadtime']
+    assert crash_source['complete'] is True and crash_source['exitCode']==0 and crash_source['buffer']=='crash' and crash_source['cleared'] is False
+    assert crash_source['timeBudgetMillis']==25000
+    assert 0<=crash_source['finishedMonotonicMillis']-crash_source['startedMonotonicMillis']<=25000
+    assert crash_source['file']=='owned-app-crash-buffer.txt' and crash_source['stderrFile']=='owned-app-crash-buffer.stderr.txt'
+    raw=(artifact/crash_source['file']).read_bytes();stderr=(artifact/crash_source['stderrFile']).read_bytes()
+    assert len(raw)==crash_source['bytes'] and hashlib.sha256(raw).hexdigest()==crash_source['sha256']
+    assert stderr==b'' and crash_source['stderrBytes']==0 and hashlib.sha256(stderr).hexdigest()==crash_source['stderrSHA256']
+    text=raw.decode('utf-8');assert not re.search(r'(?m)^(?:logcat:|Permission Denial|Error:)',text)
+    analysis=analyse_crash_buffer(text,receipt['package']);assert crash['analysis']==analysis
+    assert type(crash['ownedFatalCount']) is int and crash['ownedFatalCount']==len(analysis['ownedFatalRecords'])==0
+    assert type(crash['unresolvedNativeFatalCount']) is int and crash['unresolvedNativeFatalCount']==len(analysis['unresolvedNativeSignals'])==0
+    assert crash['pidMap'] is None
     accounts=proof['accounts'];assert set(accounts)=={'A','B','C'}
     for account in accounts.values():
         identifier(account['id']);identifier(account['storageId'])
@@ -194,7 +238,11 @@ def verify(proof,api,receipt,metadata,definitions,skill):
     return {'api':api,'complete':True,'cases':case_summaries,'originalBytesPreserved':True,
             'realMultipartVerified':True,'completeUnicodePromptVerified':True,'skillAndCrossAccountNativeReview':True,
             'persistedTaskStagesVerified':True,'onceSendFencesVerified':True,'explicitFailureRecovery':True,
-            'uncertainReopenNoReplay':True,'hotDocumentsAndDraftPreserved':True,'screenshots':False,'realServicesAccessed':False}
+            'uncertainReopenNoReplay':True,'hotDocumentsAndDraftPreserved':True,
+            'ownedAppFatalCount':crash['ownedFatalCount'],'crashBufferSHA256':crash_source['sha256'],
+            'crashBufferEvidenceFile':f"gecko-handoff-{api}-{crash_source['file']}",
+            'crashStderrEvidenceFile':f"gecko-handoff-{api}-{crash_source['stderrFile']}",
+            'screenshots':False,'realServicesAccessed':False}
 
 
 def deliver(input_root=Path('input'),candidate=Path('candidate'),acceptance=Path('acceptance/handoff')):
@@ -218,10 +266,16 @@ def deliver(input_root=Path('input'),candidate=Path('candidate'),acceptance=Path
                        'base64':base64.b64encode(body).decode('ascii')} for name,(mime,body) in fixture.assets().items()}
     proofs=[];summaries=[]
     for api in (28,35):
-        proof=read(acceptance/f'gecko-handoff-{api}'/'gecko-handoff.json')
-        summaries.append(verify(proof,api,receipt,metadata,definitions,skill));proofs.append(proof)
+        artifact=acceptance/f'gecko-handoff-{api}'
+        proof=read(artifact/'gecko-handoff.json')
+        summaries.append(verify(proof,api,receipt,metadata,definitions,skill,artifact));proofs.append(proof)
     evidence=candidate/'evidence';evidence.mkdir(exist_ok=True)
-    for proof in proofs:(evidence/f"gecko-handoff-{proof['api']}.json").write_text(json.dumps(proof,indent=2)+'\n',encoding='utf-8')
+    for proof in proofs:
+        (evidence/f"gecko-handoff-{proof['api']}.json").write_text(json.dumps(proof,indent=2)+'\n',encoding='utf-8')
+        artifact=acceptance/f"gecko-handoff-{proof['api']}"
+        for key in ('file','stderrFile'):
+            name=proof['ownedAppCrashCheck']['source'][key]
+            (evidence/f"gecko-handoff-{proof['api']}-{name}").write_bytes((artifact/name).read_bytes())
     summary={'schema':1,'complete':True,'engine':'gecko','versionMetadata':metadata,'applicationSourceSHA':receipt['sourceSHA'],
              'ciAPKsha256':receipt['sha256'],'apis':summaries,'screenshots':False,'realServicesAccessed':False}
     (evidence/'gecko-handoff-summary.json').write_text(json.dumps(summary,indent=2)+'\n',encoding='utf-8')

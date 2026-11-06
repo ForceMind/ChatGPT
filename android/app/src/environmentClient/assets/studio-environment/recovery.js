@@ -1,7 +1,7 @@
 'use strict';
 (()=>{
   if(window.top!==window)return;
-  let port=null,auth=null,sequence=0,epoch=0,timer=null,maxTimer=null,last='',currentUrl=location.href,closed=false,activeRestore=null;
+  let port=null,auth=null,sequence=0,epoch=0,timer=null,maxTimer=null,last='',currentUrl=location.href,closed=false,activeRestore=null,recoveryConnection=null;
   const documentId=crypto.randomUUID();
   function eligible(){
     let u;try{u=new URL(location.href);}catch(_){return false;}
@@ -43,7 +43,7 @@
     }catch(_){return true;}
   }
   function capture(type='capture',extra={}){
-    if(location.href!==currentUrl){cancelLocalStream();currentUrl=location.href;last='';auth=null;if(port)port.disconnect();return;}
+    if(location.href!==currentUrl){currentUrl=location.href;last='';closeRecovery(port);return;}
     const state=snapshot();if(!state){send('ineligible',extra);return;}
     const fingerprint=JSON.stringify({...state,capturedAt:0});
     if(type==='capture'&&fingerprint===last)return;last=fingerprint;
@@ -193,12 +193,23 @@
     if(auth?.localDiagnostics)send('local-diagnostic',{stage:'proof',active:!!navigator.userActivation?.isActive,eligible:eligible(),trusted:false,anchored:!!anchor});
     send('local-export-proof',{request:message.request,activation:value.id,active,hasUriDigest:!!anchor,detached:!anchor,...(anchor?{kind:anchor.kind,uriHash:uriHash||''}:{})});
   }
+  function closeRecovery(own){
+    const connection=recoveryConnection;
+    if(!own||!connection||connection.port!==own||connection.closed)return;
+    connection.closed=true;
+    if(port===own){cancelLocalStream();port=null;auth=null;activeRestore=null;}
+    // Clear ownership before this side effect. URL changes, pagehide and native
+    // revocation may race, but only this endpoint calls disconnect once.
+    own.disconnect();
+  }
   function connect(){
-    if(closed||!eligible())return;auth=null;sequence=0;
+    if(closed||port!==null||!eligible())return;auth=null;sequence=0;
     try{port=browser.runtime.connectNative('studioEnvironmentRecovery');}catch(_){setTimeout(connect,500);return;}
-    const own=port;
+    const own=port,connection={port:own,closed:false};recoveryConnection=connection;
     port.onMessage.addListener(message=>{
       if(own!==port||!message)return;
+      if(message.type==='recovery-rejected'){closeRecovery(own);return;}
+      if(message.type==='recovery-revoke'&&(!auth||(message.token===auth.token&&message.epoch===epoch))){closeRecovery(own);return;}
       if(message.type==='auth'&&typeof message.token==='string'&&Number.isSafeInteger(message.epoch)){
         cancelLocalStream();
         auth=message;epoch=message.epoch;activeRestore=null;last='';capture('ready');
@@ -211,12 +222,12 @@
         if(message.type==='restore')restore(message);if(message.type==='cancel-restore')activeRestore=null;
       }
     });
-    port.onDisconnect.addListener(()=>{if(own===port){cancelLocalStream();port=null;auth=null;if(!closed)setTimeout(connect,350);}});
+    port.onDisconnect.addListener(()=>{connection.closed=true;if(connection===recoveryConnection&&own===port){cancelLocalStream();port=null;auth=null;activeRestore=null;if(!closed)setTimeout(connect,350);}});
   }
   document.addEventListener('input',event=>{const n=composer();if(n&&(event.target===n||n.contains(event.target)))queue();},true);
   document.addEventListener('scroll',queue,{passive:true,capture:true});
   new MutationObserver(queue).observe(document.documentElement,{childList:true,subtree:true,characterData:true});
-  window.addEventListener('pagehide',()=>{cancelLocalStream();restoreLocalClick();capture('checkpoint');closed=true;if(port)port.disconnect();});
+  window.addEventListener('pagehide',()=>{cancelLocalStream();restoreLocalClick();capture('checkpoint');closed=true;closeRecovery(port);});
   window.addEventListener('pageshow',()=>{if(closed){closed=false;currentUrl=location.href;installLocalClick();connect();}});
   setInterval(()=>{if(location.href!==currentUrl)capture();if(!closed&&!port&&eligible())connect();},500);
   installLocalClick();connect();

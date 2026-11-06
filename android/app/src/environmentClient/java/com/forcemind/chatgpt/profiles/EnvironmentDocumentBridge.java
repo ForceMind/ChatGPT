@@ -29,7 +29,8 @@ final class EnvironmentDocumentBridge {
         e.session.getWebExtensionController().setMessageDelegate(extension,new WebExtension.MessageDelegate(){
             @Override public void onConnect(WebExtension.Port port){
                 Host host=target.get();WebExtension.MessageSender sender=port.sender;
-                if(host==null||e.closed||!host.owns(e)||sender.session!=e.session||!sender.isTopLevel()||sender.environmentType!=WebExtension.MessageSender.ENV_TYPE_CONTENT_SCRIPT||!EnvironmentRouteController.EXTENSION.equals(sender.webExtension.id)||!e.url.equals(sender.url)||EnvironmentUrls.recoverable(e.url)==null){port.setDelegate(new WebExtension.PortDelegate(){});port.disconnect();return;}
+                if(host==null||e.closed||!host.owns(e)||sender.session!=e.session||!sender.isTopLevel()||sender.environmentType!=WebExtension.MessageSender.ENV_TYPE_CONTENT_SCRIPT||!EnvironmentRouteController.EXTENSION.equals(sender.webExtension.id)||!e.url.equals(sender.url)||EnvironmentUrls.recoverable(e.url)==null){retire(port,"recovery-rejected",null,0);return;}
+                if(e.port==port)return;
                 invalidate(e);e.port=port;e.token=UUID.randomUUID().toString();e.sequence=0;
                 port.setDelegate(new WebExtension.PortDelegate(){
                     @Override public void onPortMessage(Object raw,WebExtension.Port source){message(e,source,raw);}
@@ -44,7 +45,23 @@ final class EnvironmentDocumentBridge {
         try{send(e,new JSONObject().put("type","auth").put("accountId",e.accountId).put("storageId",e.storageId).put("tabId",e.tabId).put("localDiagnostics",BuildConfig.ENVIRONMENT_TEST&&BuildConfig.ENVIRONMENT_NETWORK_TEST));}catch(Exception error){invalidate(e);return;}
         if(attempt<20)ui.postDelayed(()->authenticate(e,port,token,epoch,attempt+1),250);
     }
-    void invalidate(EnvironmentBrowserActivity.Entry e){Host owner=target.get();if(owner!=null)owner.localSourceInvalidated(e);cancelCheckpoint(e,null);if(e.restoringDocument!=null)e.pendingRestore=e.restoringDocument;e.restoringDocument=null;e.restoringDraft=null;e.restoreRequest=null;e.epoch++;e.sequence=0;e.token="";e.documentId=null;if(e.port!=null){WebExtension.Port old=e.port;e.port=null;old.disconnect();}e.liveDocument=null;}
+    void invalidate(EnvironmentBrowserActivity.Entry e){
+        WebExtension.Port old=e.port;String token=e.token;long epoch=e.epoch;
+        // Revoke synchronously before notifying any old document or capability holder.
+        e.port=null;e.epoch++;e.sequence=0;e.token="";e.documentId=null;e.liveDocument=null;
+        Host owner=target.get();if(owner!=null)owner.localSourceInvalidated(e);cancelCheckpoint(e,null);
+        if(e.restoringDocument!=null)e.pendingRestore=e.restoringDocument;e.restoringDocument=null;e.restoringDraft=null;e.restoreRequest=null;
+        if(old!=null)retire(old,"recovery-revoke",token,epoch);
+    }
+    private void retire(WebExtension.Port port,String type,String token,long epoch){
+        // Gecko 158 can already have queued a remote Disconnect before this main-thread
+        // callback. Its remote shutdown is not idempotent. Only the JS endpoint closes;
+        // Java immediately ignores this port and never calls Port.disconnect here.
+        port.setDelegate(new WebExtension.PortDelegate(){});
+        if(BuildConfig.ENVIRONMENT_TEST&&BuildConfig.ENVIRONMENT_NETWORK_TEST)android.util.Log.i("StudioRecoveryPort","retire kind="+("recovery-rejected".equals(type)?"rejected":"revoked"));
+        try{JSONObject message=new JSONObject().put("type",type);if(token!=null)message.put("token",token).put("epoch",epoch);port.postMessage(message);}
+        catch(org.json.JSONException impossible){throw new IllegalStateException("Invalid recovery revocation",impossible);}
+    }
     private void message(EnvironmentBrowserActivity.Entry e,WebExtension.Port source,Object raw){
         Host host=target.get();if(host==null)return;
         try{
