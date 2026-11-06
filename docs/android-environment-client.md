@@ -40,6 +40,12 @@
 
 该轮 build、两端本地导出、五组网络及 human/synthetic 两端完整升级恢复均通过；Android15 TLS初始探测仍在进入网页前失败。已保留跨 RAW/TLS/REALITY 的 HTTPS SocketInputStream/Conscrypt handshake 栈及原站/节点日志，尚无可证网络根因；下一轮仅追加闭门耗时、coreRunning、原代次与安全错误枚举，不重试探测、不改目标/超时/路由断言。不会以首例成功代替两端五场景交付。
 
+`42236811448` / `462326cacba8ada115060c77d507304c5aa6aa74` 两端首例均已实证：真实双附件原字节、一次发送、891字整文 SHA、完整用户 ACK 与主进程 submitted 全部通过。Android15 随后因 `am start` 异步返回而在工作区仍为B时开始A标题切换，失败后工作区已A；驱动已沿原60秒单次open期限等待真实 workspace A/原tab及新鲜A header，才执行原两次标题切换。Android9 虽首例真实提交，但15秒状态读取持续得不到 idle；新鲜度保护正确拒绝旧AX，没有以缓存制造成功。
+
+本批 CI 必要调整只影响测试：新增独立 `UiSnapshot` shell helper，每次新进程/新 UiAutomation connection 直接读取当前活动窗口的真实 AccessibilityNodeInfo，不 waitForIdle、不截图、不触摸；严格校验允许包、仿真器/API/uid/请求、时间、XML SHA与节点数，失败明确不可用。helper 仅在 Actions 用 SDK36 编译和推送临时 jar，不入 APK；原 App 保活及全部业务断言不变。主页面状态读真实 banner，历史重开仍走“更多”入口。
+
+同轮六组网络、两端本地导出、human两端与synthetic35通过；synthetic28的模拟器现已实证自身 SIGSEGV：`emulatorExit=139`，版本37.2.13，应用 `am start` 随后255，原始stderr/内核/进程证据已保留。当前 `swiftshader_indirect` 已被[Android官方图形文档](https://developer.android.com/studio/run/emulator-acceleration#accel-graphics)标为弃用，下一轮保留 API28/default/pixel2/2CPU/3072MiB、原用例与断言，改用受支持的 `swiftshader` 软件后端并关闭 Vulkan；这是假设性宿主兼容修正，是否消除139仍待原恢复回归，未声称已定位具体崩溃栈。
+
 ## 最新交付：2026.11.06-2024 本地导出候选
 
 第一阶段已完成，第二阶段的新 Gecko 资产/Skill 自动任务继续开发，不以本阶段代替完整主线交付。

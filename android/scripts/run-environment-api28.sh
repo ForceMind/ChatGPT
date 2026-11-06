@@ -16,8 +16,9 @@ echo no | ANDROID_AVD_HOME="$studio_avd_home" avdmanager create avd --force -n s
 printf '\nhw.cpu.ncore=2\n' >> "$studio_avd_home/studio-environment28.avd/config.ini"
 "$ANDROID_HOME/emulator/emulator" -version > "$studio_evidence/emulator-version.txt" 2>&1
 studio_emulator_log="$RUNNER_TEMP/studio-environment28-emulator.log"
-# These image, device, CPU, memory and GPU options match the first failed runner's actual command.
-ANDROID_AVD_HOME="$studio_avd_home" "$ANDROID_HOME/emulator/emulator" -avd studio-environment28 -port 5554 -memory 3072 -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -writable-system > "$studio_emulator_log" 2>&1 &
+# Keep API/device/CPU/memory fixed. The deprecated indirect renderer exited 139 on cold recovery.
+# Validate the same cases on the supported software backend, retaining every process log and assertion.
+ANDROID_AVD_HOME="$studio_avd_home" "$ANDROID_HOME/emulator/emulator" -avd studio-environment28 -port 5554 -memory 3072 -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader -feature -Vulkan -writable-system > "$studio_emulator_log" 2>&1 &
 studio_emulator_pid=$!
 studio_cleanup(){
   studio_exit=$?

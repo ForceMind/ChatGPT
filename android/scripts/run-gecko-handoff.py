@@ -40,8 +40,7 @@ class HandoffAcceptance(network.NetworkAcceptance):
         finally:self._ui_read_deadline=previous
 
     def ui(self,deadline=None):
-        # uiautomator can report an idle error with exit 0 and leave its old XML untouched.
-        # Absence before this dump and its explicit success are both required before reading.
+        # A new app_process and UiAutomation connection per read; never wait for page idle.
         limits=[time.monotonic()+25]
         if deadline is not None:limits.append(deadline)
         if self._ui_read_deadline is not None:limits.append(self._ui_read_deadline)
@@ -50,19 +49,36 @@ class HandoffAcceptance(network.NetworkAcceptance):
             remaining=deadline-time.monotonic()
             if remaining<=0:raise TimeoutError('Fresh native AX exceeded its current read-only deadline')
             return self.input_timeout(min(cap,remaining))
-        path='/data/local/tmp/handoff-ui.xml'
+        request=str(uuid.uuid4())
         self.sequence+=1;receipt_path=self.output/(f'{self.sequence:04d}-ui-snapshot.json')
-        receipt={'available':False,'devicePath':path,'previousFileAbsent':False,'dumpOutput':None}
+        receipt={'available':False,'source':'fresh-app-process-ui-automation','requestId':request}
         self.last_ui_receipt=receipt_path.name
         try:
-            self.shell('rm','-f',path,timeout=budget(5))
-            self.shell('test','!','-e',path,timeout=budget(5));receipt['previousFileAbsent']=True
-            output=self.shell('uiautomator','dump',path,timeout=budget(25));receipt['dumpOutput']=output
-            if output.strip()!='UI hierchary dumped to: '+path:
-                receipt['errorClass']='UiautomatorDumpUnavailable'
+            duration=max(1,int(budget(25)*1000))
+            command=['adb','shell','su','2000','env','GITHUB_ACTIONS=true',
+                'CLASSPATH=/data/local/tmp/studio-poc-ui-snapshot.jar','app_process','/system/bin',
+                'com.forcemind.chatgpt.pocinput.UiSnapshot',PACKAGE,request,str(duration)]
+            output=self.command(command,timeout=budget(25),check=False)
+            execution=native._json(self.output/(f'{self.sequence:04d}-command.json'))
+            result=json.loads(output);receipt['helper']={key:value for key,value in result.items() if key!='xml'}
+            receipt['exitCode']=execution['exitCode']
+            assert result['schema']==1 and result['provider']=='ci-readonly-active-window-ax'
+            assert result['requestId']==request and result['api']==self.api and result['uid']==2000 and result['qemu'] is True
+            assert result['package']==PACKAGE and type(result['pid']) is int and result['pid']>0
+            assert result['waitForIdle'] is False and result['actionsPerformed']==0 and result['screenshots'] is False
+            if execution['exitCode']!=0 or result['complete'] is not True or result['available'] is not True:
+                receipt['errorClass']=result.get('errorClass','NativeAxUnavailable')
                 return []
-            xml=self.shell('cat',path,timeout=budget(5))
+            assert result['phase']=='complete' and result['errorClass']==''
+            assert result['connectionClass']=='android.app.UiAutomationConnection' and result['connectionFlags']==1
+            assert result['constructorSignature']=='UiAutomation(Looper,IUiAutomationConnection)'
+            assert result['startedElapsedMillis']<=result['capturedElapsedMillis']<=result['finishedElapsedMillis']
+            assert 0<=result['finishedElapsedMillis']-result['startedElapsedMillis']<=duration
+            xml=result['xml'];assert hashlib.sha256(xml.encode('utf-8')).hexdigest()==result['xmlSHA256']
             root=ET.fromstring(xml);assert root.tag=='hierarchy'
+            assert int(root.attrib['window-id'])==result['windowId'] and result['windowId']>=0
+            assert len(list(root.iter('node')))==result['nodeCount']>0
+            budget(25)
             self.sequence+=1;xml_path=self.output/(f'{self.sequence:04d}-ui.xml')
             xml_path.write_text(xml,encoding='utf-8')
             receipt.update(available=True,xmlFile=xml_path.name,xmlSHA256=hashlib.sha256(xml.encode('utf-8')).hexdigest())
@@ -75,8 +91,12 @@ class HandoffAcceptance(network.NetworkAcceptance):
                 if right<=left or bottom<=top:continue
                 ancestor=node
                 while ancestor is not None and ancestor.attrib.get('class')!='android.webkit.WebView':ancestor=parents.get(ancestor)
+                assert node.attrib['package']==PACKAGE
                 nodes.append(dict(node.attrib,rectangle=[left,top,right,bottom],nodeIndex=indices[node],
-                    parentIndex=indices.get(parents.get(node)),webViewIndex=indices[ancestor] if ancestor is not None else None))
+                    parentIndex=indices.get(parents.get(node)),webViewIndex=indices[ancestor] if ancestor is not None else None,
+                    uiSnapshot={'provider':result['provider'],'api':result['api'],'uid':result['uid'],
+                                'pid':result['pid'],'requestId':request,'xmlSHA256':result['xmlSHA256'],'waitForIdle':False}))
+            budget(25)
             return nodes
         except Exception as error:
             receipt.update(available=False,errorClass=type(error).__name__,error=traceback.format_exc())
@@ -312,7 +332,29 @@ class HandoffAcceptance(network.NetworkAcceptance):
         return names
 
     def hot_pages(self):
-        self.control('open','A',0);self.route_page('A',self.source_page['document'],self.source_draft)
+        deadline=time.monotonic()+60
+        self.control('open','A',0,deadline=deadline)
+        owner=self.manifest['accounts']['A'];tab_id=owner['tabs'][0]['id']
+        def selected_source():
+            remaining=deadline-time.monotonic()
+            if remaining<=0:raise TimeoutError('Source account open exceeded its original deadline')
+            state=json.loads(self.shell('cat',FILES+'workspace.json',timeout=min(10,remaining)))
+            if state['activeAccount']!=owner['id']:return None
+            account=next(row for row in state['accounts'] if row['id']==owner['id'])
+            if account['activeTab']!=tab_id:return None
+            title=next(row['title'] for row in account['tabs'] if row['id']==tab_id)
+            rows=self.ui(deadline=deadline)
+            for label in ('切换账号，当前：环境 A','当前标签页：'+title):
+                found=[row for row in rows if row.get('package')==PACKAGE and row.get('content-desc')==label
+                       and row.get('enabled')=='true' and row.get('visible-to-user','true')=='true']
+                if not found:return None
+                assert len(found)==1,'Ambiguous native source account header'
+            return state
+        remaining=deadline-time.monotonic()
+        if remaining<=0:raise TimeoutError('Source account open exceeded its original deadline')
+        self.wait('source account and tab actually foreground',selected_source,lambda value:value is not None,
+                  timeout=remaining,interval=.2)
+        self.route_page('A',self.source_page['document'],self.source_draft)
         self.header_switch('A',1);self.header_switch('A',0)
         status,page=self.route_page('A',self.source_page['document'],self.source_draft)
         for path,before in self.hot_baseline.items():assert status['pageCounts'][path]==before

@@ -22,9 +22,13 @@ def identifier(value):
     return value
 
 
-def native_node(value,package):
+def native_node(value,package,api):
     assert value['package']==package and value.get('visible-to-user','true')=='true'
     x1,y1,x2,y2=value['rectangle'];assert 0<=x1<x2 and 0<=y1<y2
+    source=value['uiSnapshot'];assert source['provider']=='ci-readonly-active-window-ax'
+    assert source['api']==api and source['uid']==2000 and type(source['pid']) is int and source['pid']>0
+    identifier(source['requestId']);assert re.fullmatch(r'[a-f0-9]{64}',source['xmlSHA256'])
+    assert source['waitForIdle'] is False
 
 
 def verify(proof,api,receipt,metadata,definitions,skill):
@@ -92,14 +96,14 @@ def verify(proof,api,receipt,metadata,definitions,skill):
         assert hot['documents']==baseline['documents'] and hot['pageCounts']==baseline['pageCounts']
         review=case['review'];assert review['skillId']=='skill-001'
         for field,label,name in (('skillSelection','处理 Skill',skill['name']),('targetSelection','目标账号','环境 B')):
-            choice=review[field];native_node(choice['spinner'],package);native_node(choice['selected'],package)
+            choice=review[field];native_node(choice['spinner'],package,api);native_node(choice['selected'],package,api)
             assert choice['spinner']['content-desc']==label and choice['spinner']['class']=='android.widget.Spinner'
             assert choice['selected']['text']==name
-        before,after=review['crossBefore'],review['crossAfter'];native_node(before,package);native_node(after,package)
+        before,after=review['crossBefore'],review['crossAfter'];native_node(before,package,api);native_node(after,package,api)
         assert before['text']==after['text']=='我确认将所选文件发送到另一个账号'
         assert before['checked']=='false' and after['checked']=='true' and before['enabled']==after['enabled']=='true'
         status=case['nativeStatus'];assert status['status']==terminal
-        native_node(status['statusNode'],package)
+        native_node(status['statusNode'],package,api)
         label={'submitted':'已发送','cancelled':'已取消','failed':'未能发送','uncertain':'结果待确认'}[terminal]
         assert status['statusNode']['text'].startswith(label+' · '+job['label'])
         assert status['statusNode']['clickable']==status['statusNode']['enabled']=='true'
