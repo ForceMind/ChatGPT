@@ -178,8 +178,16 @@ public final class NetworkRoute {
                 final int appliedPort = port;
                 main.post(() -> applyWebView(node, appliedPort, generation, system, listener));
             } catch (Exception | LinkageError e) {
-                if (BuildConfig.NETWORK_TEST)
-                    android.util.Log.e("NetworkIntegrationCI", "startup stage=" + stage + " exception=" + e.getClass().getName());
+                if (BuildConfig.NETWORK_TEST) {
+                    // Owned CI needs the failing call site. Omit messages, configuration and node credentials.
+                    StringBuilder details = new StringBuilder("startup stage=").append(stage);
+                    Throwable cause = e;
+                    for (int depth = 0; cause != null && depth < 8; depth++, cause = cause.getCause()) {
+                        details.append("\ncause=").append(cause.getClass().getName());
+                        for (StackTraceElement frame : cause.getStackTrace()) details.append("\n  at ").append(frame);
+                    }
+                    android.util.Log.e("NetworkIntegrationCI", details.toString());
+                }
                 try { stopCore(); } catch (Exception | LinkageError ignored) { }
                 main.post(() -> fail(generation, listener, "线路连接或目标检查失败"));
             }

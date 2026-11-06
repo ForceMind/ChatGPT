@@ -30,6 +30,7 @@ final class EnvironmentLocalExports {
         Export(EnvironmentBrowserActivity.Entry e,WebResponse response,String kind){owner=e;this.response=response;this.kind=kind;source=e.url;document=e.documentId;token=e.token;epoch=e.epoch;}
     }
     EnvironmentLocalExports(Context context,EnvironmentRouteController routes){this.context=context.getApplicationContext();this.routes=routes;}
+    static void diagnostic(String detail){if(BuildConfig.ENVIRONMENT_TEST&&BuildConfig.ENVIRONMENT_NETWORK_TEST)android.util.Log.i("StudioLocalExport",detail);}
     void host(EnvironmentBrowserActivity activity){host=new WeakReference<>(activity);}
     void detach(EnvironmentBrowserActivity activity){if(host.get()==activity){for(Export value:new ArrayList<>(exports.values()))cancel(value,"本地文件保存已取消");host.clear();}}
     static String kind(String uri){if(uri==null)return null;if(uri.startsWith("blob:"))return "blob";if(uri.startsWith("data:"))return "data";return null;}
@@ -44,12 +45,14 @@ final class EnvironmentLocalExports {
     private void notice(String text){EnvironmentBrowserActivity activity=host.get();if(activity!=null)activity.notice(text);}
     void activation(EnvironmentBrowserActivity.Entry e,JSONObject data)throws Exception{
         String id=data.getString("activation"),method=data.getString("method");UUID.fromString(id);
+        if(BuildConfig.ENVIRONMENT_TEST&&BuildConfig.ENVIRONMENT_NETWORK_TEST)diagnostic("activation source="+source(e)+" active="+Boolean.TRUE.equals(data.opt("active"))+" supported="+java.util.Arrays.asList("click","keyboard").contains(method));
         if(!source(e)||!Boolean.TRUE.equals(data.opt("active"))||!java.util.Arrays.asList("click","keyboard").contains(method))return;
         Activation value=new Activation(e,id);activations.put(e,value);ui.postDelayed(()->{if(activations.get(e)==value)activations.remove(e);},CLAIM_WINDOW);
         Export pending=exports.get(e);if(pending!=null&&!pending.claimed&&pending.activation==null){pending.activation=value;stage(pending,"activation",0);claim(pending);}
     }
     void accept(EnvironmentBrowserActivity.Entry e,WebResponse response){
         String localKind=kind(response.uri);
+        if(BuildConfig.ENVIRONMENT_TEST&&BuildConfig.ENVIRONMENT_NETWORK_TEST)diagnostic("response local="+(localKind!=null)+" body="+(response.body!=null)+" source="+source(e)+" pending="+exports.containsKey(e)+" limit="+(exports.size()>=32)+" opaque="+response.uri.startsWith("blob:null/"));
         if(localKind==null||response.body==null||!source(e)||exports.containsKey(e)||exports.size()>=32||response.uri.startsWith("blob:null/")){
             close(response.body);notice("无法确认此本地文件的来源，未保存文件");return;
         }
@@ -63,6 +66,7 @@ final class EnvironmentLocalExports {
     }
     private void claim(Export value){
         Activation activation=value.activation;
+        if(BuildConfig.ENVIRONMENT_TEST&&BuildConfig.ENVIRONMENT_NETWORK_TEST)diagnostic("claim digest="+(value.fingerprint!=null)+" activation="+(activation!=null)+" asking="+value.asking+" valid="+valid(value));
         if(value.done||value.asking||value.fingerprint==null||activation==null)return;
         if(!valid(value)||activation.consumed||SystemClock.elapsedRealtime()-activation.at>CLAIM_WINDOW||activation.epoch!=value.epoch||!activation.document.equals(value.document)||!activation.token.equals(value.token)||!activation.source.equals(value.source)){cancel(value,"本地文件来源已失效");return;}
         activation.consumed=true;value.asking=true;
@@ -71,6 +75,7 @@ final class EnvironmentLocalExports {
     }
     void proof(EnvironmentBrowserActivity.Entry e,JSONObject data)throws Exception{
         Export value=exports.get(e);if(value==null||value.done||!value.asking||value.claimed||!value.challenge.equals(data.getString("request"))||value.activation==null||!value.activation.id.equals(data.getString("activation")))return;
+        if(BuildConfig.ENVIRONMENT_TEST&&BuildConfig.ENVIRONMENT_NETWORK_TEST)diagnostic("proof valid="+valid(value)+" active="+Boolean.TRUE.equals(data.opt("active"))+" expired="+(SystemClock.elapsedRealtime()-value.activation.at>CLAIM_WINDOW)+" anchored="+Boolean.TRUE.equals(data.opt("hasUriDigest"))+" detached="+Boolean.TRUE.equals(data.opt("detached")));
         if(!valid(value)||!(data.opt("active") instanceof Boolean)||!data.getBoolean("active")||SystemClock.elapsedRealtime()-value.activation.at>CLAIM_WINDOW){stage(value,"proof-rejected",0);cancel(value,"本地文件来源确认已过期");return;}
         Object anchored=data.opt("hasUriDigest");if(!(anchored instanceof Boolean)){cancel(value,"本地文件来源无法确认");return;}
         if((Boolean)anchored){if(!value.kind.equals(data.getString("kind"))||!value.fingerprint.equals(data.getString("uriHash"))){stage(value,"proof-uri-mismatch",0);cancel(value,"本地文件来源不匹配");return;}}

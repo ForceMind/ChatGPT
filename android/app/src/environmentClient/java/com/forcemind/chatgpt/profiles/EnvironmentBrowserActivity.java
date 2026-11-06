@@ -162,6 +162,7 @@ public class EnvironmentBrowserActivity extends ComponentActivity implements Env
         final java.lang.ref.WeakReference<EnvironmentBrowserActivity> target=new java.lang.ref.WeakReference<>(activity);
         e.session.setNavigationDelegate(new GeckoSession.NavigationDelegate(){
             @Override public GeckoResult<AllowOrDeny> onLoadRequest(GeckoSession session,LoadRequest request){EnvironmentBrowserActivity ownerActivity=target.get();if(ownerActivity==null||ownerActivity.destroyed){return GeckoResult.fromValue(AllowOrDeny.DENY);}
+                if(BuildConfig.ENVIRONMENT_TEST&&BuildConfig.ENVIRONMENT_NETWORK_TEST&&EnvironmentLocalExports.kind(request.uri)!=null)EnvironmentLocalExports.diagnostic("load-request owned="+ownerActivity.owns(e)+" route="+ownerActivity.routeReady+" source="+e.url.equals(request.triggerUri)+" gesture="+request.hasUserGesture+" direct="+request.isDirectNavigation);
                 if(!ownerActivity.routeReady||!ownerActivity.owns(e))return GeckoResult.fromValue(AllowOrDeny.DENY);
                 if(!NavigationPolicy.internal(request.uri)&&!CIBuild.environmentUrl(request.uri)){if(e==ownerActivity.current)ownerActivity.external(request.uri);return GeckoResult.fromValue(AllowOrDeny.DENY);}
                 if(!request.uri.equals(e.url))e.requestedUrl=request.uri;return GeckoResult.fromValue(AllowOrDeny.ALLOW);
@@ -346,6 +347,7 @@ public class EnvironmentBrowserActivity extends ComponentActivity implements Env
     private void external(String url){if(!NavigationPolicy.https(url)){notice("此链接无法在应用中打开");return;}new AlertDialog.Builder(this).setTitle("在外部浏览器打开？").setMessage(Uri.parse(url).getHost()).setPositiveButton("打开",(d,w)->{try{startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(url)));}catch(Exception error){notice("没有可用的外部浏览器");}}).setNegativeButton("取消",null).show();}
     private void download(Entry e,WebResponse response){
         e.requestedUrl=null;e.loadingUrl=null;renderHeader();
+        if(BuildConfig.ENVIRONMENT_TEST&&BuildConfig.ENVIRONMENT_NETWORK_TEST&&EnvironmentLocalExports.kind(response.uri)!=null)EnvironmentLocalExports.diagnostic("external-response body="+(response.body!=null)+" broker="+(routes!=null));
         if(response.body==null)return;if(EnvironmentLocalExports.kind(response.uri)!=null){if(routes!=null)routes.localExports.accept(e,response);else try{response.body.close();}catch(IOException ignored){}return;}if(!owns(e)||!routeReady||routes==null){try{response.body.close();}catch(Exception ignored){}return;}
         String mime=response.headers.get("Content-Type");if(mime==null)mime="application/octet-stream";String contentType=mime.split(";",2)[0].trim().toLowerCase(Locale.ROOT);if(!contentType.matches("[a-z0-9!#$&^_.+-]+/[a-z0-9!#$&^_.+-]+"))contentType="application/octet-stream";String name=android.webkit.URLUtil.guessFileName(response.uri,response.headers.get("Content-Disposition"),contentType);
         final String filename=AssetLedger.filename(name),type=contentType;long expected=-1;

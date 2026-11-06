@@ -92,6 +92,7 @@
     if(event.isTrusted&&!event.repeat&&(event.key==='Enter'||event.key===' ')&&event.target?.closest?.('button,a')){keyActivationTarget=event.target;activateLocal('keyboard');}
   },true);
   document.addEventListener('click',event=>{
+    if(auth?.localDiagnostics&&event.isTrusted)send('local-diagnostic',{stage:'click',active:!!navigator.userActivation?.isActive,eligible:eligible(),trusted:event.isTrusted,anchored:!!downloadAnchor(event)});
     if(event.isTrusted){if(!(event.detail===0&&keyActivationTarget===event.target&&activeLocal(localActivation)))activateLocal('click');keyActivationTarget=null;}
     const value=localActivation,anchor=downloadAnchor(event);
     if(!anchor||!activeLocal(value)||!navigator.userActivation?.isActive)return;
@@ -104,6 +105,7 @@
     let uriHash=null,anchor=value.anchor;
     try{if(anchor)uriHash=await anchor.promise;}catch(_){uriHash=null;}
     const active=activeLocal(value)&&!!navigator.userActivation?.isActive&&(!anchor||!!uriHash);
+    if(auth?.localDiagnostics)send('local-diagnostic',{stage:'proof',active:!!navigator.userActivation?.isActive,eligible:eligible(),trusted:false,anchored:!!anchor});
     send('local-export-proof',{request:message.request,activation:value.id,active,hasUriDigest:!!anchor,detached:!anchor,...(anchor?{kind:anchor.kind,uriHash:uriHash||''}:{})});
   }
   function connect(){

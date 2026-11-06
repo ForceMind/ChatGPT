@@ -41,7 +41,7 @@ final class EnvironmentDocumentBridge {
     }
     private void authenticate(EnvironmentBrowserActivity.Entry e,WebExtension.Port port,String token,long epoch,int attempt){
         if(e.closed||e.port!=port||!e.token.equals(token)||e.epoch!=epoch||e.documentId!=null)return;
-        try{send(e,new JSONObject().put("type","auth").put("accountId",e.accountId).put("storageId",e.storageId).put("tabId",e.tabId));}catch(Exception error){invalidate(e);return;}
+        try{send(e,new JSONObject().put("type","auth").put("accountId",e.accountId).put("storageId",e.storageId).put("tabId",e.tabId).put("localDiagnostics",BuildConfig.ENVIRONMENT_TEST&&BuildConfig.ENVIRONMENT_NETWORK_TEST));}catch(Exception error){invalidate(e);return;}
         if(attempt<20)ui.postDelayed(()->authenticate(e,port,token,epoch,attempt+1),250);
     }
     void invalidate(EnvironmentBrowserActivity.Entry e){Host owner=target.get();if(owner!=null)owner.localSourceInvalidated(e);cancelCheckpoint(e,null);if(e.restoringDocument!=null)e.pendingRestore=e.restoringDocument;e.restoringDocument=null;e.restoringDraft=null;e.restoreRequest=null;e.epoch++;e.sequence=0;e.token="";e.documentId=null;if(e.port!=null){WebExtension.Port old=e.port;e.port=null;old.disconnect();}e.liveDocument=null;}
@@ -53,6 +53,10 @@ final class EnvironmentDocumentBridge {
             if(value.toString().length()>240000||!e.url.equals(value.getString("url"))||!e.accountId.equals(value.getString("accountId"))||!e.storageId.equals(value.getString("storageId"))||!e.tabId.equals(value.getString("tabId"))||!e.token.equals(value.getString("token"))||e.epoch!=value.getLong("epoch"))return;
             Object rawSequence=value.get("sequence");if(!(rawSequence instanceof Number)||((Number)rawSequence).doubleValue()!=((Number)rawSequence).longValue())return;long sequence=((Number)rawSequence).longValue();if(sequence<=e.sequence)return;e.sequence=sequence;
             String document=value.getString("document");UUID.fromString(document);if(e.documentId!=null&&!e.documentId.equals(document))return;e.documentId=document;
+            if("local-diagnostic".equals(value.optString("type"))){
+                if(BuildConfig.ENVIRONMENT_TEST&&BuildConfig.ENVIRONMENT_NETWORK_TEST){String stage=value.optString("stage");if(java.util.Arrays.asList("click","proof").contains(stage))EnvironmentLocalExports.diagnostic("document-"+stage+" active="+Boolean.TRUE.equals(value.opt("active"))+" eligible="+Boolean.TRUE.equals(value.opt("eligible"))+" trusted="+Boolean.TRUE.equals(value.opt("trusted"))+" anchored="+Boolean.TRUE.equals(value.opt("anchored")));}
+                return;
+            }
             String type=value.getString("type");if("local-activation".equals(type)){host.localActivation(e,value);return;}if("local-export-proof".equals(type)){host.localProof(e,value);return;}if("ineligible".equals(type)){host.localSourceInvalidated(e);cancelCheckpoint(e,null);e.sensitive=true;e.pendingRestore=null;e.restoringDraft=null;e.restoringDocument=null;e.restoreRequest=null;return;}
             if(java.util.Arrays.asList("restore-unavailable","conflict","restored").contains(type)&&(e.restoreRequest==null||!e.restoreRequest.equals(value.optString("request"))))return;
             if("restore-unavailable".equals(type)){e.conflictLocal=e.restoringDocument;e.restoringDocument=null;e.restoringDraft=null;e.restoreRequest=null;host.notice("页面暂不能完成恢复，本地草稿已保留，请从恢复草稿重试");return;}

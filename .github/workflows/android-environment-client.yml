@@ -449,6 +449,13 @@ jobs:
       - name: Run the same approved network scenarios on ready Android15
         if: matrix.api == 35
         run: bash android/scripts/run-environment-api35.sh android/scripts/run-gecko-network.py
+      - name: Preserve owned node process logs even after the first error
+        if: always()
+        run: |
+          mkdir -p "$STUDIO_GECKO_OUTPUT/node-logs"
+          if compgen -G 'android/network-poc/secure-fixture/fixture-*.log' > /dev/null; then
+            cp android/network-poc/secure-fixture/fixture-*.log "$STUDIO_GECKO_OUTPUT/node-logs/"
+          fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -548,6 +555,13 @@ jobs:
       - name: Run the approved local-export scenarios on ready Android15
         if: matrix.api == 35
         run: bash android/scripts/run-environment-api35.sh android/scripts/run-gecko-local-exports.py
+      - name: Preserve owned node process logs even after the first error
+        if: always()
+        run: |
+          mkdir -p "$STUDIO_GECKO_OUTPUT/node-logs"
+          if compgen -G 'android/network-poc/secure-fixture/fixture-*.log' > /dev/null; then
+            cp android/network-poc/secure-fixture/fixture-*.log "$STUDIO_GECKO_OUTPUT/node-logs/"
+          fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:

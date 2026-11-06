@@ -339,6 +339,8 @@ def main():
     finally:
         if acceptance is not None:
             acceptance._input_deadline = None
+            try: acceptance.events()
+            except Exception: (args.output/'native-events-cleanup-error.txt').write_text(traceback.format_exc())
             try: acceptance.hold(False)
             except Exception: (args.output/'hold-cleanup-error.txt').write_text(traceback.format_exc())
             for operation in list(acceptance.pending_gates):
