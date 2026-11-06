@@ -20,6 +20,7 @@ import urllib.request
 import uuid
 
 import environment_upgrade as native
+from android_version import VERSION_CODE, validate_receipt
 
 PACKAGE = native.PACKAGE
 HOST = 'network-fixture.test'
@@ -667,14 +668,15 @@ def main():
         assert native._json(args.fixture.parent/'ready.json')['ready'] is True
         signer = native._json(Path('docs/signing/android-network-beta.json'))['certificateSHA256']
         receipt = native._json(args.receipt)
-        assert receipt['ciOnly'] is True and receipt['package'] == PACKAGE and receipt['versionCode'] == 3000031
-        assert receipt['versionName'] == '3.0.0-alpha.24-beta.7' and receipt['signerSHA256'] == signer
+        version_metadata=validate_receipt(receipt)
+        assert receipt['ciOnly'] is True and receipt['package'] == PACKAGE and receipt['versionCode'] == VERSION_CODE
+        assert receipt['signerSHA256'] == signer
         application_sha = os.environ.get('STUDIO_GECKO_APPLICATION_SHA', os.environ['GITHUB_SHA'])
         assert re.fullmatch(r'[a-f0-9]{40}', application_sha)
         assert receipt['sourceSHA'] == application_sha and receipt['file'] == args.apk.name
         assert receipt['bytes'] == args.apk.stat().st_size and receipt['sha256'] == native._sha(args.apk)
-        apk = native._inspect_apk(args.apk,native._tools(),signer,PACKAGE,3000031)
-        assert apk['versionName']=='3.0.0-alpha.24-beta.7' and apk['sha256'] == receipt['sha256']
+        apk = native._inspect_apk(args.apk,native._tools(),signer,PACKAGE,VERSION_CODE)
+        assert apk['versionName']==version_metadata['versionName'] and apk['sha256'] == receipt['sha256']
         fingerprint = native._run(['openssl','x509','-in',str(args.fixture.parent/'ca.pem'),'-noout','-fingerprint','-sha256']).stdout
         match_ca = re.search(r'Fingerprint=([A-Fa-f0-9:]+)',fingerprint)
         assert match_ca and match_ca[1].replace(':','').lower() == manifest['certificateSha256']
@@ -725,7 +727,7 @@ def main():
         assert final['pageCounts']['/c/a1']==1 and last['document']==first['document']
         assert len(final['uploads'])==2 and {row['operation'] for row in final['uploads']}=={upload_a['operation'],upload_b['operation']}
         proof={'schema':1,'complete':True,'api':api,'transport':args.transport,'engine':'gecko','candidateAPK':apk,
-               'candidateInstalledSHA256':installed,'ciReceipt':receipt,'applicationSourceSHA':application_sha,'originTLS':origin_tls,'uid':uid,'sourceSHA':os.environ.get('GITHUB_SHA'),
+               'candidateInstalledSHA256':installed,'ciReceipt':receipt,'versionMetadata':version_metadata,'applicationSourceSHA':application_sha,'originTLS':origin_tls,'uid':uid,'sourceSHA':os.environ.get('GITHUB_SHA'),
                'picker':picker,'routeA':{'upload':upload_a,'download':download_a},'routeB':{'probe':probe_b,'upload':upload_b,'download':download_b},
                'busySelectRejected':True,'idleSwitchNoReload':True,'idleSwitchWaited':switched['waitIdleRequested'],
                'idleSwitchSelectCalls':switched['networkSelectCalls'],'idleSwitchState':switched,'sameDocument':last['document'],

@@ -7,6 +7,7 @@ import re
 import shutil
 import subprocess
 import zipfile
+from android_version import load_version, assert_apk_version, apk_filename
 
 assert os.environ.get('GITHUB_ACTIONS') == 'true'
 assert not Path('android/keystore.properties').exists(), 'No production signing inputs allowed'
@@ -38,6 +39,11 @@ for flag in ['android:debuggable','android:testOnly']:
 assert identity+'.handoff' in manifest
 config=root/('generated/source/buildConfig/'+kind+'/com/forcemind/chatgpt/profiles/BuildConfig.java')
 source=config.read_text()
+version_metadata=None
+if beta and 'ENVIRONMENT_CLIENT = true' in source:
+    version_metadata=load_version()
+    assert version_metadata['sourceSHA']==os.environ['GITHUB_SHA'], 'Full App packaging must use its actual source SHA'
+    assert_apk_version(badging,version_metadata,source)
 assert 'NETWORK_TEST = false' in source
 assert 'NETWORK_HOME_URL = ""' in source and 'NETWORK_PROBE_URL = ""' in source
 with zipfile.ZipFile(apk) as archive:
@@ -60,15 +66,22 @@ cert=run(tools/'apksigner','verify','--verbose','--print-certs',apk)
 assert 'Number of signers: 1' in cert
 version=re.search(r"versionName='([^']+)'",badging)[1]
 folder=root/('network-beta' if beta else 'network-preview');folder.mkdir(exist_ok=True)
-name='ChatGPT-Studio-'+version+'-android-arm64.apk'
+name=apk_filename(version) if version_metadata is not None else 'ChatGPT-Studio-'+version+'-android-arm64.apk'
 shutil.copyfile(apk,folder/name)
 signer=re.search(r'certificate SHA-256 digest: ([0-9a-fA-F]+)',cert)[1].lower()
 if beta:
     expected=json.loads(Path('docs/signing/android-network-beta.json').read_text())
     assert identity==expected['package'] and signer==expected['certificateSHA256']
 code=int(re.search(r"versionCode='(\d+)'",badging)[1])
-if beta:assert code==int(os.environ['BETA_VERSION_CODE'])
+if beta:
+    if version_metadata is not None:
+        assert code==version_metadata['versionCode']
+        if 'BETA_VERSION_CODE' in os.environ:assert code==int(os.environ['BETA_VERSION_CODE'])
+    else:assert code==int(os.environ['BETA_VERSION_CODE'])
 receipt={'sourceSHA':os.environ['GITHUB_SHA'],'package':identity,'displayName':label,'versionName':version,'versionCode':code,'file':name,'bytes':apk.stat().st_size,'sha256':hashlib.sha256(apk.read_bytes()).hexdigest(),'signerSHA256':signer,'signing':'fixed dedicated beta key; not production' if beta else 'temporary CI test key; not production; future overlay upgrades not guaranteed','ciTrustIncluded':False,'syntheticNodesIncluded':False,'debuggable':False,'testOnly':False,'abi':['arm64-v8a'],'minAndroid':9,'alignment16KiB':True,'phoneInstalled':False,'realServiceTested':False,'publicRelease':False}
+if version_metadata is not None:
+    receipt['versionMetadata']=version_metadata
+    (folder/'android-version.json').write_text(json.dumps(version_metadata,indent=2)+'\n')
 (folder/'receipt.json').write_text(json.dumps(receipt,ensure_ascii=False,indent=2)+'\n')
 (folder/'SHA256SUMS.txt').write_text(receipt['sha256']+'  '+name+'\n')
 (folder/'INSTALL.md').write_text('''# ChatGPT Studio 独立网络测试版

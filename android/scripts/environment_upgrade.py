@@ -1,4 +1,4 @@
-"""Fixed Beta.6 -> Beta.7 preservation proof on fresh, owned GitHub Actions emulators.
+"""Fixed Beta.7 -> date-stamped candidate preservation proof on fresh, owned GitHub Actions emulators.
 
 Importing this module does not invoke adb, create evidence, or alter a device.
 All browser documents in this phase are owned inline .invalid fixtures.
@@ -12,6 +12,7 @@ import re
 import subprocess
 import sys
 import traceback
+from android_version import VERSION_CODE, validate_receipt
 
 PACKAGE = 'com.forcemind.chatgpt.profiles.networkbeta'
 TEST_PACKAGE = PACKAGE + '.test'
@@ -20,8 +21,8 @@ INPUT = Path('android/app/build/environment-client-input')
 OLD = Path('android/app/build/environment-client-baseline')
 OLD_CI = Path('android/app/build/environment-client-ci-baseline')
 EVIDENCE = Path('android/app/build/environment-client-evidence')
-OLD_CODE = 3000030
-NEW_CODE = 3000031
+OLD_CODE = 3000031
+NEW_CODE = VERSION_CODE
 EXPECTED_FILE = '/data/user/0/' + PACKAGE + '/files/environment-upgrade-expected.json'
 
 
@@ -215,11 +216,12 @@ def run_upgrade(target='human'):
         EVIDENCE.mkdir(parents=True, exist_ok=True)
         assert not _shell('pm', 'list', 'packages', PACKAGE).strip(), 'Fresh emulator package must be absent'
         receipt = _json(INPUT / 'receipt.json')
+        version_metadata = validate_receipt(receipt, require_human_filename=True)
         assert receipt['package'] == PACKAGE and receipt['versionCode'] == NEW_CODE
         assert Path(receipt['file']).name == receipt['file'], 'Receipt APK must be a basename'
         human = INPUT / receipt['file']
         assert re.fullmatch(r'[a-f0-9]{64}', receipt['sha256']) and _sha(human) == receipt['sha256']
-        previous = _json(Path('docs/releases/android-environment-beta6-baseline.json'))
+        previous = _json(Path('docs/releases/android-environment-beta7-baseline.json'))
         baseline = previous['receipt']
         assert baseline['package'] == PACKAGE and baseline['versionCode'] == OLD_CODE
         signer = _json(Path('docs/signing/android-network-beta.json'))['certificateSHA256']
@@ -257,6 +259,9 @@ def run_upgrade(target='human'):
         candidate_apk = _inspect_apk(candidate, tools, signer, PACKAGE, NEW_CODE)
         human_apk = _inspect_apk(human, tools, signer, PACKAGE, NEW_CODE)
         test_apk = _inspect_apk(test, tools, signer, TEST_PACKAGE)
+        assert old_apk['versionName'] == baseline['versionName']
+        for descriptor in (candidate_apk, human_apk):
+            assert descriptor['versionName'] == version_metadata['versionName']
         _root_and_block()
         _run(['adb', 'install', str(old)])
         old_installed = _installed(old_hash, 'baseline')
@@ -281,6 +286,7 @@ def run_upgrade(target='human'):
             assert phase['recoveryRecords'] == expected['recoveries']
         proof = {'schema': 1, 'complete': True, 'target': target, 'sourceSHA': os.environ.get('GITHUB_SHA'),
                  'api': api, 'baselineScope': scope, 'fromVersionCode': OLD_CODE, 'toVersionCode': NEW_CODE,
+                 'versionMetadata': version_metadata, 'applicationSourceSHA': receipt['sourceSHA'],
                  'candidateScope': 'synthetic-x86-ci' if target == 'synthetic' else
                                    'original-human-arm64' if api == 35 else 'human-x86-ci-input',
                  'originalHumanCandidateBytesInstalled': target == 'human' and api == 35,

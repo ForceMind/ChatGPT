@@ -5,6 +5,10 @@ on:
     paths: ['.github/workflows/android-environment-client.yml']
   workflow_dispatch:
     inputs:
+      run_acceptance:
+        description: Run the specifically approved synthetic browser acceptance; false builds and checks packages only
+        type: boolean
+        default: false
       reuse_gecko_acceptance:
         description: Reuse the complete six-case Gecko matrix from 42164399330 when its APK and network fixtures are unchanged
         type: boolean
@@ -32,12 +36,23 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    outputs:
+      version_name: ${{ steps.version.outputs.version_name }}
+      version_code: ${{ steps.version.outputs.version_code }}
     env:
       STUDIO_BETA_STORE_PASSWORD: ${{ secrets.STUDIO_BETA_STORE_PASSWORD }}
       STUDIO_BETA_MODE: '1'
-      BETA_VERSION_CODE: '3000031'
+      BETA_VERSION_CODE: '3000032'
     steps:
       - uses: actions/checkout@v4
+      - name: Freeze one Shanghai timestamp for every candidate package
+        id: version
+        if: ${{ !inputs.reuse_application_build && !inputs.reuse_beta7_checks }}
+        run: |
+          python3 android/scripts/android_version.py create --output android/app/build/android-version.json
+          echo "STUDIO_ANDROID_VERSION_FILE=$GITHUB_WORKSPACE/android/app/build/android-version.json" >> "$GITHUB_ENV"
+          echo "version_name=$(python3 android/scripts/android_version.py read --file android/app/build/android-version.json --field versionName)" >> "$GITHUB_OUTPUT"
+          echo "version_code=$(python3 android/scripts/android_version.py read --file android/app/build/android-version.json --field versionCode)" >> "$GITHUB_OUTPUT"
       - name: Require immutable application reuse for the completed Android9 proof
         if: inputs.reuse_android9_acceptance
         run: test '${{ inputs.reuse_application_build }}' = true
@@ -86,7 +101,7 @@ jobs:
           test ! -f android/keystore.properties
           sdkmanager 'platforms;android-36' 'platforms;android-37.0' 'build-tools;35.0.0'
           bash android/gradlew -p android --no-daemon :app:testDebugUnitTest
-          bash android/environment-poc/gradlew -p android --no-daemon -PenvironmentClient -PbetaVersionCode=3000031 -PbetaVersionName=3.0.0-alpha.24-beta.7 :app:lintNetworkBeta :app:assembleNetworkBeta :app:assembleNetworkBetaAndroidTest
+          bash android/environment-poc/gradlew -p android --no-daemon -PenvironmentClient :app:lintNetworkBeta :app:assembleNetworkBeta :app:assembleNetworkBetaAndroidTest
           python3 android/scripts/package-network-preview.py
           python3 android/scripts/check-environment-package.py
           mkdir -p android/app/build/environment-client-input
@@ -95,11 +110,11 @@ jobs:
       - name: Build x86 compatibility and separately marked synthetic target
         if: ${{ !inputs.reuse_application_build && !inputs.reuse_beta7_checks }}
         run: |
-          bash android/environment-poc/gradlew -p android --no-daemon -PenvironmentClient -PbetaAbi=x86_64 -PbetaVersionCode=3000031 -PbetaVersionName=3.0.0-alpha.24-beta.7 :app:assembleNetworkBeta
+          bash android/environment-poc/gradlew -p android --no-daemon -PenvironmentClient -PbetaAbi=x86_64 :app:assembleNetworkBeta
           cp android/app/build/outputs/apk/networkBeta/app-networkBeta.apk android/app/build/environment-client-input/human-x86.apk
-          bash android/environment-poc/gradlew -p android --no-daemon -PenvironmentClient -PenvironmentTest -PbetaAbi=x86_64 -PbetaVersionCode=3000031 -PbetaVersionName=3.0.0-alpha.24-beta.7 :app:assembleNetworkBeta
+          bash android/environment-poc/gradlew -p android --no-daemon -PenvironmentClient -PenvironmentTest -PbetaAbi=x86_64 :app:assembleNetworkBeta
           cp android/app/build/outputs/apk/networkBeta/app-networkBeta.apk android/app/build/environment-client-input/synthetic-x86.apk
-          bash android/environment-poc/gradlew -p android --no-daemon -PenvironmentClient -PenvironmentTest -PenvironmentNetworkTest -PbetaAbi=x86_64 -PbetaVersionCode=3000031 -PbetaVersionName=3.0.0-alpha.24-beta.7 :app:assembleNetworkBeta
+          bash android/environment-poc/gradlew -p android --no-daemon -PenvironmentClient -PenvironmentTest -PenvironmentNetworkTest -PbetaAbi=x86_64 :app:assembleNetworkBeta
           cp android/app/build/outputs/apk/networkBeta/app-networkBeta.apk android/app/build/environment-client-input/gecko-network-x86.apk
           python3 android/scripts/gecko-network-package.py
       - uses: actions/upload-artifact@v4
@@ -197,20 +212,33 @@ jobs:
         env:
           STUDIO_BETA_KEYSTORE_B64: ${{ secrets.STUDIO_BETA_KEYSTORE_B64 }}
         run: python3 android/scripts/restore-beta-signing.py
+      - uses: actions/download-artifact@v4
+        with:
+          name: environment-client-input
+          run-id: 42161704887
+          github-token: ${{ github.token }}
+          path: android/app/build/environment-client-input
+      - name: Preserve the original App timestamp for a test-only rebuild
+        run: |
+          python3 android/scripts/android_version.py from-receipt --receipt android/app/build/environment-client-input/receipt.json --output android/app/build/android-version.json
+          echo "STUDIO_ANDROID_VERSION_FILE=$GITHUB_WORKSPACE/android/app/build/android-version.json" >> "$GITHUB_ENV"
       - name: Compile the acceptance APK without repackaging the frozen application
         run: |
           test ! -f android/keystore.properties
           sdkmanager 'platforms;android-36' 'platforms;android-37.0' 'build-tools;35.0.0'
-          bash android/environment-poc/gradlew -p android --no-daemon -PenvironmentClient -PbetaVersionCode=3000031 -PbetaVersionName=3.0.0-alpha.24-beta.7 :app:assembleNetworkBetaAndroidTest
+          bash android/environment-poc/gradlew -p android --no-daemon -PenvironmentClient :app:assembleNetworkBetaAndroidTest
           mkdir -p android/app/build/api35-acceptance-test
           cp android/app/build/outputs/apk/androidTest/networkBeta/app-networkBeta-androidTest.apk android/app/build/api35-acceptance-test/api35-upgrade-test.apk
           python3 - <<'PY'
           import hashlib,json,os,pathlib,re,subprocess
+          import sys
+          sys.path.insert(0,'android/scripts')
+          from android_version import load_version
           root=pathlib.Path('android/app/build/api35-acceptance-test');apk=root/'api35-upgrade-test.apk'
           cert=subprocess.check_output([os.environ['ANDROID_HOME']+'/build-tools/35.0.0/apksigner','verify','--print-certs',str(apk)],text=True)
           signer=re.search(r'certificate SHA-256 digest: ([0-9a-fA-F]+)',cert)[1].lower()
           assert signer==json.loads(pathlib.Path('docs/signing/android-network-beta.json').read_text())['certificateSHA256']
-          receipt={'file':apk.name,'sha256':hashlib.sha256(apk.read_bytes()).hexdigest(),'sourceSHA':os.environ['GITHUB_SHA'],'applicationSourceSHA':'1f32390332b2d510f561db241f47068a34568a1e','targetVersionCode':3000031,'targetPackage':'com.forcemind.chatgpt.profiles.networkbeta','signerSHA256':signer}
+          receipt={'file':apk.name,'sha256':hashlib.sha256(apk.read_bytes()).hexdigest(),'sourceSHA':os.environ['GITHUB_SHA'],'applicationSourceSHA':'1f32390332b2d510f561db241f47068a34568a1e','targetVersionCode':load_version()['versionCode'],'versionMetadata':load_version(),'targetPackage':'com.forcemind.chatgpt.profiles.networkbeta','signerSHA256':signer}
           (root/'api35-test-receipt.json').write_text(json.dumps(receipt,indent=2)+'\n')
           PY
       - uses: actions/upload-artifact@v4
@@ -223,7 +251,7 @@ jobs:
         run: rm -f "$RUNNER_TEMP/studio-beta.p12"
   accept:
     needs: [build, api35-test-build]
-    if: ${{ always() && !inputs.reuse_beta7_checks && needs.build.result == 'success' && (needs.api35-test-build.result == 'success' || needs.api35-test-build.result == 'skipped') }}
+    if: ${{ always() && github.event_name == 'workflow_dispatch' && inputs.run_acceptance && !inputs.reuse_beta7_checks && needs.build.result == 'success' && (needs.api35-test-build.result == 'success' || needs.api35-test-build.result == 'skipped') }}
     runs-on: ubuntu-latest
     timeout-minutes: 40
     strategy:
@@ -257,15 +285,15 @@ jobs:
       - uses: actions/download-artifact@v4
         if: matrix.api == 35
         with:
-          name: ChatGPT-Studio-Beta6-Tab-Navigation-Candidate
-          run-id: 42107129970
+          name: ChatGPT-Studio-Beta7-Gecko-Network-Candidate
+          run-id: 42170066469
           github-token: ${{ github.token }}
           path: android/app/build/environment-client-baseline
       - uses: actions/download-artifact@v4
         if: matrix.api == 28
         with:
           name: environment-client-input
-          run-id: 42090385251
+          run-id: 42161704887
           github-token: ${{ github.token }}
           path: android/app/build/environment-client-ci-baseline
       - uses: actions/download-artifact@v4
@@ -327,7 +355,7 @@ jobs:
           retention-days: 14
           path: android/app/build/environment-client-evidence/
   gecko-network:
-    if: ${{ !inputs.reuse_gecko_acceptance }}
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_acceptance && !inputs.reuse_gecko_acceptance }}
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 35
@@ -428,7 +456,7 @@ jobs:
           retention-days: 14
           path: android/app/build/gecko-network-evidence/
   reuse-human:
-    if: inputs.reuse_application_build
+    if: inputs.run_acceptance && inputs.reuse_application_build
     needs: build
     runs-on: ubuntu-latest
     strategy:
@@ -456,7 +484,7 @@ jobs:
           retention-days: 14
           path: evidence/
   reuse-android9:
-    if: inputs.reuse_application_build && inputs.reuse_android9_acceptance
+    if: inputs.run_acceptance && inputs.reuse_application_build && inputs.reuse_android9_acceptance
     needs: build
     runs-on: ubuntu-latest
     steps:
@@ -489,7 +517,7 @@ jobs:
           retention-days: 14
           path: evidence/
   reuse-beta7:
-    if: inputs.reuse_beta7_checks
+    if: inputs.run_acceptance && inputs.reuse_beta7_checks
     needs: build
     runs-on: ubuntu-latest
     strategy:
@@ -519,7 +547,7 @@ jobs:
           retention-days: 14
           path: evidence/
   reuse-gecko:
-    if: inputs.reuse_gecko_acceptance
+    if: inputs.run_acceptance && inputs.reuse_gecko_acceptance
     needs: build
     runs-on: ubuntu-latest
     strategy:
@@ -561,7 +589,7 @@ jobs:
           path: evidence/
   deliver:
     needs: [accept, gecko-network, reuse-human, reuse-android9, reuse-beta7, reuse-gecko]
-    if: ${{ always() && (needs.accept.result == 'success' || needs.reuse-beta7.result == 'success') && (needs.gecko-network.result == 'success' || needs.reuse-gecko.result == 'success') && (needs.reuse-human.result == 'success' || needs.reuse-human.result == 'skipped') && (needs.reuse-android9.result == 'success' || needs.reuse-android9.result == 'skipped') }}
+    if: ${{ always() && github.event_name == 'workflow_dispatch' && inputs.run_acceptance && (needs.accept.result == 'success' || needs.reuse-beta7.result == 'success') && (needs.gecko-network.result == 'success' || needs.reuse-gecko.result == 'success') && (needs.reuse-human.result == 'success' || needs.reuse-human.result == 'skipped') && (needs.reuse-android9.result == 'success' || needs.reuse-android9.result == 'skipped') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -594,6 +622,6 @@ jobs:
         run: python3 android/scripts/deliver-gecko-network.py
       - uses: actions/upload-artifact@v4
         with:
-          name: ChatGPT-Studio-Beta7-Gecko-Network-Candidate
+          name: ChatGPT-Studio-Android-${{ needs.build.outputs.version_name }}-Candidate
           retention-days: 14
           path: candidate/

@@ -1,6 +1,7 @@
 """Receipt for the separately marked CI target; never distribute it as a human APK."""
 import hashlib, json, os, re, subprocess, zipfile
 from pathlib import Path
+from android_version import load_version, assert_apk_version
 
 assert os.environ.get('GITHUB_ACTIONS') == 'true'
 root = Path('android/app/build')
@@ -11,7 +12,9 @@ for flag in ('ENVIRONMENT_CLIENT', 'ENVIRONMENT_TEST', 'ENVIRONMENT_NETWORK_TEST
 tools = Path(os.environ['ANDROID_HOME']) / 'build-tools/35.0.0'
 badging = subprocess.check_output([str(tools/'aapt2'), 'dump', 'badging', str(apk)], text=True)
 assert "name='com.forcemind.chatgpt.profiles.networkbeta'" in badging
-assert "versionCode='3000031'" in badging and "versionName='3.0.0-alpha.24-beta.7'" in badging
+version_metadata=load_version()
+assert version_metadata['sourceSHA']==os.environ['GITHUB_SHA']
+assert_apk_version(badging,version_metadata,source)
 cert = subprocess.check_output([str(tools/'apksigner'), 'verify', '--print-certs', str(apk)], text=True)
 signer = re.search(r'certificate SHA-256 digest: ([0-9a-fA-F]+)', cert)[1].lower()
 assert signer == json.loads(Path('docs/signing/android-network-beta.json').read_text())['certificateSHA256']
@@ -31,7 +34,7 @@ with zipfile.ZipFile(apk) as archive:
     assert b'EnvironmentNetworkFilesProvider' in dex and b'GeneratedNetworkTrust' in dex
 receipt = {'schema':1,'file':apk.name,'bytes':apk.stat().st_size,
            'sha256':hashlib.sha256(apk.read_bytes()).hexdigest(),'sourceSHA':os.environ['GITHUB_SHA'],
-           'package':'com.forcemind.chatgpt.profiles.networkbeta','versionCode':3000031,
-           'versionName':'3.0.0-alpha.24-beta.7','signerSHA256':signer,'ciOnly':True}
+           'package':'com.forcemind.chatgpt.profiles.networkbeta','versionCode':version_metadata['versionCode'],
+           'versionName':version_metadata['versionName'],'versionMetadata':version_metadata,'signerSHA256':signer,'ciOnly':True}
 (apk.parent/'gecko-network-receipt.json').write_text(json.dumps(receipt, indent=2)+'\n')
 print(json.dumps(receipt))

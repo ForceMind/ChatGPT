@@ -1,6 +1,7 @@
 """Human environment package constraints, in Actions only. Never starts an app."""
 import json, os, subprocess, zipfile
 from pathlib import Path
+from android_version import load_version, assert_apk_version
 assert os.environ.get('GITHUB_ACTIONS') == 'true'
 root=Path('android/app/build')
 source=(root/'generated/source/buildConfig/networkBeta/com/forcemind/chatgpt/profiles/BuildConfig.java').read_text()
@@ -8,6 +9,10 @@ assert 'ENVIRONMENT_CLIENT = true' in source
 assert 'ENVIRONMENT_TEST = false' in source and 'ENVIRONMENT_HOME_URL = ""' in source
 assert 'ENVIRONMENT_NETWORK_TEST = false' in source and 'NETWORK_TEST = false' in source
 apk=root/'outputs/apk/networkBeta/app-networkBeta.apk'
+metadata=load_version()
+assert metadata['sourceSHA']==os.environ['GITHUB_SHA']
+badging=subprocess.check_output([str(Path(os.environ['ANDROID_HOME'])/'build-tools/35.0.0/aapt2'),'dump','badging',str(apk)],text=True)
+assert_apk_version(badging,metadata,source)
 resources=subprocess.check_output([str(Path(os.environ['ANDROID_HOME'])/'build-tools/35.0.0/aapt2'),'dump','resources',str(apk)],text=True)
 assert 'raw/studio_environment_network_ci_ca' not in resources and 'xml/studio_environment_network_security' not in resources
 with zipfile.ZipFile(apk) as z:

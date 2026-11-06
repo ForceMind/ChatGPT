@@ -1,5 +1,26 @@
 plugins { id 'com.android.application' }
 
+// One Actions-generated minute is shared by every candidate ABI and CI mode.
+// Never read the clock during Gradle configuration or reconstruct a reused version.
+def androidVersionPath = project.findProperty('androidVersionFile') ?: System.getenv('STUDIO_ANDROID_VERSION_FILE')
+def androidCandidateVersion = null
+if (androidVersionPath) {
+    def versionFile = new File(androidVersionPath.toString())
+    if (!versionFile.isAbsolute()) versionFile = new File(rootProject.projectDir.parentFile, androidVersionPath.toString())
+    if (!versionFile.isFile()) throw new GradleException('Missing shared Android version metadata')
+    androidCandidateVersion = new groovy.json.JsonSlurper().parse(versionFile)
+    if (androidCandidateVersion.schema != 1 || androidCandidateVersion.versionCode != 3000032 || androidCandidateVersion.timeZone != 'Asia/Shanghai'
+            || !(androidCandidateVersion.versionName ==~ /\d{4}\.\d{2}\.\d{2}-\d{4}/) || !(androidCandidateVersion.sourceSHA ==~ /[a-f0-9]{40}/))
+        throw new GradleException('Invalid Android candidate date version metadata')
+    def formatter = java.time.format.DateTimeFormatter.ofPattern('uuuu.MM.dd-HHmm').withResolverStyle(java.time.format.ResolverStyle.STRICT)
+    java.time.LocalDateTime.parse(androidCandidateVersion.versionName, formatter)
+    if (project.hasProperty('betaVersionCode') && project.property('betaVersionCode').toInteger() != androidCandidateVersion.versionCode
+            || project.hasProperty('betaVersionName') && project.property('betaVersionName') != androidCandidateVersion.versionName)
+        throw new GradleException('Legacy beta properties differ from shared Android version metadata')
+} else if (project.hasProperty('environmentClient')) {
+    throw new GradleException('Environment candidates require -PandroidVersionFile or STUDIO_ANDROID_VERSION_FILE')
+}
+
 def signingFile = rootProject.file('keystore.properties')
 def signing = new Properties()
 if (signingFile.exists()) signingFile.withInputStream { signing.load(it) }
@@ -13,8 +34,8 @@ android {
         applicationId 'com.forcemind.chatgpt.profiles'
         minSdk 28
         targetSdk 36
-        versionCode 3000024
-        versionName '3.0.0-alpha.24-candidate.1'
+        versionCode(androidCandidateVersion != null ? androidCandidateVersion.versionCode : 3000024)
+        versionName(androidCandidateVersion != null ? androidCandidateVersion.versionName : '3.0.0-alpha.24-candidate.1')
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
         buildConfigField 'boolean', 'NETWORK_TEST', 'false'
         buildConfigField 'String', 'NETWORK_HOME_URL', '""'
@@ -53,7 +74,7 @@ android {
         networkBeta {
             initWith release
             applicationIdSuffix '.networkbeta'
-            versionNameSuffix '-beta.1'
+            versionNameSuffix(androidCandidateVersion != null ? '' : '-beta.1')
             signingConfig System.getenv('STUDIO_BETA_KEYSTORE_PATH') ? signingConfigs.networkBetaKey : null
             debuggable false
             matchingFallbacks = ['release']
@@ -153,8 +174,8 @@ if (project.hasProperty('networkIntegration')) {
 // Only the isolated long-lived beta has its own monotonically increasing code.
 androidComponents.onVariants(androidComponents.selector().withBuildType('networkBeta')) { variant ->
     variant.outputs.each { output ->
-        output.versionCode.set((project.findProperty('betaVersionCode') ?: '3000025').toInteger())
-        output.versionName.set(project.findProperty('betaVersionName') ?: '3.0.0-alpha.24-beta.1')
+        output.versionCode.set(androidCandidateVersion != null ? androidCandidateVersion.versionCode : (project.findProperty('betaVersionCode') ?: '3000025').toInteger())
+        output.versionName.set(androidCandidateVersion != null ? androidCandidateVersion.versionName : (project.findProperty('betaVersionName') ?: '3.0.0-alpha.24-beta.1'))
     }
 }
 tasks.matching { it.name == 'preNetworkBetaBuild' }.configureEach {

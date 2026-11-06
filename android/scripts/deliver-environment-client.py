@@ -1,6 +1,7 @@
 """Deliver the unchanged human APK only after both native upgrades and full client acceptance."""
 import hashlib,json,os,shutil
 from pathlib import Path
+from android_version import validate_receipt
 assert os.environ.get('GITHUB_ACTIONS')=='true'
 root=Path('input');receipt=json.loads((root/'receipt.json').read_text())
 synthetic_hash=hashlib.sha256((root/'synthetic-x86.apk').read_bytes()).hexdigest()
@@ -11,7 +12,9 @@ if (root/'api35-test-receipt.json').exists():
     assert test35['file']=='api35-upgrade-test.apk' and test35['applicationSourceSHA']==receipt['sourceSHA']
     test35_hash=hashlib.sha256((root/test35['file']).read_bytes()).hexdigest()
     assert test35_hash==test35['sha256'] and test35['signerSHA256']==receipt['signerSHA256']
-assert receipt['versionName']=='3.0.0-alpha.24-beta.7' and receipt['versionCode']==3000031
+version_metadata=validate_receipt(receipt,require_human_filename=True)
+assert receipt['signerSHA256']==json.loads(Path('docs/signing/android-network-beta.json').read_text())['certificateSHA256']
+assert json.loads((root/'android-version.json').read_text())==version_metadata
 assert receipt['package']=='com.forcemind.chatgpt.profiles.networkbeta'
 proofs=[]
 for api in (28,35):
@@ -19,6 +22,11 @@ for api in (28,35):
     engine=Path(f'acceptance/synthetic/environment-client-{api}-synthetic/functional.json')
     a,b=json.loads(human.read_text()),json.loads(engine.read_text())
     assert a['complete'] and b['complete'] and a['api']==b['api']==api
+    for native_proof in (a,b['legacyUpgrade']):
+        assert native_proof['fromVersionCode']==3000031 and native_proof['toVersionCode']==version_metadata['versionCode']
+        assert native_proof['versionMetadata']==version_metadata and native_proof['applicationSourceSHA']==receipt['sourceSHA']
+        for descriptor in (native_proof['humanAPK'],native_proof['candidateAPK']):
+            assert descriptor['versionCode']==version_metadata['versionCode'] and descriptor['versionName']==version_metadata['versionName']
     assert b['candidateScope']=='synthetic-x86-ci' and not b['originalHumanCandidateBytesInstalled']
     assert b['candidateInstalledSHA256']==synthetic_hash and b['legacyUpgrade']['testAPK']['sha256']==(test35_hash if api==35 else test_hash)
     assert b['legacyUpgrade']['humanCandidateSHA256']==receipt['sha256']
@@ -49,7 +57,7 @@ apk=root/receipt['file'];assert apk.stat().st_size==receipt['bytes'] and hashlib
 assert proofs[1]['human']['originalHumanCandidateBytesInstalled']
 assert proofs[1]['human']['candidateInstalledSHA256']==receipt['sha256']
 out=Path('candidate');out.mkdir()
-for name in (receipt['file'],'receipt.json','SHA256SUMS.txt','LICENSE','GECKO-NOTICE.txt','network-core-dependencies.json'):
+for name in (receipt['file'],'receipt.json','SHA256SUMS.txt','LICENSE','GECKO-NOTICE.txt','network-core-dependencies.json','android-version.json'):
     shutil.copyfile(root/name,out/name)
 shutil.copytree(root/'licenses',out/'licenses')
 shutil.copyfile('docs/android-environment-client-install.md',out/'INSTALL.md')

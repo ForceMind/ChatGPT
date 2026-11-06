@@ -1,13 +1,18 @@
 """Add Gecko network proof only after every real transport and OS tuple passes."""
 import hashlib, json, os, shutil
 from pathlib import Path
+from android_version import validate_receipt
 
 assert os.environ.get('GITHUB_ACTIONS') == 'true'
 root=Path('input');out=Path('candidate')
 assert out.is_dir(), 'Existing upgrade and UI/recovery gate must finish first'
 receipt=json.loads((root/'gecko-network-receipt.json').read_text())
 apk=root/'gecko-network-x86.apk'
-assert receipt['ciOnly'] and receipt['versionCode']==3000031
+version_metadata=validate_receipt(receipt)
+assert receipt['ciOnly'] is True
+human=json.loads((root/'receipt.json').read_text());assert validate_receipt(human,require_human_filename=True)==version_metadata
+assert receipt['signerSHA256']==human['signerSHA256']==json.loads(Path('docs/signing/android-network-beta.json').read_text())['certificateSHA256']
+assert apk.stat().st_size==receipt['bytes'] and receipt['file']==apk.name
 assert hashlib.sha256(apk.read_bytes()).hexdigest()==receipt['sha256']
 proofs=[]
 for api in (28,35):
@@ -17,6 +22,7 @@ for api in (28,35):
         assert proof['schema']==1 and proof['complete'] and proof['api']==api and proof['transport']==transport
         assert proof['engine']=='gecko' and proof['candidateInstalledSHA256']==receipt['sha256']
         assert proof['ciReceipt']==receipt and proof['applicationSourceSHA']==receipt['sourceSHA']
+        assert proof['candidateAPK']['versionCode']==version_metadata['versionCode'] and proof['candidateAPK']['versionName']==version_metadata['versionName']
         assert proof['idleSwitchWaited'] is True and proof['idleSwitchSelectCalls']==1
         assert proof['idleSwitchState']['waitIdleRequested'] is True and proof['idleSwitchState']['networkSelectCalls']==1
         schedule=proof['nativeInputSchedule'];prefixes=proof['nativePrefixReceipts']
