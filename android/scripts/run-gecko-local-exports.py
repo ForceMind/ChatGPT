@@ -17,6 +17,7 @@ import urllib.parse
 import uuid
 
 from android_version import VERSION_CODE, validate_receipt
+from native_ax import NativeAXMixin
 
 _spec = importlib.util.spec_from_file_location('owned_network_acceptance', Path(__file__).with_name('run-gecko-network.py'))
 network = importlib.util.module_from_spec(_spec)
@@ -26,7 +27,7 @@ PACKAGE, HOST, FILES = network.PACKAGE, network.HOST, common.FILES
 LABELS = {'html': '导出 HTML', 'png': '导出 PNG', 'data': '导出 data 文本'}
 
 
-class LocalExportsAcceptance(network.NetworkAcceptance):
+class LocalExportsAcceptance(NativeAXMixin, network.NetworkAcceptance):
     def __init__(self, api, uid, fixture, output):
         super().__init__(api, uid, fixture, output, 'raw')
         self.export_operations = []

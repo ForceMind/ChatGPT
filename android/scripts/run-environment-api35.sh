@@ -57,7 +57,7 @@ if grep -Eq 'ANR in com.google.android.apps.nexuslauncher' "$studio_evidence/emu
   exit 1
 fi
 adb push android/app/build/environment-ascii/input.jar /data/local/tmp/studio-poc-ascii-input.jar
-if [ "$studio_validation_script" = android/scripts/run-gecko-handoff.py ]; then
+if [ "$studio_validation_script" = android/scripts/run-gecko-handoff.py ] || [ "$studio_validation_script" = android/scripts/run-gecko-local-exports.py ]; then
   adb push android/app/build/environment-ui-snapshot/input.jar /data/local/tmp/studio-poc-ui-snapshot.jar
 fi
 python3 "$studio_validation_script"

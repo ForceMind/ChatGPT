@@ -9,6 +9,7 @@ import android.os.Looper;
 import android.os.SystemClock;
 import android.util.Xml;
 import android.view.accessibility.AccessibilityNodeInfo;
+import android.view.accessibility.AccessibilityWindowInfo;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -17,13 +18,15 @@ import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.Locale;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.json.JSONObject;
+import org.json.JSONArray;
 import org.xmlpull.v1.XmlSerializer;
 
-/** Owned emulator shell only. One new connection, one active-window read, no UI actions or idle wait. */
+/** Owned emulator shell only. One new connection and an input-focused application root, no actions. */
 public final class UiSnapshot {
     private static final String TARGET="com.forcemind.chatgpt.profiles.networkbeta";
     private static final AtomicBoolean EMITTED=new AtomicBoolean();
@@ -31,6 +34,10 @@ public final class UiSnapshot {
     private static volatile String request="",phase="guard";
     private static volatile long started=SystemClock.elapsedRealtime(),captured;
     private static volatile int count,window=-1;
+    private static volatile int serviceFlags;
+    private static volatile boolean windowsComplete,packagesComplete;
+    private static volatile String windowsJson="[]",activeJson="null",chosenJson="null";
+    private static volatile String rootPackage="";
     private static long deadline;
     private static void check()throws IOException{
         if(SystemClock.elapsedRealtime()>=deadline)throw new IOException("AX deadline expired");
@@ -47,6 +54,12 @@ public final class UiSnapshot {
                 .put("complete",complete).put("available",complete).put("api",Build.VERSION.SDK_INT)
                 .put("uid",android.os.Process.myUid()).put("pid",android.os.Process.myPid()).put("qemu",qemu)
                 .put("package",TARGET).put("requestId",request).put("phase",phase).put("windowId",window)
+                .put("selection","unique-input-focused-application").put("rootWindowId",window)
+                .put("rootPackage",rootPackage).put("windows",new JSONArray(windowsJson))
+                .put("activeRoot",activeJson.equals("null")?JSONObject.NULL:new JSONObject(activeJson))
+                .put("chosenWindow",chosenJson.equals("null")?JSONObject.NULL:new JSONObject(chosenJson))
+                .put("windowsMetadataComplete",windowsComplete).put("windowPackagesComplete",packagesComplete)
+                .put("serviceFlags",serviceFlags)
                 .put("startedElapsedMillis",started).put("capturedElapsedMillis",captured)
                 .put("finishedElapsedMillis",SystemClock.elapsedRealtime()).put("nodeCount",count)
                 .put("waitForIdle",false).put("actionsPerformed",0).put("screenshots",false)
@@ -77,6 +90,7 @@ public final class UiSnapshot {
         xml.startTag("","node");attribute(xml,"index",Integer.toString(index));attribute(xml,"text",item.isPassword()?"":item.getText());
         attribute(xml,"resource-id",item.getViewIdResourceName());attribute(xml,"class",item.getClassName());
         attribute(xml,"package",item.getPackageName());attribute(xml,"content-desc",item.getContentDescription());
+        attribute(xml,"window-id",Integer.toString(item.getWindowId()));
         flag(xml,"checkable",item.isCheckable());flag(xml,"checked",item.isChecked());flag(xml,"clickable",item.isClickable());
         flag(xml,"enabled",item.isEnabled());flag(xml,"focusable",item.isFocusable());flag(xml,"focused",item.isFocused());
         flag(xml,"scrollable",item.isScrollable());flag(xml,"long-clickable",item.isLongClickable());flag(xml,"password",item.isPassword());
@@ -122,6 +136,7 @@ public final class UiSnapshot {
             }
         }},"OwnedAxDeadline");watchdog.setDaemon(true);watchdog.start();
         UiAutomation automation=null;HandlerThread callbacks=null;AccessibilityNodeInfo root=null;
+        List<AccessibilityWindowInfo> windows=null;
         String xml=null,error="",failedPhase="";
         try{
             int uid=android.os.Process.myUid();
@@ -141,12 +156,46 @@ public final class UiSnapshot {
             automation=(UiAutomation)UiAutomation.class.getConstructor(Looper.class,connectionType).newInstance(callbacks.getLooper(),connection);
             UiAutomation.class.getMethod("connect",int.class).invoke(automation,UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES);
             check();AccessibilityServiceInfo info=automation.getServiceInfo();if(info==null)throw new IOException("AX service unavailable");
-            info.flags|=AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS|AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS;
+            info.flags|=AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS|AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS
+                |AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS;
             info.packageNames=new String[]{TARGET};automation.setServiceInfo(info);
-            phase="root";root=automation.getRootInActiveWindow();check();
-            if(root==null||!root.isVisibleToUser())throw new IOException("Active AX root unavailable");
-            if(!TARGET.contentEquals(root.getPackageName()==null?"":root.getPackageName()))throw new SecurityException("Non-owned active window refused");
-            window=root.getWindowId();captured=SystemClock.elapsedRealtime();phase="serialize";
+            AccessibilityServiceInfo observed=automation.getServiceInfo();if(observed==null)throw new IOException("AX service flags unavailable");
+            serviceFlags=observed.flags;
+            if((serviceFlags&AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS)==0)throw new IOException("Interactive AX windows unavailable");
+            phase="windows";windows=automation.getWindows();check();
+            if(windows==null||windows.isEmpty()||windows.size()>64)throw new IOException("AX window list unavailable");
+            JSONArray metadata=new JSONArray();int focusedApplications=0;
+            for(AccessibilityWindowInfo item:windows){
+                check();metadata.put(new JSONObject().put("id",item.getId()).put("type",item.getType())
+                    .put("isFocused",item.isFocused()).put("isActive",item.isActive())
+                    .put("allowedPackage","").put("packageQueried",false).put("rootPresent",false));
+                if(item.getType()==AccessibilityWindowInfo.TYPE_APPLICATION&&item.isFocused())focusedApplications++;
+            }
+            windowsJson=metadata.toString();windowsComplete=true;
+            // Retain active-window facts, but never use expected account labels to choose a root.
+            phase="active-root";AccessibilityNodeInfo active=automation.getRootInActiveWindow();check();
+            try{activeJson=new JSONObject().put("id",active==null?-1:active.getWindowId()).put("rootPresent",active!=null)
+                .put("allowedPackage",active!=null&&TARGET.contentEquals(active.getPackageName()==null?"":active.getPackageName())?TARGET:"").toString();}
+            finally{if(active!=null)active.recycle();}
+            phase="focused-root";
+            for(int i=0;i<windows.size();i++){
+                check();AccessibilityWindowInfo item=windows.get(i);AccessibilityNodeInfo candidate=item.getRoot();check();
+                try{
+                    boolean allowed=candidate!=null&&TARGET.contentEquals(candidate.getPackageName()==null?"":candidate.getPackageName());
+                    JSONObject facts=metadata.getJSONObject(i);facts.put("packageQueried",true).put("rootPresent",candidate!=null)
+                        .put("allowedPackage",allowed?TARGET:"");
+                    if(candidate!=null)facts.put("rootWindowId",candidate.getWindowId());
+                    windowsJson=metadata.toString();
+                    if(item.getType()==AccessibilityWindowInfo.TYPE_APPLICATION&&item.isFocused()&&allowed){
+                        if(root!=null||focusedApplications!=1)throw new IOException("Focused application AX window ambiguous");
+                        if(candidate.getWindowId()!=item.getId())throw new IOException("Focused AX root window differs");
+                        root=candidate;candidate=null;window=item.getId();rootPackage=TARGET;chosenJson=facts.toString();
+                    }
+                }finally{if(candidate!=null)candidate.recycle();}
+            }
+            packagesComplete=true;
+            if(focusedApplications!=1||root==null||!root.isVisibleToUser())throw new IOException("Owned input-focused application root unavailable");
+            captured=SystemClock.elapsedRealtime();phase="serialize";
             StringWriter buffer=new StringWriter();XmlSerializer serializer=Xml.newSerializer();serializer.setOutput(buffer);
             serializer.startDocument("UTF-8",true);serializer.startTag("","hierarchy");attribute(serializer,"window-id",Integer.toString(window));
             node(serializer,root,0,0);serializer.endTag("","hierarchy");serializer.endDocument();serializer.flush();
@@ -156,6 +205,7 @@ public final class UiSnapshot {
             error=cause.getClass().getName();failedPhase=phase;xml=null;
         }finally{
             if(root!=null)root.recycle();
+            if(windows!=null)for(AccessibilityWindowInfo item:windows)item.recycle();
             if(automation!=null){
                 phase="disconnect";
                 try{UiAutomation.class.getMethod("disconnect").invoke(automation);}

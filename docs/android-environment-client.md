@@ -52,6 +52,10 @@
 
 同轮 Android15 在首个 AX helper 读取时失败，独立 app_process 的主 Looper 未准备，AccessibilityInteractionClient 回调创建Handler崩溃，无有效回执；App业务没有开始。helper现准备并运行主Looper，只读capture在工作线程，仍受同一watchdog/预算、包/仿真器/UID guard与零动作限制；异常明确回unavailable。真实完整五场景仍待下一轮，不以Android9首例或AX编译成功替代交付。
 
+`42244864474` / `d8e7c9bc15efd3181b64d8756641ed04db031f12` 的两端首例均有一次真实发送、891字 SHA、完整ACK和submitted。helper两端也确有新进程真树回执，但状态等待15秒取到A/A0，而workspace仍是B/任务tab；activeWindow不等于已证明的输入焦点，不能据此改App窗口或按预期账号拼树。固定AOSP9/15的getWindows/isFocused/TYPE_APPLICATION/getRoot支持严格读取实际唯一input-focused允许包窗口，helper现同时保存active与focused事实；如真实focus是A就仍返回A。Handoff及本地导出两个实际消费者复用纯 `native_ax.py`，原read-only预算和业务断言保留。
+
+同轮本地导出35已过在线/离线六格式及HTTP，在EOF暂停的前台B核对处遇原uiautomator idle等待超时；本次只更换AX来源，18秒操作截止、20秒EOF控制、9operation与字节/归属/取消不改。human两端及六组网络通过；synthetic35在SDK Emulator下载准备时报ZipFile unknown archive，App尚未运行；synthetic28仍以本轮实际结果为准。以上原始日志/产物保留，下一轮不把缺失focus或SDK准备失败记成业务通过。
+
 ## 最新交付：2026.11.06-2024 本地导出候选
 
 第一阶段已完成，第二阶段的新 Gecko 资产/Skill 自动任务继续开发，不以本阶段代替完整主线交付。

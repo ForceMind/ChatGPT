@@ -29,6 +29,15 @@ def native_node(value,package,api):
     assert source['api']==api and source['uid']==2000 and type(source['pid']) is int and source['pid']>0
     identifier(source['requestId']);assert re.fullmatch(r'[a-f0-9]{64}',source['xmlSHA256'])
     assert source['waitForIdle'] is False
+    assert source['selection']=='unique-input-focused-application' and source['rootPackage']==package
+    chosen=source['chosenWindow']
+    assert chosen['type']==1 and chosen['isFocused'] is True and chosen['allowedPackage']==package
+    assert chosen['rootPresent'] is True and chosen['packageQueried'] is True
+    assert chosen['id']==chosen['rootWindowId']==source['rootWindowId']==int(value['window-id'])>=0
+    windows=source['windows'];assert len({row['id'] for row in windows})==len(windows)
+    focused=[row for row in windows if row['type']==1 and row['isFocused'] is True]
+    assert focused==[chosen] and all(row['allowedPackage'] in ('',package) for row in windows)
+    active=source['activeRoot'];assert active['allowedPackage'] in ('',package) and type(active['id']) is int
 
 
 def verify(proof,api,receipt,metadata,definitions,skill):

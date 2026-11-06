@@ -542,6 +542,11 @@ jobs:
           mkdir -p android/app/build/environment-ascii/classes
           javac --release 8 -classpath "$ANDROID_HOME/platforms/android-36/android.jar" -d android/app/build/environment-ascii/classes android/scripts/android/AsciiInput.java android/scripts/android/AsciiInputStream.java
           "$ANDROID_HOME/build-tools/35.0.0/d8" --min-api 28 --lib "$ANDROID_HOME/platforms/android-36/android.jar" --output android/app/build/environment-ascii/input.jar android/app/build/environment-ascii/classes/com/forcemind/chatgpt/pocinput/*.class
+      - name: Compile the shared read-only native AX helper outside the APK
+        run: |
+          mkdir -p android/app/build/environment-ui-snapshot/classes
+          javac --release 8 -classpath "$ANDROID_HOME/platforms/android-36/android.jar" -d android/app/build/environment-ui-snapshot/classes android/scripts/android/UiSnapshot.java
+          "$ANDROID_HOME/build-tools/35.0.0/d8" --min-api 28 --lib "$ANDROID_HOME/platforms/android-36/android.jar" --output android/app/build/environment-ui-snapshot/input.jar android/app/build/environment-ui-snapshot/classes/com/forcemind/chatgpt/pocinput/UiSnapshot*.class
       - name: Compile the existing Android9 touch helper
         if: matrix.api == 28
         run: |
@@ -561,6 +566,7 @@ jobs:
             python3 android/network-poc/scripts/install-webview.py --provider android/app/build/environment-provider-input/provider --output android/app/build/gecko-local-exports-evidence/provider
             adb push android/app/build/environment-ascii/input.jar /data/local/tmp/studio-poc-ascii-input.jar
             adb push android/app/build/environment-touch/input.jar /data/local/tmp/studio-poc-input.jar
+            adb push android/app/build/environment-ui-snapshot/input.jar /data/local/tmp/studio-poc-ui-snapshot.jar
             python3 android/scripts/run-gecko-local-exports.py
       - name: Run the approved local-export scenarios on ready Android15
         if: matrix.api == 35

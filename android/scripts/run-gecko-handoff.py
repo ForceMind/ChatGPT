@@ -14,10 +14,10 @@ import traceback
 import urllib.parse
 import urllib.request
 import uuid
-import xml.etree.ElementTree as ET
 import zipfile
 
 from android_version import VERSION_CODE, validate_receipt
+from native_ax import NativeAXMixin
 
 _spec=importlib.util.spec_from_file_location('owned_handoff_network',Path(__file__).with_name('run-gecko-network.py'))
 network=importlib.util.module_from_spec(_spec);_spec.loader.exec_module(network)
@@ -25,88 +25,12 @@ native,common=network.native,network.common
 PACKAGE,HOST,FILES=network.PACKAGE,network.HOST,network.common.FILES
 
 
-class HandoffAcceptance(network.NetworkAcceptance):
+class HandoffAcceptance(NativeAXMixin,network.NetworkAcceptance):
     def __init__(self,api,uid,fixture,output):
         super().__init__(api,uid,fixture,output,'raw')
         self.pending_tasks=set();self.cases=[];self.reviews={}
         self._ui_read_deadline=None
         self.last_ui_receipt=None
-
-    def wait(self,description,sample,condition,timeout=75,interval=.6):
-        previous=self._ui_read_deadline
-        deadline=time.monotonic()+timeout
-        self._ui_read_deadline=min(previous,deadline) if previous is not None else deadline
-        try:return super().wait(description,sample,condition,timeout=timeout,interval=interval)
-        finally:self._ui_read_deadline=previous
-
-    def ui(self,deadline=None):
-        # A new app_process and UiAutomation connection per read; never wait for page idle.
-        limits=[time.monotonic()+25]
-        if deadline is not None:limits.append(deadline)
-        if self._ui_read_deadline is not None:limits.append(self._ui_read_deadline)
-        deadline=min(limits)
-        def budget(cap):
-            remaining=deadline-time.monotonic()
-            if remaining<=0:raise TimeoutError('Fresh native AX exceeded its current read-only deadline')
-            return self.input_timeout(min(cap,remaining))
-        request=str(uuid.uuid4())
-        self.sequence+=1;receipt_path=self.output/(f'{self.sequence:04d}-ui-snapshot.json')
-        receipt={'available':False,'source':'fresh-app-process-ui-automation','requestId':request}
-        self.last_ui_receipt=receipt_path.name
-        try:
-            duration=max(1,int(budget(25)*1000))
-            command=['adb','shell','su','2000','env','GITHUB_ACTIONS=true',
-                'CLASSPATH=/data/local/tmp/studio-poc-ui-snapshot.jar','app_process','/system/bin',
-                'com.forcemind.chatgpt.pocinput.UiSnapshot',PACKAGE,request,str(duration)]
-            output=self.command(command,timeout=budget(25),check=False)
-            execution=native._json(self.output/(f'{self.sequence:04d}-command.json'))
-            result=json.loads(output);receipt['helper']={key:value for key,value in result.items() if key!='xml'}
-            receipt['exitCode']=execution['exitCode']
-            assert result['schema']==1 and result['provider']=='ci-readonly-active-window-ax'
-            assert result['requestId']==request and result['api']==self.api and result['uid']==2000 and result['qemu'] is True
-            assert result['package']==PACKAGE and type(result['pid']) is int and result['pid']>0
-            assert result['waitForIdle'] is False and result['actionsPerformed']==0 and result['screenshots'] is False
-            if execution['exitCode']!=0 or result['complete'] is not True or result['available'] is not True:
-                receipt['errorClass']=result.get('errorClass','NativeAxUnavailable')
-                return []
-            assert result['phase']=='complete' and result['errorClass']==''
-            assert result['connectionClass']=='android.app.UiAutomationConnection' and result['connectionFlags']==1
-            assert result['constructorSignature']=='UiAutomation(Looper,IUiAutomationConnection)'
-            assert result['startedElapsedMillis']<=result['capturedElapsedMillis']<=result['finishedElapsedMillis']
-            assert 0<=result['finishedElapsedMillis']-result['startedElapsedMillis']<=duration
-            xml=result['xml'];assert hashlib.sha256(xml.encode('utf-8')).hexdigest()==result['xmlSHA256']
-            root=ET.fromstring(xml);assert root.tag=='hierarchy'
-            assert int(root.attrib['window-id'])==result['windowId'] and result['windowId']>=0
-            assert len(list(root.iter('node')))==result['nodeCount']>0
-            budget(25)
-            self.sequence+=1;xml_path=self.output/(f'{self.sequence:04d}-ui.xml')
-            xml_path.write_text(xml,encoding='utf-8')
-            receipt.update(available=True,xmlFile=xml_path.name,xmlSHA256=hashlib.sha256(xml.encode('utf-8')).hexdigest())
-            parents={child:parent for parent in root.iter() for child in parent}
-            elements=list(root.iter('node'));indices={node:index for index,node in enumerate(elements)};nodes=[]
-            for node in elements:
-                bounds=re.fullmatch(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]',node.attrib.get('bounds',''))
-                if not bounds:continue
-                left,top,right,bottom=map(int,bounds.groups())
-                if right<=left or bottom<=top:continue
-                ancestor=node
-                while ancestor is not None and ancestor.attrib.get('class')!='android.webkit.WebView':ancestor=parents.get(ancestor)
-                assert node.attrib['package']==PACKAGE
-                nodes.append(dict(node.attrib,rectangle=[left,top,right,bottom],nodeIndex=indices[node],
-                    parentIndex=indices.get(parents.get(node)),webViewIndex=indices[ancestor] if ancestor is not None else None,
-                    uiSnapshot={'provider':result['provider'],'api':result['api'],'uid':result['uid'],
-                                'pid':result['pid'],'requestId':request,'xmlSHA256':result['xmlSHA256'],'waitForIdle':False}))
-            budget(25)
-            return nodes
-        except Exception as error:
-            receipt.update(available=False,errorClass=type(error).__name__,error=traceback.format_exc())
-            return []
-        finally:native._write_json(receipt_path,receipt)
-
-    def failure_ui(self):
-        nodes=self.ui()
-        if not nodes:raise RuntimeError('Fresh native AX unavailable; see '+str(self.last_ui_receipt))
-        return nodes
 
     def selected_spinner(self,label,value):
         def choose(rows):
@@ -133,6 +57,26 @@ class HandoffAcceptance(network.NetworkAcceptance):
         assert value['schema']==1 and value['pid']==main_pid
         assert value['events'] and all(row['pid']==main_pid for row in value['events'])
         return value
+
+    def failure_focus(self):
+        deadline=time.monotonic()+25;observations=[]
+        pattern=re.compile(r'\b(?:mCurrentFocus|mFocusedApp|mTopFocusedDisplayId|mFocusedWindow|mInputMethodTarget|mImeInputTarget|mImeLayeringTarget|topResumedActivity|mTopResumedActivity|mResumedActivity|ResumedActivity|mFocusedActivity)\b')
+        for arguments in (('window','windows'),('activity','activities')):
+            command=['adb','shell','dumpsys',*arguments]
+            value={'command':command,'complete':False,'readOnly':True}
+            try:
+                remaining=deadline-time.monotonic()
+                if remaining<=0:raise TimeoutError('Failure focus reads exceeded their single original budget')
+                result=subprocess.run(command,text=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=min(10,remaining))
+                # Preserve focus facts, never the Activity Intent extras or page/prompt content.
+                value.update(exitCode=result.returncode,stderr=result.stderr,
+                    rawStdoutSHA256=hashlib.sha256(result.stdout.encode('utf-8')).hexdigest(),
+                    focusLines=[line for line in result.stdout.splitlines() if pattern.search(line)])
+                value['complete']=result.returncode==0 and bool(value['focusLines'])
+            except Exception as error:
+                value.update(errorClass=type(error).__name__,error=traceback.format_exc())
+            observations.append(value)
+        return {'schema':1,'readOnly':True,'complete':all(row['complete'] for row in observations),'samples':observations}
 
     def status(self):
         value=self.http('/status')
@@ -485,7 +429,8 @@ def main():
                 observations=[('server',lambda:acceptance.http('/status')),
                               ('journal',acceptance.jobs),
                               ('workspace',lambda:acceptance.json_file('workspace.json')),
-                              ('native-ui',acceptance.failure_ui)]
+                              ('native-ui',acceptance.failure_ui),
+                              ('window-focus',acceptance.failure_focus)]
                 if main_pid is not None:
                     observations.append(('native-task-events',lambda:acceptance.task_events(int(main_pid))))
                 for label,observe in observations:
