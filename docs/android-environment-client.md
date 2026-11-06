@@ -6,6 +6,8 @@
 
 目标为固定签名Beta.7 / 3000031候选。旧数据覆盖升级及Beta.6界面/恢复回归单列；新网络矩阵采用全新合成空间，不篡改旧数据golden。无截图、真实ChatGPT或个人设备操作，不合并main、不公开发布、不改官网。只有完整路由/字节/隔离及必要回归通过才交候选；下面Beta.6仍是已交付基线。
 
+首轮42148393692（8e86909）单元、人用包、Java与普通合成包编译通过，网络合成包在NetworkSecurityConfig lint要求显式includeSubdomains处停止，设备用例尚未运行。生成XML改为两个精确owned域的includeSubdomains=false，不加基线或关闭规则。
+
 ## 当前交付
 
 本批已完成，交付固定签名 **3.0.0-alpha.24-beta.6**（versionCode `3000030`），Android9及以上arm64候选。仅推送dev、通过Actions分发；未合并main、未创建公开Release、未改官网或个人设备。

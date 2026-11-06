@@ -242,7 +242,7 @@ if (project.hasProperty('environmentNetworkTest')) {
             javaFile.text='package com.forcemind.chatgpt.profiles; public final class GeneratedNetworkTrust { public static final String PEM = ' + groovy.json.JsonOutput.toJson(pem) + '; }'
             def ca=new File(trustRoot,'res/raw/studio_environment_network_ci_ca.pem');ca.parentFile.mkdirs();ca.text=pem
             def config=new File(trustRoot,'res/xml/studio_environment_network_security.xml');config.parentFile.mkdirs()
-            config.text='<network-security-config><base-config cleartextTrafficPermitted="false" /><domain-config><domain>network-fixture.test</domain><domain>files.network-fixture.test</domain><trust-anchors><certificates src="system" /><certificates src="@raw/studio_environment_network_ci_ca" /></trust-anchors></domain-config></network-security-config>'
+            config.text='<network-security-config><base-config cleartextTrafficPermitted="false" /><domain-config><domain includeSubdomains="false">network-fixture.test</domain><domain includeSubdomains="false">files.network-fixture.test</domain><trust-anchors><certificates src="system" /><certificates src="@raw/studio_environment_network_ci_ca" /></trust-anchors></domain-config></network-security-config>'
         }
     }
     android.sourceSets.networkBeta.java.srcDir(new File(trustRoot,'java'))
