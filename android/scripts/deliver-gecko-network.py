@@ -16,6 +16,9 @@ for api in (28,35):
         proof=json.loads(file.read_text())
         assert proof['schema']==1 and proof['complete'] and proof['api']==api and proof['transport']==transport
         assert proof['engine']=='gecko' and proof['candidateInstalledSHA256']==receipt['sha256']
+        assert proof['ciReceipt']==receipt and proof['applicationSourceSHA']==receipt['sourceSHA']
+        assert proof['idleSwitchWaited'] is True and proof['idleSwitchSelectCalls']==1
+        assert proof['idleSwitchState']['waitIdleRequested'] is True and proof['idleSwitchState']['networkSelectCalls']==1
         for flag in ('busySelectRejected','idleSwitchNoReload','noDirect','noReplay','draftCookieIdentityPreserved'):
             assert proof[flag], (api,transport,flag)
         assert proof['sendCount']==0 and not proof['screenshots'] and not proof['realServicesAccessed'] and not proof['adbReverseOriginUsed']

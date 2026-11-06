@@ -23,15 +23,17 @@ final class EnvironmentNetworkControl {
     private String operation;
     private Runnable observer;
     private boolean done;
+    private boolean waitIdleRequested;
+    private int explicitSelectCalls,idleSamples;
     EnvironmentNetworkControl(Activity activity){this.activity=activity;session=BrowserMemory.get(activity).network();}
     void run(Intent input){
         if(!BuildConfig.ENVIRONMENT_NETWORK_TEST||!BuildConfig.ENVIRONMENT_TEST)throw new SecurityException("Owned network control disabled");
         operation=input.getStringExtra("action");
-        if(input.getExtras()!=null)for(String key:input.getExtras().keySet())if(!"action".equals(key)&&!("network-select".equals(operation)&&"index".equals(key)))throw new IllegalArgumentException("Unexpected network control input");
+        if(input.getExtras()!=null)for(String key:input.getExtras().keySet())if(!"action".equals(key)&&!("network-select".equals(operation)&&("index".equals(key)||"waitIdle".equals(key))))throw new IllegalArgumentException("Unexpected network control input");
         ui.postDelayed(()->finish(false,"Owned network action timed out"),45000);
         try{
             if("network-status".equals(operation)){finish(true,"");return;}
-            if("network-select".equals(operation)){Object value=input.getExtras().get("index");if(!(value instanceof Integer))throw new IllegalArgumentException("Integer route index required");int index=(Integer)value;if(index<0||index>=session.nodes().size())throw new IllegalArgumentException("Unknown owned route");session.select(index,this::finish);return;}
+            if("network-select".equals(operation)){Object value=input.getExtras().get("index");if(!(value instanceof Integer))throw new IllegalArgumentException("Integer route index required");int index=(Integer)value;if(index<0||index>=session.nodes().size())throw new IllegalArgumentException("Unknown owned route");Object wait=input.getExtras().get("waitIdle");if(wait!=null&&!(wait instanceof Boolean))throw new IllegalArgumentException("Boolean idle boundary required");waitIdleRequested=Boolean.TRUE.equals(wait);selectWhenReady(index);return;}
             if("network-retry".equals(operation)){session.retry(this::finish);return;}
             if("network-stop".equals(operation)){
                 if(!session.routes.coreInitialized())throw new IllegalStateException("Core must already exist");
@@ -40,6 +42,13 @@ final class EnvironmentNetworkControl {
             if(!"network-config".equals(operation))throw new IllegalArgumentException("Unknown owned action");
             observer=()->{if(done||session.changing()||!session.ready())return;session.removePanelObserver(observer);observer=null;configure();};session.observePanel(observer);
         }catch(Exception failure){finish(false,failure.getClass().getName());}
+    }
+    private void selectWhenReady(int index){
+        if(done)return;
+        // Establish the positive scenario's idle boundary before its single
+        // selection. The default path still exercises immediate busy rejection.
+        if(waitIdleRequested&&session.controlsBusy()){idleSamples++;ui.postDelayed(()->selectWhenReady(index),100);return;}
+        explicitSelectCalls++;session.select(index,this::finish);
     }
     private void configure(){
         try{
@@ -58,7 +67,7 @@ final class EnvironmentNetworkControl {
         if(done)return;done=true;ui.removeCallbacksAndMessages(null);if(observer!=null){session.removePanelObserver(observer);observer=null;}
         try{
             NetworkRoute.Snapshot current=session.routes.snapshot();boolean running=session.routes.coreInitialized()&&Networkcore.isRunning();
-            JSONObject status=new JSONObject().put("schema",1).put("sampledAt",System.currentTimeMillis()).put("complete",true).put("operation",operation).put("ok",ok).put("state",current.state.name()).put("selected",session.selected()).put("enabled",session.enabled()).put("generation",current.generation).put("coreRunning",running).put("port",current.port).put("busy",session.controlsBusy()).put("status",session.status()).put("error",message.isEmpty()?session.routes.error():message);
+            JSONObject status=new JSONObject().put("schema",1).put("sampledAt",System.currentTimeMillis()).put("complete",true).put("operation",operation).put("ok",ok).put("state",current.state.name()).put("selected",session.selected()).put("enabled",session.enabled()).put("generation",current.generation).put("coreRunning",running).put("port",current.port).put("busy",session.controlsBusy()).put("status",session.status()).put("error",message.isEmpty()?session.routes.error():message).put("waitIdleRequested",waitIdleRequested).put("networkSelectCalls",explicitSelectCalls).put("idleSamples",idleSamples);
             File root=activity.getFilesDir().getCanonicalFile(),target=new File(root,"gecko-network-status.json"),next=new File(root,"gecko-network-status.json.new");try(FileOutputStream output=new FileOutputStream(next)){output.write(status.toString().getBytes(StandardCharsets.UTF_8));output.getFD().sync();}Files.move(next.toPath(),target.toPath(),StandardCopyOption.ATOMIC_MOVE,StandardCopyOption.REPLACE_EXISTING);activity.setResult(Activity.RESULT_OK);
         }catch(Exception failure){android.util.Log.e("OwnedGeckoNetwork","Cannot retain action receipt",failure);activity.setResult(Activity.RESULT_CANCELED);}
         activity.finish();

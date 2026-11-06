@@ -113,8 +113,9 @@ class NetworkAcceptance(common.Acceptance):
             return None
         return json.loads(text)
 
-    def network(self, action, index=None):
+    def network(self, action, index=None, wait_idle=False):
         assert action in ('network-config', 'network-status', 'network-select', 'network-retry', 'network-stop')
+        assert isinstance(wait_idle, bool) and (not wait_idle or action == 'network-select' and index is not None)
         deadline = time.monotonic() + 60
         previous = self.optional_json('gecko-network-status.json')
         stamp = previous['sampledAt'] if previous else -1
@@ -122,12 +123,16 @@ class NetworkAcceptance(common.Acceptance):
         if index is not None:
             assert action == 'network-select' and isinstance(index, int) and 0 <= index < 4
             command += ['--ei', 'index', str(index)]
+        if wait_idle:
+            command += ['--ez', 'waitIdle', 'true']
         result = self.shell(*command, timeout=max(0.1, deadline-time.monotonic()))
         assert not re.search(r'Error:|Exception|Permission Denial', result), result
         value = self.wait('CI route callback ' + action, lambda: self.optional_json('gecko-network-status.json'),
             lambda row: row and row.get('complete') is True and row.get('operation') == action
             and row.get('sampledAt', -1) > stamp, timeout=max(0.1, deadline-time.monotonic()), interval=0.3)
         assert value['schema'] == 1
+        if action == 'network-select':
+            assert value['waitIdleRequested'] is wait_idle and value['networkSelectCalls'] == 1
         for key in ('ok', 'state', 'selected', 'enabled', 'generation', 'coreRunning', 'port', 'busy', 'status', 'error'):
             assert key in value, 'Missing actual network state: ' + key
         assert 'vless://' not in json.dumps(value).lower(), 'Do not expose node URIs in route evidence'
@@ -332,10 +337,10 @@ class NetworkAcceptance(common.Acceptance):
         return {'kind':kind,'operation':operation,'originReached':False,'nativeAttemptObserved':True,'nativeFailureObserved':kind!='download'}
 
     def negative(self, index):
-        rejected = self.network('network-select', index)
+        rejected = self.network('network-select', index, wait_idle=True)
         assert rejected['ok'] is False and rejected['state'] == 'FAILED' and rejected['coreRunning'] is False
         attempt = self.blocked_attempt('probe')
-        recovered = self.network('network-select', 1);self.connected(recovered, 1)
+        recovered = self.network('network-select', 1, wait_idle=True);self.connected(recovered, 1)
         actual = self.probe('B')
         assert not any(attempt['operation'] in row['path'] for row in self.status()['networkRequests'])
         return {'index':index,'rejected':rejected,'blocked':attempt,'explicitRecovery':recovered,'probe':actual}
@@ -396,7 +401,9 @@ def main():
         draft='OwnedNetworkDraft-'+uuid.uuid4().hex;acceptance.type_draft('A',0,draft)
         picker=acceptance.picker_file()
         upload_a=acceptance.upload('A',busy_probe=True);download_a=acceptance.download('A')
-        switched=acceptance.network('network-select',1);acceptance.connected(switched,1);assert switched['generation']>connected['generation']
+        switched=acceptance.network('network-select',1,wait_idle=True);acceptance.connected(switched,1)
+        assert switched['waitIdleRequested'] is True and switched['networkSelectCalls']==1
+        assert switched['generation']>connected['generation']
         probe_b=acceptance.probe('B');_,retained=acceptance.route_page('B',first['document'],draft)
         upload_b=acceptance.upload('B');download_b=acceptance.download('B')
         stop=acceptance.network('network-stop');assert stop['ok'] is True
@@ -419,7 +426,8 @@ def main():
         proof={'schema':1,'complete':True,'api':api,'transport':args.transport,'engine':'gecko','candidateAPK':apk,
                'candidateInstalledSHA256':installed,'ciReceipt':receipt,'applicationSourceSHA':application_sha,'originTLS':origin_tls,'uid':uid,'sourceSHA':os.environ.get('GITHUB_SHA'),
                'picker':picker,'routeA':{'upload':upload_a,'download':download_a},'routeB':{'probe':probe_b,'upload':upload_b,'download':download_b},
-               'busySelectRejected':True,'idleSwitchNoReload':True,'sameDocument':last['document'],
+               'busySelectRejected':True,'idleSwitchNoReload':True,'idleSwitchWaited':switched['waitIdleRequested'],
+               'idleSwitchSelectCalls':switched['networkSelectCalls'],'idleSwitchState':switched,'sameDocument':last['document'],
                'coreFailure':failed,'failedOperations':failures,'explicitRecovery':{'state':recovered,'probe':recovery_probe},'negatives':negatives,
                'noDirect':True,'noReplay':True,'draftCookieIdentityPreserved':True,'networkStates':acceptance.network_observations,
                'origin':final,'nativeAsciiKeyboardReceipts':acceptance.keyboard_events,'sendCount':final['sendCount'],
