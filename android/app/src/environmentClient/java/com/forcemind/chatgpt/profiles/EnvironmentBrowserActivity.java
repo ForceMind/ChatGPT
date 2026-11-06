@@ -90,7 +90,10 @@ public class EnvironmentBrowserActivity extends ComponentActivity implements Env
                 boolean wasReady=routeReady;routeReady=ready;appForeground=foreground;if(!ready){cancelPageOperation();cancelFile();}
                 if(status!=null){status.setText(notice);status.setVisibility(notice.isEmpty()?View.GONE:View.VISIBLE);}
                 for(Entry e:SESSIONS.values())if(!e.closed){e.session.setActive(foreground);if(wasReady&&!ready&&e.started)e.session.stop();}
-                if(ready){drainHandoff();startCurrent();}else if(handoffBusy())cancelHandoff("网络连接已失效；不会自动重发");renderHeader();
+                // A cold slot receives initial false before its first broker/extension ACK.
+                // Preserve the one-shot launch while waiting; only a ready route can be lost.
+                if(BuildConfig.ENVIRONMENT_TEST&&BuildConfig.ENVIRONMENT_NETWORK_TEST)android.util.Log.i("StudioHandoff","route ready="+ready+" wasReady="+wasReady+" pending="+(pendingHandoff!=null)+" starting="+startingHandoff);
+                if(ready){drainHandoff();startCurrent();}else if(wasReady&&handoffBusy())cancelHandoff("网络连接已失效；不会自动重发");renderHeader();
             };
             if(processRoutes==null)processRoutes=new EnvironmentRouteController(getApplicationContext(),runtime,slot(),routeListener);
             routes=processRoutes;routes.localExports.host(this);routes.listener(routeListener);
@@ -360,12 +363,13 @@ public class EnvironmentBrowserActivity extends ComponentActivity implements Env
     private boolean handoffBusy(){return pendingHandoff!=null||startingHandoff||handoff!=null&&handoff.active();}
     private void captureHandoff(Intent intent){
         if(intent==null||!intent.hasExtra("handoffJob"))return;
-        try{pendingHandoff=intent.getStringExtra("handoffJob");pendingHandoffToken=intent.getStringExtra("handoffToken");WorkspaceState.profile(pendingHandoff);WorkspaceState.profile(pendingHandoffToken);handoffJob=null;}
+        try{pendingHandoff=intent.getStringExtra("handoffJob");pendingHandoffToken=intent.getStringExtra("handoffToken");WorkspaceState.profile(pendingHandoff);WorkspaceState.profile(pendingHandoffToken);handoffJob=null;if(BuildConfig.ENVIRONMENT_TEST&&BuildConfig.ENVIRONMENT_NETWORK_TEST)android.util.Log.i("StudioHandoff","launch-captured valid=true");}
         catch(Exception invalid){pendingHandoff=null;pendingHandoffToken=null;notice("任务授权参数无效");}
         intent.removeExtra("handoffJob");intent.removeExtra("handoffToken");
     }
     private void drainHandoff(){
         if(destroyed||!resumed||!routeReady||routes==null||routes.extensionReady==null||pendingHandoff==null||startingHandoff||handoff!=null&&handoff.active())return;
+        if(BuildConfig.ENVIRONMENT_TEST&&BuildConfig.ENVIRONMENT_NETWORK_TEST)android.util.Log.i("StudioHandoff","launch-claim routeReady=true extensionReady=true resumed=true");
         String id=pendingHandoff,launch=pendingHandoffToken,expectedAccount=accountId;pendingHandoff=null;pendingHandoffToken=null;startingHandoff=true;long attempt=++handoffAttempt;cancelPageOperation();cancelFile();renderHeader();
         try{routes.handoff("claim",new JSONObject().put("id",id).put("token",launch),(result,error)->{
             if(attempt!=handoffAttempt||destroyed)return;startingHandoff=false;

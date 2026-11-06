@@ -46,6 +46,12 @@
 
 同轮六组网络、两端本地导出、human两端与synthetic35通过；synthetic28的模拟器现已实证自身 SIGSEGV：`emulatorExit=139`，版本37.2.13，应用 `am start` 随后255，原始stderr/内核/进程证据已保留。当前 `swiftshader_indirect` 已被[Android官方图形文档](https://developer.android.com/studio/run/emulator-acceleration#accel-graphics)标为弃用，下一轮保留 API28/default/pixel2/2CPU/3072MiB、原用例与断言，改用受支持的 `swiftshader` 软件后端并关闭 Vulkan；这是假设性宿主兼容修正，是否消除139仍待原恢复回归，未声称已定位具体崩溃栈。
 
+`42241736133` / `8735ba5c4065f69515c51a3e235481ccd5541d80` 的新软件渲染下 human/synthetic 两端完整升级恢复及六组网络均通过，本地导出28通过；本地导出35尚未进入文件步骤，初始 HTTPS probe 2065ms遇reset，失败前 coreRunning=true、原代次未变。根因仍未知，下一轮仅在原合成端口记录TCP reset方向的包头摘要（不保存/打印包体），不改探测、超时或断言。
+
+该轮 Android9 独立 AX helper 已实际运行，多次真树回执与首例一次发送/全文ACK、staging清理、源A双标题热切换均过；第二 `upload-hold` 任务停在ready无tab，新Slot进程5396只恢复旧提交页。源码与进程/事件证据确认：cold onCreate capture后，route listener首次false回放误清新pending，binder尚空，cancel未送主进程。最小修正只把首次握手等待与wasReady→false失联区分，保留pending到route/extension/resumed三门后一次claim；停止与真正失联收口不改。
+
+同轮 Android15 在首个 AX helper 读取时失败，独立 app_process 的主 Looper 未准备，AccessibilityInteractionClient 回调创建Handler崩溃，无有效回执；App业务没有开始。helper现准备并运行主Looper，只读capture在工作线程，仍受同一watchdog/预算、包/仿真器/UID guard与零动作限制；异常明确回unavailable。真实完整五场景仍待下一轮，不以Android9首例或AX编译成功替代交付。
+
 ## 最新交付：2026.11.06-2024 本地导出候选
 
 第一阶段已完成，第二阶段的新 Gecko 资产/Skill 自动任务继续开发，不以本阶段代替完整主线交付。

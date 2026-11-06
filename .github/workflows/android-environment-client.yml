@@ -379,7 +379,7 @@ jobs:
       - run: |
           sdkmanager 'platforms;android-36' 'build-tools;35.0.0'
           sudo apt-get update -qq
-          sudo apt-get install -y libnss3-tools
+          sudo apt-get install -y libnss3-tools tcpdump
       - uses: actions/download-artifact@v4
         with:
           name: environment-client-input
@@ -417,6 +417,10 @@ jobs:
           test -f android/network-poc/secure-fixture/ready.json
           test -c /dev/kvm
           sudo chmod a+rw /dev/kvm
+      - name: Observe owned transport TCP reset headers without payload capture
+        run: |
+          sudo tcpdump -nn -tt -l -q -s 96 -i any 'tcp and (port 18480 or port 18443 or port 18444 or port 19443 or port 19444 or port 20443 or port 20444) and (tcp[tcpflags] & tcp-rst != 0)' > "$STUDIO_GECKO_OUTPUT/owned-tcp-reset-headers.log" 2> "$STUDIO_GECKO_OUTPUT/owned-tcp-capture-stderr.txt" &
+          echo $! > "$RUNNER_TEMP/studio-owned-tcp.pid"
       - name: Compile the existing native input helper outside the app
         run: |
           mkdir -p android/app/build/environment-ascii/classes
@@ -449,6 +453,12 @@ jobs:
         if: always()
         run: |
           mkdir -p "$STUDIO_GECKO_OUTPUT/node-logs"
+          if [ -f "$RUNNER_TEMP/studio-owned-tcp.pid" ]; then
+            studio_capture_pid=$(cat "$RUNNER_TEMP/studio-owned-tcp.pid")
+            if kill -0 "$studio_capture_pid" 2>/dev/null; then
+              sudo kill -INT "$studio_capture_pid"
+            fi
+          fi
           if compgen -G 'android/network-poc/secure-fixture/fixture-*.log' > /dev/null; then
             cp android/network-poc/secure-fixture/fixture-*.log "$STUDIO_GECKO_OUTPUT/node-logs/"
           fi
@@ -485,7 +495,7 @@ jobs:
       - run: |
           sdkmanager 'platforms;android-36' 'build-tools;35.0.0'
           sudo apt-get update -qq
-          sudo apt-get install -y libnss3-tools
+          sudo apt-get install -y libnss3-tools tcpdump
       - uses: actions/download-artifact@v4
         with:
           name: environment-client-input
@@ -523,6 +533,10 @@ jobs:
           test -f android/network-poc/secure-fixture/ready.json
           test -c /dev/kvm
           sudo chmod a+rw /dev/kvm
+      - name: Observe owned transport TCP reset headers without payload capture
+        run: |
+          sudo tcpdump -nn -tt -l -q -s 96 -i any 'tcp and (port 18480 or port 18443 or port 18444 or port 19443 or port 19444 or port 20443 or port 20444) and (tcp[tcpflags] & tcp-rst != 0)' > "$STUDIO_GECKO_OUTPUT/owned-tcp-reset-headers.log" 2> "$STUDIO_GECKO_OUTPUT/owned-tcp-capture-stderr.txt" &
+          echo $! > "$RUNNER_TEMP/studio-owned-tcp.pid"
       - name: Compile the existing native input helper outside the app
         run: |
           mkdir -p android/app/build/environment-ascii/classes
@@ -555,6 +569,12 @@ jobs:
         if: always()
         run: |
           mkdir -p "$STUDIO_GECKO_OUTPUT/node-logs"
+          if [ -f "$RUNNER_TEMP/studio-owned-tcp.pid" ]; then
+            studio_capture_pid=$(cat "$RUNNER_TEMP/studio-owned-tcp.pid")
+            if kill -0 "$studio_capture_pid" 2>/dev/null; then
+              sudo kill -INT "$studio_capture_pid"
+            fi
+          fi
           if compgen -G 'android/network-poc/secure-fixture/fixture-*.log' > /dev/null; then
             cp android/network-poc/secure-fixture/fixture-*.log "$STUDIO_GECKO_OUTPUT/node-logs/"
           fi
@@ -591,7 +611,7 @@ jobs:
       - run: |
           sdkmanager 'platforms;android-36' 'build-tools;35.0.0'
           sudo apt-get update -qq
-          sudo apt-get install -y libnss3-tools
+          sudo apt-get install -y libnss3-tools tcpdump
       - uses: actions/download-artifact@v4
         with:
           name: environment-client-input
@@ -629,6 +649,10 @@ jobs:
           test -f android/network-poc/secure-fixture/ready.json
           test -c /dev/kvm
           sudo chmod a+rw /dev/kvm
+      - name: Observe owned transport TCP reset headers without payload capture
+        run: |
+          sudo tcpdump -nn -tt -l -q -s 96 -i any 'tcp and (port 18480 or port 18443 or port 18444 or port 19443 or port 19444 or port 20443 or port 20444) and (tcp[tcpflags] & tcp-rst != 0)' > "$STUDIO_GECKO_OUTPUT/owned-tcp-reset-headers.log" 2> "$STUDIO_GECKO_OUTPUT/owned-tcp-capture-stderr.txt" &
+          echo $! > "$RUNNER_TEMP/studio-owned-tcp.pid"
       - name: Compile the existing native input helper outside the app
         run: |
           mkdir -p android/app/build/environment-ascii/classes
@@ -667,6 +691,12 @@ jobs:
         if: always()
         run: |
           mkdir -p "$STUDIO_GECKO_OUTPUT/node-logs"
+          if [ -f "$RUNNER_TEMP/studio-owned-tcp.pid" ]; then
+            studio_capture_pid=$(cat "$RUNNER_TEMP/studio-owned-tcp.pid")
+            if kill -0 "$studio_capture_pid" 2>/dev/null; then
+              sudo kill -INT "$studio_capture_pid"
+            fi
+          fi
           if [ -f "$RUNNER_TEMP/studio-gecko-handoff-host.log" ]; then
             cp "$RUNNER_TEMP/studio-gecko-handoff-host.log" "$STUDIO_GECKO_OUTPUT/host-fixture.log"
           else

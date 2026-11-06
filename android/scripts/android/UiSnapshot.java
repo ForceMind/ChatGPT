@@ -89,7 +89,24 @@ public final class UiSnapshot {
         }
         xml.endTag("","node");check();
     }
-    public static void main(String[] args){
+    public static void main(final String[] args){
+        Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler(){
+            @Override public void uncaughtException(Thread thread,Throwable error){
+                finish(false,null,error.getClass().getName(),1);
+            }
+        });
+        try{
+            // API35's AccessibilityInteractionClient creates a Handler on the process main
+            // Looper, even when UiAutomation uses its separate callback HandlerThread.
+            // Keep that queue running; the read worker and watchdog retain the same deadline.
+            if(Looper.getMainLooper()==null)Looper.prepareMainLooper();
+            if(Looper.myLooper()!=Looper.getMainLooper())throw new IllegalStateException("Owned AX main looper unavailable");
+            new Thread(new Runnable(){@Override public void run(){capture(args);}},"OwnedAxRead").start();
+            Looper.loop();
+            finish(false,null,IllegalStateException.class.getName(),1);
+        }catch(Throwable failure){finish(false,null,failure.getClass().getName(),1);}
+    }
+    private static void capture(String[] args){
         if(args.length!=3){finish(false,null,IllegalArgumentException.class.getName(),1);return;}
         long budget;
         try{
