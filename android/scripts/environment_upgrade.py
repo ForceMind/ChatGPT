@@ -126,7 +126,8 @@ def _root_and_block():
         _shell('iptables-save') + _shell('ip6tables-save'), encoding='utf-8')
 
 
-def _phase(label, api, scope, signer):
+def _phase(label, api, scope, signer, evidence_name=None):
+    evidence_name = evidence_name or label
     old_phase = label in ('seed', 'verify-old')
     cls = 'EnvironmentUpgradeSeedTest' if old_phase else 'EnvironmentUpgradeVerifyTest'
     command = ['adb', 'shell', 'am', 'instrument', '-w', '-r', '-e', 'class',
@@ -139,10 +140,10 @@ def _phase(label, api, scope, signer):
         partial = error.stdout or ''
         if isinstance(partial, bytes):
             partial = partial.decode('utf-8', errors='replace')
-        (EVIDENCE / (label + '.txt')).write_text(partial, encoding='utf-8')
+        (EVIDENCE / (evidence_name + '.txt')).write_text(partial, encoding='utf-8')
         raise
     text = result.stdout
-    (EVIDENCE / (label + '.txt')).write_text(text, encoding='utf-8')
+    (EVIDENCE / (evidence_name + '.txt')).write_text(text, encoding='utf-8')
     print(text, flush=True)
     assert result.returncode == 0, f'Instrumentation exited {result.returncode}: {label}'
     assert re.findall(r'(?m)^OK \((\d+) test\)\s*$', text) == ['1'], label
@@ -313,7 +314,7 @@ def run_upgrade(target='human'):
             _logcat('upgrade-' + target)
 
 
-def verify_after_environment():
+def verify_after_environment(evidence_prefix=''):
     """Read the preserved old subset after environment use; never reseed or stop an Activity/service."""
     guarded = False
     try:
@@ -329,10 +330,11 @@ def verify_after_environment():
         assert baseline['complete'] is True and baseline['api'] == api
         signer = _json(Path('docs/signing/android-network-beta.json'))['certificateSHA256']
         assert baseline['signerSHA256'] == signer
-        installed = _installed(baseline['candidateInstalledSHA256'], 'after-environment')
+        installed = _installed(baseline['candidateInstalledSHA256'], evidence_prefix + 'after-environment')
         expected = _expected()
         assert expected == _json(EVIDENCE / 'upgrade-expected.json'), 'Original fixture expectations changed'
-        phase = _phase('verify-after-environment', api, baseline['baselineScope'], signer)
+        phase = _phase('verify-after-environment', api, baseline['baselineScope'], signer,
+                       evidence_name=evidence_prefix + 'verify-after-environment')
         assert phase['uid'] == baseline['uid'] == expected['uid']
         assert phase['storageId'] == expected['storageId']
         assert phase['expectedSHA256'] == baseline['seed']['expectedSHA256']
@@ -345,14 +347,14 @@ def verify_after_environment():
                  'legacyAccountPreserved': True, 'native': phase,
                  'reseeded': False, 'uninstallOrClear': False, 'activityOrServiceStoppedByHelper': False,
                  'geckoOpened': False, 'screenshots': False}
-        _write_json(EVIDENCE / 'native-after-environment.json', proof)
+        _write_json(EVIDENCE / (evidence_prefix + 'native-after-environment.json'), proof)
         return proof
     except Exception:
         _record_failure()
         raise
     finally:
         if guarded:
-            _logcat('after-environment')
+            _logcat(evidence_prefix + 'after-environment')
 
 
 def verify_browser_chrome():
@@ -396,6 +398,101 @@ def verify_browser_chrome():
         except Exception:
             (EVIDENCE / 'browser-chrome-tree-read-error.txt').write_text(traceback.format_exc(), encoding='utf-8')
         _logcat('legacy-chrome')
+
+
+def verify_navigation_timing_cases():
+    """Three explicit owned cases; the old-release counterfactual must really fail the original assertion."""
+    summary = {'schema': 1, 'complete': False, 'sourceSHA': os.environ.get('GITHUB_SHA'),
+               'api': 35, 'cases': {}, 'screenshots': False, 'realServicesAccessed': False}
+    try:
+        assert _guard() == 35, 'Navigation timing cases require the owned API35 emulator'
+        assert os.environ.get('STUDIO_NAVIGATION_TIMING_CASES') == 'true', 'Explicit timing suite required'
+        context = _json(EVIDENCE / 'native-context.json')
+        assert context['target'] == 'synthetic' and context['proofFile'] == 'verified-synthetic.json'
+        previous = _json(EVIDENCE / 'verified-synthetic.json')
+        assert previous['complete'] and previous['api'] == 35
+        assert previous['sourceSHA'] == os.environ['GITHUB_SHA']
+        assert _json(EVIDENCE / 'browser-chrome-legacy.json')['complete']
+        assert _json(EVIDENCE / 'native-after-environment.json')['complete']
+        _installed(previous['candidateInstalledSHA256'], 'navigation-timing')
+        for case in ('baseline-late-poll', 'fixed-late-poll', 'fixed-early-poll'):
+            prefix = 'browser-chrome-' + case
+            try:
+                command = ['adb', 'shell', 'am', 'instrument', '-w', '-r', '-e', 'class',
+                           'com.forcemind.chatgpt.profiles.BrowserChromeNavigationTest#realHeaderAndNavigationPreserveLegacyPage',
+                           '-e', 'navigationTimingCase', case, '-e', 'expectedApi', '35',
+                           '-e', 'baselineScope', previous['baselineScope'],
+                           '-e', 'signer', previous['signerSHA256'], RUNNER]
+                result = _run(command, timeout=300, check=False)
+                (EVIDENCE / (prefix + '-instrument.txt')).write_text(result.stdout, encoding='utf-8')
+                print(result.stdout, flush=True)
+                assert result.returncode == 0, (case, result.returncode)
+            except subprocess.TimeoutExpired as error:
+                partial = error.stdout or ''
+                if isinstance(partial, bytes):
+                    partial = partial.decode('utf-8', errors='replace')
+                (EVIDENCE / (prefix + '-instrument.txt')).write_text(partial, encoding='utf-8')
+                raise
+            finally:
+                for suffix in ('-navigation.json', '-timing.json', '-native-tree.txt'):
+                    name = prefix + suffix
+                    fetched = _run(['adb', 'shell', 'cat', '/data/user/0/' + PACKAGE + '/files/' + name], timeout=15, check=False)
+                    if fetched.returncode == 0:
+                        (EVIDENCE / name).write_text(fetched.stdout, encoding='utf-8')
+                _logcat('navigation-' + case)
+            timing = _json(EVIDENCE / (prefix + '-timing.json'))
+            navigation = _json(EVIDENCE / (prefix + '-navigation.json'))
+            assert timing['schema'] == 1 and timing['case'] == case and timing['complete']
+            for flag in ('fixtureRevisionApplied', 'realEncryptedSave', 'realSaveChanged', 'realEncryptedRead',
+                         'realPollWhileSavePending', 'noNavigationBeforeSave'):
+                assert timing[flag] is True, (case, flag)
+            assert 0 <= timing['gateHeldMillis'] < 2000
+            raw = result.stdout
+            assert not re.search(r'shortMsg=|INSTRUMENTATION_FAILED|Process crashed', raw), case
+            baseline = case == 'baseline-late-poll'
+            assert timing['expectedFailure'] is baseline
+            assert timing['oldEarlyReleaseApplied'] is baseline
+            if baseline:
+                assert timing['counterfactual'] == 'old-early-release-line-only'
+                assert timing['pollAdvancedTicket'] and timing['originalNewDocumentAssertionFailed']
+                assert timing['ticketAfterPoll'] == timing['captureTicket'] + 1
+                assert re.findall(r'(?m)^INSTRUMENTATION_STATUS: stack=([^\r\n]*)', raw) == [
+                    'java.lang.AssertionError: Timed out: force refresh new document']
+                assert re.search(r'(?m)^Tests run: 1,\s+Failures: 1\s*$', raw)
+                assert not re.findall(r'(?m)^OK \(', raw)
+                assert navigation['phase'] == 'force-refresh' and navigation['failure'] == 'assertion'
+                summary['cases'][case] = {'classification': 'expected-original-assertion-failure', 'timing': timing}
+            else:
+                assert re.findall(r'(?m)^OK \((\d+) test\)\s*$', raw) == ['1']
+                assert not re.search(r'FAILED|FAILURES!!!|shortMsg=', raw)
+                assert navigation['phase'] == 'complete' and navigation['failure'] == 'none'
+                if case == 'fixed-late-poll':
+                    assert not timing['pollAdvancedTicket']
+                    assert timing['ticketAfterPoll'] == timing['captureTicket']
+                    assert timing['originalNavigationAssertions'] and timing['savedBeforeNavigation']
+                    assert timing['saveCompletedMillis'] <= timing['actionApprovedMillis'] <= timing['pageStartedMillis']
+                    records = re.findall(r'(?m)^INSTRUMENTATION_RESULT: browserChromeProof=(\{[^\r\n]+\})\s*$', raw)
+                    assert len(records) == 1
+                    proof = json.loads(records[0])
+                    assert proof['complete'] and proof['api'] == 35
+                    for flag in ('nativeHeaderTitleSwitch', 'switchNoReload', 'disabledEmptyHistory', 'backForward',
+                                 'normalAndForceRefresh', 'draftCookieStoragePreserved', 'allRequestsIntercepted', 'profileRegistryPersisted'):
+                        assert proof[flag] is True, flag
+                    assert proof['unexpectedRequests'] == 0 and not proof['screenshots'] and not proof['realServicesAccessed']
+                    _write_json(EVIDENCE / (prefix + '-proof.json'), proof)
+                else:
+                    assert timing['safeRefusal'] and timing['documentUnchanged'] and timing['draftCookieStoragePreserved']
+                    assert timing['refusalBeforeSave'] and timing['refusedMillis'] <= timing['saveCompletedMillis']
+                    assert not timing['screenshots'] and not timing['realServicesAccessed']
+                summary['cases'][case] = {'classification': 'fixed-original-assertions-pass' if case == 'fixed-late-poll' else 'safe-refusal-pass', 'timing': timing}
+        summary['legacySubsetAfterCases'] = verify_after_environment(evidence_prefix='navigation-timing-')
+        summary['complete'] = True
+        return summary
+    except Exception:
+        _record_failure()
+        raise
+    finally:
+        _write_json(EVIDENCE / 'navigation-timing-cases.json', summary)
 
 
 if __name__ == '__main__':

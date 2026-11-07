@@ -62,7 +62,8 @@ public final class NetworkRoute {
     private void stopCore() throws Exception { if (coreLoaded) Networkcore.stop(); }
     private static void logStartupStage(String stage, long generation, long startedAt) {
         if (BuildConfig.NETWORK_TEST) android.util.Log.i("NetworkIntegrationCI", "startup stage=" + stage
-                + " generation=" + generation + " elapsedMillis=" + (android.os.SystemClock.elapsedRealtime() - startedAt));
+                + " generation=" + generation + " elapsedMillis=" + (android.os.SystemClock.elapsedRealtime() - startedAt)
+                + " elapsedRealtimeMillis=" + android.os.SystemClock.elapsedRealtime());
     }
     private static void logCoreDiagnostics(long generation) {
         if (!BuildConfig.NETWORK_TEST) return;
@@ -213,6 +214,7 @@ public final class NetworkRoute {
                     StringBuilder details = new StringBuilder("startup stage=").append(stage)
                             .append(" generation=").append(generation)
                             .append(" elapsedMillis=").append(android.os.SystemClock.elapsedRealtime() - startedAt)
+                            .append(" elapsedRealtimeMillis=").append(android.os.SystemClock.elapsedRealtime())
                             .append(" coreRunning=").append(running).append(" originalGeneration=").append(current == pending)
                             .append(" category=").append(category);
                     Throwable cause = e;

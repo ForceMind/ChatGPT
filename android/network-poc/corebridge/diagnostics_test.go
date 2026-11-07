@@ -10,6 +10,7 @@ import (
 	"strings"
 	"syscall"
 	"testing"
+	"time"
 
 	xerrors "github.com/xtls/xray-core/common/errors"
 	xlog "github.com/xtls/xray-core/common/log"
@@ -138,6 +139,36 @@ func TestTypedFeedbackBoundsAndOldContextCannotCrossStartup(t *testing.T) {
 		!strings.Contains(TestDiagnostics(), "chain=other:eof") {
 		t.Fatal("new startup did not accept its own typed feedback")
 	}
+}
+
+func TestFixedVLESSRetryImmediatelyFailingDialTiming(t *testing.T) {
+	// This is an injected host unit closure, not a real network reproduction.
+	// Exercise the exact fixed Xray strategy used by VLESS without changing it.
+	attempts := 0
+	started := time.Now()
+	err := xretry.ExponentialBackoff(5, 200).On(func() error {
+		attempts++
+		return syscall.ECONNREFUSED
+	})
+	elapsed := time.Since(started)
+	t.Logf("injectedImmediateFailure=true actualDialClosureCalls=%d actualElapsedMillis=%d", attempts, elapsed.Milliseconds())
+	if attempts != 5 || elapsed < 2000*time.Millisecond {
+		t.Fatal("fixed VLESS retry did not execute five failures and its 2000ms minimum backoff")
+	}
+	if diagnosticErrorCategory(err) != "retry-exhausted" {
+		t.Fatal("retry exhaustion was not exposed through the public sentinel")
+	}
+	handler := beginTestDiagnostics()
+	defer endTestDiagnostics()
+	ctx := session.TrackedConnectionError(context.Background(), handler)
+	session.SubmitOutboundErrorToOriginator(ctx, err)
+	result := TestDiagnostics()
+	if !strings.Contains(result, "source=outbound-feedback") ||
+		!strings.Contains(result, "chain=xray:retry-exhausted>xray:retry-exhausted") ||
+		strings.Contains(result, "refused") {
+		t.Fatal("typed retry feedback lost exhaustion or claimed a hidden per-dial cause")
+	}
+	t.Logf("typedFeedback=%s", result)
 }
 
 func TestDiagnosticsBoundBufferAndErrorDepthAndStop(t *testing.T) {

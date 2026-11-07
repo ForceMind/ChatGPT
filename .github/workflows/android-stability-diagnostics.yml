@@ -52,6 +52,12 @@ jobs:
             android/app/libs/licenses/
           key: formal-network-core-go1273-ndk282-${{ hashFiles('android/network-poc/corebridge/go.mod', 'android/network-poc/corebridge/go.sum', 'android/network-poc/corebridge/**/*.go', 'android/network-poc/scripts/build-core.sh', 'android/scripts/prepare-network-core.sh') }}
       - run: bash android/scripts/prepare-network-core.sh
+      - name: Record actual pinned retry timing without network or browser requests
+        run: |
+          set -o pipefail
+          mkdir -p android/app/build/stability-code-evidence
+          cd android/network-poc/corebridge
+          go test -count=1 -v -timeout 120s -run '^TestFixedVLESSRetryImmediatelyFailingDialTiming$' ./... | tee "$GITHUB_WORKSPACE/android/app/build/stability-code-evidence/retry-timing.txt"
       - name: Prepare the owned network trust and node inputs
         run: |
           python3 -m unittest discover -s android/network-poc/scripts/tests -p test_secure_fixture.py
@@ -96,12 +102,14 @@ jobs:
           retention-days: 14
           path: android/app/build/environment-client-input/
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: environment-client-build-evidence
           retention-days: 14
           path: |
             android/app/build/reports/
             android/app/build/test-results/
+            android/app/build/stability-code-evidence/
       - name: Remove transient signer
         if: always()
         run: rm -f "$RUNNER_TEMP/studio-beta.p12"
@@ -172,9 +180,9 @@ jobs:
           test -f android/network-poc/secure-fixture/ready.json
           test -c /dev/kvm
           sudo chmod a+rw /dev/kvm
-      - name: Observe owned transport TCP reset headers without payload capture
+      - name: Observe owned TCP connection lifecycle headers without payload capture
         run: |
-          sudo tcpdump -nn -tt -l -q -s 96 -i any 'tcp and (port 18480 or port 18443 or port 18444 or port 19443 or port 19444 or port 20443 or port 20444) and (tcp[tcpflags] & tcp-rst != 0)' > "$STUDIO_GECKO_OUTPUT/owned-tcp-reset-headers.log" 2> "$STUDIO_GECKO_OUTPUT/owned-tcp-capture-stderr.txt" &
+          sudo tcpdump -nn -tt -l -s 96 -i any 'tcp and (port 18480 or port 18443 or port 18444 or port 19443 or port 19444 or port 20443 or port 20444) and (tcp[tcpflags] & (tcp-syn|tcp-fin|tcp-rst) != 0)' > "$STUDIO_GECKO_OUTPUT/owned-tcp-lifecycle-headers.log" 2> "$STUDIO_GECKO_OUTPUT/owned-tcp-capture-stderr.txt" &
           echo $! > "$RUNNER_TEMP/studio-owned-tcp.pid"
       - name: Compile the existing native input helper outside the app
         run: |
@@ -212,6 +220,11 @@ jobs:
             studio_capture_pid=$(cat "$RUNNER_TEMP/studio-owned-tcp.pid")
             if kill -0 "$studio_capture_pid" 2>/dev/null; then
               sudo kill -INT "$studio_capture_pid"
+              if timeout 5 tail --pid="$studio_capture_pid" -f /dev/null; then
+                echo 'exited-after-interrupt' > "$STUDIO_GECKO_OUTPUT/owned-tcp-capture-stop.txt"
+              else
+                echo 'exit-not-observed-within-budget' > "$STUDIO_GECKO_OUTPUT/owned-tcp-capture-stop.txt"
+              fi
             fi
           fi
           if compgen -G 'android/network-poc/secure-fixture/fixture-*.log' > /dev/null; then
@@ -259,6 +272,8 @@ jobs:
           "$ANDROID_HOME/build-tools/35.0.0/d8" --min-api 28 --lib "$ANDROID_HOME/platforms/android-36/android.jar" --output android/app/build/environment-ascii/input.jar android/app/build/environment-ascii/classes/com/forcemind/chatgpt/pocinput/*.class
       - run: sudo chmod a+rw /dev/kvm
       - name: Preserve the original synthetic client preconditions and navigation assertions
+        env:
+          STUDIO_NAVIGATION_TIMING_CASES: 'true'
         run: bash android/scripts/run-environment-api35.sh
       - uses: actions/upload-artifact@v4
         if: always()

@@ -26,6 +26,35 @@ final class PageRecoveryManager {
     private final Set<Bitmap> pendingPictures=Collections.newSetFromMap(new IdentityHashMap<>());
     private final String script;
     private boolean foreground;private volatile boolean closed;
+    private EnvironmentTiming environmentTiming;
+    /** Owned CI scheduling only. The store, capture tickets and completion results remain real. */
+    static final class EnvironmentTiming {
+        final String name;private final Session owner;final boolean oldEarlyRelease;private final String revision="owned-timing-"+UUID.randomUUID();
+        final CountDownLatch saveEntered=new CountDownLatch(1),releaseSave=new CountDownLatch(1),saveFinished=new CountDownLatch(1),pollReturned=new CountDownLatch(1);
+        private final java.util.concurrent.atomic.AtomicBoolean selected=new java.util.concurrent.atomic.AtomicBoolean();
+        volatile long captureTicket,serial,enteredMillis,releasedMillis,savedMillis;volatile boolean saveSucceeded,saveChanged,fixtureRevisionCaptured,oldReleaseApplied;volatile String readError="";
+        EnvironmentTiming(String name,Session owner){this.name=name;this.owner=owner;oldEarlyRelease=name.equals("baseline-late-poll");}
+        private void gate()throws Exception{
+            enteredMillis=SystemClock.elapsedRealtime();saveEntered.countDown();
+            boolean released=releaseSave.await(1250,TimeUnit.MILLISECONDS);releasedMillis=SystemClock.elapsedRealtime();
+            if(!released)throw new IOException("Owned capture IO gate timed out");
+        }
+    }
+    EnvironmentTiming environmentTiming(String name,WebView web){
+        if(!BuildConfig.ENVIRONMENT_TEST||MainActivity.handoffFixture==null||!Arrays.asList("baseline-late-poll","fixed-late-poll","fixed-early-poll").contains(name)
+                ||"other".equals(MainActivity.environmentPageLabel(web.getUrl())))throw new IllegalStateException("Owned timing case required");
+        Session s=sessions.get(web);if(s==null||!valid(s))throw new IllegalStateException("Owned capture session required");
+        environmentTiming=new EnvironmentTiming(name,s);return environmentTiming;
+    }
+    void environmentPoll(EnvironmentTiming probe){
+        if(!BuildConfig.ENVIRONMENT_TEST||MainActivity.handoffFixture==null||environmentTiming!=probe||!valid(probe.owner))throw new IllegalStateException("Owned timing case required");
+        handler.removeCallbacks(poll);poll.run();handler.post(probe.pollReturned::countDown);
+    }
+    void environmentReadSaved(EnvironmentTiming probe,String expected,Consumer<Boolean> result){
+        if(!BuildConfig.ENVIRONMENT_TEST||MainActivity.handoffFixture==null||environmentTiming!=probe)throw new IllegalStateException("Owned timing case required");
+        Session s=probe.owner;String url=s.url;IO.execute(()->{boolean matches=false;try{JSONObject record=store.load(s.account,s.storage,s.tab,url);matches=record!=null&&expected.equals(record.getString("draft"))&&environmentRevision(record,probe);}catch(Exception error){probe.readError=error.getClass().getSimpleName();}boolean saved=matches;handler.post(()->result.accept(saved));});
+    }
+    private static boolean environmentRevision(JSONObject record,EnvironmentTiming probe){JSONObject page=record.optJSONObject("page");JSONArray messages=page==null?null:page.optJSONArray("messages");return messages!=null&&messages.length()==1&&probe.revision.equals(messages.optJSONObject(0).optString("text"));}
     private static final class Session {
         final WebView web;final String account,storage,tab,key,token;final long generation;
         final LinkedHashMap<String,HistoryDraft> history=new LinkedHashMap<>(8,.75f,true);
@@ -136,12 +165,20 @@ final class PageRecoveryManager {
     private void capture(Session s,boolean force){capture(s,force,null);}
     private void capture(Session s,boolean force,Consumer<Boolean> completion){
         if(!valid(s)||!s.installed||s.loading||s.restoring||s.inflight||s.blocked||s.waitingOffline||s.preview!=null&&!s.liveReady){if(completion!=null)completion.accept(false);return;}s.inflight=true;long ticket=++s.captureTicket,serial=s.serial;
+        EnvironmentTiming armed=environmentTiming;
+        EnvironmentTiming probe=BuildConfig.ENVIRONMENT_TEST&&MainActivity.handoffFixture!=null&&armed!=null&&armed.owner==s
+            &&(armed.name.equals("fixed-early-poll")?completion==null:completion!=null)&&armed.selected.compareAndSet(false,true)?armed:null;
+        if(probe!=null){probe.captureTicket=ticket;probe.serial=serial;}
         java.util.concurrent.atomic.AtomicBoolean completed=new java.util.concurrent.atomic.AtomicBoolean();
         // Keep this capture exclusive through encrypted IO and its main-thread acknowledgement.
         // Releasing after JavaScript alone lets the next poll invalidate a pending navigation save.
         Consumer<Boolean> done=success->{if(!completed.compareAndSet(false,true))return;boolean current=valid(s)&&s.serial==serial&&s.captureTicket==ticket;if(current)s.inflight=false;if(completion!=null)completion.accept(success&&current);};
         handler.postDelayed(()->{if(valid(s)&&s.serial==serial&&s.inflight&&s.captureTicket==ticket){s.inflight=false;s.captureTicket++;notice("网页繁忙，最近的修改尚未保存，请稍候或手动备份。");done.accept(false);}},2000);
-        evaluate(s,"capture",String.valueOf(force),value->{if(completed.get()||s.serial!=serial||s.captureTicket!=ticket){done.accept(false);return;}String status=value.optString("status");if(status.equals("oversize")){notice("草稿超过 10 万字符，本地未保存，请手动备份。");done.accept(false);return;}
+        if(probe!=null)s.web.evaluateJavascript("(function(){if(window.ownedDocument&&typeof window.ownedTimingCapture==='function')window.ownedTimingCapture("+JSONObject.quote(probe.revision)+");})()",null);
+        evaluate(s,"capture",String.valueOf(force),value->{if(completed.get()||s.serial!=serial||s.captureTicket!=ticket){done.accept(false);return;}
+            // Single-variable CI counterfactual: restore exactly the old early-release line.
+            if(probe!=null&&probe.oldEarlyRelease){s.inflight=false;probe.oldReleaseApplied=true;}
+            String status=value.optString("status");if(status.equals("oversize")){notice("草稿超过 10 万字符，本地未保存，请手动备份。");done.accept(false);return;}
             if(status.equals("same")){if(completion!=null)IO.execute(()->handler.post(()->done.accept(true)));else{done.accept(true);if(s.currentPage!=null&&!s.currentPage.has("image"))capturePicture(s,s.currentPage,s.url,serial,ticket,false);}return;}
             if(!status.equals("captured")){if(completion!=null)unprotectedDraftEmpty(s.web,done);else done.accept(false);return;}
             try{if(!Objects.equals(s.url,PageRecoveryRecord.url(value.getString("url")))){done.accept(false);return;}JSONObject record=new JSONObject().put("schema",1).put("accountId",s.account).put("storageId",s.storage).put("tabId",s.tab).put("url",s.url).put("draft",value.getString("draft")).put("scroll",value.getDouble("scroll")).put("ratio",value.getDouble("ratio")).put("capturedAt",System.currentTimeMillis());
@@ -149,8 +186,9 @@ final class PageRecoveryManager {
                 if(value.has("page")){JSONObject rawPage=new JSONObject(value.getJSONObject("page").toString());rawPage.remove("image");rawPage.remove("imageCapturedAt");JSONObject page=PageSnapshot.normalize(rawPage,s.url);
                     if(s.currentPage!=null&&s.currentPage.has("image")){page.put("image",s.currentPage.getString("image"));page.put("imageCapturedAt",s.currentPage.getLong("imageCapturedAt"));}record.put("page",page);
                 }else if(s.currentPage!=null)record.put("page",s.currentPage);PageRecoveryRecord.normalize(record);rememberHistory(s,record);
+                if(probe!=null){probe.fixtureRevisionCaptured=environmentRevision(record,probe);if(!probe.fixtureRevisionCaptured)throw new IOException("Owned fixture revision was not captured");}
                 if(record.toString().getBytes(StandardCharsets.UTF_8).length>1024*1024&&record.optJSONObject("page")!=null){record.getJSONObject("page").remove("image");record.getJSONObject("page").remove("imageCapturedAt");}
-                JSONObject savedPage=record.optJSONObject("page");String pageURL=s.url;IO.execute(()->{try{boolean changed=store.save(record,s.generation);handler.post(()->{boolean current=valid(s)&&s.serial==serial&&s.captureTicket==ticket&&!completed.get();if(current){if(changed){s.currentRecord=record;s.currentPage=savedPage;}JSONObject page=s.currentPage;if(completion==null&&page!=null)capturePicture(s,page,pageURL,serial,ticket,force);}done.accept(current);});}catch(Exception e){handler.post(()->{if(valid(s))notice("本地草稿保存未完成，请手动备份；不会写入未加密内容。");done.accept(false);});}});
+                JSONObject savedPage=record.optJSONObject("page");String pageURL=s.url;IO.execute(()->{try{if(probe!=null)probe.gate();boolean changed=store.save(record,s.generation);if(probe!=null){probe.saveChanged=changed;probe.savedMillis=SystemClock.elapsedRealtime();probe.saveSucceeded=true;}handler.post(()->{boolean current=valid(s)&&s.serial==serial&&s.captureTicket==ticket&&!completed.get();if(current){if(changed){s.currentRecord=record;s.currentPage=savedPage;}JSONObject page=s.currentPage;if(completion==null&&page!=null)capturePicture(s,page,pageURL,serial,ticket,force);}done.accept(current);});}catch(Exception e){handler.post(()->{if(valid(s))notice("本地草稿保存未完成，请手动备份；不会写入未加密内容。");done.accept(false);});}finally{if(probe!=null)probe.saveFinished.countDown();}});
             }catch(Exception e){notice("页面草稿或阅读位置无效，本次未保存。");done.accept(false);}
         });
     }

@@ -930,3 +930,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+    if os.environ.get('STUDIO_NAVIGATION_TIMING_CASES') == 'true':
+        native.verify_navigation_timing_cases()

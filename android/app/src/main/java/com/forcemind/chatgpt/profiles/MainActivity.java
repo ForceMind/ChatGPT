@@ -222,6 +222,9 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
     JSONObject environmentNavigationEvidence()throws org.json.JSONException{
         JSONObject value=environmentNavigationState(currentWeb());return value.put("events",new org.json.JSONArray(environmentNavigationEvents.toString()));
     }
+    PageRecoveryManager.EnvironmentTiming environmentNavigationTiming(String name){return recovery.environmentTiming(name,currentWeb());}
+    void environmentNavigationPoll(PageRecoveryManager.EnvironmentTiming probe){recovery.environmentPoll(probe);}
+    void environmentNavigationReadSaved(PageRecoveryManager.EnvironmentTiming probe,String expected,Consumer<Boolean> result){recovery.environmentReadSaved(probe,expected,result);}
     private void restoreCacheMode(WebView web){Integer mode=forcedCacheModes.remove(web);if(mode!=null)web.getSettings().setCacheMode(mode);}
     private boolean samePage(WebView web,String account,String storage,String tab,String url,long epoch){
         if(!ready||fatal||!resumed||overview!=null||offlineSnapshot!=null||currentWeb()!=web||!state.activeAccount.equals(account)||!state.current().storageId.equals(storage)||!state.current().activeTab.equals(tab)||!java.util.Objects.equals(url,web.getUrl())||pageEpochs.getOrDefault(tab,-1L)!=epoch)return false;

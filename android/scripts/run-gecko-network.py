@@ -40,6 +40,41 @@ def source_module():
 common = source_module()
 
 
+def owned_output_counters(text, node_ports, family):
+    """Parse only the fixture's filter/OUTPUT rules; never retain raw rule text."""
+    labels = ['loopback', 'rejectAggregate'] + (['OwnedA', 'OwnedB'] if family == 'ipv4' else [])
+    counters = {label: {'ruleCount': 0, 'packets': 0, 'bytes': 0} for label in labels}
+    in_filter = False
+    for line in text.splitlines():
+        if line.startswith('*'):
+            in_filter = line == '*filter'
+            continue
+        if line == 'COMMIT':
+            in_filter = False
+        if not in_filter:
+            continue
+        match = re.fullmatch(r'\[(\d+):(\d+)\] (-A OUTPUT .+)', line)
+        if not match:
+            continue
+        tokens = match[3].split()
+        label = None
+        if tokens == ['-A', 'OUTPUT', '-o', 'lo', '-j', 'ACCEPT']:
+            label = 'loopback'
+        elif '-j' in tokens and tokens[tokens.index('-j')+1:] == ['REJECT', '--reject-with',
+                'icmp-port-unreachable' if family == 'ipv4' else 'icmp6-port-unreachable']:
+            label = 'rejectAggregate'
+        elif family == 'ipv4':
+            for name, port in zip(('OwnedA', 'OwnedB'), node_ports):
+                if tokens == ['-A', 'OUTPUT', '-d', '10.0.2.2/32', '-p', 'tcp', '-m', 'tcp',
+                              '--dport', str(port), '-j', 'ACCEPT']:
+                    label = name
+        if label is not None:
+            counters[label]['ruleCount'] += 1
+            counters[label]['packets'] += int(match[1])
+            counters[label]['bytes'] += int(match[2])
+    return counters
+
+
 class NetworkAcceptance(common.Acceptance):
     def __init__(self, api, uid, fixture, output, transport):
         common.EVIDENCE = output
@@ -58,6 +93,69 @@ class NetworkAcceptance(common.Acceptance):
         self._input_deadline = None
         self.input_prefix_receipts = []
         self.input_stream_receipts = []
+        self.counter_node_ports = None
+
+    def packet_counter_snapshot(self, phase):
+        # Passive CI diagnostics: no packet/probe, rule writes, command retries,
+        # raw rules or stderr. A failed read must not replace the original error.
+        if self.transport != 'tls' or self.counter_node_ports is None:
+            return
+        snapshot = {'schema': 1, 'phase': phase, 'transport': 'tls',
+                    'sourceSHA': os.environ.get('GITHUB_SHA'), 'clockDomain': 'ci-host',
+                    'startedEpochMillis': int(time.time()*1000),
+                    'startedMonotonicMillis': int(time.monotonic()*1000),
+                    'scope': 'filter/OUTPUT', 'uidSpecific': False,
+                    'rejectAggregateAttributableToApp': False,
+                    'nodes': [{'label': name, 'port': port} for name, port in
+                              zip(('OwnedA', 'OwnedB'), self.counter_node_ports)],
+                    'families': {}}
+        try:
+            clock = {'clockDomain': 'guest-boottime', 'approximate': True,
+                     'resolutionMillis': 10, 'complete': False,
+                     'hostBeforeEpochMillis': int(time.time()*1000),
+                     'hostBeforeMonotonicMillis': int(time.monotonic()*1000)}
+            snapshot['guestClockSample'] = clock
+            try:
+                result = subprocess.run(['adb', 'shell', 'cat', '/proc/uptime'],
+                    text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=3)
+                clock.update(exitCode=result.returncode, stderrPresent=bool(result.stderr))
+                if result.returncode == 0:
+                    uptime = re.fullmatch(r'(\d+)\.(\d{2})[ \t]+\d+\.\d{2}\s*', result.stdout)
+                    if uptime is None:
+                        clock['errorCategory'] = 'invalid-guest-uptime-format'
+                    else:
+                        clock['guestUptimeMillis'] = int(uptime[1])*1000 + int(uptime[2])*10
+                        clock['complete'] = True
+                else:
+                    clock['errorCategory'] = 'guest-uptime-command-failed'
+            except Exception as error:
+                clock['errorClass'] = type(error).__name__
+            finally:
+                clock['hostAfterEpochMillis'] = int(time.time()*1000)
+                clock['hostAfterMonotonicMillis'] = int(time.monotonic()*1000)
+            for family, tool in (('ipv4', 'iptables-save'), ('ipv6', 'ip6tables-save')):
+                value = {'tool': tool, 'complete': False, 'startedEpochMillis': int(time.time()*1000)}
+                snapshot['families'][family] = value
+                try:
+                    result = subprocess.run(['adb', 'shell', tool, '-c', '-t', 'filter'],
+                        text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=3)
+                    value.update(exitCode=result.returncode, stderrPresent=bool(result.stderr))
+                    if result.returncode == 0:
+                        counters = owned_output_counters(result.stdout, self.counter_node_ports, family)
+                        value['counters'] = counters
+                        value['complete'] = all(row['ruleCount'] == 1 for row in counters.values())
+                        if not value['complete']:
+                            value['errorCategory'] = 'expected-rule-count-mismatch'
+                except Exception as error:
+                    value['errorClass'] = type(error).__name__
+                value['finishedEpochMillis'] = int(time.time()*1000)
+            snapshot['complete'] = clock['complete'] and all(row['complete'] for row in snapshot['families'].values())
+            snapshot['finishedEpochMillis'] = int(time.time()*1000)
+            snapshot['finishedMonotonicMillis'] = int(time.monotonic()*1000)
+            native._write_json(self.output/('owned-output-counters-'+phase+'.json'), snapshot)
+        except Exception:
+            # The acceptance's first-error.txt/exception remains authoritative.
+            pass
 
     def input_timeout(self, timeout):
         if self._input_deadline is None:
@@ -407,6 +505,9 @@ class NetworkAcceptance(common.Acceptance):
         self.command(['adb', 'push', str(config), common.FILES + 'gecko-network-config.json'])
         self.shell('chown', str(self.upgrade['uid']) + ':' + str(self.upgrade['uid']), common.FILES + 'gecko-network-config.json')
         self.shell('chmod', '600', common.FILES + 'gecko-network-config.json')
+        if self.transport == 'tls':
+            self.counter_node_ports = tuple(urllib.parse.urlsplit(mode[key]).port for key in ('nodeA', 'nodeB'))
+            self.packet_counter_snapshot('before-initial-probe')
         result = self.network('network-config');self.connected(result, 0)
         return result, len(nodes)
 
@@ -740,7 +841,10 @@ def main():
                'screenshots':False,'realServicesAccessed':False,'adbReverseOriginUsed':False}
         native._write_json(args.output/'gecko-network.json',proof);print(json.dumps(proof,indent=2),flush=True);return proof
     except Exception:
-        native._record_failure();raise
+        native._record_failure()
+        if acceptance is not None:
+            acceptance.packet_counter_snapshot('after-first-error')
+        raise
     finally:
         if acceptance is not None:
             for operation in list(acceptance.pending_gates):
