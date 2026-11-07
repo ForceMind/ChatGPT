@@ -101,7 +101,7 @@ function locateDownload() {
   if (os && location.hash === "#downloads" && (os === "android" || matchMedia("(max-width: 800px)").matches)) {
     history.replaceState(null, "", `#download-${os}`);
   }
-  const platform = /^#download-(windows|macos|android)$/.exec(location.hash)?.[1];
+  const platform = /^#download-(windows|macos|android|android-beta)$/.exec(location.hash)?.[1];
   if (!platform) return;
   requestAnimationFrame(() => document.getElementById(`download-${platform}`)?.scrollIntoView({block:"start",behavior:"instant"}));
 }

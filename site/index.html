@@ -456,6 +456,30 @@
               </details>
             </article>
           </div>
+          <article class="android-beta-panel" id="download-android-beta" aria-labelledby="android-beta-title">
+            <div class="android-beta-copy">
+              <p class="eyebrow">ANDROID / INDEPENDENT BETA</p>
+              <h3 id="android-beta-title">Android 独立 Beta <span>2026.11.07-1905</span></h3>
+              <p>每个账号独立设置语言与时区，切换标签沿用原网页；网页与文件可使用同一条 VLESS 线路。本地导出进入所属账号资产库，可选择文件与 Skill 继续处理，并查看进度或停止任务。</p>
+              <p>与上方 alpha.22 并存，登录、资产和恢复空间各自独立，不自动迁移正式版数据。沿用固定 Beta 包名与签名，可覆盖已有同签名 Beta；从早期临时签名测试包升级请先核对签名。</p>
+              <p class="android-beta-limits">Android 9 / 15 合成验收已通过，包含保存竞争修正。真实 ChatGPT、真实节点与厂商手机仍待验收；历史偶发 TLS 连接重置及首次后退超时尚未全部归因。发送结果不确定时，请先检查原对话，应用不会自动重新执行。</p>
+            </div>
+            <div class="android-beta-downloads">
+              <span class="milestone-status">独立公开预发布</span>
+              <p class="android-beta-requirement">Android 9+ · arm64 · 已签名 APK<br />230.7 MiB · 241,907,607 字节</p>
+              <a class="button button-platform" href="https://github.com/ForceMind/ChatGPT/releases/download/android-beta-2026.11.07-1905/ChatGPT-Studio-2026.11.07-1905-android-arm64.apk"><span>下载独立 Beta APK</span><svg><use href="#download" /></svg></a>
+              <a class="android-beta-release" href="https://github.com/ForceMind/ChatGPT/releases/tag/android-beta-2026.11.07-1905">发布说明与验证资料 <span aria-hidden="true">↗</span></a>
+              <details class="accelerated-download">
+                <summary>国内用户加速下载 <span aria-hidden="true">+</span></summary>
+                <div class="accelerated-links"><a href="https://gh-proxy.org/https://github.com/ForceMind/ChatGPT/releases/download/android-beta-2026.11.07-1905/ChatGPT-Studio-2026.11.07-1905-android-arm64.apk" rel="noopener noreferrer" referrerpolicy="no-referrer">独立 Beta APK <span aria-hidden="true">↗</span></a></div>
+                <p>通过第三方 gh-proxy.org 下载；原始下载入口保留。安装前请核对下方 SHA-256，加速服务可能暂时不可用。</p>
+              </details>
+              <details class="checksums">
+                <summary>Beta 文件校验 <span>+</span></summary>
+                <div class="hash-row"><span>APK · SHA-256</span><button type="button" data-copy="8555c1b1e8ad64659bdccd8832c84302a2a8986f049235d9d9f77eae416d4125">复制</button><code>8555c1b1e8ad64659bdccd8832c84302a2a8986f049235d9d9f77eae416d4125</code></div>
+              </details>
+            </div>
+          </article>
           <div class="download-footer">
             <span
               ><i class="status-dot"></i>
@@ -535,7 +559,8 @@
           <li data-milestone="android-network-standalone"><div class="milestone-version"><strong>Android 应用内网络</strong>2026.11.04 · 独立测试</div><div class="milestone-copy"><h3>为网页和文件，选择同一条线路。</h3><p>已完成可与正式版并存的独立网络测试包，支持 VLESS RAW/TCP、TLS 与 REALITY 配置及线路切换。账号、资产和恢复数据使用独立空间；网页与原生文件共用所选线路。真实节点和手机体验仍待验收，不提供免费节点，暂未纳入公开下载。</p></div><span class="milestone-status progress">独立测试待验收</span></li>
           <li data-milestone="android-gecko-beta7"><div class="milestone-version"><strong>Android 独立环境与网络</strong>2026.11.06 · Beta.7 候选</div><div class="milestone-copy"><h3>账号保持独立，网页与文件沿用同一条线路。</h3><p>固定签名测试版支持每账号语言与时区、标签切换复用原网页和加密恢复；补齐 VLESS RAW、TLS、REALITY 下网页、系统选文件上传与下载的同路由验证。Android 9 / 15 六组合成场景及旧数据恢复回归通过，保留原登录空间和保活策略。候选尚未纳入公开下载，真实 ChatGPT、节点与手机体验仍待验收。</p></div><span class="milestone-status progress">候选合成验证通过</span></li>
           <li data-milestone="android-gecko-files-tasks"><div class="milestone-version"><strong>Android 文件与任务</strong>2026.11.07-1001 · 测试候选</div><div class="milestone-copy"><h3>保存网页文件，带着完整要求继续处理。</h3><p>独立环境支持将网页导出的图片、HTML 和文本保存到所属账号资产库，再选择文件、目标账号与 Skill 发起处理任务；上传、填写指令、发送与失败位置都有明确进度，可停止并回看原对话。结果待确认时不会自动再次执行，请先检查原对话；应用的一次发送操作不代表浏览器或第三方服务一定只处理一次。Android 9 / 15 的文件字节、任务流程、同签升级、恢复与标签切换合成验收通过，保留既有登录和保活策略。版本名与安装文件统一使用上海时间；本批仍是独立测试候选，真实 ChatGPT、节点与手机体验待验收，未替换公开下载。</p></div><span class="milestone-status progress">候选合成验证通过</span></li>
-        </ol><p class="milestone-note">macOS 的公开预发布版为 alpha.23，Android 为 alpha.22，Windows 为 alpha.24。各平台按下载卡片标注独立更新。公开 Android 继续使用 System WebView，版本达标之外还需多档案能力；独立环境最新候选为 2026.11.07-1001，已接通本地文件保存与资产 / Skill 任务，保留旧账号原登录空间，尚未迁入公开版本。真实账号业务与真机验收另行记录。</p>
+          <li data-milestone="android-beta-20261107-1905"><div class="milestone-version"><strong>Android 独立 Beta</strong>2026.11.07-1905 · 固定签名</div><div class="milestone-copy"><h3>把独立环境、网络与文件任务带入公开 Beta。</h3><p>现已提供独立 Beta APK，包含每账号语言与时区、原网页切换复用、加密恢复、VLESS 同路由文件处理，以及本地导出和资产 / Skill 任务；本批修正保存竞争。Android 9 / 15 合成验收通过，真实 ChatGPT、节点和厂商手机仍待验收，历史偶发 TLS 重置与首次后退超时尚未全部归因。Beta 与正式版登录、资产和恢复空间独立，不自动迁移，未替换 alpha.22。<a href="#download-android-beta">下载独立 Beta 与查看校验</a></p></div><span class="milestone-status">独立公开预发布</span></li>
+        </ol><p class="milestone-note">常规客户端公开预发布版为 macOS alpha.23、Android alpha.22、Windows alpha.24，各平台按原下载卡片独立更新。常规 Android 继续使用 System WebView，需支持多档案；独立 Beta 2026.11.07-1905 已另行公开，登录与数据空间不串用，不自动迁移正式版数据。以上历史候选记录保留当时状态；真实账号业务、节点与厂商真机验收另行记录。</p>
       </section>
 
       <section

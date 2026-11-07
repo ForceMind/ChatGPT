@@ -1876,3 +1876,20 @@ kbd {
 .accelerated-links a:hover{border-color:#222}
 .accelerated-download p{margin:10px 14px 14px;line-height:1.7;font-size:11px}
 .accelerated-download summary:focus-visible,.accelerated-links a:focus-visible{outline:2px solid #222;outline-offset:3px}
+
+
+/* Independent Android Beta stays separate from device-recommended release cards. */
+.android-beta-panel{scroll-margin-top:10px;display:grid;grid-template-columns:minmax(0,1.65fr) minmax(280px,1fr);gap:36px;margin-top:24px;padding:28px;border:1px solid #d5d5d5;border-radius:16px;background:#f8f8f8;color:#222}
+.android-beta-copy,.android-beta-downloads{min-width:0}
+.android-beta-copy .eyebrow{font-size:11px;color:#555;margin:0 0 10px}
+.android-beta-copy h3{font-size:23px;line-height:1.4;font-weight:500;margin:0 0 16px;letter-spacing:-.4px}
+.android-beta-copy h3 span{display:block;font:12px/1.8 var(--mono);color:#555;letter-spacing:0;margin-top:4px}
+.android-beta-copy>p:not(.eyebrow){font-size:13px;line-height:1.9;margin:12px 0 0;color:#444}
+.android-beta-copy .android-beta-limits{border-top:1px solid #ddd;padding-top:14px}
+.android-beta-downloads>.milestone-status{display:inline-block;font-size:12px}
+.android-beta-requirement{font-size:12px;line-height:1.9;color:#555;margin:16px 0}
+.android-beta-release{display:inline-block;font-size:13px;color:#333;margin-top:14px;border-bottom:1px solid #999}
+.android-beta-panel .checksums summary,.android-beta-panel .hash-row{font-size:12px}
+.android-beta-panel .hash-row code{font-size:11px;overflow-wrap:anywhere}
+@media(max-width:800px){.android-beta-panel{grid-template-columns:minmax(0,1fr);gap:24px;padding:24px}.android-beta-copy h3{font-size:22px}}
+@media(max-width:420px){.android-beta-panel{padding:20px}.android-beta-copy h3{font-size:20px}}
