@@ -252,7 +252,7 @@ class HandoffAcceptance(NativeAXMixin,network.NetworkAcceptance):
             self.asset_bytes(added[0])
 
     def launch(self,mode,verify_cross=False):
-        assert mode in ('normal','upload-hold','upload-error','send-ack-drop')
+        assert mode in ('normal','upload-hold','upload-error','send-ack-drop','send-business-ack-missing')
         before_jobs={row['id'] for row in self.jobs()};before_docs=set(self.status()['taskDocuments'])
         assert self.host('/handoff-control/configure',{'schema':1,'mode':mode})['ok'] is True
         self.control('open','A',0);self.route_page('A',self.source_page['document'],self.source_draft)
@@ -313,6 +313,17 @@ class HandoffAcceptance(NativeAXMixin,network.NetworkAcceptance):
             assert job['conversationURL']=='https://'+HOST+':18480/c/handoff-'+document
         else:
             assert task['latest'] and task['latest']['userMessages']==[]
+            assert task['mode']=='send-business-ack-missing'
+            response=task['sendResponse'];observed=task['latest']['sendResponse']
+            assert response['complete'] is True and response['status']==200
+            body=base64.b64decode(response['bodyBase64'],validate=True)
+            assert response['bytesWritten']==response['bodyBytes']==len(body)
+            assert response['bodySHA256']==hashlib.sha256(body).hexdigest()
+            assert response['contentType']=='application/json; charset=utf-8' and response['contentLength']==str(len(body))
+            for key in ('status','contentType','contentLength','bodyBytes','bodySHA256','bodyBase64'):assert observed[key]==response[key]
+            assert observed['httpOK'] is True and observed['jsonParsed'] is True
+            assert observed['hasAccepted'] is False and observed['acceptedValue'] is None
+            assert 'accepted' not in json.loads(body.decode('utf-8'))
         latest=task['latest'];assert latest['inputCount']>=1 and latest['trustedInputCount']>=1
         assert latest['fileChanges']==latest['trustedFileChanges']==1
         return {'job':job,'document':document,'server':task,'sendFence':fence,'originalsAfter':self.originals(),
@@ -437,7 +448,7 @@ def main():
         identifier,document=acceptance.launch('normal')
         recovery=acceptance.validate_sent(identifier,document);recovery['stagingAfter']=acceptance.cleanup(identifier);recovery['hotPages']=acceptance.hot_pages()
         assert acceptance.job(failed['id'])['status']=='failed'
-        identifier,document=acceptance.launch('send-ack-drop')
+        identifier,document=acceptance.launch('send-business-ack-missing')
         uncertain=acceptance.validate_sent(identifier,document,'uncertain');uncertain['stagingAfter']=acceptance.cleanup(identifier)
         acceptance.tap_native_action('更多功能',description=True)
         acceptance.tap_native_action('查看网页任务',description=True)
@@ -457,6 +468,10 @@ def main():
         assert all(row['route'] in ('A','B') for row in final['networkRequests'])
         assert acceptance.originals()==originals
         proof={'schema':1,'complete':True,'api':api,'engine':'gecko','transport':'raw','sourceSHA':os.environ['GITHUB_SHA'],
+            'onceScope':'application-task','transportLevelReplayGuarantee':False,'uncertaintyMode':'send-business-ack-missing',
+            'knownTransportReplayFailure':{'status':'known-transport-replay-failure','mode':'send-ack-drop',
+                'run':42254916165,'sourceSHA':'2bc002f29f7424e0413c335721d61b09a320c4b7',
+                'api28Artifact':13522023748,'api35Artifact':13523037625,'includedInCurrentPass':False},
             'applicationSourceSHA':source,'versionMetadata':version,'ciReceipt':receipt,'candidateAPK':apk,'candidateInstalledSHA256':installed,
             'originTLS':tls,'accounts':acceptance.manifest['accounts'],'originalsBefore':originals,'originalsAfter':acceptance.originals(),
             'mainProcessPID':int(main_pid),'nativeTaskEvents':acceptance.task_events(int(main_pid)),
@@ -470,7 +485,8 @@ def main():
         assert crash['passed'] is True,('Owned App crash gate failed',crash['ownedFatalCount'],crash['unresolvedNativeFatalCount'])
         proof['ownedAppCrashCheck']=crash
         native._write_json(args.output/'gecko-handoff.json',proof)
-        print(json.dumps({'complete':True,'api':api,'cases':5,'sendCount':3,'proofFile':str(args.output/'gecko-handoff.json')}),flush=True)
+        print(json.dumps({'complete':True,'api':api,'cases':5,'sendCount':3,'onceScope':'application-task',
+                          'transportLevelReplayGuarantee':False,'proofFile':str(args.output/'gecko-handoff.json')}),flush=True)
         return proof
     except Exception:
         capture_failure=True;native._record_failure();raise

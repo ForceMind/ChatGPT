@@ -4,6 +4,10 @@
 
 第一阶段已交付 `2026.11.06-2024`，下载与实际结果见下方“最新交付”。当前推进第二阶段资产/Skill 自动任务，接线代码已落盘，尚待 Actions 完整验收。
 
+**当前确认范围（2026-11-07）**：用户已明确确认按应用层单次发送继续。第五项新增“完整 HTTP 响应、缺少业务确认”的合成故障，仍要求服务器真实记录一次、页面一次发送点击、完整文件/指令、持久化发送栅栏、uncertain 后重开不自动再执行和零 App 崩溃。原“已提交但完全无 HTTP 响应就 TCP 断流”模式与两次 POST 失败证据保留为运输层限制，不更名为通过，不承诺第三方恰好一次处理。其他原定回归与数据/保活边界保持。
+
+新夹具模式 `send-business-ack-missing` 已接入，尚待 Actions：真实 commit 后写完整 HTTP200/JSON/Content-Length，无 `accepted` 业务字段。服务端保存 write/flush 的实际字节、长度与SHA，网页通过真实 Response.arrayBuffer/JSON解析记录收到的状态、header、字节与缺ACK；driver和Gate逐项互核。原 `send-ack-drop` TCP shutdown/close 分支保留。候选 proof/summary 明确 `onceScope=application-task`、`transportLevelReplayGuarantee=false`，单独引用原失败run/artifact且 `includedInCurrentPass=false`。App代码、重试设置、全部原数据与保活策略未改，当前批次内部序号仍3000033。
+
 用户已要求继续 Android 主线，alpha.22 原包 UI 单独回迁暂缓。当前顺序为：先补齐 Gecko 的 blob/data 本地文件导出，再接入新环境“资产 → GPT / Skill”完整流程；两步沿用原固定 Beta 包名、证书、账号空间、加密恢复与热标签，不合并 main、不公开发布、不部署官网或更新个人设备。
 
 从下一次交付起，用户可见版本名使用上海时区 `YYYY.MM.DD-HHmm`，例如 `2026.11.06-1835`，APK 文件名采用同一版本。Android 内部 versionCode 从 3000031 递增至 3000032，继续由整数保证覆盖升级。一次完整构建只生成一份时间版本元数据，人用包和所有 CI 变体共用；复用原 APK 时保留其原日期，旧交付记录不改名。本轮仅接入 Android，其他平台在各自后续版本接入，当前公开下载与更新清单保持原状。
@@ -66,7 +70,7 @@
 
 固定158 `nsHttpTransaction.cpp:1560–1640` 允许某些连接复用且完全无响应的事务重启，`2007–2051` 会回卷可seek请求体再 Restart。夹具当前已真实commit后直接TCP shutdown、无任何HTTP头；route/core只转发HTTPS密文，没有生成第二份有效JSON请求的逻辑，证据指向浏览器运输层重放，但未单独记录本次具体restart reason。App的一次Native点击/持久fence无法单方面证明第三方服务只收到一次，真实ChatGPT服务端幂等亦未验证；没有偷偷启用影响全runtime/其它热标签的max-attempts设置。
 
-**等待范围确认（2026-11-07）**：已向用户说明两种边界。可继续验证应用层“真实commit、完整HTTP framing但无业务ACK”，仍严格一次发送、结果待确认、不自动再执行，并披露原TCP断流2POST为已发现运输层限制；或继续研究可靠单事务禁止底层重传方案并暂不交付。未获确认前不替换故障模式、不删除原失败产物、不放宽次数、也不把现第五项改成已通过。当前源码/记录都保存在dev。
+**范围确认过程（2026-11-07，现已确认）**：当时向用户说明两种边界：验证应用层“真实commit、完整HTTP framing但无业务ACK”，仍严格一次发送、结果待确认、不自动再执行并披露运输层限制；或继续研究可靠单事务禁止底层重传方案并暂不交付。等待期间没有替换故障模式、删除原失败产物、放宽次数或把现第五项改成通过。用户随后明确回复“确认”，现按页面顶部列明范围执行；原失败仍保留。
 
 原范围只读续查（2026-11-07）：未把自动Goal续跑当作范围变更批准，继续核对固定158的窄作用域方案。`nsHttpChannel.cpp` 在 BeginConnect 先按原请求头调整 keep-alive 能力，随后 PrepareToConnect 才触发普通 webRequest 的修改阶段；`HttpBaseChannel::SetRequestHeaderInternal` 只改请求头，不回写连接能力。因此没有把扩展晚加 `Connection: close` 当作可证的单请求禁重传修复。公开 `proxy.ProxyInfo.connectionIsolationKey` 只承诺代理连接隔离，direct 模式忽略其它字段，不能据此宣称覆盖系统直连或所有事务重启。固定158的流式请求体会拒绝已消费后的回卷，但要求HTTP2/3，且强改网页fetch/请求体并非当前已核实的透明兼容路径。未写入全runtime max-attempts、未修改网页fetch或夹具，没有新增测试场景或候选发布。
 

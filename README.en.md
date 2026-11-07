@@ -35,7 +35,7 @@ ChatGPT Studio brings independent ChatGPT account spaces, tabs, downloaded asset
 - **Tabs:** create, pin, reorder, close and restore tabs per account. Android includes phone/tablet card views, filtering, search and renaming. Desktop does not proactively freeze or discard open pages.
 - **Local asset library:** account ownership, imports and downloads, categories, search, favorites, tags, derived files and a recoverable trash.
 - **Preview and conversion:** images, PDF, HTML, Markdown, text, CSV and supported media. Specialized formats can open in associated system applications. Conversions create new files and preserve originals.
-- **Reviewed tasks:** select files, a target account and a Skill, then follow preparation, upload, instruction entry, readiness, a single send and confirmation. An uncertain result is not retried automatically.
+- **Reviewed tasks:** select files, a target account and a Skill, then follow preparation, upload, instruction entry, readiness, a single application-level send and confirmation. The app does not automatically execute an uncertain send again. The Android Gecko candidate does not guarantee exactly-once browser transport or third-party server processing. [Boundary and validation scope](docs/android-environment-client.md)
 - **Capabilities:** desktop builds include 121 Skills and 32 original roles, with 24 internet-related roles first. Android retains 120 task Skills. Roles support standalone or combined Skill/file tasks, with steps, deliverables and checks.
 - **Local recovery:** saved account/tab state, drafts and reading positions. macOS also provides encrypted read-only conversation snapshots and confirmed updates.
 

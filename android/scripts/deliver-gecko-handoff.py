@@ -72,6 +72,11 @@ def native_node(value,package,api):
 def verify(proof,api,receipt,metadata,definitions,skill,artifact):
     assert proof['schema']==1 and proof['complete'] is True and proof['api']==api
     assert proof['engine']=='gecko' and proof['transport']=='raw'
+    assert proof['onceScope']=='application-task' and proof['transportLevelReplayGuarantee'] is False
+    assert proof['uncertaintyMode']=='send-business-ack-missing'
+    assert proof['knownTransportReplayFailure']=={'status':'known-transport-replay-failure','mode':'send-ack-drop',
+        'run':42254916165,'sourceSHA':'2bc002f29f7424e0413c335721d61b09a320c4b7',
+        'api28Artifact':13522023748,'api35Artifact':13523037625,'includedInCurrentPass':False}
     assert proof['ciReceipt']==receipt and proof['versionMetadata']==metadata
     assert proof['applicationSourceSHA']==receipt['sourceSHA'] and re.fullmatch(r'[a-f0-9]{40}',proof['sourceSHA'])
     for key in ('file','sha256','package','versionCode','versionName','signerSHA256'):assert proof['candidateAPK'][key]==receipt[key]
@@ -135,7 +140,7 @@ def verify(proof,api,receipt,metadata,definitions,skill,artifact):
         by_job.setdefault(event['jobId'],[]).append(event)
     cases=(('positive','normal','submitted',1),('cancelled','upload-hold','cancelled',0),
            ('failed','upload-error','failed',0),('explicitNewTaskRecovery','normal','submitted',1),
-           ('uncertain','send-ack-drop','uncertain',1))
+           ('uncertain','send-business-ack-missing','uncertain',1))
     used_jobs=set();used_docs=set();used_stages=set();case_summaries=[]
     for key,mode,terminal,sends in cases:
         case=proof[key];job=case['job'];identifier(job['id']);document=identifier(case['document'])
@@ -204,6 +209,17 @@ def verify(proof,api,receipt,metadata,definitions,skill,artifact):
                 assert latest['draft']==latest['modelDraft']=='' and latest['url']==job['conversationURL']=='https://network-fixture.test:18480/c/handoff-'+document
             else:
                 assert latest['draft']==latest['modelDraft']==prompt and latest['error'] is True
+                response=task['sendResponse'];observed=latest['sendResponse']
+                body=base64.b64decode(response['bodyBase64'],validate=True)
+                expected_body=json.dumps({'document':document,'receipt':'owned-commit-without-business-ack'},separators=(',',':')).encode('utf-8')
+                assert body==expected_body and response['bodyBytes']==response['bytesWritten']==len(body)
+                assert response['complete'] is True and response['status']==200
+                assert response['contentType']=='application/json; charset=utf-8' and response['contentLength']==str(len(body))
+                assert response['bodySHA256']==hashlib.sha256(body).hexdigest()
+                for field in ('status','contentType','contentLength','bodyBytes','bodySHA256','bodyBase64'):assert observed[field]==response[field]
+                assert observed['httpOK'] is True and observed['jsonParsed'] is True
+                assert observed['hasAccepted'] is False and observed['acceptedValue'] is None
+                assert 'accepted' not in json.loads(body.decode('utf-8'))
         else:
             assert case['sendFence'] is None and latest['userMessages']==[] and latest['sendClicks']==0
             assert latest['draft']==latest['modelDraft']=='' and latest['trustedInputCount']==latest['inputCount']==0
@@ -218,9 +234,10 @@ def verify(proof,api,receipt,metadata,definitions,skill,artifact):
     assert proof['failed']['job']['id']!=proof['explicitNewTaskRecovery']['job']['id']
     assert proof['failed']['job']['createdAt']<proof['explicitNewTaskRecovery']['job']['createdAt']
     reopened=proof['uncertain']['afterNativeReopen'];assert reopened['job']==proof['uncertain']['job']
-    for key in ('document','mode','identity','route','documentLoads','uploadAttempts','sendAttempts','uploads','sends'):
+    for key in ('document','mode','identity','route','documentLoads','uploadAttempts','sendAttempts','uploads','sends','sendResponse'):
         assert reopened['server'][key]==proof['uncertain']['server'][key]
     assert reopened['server']['latest']['userMessages']==[] and reopened['server']['sendAttempts']==1
+    assert reopened['server']['latest']['sendResponse']==proof['uncertain']['server']['latest']['sendResponse']
     origin=proof['origin'];assert origin['schema']==1 and origin['host']=='network-fixture.test' and origin['sendCount']==3
     assert origin['rejectedEventCount']==0 and set(origin['taskDocuments'])==used_docs
     assert origin['networkRequests'] and all(row['route'] in ('A','B') for row in origin['networkRequests'])
@@ -228,6 +245,7 @@ def verify(proof,api,receipt,metadata,definitions,skill,artifact):
         task=origin['taskDocuments'][proof[key]['document']]
         assert task['sendAttempts']==sends and task['uploadAttempts']==task['documentLoads']==1
         assert task['uploads']==proof[key]['server']['uploads'] and task['sends']==proof[key]['server']['sends']
+        if key=='uncertain':assert task['sendResponse']==proof[key]['server']['sendResponse']
     assert {path:origin['pageCounts'][path] for path in baseline['pageCounts']}==baseline['pageCounts']
     assert {path:list(origin['pages'][path]) for path in baseline['documents']}==baseline['documents']
     assert len(origin['handoffAssetDownloads'])==2
@@ -236,6 +254,10 @@ def verify(proof,api,receipt,metadata,definitions,skill,artifact):
     tls=proof['originTLS'];assert tls['caUnchanged'] is True and tls['leafIsCA'] is False and tls['purpose']=='sslserver'
     assert tls['dnsSANs']==['network-fixture.test','files.network-fixture.test'] and re.fullmatch(r'[a-f0-9]{64}',tls['caCertificateSha256'])
     return {'api':api,'complete':True,'cases':case_summaries,'originalBytesPreserved':True,
+            'onceScope':'application-task','transportLevelReplayGuarantee':False,
+            'uncertaintyMode':'send-business-ack-missing','knownTransportReplayFailure':proof['knownTransportReplayFailure'],
+            'businessAckResponse':{key:proof['uncertain']['server']['sendResponse'][key]
+                                   for key in ('status','contentType','contentLength','bodyBytes','bodySHA256','bytesWritten')},
             'realMultipartVerified':True,'completeUnicodePromptVerified':True,'skillAndCrossAccountNativeReview':True,
             'persistedTaskStagesVerified':True,'onceSendFencesVerified':True,'explicitFailureRecovery':True,
             'uncertainReopenNoReplay':True,'hotDocumentsAndDraftPreserved':True,
@@ -277,6 +299,8 @@ def deliver(input_root=Path('input'),candidate=Path('candidate'),acceptance=Path
             name=proof['ownedAppCrashCheck']['source'][key]
             (evidence/f"gecko-handoff-{proof['api']}-{name}").write_bytes((artifact/name).read_bytes())
     summary={'schema':1,'complete':True,'engine':'gecko','versionMetadata':metadata,'applicationSourceSHA':receipt['sourceSHA'],
+             'onceScope':'application-task','transportLevelReplayGuarantee':False,
+             'uncertaintyMode':'send-business-ack-missing','knownTransportReplayFailure':proofs[0]['knownTransportReplayFailure'],
              'ciAPKsha256':receipt['sha256'],'apis':summaries,'screenshots':False,'realServicesAccessed':False}
     (evidence/'gecko-handoff-summary.json').write_text(json.dumps(summary,indent=2)+'\n',encoding='utf-8')
     return summary

@@ -15,7 +15,7 @@ import uuid
 import zlib
 
 HOST = 'network-fixture.test'
-MODES = ('normal','upload-hold','upload-error','send-ack-drop')
+MODES = ('normal','upload-hold','upload-error','send-ack-drop','send-business-ack-missing')
 
 
 def assets():
@@ -53,11 +53,11 @@ def task_page(document, owner):
 <title>合成任务 __DOCUMENT__</title><style>*{box-sizing:border-box}body{margin:0;font:16px system-ui;color:#111;background:#fff}main{padding:16px}textarea{width:100%;height:140px;font:16px system-ui}button{font:16px system-ui;padding:12px}input[type=file]{display:none}.attachment{padding:8px;border:1px solid #ccc;margin-bottom:6px}[role=alert]{color:#a00000}[data-message-author-role=user]{white-space:pre-wrap}</style></head><body><main>
 <h1>合成资产任务</h1><p>仅已授权的合成材料，不访问真实服务。</p><form><input id="owned-files" type="file" multiple accept="*/*"><div id="files"></div><textarea id="prompt-textarea" aria-label="合成任务指令"></textarea><button type="button" data-testid="send-button" disabled>发送合成任务</button></form><section id="messages"></section></main><script>
 'use strict';const config=__CONFIG__,doc=config.document,input=document.getElementById('owned-files'),editor=document.getElementById('prompt-textarea'),send=document.querySelector('[data-testid=send-button]'),box=document.getElementById('files');
-let modelDraft='',browserFiles=[],inputCount=0,trustedInputCount=0,fileChanges=0,trustedFileChanges=0,sendClicks=0,uploadBusy=false,error=false,submitted=false,sequence=0;
+let modelDraft='',browserFiles=[],inputCount=0,trustedInputCount=0,fileChanges=0,trustedFileChanges=0,sendClicks=0,uploadBusy=false,error=false,submitted=false,sequence=0,sendResponse=null;
 const hex=bytes=>Array.from(new Uint8Array(bytes),x=>x.toString(16).padStart(2,'0')).join('');
 function update(){send.disabled=uploadBusy||error||submitted||browserFiles.length!==2||!editor.value;}
 function snapshot(){return {document:doc,account:config.account,url:location.href,language:navigator.language,timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone,
- draft:editor.value,modelDraft,inputCount,trustedInputCount,fileChanges,trustedFileChanges,browserFiles,uploadBusy,error,sendClicks,submitted,
+ draft:editor.value,modelDraft,inputCount,trustedInputCount,fileChanges,trustedFileChanges,browserFiles,uploadBusy,error,sendClicks,submitted,sendResponse,
  focused:document.activeElement===editor,userMessages:Array.from(document.querySelectorAll('[data-message-author-role=user]'),e=>e.textContent),eventSequence:++sequence,visibility:document.visibilityState};}
 let reporting=false;async function report(){if(reporting)return;reporting=true;try{await fetch('/handoff/event',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(snapshot())});}catch(unavailable){}finally{reporting=false;}}
 editor.addEventListener('input',event=>{modelDraft=editor.value;inputCount++;if(event.isTrusted)trustedInputCount++;update();report();});
@@ -69,7 +69,10 @@ input.addEventListener('change',async event=>{fileChanges++;if(event.isTrusted)t
  catch(failure){error=true;box.innerHTML='<div role="alert">合成附件上传失败，未发送任务</div>';}
  finally{uploadBusy=false;update();report();}});
 send.addEventListener('click',async event=>{if(send.disabled)return;sendClicks++;submitted=true;update();report();const prompt=editor.value;
- try{const response=await fetch('/handoff/send',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({document:doc,identity:config.account,prompt,modelDraft,files:browserFiles})});if(!response.ok)throw Error('Owned send rejected');const result=await response.json();if(!result.accepted)throw Error('Owned send not accepted');
+ try{const response=await fetch('/handoff/send',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({document:doc,identity:config.account,prompt,modelDraft,files:browserFiles})});
+ const bytes=new Uint8Array(await response.arrayBuffer());sendResponse={status:response.status,httpOK:response.ok,contentType:response.headers.get('Content-Type'),contentLength:response.headers.get('Content-Length'),bodyBytes:bytes.length,bodySHA256:hex(await crypto.subtle.digest('SHA-256',bytes)),bodyBase64:btoa(Array.from(bytes,value=>String.fromCharCode(value)).join('')),jsonParsed:false,hasAccepted:null,acceptedValue:null};
+ const result=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes));sendResponse.jsonParsed=true;sendResponse.hasAccepted=Object.prototype.hasOwnProperty.call(result,'accepted');sendResponse.acceptedValue=sendResponse.hasAccepted?result.accepted:null;
+ if(!response.ok)throw Error('Owned send rejected');if(!sendResponse.hasAccepted||result.accepted!==true)throw Error('Owned send not accepted');
  history.pushState({},'', '/c/handoff-'+doc);const message=document.createElement('article');message.dataset.messageAuthorRole='user';message.textContent=prompt;document.getElementById('messages').appendChild(message);editor.value='';modelDraft='';}
  catch(failure){error=true;box.insertAdjacentHTML('beforeend','<div role="alert">合成发送结果待确认，不会自动重发</div>');}
  finally{update();report();}});
@@ -221,6 +224,19 @@ def handler_for(network_handler, route_name):
                     return self.response(200,{'accepted':True,'document':document})
                 if mode=='send-ack-drop':
                     self.close_connection=True;self.connection.shutdown(socket.SHUT_RDWR);self.connection.close();return
+                if mode=='send-business-ack-missing':
+                    # The real commit above is retained. Only the business acknowledgement is
+                    # absent; complete HTTP framing must not simulate a transport replay guarantee.
+                    body=json.dumps({'document':document,'receipt':'owned-commit-without-business-ack'},separators=(',',':')).encode('utf-8')
+                    content_type='application/json; charset=utf-8'
+                    with lock:task['sendResponse']={'status':200,'contentType':content_type,'contentLength':str(len(body)),
+                        'bodyBytes':len(body),'bodySHA256':hashlib.sha256(body).hexdigest(),
+                        'bodyBase64':base64.b64encode(body).decode('ascii'),'bytesWritten':0,'complete':False}
+                    self.send_response(200);self.send_header('Content-Type',content_type);self.send_header('Content-Length',str(len(body)))
+                    self.send_header('Cache-Control','no-store');self.send_header('X-Fixture-Route',route);self.end_headers()
+                    written=self.wfile.write(body);self.wfile.flush()
+                    with lock:task['sendResponse'].update(bytesWritten=written,complete=written==len(body))
+                    return
                 return self.response(200,{'accepted':True,'document':document})
             except (AssertionError,KeyError,ValueError,UnicodeError) as invalid:
                 with lock:state['rejectedEventCount']+=1
