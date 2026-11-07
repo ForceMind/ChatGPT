@@ -2,13 +2,23 @@
 
 ## 当前迭代：Android 15 两项首错定位
 
-用户已批准继续定位 TLS startup reset 与旧 WebView 导航超时，先补证据、不预设根因。专用 `android-stability-diagnostics.yml` 仅在 Actions 构建并运行原 Android15 TLS 场景，以及保留完整 synthetic 客户端前置的原导航用例；不重复后台长测。当前补丁增加仅测试启用的核心错误枚举、导航步骤/保护状态与失败摘要，保留原异常、断言、操作次数和超时，运行结果待记入此节。
+用户已批准继续定位 TLS startup reset 与旧 WebView 导航超时。专用 `android-stability-diagnostics.yml` 仅在 Actions 构建并运行原 Android15 TLS 场景，以及保留完整 synthetic 客户端前置的原导航用例；不重复后台长测。已增加仅测试启用的核心错误枚举、导航步骤/保护状态与失败摘要，保留原完整Java异常栈、断言、操作次数和超时。已定位并修正本轮强制刷新保存竞争；原首次后退超时与正向 TLS reset 仍不能宣称根因已解决。
 
-本批不改变正式客户端的登录/恢复格式或保活策略，不合并 main、不公开发布或部署。上一可安装候选仍是下方 `2026.11.07-1001`；诊断构建即使成功，也不替代完整候选验收或表示两个根因已解决。
+本批不改变正式客户端的登录/恢复格式或保活策略，不合并 main、不公开发布或部署。上一可安装候选仍是下方 `2026.11.07-1001`，尚未包含本轮保存竞争修正；诊断构建不替代完整候选验收，也不自动提供为日常安装包。
 
 首轮取证：`42350115528` / `145fc5632ca66e8c71bc6079ce4e3bed041c9be8` 构建通过（17份XML、85项Android单元、失败/错误/跳过均0；Go诊断及16项夹具测试通过）。TLS job `128338288799` / artifact `13565842539` 的正向原场景通过，初次probe在567ms完成；错误hostname/CA负例的reset不等于原正向首错，原根因仍未知。核心日志确有来源枚举，但Xray会在outbound日志前把cause格式化进私有message；下一轮改用其公开typed错误反馈接口，不打印/格式化原文，仍不能恢复retry私有message中的逐次dial原因。
 
-导航 job `128338288841` / artifact `13566185043` 失败于 `force-refresh`，原后退/前进步骤本轮已通过。新增状态实证：guard已到recovery-start，serial15/epoch6/URL不变，captureTicket从6推进到8后recovery-cancelled，无action-approved或新page-start，原草稿/存储保留。源码对应JS采集后提前清inflight、IO保存未结束时4秒poll可启动新capture，旧导航保存因ticket失效取消。当前修正覆盖采集至保存确认的inflight生命周期，保留原票据/归属/成功门及2秒、7秒、30秒预算；尚待Actions。此证据只确证本次强制刷新竞争，不能先认定原后退超时同根。
+导航 job `128338288841` / artifact `13566185043` 失败于 `force-refresh`，原后退/前进步骤本轮已通过。新增状态实证：guard已到recovery-start，serial15/epoch6/URL不变，captureTicket从6推进到8后recovery-cancelled，无action-approved或新page-start，原草稿/存储保留。源码对应JS采集后提前清inflight、IO保存未结束时4秒poll可启动新capture，旧导航保存因ticket失效取消。修正覆盖采集至保存确认的inflight生命周期，同serial/ticket才能释放与更新，完成回调仅一次，保留原票据/归属/成功门及2秒、7秒、30秒预算。此证据只确证本次强制刷新竞争，不能先认定原后退超时同根。
+
+修正回归：`42351983115` / `85b1737e5cac3f5eec2b43dde3c06dddcb0a12e1` 的构建、原完整synthetic35与TLS场景首轮通过；实际17份XML、85项Android单元、失败/错误/跳过均0，Go诊断测试（含原3项及新增2项）、16项夹具测试、lint/包检查通过。导航 job `128343890758` / artifact `13565997733` 的原instrument为OK(1 test)，强制刷新实际263437ms recovery-start→263450ms action-approved，captureTicket仅6→7，随后263598ms page-start、epoch6→7；原新document、切标签不重载、前后退、普通/强制刷新、草稿/Cookie/storage及旧账号密文资产保留断言均通过。本轮保存仅13ms，未声称受控撞上poll竞争或原后退超时已同根复现。
+
+TLS 首轮 job `128343890742` / artifact `13566935493` 的正向启动为582/518/549/583/538ms，未复现reset。公开 `session.TrackedConnectionError` 已在两个预期凭证负例中实际产生 `outbound-feedback` / `retry-exhausted`，各17条、无丢弃；固定类型链不调用Error/String，不输出地址、配置、凭据或正文。每次启动独立tracker，旧context晚反馈不能混入新实例；泛logger仅辅助时序，跨代次因果以typed tracker为准。Xray将逐次dial原因放私有message，因此仅能报告公开retry耗尽，不能虚构证书或网络终因。
+
+原2053ms首错已越过core启动及本地连接检查，进入Java TLS握手时核心和代次仍有效；但这不足以排除本地HTTP/CONNECT、outer TLS/VLESS、host路由与origin接收调度。没有APP accepted日志只表示未观察到handler标记；host RST为空也不能排除guest loopback、FIN或TLS alert。不能用新负例链回填旧正向故障。
+
+第二轮仅对TLS原任务追加一次全新模拟器采样，不重建、不重复导航/后台长测：[attempt2 job `128345290927`](https://github.com/ForceMind/ChatGPT/actions/runs/42351983115/job/128345290927) / artifact `13566402583` 通过，同源码85b1737。正向probe为580/516/565/634/577ms，各8条、无丢弃/正向reset；两个凭证负例各17条，实际typed反馈为4层retry-exhausted，正确拒绝后显式恢复。proof核对noDirect/noReplay/draftCookieIdentityPreserved，sendCount=0，未截图或访问真实服务。另直接复核了导航原proof与recovery-start→action-approved→page-start序列、旧数据保留汇总；新增诊断总计三个独立任务样本通过，仍不等于原TLS根因解决。
+
+当前未关闭项：原首次后退超时是否属于同一保存竞争，及正向TLS reset根因。现有原失败缺少typed因果，新的通过样本不能补回旧失败链；需要带新取证的同场景正向失败样本才能继续因果定位。本轮停止机械采样，不预先增加平台、后台长测或新的网络行为，也不将当前诊断包提升为完整可安装候选。主线仍处于稳定性收口，尚未进入公开版迁入。
 
 ## 当前开发：日期版本、本地导出与资产任务
 
