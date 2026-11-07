@@ -44,6 +44,25 @@ TLS [job `128353716199`](https://github.com/ForceMind/ChatGPT/actions/runs/42355
 
 本批已完成获批的确定性导航对照及TLS被动取证验证，源码和报告仅同步dev；未作完整Android9/15候选发布回归或替换可安装候选。正向TLS原首错仍缺带新取证的失败样本，不能仅凭2002ms代码级相容、成功样本或负例链认定根因。历史first-back归因同样保留未知，主目标保持未完成，不继续无新证据的机械重跑，不合并main、公开发布或部署。
 
+### 剩余根因审计与阻塞条件（2026-11-07）
+
+上一轮已完成确定性对照，属于实质进展。本轮回读确认 `42355022185`、`42351983115`、`42350115528` 均已终止，无遗漏的活跃验证任务；原首错artifact `13556391205`、`13556366868` 均仍未过期，source为 `d5f187e84cdcc3568e51fe581041dca7c3368171`，未删除或改写。当前客户端/工作流源码仍与已验证的 `263db3713870538808903a91aa75e3cd037628ac` 一致。
+
+| 目标验收项 | 当前证据 | 结论 |
+| --- | --- | --- |
+| 导航保存竞争的最小修正 | 真实IO/轮询单变量旧行对照失败、修正版及先发轮询保护通过 | 本次竞争分支已确证；缺原phase/ticket的历史首次后退不能严格归同根 |
+| 正向TLS reset实际原因及对应修正 | 原2053ms缺typed/counter/连接生命周期；新版本正向样本通过，负例及注入单元另列 | 未完成，不得用相容时序或负例链补写旧原因 |
+| 首错与完整必要运行器/状态证据 | 原artifact及各轮raw instrument、计数、跨钟、TCP flags、失败分类保留 | 已保存；成功case没有伪造after-first-error数据 |
+| 原断言、预算和真实保存 | 原2/7/30秒及4秒轮询；旧行对照真实失败；真实changed/解密读回 | 保持，未删除功能或放宽关键断言 |
+| 登录/恢复及标签保活 | 原完整synthetic35、旧子集哈希与record、热切换原flags；源码未改数据格式或保活策略 | 本批API35证据通过，不扩大成完整多平台发布验收 |
+| Actions-only、无截图/真实服务/个人设备，dev-only | CI guards、禁用测试截图、各proof flags及Git记录 | 保持；未合并main、发布或部署 |
+
+为确认是否仍有必要的安全行动，只读审计了固定Xray `0afec66085a8`：原system dialer为私有对象且无getter；公开替换接口不返回原对象，无法直接委托；保存DialSystem函数仍动态读全局，包装后会递归。Socket controller只在DialContext前执行，不能被动取得之后connect或TLS的typed结果；已有context反馈位于outbound整体返回后，拿不到内部每次dial错误。新建默认dialer、替换transport、私有反射或格式化原错误会改变本次硬约束，因此未实施。
+
+依据：[SystemDialer对象与替换接口](https://github.com/XTLS/Xray-core/blob/0afec66085a8/transport/internet/system_dialer.go#L200)、[socket controller调用时机](https://github.com/XTLS/Xray-core/blob/0afec66085a8/transport/internet/system_dialer.go#L149)、[outbound聚合反馈](https://github.com/XTLS/Xray-core/blob/0afec66085a8/app/proxyman/outbound/handler.go#L238)。
+
+同一阻塞条件已连续三个目标轮次存在：缺少带现有取证的正向失败因果数据。当前没有可安全补回旧信息的实现动作，也无活跃任务可等待；继续收集成功样本不会区分仍相容的多个原因。目标标为blocked而非complete，完整目标保持。恢复条件是同一合成场景产生带现有typed/counter/clock/flags的正向失败，或取得原首错更完整的因果日志；历史后退归因同样需要相应原状态证据。未安排后台采样、定时自动化或额外发布。
+
 ## 当前开发：日期版本、本地导出与资产任务
 
 本轮已交付 `2026.11.07-1001` 固定签名候选：Gecko 本地导出与资产/Skill 自动任务均通过 Android 9/15 的合成验收。下载、原始失败及边界见下方“最新交付”；正式版迁入与真实服务、手机验收仍未完成。
