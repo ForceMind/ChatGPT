@@ -1,0 +1,247 @@
+name: Complete Android Candidate Handoff Recovery
+on:
+  push:
+    branches: [dev]
+    paths: ['.github/workflows/android-environment-candidate-resume.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  authenticate:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Authenticate immutable APKs and every successful original case
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git fetch origin 364ddd14d2fb76f234c3284e1372e8de9b37c4f8 --depth=1
+          gh api repos/${{ github.repository }}/actions/runs/42366675306 > "$RUNNER_TEMP/original-candidate-run.json"
+          gh api 'repos/${{ github.repository }}/actions/runs/42366675306/attempts/1/jobs?per_page=100' > "$RUNNER_TEMP/original-candidate-jobs.json"
+          python3 - <<'PY_AUTH'
+          import hashlib,json,os,pathlib,subprocess
+          base='364ddd14d2fb76f234c3284e1372e8de9b37c4f8'
+          allowed={'android/scripts/run-gecko-handoff.py','.github/workflows/android-environment-candidate-resume.yml','docs/android-environment-client.md','docs/android-environment-client-install.md','README.md','README.en.md'}
+          changed=subprocess.check_output(['git','diff','--name-only',base,'HEAD'],text=True).splitlines()
+          assert set(changed)<=allowed,changed
+          driver=pathlib.Path('android/scripts/run-gecko-handoff.py')
+          actual=hashlib.sha256(driver.read_bytes()).hexdigest()
+          assert actual=='bcafa68d28e2133206d8c9bdcd50f34f0f427cccf4670ca9df13315803f702e9'
+          run=json.loads(pathlib.Path(os.environ['RUNNER_TEMP'],'original-candidate-run.json').read_text())
+          assert run['head_sha']==base and run['status']=='completed' and run['conclusion']=='failure'
+          rows=json.loads(pathlib.Path(os.environ['RUNNER_TEMP'],'original-candidate-jobs.json').read_text())['jobs']
+          expected={'build',*(f'accept ({api}, {target})' for api in (28,35) for target in ('human','synthetic')),*(f'gecko-network ({api}, {transport})' for api in (28,35) for transport in ('raw','tls','reality')),*(f'gecko-local-exports ({api})' for api in (28,35)),'gecko-handoff (28)'}
+          statuses={row['name']:row for row in rows}
+          assert all(statuses[name]['status']=='completed' and statuses[name]['conclusion']=='success' for name in expected)
+          assert statuses['gecko-handoff (35)']['conclusion']=='failure'
+          assert not [row['name'] for row in rows if row['conclusion']=='failure' and row['name']!='gecko-handoff (35)']
+          proof={'schema':1,'applicationSourceSHA':base,'buildRun':42366675306,'harnessSourceSHA':os.environ['GITHUB_SHA'],'driverSHA256':actual,'changedPaths':changed,'applicationAndOtherDriversUnchanged':True,'reusedSuccessfulJobs':[{'name':name,'id':statuses[name]['id'],'conclusion':'success'} for name in sorted(expected)],'originalFailure':{'job':128387214254,'artifact':13571809283,'conclusion':'failure','includedInPass':False},'versionName':'2026.11.07-1905','versionCode':3000034}
+          pathlib.Path('candidate-recovery-source.json').write_text(json.dumps(proof,indent=2))
+          PY_AUTH
+      - uses: actions/upload-artifact@v4
+        with:
+          name: candidate-recovery-source
+          retention-days: 14
+          path: candidate-recovery-source.json
+  handoff35:
+    if: needs.authenticate.result == 'success'
+    needs: authenticate
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [35]
+    env:
+      STUDIO_GECKO_APPLICATION_SHA: '364ddd14d2fb76f234c3284e1372e8de9b37c4f8'
+      STUDIO_GECKO_FIXTURE: android/network-poc/secure-fixture/fixture.json
+      STUDIO_GECKO_APK: android/app/build/environment-client-input/gecko-network-x86.apk
+      STUDIO_GECKO_RECEIPT: android/app/build/environment-client-input/gecko-network-receipt.json
+      STUDIO_GECKO_OUTPUT: android/app/build/gecko-handoff-evidence
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - run: |
+          sdkmanager 'platforms;android-36' 'build-tools;35.0.0'
+          sudo apt-get update -qq
+          sudo apt-get install -y libnss3-tools tcpdump
+      - uses: actions/download-artifact@v4
+        with:
+          name: environment-client-input
+          run-id: 42366675306
+          github-token: ${{ github.token }}
+          path: android/app/build/environment-client-input
+      - uses: actions/download-artifact@v4
+        with:
+          name: gecko-network-fixture
+          run-id: 42366675306
+          github-token: ${{ github.token }}
+          path: android/network-poc/secure-fixture
+      - uses: actions/download-artifact@v4
+        with:
+          name: gecko-network-host-core
+          run-id: 42366675306
+          github-token: ${{ github.token }}
+          path: android/network-poc/corebridge/bin
+      - uses: actions/download-artifact@v4
+        if: matrix.api == 28
+        with:
+          name: beta-continuation-input
+          run-id: 41993581770
+          github-token: ${{ github.token }}
+          path: android/app/build/environment-provider-input
+      - name: Start owned asset and Skill handoff fixtures
+        run: |
+          mkdir -p "$STUDIO_GECKO_OUTPUT"
+          chmod +x android/network-poc/corebridge/bin/xray
+          python3 -u android/network-poc/scripts/fixture.py --core android/network-poc/corebridge/bin/xray --output android/network-poc/secure-fixture --gecko-handoff > "$RUNNER_TEMP/studio-gecko-handoff-host.log" 2>&1 &
+          for attempt in $(seq 1 40); do
+            if [ -f android/network-poc/secure-fixture/ready.json ]; then break; fi
+            sleep 1
+          done
+          test -f android/network-poc/secure-fixture/ready.json
+          test -c /dev/kvm
+          sudo chmod a+rw /dev/kvm
+      - name: Observe owned transport TCP reset headers without payload capture
+        run: |
+          sudo tcpdump -nn -tt -l -q -s 96 -i any 'tcp and (port 18480 or port 18443 or port 18444 or port 19443 or port 19444 or port 20443 or port 20444) and (tcp[tcpflags] & tcp-rst != 0)' > "$STUDIO_GECKO_OUTPUT/owned-tcp-reset-headers.log" 2> "$STUDIO_GECKO_OUTPUT/owned-tcp-capture-stderr.txt" &
+          echo $! > "$RUNNER_TEMP/studio-owned-tcp.pid"
+      - name: Compile the existing native input helper outside the app
+        run: |
+          mkdir -p android/app/build/environment-ascii/classes
+          javac --release 8 -classpath "$ANDROID_HOME/platforms/android-36/android.jar" -d android/app/build/environment-ascii/classes android/scripts/android/AsciiInput.java android/scripts/android/AsciiInputStream.java
+          "$ANDROID_HOME/build-tools/35.0.0/d8" --min-api 28 --lib "$ANDROID_HOME/platforms/android-36/android.jar" --output android/app/build/environment-ascii/input.jar android/app/build/environment-ascii/classes/com/forcemind/chatgpt/pocinput/*.class
+      - name: Compile the read-only native AX snapshot helper outside the APK
+        run: |
+          mkdir -p android/app/build/environment-ui-snapshot/classes
+          javac --release 8 -classpath "$ANDROID_HOME/platforms/android-36/android.jar" -d android/app/build/environment-ui-snapshot/classes android/scripts/android/UiSnapshot.java
+          "$ANDROID_HOME/build-tools/35.0.0/d8" --min-api 28 --lib "$ANDROID_HOME/platforms/android-36/android.jar" --output android/app/build/environment-ui-snapshot/input.jar android/app/build/environment-ui-snapshot/classes/com/forcemind/chatgpt/pocinput/UiSnapshot*.class
+      - name: Compile the existing Android9 touch helper
+        if: matrix.api == 28
+        run: |
+          mkdir -p android/app/build/environment-touch/classes
+          javac --release 8 -classpath "$ANDROID_HOME/platforms/android-36/android.jar" -d android/app/build/environment-touch/classes android/scripts/android/TouchInput.java
+          "$ANDROID_HOME/build-tools/35.0.0/d8" --min-api 28 --lib "$ANDROID_HOME/platforms/android-36/android.jar" --output android/app/build/environment-touch/input.jar android/app/build/environment-touch/classes/com/forcemind/chatgpt/pocinput/TouchInput.class
+      - uses: reactivecircus/android-emulator-runner@v2
+        if: matrix.api == 28
+        with:
+          api-level: 28
+          target: default
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -writable-system -memory 3072
+          script: |
+            python3 android/network-poc/scripts/install-webview.py --provider android/app/build/environment-provider-input/provider --output android/app/build/gecko-handoff-evidence/provider
+            adb push android/app/build/environment-ascii/input.jar /data/local/tmp/studio-poc-ascii-input.jar
+            adb push android/app/build/environment-touch/input.jar /data/local/tmp/studio-poc-input.jar
+            adb push android/app/build/environment-ui-snapshot/input.jar /data/local/tmp/studio-poc-ui-snapshot.jar
+            python3 android/scripts/run-gecko-handoff.py
+      - name: Run the approved asset and Skill task scenarios on ready Android15
+        if: matrix.api == 35
+        run: bash android/scripts/run-environment-api35.sh android/scripts/run-gecko-handoff.py
+      - name: Preserve owned node process logs even after the first error
+        if: always()
+        run: |
+          mkdir -p "$STUDIO_GECKO_OUTPUT/node-logs"
+          if [ -f "$RUNNER_TEMP/studio-owned-tcp.pid" ]; then
+            studio_capture_pid=$(cat "$RUNNER_TEMP/studio-owned-tcp.pid")
+            if kill -0 "$studio_capture_pid" 2>/dev/null; then
+              sudo kill -INT "$studio_capture_pid"
+            fi
+          fi
+          if [ -f "$RUNNER_TEMP/studio-gecko-handoff-host.log" ]; then
+            cp "$RUNNER_TEMP/studio-gecko-handoff-host.log" "$STUDIO_GECKO_OUTPUT/host-fixture.log"
+          else
+            echo 'Owned host fixture log was not created before the failure.' > "$STUDIO_GECKO_OUTPUT/host-fixture-log-unavailable.txt"
+          fi
+          if compgen -G 'android/network-poc/secure-fixture/fixture-*.log' > /dev/null; then
+            cp android/network-poc/secure-fixture/fixture-*.log "$STUDIO_GECKO_OUTPUT/node-logs/"
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gecko-handoff-${{ matrix.api }}
+          retention-days: 14
+          path: android/app/build/gecko-handoff-evidence/
+  deliver:
+    needs: [authenticate, handoff35]
+    if: always() && needs.authenticate.result == 'success' && needs.handoff35.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: environment-client-input
+          run-id: 42366675306
+          github-token: ${{ github.token }}
+          path: input
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: environment-client-*-human
+          run-id: 42366675306
+          github-token: ${{ github.token }}
+          path: acceptance/human
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: environment-client-*-synthetic
+          run-id: 42366675306
+          github-token: ${{ github.token }}
+          path: acceptance/synthetic
+      - name: Gate usable client on upgrades and real environment/recovery evidence
+        run: python3 android/scripts/deliver-environment-client.py
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: gecko-network-??-*
+          run-id: 42366675306
+          github-token: ${{ github.token }}
+          path: acceptance/network
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: gecko-local-exports-??
+          run-id: 42366675306
+          github-token: ${{ github.token }}
+          path: acceptance/local-exports
+      - name: Require real Gecko route and file-byte evidence from every protocol
+        run: python3 android/scripts/deliver-gecko-network.py
+      - uses: actions/download-artifact@v4
+        with:
+          name: gecko-handoff-28
+          run-id: 42366675306
+          github-token: ${{ github.token }}
+          path: acceptance/handoff/gecko-handoff-28
+      - uses: actions/download-artifact@v4
+        with:
+          name: gecko-handoff-35
+          path: acceptance/handoff/gecko-handoff-35
+      - name: Require real attachments, complete prompts and once-only task progress
+        run: python3 android/scripts/deliver-gecko-handoff.py
+      - uses: actions/download-artifact@v4
+        with:
+          name: candidate-recovery-source
+          path: recovery
+      - name: Preserve original failure and immutable source provenance
+        run: |
+          python3 - <<'PY_SOURCE'
+          import json,pathlib,shutil
+          r=json.loads(pathlib.Path('recovery/candidate-recovery-source.json').read_text())
+          receipt=json.loads(pathlib.Path('candidate/receipt.json').read_text())
+          assert receipt['sourceSHA']==r['applicationSourceSHA'] and receipt['versionName']==r['versionName'] and receipt['versionCode']==r['versionCode']
+          assert receipt['sha256']=='8555c1b1e8ad64659bdccd8832c84302a2a8986f049235d9d9f77eae416d4125'
+          fixed=json.loads(pathlib.Path('acceptance/handoff/gecko-handoff-35/gecko-handoff.json').read_text())
+          assert fixed['sourceSHA']==r['harnessSourceSHA'] and fixed['applicationSourceSHA']==r['applicationSourceSHA']
+          shutil.copyfile('recovery/candidate-recovery-source.json','candidate/evidence/candidate-recovery-source.json')
+          PY_SOURCE
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ChatGPT-Studio-Android-2026.11.07-1905-Candidate
+          retention-days: 14
+          path: candidate/

@@ -148,6 +148,23 @@ class HandoffAcceptance(NativeAXMixin,network.NetworkAcceptance):
         assert result['released'] is True and result['document']==document
         self.pending_tasks.discard(document)
 
+    @staticmethod
+    def popup_geometry_ready(rows):
+        by_index={row['nodeIndex']:row for row in rows}
+        lists=[row for row in rows if row.get('package')==PACKAGE and row.get('class')=='android.widget.ListView'
+               and row.get('visible-to-user','true')=='true']
+        if not lists:return False
+        for viewport in lists:
+            left,top,right,bottom=viewport['rectangle'];cursor=viewport
+            while cursor.get('parentIndex') is not None:
+                cursor=by_index.get(cursor['parentIndex'])
+                if cursor is None:return False
+                x1,y1,x2,y2=cursor['rectangle']
+                if cursor.get('visible-to-user','true')!='true' or not (x1<=left<right<=x2 and y1<=top<bottom<=y2):return False
+            observed=cursor.get('uiSnapshot',{})
+            if observed.get('rootWindowId')!=int(cursor.get('window-id','-1')) or observed.get('chosenWindow',{}).get('isFocused') is not True:return False
+        return True
+
     def action_node(self,rows,label,description=False,prefix=False,popup=False):
         key='content-desc' if description else 'text'
         matches=[row for row in rows if row.get('package')==PACKAGE
@@ -161,6 +178,13 @@ class HandoffAcceptance(NativeAXMixin,network.NetworkAcceptance):
                 cursor=by_index.get(cursor.get('parentIndex'))
             if cursor is None:return None
             cursor=target
+            # Keep the original point; never infer an offset from a half-laid-out popup.
+            x1,y1,x2,y2=target['rectangle'];x,y=(x1+x2)//2,(y1+y2)//2
+            while cursor is not None:
+                left,top,right,bottom=cursor['rectangle']
+                if cursor.get('visible-to-user','true')!='true' or not (left<=x<right and top<=y<bottom):return None
+                cursor=by_index.get(cursor.get('parentIndex'))
+            cursor=target
         while cursor is not None:
             if cursor.get('clickable')=='true' or cursor.get('class') in ('android.widget.ListView','android.widget.AbsListView'):
                 return target
@@ -170,7 +194,11 @@ class HandoffAcceptance(NativeAXMixin,network.NetworkAcceptance):
     def tap_label(self,label,description=False,prefix=False,scroll=False,backward=False,popup=False):
         deadline=time.monotonic()+45;swipes=0
         while True:
-            rows=self.ui(deadline=deadline);target=self.action_node(rows,label,description,prefix,popup)
+            rows=self.ui(deadline=deadline)
+            if popup and rows and not self.popup_geometry_ready(rows):
+                if time.monotonic()>=deadline:raise AssertionError('Native task action not ready: '+label)
+                continue  # Read again inside the same deadline; no tap or scroll on inconsistent bounds.
+            target=self.action_node(rows,label,description,prefix,popup)
             if target:
                 x1,y1,x2,y2=target['rectangle'];assert 0<=x1<x2 and 0<=y1<y2
                 self.shell('input','tap',(x1+x2)//2,(y1+y2)//2,timeout=max(.1,deadline-time.monotonic()))

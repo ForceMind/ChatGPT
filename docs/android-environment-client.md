@@ -8,6 +8,12 @@
 
 完整验收包括两系统human/synthetic同签升级与语言/时区隔离、热标签/冷恢复/导航/草稿，六组RAW/TLS/REALITY网页上传下载同路由，两系统本地导出与资产/Skill任务，原零owned崩溃及来源/字节/归属门禁。API35同时执行已批准的三组导航时序对照，严格区分旧单变量对照的expected failure与修正版通过，并随包保存简要原始证据。所有构建与运行只在Actions，用合成数据，无截图、真实ChatGPT或真实节点；不重复此前后台长测。当前待本批实际结果，不以旧SHA通过替代。
 
+本批完整运行 `42366675306`，来源 `364ddd14d2fb76f234c3284e1372e8de9b37c4f8`。构建已通过，冻结版本 `2026.11.07-1905 / 3000034`；实际17份JUnit XML共85项，失败/错误/跳过均0，Go、16项夹具、lint与包检查通过。人用ARM收据为241,907,607字节、SHA-256 `8555c1b1e8ad64659bdccd8832c84302a2a8986f049235d9d9f77eae416d4125`，固定Beta签名和16KiB检查通过。14个设备场景中13个通过，只有Android15任务场景失败；未把构建产物当作合格可安装候选交付。
+
+首错 job `128387214254` / artifact `13571809283` 实证是harness在Skill弹窗几何未一致时误点：focused popup根bounds为[123,883][831,1857]，ListView/选项却暂报从[0,0]起，实际input tap354,189落在弹窗之外。随后Skill仍为“不使用Skill”、jobs为空，未进入文件或消息发送。最小修正只改 `run-gecko-handoff.py`，原45秒动作预算内只读重取直至ListView viewport/目标原始center与focused根、可见祖先几何一致，仍只真实点击一次；不猜偏移、不放宽原15秒选中断言，也不修改App。
+
+为避免无变化的整包与13个通过场景重复运行，新增固定来源的 `android-environment-candidate-resume.yml`：校验原run/source及全部成功任务，限制源码差异仅为已审阅harness、续验工作流和说明，固定driver SHA；复用原APK/fixture/core及未改写的成功proof，只续跑handoff35。最后重跑全部原升级、时序、六协议、导出、任务和零崩溃交付verifier，追加recovery来源记录并保留原失败为excluded-from-pass。App日期、code、APK字节与receipt继续沿原1905，验收脚本来源另记。当前续验尚待实际结果，不作通过声明。
+
 ## 前一迭代：Android 15 两项首错定位（历史证据保留）
 
 用户已批准继续定位 TLS startup reset 与旧 WebView 导航超时。专用 `android-stability-diagnostics.yml` 仅在 Actions 构建并运行原 Android15 TLS 场景，以及保留完整 synthetic 客户端前置的原导航用例；不重复后台长测。已增加仅测试启用的核心错误枚举、导航步骤/保护状态与失败摘要，保留原完整Java异常栈、断言、操作次数和超时。已定位并修正本轮强制刷新保存竞争；原首次后退超时与正向 TLS reset 仍不能宣称根因已解决。
