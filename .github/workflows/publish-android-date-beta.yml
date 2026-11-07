@@ -1,0 +1,41 @@
+name: Publish verified Android date Beta
+on:
+  push:
+    branches: [dev]
+    paths: ['.github/workflows/publish-android-date-beta.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: read
+jobs:
+  publish:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          name: ChatGPT-Studio-Android-2026.11.07-1905-Candidate
+          run-id: 42370754805
+          github-token: ${{ github.token }}
+          path: promotion/candidate
+      - uses: actions/download-artifact@v4
+        with:
+          name: environment-client-build-evidence
+          run-id: 42366675306
+          github-token: ${{ github.token }}
+          path: promotion/build-evidence
+      - name: Verify original bytes, fast-forward main and publish independent Beta
+        run: python3 android/scripts/publish-date-beta.py --candidate promotion/candidate --reports promotion/build-evidence --stage promotion/release
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-date-beta-publication-receipt
+          retention-days: 14
+          path: android-beta-publication-receipt.json
