@@ -23,7 +23,7 @@ jobs:
     env:
       STUDIO_BETA_STORE_PASSWORD: ${{ secrets.STUDIO_BETA_STORE_PASSWORD }}
       STUDIO_BETA_MODE: '1'
-      BETA_VERSION_CODE: '3000033'
+      BETA_VERSION_CODE: '3000034'
     steps:
       - uses: actions/checkout@v4
       - name: Freeze one timestamp for this CI-only diagnostic build
@@ -261,8 +261,8 @@ jobs:
           path: android/app/build/environment-client-input
       - uses: actions/download-artifact@v4
         with:
-          name: ChatGPT-Studio-Android-2026.11.06-2024-Candidate
-          run-id: 42217329731
+          name: ChatGPT-Studio-Android-2026.11.07-1001-Candidate
+          run-id: 42327120729
           github-token: ${{ github.token }}
           path: android/app/build/environment-client-baseline
       - name: Compile the existing native helper required by the common boot script

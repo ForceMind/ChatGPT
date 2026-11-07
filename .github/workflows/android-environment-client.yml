@@ -42,7 +42,7 @@ jobs:
     env:
       STUDIO_BETA_STORE_PASSWORD: ${{ secrets.STUDIO_BETA_STORE_PASSWORD }}
       STUDIO_BETA_MODE: '1'
-      BETA_VERSION_CODE: '3000033'
+      BETA_VERSION_CODE: '3000034'
     steps:
       - uses: actions/checkout@v4
       - name: Freeze one Shanghai timestamp for every candidate package
@@ -258,6 +258,8 @@ jobs:
       fail-fast: false
       matrix:
         include: ${{ fromJSON(inputs.reuse_application_build && (inputs.reuse_android9_acceptance && '[{"api":35,"target":"synthetic"}]' || '[{"api":28,"target":"synthetic"},{"api":35,"target":"synthetic"}]') || '[{"api":28,"target":"human"},{"api":35,"target":"human"},{"api":28,"target":"synthetic"},{"api":35,"target":"synthetic"}]') }}
+    env:
+      STUDIO_NAVIGATION_TIMING_CASES: ${{ matrix.api == 35 && matrix.target == 'synthetic' && 'true' || 'false' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -285,15 +287,15 @@ jobs:
       - uses: actions/download-artifact@v4
         if: matrix.api == 35
         with:
-          name: ChatGPT-Studio-Android-2026.11.06-2024-Candidate
-          run-id: 42217329731
+          name: ChatGPT-Studio-Android-2026.11.07-1001-Candidate
+          run-id: 42327120729
           github-token: ${{ github.token }}
           path: android/app/build/environment-client-baseline
       - uses: actions/download-artifact@v4
         if: matrix.api == 28
         with:
           name: environment-client-input
-          run-id: 42217329731
+          run-id: 42327120729
           github-token: ${{ github.token }}
           path: android/app/build/environment-client-ci-baseline
       - uses: actions/download-artifact@v4
@@ -417,9 +419,9 @@ jobs:
           test -f android/network-poc/secure-fixture/ready.json
           test -c /dev/kvm
           sudo chmod a+rw /dev/kvm
-      - name: Observe owned transport TCP reset headers without payload capture
+      - name: Observe owned TCP connection lifecycle headers without payload capture
         run: |
-          sudo tcpdump -nn -tt -l -q -s 96 -i any 'tcp and (port 18480 or port 18443 or port 18444 or port 19443 or port 19444 or port 20443 or port 20444) and (tcp[tcpflags] & tcp-rst != 0)' > "$STUDIO_GECKO_OUTPUT/owned-tcp-reset-headers.log" 2> "$STUDIO_GECKO_OUTPUT/owned-tcp-capture-stderr.txt" &
+          sudo tcpdump -nn -tt -l -s 96 -i any 'tcp and (port 18480 or port 18443 or port 18444 or port 19443 or port 19444 or port 20443 or port 20444) and (tcp[tcpflags] & (tcp-syn|tcp-fin|tcp-rst) != 0)' > "$STUDIO_GECKO_OUTPUT/owned-tcp-lifecycle-headers.log" 2> "$STUDIO_GECKO_OUTPUT/owned-tcp-capture-stderr.txt" &
           echo $! > "$RUNNER_TEMP/studio-owned-tcp.pid"
       - name: Compile the existing native input helper outside the app
         run: |
@@ -457,6 +459,11 @@ jobs:
             studio_capture_pid=$(cat "$RUNNER_TEMP/studio-owned-tcp.pid")
             if kill -0 "$studio_capture_pid" 2>/dev/null; then
               sudo kill -INT "$studio_capture_pid"
+              if timeout 5 tail --pid="$studio_capture_pid" -f /dev/null; then
+                echo 'exited-after-interrupt' > "$STUDIO_GECKO_OUTPUT/owned-tcp-capture-stop.txt"
+              else
+                echo 'exit-not-observed-within-budget' > "$STUDIO_GECKO_OUTPUT/owned-tcp-capture-stop.txt"
+              fi
             fi
           fi
           if compgen -G 'android/network-poc/secure-fixture/fixture-*.log' > /dev/null; then

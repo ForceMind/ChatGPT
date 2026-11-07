@@ -9,7 +9,7 @@ if (androidVersionPath) {
     if (!versionFile.isAbsolute()) versionFile = new File(rootProject.projectDir.parentFile, androidVersionPath.toString())
     if (!versionFile.isFile()) throw new GradleException('Missing shared Android version metadata')
     androidCandidateVersion = new groovy.json.JsonSlurper().parse(versionFile)
-    if (androidCandidateVersion.schema != 1 || androidCandidateVersion.versionCode != 3000033 || androidCandidateVersion.timeZone != 'Asia/Shanghai'
+    if (androidCandidateVersion.schema != 1 || androidCandidateVersion.versionCode != 3000034 || androidCandidateVersion.timeZone != 'Asia/Shanghai'
             || !(androidCandidateVersion.versionName ==~ /\d{4}\.\d{2}\.\d{2}-\d{4}/) || !(androidCandidateVersion.sourceSHA ==~ /[a-f0-9]{40}/))
         throw new GradleException('Invalid Android candidate date version metadata')
     def formatter = java.time.format.DateTimeFormatter.ofPattern('uuuu.MM.dd-HHmm').withResolverStyle(java.time.format.ResolverStyle.STRICT)

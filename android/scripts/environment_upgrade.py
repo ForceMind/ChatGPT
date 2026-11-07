@@ -21,7 +21,7 @@ INPUT = Path('android/app/build/environment-client-input')
 OLD = Path('android/app/build/environment-client-baseline')
 OLD_CI = Path('android/app/build/environment-client-ci-baseline')
 EVIDENCE = Path('android/app/build/environment-client-evidence')
-OLD_CODE = 3000032
+OLD_CODE = 3000033
 NEW_CODE = VERSION_CODE
 EXPECTED_FILE = '/data/user/0/' + PACKAGE + '/files/environment-upgrade-expected.json'
 

@@ -23,7 +23,7 @@ for api in (28,35):
     a,b=json.loads(human.read_text()),json.loads(engine.read_text())
     assert a['complete'] and b['complete'] and a['api']==b['api']==api
     for native_proof in (a,b['legacyUpgrade']):
-        assert native_proof['fromVersionCode']==3000032 and native_proof['toVersionCode']==version_metadata['versionCode']
+        assert native_proof['fromVersionCode']==3000033 and native_proof['toVersionCode']==version_metadata['versionCode']
         assert native_proof['versionMetadata']==version_metadata and native_proof['applicationSourceSHA']==receipt['sourceSHA']
         for descriptor in (native_proof['humanAPK'],native_proof['candidateAPK']):
             assert descriptor['versionCode']==version_metadata['versionCode'] and descriptor['versionName']==version_metadata['versionName']
@@ -53,6 +53,20 @@ for api in (28,35):
             assert navigation[flag], (key,flag)
         assert not navigation['screenshots'] and not navigation['realServicesAccessed']
     proofs.append({'api':api,'human':a,'engine':b})
+timing_root=Path('acceptance/synthetic/environment-client-35-synthetic')
+timing=json.loads((timing_root/'navigation-timing-cases.json').read_text())
+assert timing['schema']==1 and timing['complete'] and timing['api']==35
+assert timing['sourceSHA']==receipt['sourceSHA'] and not timing['screenshots'] and not timing['realServicesAccessed']
+timing_classes={'baseline-late-poll':'expected-original-assertion-failure',
+                'fixed-late-poll':'fixed-original-assertions-pass','fixed-early-poll':'safe-refusal-pass'}
+assert set(timing['cases'])==set(timing_classes)
+for name,classification in timing_classes.items():
+    row=timing['cases'][name];case=row['timing']
+    assert row['classification']==classification and case['case']==name and case['complete']
+    assert case['expectedFailure'] is (name=='baseline-late-poll') and 0<=case['gateHeldMillis']<2000
+    for flag in ('realEncryptedSave','realSaveChanged','realEncryptedRead','realPollWhileSavePending','noNavigationBeforeSave'):
+        assert case[flag] is True,(name,flag)
+assert timing['legacySubsetAfterCases']['complete'] and timing['legacySubsetAfterCases']['legacyAccountPreserved']
 apk=root/receipt['file'];assert apk.stat().st_size==receipt['bytes'] and hashlib.sha256(apk.read_bytes()).hexdigest()==receipt['sha256']
 assert proofs[1]['human']['originalHumanCandidateBytesInstalled']
 assert proofs[1]['human']['candidateInstalledSHA256']==receipt['sha256']
@@ -62,3 +76,11 @@ for name in (receipt['file'],'receipt.json','SHA256SUMS.txt','LICENSE','GECKO-NO
 shutil.copytree(root/'licenses',out/'licenses')
 shutil.copyfile('docs/android-environment-client-install.md',out/'INSTALL.md')
 (out/'client-environment-and-recovery-acceptance.json').write_text(json.dumps(proofs,indent=2)+'\n')
+timing_evidence=out/'evidence';timing_evidence.mkdir(exist_ok=True)
+for name in ['navigation-timing-cases.json','navigation-timing-native-after-environment.json']:
+    shutil.copyfile(timing_root/name,timing_evidence/name)
+for case in timing_classes:
+    for suffix in ('-instrument.txt','-timing.json','-navigation.json'):
+        name='browser-chrome-'+case+suffix
+        shutil.copyfile(timing_root/name,timing_evidence/name)
+shutil.copyfile(timing_root/'browser-chrome-fixed-late-poll-proof.json',timing_evidence/'browser-chrome-fixed-late-poll-proof.json')

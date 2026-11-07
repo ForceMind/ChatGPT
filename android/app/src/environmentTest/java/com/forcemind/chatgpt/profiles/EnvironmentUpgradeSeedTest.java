@@ -38,7 +38,7 @@ public final class EnvironmentUpgradeSeedTest {
     static final String SIGNER="bd7b9c924795ec21d27c73f280b5fc71b83ffea950e36e05967b77f092056ac0";
     static final String EXPECTED="environment-upgrade-expected.json";
     static final String ORIGIN="https://environment-upgrade-fixture.invalid/";
-    static final long OLD_CODE=3000032L, NEW_CODE=3000033L;
+    static final long OLD_CODE=3000033L, NEW_CODE=3000034L;
     static Context context(){return InstrumentationRegistry.getInstrumentation().getTargetContext();}
     static File file(String name){return new File(context().getFilesDir(),name);}
     static void main(Runnable action){InstrumentationRegistry.getInstrumentation().runOnMainSync(action);}
