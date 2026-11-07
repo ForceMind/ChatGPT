@@ -4,7 +4,7 @@
 
 用户已明确确认公开此独立Beta，并同步main/dev及现有官网。入口为 [GitHub 预发布](https://github.com/ForceMind/ChatGPT/releases/tag/android-beta-2026.11.07-1905) 与 [官网独立Beta下载](https://chatgpt.xincreates.com/#download-android-beta)。本次复用下方已通过验收的原APK字节，不重新构建或签名；正式Android alpha.22、Mac alpha.23、Windows alpha.24及其下载/自动更新仍保留原版本。
 
-已有同签名固定Beta可覆盖安装，常规版与Beta的账号/资产/恢复空间独立，不自动迁移或更新个人设备。历史正向TLS reset与首次后退归因仍未完成，真实ChatGPT、节点与厂商手机仍待验收。公开发布的完整安装和验证边界见 [发布说明](releases/android-beta-2026.11.07-1905-notes.md)。原候选及诊断过程按当时状态保留，实际公开状态以Release与本次发布回读记录为准。
+已有同签名固定Beta可覆盖安装，常规版与Beta的账号/资产/恢复空间独立，不自动迁移或更新个人设备。历史正向TLS reset与首次后退归因仍未完成，真实ChatGPT、节点与厂商手机仍待验收。公开发布的完整安装和验证边界见 [发布说明](releases/android-beta-2026.11.07-1905-notes.md)。原候选及诊断过程按当时状态保留。Release已公开（非draft、prerelease），五个原资产ID/大小/摘要不变，原始与国内加速APK入口均返回206和正确ZIP头；官网已部署到现有Pages并通过11次HTTP回读。[实际发布、分支同步与部署记录](releases/android-beta-2026.11.07-1905-publication.json)。本轮未运行网站浏览器或视觉交互验证。
 
 ## 原候选构建与验收：2026.11.07-1905
 

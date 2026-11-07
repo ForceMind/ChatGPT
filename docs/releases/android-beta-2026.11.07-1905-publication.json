@@ -1,0 +1,396 @@
+{
+  "schema": 1,
+  "kind": "independent-android-beta-publication-and-website-sync",
+  "tag": "android-beta-2026.11.07-1905",
+  "versionName": "2026.11.07-1905",
+  "versionCode": 3000034,
+  "verifiedAtUTC": "2026-11-07T16:07:23.131636+00:00",
+  "applicationSourceSHA": "364ddd14d2fb76f234c3284e1372e8de9b37c4f8",
+  "harnessSourceSHA": "a94185dbb39a9115b3b39d3d10dc27e8df223234",
+  "releaseSourceSHA": "4e4d5583b2a1c1c48d4df6f17ad3a5722efc6fcc",
+  "publicationControlAndMergedMainDevSHA": "2a57dcdcd653d1cb44c00a7aa85eedc355c95628",
+  "candidateRun": 42370754805,
+  "candidateArtifact": 13574370247,
+  "originalAPKRebuilt": false,
+  "originalAPKResigned": false,
+  "publicRelease": {
+    "id": 437661601,
+    "tag_name": "android-beta-2026.11.07-1905",
+    "html_url": "https://github.com/ForceMind/ChatGPT/releases/tag/android-beta-2026.11.07-1905",
+    "draft": false,
+    "prerelease": true,
+    "published_at": "2026-11-07T15:41:07Z"
+  },
+  "assets": [
+    {
+      "id": 721114732,
+      "name": "android-beta-release-manifest.json",
+      "size": 5217,
+      "digest": "sha256:3454bcd941a2714d7bf66190dec4dc82e0e84191819c25a46baa750c4203d194",
+      "browser_download_url": "https://github.com/ForceMind/ChatGPT/releases/download/android-beta-2026.11.07-1905/android-beta-release-manifest.json"
+    },
+    {
+      "id": 721114224,
+      "name": "ChatGPT-Studio-2026.11.07-1905-android-arm64.apk",
+      "size": 241907607,
+      "digest": "sha256:8555c1b1e8ad64659bdccd8832c84302a2a8986f049235d9d9f77eae416d4125",
+      "browser_download_url": "https://github.com/ForceMind/ChatGPT/releases/download/android-beta-2026.11.07-1905/ChatGPT-Studio-2026.11.07-1905-android-arm64.apk"
+    },
+    {
+      "id": 721114637,
+      "name": "ChatGPT-Studio-2026.11.07-1905-android-evidence.zip",
+      "size": 338195,
+      "digest": "sha256:7034d3a97e90650724a01633196ad4a3a3ba98b2fe6c04845deb06379ffef781",
+      "browser_download_url": "https://github.com/ForceMind/ChatGPT/releases/download/android-beta-2026.11.07-1905/ChatGPT-Studio-2026.11.07-1905-android-evidence.zip"
+    },
+    {
+      "id": 721114675,
+      "name": "INSTALL.android-beta.md",
+      "size": 4135,
+      "digest": "sha256:8318be3ce0881b99e7854ddc740cd58ad120f64313bacf116ab789515f505c9b",
+      "browser_download_url": "https://github.com/ForceMind/ChatGPT/releases/download/android-beta-2026.11.07-1905/INSTALL.android-beta.md"
+    },
+    {
+      "id": 721114707,
+      "name": "SHA256SUMS.android-beta.txt",
+      "size": 424,
+      "digest": "sha256:44c4115c59415dfa5f391b071f6f642bc0500a4db8f821274d87d00f050a63d8",
+      "browser_download_url": "https://github.com/ForceMind/ChatGPT/releases/download/android-beta-2026.11.07-1905/SHA256SUMS.android-beta.txt"
+    }
+  ],
+  "actionsReceipt": {
+    "schema": 1,
+    "releaseURL": "https://github.com/ForceMind/ChatGPT/releases/tag/android-beta-2026.11.07-1905",
+    "tag": "android-beta-2026.11.07-1905",
+    "releaseId": 437661601,
+    "isDraft": false,
+    "isPrerelease": true,
+    "publishedAt": "2026-11-07T15:41:07Z",
+    "applicationSourceSHA": "364ddd14d2fb76f234c3284e1372e8de9b37c4f8",
+    "harnessSourceSHA": "a94185dbb39a9115b3b39d3d10dc27e8df223234",
+    "uploadedAndVerifiedRun": 42387533415,
+    "draftPreparationRun": 42386832463,
+    "finalizationRun": 42388325646,
+    "releaseSourceSHA": "4e4d5583b2a1c1c48d4df6f17ad3a5722efc6fcc",
+    "mergedMainAndDevSHA": "2a57dcdcd653d1cb44c00a7aa85eedc355c95628",
+    "removedGeneratedTag": false,
+    "rebuilt": false,
+    "resigned": false,
+    "assets": [
+      {
+        "id": 721114732,
+        "name": "android-beta-release-manifest.json",
+        "size": 5217,
+        "digest": "sha256:3454bcd941a2714d7bf66190dec4dc82e0e84191819c25a46baa750c4203d194",
+        "browser_download_url": "https://github.com/ForceMind/ChatGPT/releases/download/android-beta-2026.11.07-1905/android-beta-release-manifest.json"
+      },
+      {
+        "id": 721114224,
+        "name": "ChatGPT-Studio-2026.11.07-1905-android-arm64.apk",
+        "size": 241907607,
+        "digest": "sha256:8555c1b1e8ad64659bdccd8832c84302a2a8986f049235d9d9f77eae416d4125",
+        "browser_download_url": "https://github.com/ForceMind/ChatGPT/releases/download/android-beta-2026.11.07-1905/ChatGPT-Studio-2026.11.07-1905-android-arm64.apk"
+      },
+      {
+        "id": 721114637,
+        "name": "ChatGPT-Studio-2026.11.07-1905-android-evidence.zip",
+        "size": 338195,
+        "digest": "sha256:7034d3a97e90650724a01633196ad4a3a3ba98b2fe6c04845deb06379ffef781",
+        "browser_download_url": "https://github.com/ForceMind/ChatGPT/releases/download/android-beta-2026.11.07-1905/ChatGPT-Studio-2026.11.07-1905-android-evidence.zip"
+      },
+      {
+        "id": 721114675,
+        "name": "INSTALL.android-beta.md",
+        "size": 4135,
+        "digest": "sha256:8318be3ce0881b99e7854ddc740cd58ad120f64313bacf116ab789515f505c9b",
+        "browser_download_url": "https://github.com/ForceMind/ChatGPT/releases/download/android-beta-2026.11.07-1905/INSTALL.android-beta.md"
+      },
+      {
+        "id": 721114707,
+        "name": "SHA256SUMS.android-beta.txt",
+        "size": 424,
+        "digest": "sha256:44c4115c59415dfa5f391b071f6f642bc0500a4db8f821274d87d00f050a63d8",
+        "browser_download_url": "https://github.com/ForceMind/ChatGPT/releases/download/android-beta-2026.11.07-1905/SHA256SUMS.android-beta.txt"
+      }
+    ]
+  },
+  "tagMetadataCorrection": {
+    "releaseId": 437661601,
+    "tag": "android-beta-2026.11.07-1905",
+    "targetSHA": "4e4d5583b2a1c1c48d4df6f17ad3a5722efc6fcc",
+    "removedOnlyGeneratedPlaceholder": "refs/tags/untagged-ebbc7c33321e57921cd7",
+    "assetIdsAndDigestsUnchanged": true
+  },
+  "publicationProcessFailures": [
+    {
+      "run": 42386832463,
+      "reason": "draft-created-but-immediate-list-read-did-not-find-it",
+      "assetsUploaded": false
+    },
+    {
+      "run": 42387533415,
+      "reason": "original-assets-verified-uploaded-and-published-but-tag-readback-found-generated-placeholder",
+      "assetBytesChanged": false
+    },
+    {
+      "run": 42388325646,
+      "attempt": 1,
+      "reason": "GITHUB_TOKEN-create-ref-returned-403",
+      "finalAttempt": 2,
+      "finalConclusion": "success"
+    }
+  ],
+  "website": {
+    "project": "chatgpt-studio",
+    "environment": "production",
+    "productionBranch": "main",
+    "deploymentId": "2cc4e0e4-b9ad-4069-956f-19dce0c45eb5",
+    "deploymentURL": "https://2cc4e0e4.chatgpt-studio.pages.dev",
+    "sourceCommit": "2a57dcdcd653d1cb44c00a7aa85eedc355c95628",
+    "previousDeploymentId": "d686deb8-6c64-401c-94d4-175f15052050",
+    "customDomainBindingsChanged": false,
+    "sourceFiles": [
+      {
+        "path": "404.html",
+        "bytes": 623,
+        "sha256": "7ab17d69c072d2113c836bcd612ef54bcda411b8500dfafe67e5417e3d70ccba"
+      },
+      {
+        "path": "_headers",
+        "bytes": 600,
+        "sha256": "87579955f96fe07b28599c61b6478511dbbc807419ca6f4a1127cd4cc367a1bd"
+      },
+      {
+        "path": "app.js",
+        "bytes": 7100,
+        "sha256": "90732439f572dfa944f6b9bd170bb98a0c0ca47d83be0ecc7335fa3b6660f46a"
+      },
+      {
+        "path": "assets/android-assets.png",
+        "bytes": 69859,
+        "sha256": "cca90311a5db1cab90b5e92a8d8c9fae8d5d09d3a7b7f193bf2ef57d037573a2"
+      },
+      {
+        "path": "assets/android-skills.png",
+        "bytes": 346485,
+        "sha256": "fdef510c45f8d0d3d724fea2ba2d67aca8ccf63e5fa88b2e09c1e016d97f0fbb"
+      },
+      {
+        "path": "assets/android-tablet-tabs.png",
+        "bytes": 120969,
+        "sha256": "239f1cd608cbcfe514d223264bb89a8858e33d85170077c4ba8362333f2c9f20"
+      },
+      {
+        "path": "assets/android-tabs.png",
+        "bytes": 121069,
+        "sha256": "62662cee4fc379c0d4d8c21ccca7d238534e6b63a8e750fdd5b98b0b84243b07"
+      },
+      {
+        "path": "assets/icon.svg",
+        "bytes": 2119,
+        "sha256": "c40527d47803acd03080ba814abe214159f3117ff277c36a600ff0ccedac82b0"
+      },
+      {
+        "path": "assets/macos-window.png",
+        "bytes": 227406,
+        "sha256": "b562a84cb733ff295a28a6f385ae3a9583dc0d6d5b95ce60cf3edead16ddcc38"
+      },
+      {
+        "path": "assets/windows-installed.png",
+        "bytes": 48225,
+        "sha256": "cf9556ec248f33e2ad70231a04231416b3d30fc73008ec1e9e727b023d5d2718"
+      },
+      {
+        "path": "index.html",
+        "bytes": 50999,
+        "sha256": "368a3580a7c0f756e3f53dc09f694a8a99e2cb2ae6f18b43567a8103363875b4"
+      },
+      {
+        "path": "license.txt",
+        "bytes": 2435,
+        "sha256": "9d1b471b68ba1bf60015a232b380a075da38f31a74c961247a03e281785cc4a9"
+      },
+      {
+        "path": "robots.txt",
+        "bytes": 77,
+        "sha256": "7f425345d5aa792cc6bf96f6b8f8cf148c87e9404b07a0593073b8322f2b3ca7"
+      },
+      {
+        "path": "sitemap.xml",
+        "bytes": 164,
+        "sha256": "edd6e6b0a8d9d2da3a0c0a8d3b566a16112e79c8fee69206f187de93b7a757db"
+      },
+      {
+        "path": "styles.css",
+        "bytes": 38087,
+        "sha256": "b4814c6ea0d70ee23c9e1d9998dd1ab279a0b7e03c834f9d253395ab85a59d5b"
+      },
+      {
+        "path": "updates/macos.json",
+        "bytes": 698,
+        "sha256": "b46f0e63af3738fecaa75fa86b5b221453741a8898246dee919aa53bb1677112"
+      },
+      {
+        "path": "updates/windows/alpha.yml",
+        "bytes": 2402,
+        "sha256": "ccfde281b9983890ad790bed2cd47b700d89142c0d58bf931aabc9b52e85891f"
+      }
+    ],
+    "httpReadback": [
+      {
+        "url": "https://2cc4e0e4.chatgpt-studio.pages.dev/",
+        "status": 200,
+        "bytes": 50999,
+        "actualSHA256": "368a3580a7c0f756e3f53dc09f694a8a99e2cb2ae6f18b43567a8103363875b4",
+        "sourceSHA256": "368a3580a7c0f756e3f53dc09f694a8a99e2cb2ae6f18b43567a8103363875b4",
+        "comparison": "exact-beta-milestone-and-original-cards-after-intertag-whitespace",
+        "allNonEmailLinksMatch": true
+      },
+      {
+        "url": "https://chatgpt-studio.pages.dev/",
+        "status": 200,
+        "bytes": 50999,
+        "actualSHA256": "368a3580a7c0f756e3f53dc09f694a8a99e2cb2ae6f18b43567a8103363875b4",
+        "sourceSHA256": "368a3580a7c0f756e3f53dc09f694a8a99e2cb2ae6f18b43567a8103363875b4",
+        "comparison": "exact-beta-milestone-and-original-cards-after-intertag-whitespace",
+        "allNonEmailLinksMatch": true
+      },
+      {
+        "url": "https://chatgpt.xincreates.com/",
+        "status": 200,
+        "bytes": 51829,
+        "actualSHA256": "6bed1f222a2f9b337a27594bb1a7e6ccc6ccfe800770f366883e1547a099b1f8",
+        "sourceSHA256": "368a3580a7c0f756e3f53dc09f694a8a99e2cb2ae6f18b43567a8103363875b4",
+        "comparison": "exact-beta-milestone-and-original-cards-after-intertag-whitespace",
+        "allNonEmailLinksMatch": true
+      },
+      {
+        "url": "https://chatgpt-studio.pages.dev/app.js",
+        "status": 200,
+        "bytes": 7100,
+        "actualSHA256": "90732439f572dfa944f6b9bd170bb98a0c0ca47d83be0ecc7335fa3b6660f46a",
+        "sourceSHA256": "90732439f572dfa944f6b9bd170bb98a0c0ca47d83be0ecc7335fa3b6660f46a",
+        "comparison": "exact-bytes"
+      },
+      {
+        "url": "https://chatgpt-studio.pages.dev/styles.css",
+        "status": 200,
+        "bytes": 38087,
+        "actualSHA256": "b4814c6ea0d70ee23c9e1d9998dd1ab279a0b7e03c834f9d253395ab85a59d5b",
+        "sourceSHA256": "b4814c6ea0d70ee23c9e1d9998dd1ab279a0b7e03c834f9d253395ab85a59d5b",
+        "comparison": "exact-bytes"
+      },
+      {
+        "url": "https://chatgpt-studio.pages.dev/updates/macos.json",
+        "status": 200,
+        "bytes": 698,
+        "actualSHA256": "b46f0e63af3738fecaa75fa86b5b221453741a8898246dee919aa53bb1677112",
+        "sourceSHA256": "b46f0e63af3738fecaa75fa86b5b221453741a8898246dee919aa53bb1677112",
+        "comparison": "exact-bytes",
+        "version": "3.0.0-alpha.23"
+      },
+      {
+        "url": "https://chatgpt-studio.pages.dev/updates/windows/alpha.yml",
+        "status": 200,
+        "bytes": 2402,
+        "actualSHA256": "ccfde281b9983890ad790bed2cd47b700d89142c0d58bf931aabc9b52e85891f",
+        "sourceSHA256": "ccfde281b9983890ad790bed2cd47b700d89142c0d58bf931aabc9b52e85891f",
+        "comparison": "exact-bytes",
+        "version": "3.0.0-alpha.24"
+      },
+      {
+        "url": "https://chatgpt.xincreates.com/app.js",
+        "status": 200,
+        "bytes": 7100,
+        "actualSHA256": "90732439f572dfa944f6b9bd170bb98a0c0ca47d83be0ecc7335fa3b6660f46a",
+        "sourceSHA256": "90732439f572dfa944f6b9bd170bb98a0c0ca47d83be0ecc7335fa3b6660f46a",
+        "comparison": "exact-bytes"
+      },
+      {
+        "url": "https://chatgpt.xincreates.com/styles.css",
+        "status": 200,
+        "bytes": 38087,
+        "actualSHA256": "b4814c6ea0d70ee23c9e1d9998dd1ab279a0b7e03c834f9d253395ab85a59d5b",
+        "sourceSHA256": "b4814c6ea0d70ee23c9e1d9998dd1ab279a0b7e03c834f9d253395ab85a59d5b",
+        "comparison": "exact-bytes"
+      },
+      {
+        "url": "https://chatgpt.xincreates.com/updates/macos.json",
+        "status": 200,
+        "bytes": 698,
+        "actualSHA256": "b46f0e63af3738fecaa75fa86b5b221453741a8898246dee919aa53bb1677112",
+        "sourceSHA256": "b46f0e63af3738fecaa75fa86b5b221453741a8898246dee919aa53bb1677112",
+        "comparison": "exact-bytes",
+        "version": "3.0.0-alpha.23"
+      },
+      {
+        "url": "https://chatgpt.xincreates.com/updates/windows/alpha.yml",
+        "status": 200,
+        "bytes": 2402,
+        "actualSHA256": "ccfde281b9983890ad790bed2cd47b700d89142c0d58bf931aabc9b52e85891f",
+        "sourceSHA256": "ccfde281b9983890ad790bed2cd47b700d89142c0d58bf931aabc9b52e85891f",
+        "comparison": "exact-bytes",
+        "version": "3.0.0-alpha.24"
+      }
+    ]
+  },
+  "downloadReadback": [
+    {
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/android-beta-2026.11.07-1905/ChatGPT-Studio-2026.11.07-1905-android-arm64.apk",
+      "boundedReadBytes": 4,
+      "status": 206,
+      "contentType": "application/vnd.android.package-archive",
+      "contentLength": "4",
+      "contentRange": "bytes 0-3/241907607",
+      "resolvedHost": "release-assets.githubusercontent.com",
+      "apkZipHeader": true
+    },
+    {
+      "url": "https://gh-proxy.org/https://github.com/ForceMind/ChatGPT/releases/download/android-beta-2026.11.07-1905/ChatGPT-Studio-2026.11.07-1905-android-arm64.apk",
+      "boundedReadBytes": 4,
+      "status": 206,
+      "contentType": "application/vnd.android.package-archive",
+      "contentLength": "4",
+      "contentRange": "bytes 0-3/241907607",
+      "resolvedHost": "gh-proxy.org",
+      "apkZipHeader": true
+    }
+  ],
+  "smallPublicAssetsReadback": [
+    {
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/android-beta-2026.11.07-1905/android-beta-release-manifest.json",
+      "bytes": 5217,
+      "sha256": "3454bcd941a2714d7bf66190dec4dc82e0e84191819c25a46baa750c4203d194"
+    },
+    {
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/android-beta-2026.11.07-1905/SHA256SUMS.android-beta.txt",
+      "bytes": 424,
+      "sha256": "44c4115c59415dfa5f391b071f6f642bc0500a4db8f821274d87d00f050a63d8"
+    },
+    {
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/android-beta-2026.11.07-1905/INSTALL.android-beta.md",
+      "bytes": 4135,
+      "sha256": "8318be3ce0881b99e7854ddc740cd58ad120f64313bacf116ab789515f505c9b"
+    },
+    {
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/android-beta-2026.11.07-1905/ChatGPT-Studio-2026.11.07-1905-android-evidence.zip",
+      "bytes": 338195,
+      "sha256": "7034d3a97e90650724a01633196ad4a3a3ba98b2fe6c04845deb06379ffef781"
+    }
+  ],
+  "regularVersions": {
+    "macos": "3.0.0-alpha.23",
+    "windows": "3.0.0-alpha.24",
+    "android": "3.0.0-alpha.22"
+  },
+  "regularDownloadCardsChanged": false,
+  "regularAutoUpdateFeedsChanged": false,
+  "personalDevicesUpdated": false,
+  "browserRun": false,
+  "screenshotsTaken": false,
+  "newCredentialsStored": false,
+  "newCloudflareProjectCreated": false,
+  "knownTLSAndHistoricalBackRootCausesResolved": false,
+  "temporarySiteStageCleaned": true,
+  "taskCreatedWranglerLogCleaned": true
+}
