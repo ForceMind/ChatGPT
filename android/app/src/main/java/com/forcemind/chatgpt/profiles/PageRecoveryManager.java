@@ -122,6 +122,14 @@ final class PageRecoveryManager {
         if(s.loading||s.inflight){done.accept(false);return;}
         capture(s,true,done);
     }
+    JSONObject environmentNavigationState(WebView web)throws JSONException{
+        if(!BuildConfig.ENVIRONMENT_TEST)throw new IllegalStateException("Environment test required");
+        Session s=sessions.get(web);JSONObject result=new JSONObject().put("bound",s!=null);if(s==null)return result;
+        return result.put("serial",s.serial).put("captureTicket",s.captureTicket).put("valid",valid(s)).put("installed",s.installed)
+            .put("loading",s.loading).put("restoring",s.restoring).put("restoreCall",s.restoreCall).put("inflight",s.inflight).put("blocked",s.blocked)
+            .put("liveReady",s.liveReady).put("waitingOffline",s.waitingOffline).put("preview",s.preview!=null).put("failed",s.failed)
+            .put("authenticationRequired",s.authenticationRequired).put("currentUrlMatches",Objects.equals(s.url,PageRecoveryRecord.url(web.getUrl())));
+    }
     private void unprotectedDraftEmpty(WebView web,Consumer<Boolean> done){
         try{web.evaluateJavascript("(function(){try{return !Array.from(document.querySelectorAll('#prompt-textarea,textarea,[contenteditable=\"true\"]')).some(function(e){return e.getClientRects().length&&!!(e.value||e.innerText||'');});}catch(e){return false;}})()",raw->done.accept("true".equals(raw)));}catch(RuntimeException error){done.accept(false);}
     }

@@ -389,7 +389,7 @@ def verify_browser_chrome():
         raise
     finally:
         try:
-            for name in ('browser-chrome-native-tree.txt', 'browser-chrome-document.json', 'browser-chrome-registry-barrier.json'):
+            for name in ('browser-chrome-native-tree.txt', 'browser-chrome-document.json', 'browser-chrome-navigation.json', 'browser-chrome-registry-barrier.json'):
                 tree = _run(['adb', 'shell', 'cat', '/data/user/0/' + PACKAGE + '/files/' + name], timeout=15, check=False)
                 if tree.returncode == 0:
                     (EVIDENCE / name).write_text(tree.stdout, encoding='utf-8')

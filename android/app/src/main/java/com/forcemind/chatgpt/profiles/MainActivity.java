@@ -76,6 +76,7 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
     private boolean navigationPending;
     private WebView navigationWeb;
     private long navigationTicket;
+    private final org.json.JSONArray environmentNavigationEvents=new org.json.JSONArray();
     private FrameLayout content;
     private ProgressBar progress;
     private BrowserMemory memory;
@@ -199,28 +200,53 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
         return pendingJob!=null||fileCallback!=null||mediaRequest!=null||memory!=null&&memory.network().busy()||controller!=null&&controller.owns(web);
     }
     private void cancelPageNavigation(){navigationTicket++;navigationPending=false;WebView pending=navigationWeb;navigationWeb=null;if(pending!=null)selectPage(pending,currentWeb()==pending);}
+    // Synthetic CI evidence only; never retain page text, identity, addresses or recovery tokens.
+    private void environmentNavigationEvent(String event,WebView web){
+        if(!BuildConfig.ENVIRONMENT_TEST||handoffFixture==null)return;
+        try{JSONObject value=environmentNavigationState(web);value.put("event",event).put("elapsedMillis",android.os.SystemClock.elapsedRealtime());if(environmentNavigationEvents.length()>=96)environmentNavigationEvents.remove(0);environmentNavigationEvents.put(value);}catch(Exception ignored){}
+    }
+    JSONObject environmentNavigationState(WebView web)throws org.json.JSONException{
+        if(!BuildConfig.ENVIRONMENT_TEST||handoffFixture==null)throw new IllegalStateException("Synthetic fixture required");
+        String tab=null;for(Map.Entry<String,WebView> entry:views.entrySet())if(entry.getValue()==web){tab=entry.getKey();break;}
+        JSONObject value=new JSONObject().put("ticket",navigationTicket).put("pending",navigationPending).put("epoch",pageEpochs.getOrDefault(tab,-1L))
+            .put("currentWeb",web!=null&&currentWeb()==web).put("pendingWeb",web!=null&&navigationWeb==web).put("ready",ready).put("resumed",resumed)
+            .put("overview",overview!=null).put("offlineSnapshot",offlineSnapshot!=null).put("fatal",fatal);
+        if(web!=null)value.put("page",environmentPageLabel(web.getUrl())).put("progress",web.getProgress()).put("loading",loadingPages.getOrDefault(web,web.getProgress()<100))
+            .put("nativeBusy",nativePageBusy(web)).put("canGoBack",web.canGoBack()).put("canGoForward",web.canGoForward());
+        if(recovery!=null&&web!=null)value.put("recovery",recovery.environmentNavigationState(web));return value;
+    }
+    static String environmentPageLabel(String url){
+        if(url==null||url.isEmpty())return "none";String prefix="https://chatgpt.com/c/owned-ui-";
+        for(String suffix:new String[]{"one","two","next"})if((prefix+suffix).equals(url))return suffix;return "other";
+    }
+    JSONObject environmentNavigationEvidence()throws org.json.JSONException{
+        JSONObject value=environmentNavigationState(currentWeb());return value.put("events",new org.json.JSONArray(environmentNavigationEvents.toString()));
+    }
     private void restoreCacheMode(WebView web){Integer mode=forcedCacheModes.remove(web);if(mode!=null)web.getSettings().setCacheMode(mode);}
     private boolean samePage(WebView web,String account,String storage,String tab,String url,long epoch){
         if(!ready||fatal||!resumed||overview!=null||offlineSnapshot!=null||currentWeb()!=web||!state.activeAccount.equals(account)||!state.current().storageId.equals(storage)||!state.current().activeTab.equals(tab)||!java.util.Objects.equals(url,web.getUrl())||pageEpochs.getOrDefault(tab,-1L)!=epoch)return false;
         try{WorkspaceState latest=store.load();WorkspaceState.Account owner=latest.find(account);return latest.activeAccount.equals(account)&&owner.storageId.equals(storage)&&owner.activeTab.equals(tab);}catch(Exception error){return false;}
     }
     private void pageAction(Consumer<WebView> action){
+        environmentNavigationEvent("action-request",currentWeb());
         WebView web=currentWeb();if(web==null||!ready||fatal)return;
         if(overview!=null||offlineSnapshot!=null){toast("请先返回原网页，再操作页面");return;}
         if(navigationPending||nativePageBusy(web)){toast("页面或文件任务正在处理中，请完成后再操作");return;}
         String account=state.activeAccount,storage=state.current().storageId,tab=state.current().activeTab,url=web.getUrl();long epoch=pageEpochs.getOrDefault(tab,-1L);
         if(url==null)return;
         navigationPending=true;navigationWeb=web;selectPage(web,true);long ticket=++navigationTicket;renderHeader();
-        recentHandler.postDelayed(()->{if(navigationPending&&navigationTicket==ticket){cancelPageNavigation();renderHeader();toast("页面暂未完成保护，请稍候重试");}},7000);
+        environmentNavigationEvent("guard-start",web);
+        recentHandler.postDelayed(()->{if(navigationPending&&navigationTicket==ticket){environmentNavigationEvent("guard-timeout",web);cancelPageNavigation();renderHeader();toast("页面暂未完成保护，请稍候重试");}},7000);
         String check="(function(){try{var visible=function(e){return !!e&&!!e.getClientRects().length;};var busy=Array.from(document.querySelectorAll('[aria-busy=\"true\"],[role=\"progressbar\"],[data-testid=\"stop-button\"],[data-testid=\"remove-file-button\"],[data-testid=\"attachment\"],button[aria-label*=\"Remove file\" i],button[aria-label*=\"Remove attachment\" i],button[aria-label*=\"移除附件\"],button[aria-label*=\"删除附件\"]')).some(visible)||Array.from(document.querySelectorAll('input[type=file]')).some(function(e){return e.files&&e.files.length;});var e=Array.from(document.querySelectorAll('#prompt-textarea,textarea,[contenteditable=\"true\"]')).find(visible);return JSON.stringify({busy:busy,draft:!!e&&!!(e.value||e.innerText||'')});}catch(e){return JSON.stringify({busy:true});}})()";
         try{web.evaluateJavascript(check,raw->{
+            environmentNavigationEvent("guard-result",web);
             if(navigationTicket!=ticket||!navigationPending)return;
-            if(!samePage(web,account,storage,tab,url,epoch)){cancelPageNavigation();renderHeader();return;}
+            if(!samePage(web,account,storage,tab,url,epoch)){environmentNavigationEvent("guard-page-changed",web);cancelPageNavigation();renderHeader();return;}
             try{
                 Object parsed=new org.json.JSONTokener(raw).nextValue();JSONObject value=parsed instanceof JSONObject?(JSONObject)parsed:new JSONObject(String.valueOf(parsed));
-                if(value.optBoolean("busy",true)||nativePageBusy(web)){cancelPageNavigation();renderHeader();toast("网页正在生成或处理附件，请完成后再操作");return;}
-                Runnable proceed=()->{if(navigationTicket!=ticket||!navigationPending)return;boolean current=samePage(web,account,storage,tab,url,epoch)&&!nativePageBusy(web);cancelPageNavigation();if(current){restoreCacheMode(web);try{action.accept(web);}catch(RuntimeException error){restoreCacheMode(web);loadingPages.put(web,false);toast("页面操作未完成，请重试");}}renderHeader();};
-                if(recovery!=null)recovery.beforeNavigation(web,proceed,()->{if(navigationTicket==ticket){cancelPageNavigation();renderHeader();}});
+                if(value.optBoolean("busy",true)||nativePageBusy(web)){environmentNavigationEvent("guard-busy",web);cancelPageNavigation();renderHeader();toast("网页正在生成或处理附件，请完成后再操作");return;}
+                Runnable proceed=()->{if(navigationTicket!=ticket||!navigationPending)return;boolean current=samePage(web,account,storage,tab,url,epoch)&&!nativePageBusy(web);environmentNavigationEvent(current?"action-approved":"action-page-changed",web);cancelPageNavigation();if(current){restoreCacheMode(web);try{action.accept(web);}catch(RuntimeException error){restoreCacheMode(web);loadingPages.put(web,false);toast("页面操作未完成，请重试");}}renderHeader();};
+                if(recovery!=null){environmentNavigationEvent("recovery-start",web);recovery.beforeNavigation(web,proceed,()->{environmentNavigationEvent("recovery-cancelled",web);if(navigationTicket==ticket){cancelPageNavigation();renderHeader();}});}
                 else if(!value.optBoolean("draft"))proceed.run();
                 else{cancelPageNavigation();renderHeader();toast("当前草稿暂不能保护，请先复制备份后再操作");}
             }catch(Exception error){cancelPageNavigation();renderHeader();toast("无法确认页面状态，已保留当前页面");}
@@ -343,7 +369,7 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
         web.setBackgroundColor(Color.WHITE);
         loadingPages.putIfAbsent(web,web.getProgress()<100);web.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT,false);pageEpochs.putIfAbsent(tabId,0L);if(initial&&recovery!=null)recovery.bind(web,accountId,storageId,tabId);
         web.setWebViewClient(new WebViewClient() {
-            @Override public void onPageStarted(WebView view,String url,android.graphics.Bitmap icon){pageEpochs.put(tabId,pageEpochs.getOrDefault(tabId,0L)+1);if(recovery!=null)recovery.navigating(view,url);memory.diagnostics.event("page-load",accountId,tabId,null);loadingPages.put(view,true);if(active(tabId)){cancelPageNavigation();renderHeader();}}
+            @Override public void onPageStarted(WebView view,String url,android.graphics.Bitmap icon){pageEpochs.put(tabId,pageEpochs.getOrDefault(tabId,0L)+1);environmentNavigationEvent("page-start:"+environmentPageLabel(url),view);if(recovery!=null)recovery.navigating(view,url);memory.diagnostics.event("page-load",accountId,tabId,null);loadingPages.put(view,true);if(active(tabId)){cancelPageNavigation();renderHeader();}}
             @Override public WebResourceResponse shouldInterceptRequest(WebView view,WebResourceRequest request){if(!memory.networkReady())return null; /* WebSettings blocks network; preserve the native failure. */if((BuildConfig.DEBUG||BuildConfig.ENVIRONMENT_TEST)&&handoffFixture!=null)return handoffFixture.response(accountId,request);return null;}
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 String url = request.getUrl().toString();
@@ -353,9 +379,9 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
                 return true;
             }
             @Override public void onPageFinished(WebView view, String url) {
-                rememberURL(accountId,tabId,url);if(recovery!=null)recovery.ready(view);loadingPages.put(view,false);restoreCacheMode(view);if(active(tabId))renderHeader();
+                environmentNavigationEvent("page-finish:"+environmentPageLabel(url),view);rememberURL(accountId,tabId,url);if(recovery!=null)recovery.ready(view);loadingPages.put(view,false);restoreCacheMode(view);if(active(tabId))renderHeader();
             }
-            @Override public void doUpdateVisitedHistory(WebView view,String url,boolean reload){rememberURL(accountId,tabId,url);if(recovery!=null)recovery.ready(view);if(active(tabId))renderHeader();}
+            @Override public void doUpdateVisitedHistory(WebView view,String url,boolean reload){environmentNavigationEvent("history-update:"+environmentPageLabel(url),view);rememberURL(accountId,tabId,url);if(recovery!=null)recovery.ready(view);if(active(tabId))renderHeader();}
             @Override public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
                 if(!request.isForMainFrame())return;loadingPages.put(view,false);restoreCacheMode(view);if(active(tabId))renderHeader();memory.diagnostics.event("page-error",accountId,tabId,"code:"+error.getErrorCode());boolean saved=recovery!=null&&recovery.failed(view,request.getUrl().toString(),false);if(active(tabId)&&resumed&&!saved)showMessage("网页暂时无法加载", "请检查网络后重试。账号登录数据仍保留。", "重试", () -> { showCurrent(); currentWeb().loadUrl(state.current().current().url); });
             }

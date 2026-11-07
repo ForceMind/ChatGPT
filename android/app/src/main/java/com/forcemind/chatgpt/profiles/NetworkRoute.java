@@ -60,6 +60,20 @@ public final class NetworkRoute {
         }
     }
     private void stopCore() throws Exception { if (coreLoaded) Networkcore.stop(); }
+    private static void logStartupStage(String stage, long generation, long startedAt) {
+        if (BuildConfig.NETWORK_TEST) android.util.Log.i("NetworkIntegrationCI", "startup stage=" + stage
+                + " generation=" + generation + " elapsedMillis=" + (android.os.SystemClock.elapsedRealtime() - startedAt));
+    }
+    private static void logCoreDiagnostics(long generation) {
+        if (!BuildConfig.NETWORK_TEST) return;
+        try {
+            // Native output is a bounded enum-only buffer, never Xray's raw logger.
+            String[] rows = Networkcore.testDiagnostics().split("\n");
+            for (String row : rows) android.util.Log.i("NetworkIntegrationCI", "core generation=" + generation + " " + row);
+        } catch (Exception | LinkageError unavailable) {
+            android.util.Log.i("NetworkIntegrationCI", "core generation=" + generation + " diagnostic=unavailable");
+        }
+    }
     public boolean coreInitialized() { return coreLoaded; }
     public void block(String message) {
         if (Looper.myLooper() != main.getLooper()) { main.post(() -> block(message)); return; }
@@ -155,19 +169,28 @@ public final class NetworkRoute {
         worker.execute(() -> {
             if (closed || current != pending) return;
             int port = 0;
+            boolean diagnosticsStarted = false;
             String stage = "stop-previous-core";
             long startedAt = BuildConfig.NETWORK_TEST ? android.os.SystemClock.elapsedRealtime() : 0;
             try {
+                logStartupStage(stage, generation, startedAt);
                 stopCore();
                 if (node != null) {
                     stage = "start-core";
+                    logStartupStage(stage, generation, startedAt);
                     try (ServerSocket socket = new ServerSocket(0, 1, InetAddress.getByName("127.0.0.1"))) { port = socket.getLocalPort(); }
                     coreLoaded = true;
-                    Networkcore.start(NetworkCoreConfig.build(node, port));
+                    String config = NetworkCoreConfig.build(node, port);
+                    if (BuildConfig.NETWORK_TEST) {
+                        diagnosticsStarted = true;
+                        Networkcore.startWithTestDiagnostics(config);
+                    } else Networkcore.start(config);
                     stage = "check-local-listener";
+                    logStartupStage(stage, generation, startedAt);
                     try (Socket check = new Socket()) { check.connect(new InetSocketAddress("127.0.0.1", port), 3000); }
                     java.net.HttpURLConnection probe = null;
                     stage = "probe-owned-target";
+                    logStartupStage(stage, generation, startedAt);
                     try {
                         java.net.Proxy explicitProxy = new java.net.Proxy(java.net.Proxy.Type.HTTP, new InetSocketAddress("127.0.0.1", port));
                         probe = (java.net.HttpURLConnection) new java.net.URL(NetworkTestPolicy.probeURL()).openConnection(explicitProxy);
@@ -175,6 +198,8 @@ public final class NetworkRoute {
                         int code = probe.getResponseCode();
                         if (code < 100 || code >= 500) throw new java.io.IOException("检查目标未返回有效响应");
                     } finally { if (probe != null) probe.disconnect(); }
+                    logStartupStage("probe-complete", generation, startedAt);
+                    if (diagnosticsStarted) logCoreDiagnostics(generation);
                 }
                 final int appliedPort = port;
                 main.post(() -> applyWebView(node, appliedPort, generation, system, listener));
@@ -186,15 +211,19 @@ public final class NetworkRoute {
                     String message = e.getMessage() == null ? "" : e.getMessage().toLowerCase(java.util.Locale.ROOT);
                     String category = message.contains("reset") ? "reset" : message.contains("closed") ? "closed" : message.contains("refused") ? "refused" : message.contains("timed out") ? "timeout" : message.contains("broken pipe") ? "broken-pipe" : "other";
                     StringBuilder details = new StringBuilder("startup stage=").append(stage)
+                            .append(" generation=").append(generation)
                             .append(" elapsedMillis=").append(android.os.SystemClock.elapsedRealtime() - startedAt)
                             .append(" coreRunning=").append(running).append(" originalGeneration=").append(current == pending)
                             .append(" category=").append(category);
                     Throwable cause = e;
                     for (int depth = 0; cause != null && depth < 8; depth++, cause = cause.getCause()) {
                         details.append("\ncause=").append(cause.getClass().getName());
-                        for (StackTraceElement frame : cause.getStackTrace()) details.append("\n  at ").append(frame);
+                        StackTraceElement[] frames = cause.getStackTrace();
+                        for (int index = 0; index < frames.length && index < 48; index++) details.append("\n  at ").append(frames[index]);
+                        if (frames.length > 48) details.append("\n  frames=truncated");
                     }
                     android.util.Log.e("NetworkIntegrationCI", details.toString());
+                    if (diagnosticsStarted) logCoreDiagnostics(generation);
                 }
                 try { stopCore(); } catch (Exception | LinkageError ignored) { }
                 main.post(() -> fail(generation, listener, "线路连接或目标检查失败"));

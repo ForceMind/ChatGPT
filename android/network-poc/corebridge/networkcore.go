@@ -7,6 +7,7 @@ import (
     "strings"
     "sync"
 
+    xlog "github.com/xtls/xray-core/common/log"
     "github.com/xtls/xray-core/core"
     _ "github.com/xtls/xray-core/main/distro/all"
 )
@@ -18,22 +19,42 @@ var instanceCancel context.CancelFunc
 // Start starts a controlled configuration built by the Android application.
 // Errors deliberately omit configuration values and node credentials.
 func Start(config string) error {
+    return start(config, false)
+}
+
+// StartWithTestDiagnostics is called only by Android's NETWORK_TEST build.
+// It keeps the same configuration, transport behavior and startup failure rules.
+func StartWithTestDiagnostics(config string) error {
+    return start(config, true)
+}
+
+func start(config string, diagnostics bool) error {
     mu.Lock()
     defer mu.Unlock()
     if instance != nil { return errors.New("core already running") }
+    var diagnosticHandler *testDiagnosticHandler
+    if diagnostics { diagnosticHandler = beginTestDiagnostics() } else { endTestDiagnostics() }
     c, err := core.LoadConfig("json", strings.NewReader(config))
-    if err != nil { return errors.New("invalid proxy configuration") }
+    if err != nil { endTestDiagnostics(); return errors.New("invalid proxy configuration") }
     // Xray Close shuts listeners, but accepted TCP streams inherit this context.
     // Own its cancellation so Stop also interrupts active HTTP/CONNECT requests.
     ctx, cancel := context.WithCancel(context.Background())
     next, err := core.NewWithContext(ctx, c)
     if err != nil {
         cancel()
+        endTestDiagnostics()
         return errors.New("unable to initialize proxy core")
+    }
+    // core.NewWithContext installs its configured logger. Replace it only in
+    // the explicit CI entry point, after construction and before listener start.
+    // The diagnostic handler never forwards raw Xray messages to any writer.
+    if diagnostics {
+        xlog.RegisterHandler(diagnosticHandler)
     }
     if err = next.Start(); err != nil {
         cancel()
         _ = next.Close()
+        endTestDiagnostics()
         return errors.New("unable to start proxy listener")
     }
     instance = next
@@ -44,6 +65,7 @@ func Start(config string) error {
 func Stop() error {
     mu.Lock()
     defer mu.Unlock()
+    defer endTestDiagnostics()
     if instanceCancel != nil {
         instanceCancel()
         instanceCancel = nil

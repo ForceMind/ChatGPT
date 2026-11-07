@@ -33,9 +33,31 @@ public final class BrowserChromeNavigationTest {
     private final Instrumentation instrumentation=InstrumentationRegistry.getInstrumentation();
     private final AtomicInteger firstLoads=new AtomicInteger(),secondLoads=new AtomicInteger(),nextLoads=new AtomicInteger(),unexpected=new AtomicInteger();
     private MainActivity activity;
+    private String phase="setup";
+    private final org.json.JSONArray phases=new org.json.JSONArray();
     private static final String ORIGIN="https://chatgpt.com/c/owned-ui-";
     private interface Check { boolean ready()throws Exception; }
     private void main(Runnable run){instrumentation.runOnMainSync(run);}
+    private void phase(String value)throws Exception{
+        phase=value;phases.put(new JSONObject().put("phase",value).put("elapsedMillis",android.os.SystemClock.elapsedRealtime()));
+        android.util.Log.i("BrowserChromeAcceptance","phase="+value);
+    }
+    private void saveNavigationEvidence(String failure){
+        try{
+            AtomicReference<JSONObject> nativeState=new AtomicReference<>();AtomicReference<String> nativeStateReadError=new AtomicReference<>();
+            main(()->{try{nativeState.set(activity.environmentNavigationEvidence());}catch(Exception error){nativeStateReadError.set(error.getClass().getSimpleName());}});
+            JSONObject evidence=new JSONObject().put("schema",1).put("phase",phase).put("failure",failure).put("phases",phases)
+                .put("firstLoads",firstLoads.get()).put("secondLoads",secondLoads.get()).put("nextLoads",nextLoads.get()).put("unexpectedRequests",unexpected.get());
+            if(nativeState.get()!=null)evidence.put("native",nativeState.get());
+            if(nativeStateReadError.get()!=null)evidence.put("nativeStateReadError",nativeStateReadError.get());
+            java.nio.file.Files.write(EnvironmentUpgradeSeedTest.file("browser-chrome-navigation.json").toPath(),evidence.toString().getBytes(StandardCharsets.UTF_8));
+            // Observe a transitioning/opaque document without letting cookie access suppress all evidence.
+            AtomicReference<String> raw=new AtomicReference<>();CountDownLatch done=new CountDownLatch(1);
+            main(()->activity.recoveryCurrentWeb().evaluateJavascript("JSON.stringify((function(){var s={page:'other',readyState:document.readyState,ownedDocument:!!window.ownedDocument,modelLength:(window.ownedModel||'').length,trusted:window.ownedTrusted||0};for(var p of ['one','two','next'])if(location.href==='https://chatgpt.com/c/owned-ui-'+p)s.page=p;var e=document.querySelector('#prompt-textarea');s.editor=!!e;s.draftLength=e?(e.value||'').length:0;s.draftMatchesModel=!!e&&e.value===(window.ownedModel||'');s.focused=!!e&&document.activeElement===e;try{s.cookiePreserved=document.cookie.indexOf('owned-ui=preserved')>=0;}catch(e){s.cookieError=e.name;}try{s.storagePreserved=localStorage.getItem('owned-ui')==='preserved';}catch(e){s.storageError=e.name;}return s;})())",value->{raw.set(value);done.countDown();}));
+            if(done.await(5,TimeUnit.SECONDS)&&raw.get()!=null){Object decoded=new JSONTokener(raw.get()).nextValue();if(decoded!=JSONObject.NULL)evidence.put("document",new JSONObject(String.valueOf(decoded)));}
+            java.nio.file.Files.write(EnvironmentUpgradeSeedTest.file("browser-chrome-navigation.json").toPath(),evidence.toString().getBytes(StandardCharsets.UTF_8));
+        }catch(Exception error){android.util.Log.e("BrowserChromeAcceptance","Cannot preserve navigation state",error);}
+    }
     private void waitFor(String label,Check check)throws Exception{
         long deadline=android.os.SystemClock.elapsedRealtime()+30000;
         while(!check.ready()){if(android.os.SystemClock.elapsedRealtime()>deadline){saveNativeTree();throw new AssertionError("Timed out: "+label);}Thread.sleep(150);}
@@ -130,8 +152,7 @@ public final class BrowserChromeNavigationTest {
         return new WebResourceResponse("text/html","UTF-8",new ByteArrayInputStream(body.getBytes(StandardCharsets.UTF_8)));
     }
     private void assertDraft(String expected)throws Exception{
-        try{waitFor("protected legacy draft",()->{JSONObject v=snapshot(web());return expected.equals(v.getString("draft"))&&expected.equals(v.getString("model"));});}
-        catch(AssertionError failure){try{java.nio.file.Files.write(EnvironmentUpgradeSeedTest.file("browser-chrome-document.json").toPath(),snapshot(web()).toString().getBytes(StandardCharsets.UTF_8));}catch(Exception evidenceError){android.util.Log.e("BrowserChromeAcceptance","Cannot preserve owned document state",evidenceError);}throw failure;}
+        waitFor("protected legacy draft",()->{JSONObject v=snapshot(web());return expected.equals(v.getString("draft"))&&expected.equals(v.getString("model"));});
         JSONObject v=snapshot(web());assertTrue(v.getString("cookie").contains("owned-ui=preserved"));assertEquals("preserved",v.getString("storage"));
     }
     @Test public void realHeaderAndNavigationPreserveLegacyPage()throws Exception{
@@ -145,16 +166,22 @@ public final class BrowserChromeNavigationTest {
         java.nio.file.Files.write(EnvironmentUpgradeSeedTest.file("browser-chrome-profile.json").toPath(),profile.toString().getBytes(StandardCharsets.UTF_8));
         MainActivity.handoffFixture=this::response;
         try{
-            activity=(MainActivity)instrumentation.startActivitySync(new Intent(context,MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));loaded("one");
+            phase("initial-load-one");activity=(MainActivity)instrumentation.startActivitySync(new Intent(context,MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));loaded("one");
             click("更多功能");AccessibilityNodeInfo back=control("后退"),forward=control("前进");assertFalse(back.isEnabled());assertFalse(forward.isEnabled());back.recycle();forward.recycle();click("关闭弹层");
             String original=snapshot(web()).getString("document");String draft="OwnedLegacyDraft";type(draft);
-            click("切换标签页：旧页二");loaded("two");click("切换标签页：旧页一");loaded("one");assertEquals(original,snapshot(web()).getString("document"));assertEquals(1,firstLoads.get());assertEquals(1,secondLoads.get());assertDraft(draft);
-            tapWeb("next");loaded("next");click("更多功能");click("后退");loaded("one");assertDraft(draft);click("更多功能");click("前进");loaded("next");click("更多功能");click("后退");loaded("one");assertDraft(draft);
-            String before=snapshot(web()).getString("document");click("刷新页面");waitFor("normal refresh new document",()->!before.equals(snapshot(web()).getString("document")));loaded("one");assertDraft(draft);
-            String normal=snapshot(web()).getString("document");click("更多功能");click("强制刷新");waitFor("force refresh new document",()->!normal.equals(snapshot(web()).getString("document")));loaded("one");assertDraft(draft);
+            phase("switch-two");click("切换标签页：旧页二");loaded("two");
+            phase("switch-one");click("切换标签页：旧页一");loaded("one");assertEquals(original,snapshot(web()).getString("document"));assertEquals(1,firstLoads.get());assertEquals(1,secondLoads.get());assertDraft(draft);
+            phase("link-next");tapWeb("next");loaded("next");
+            phase("first-back-one");click("更多功能");click("后退");loaded("one");assertDraft(draft);
+            phase("forward-next");click("更多功能");click("前进");loaded("next");
+            phase("second-back-one");click("更多功能");click("后退");loaded("one");assertDraft(draft);
+            phase("normal-refresh");String before=snapshot(web()).getString("document");click("刷新页面");waitFor("normal refresh new document",()->!before.equals(snapshot(web()).getString("document")));loaded("one");assertDraft(draft);
+            phase("force-refresh");String normal=snapshot(web()).getString("document");click("更多功能");click("强制刷新");waitFor("force refresh new document",()->!normal.equals(snapshot(web()).getString("document")));loaded("one");assertDraft(draft);
             assertEquals(0,unexpected.get());JSONObject proof=new JSONObject().put("schema",1).put("complete",true).put("api",api).put("engine","webview").put("nativeHeaderTitleSwitch",true).put("switchNoReload",true).put("disabledEmptyHistory",true).put("backForward",true).put("normalAndForceRefresh",true).put("draftCookieStoragePreserved",true).put("allRequestsIntercepted",true).put("unexpectedRequests",unexpected.get()).put("screenshots",false).put("realServicesAccessed",false);
             JSONObject observed=EnvironmentUpgradeSeedTest.uiRegistryBarrier(EnvironmentUpgradeSeedTest.expected());proof.put("profileRegistryPersisted",true).put("registryBarrierMillis",observed.getLong("registryBarrierMillis")).put("firstObservedProfileNames",observed.get("firstObservedProfileNames")).put("profileRegistryBarrier",observed);
             Bundle output=new Bundle();output.putString("browserChromeProof",proof.toString());instrumentation.addResults(output);
+            phase("complete");saveNavigationEvidence("none");
+        }catch(AssertionError|Exception failure){if(activity!=null)saveNavigationEvidence(failure instanceof AssertionError?"assertion":"exception");throw failure;
         }finally{if(activity!=null)main(activity::finish);MainActivity.handoffFixture=null;}
     }
 }
