@@ -21,6 +21,8 @@ APK = 'ChatGPT-Studio-2026.11.07-1905-android-arm64.apk'
 APK_SHA = '8555c1b1e8ad64659bdccd8832c84302a2a8986f049235d9d9f77eae416d4125'
 CERT_SHA = 'bd7b9c924795ec21d27c73f280b5fc71b83ffea950e36e05967b77f092056ac0'
 DRAFT_ID = 437661601
+UPLOADED_SOURCE = '4e4d5583b2a1c1c48d4df6f17ad3a5722efc6fcc'
+GENERATED_TAG = 'untagged-ebbc7c33321e57921cd7'
 
 
 def command(*args):
@@ -159,7 +161,7 @@ def publish(stage, manifest):
     assert release['id'] == DRAFT_ID and release['tag_name'] == TAG and release['prerelease']
     if release['draft'] and release['target_commitish'] != sha:
         assert not release['assets'], 'Do not retarget a nonempty draft'
-        release = patch_release({'target_commitish': sha, 'draft': True, 'prerelease': True,
+        release = patch_release({'tag_name': TAG, 'target_commitish': sha, 'draft': True, 'prerelease': True,
                                  'name': 'ChatGPT Studio Android Beta · 2026.11.07-1905',
                                  'body': Path('docs/releases/android-beta-2026.11.07-1905-notes.md').read_text(),
                                  'make_latest': 'false'})
@@ -187,7 +189,8 @@ def publish(stage, manifest):
         assert set(existing) == set(files)
         for name, asset in existing.items():
             assert asset['size'] == files[name].stat().st_size and asset['digest'] == 'sha256:' + digest(files[name]), name
-        published = patch_release({'draft': False, 'prerelease': True, 'make_latest': 'false'})
+        published = patch_release({'tag_name': TAG, 'target_commitish': sha,
+                                   'draft': False, 'prerelease': True, 'make_latest': 'false'})
         assert published['draft'] is False and published['prerelease'] is True
         for attempt in range(12):
             release = api('releases/' + str(release['id']))
@@ -216,11 +219,82 @@ def publish(stage, manifest):
                       'mainAndDevSHA': sha, 'apkSHA256': APK_SHA, 'rebuilt': False}))
 
 
+def finalize_existing():
+    """Correct only this run's generated tag; keep all uploaded bytes immutable."""
+    assert os.environ.get('GITHUB_ACTIONS') == 'true' and os.environ['GITHUB_REPOSITORY'] == REPO
+    sha = command('git', 'rev-parse', 'HEAD')
+    assert sha == os.environ['GITHUB_SHA'] and api('branches/dev')['commit']['sha'] == sha
+    changed = command('git', 'diff', '--name-only', APP_SOURCE, 'HEAD', '--', 'android').splitlines()
+    assert set(changed) <= {'android/scripts/run-gecko-handoff.py', 'android/scripts/publish-date-beta.py'}
+    final = api('actions/runs/42370754805')
+    assert final['conclusion'] == 'success' and final['head_sha'] == HARNESS_SOURCE
+    expected = {
+        APK: (241907607, APK_SHA),
+        'ChatGPT-Studio-2026.11.07-1905-android-evidence.zip':
+            (338195, '7034d3a97e90650724a01633196ad4a3a3ba98b2fe6c04845deb06379ffef781'),
+        'INSTALL.android-beta.md': (4135, '8318be3ce0881b99e7854ddc740cd58ad120f64313bacf116ab789515f505c9b'),
+        'SHA256SUMS.android-beta.txt': (424, '44c4115c59415dfa5f391b071f6f642bc0500a4db8f821274d87d00f050a63d8'),
+        'android-beta-release-manifest.json': (5217, '3454bcd941a2714d7bf66190dec4dc82e0e84191819c25a46baa750c4203d194')}
+    def check_assets(release):
+        assert not release['draft'] and release['prerelease'] and release['target_commitish'] == UPLOADED_SOURCE
+        assert release['tag_name'] in (TAG, GENERATED_TAG)
+        assert {row['name'] for row in release['assets']} == set(expected)
+        for row in release['assets']:
+            size, checksum = expected[row['name']]
+            assert row['size'] == size and row['digest'] == 'sha256:' + checksum
+    release = api('releases/' + str(DRAFT_ID))
+    check_assets(release)
+    subprocess.run(['git', 'fetch', 'origin', 'main', 'dev', '--no-tags'], check=True)
+    subprocess.run(['git', 'merge-base', '--is-ancestor', 'origin/main', sha], check=True)
+    subprocess.run(['git', 'merge-base', '--is-ancestor', UPLOADED_SOURCE, sha], check=True)
+    subprocess.run(['git', 'push', 'origin', sha + ':refs/heads/main'], check=True)
+    assert api('branches/main')['commit']['sha'] == api('branches/dev')['commit']['sha'] == sha
+    tag = api('git/ref/tags/' + TAG, allow_not_found=True)
+    if tag is None:
+        payload = json.dumps({'ref': 'refs/tags/' + TAG, 'sha': UPLOADED_SOURCE})
+        tag = json.loads(subprocess.check_output(['gh', 'api', '--method', 'POST',
+                         'repos/' + REPO + '/git/refs', '--input', '-'], input=payload, text=True))
+    assert tag['object']['type'] == 'commit' and tag['object']['sha'] == UPLOADED_SOURCE
+    if release['tag_name'] != TAG:
+        release = patch_release({'tag_name': TAG, 'target_commitish': UPLOADED_SOURCE,
+                                 'draft': False, 'prerelease': True, 'make_latest': 'false'})
+    release = api('releases/' + str(DRAFT_ID))
+    check_assets(release)
+    assert release['tag_name'] == TAG and release['html_url'] == 'https://github.com/' + REPO + '/releases/tag/' + TAG
+    for row in release['assets']:
+        assert row['browser_download_url'] == 'https://github.com/' + REPO + '/releases/download/' + TAG + '/' + row['name']
+    # This exact placeholder was generated by our preparation run. It points to
+    # the same commit now retained by the real tag and both branches.
+    placeholder = api('git/ref/tags/' + GENERATED_TAG, allow_not_found=True)
+    removed = False
+    if placeholder is not None:
+        assert placeholder['object']['type'] == 'commit' and placeholder['object']['sha'] == UPLOADED_SOURCE
+        subprocess.run(['gh', 'api', '--method', 'DELETE', 'repos/' + REPO + '/git/refs/tags/' + GENERATED_TAG], check=True)
+        removed = True
+    assert api('git/ref/tags/' + GENERATED_TAG, allow_not_found=True) is None
+    result = {'schema': 1, 'releaseURL': release['html_url'], 'tag': TAG, 'releaseId': DRAFT_ID,
+              'isDraft': False, 'isPrerelease': True, 'publishedAt': release['published_at'],
+              'applicationSourceSHA': APP_SOURCE, 'harnessSourceSHA': HARNESS_SOURCE,
+              'uploadedAndVerifiedRun': 42387533415, 'draftPreparationRun': 42386832463,
+              'finalizationRun': int(os.environ['GITHUB_RUN_ID']), 'releaseSourceSHA': UPLOADED_SOURCE,
+              'mergedMainAndDevSHA': sha, 'removedGeneratedTag': removed, 'rebuilt': False, 'resigned': False,
+              'assets': [{key: row[key] for key in ('id', 'name', 'size', 'digest', 'browser_download_url')}
+                         for row in release['assets']]}
+    Path('android-beta-publication-receipt.json').write_text(json.dumps(result, indent=2) + '\n')
+    print(json.dumps({'releaseURL': result['releaseURL'], 'assets': len(expected),
+                      'mainAndDevSHA': sha, 'originalAssetDigestsUnchanged': True}))
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--candidate', type=Path, required=True)
-    parser.add_argument('--reports', type=Path, required=True)
-    parser.add_argument('--stage', type=Path, required=True)
+    parser.add_argument('--candidate', type=Path)
+    parser.add_argument('--reports', type=Path)
+    parser.add_argument('--stage', type=Path)
+    parser.add_argument('--finalize-existing', action='store_true')
     args = parser.parse_args()
-    checked = verify_and_stage(args.candidate, args.reports, args.stage)
-    publish(args.stage, checked)
+    if args.finalize_existing:
+        finalize_existing()
+    else:
+        assert args.candidate and args.reports and args.stage
+        checked = verify_and_stage(args.candidate, args.reports, args.stage)
+        publish(args.stage, checked)
