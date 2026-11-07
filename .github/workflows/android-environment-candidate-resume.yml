@@ -28,7 +28,7 @@ jobs:
           assert set(changed)<=allowed,changed
           driver=pathlib.Path('android/scripts/run-gecko-handoff.py')
           actual=hashlib.sha256(driver.read_bytes()).hexdigest()
-          assert actual=='bcafa68d28e2133206d8c9bdcd50f34f0f427cccf4670ca9df13315803f702e9'
+          assert actual=='7cd77dfedb3e954443f98790e1ffdb8e0157ae4de297a3b759b738e52dd21a7a'
           run=json.loads(pathlib.Path(os.environ['RUNNER_TEMP'],'original-candidate-run.json').read_text())
           assert run['head_sha']==base and run['status']=='completed' and run['conclusion']=='failure'
           rows=json.loads(pathlib.Path(os.environ['RUNNER_TEMP'],'original-candidate-jobs.json').read_text())['jobs']
@@ -38,6 +38,7 @@ jobs:
           assert statuses['gecko-handoff (35)']['conclusion']=='failure'
           assert not [row['name'] for row in rows if row['conclusion']=='failure' and row['name']!='gecko-handoff (35)']
           proof={'schema':1,'applicationSourceSHA':base,'buildRun':42366675306,'harnessSourceSHA':os.environ['GITHUB_SHA'],'driverSHA256':actual,'changedPaths':changed,'applicationAndOtherDriversUnchanged':True,'reusedSuccessfulJobs':[{'name':name,'id':statuses[name]['id'],'conclusion':'success'} for name in sorted(expected)],'originalFailure':{'job':128387214254,'artifact':13571809283,'conclusion':'failure','includedInPass':False},'versionName':'2026.11.07-1905','versionCode':3000034}
+          proof['additionalFailedHarnessRuns']=[{'run':42368635085,'job':128391980774,'artifact':13572559534,'harnessSourceSHA':'e78dcdc69672a0b473a417cb6d0ca714e38afc2a','includedInPass':False,'stage':'fifth-case-source-asset-menu'}]
           pathlib.Path('candidate-recovery-source.json').write_text(json.dumps(proof,indent=2))
           PY_AUTH
       - uses: actions/upload-artifact@v4

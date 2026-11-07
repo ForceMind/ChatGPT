@@ -173,10 +173,12 @@ class HandoffAcceptance(NativeAXMixin,network.NetworkAcceptance):
         if not matches:return None
         assert len(matches)==1,'Ambiguous native task action: '+label
         target=matches[0];by_index={row['nodeIndex']:row for row in rows};cursor=target
-        if popup:
-            while cursor is not None and cursor.get('class')!='android.widget.ListView':
-                cursor=by_index.get(cursor.get('parentIndex'))
-            if cursor is None:return None
+        while cursor is not None and cursor.get('class')!='android.widget.ListView':
+            cursor=by_index.get(cursor.get('parentIndex'))
+        if popup and cursor is None:return None
+        if cursor is not None:
+            # Asset action menus also use ListView, without the spinner-popup flag.
+            if not self.popup_geometry_ready(rows):return None
             cursor=target
             # Keep the original point; never infer an offset from a half-laid-out popup.
             x1,y1,x2,y2=target['rectangle'];x,y=(x1+x2)//2,(y1+y2)//2
@@ -184,7 +186,7 @@ class HandoffAcceptance(NativeAXMixin,network.NetworkAcceptance):
                 left,top,right,bottom=cursor['rectangle']
                 if cursor.get('visible-to-user','true')!='true' or not (left<=x<right and top<=y<bottom):return None
                 cursor=by_index.get(cursor.get('parentIndex'))
-            cursor=target
+        cursor=target
         while cursor is not None:
             if cursor.get('clickable')=='true' or cursor.get('class') in ('android.widget.ListView','android.widget.AbsListView'):
                 return target
@@ -195,7 +197,8 @@ class HandoffAcceptance(NativeAXMixin,network.NetworkAcceptance):
         deadline=time.monotonic()+45;swipes=0
         while True:
             rows=self.ui(deadline=deadline)
-            if popup and rows and not self.popup_geometry_ready(rows):
+            has_list=any(row.get('class')=='android.widget.ListView' and row.get('visible-to-user','true')=='true' for row in rows)
+            if rows and (popup or has_list) and not self.popup_geometry_ready(rows):
                 if time.monotonic()>=deadline:raise AssertionError('Native task action not ready: '+label)
                 continue  # Read again inside the same deadline; no tap or scroll on inconsistent bounds.
             target=self.action_node(rows,label,description,prefix,popup)
@@ -210,11 +213,10 @@ class HandoffAcceptance(NativeAXMixin,network.NetworkAcceptance):
                 containers=[row for row in rows if row.get('package')==PACKAGE and row.get('scrollable')=='true'
                             and row['rectangle'][3]-row['rectangle'][1]>180
                             and (not popup or row.get('class')=='android.widget.ListView')]
-                if popup and not containers:
-                    # A dismissed attachment dialog can expose the form before the spinner popup.
-                    # Await the actual option list; never scroll the underlying review form for an option.
-                    time.sleep(.2);continue
-                assert len(containers)==1,'Missing or ambiguous native task scroll container'
+                if len(containers)!=1:
+                    # Transitions can expose no viewport or overlapping viewports. Read again
+                    # inside the original deadline; only a unique real container permits input.
+                    continue
                 assert swipes<20,'Native task action absent after bounded scroll: '+label
                 x1,y1,x2,y2=containers[0]['rectangle'];x=(x1+x2)//2
                 top,bottom=y1+(y2-y1)//5,y2-(y2-y1)//5

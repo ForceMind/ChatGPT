@@ -14,6 +14,8 @@
 
 为避免无变化的整包与13个通过场景重复运行，新增固定来源的 `android-environment-candidate-resume.yml`：校验原run/source及全部成功任务，限制源码差异仅为已审阅harness、续验工作流和说明，固定driver SHA；复用原APK/fixture/core及未改写的成功proof，只续跑handoff35。最后重跑全部原升级、时序、六协议、导出、任务和零崩溃交付verifier，追加recovery来源记录并保留原失败为excluded-from-pass。App日期、code、APK字节与receipt继续沿原1905，验收脚本来源另记。当前续验尚待实际结果，不作通过声明。
 
+第一次续验 `42368635085` / job `128391980774` / artifact `13572559534` 已越过前四个任务，但第五项在附件选择前失败。更早AX证据显示资产操作菜单根[28,406][1052,1514]，ListView上沿却为163；harness点击512,982后实际把原文件标为收藏，并未打开任务表单，后续零滚动容器是错误页面的表现。只对spinner启用几何校验不足，现纯harness修正扩大到所有可见ListView菜单：原center不变，不一致只读重取、不tap或scroll；0/多容器也只在原45秒内等真正唯一。原15秒、20次scroll上限、实际tap次数和App全部不改。原两次错误及排除通过的来源都随recovery记录保留，不将其改写为App业务修复。
+
 ## 前一迭代：Android 15 两项首错定位（历史证据保留）
 
 用户已批准继续定位 TLS startup reset 与旧 WebView 导航超时。专用 `android-stability-diagnostics.yml` 仅在 Actions 构建并运行原 Android15 TLS 场景，以及保留完整 synthetic 客户端前置的原导航用例；不重复后台长测。已增加仅测试启用的核心错误枚举、导航步骤/保护状态与失败摘要，保留原完整Java异常栈、断言、操作次数和超时。已定位并修正本轮强制刷新保存竞争；原首次后退超时与正向 TLS reset 仍不能宣称根因已解决。
