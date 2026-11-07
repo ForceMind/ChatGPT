@@ -1,6 +1,49 @@
 # Android 独立环境客户端：文件与任务主线
 
-## 当前迭代：完整 Android 独立候选交付
+## 当前交付：2026.11.07-1905 完整候选
+
+- [下载候选：ARM64 APK、安装说明、SHA-256 与完整验收证据](https://github.com/ForceMind/ChatGPT/actions/runs/42370754805/artifacts/13574370247)（需 GitHub 登录，保留14天）。
+- [最终续验及全部交付门禁：42370754805](https://github.com/ForceMind/ChatGPT/actions/runs/42370754805)，全部通过；[原完整矩阵与构建：42366675306](https://github.com/ForceMind/ChatGPT/actions/runs/42366675306) 的原失败仍保留，未改写为成功。
+- [安装与数据保留](android-environment-client-install.md)。已有固定 Beta 可直接覆盖安装，不卸载、不清数据；正式版及临时测试版保持各自独立空间，不自动搬迁。
+
+| 安装包身份 | 已核对值 |
+| --- | --- |
+| 文件名 / 内部版本 | `ChatGPT-Studio-2026.11.07-1905-android-arm64.apk` / `3000034` |
+| APK / 候选ZIP字节 | 241,907,607 / 111,828,723 |
+| APK SHA-256 | `8555c1b1e8ad64659bdccd8832c84302a2a8986f049235d9d9f77eae416d4125` |
+| 固定证书 SHA-256 | `bd7b9c924795ec21d27c73f280b5fc71b83ffea950e36e05967b77f092056ac0` |
+| 包名 / 系统与架构 | `com.forcemind.chatgpt.profiles.networkbeta` / Android9以上，arm64-v8a |
+| 人用包检查 | 非debug、非testOnly、16KiB对齐；测试开关关闭，无合成入口/节点输入/测试CA/Probe激活 |
+| App / 最终harness源码 | `364ddd14d2fb76f234c3284e1372e8de9b37c4f8` / `a94185dbb39a9115b3b39d3d10dc27e8df223234` |
+
+本候选包含已验证的加密保存竞争修正，保留每账号语言/时区环境、热标签复用、加密页面/草稿恢复、VLESS、资产库与Skill完整任务。App版本、文件名、receipt和一次冻结的上海时区元数据一致。人用包可含被编译期开关和运行guard保护的辅助实现；隔离门禁不宣称所有测试辅助代码已从二进制物理剔除。
+
+| 原严验收 | Android9 / API28 | Android15 / API35 |
+| --- | --- | --- |
+| 33→34同签升级，旧Cookie/存储/密文/资产及偏好保留 | human/synthetic通过 | 原ARM字节human/synthetic通过 |
+| 三账号四页隔离、语言/时区/Worker、热切换不重载、旋转/冷恢复/草稿冲突 | 通过 | 通过 |
+| 原生前后退、普通/强制刷新与草稿保护 | WebView/Gecko通过 | WebView/Gecko通过 |
+| RAW/TLS/REALITY网页、真实选择文件上传、下载同路由及原负例/恢复 | 三组通过 | 三组通过 |
+| Blob HTML/PNG及data文本本地导出、离线/归属/取消/关闭源页 | 通过 | 通过 |
+| 资产/Skill完整指令与附件、正常/取消/失败/新任务恢复/结果待确认 | 五项通过 | 五项通过 |
+| 原任务崩溃门：owned fatal / 未归属native fatal | 0 / 0 | 0 / 0 |
+| 获批保存时序对照 | 未新增此专项 | 旧行对照原断言真实失败单列；修正版保存后导航、先发poll保护拒绝通过 |
+
+实际构建报告为17份JUnit XML、85项Android单元测试，失败/错误/跳过均0；Go、16项夹具、lint、签名/对齐/包隔离检查通过。所有构建与运行仅Actions。完整矩阵13项设备场景先通过，Android15任务场景因AX几何不一致误点失败；纯harness修正未改App及其他driver，固定来源校验后只续验该项。最终所有原升级、导航时序、六协议、导出、任务、零崩溃verifier重新退出0，没有重复后台长测。
+
+Android15最终任务 proof实际为submitted/cancelled/failed/submitted/uncertain，发送/网页click次数1/0/0/1/1，共3次；5次实际上传的10份HTML/PNG原字节和SHA匹配，3条完整指令均1707 UTF8字节/891 UTF16且SHA一致。原生Skill、目标账号与跨账号勾选正确，原资产不变，暂存全部清空，原3热页的document/draft/model与加载次数不变。不确定任务重开不重放；原始crash buffer/stderr均0字节且哈希已核。不得将应用层单次发送扩大为运输层或第三方服务端恰好一次。
+
+候选ZIP附带 `evidence/candidate-recovery-source.json`，分别记录原App/构建来源、最终harness来源、14个未改写的成功job，以及三份未计入通过的原误点失败证据（13571809283、13572559534、13573770384）。原失败与前几次续验未改写成绿色，详情保留在下方过程记录。最终job128398235412/artifact13573896231为实际Android15任务成功证据，最终deliver128400072968全部通过。
+
+已在线有界读取最终ZIP：102项、仅一个人用APK；读取144,505字节、43个Range请求，版本/收据、升级、六协议、本地导出、任务、导航时序和来源记录均核对，原crash源文件哈希一致；未下载大型APK到本机。SHA-256由CI实际重算完整APK，本机在线核对收据及ZIP条目大小，不将元数据读取冒称完整APK重新哈希。
+
+**已知边界**：历史正向TLS reset与首次后退超时仍未严格定位，不把本轮通过称为根因解决；原TCP无响应重传失败继续保留。实站、真实节点、通行密钥与OEM手机仍待验收。当前仅独立固定Beta候选，公开Android仍alpha.22；未合并main、公开Release、部署、改更新清单或安装个人设备。
+
+<details>
+<summary>本批范围、首错与续验过程（按发生顺序保留）</summary>
+
+## 本批范围：完整 Android 独立候选交付
+
 
 2026-11-07 用户已明确选择先交付完整 Android 候选：纳入已验证的保存竞争修正，在 Actions 跑此前批准的 Android9/15 完整回归，交付可安装包；正向 TLS reset 与历史首次后退归因继续列为未定位项，不作为已修复宣传，也不缩减任何验收断言。此前根因目标已由用户清除，本迭代不重启无新证据的机械诊断。
 
@@ -12,11 +55,13 @@
 
 首错 job `128387214254` / artifact `13571809283` 实证是harness在Skill弹窗几何未一致时误点：focused popup根bounds为[123,883][831,1857]，ListView/选项却暂报从[0,0]起，实际input tap354,189落在弹窗之外。随后Skill仍为“不使用Skill”、jobs为空，未进入文件或消息发送。最小修正只改 `run-gecko-handoff.py`，原45秒动作预算内只读重取直至ListView viewport/目标原始center与focused根、可见祖先几何一致，仍只真实点击一次；不猜偏移、不放宽原15秒选中断言，也不修改App。
 
-为避免无变化的整包与13个通过场景重复运行，新增固定来源的 `android-environment-candidate-resume.yml`：校验原run/source及全部成功任务，限制源码差异仅为已审阅harness、续验工作流和说明，固定driver SHA；复用原APK/fixture/core及未改写的成功proof，只续跑handoff35。最后重跑全部原升级、时序、六协议、导出、任务和零崩溃交付verifier，追加recovery来源记录并保留原失败为excluded-from-pass。App日期、code、APK字节与receipt继续沿原1905，验收脚本来源另记。当前续验尚待实际结果，不作通过声明。
+为避免无变化的整包与13个通过场景重复运行，新增固定来源的 `android-environment-candidate-resume.yml`：校验原run/source及全部成功任务，限制源码差异仅为已审阅harness、续验工作流和说明，固定driver SHA；复用原APK/fixture/core及未改写的成功proof，只续跑handoff35。最后重跑全部原升级、时序、六协议、导出、任务和零崩溃交付verifier，追加recovery来源记录并保留原失败为excluded-from-pass。App日期、code、APK字节与receipt继续沿原1905，验收脚本来源另记。当时续验尚待结果；最终通过与来源见顶部当前交付。
 
 第一次续验 `42368635085` / job `128391980774` / artifact `13572559534` 已越过前四个任务，但第五项在附件选择前失败。更早AX证据显示资产操作菜单根[28,406][1052,1514]，ListView上沿却为163；harness点击512,982后实际把原文件标为收藏，并未打开任务表单，后续零滚动容器是错误页面的表现。只对spinner启用几何校验不足，现纯harness修正扩大到所有可见ListView菜单：原center不变，不一致只读重取、不tap或scroll；0/多容器也只在原45秒内等真正唯一。原15秒、20次scroll上限、实际tap次数和App全部不改。原两次错误及排除通过的来源都随recovery记录保留，不将其改写为App业务修复。
 
 第二次续验 `42369738440` / job `128395232848` / artifact `13573770384` 在首项跨账号checkbox前失败，jobs仍为空。原AX显示普通表单也暂缺根偏移(28,63)：点击前checkbox y805..889，实际正常y868..952，input tap512,847落在框上方；外层frame y42又在focused root y63之外。现harness普通控件与scroll也要求focused root、外层frame和可见祖先几何一致，保持原center一次tap，不直接赋值勾选、不绕跨账号安全断言。ScrollView内部长内容允许合法超出viewport，但点击中心必须落在各可见clip。App与原APK仍未改，失败来源另列。
+
+</details>
 
 ## 前一迭代：Android 15 两项首错定位（历史证据保留）
 
@@ -81,9 +126,9 @@ TLS [job `128353716199`](https://github.com/ForceMind/ChatGPT/actions/runs/42355
 
 同一阻塞条件已连续三个目标轮次存在：缺少带现有取证的正向失败因果数据。当前没有可安全补回旧信息的实现动作，也无活跃任务可等待；继续收集成功样本不会区分仍相容的多个原因。目标标为blocked而非complete，完整目标保持。恢复条件是同一合成场景产生带现有typed/counter/clock/flags的正向失败，或取得原首错更完整的因果日志；历史后退归因同样需要相应原状态证据。未安排后台采样、定时自动化或额外发布。
 
-## 当前开发：日期版本、本地导出与资产任务
+## 历史开发：日期版本、本地导出与资产任务
 
-本轮已交付 `2026.11.07-1001` 固定签名候选：Gecko 本地导出与资产/Skill 自动任务均通过 Android 9/15 的合成验收。下载、原始失败及边界见下方“最新交付”；正式版迁入与真实服务、手机验收仍未完成。
+该阶段交付 `2026.11.07-1001` 固定签名候选：Gecko 本地导出与资产/Skill 自动任务通过 Android9/15合成验收。原下载、失败及边界见下方历史交付；后续1905候选同时纳入保存竞争修正，正式版迁入与真实服务、手机验收仍未完成。
 
 **当前确认范围（2026-11-07）**：用户已明确确认按应用层单次发送继续。第五项新增“完整 HTTP 响应、缺少业务确认”的合成故障，仍要求服务器真实记录一次、页面一次发送点击、完整文件/指令、持久化发送栅栏、uncertain 后重开不自动再执行和零 App 崩溃。原“已提交但完全无 HTTP 响应就 TCP 断流”模式与两次 POST 失败证据保留为运输层限制，不更名为通过，不承诺第三方恰好一次处理。其他原定回归与数据/保活边界保持。
 
@@ -161,7 +206,7 @@ TLS [job `128353716199`](https://github.com/ForceMind/ChatGPT/actions/runs/42355
 
 依据：[固定158 channel顺序](https://github.com/mozilla-firefox/firefox/blob/FIREFOX_158_0_RELEASE/netwerk/protocol/http/nsHttpChannel.cpp)、[请求头修改实现](https://github.com/mozilla-firefox/firefox/blob/FIREFOX_158_0_RELEASE/netwerk/protocol/http/HttpBaseChannel.cpp)、[事务重启与流式请求体](https://github.com/mozilla-firefox/firefox/blob/FIREFOX_158_0_RELEASE/netwerk/protocol/http/nsHttpTransaction.cpp)、[Mozilla代理隔离API](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/proxy/ProxyInfo)。结论为尚未找到可靠且不改变其它热标签行为的公开单事务禁重传路径，不是对所有可能实现作不可能性证明；用户现已确认应用层范围，原运输层失败不计入通过项。
 
-## 最新交付：2026.11.07-1001 文件与任务候选
+## 历史交付：2026.11.07-1001 文件与任务候选
 
 - [下载候选：APK、SHA-256、安装说明与完整验收证据](https://github.com/ForceMind/ChatGPT/actions/runs/42327120729/artifacts/13557011670)
 - [Actions 42327120729：最终全部通过](https://github.com/ForceMind/ChatGPT/actions/runs/42327120729)；源码 `d5f187e84cdcc3568e51fe581041dca7c3368171`。

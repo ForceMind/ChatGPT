@@ -13,6 +13,8 @@
   <p><a href="https://chatgpt-studio.pages.dev/">官网</a> · <a href="#下载与安装">下载</a> · <a href="#开始使用">使用指南</a> · <a href="#技术方向与架构">技术架构</a> · <a href="#路线图与待完成事项">路线图</a> · <a href="https://github.com/ForceMind/ChatGPT/issues">问题反馈</a></p>
 </div>
 
+**Android 独立测试候选：2026.11.07-1905**。包含保存竞争修正，已完成 Android 9/15 完整候选验收。[下载 APK 与证据包](https://github.com/ForceMind/ChatGPT/actions/runs/42370754805/artifacts/13574370247)（GitHub 登录，保留14天）· [安装与已知限制](docs/android-environment-client.md)。可覆盖已有固定 Beta；与正式版独立，不自动搬迁正式版账号。
+
 **沉浸式多账号 ChatGPT 工作台。**
 
 在独立账号空间中使用 ChatGPT，管理标签与会话，把下载、预览、格式转换和文件处理集中在一个应用里。启动直接进入网页，采用白灰黑界面，没有地址栏；各设备独立登录，无需配置 OpenAI API Key。
@@ -216,12 +218,12 @@ cd android
 | 已发布 | Android 加密离线快照与 121 Skill / 32 自有角色 | alpha.22 原证书 APK；[CI 与工件记录](docs/releases/3.0.0-alpha.22-android-candidate.json)，真实账号与设备待验 |
 | 已发布 | Mac 账号菜单淡遮罩、平滑交接与标签强制刷新 | alpha.22；[原包与原生验证](docs/releases/3.0.0-alpha.22-macos-candidate.json)，真实账号兼容待验 |
 | 已发布 | Mac 更新进度与手动更新 | alpha.23；下载、校验与准备状态清晰可见，支持手动检查、重试和立即安装；[发布与验证范围](docs/releases/3.0.0-alpha.23.json) |
-| 环境隔离 | Android 每账号语言 / 时区迁入客户端 | 固定签名 `2026.11.07-1001` 候选；三账号四页隔离、热切换不重载、旋转、冷恢复和草稿冲突在 Android 9/15 合成验收通过。日期版32→33同签升级保留旧登录、密文和资产；正式版迁入及真实服务、手机验收仍待完成。[候选与验证范围](docs/android-environment-client.md) |
+| 环境隔离 | Android 每账号语言 / 时区迁入客户端 | 固定签名 **2026.11.07-1905** 候选；三账号四页隔离、热切换不重载、旋转、冷恢复和草稿冲突通过 Android 9/15 合成验收。33→34 同签升级保留旧登录、密文和资产。正式版迁入、真实服务与手机验收仍待完成。[候选与验证范围](docs/android-environment-client.md) |
 | 系统集成 | 系统 / Chrome 通行密钥、真实 Touch ID 恢复与稳定签名 | 通行密钥未接入；Touch ID 受证书与实机验收条件限制 |
 | 已发布 | 自有智能体与设计补丁 Skill | alpha.21 桌面含 32 个角色，支持单独使用、组合 Skill、收藏与任务恢复 |
-| 移动网络 | 应用内代理与 VLESS 配置 | 固定签名 **2026.11.07-1001** 的 Gecko HTTP(S) 网页、系统选文件上传和下载同路由通过 Android 9/15 的六组 RAW/TLS/REALITY 合成验收，包含出口、字节、归属、在途保护、身份负例、核心停止阻断及恢复。Android15 TLS 首轮探测 reset 后同代码定点重跑通过，根因未定并保留原证据。仅 Actions 候选，公开版仍为 alpha.22；真实节点、服务及手机待验收，不提供免费节点。[完整证据与限制](docs/android-environment-client.md) |
+| 移动网络 | 应用内代理与 VLESS 配置 | **2026.11.07-1905** 的 Gecko 网页、真实系统选文件上传与下载，通过 Android 9/15 六组 RAW/TLS/REALITY 同路由验收，核对出口、字节、归属、在途保护、错误身份、核心停止及恢复。历史正向 TLS reset 仍未定位，原证据保留；不把本轮通过写成根因解决。仅 Actions 候选，公开版仍 alpha.22；真实节点、服务与手机待验收，不提供免费节点。[完整证据与限制](docs/android-environment-client.md) |
 | 独立测试 | Android 网络测试安装包 | 已交付已签名 arm64 APK，名称“ChatGPT Studio 测试版”，包名及登录／恢复空间独立，与正式版并存。用户自行配置真实节点验收；临时测试签名不保证后续覆盖升级。已提供[GitHub 独立预发布](https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.24-candidate.1-standalone)，不替换正式版下载。[安装说明](docs/android-network-standalone-preview.md) · [构建收据](docs/releases/android-network-standalone-preview.1.json) · [发布记录](docs/releases/android-network-standalone-preview.1-publication.json) |
-| 长期测试 | Android 固定签名 Beta 候选 | **2026.11.07-1001** 已交付 Gecko Blob/HTML/PNG、data 文本保存与资产→GPT/Skill完整任务；Android9/15 的真实附件字节、完整指令、进度、取消、失败恢复和结果待确认不自动再执行均通过。保留原登录、加密恢复及热标签；恢复端口改为单方关闭，本轮崩溃门禁通过。应用层一次操作不保证浏览器运输层或第三方服务端只处理一次，原TCP断流重传失败保留；真实业务、OEM手机和正式原签名迁入待验收。[候选下载、安装与边界](docs/android-environment-client.md) |
+| 长期测试 | Android 固定签名 Beta 候选 | **2026.11.07-1905** 已交付，包含本地导出、资产→GPT/Skill 与保存竞争修正。Android9/15 完整候选证据及最终门禁通过；API35 原流程和三组真实保存时序对照通过，旧行预期失败单列。任务包含完整指令、进度、停止与不确定结果不自动再执行，两端任务崩溃门禁通过。仅测试脚本坐标修正后续验原APK，全部来源和失败保留。应用层一次发送不保证运输层或服务端恰好一次；实站、OEM及正式版迁入待验收。[下载、安装与报告](docs/android-environment-client.md) |
 | 新平台 | iPhone / iPad 后续开发；Intel Mac、Linux 与商店发行 | 未纳入当前迭代，暂无对应安装包 |
 | 更新能力 | 差量下载 | 尚未实现；alpha.23 已提供下载进度与手动入口，完整原生程序更新仍需重启 |
 
