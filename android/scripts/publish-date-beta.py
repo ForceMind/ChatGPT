@@ -9,6 +9,7 @@ import re
 import shutil
 import subprocess
 import time
+from urllib.parse import urlencode
 import xml.etree.ElementTree as ET
 import zipfile
 
@@ -19,15 +20,18 @@ HARNESS_SOURCE = 'a94185dbb39a9115b3b39d3d10dc27e8df223234'
 APK = 'ChatGPT-Studio-2026.11.07-1905-android-arm64.apk'
 APK_SHA = '8555c1b1e8ad64659bdccd8832c84302a2a8986f049235d9d9f77eae416d4125'
 CERT_SHA = 'bd7b9c924795ec21d27c73f280b5fc71b83ffea950e36e05967b77f092056ac0'
+DRAFT_ID = 437661601
 
 
 def command(*args):
     return subprocess.check_output(args, text=True).strip()
 
 
-def api(path):
-    result = subprocess.run(['gh', 'api', 'repos/' + REPO + '/' + path], text=True,
+def api(path, allow_not_found=False):
+    result = subprocess.run(['gh', 'api', '-H', 'Cache-Control: no-cache', 'repos/' + REPO + '/' + path], text=True,
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=90)
+    if allow_not_found and result.returncode and 'HTTP 404' in result.stderr:
+        return None
     if result.returncode:
         raise RuntimeError('GitHub read failed: ' + path + '\n' + result.stderr)
     return json.loads(result.stdout)
@@ -37,10 +41,13 @@ def read(path):
     return json.loads(path.read_text(encoding='utf-8'))
 
 
-def find_release():
-    matches = [row for row in api('releases?per_page=100') if row['tag_name'] == TAG]
-    assert len(matches) <= 1
-    return matches[0] if matches else None
+def patch_release(fields):
+    result = subprocess.run(['gh', 'api', '--method', 'PATCH', 'repos/' + REPO + '/releases/' + str(DRAFT_ID),
+                             '--input', '-'], input=json.dumps(fields), text=True, stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE, timeout=90)
+    if result.returncode:
+        raise RuntimeError('GitHub draft update failed: ' + result.stderr)
+    return json.loads(result.stdout)
 
 
 def digest(path):
@@ -146,14 +153,17 @@ def publish(stage, manifest):
     # does not recursively start old branch/tag build workflows.
     subprocess.run(['git', 'push', 'origin', sha + ':refs/heads/main'], check=True)
     assert api('branches/main')['commit']['sha'] == api('branches/dev')['commit']['sha'] == sha
-    release = find_release()
-    if release is None:
-        subprocess.run(['gh', 'release', 'create', TAG, '--target', sha, '--title',
-                        'ChatGPT Studio Android Beta · 2026.11.07-1905', '--notes-file',
-                        'docs/releases/android-beta-2026.11.07-1905-notes.md', '--draft', '--prerelease', '--latest=false'], check=True)
-        release = find_release()
-        assert release is not None
-    assert release['prerelease'] and release['target_commitish'] == sha
+    # The preparation run created this exact empty draft. Read it by ID rather
+    # than relying on immediate visibility in the release-list/tag caches.
+    release = api('releases/' + str(DRAFT_ID))
+    assert release['id'] == DRAFT_ID and release['tag_name'] == TAG and release['prerelease']
+    if release['draft'] and release['target_commitish'] != sha:
+        assert not release['assets'], 'Do not retarget a nonempty draft'
+        release = patch_release({'target_commitish': sha, 'draft': True, 'prerelease': True,
+                                 'name': 'ChatGPT Studio Android Beta · 2026.11.07-1905',
+                                 'body': Path('docs/releases/android-beta-2026.11.07-1905-notes.md').read_text(),
+                                 'make_latest': 'false'})
+    assert release['target_commitish'] == sha
     files = {path.name: path for path in stage.iterdir()}
     existing = {row['name']: row for row in release['assets']}
     assert set(existing) <= set(files), 'Refuse unreviewed assets'
@@ -162,8 +172,12 @@ def publish(stage, manifest):
     if not release['draft']:
         assert set(existing) == set(files), 'Published release is immutable'
     else:
+        upload = release['upload_url'].split('{', 1)[0]
+        assert upload == 'https://uploads.github.com/repos/' + REPO + '/releases/' + str(DRAFT_ID) + '/assets'
         for name in sorted(set(files) - set(existing)):
-            subprocess.run(['gh', 'release', 'upload', TAG, str(files[name])], check=True)
+            subprocess.run(['gh', 'api', '--method', 'POST', upload + '?' + urlencode({'name': name}),
+                            '-H', 'Content-Type: application/octet-stream', '--input', str(files[name])],
+                           check=True, stdout=subprocess.PIPE, timeout=600)
         for attempt in range(12):
             release = api('releases/' + str(release['id']))
             existing = {row['name']: row for row in release['assets']}
@@ -173,15 +187,27 @@ def publish(stage, manifest):
         assert set(existing) == set(files)
         for name, asset in existing.items():
             assert asset['size'] == files[name].stat().st_size and asset['digest'] == 'sha256:' + digest(files[name]), name
-        subprocess.run(['gh', 'release', 'edit', TAG, '--draft=false', '--prerelease', '--latest=false'], check=True)
-        release = api('releases/' + str(release['id']))
+        published = patch_release({'draft': False, 'prerelease': True, 'make_latest': 'false'})
+        assert published['draft'] is False and published['prerelease'] is True
+        for attempt in range(12):
+            release = api('releases/' + str(release['id']))
+            if release['draft'] is False:
+                break
+            time.sleep(2)
     assert release['draft'] is False and release['prerelease'] is True
-    ref = api('git/ref/tags/' + TAG)['object']
+    for attempt in range(12):
+        tag = api('git/ref/tags/' + TAG, allow_not_found=True)
+        if tag is not None:
+            break
+        time.sleep(2)
+    assert tag is not None, 'Published tag unavailable after bounded readback'
+    ref = tag['object']
     if ref['type'] == 'tag':
         ref = api('git/tags/' + ref['sha'])['object']
     assert ref['type'] == 'commit' and ref['sha'] == sha
     result = {'schema': 1, 'releaseURL': release['html_url'], 'tag': TAG, 'releaseId': release['id'],
               'publishedAt': release['published_at'], 'isDraft': release['draft'], 'isPrerelease': release['prerelease'],
+              'draftPreparationRun': 42386832463,
               'mergedMainAndDevSHA': sha, 'manifest': manifest,
               'assets': [{key: row[key] for key in ('id', 'name', 'size', 'digest', 'browser_download_url')}
                          for row in release['assets']]}
