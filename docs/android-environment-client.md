@@ -2,19 +2,23 @@
 
 ## 当前开发：日期版本、本地导出与资产任务
 
-第一阶段已交付 `2026.11.06-2024`，下载与实际结果见下方“最新交付”。当前推进第二阶段资产/Skill 自动任务，接线代码已落盘，尚待 Actions 完整验收。
+本轮已交付 `2026.11.07-1001` 固定签名候选：Gecko 本地导出与资产/Skill 自动任务均通过 Android 9/15 的合成验收。下载、原始失败及边界见下方“最新交付”；正式版迁入与真实服务、手机验收仍未完成。
 
 **当前确认范围（2026-11-07）**：用户已明确确认按应用层单次发送继续。第五项新增“完整 HTTP 响应、缺少业务确认”的合成故障，仍要求服务器真实记录一次、页面一次发送点击、完整文件/指令、持久化发送栅栏、uncertain 后重开不自动再执行和零 App 崩溃。原“已提交但完全无 HTTP 响应就 TCP 断流”模式与两次 POST 失败证据保留为运输层限制，不更名为通过，不承诺第三方恰好一次处理。其他原定回归与数据/保活边界保持。
 
-新夹具模式 `send-business-ack-missing` 已接入，尚待 Actions：真实 commit 后写完整 HTTP200/JSON/Content-Length，无 `accepted` 业务字段。服务端保存 write/flush 的实际字节、长度与SHA，网页通过真实 Response.arrayBuffer/JSON解析记录收到的状态、header、字节与缺ACK；driver和Gate逐项互核。原 `send-ack-drop` TCP shutdown/close 分支保留。候选 proof/summary 明确 `onceScope=application-task`、`transportLevelReplayGuarantee=false`，单独引用原失败run/artifact且 `includedInCurrentPass=false`。App代码、重试设置、全部原数据与保活策略未改，当前批次内部序号仍3000033。
+新夹具模式 `send-business-ack-missing` 已通过两端 Actions：真实 commit 后写完整 HTTP200/JSON/Content-Length，无 `accepted` 业务字段。服务端保存 write/flush 的实际字节、长度与SHA，网页通过真实 Response.arrayBuffer/JSON解析记录收到的状态、header、字节与缺ACK；driver和Gate逐项互核。原 `send-ack-drop` TCP shutdown/close 分支保留。候选 proof/summary 明确 `onceScope=application-task`、`transportLevelReplayGuarantee=false`，单独引用原失败run/artifact且 `includedInCurrentPass=false`。本次范围确认后未改 App 代码或重试设置，内部序号仍3000033；前批已实现的桥接与恢复修正一并纳入本候选。
 
 用户已要求继续 Android 主线，alpha.22 原包 UI 单独回迁暂缓。当前顺序为：先补齐 Gecko 的 blob/data 本地文件导出，再接入新环境“资产 → GPT / Skill”完整流程；两步沿用原固定 Beta 包名、证书、账号空间、加密恢复与热标签，不合并 main、不公开发布、不部署官网或更新个人设备。
 
-从下一次交付起，用户可见版本名使用上海时区 `YYYY.MM.DD-HHmm`，例如 `2026.11.06-1835`，APK 文件名采用同一版本。Android 内部 versionCode 从 3000031 递增至 3000032，继续由整数保证覆盖升级。一次完整构建只生成一份时间版本元数据，人用包和所有 CI 变体共用；复用原 APK 时保留其原日期，旧交付记录不改名。本轮仅接入 Android，其他平台在各自后续版本接入，当前公开下载与更新清单保持原状。
+用户可见版本名已采用上海时区 `YYYY.MM.DD-HHmm`，APK 文件名采用同一版本。日期版首批内部 versionCode 为3000032，本批递增至3000033，继续由整数保证覆盖升级。一次完整构建只生成一份时间版本元数据，人用包和所有 CI 变体共用；复用原 APK 时保留其原日期，旧交付记录不改名。本轮仅接入 Android，其他平台在各自后续版本接入，当前公开下载与更新清单保持原状。
 
 第一步交付可安装的日期版候选及本地导出证据：HTTP(S) 仍严格核对原线路票据；blob/data 使用单列的本地来源、账号及文档授权，消费浏览器原字节流，不冒充网络线路、不为导出放开任意本地页面导航。成功文件写入原账号资产库，失效、取消、关闭及迟到回调不能误归档或串号。
 
-随后在同一基础完成资产/Skill 的附件与完整指令、一次发送、清晰进度以及取消/失败恢复，复用原工作台流程。用户已明确批准新浏览器验收范围：Actions Android 9/15 的 Blob 图片/HTML、data 文本、账号切换/关闭/取消、资产/Skill 一次发送及旧登录/恢复/热标签/同签升级。所有构建与测试仍在 Actions，只用合成数据，不截图、不访问真实 ChatGPT。
+第二步已在同一基础完成资产/Skill 的附件与完整指令、应用层一次发送、清晰进度以及取消/失败恢复，复用原工作台流程。用户已明确批准新浏览器验收范围：Actions Android 9/15 的 Blob 图片/HTML、data 文本、账号切换/关闭/取消、资产/Skill 一次发送及旧登录/恢复/热标签/同签升级。所有构建与测试仍在 Actions，只用合成数据，不截图、不访问真实 ChatGPT。
+
+## 实现与验证记录（按发生顺序保留）
+
+以下记录当时的状态，最终交付与当前限制以“最新交付”一节为准。
 
 日期机制构建 `42208305365`（`0be651b3483400a1964c1d95685e82499e215427`）已成功：人用 ARM 与所有 CI 变体共用 `2026.11.06-1911` / `3000032`，包内版本、BuildConfig、文件名和 receipt 均经 Actions 检查。该轮只验证版本机制和打包，未运行浏览器，也未包含随后完成的本地导出代码，不能作为新导出功能验收。
 
@@ -74,9 +78,37 @@
 
 原范围只读续查（2026-11-07）：未把自动Goal续跑当作范围变更批准，继续核对固定158的窄作用域方案。`nsHttpChannel.cpp` 在 BeginConnect 先按原请求头调整 keep-alive 能力，随后 PrepareToConnect 才触发普通 webRequest 的修改阶段；`HttpBaseChannel::SetRequestHeaderInternal` 只改请求头，不回写连接能力。因此没有把扩展晚加 `Connection: close` 当作可证的单请求禁重传修复。公开 `proxy.ProxyInfo.connectionIsolationKey` 只承诺代理连接隔离，direct 模式忽略其它字段，不能据此宣称覆盖系统直连或所有事务重启。固定158的流式请求体会拒绝已消费后的回卷，但要求HTTP2/3，且强改网页fetch/请求体并非当前已核实的透明兼容路径。未写入全runtime max-attempts、未修改网页fetch或夹具，没有新增测试场景或候选发布。
 
-依据：[固定158 channel顺序](https://github.com/mozilla-firefox/firefox/blob/FIREFOX_158_0_RELEASE/netwerk/protocol/http/nsHttpChannel.cpp)、[请求头修改实现](https://github.com/mozilla-firefox/firefox/blob/FIREFOX_158_0_RELEASE/netwerk/protocol/http/HttpBaseChannel.cpp)、[事务重启与流式请求体](https://github.com/mozilla-firefox/firefox/blob/FIREFOX_158_0_RELEASE/netwerk/protocol/http/nsHttpTransaction.cpp)、[Mozilla代理隔离API](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/proxy/ProxyInfo)。结论为尚未找到可靠且不改变其它热标签行为的公开单事务禁重传路径，不是对所有可能实现作不可能性证明；验收范围问题仍待用户答复。
+依据：[固定158 channel顺序](https://github.com/mozilla-firefox/firefox/blob/FIREFOX_158_0_RELEASE/netwerk/protocol/http/nsHttpChannel.cpp)、[请求头修改实现](https://github.com/mozilla-firefox/firefox/blob/FIREFOX_158_0_RELEASE/netwerk/protocol/http/HttpBaseChannel.cpp)、[事务重启与流式请求体](https://github.com/mozilla-firefox/firefox/blob/FIREFOX_158_0_RELEASE/netwerk/protocol/http/nsHttpTransaction.cpp)、[Mozilla代理隔离API](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/proxy/ProxyInfo)。结论为尚未找到可靠且不改变其它热标签行为的公开单事务禁重传路径，不是对所有可能实现作不可能性证明；用户现已确认应用层范围，原运输层失败不计入通过项。
 
-## 最新交付：2026.11.06-2024 本地导出候选
+## 最新交付：2026.11.07-1001 文件与任务候选
+
+- [下载候选：APK、SHA-256、安装说明与完整验收证据](https://github.com/ForceMind/ChatGPT/actions/runs/42327120729/artifacts/13557011670)
+- [Actions 42327120729：最终全部通过](https://github.com/ForceMind/ChatGPT/actions/runs/42327120729)；源码 `d5f187e84cdcc3568e51fe581041dca7c3368171`。
+- App 与文件名版本均为 `2026.11.07-1001`，上海时区，内部序号 `3000033`。APK `ChatGPT-Studio-2026.11.07-1001-android-arm64.apk`，241,891,223 字节。
+- APK SHA-256：`b3bae319466c1da37e295949e1db137723b240c7fb1bc8a0232c0f275e612794`。
+- 包名 `com.forcemind.chatgpt.profiles.networkbeta`；固定证书 SHA-256 `bd7b9c924795ec21d27c73f280b5fc71b83ffea950e36e05967b77f092056ac0`。人用 arm64 包非 debug、非 testOnly、16 KiB 对齐，不含测试 CA、合成节点或 CI Probe。已有固定 Beta 可覆盖安装，不卸载、不清数据；正式版和临时测试版保持独立。
+
+本轮可在资产库核对文件、目标账号及 Skill 后创建处理任务。真实系统选文件、原字节上传、完整指令写入、发送、原对话回看均有明确进度；跨账号确认、停止、失败后的明确新任务及结果待确认状态保留。原始文件不变，已有登录空间、加密恢复格式和后台保活策略不变。
+
+| 合成验收 | Android 9 / API28 | Android 15 / API35 |
+| --- | --- | --- |
+| 正常发送、上传中取消、上传失败、明确新任务恢复、缺少业务确认 | 五项通过 | 五项通过 |
+| 真实双附件与完整 891 字指令、原生审核、主进程持久进度 | 通过 | 通过 |
+| 发送次数依次 1/0/0/1/1、发送标记、临时文件清理 | 通过 | 通过 |
+| 完整 HTTP200 但无 accepted；uncertain 重开不再执行 | 通过 | 通过 |
+| 原 A0/A1/B0 文档、草稿和加载次数保持 | 通过 | 通过 |
+| 原始 crash buffer：owned fatal / 未归属 native fatal | 0 / 0 | 0 / 0 |
+| Blob HTML/PNG、data 文本在线/离线保存、归属与取消 | 通过 | 通过 |
+| RAW/TLS/REALITY 网页、上传、下载同路由 | 三组通过 | 三组通过 |
+| 日期版32→33同签升级、旧登录/密文/资产、热标签与冷恢复 | human / synthetic 通过 | human / synthetic 通过 |
+
+构建原始报告为17份 JUnit XML、85项测试，失败/错误/跳过均0；16项网络夹具测试、lint和打包检查通过。所有构建与运行在 Actions，未本机构建、截图、访问真实 ChatGPT、使用真实节点或更新个人设备。两端任务汇总与 crash 原始字节随包附带；API28 crash buffer 为4421字节，API35为空，独立门禁重新计算哈希及归属后均通过。
+
+本次首轮另有两项失败，未隐去：Android15 TLS 在网页前 `probe-owned-target` 的2053ms处出现 SocketException/reset，当时核心仍运行、原代次未变，宿主捕获未见RST；[首错 job](https://github.com/ForceMind/ChatGPT/actions/runs/42327120729/job/128266894418)、产物 `13556391205` 保留。旧 WebView 导航在 next/后退/前进组合的 `loaded("one")` 超时，失败树仍显示后续页，尚未进入普通刷新；[首错 job](https://github.com/ForceMind/ChatGPT/actions/runs/42327120729/job/128266894774)、产物 `13556366868` 保留。两项分别用同一源码、原断言和预算定点重跑通过，原因尚未确定，不作为已修复问题或稳定性保证；没有重复已通过的后台长测。
+
+在线范围读取最终ZIP：89项、仅一个人用APK、压缩包111,808,636字节；版本、文件名、源码、证书收据与任务摘要一致，未下载大型APK到本机。下载需GitHub登录，产物保留14天。仓库仅推送dev，不合并main、公开发布、部署或改公开更新清单。真实ChatGPT附件/一次业务处理、通行密钥、真实节点与OEM手机仍待验收；原TCP无响应断流的浏览器重传限制仍见上文，不纳入本次通过。
+
+## 历史交付：2026.11.06-2024 本地导出候选
 
 **已知限制（2026-11-07）**：已对照该包源码，恢复桥同样包含本轮发现的 Native/JS 双主动 Port 关闭逻辑。它通过了当时的文件与恢复矩阵，但没有覆盖此次竞争崩溃；当前不建议将它作为日常主版本。最新单关闭方修复与完整任务候选仍在 Actions 验收，未将历史包描述为已修复。
 
