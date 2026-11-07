@@ -1,0 +1,213 @@
+{
+  "schema": 1,
+  "kind": "website-milestone-sync-no-app-release",
+  "sourceCommit": "5bfc3ecabe3fb0340cfb06961e78730bbbda8721",
+  "gitBranch": "dev",
+  "gitMainMerged": false,
+  "project": "chatgpt-studio",
+  "pagesEnvironment": "production",
+  "pagesProductionBranch": "main",
+  "deploymentId": "d686deb8-6c64-401c-94d4-175f15052050",
+  "deploymentURL": "https://d686deb8.chatgpt-studio.pages.dev",
+  "previousDeployment": {
+    "id": "f0534164-7d4a-4c42-a3eb-5323f935edd5",
+    "url": "https://f0534164.chatgpt-studio.pages.dev",
+    "source": "c6abc4f706ca1b6e5a94697dc6ad8de2f033ed5b"
+  },
+  "verifiedAt": "2026-11-07T12:27:13.496454+08:00",
+  "change": "Android 2026.11.07-1001 local exports and asset/Skill task candidate milestone; application-level send uncertainty disclosed",
+  "candidateVersion": "2026.11.07-1001",
+  "candidateAPKPublished": false,
+  "officialDownloadLinksChanged": false,
+  "domesticAccelerationChanged": false,
+  "automaticUpdateFeedsChanged": false,
+  "customDomainBindingsChanged": false,
+  "officialVersions": {
+    "macos": "3.0.0-alpha.23",
+    "windows": "3.0.0-alpha.24",
+    "android": "3.0.0-alpha.22"
+  },
+  "sourceFiles": [
+    {
+      "path": "404.html",
+      "bytes": 623,
+      "sha256": "7ab17d69c072d2113c836bcd612ef54bcda411b8500dfafe67e5417e3d70ccba"
+    },
+    {
+      "path": "_headers",
+      "bytes": 600,
+      "sha256": "87579955f96fe07b28599c61b6478511dbbc807419ca6f4a1127cd4cc367a1bd"
+    },
+    {
+      "path": "app.js",
+      "bytes": 7087,
+      "sha256": "e4e5eecd24322e5f1104f43aacd625d80a5b7f188de4add38520b2246ebbb8d4"
+    },
+    {
+      "path": "assets/android-assets.png",
+      "bytes": 69859,
+      "sha256": "cca90311a5db1cab90b5e92a8d8c9fae8d5d09d3a7b7f193bf2ef57d037573a2"
+    },
+    {
+      "path": "assets/android-skills.png",
+      "bytes": 346485,
+      "sha256": "fdef510c45f8d0d3d724fea2ba2d67aca8ccf63e5fa88b2e09c1e016d97f0fbb"
+    },
+    {
+      "path": "assets/android-tablet-tabs.png",
+      "bytes": 120969,
+      "sha256": "239f1cd608cbcfe514d223264bb89a8858e33d85170077c4ba8362333f2c9f20"
+    },
+    {
+      "path": "assets/android-tabs.png",
+      "bytes": 121069,
+      "sha256": "62662cee4fc379c0d4d8c21ccca7d238534e6b63a8e750fdd5b98b0b84243b07"
+    },
+    {
+      "path": "assets/icon.svg",
+      "bytes": 2119,
+      "sha256": "c40527d47803acd03080ba814abe214159f3117ff277c36a600ff0ccedac82b0"
+    },
+    {
+      "path": "assets/macos-window.png",
+      "bytes": 227406,
+      "sha256": "b562a84cb733ff295a28a6f385ae3a9583dc0d6d5b95ce60cf3edead16ddcc38"
+    },
+    {
+      "path": "assets/windows-installed.png",
+      "bytes": 48225,
+      "sha256": "cf9556ec248f33e2ad70231a04231416b3d30fc73008ec1e9e727b023d5d2718"
+    },
+    {
+      "path": "index.html",
+      "bytes": 47162,
+      "sha256": "204db60553453067daf6441a787b24515756809f13177d82e670e794571ec163"
+    },
+    {
+      "path": "license.txt",
+      "bytes": 2435,
+      "sha256": "9d1b471b68ba1bf60015a232b380a075da38f31a74c961247a03e281785cc4a9"
+    },
+    {
+      "path": "robots.txt",
+      "bytes": 77,
+      "sha256": "7f425345d5aa792cc6bf96f6b8f8cf148c87e9404b07a0593073b8322f2b3ca7"
+    },
+    {
+      "path": "sitemap.xml",
+      "bytes": 164,
+      "sha256": "edd6e6b0a8d9d2da3a0c0a8d3b566a16112e79c8fee69206f187de93b7a757db"
+    },
+    {
+      "path": "styles.css",
+      "bytes": 36578,
+      "sha256": "df4ee39f9cd53992e7c2e718c83f941afe238fadc1c2c84ae8a7a72a11fcf1a1"
+    },
+    {
+      "path": "updates/macos.json",
+      "bytes": 698,
+      "sha256": "b46f0e63af3738fecaa75fa86b5b221453741a8898246dee919aa53bb1677112"
+    },
+    {
+      "path": "updates/windows/alpha.yml",
+      "bytes": 2402,
+      "sha256": "ccfde281b9983890ad790bed2cd47b700d89142c0d58bf931aabc9b52e85891f"
+    }
+  ],
+  "onlineReadback": [
+    {
+      "url": "https://d686deb8.chatgpt-studio.pages.dev/",
+      "status": 200,
+      "bytes": 47162,
+      "actualSHA256": "204db60553453067daf6441a787b24515756809f13177d82e670e794571ec163",
+      "sourceSHA256": "204db60553453067daf6441a787b24515756809f13177d82e670e794571ec163",
+      "comparison": "exact-new-milestone-block-and-existing-non-email-links",
+      "candidateVersion": "2026.11.07-1001",
+      "allNonEmailLinksUnchanged": true
+    },
+    {
+      "url": "https://chatgpt-studio.pages.dev/",
+      "status": 200,
+      "bytes": 47162,
+      "actualSHA256": "204db60553453067daf6441a787b24515756809f13177d82e670e794571ec163",
+      "sourceSHA256": "204db60553453067daf6441a787b24515756809f13177d82e670e794571ec163",
+      "comparison": "exact-new-milestone-block-and-existing-non-email-links",
+      "candidateVersion": "2026.11.07-1001",
+      "allNonEmailLinksUnchanged": true
+    },
+    {
+      "url": "https://chatgpt.xincreates.com/",
+      "status": 200,
+      "bytes": 47992,
+      "actualSHA256": "cca71400cc9f8247f7025e40f26e01abb9c2020795178fc228ad4dd8474b4d59",
+      "sourceSHA256": "204db60553453067daf6441a787b24515756809f13177d82e670e794571ec163",
+      "comparison": "exact-new-milestone-block-and-existing-non-email-links",
+      "candidateVersion": "2026.11.07-1001",
+      "allNonEmailLinksUnchanged": true
+    },
+    {
+      "url": "https://chatgpt-studio.pages.dev/updates/macos.json",
+      "status": 200,
+      "bytes": 698,
+      "actualSHA256": "b46f0e63af3738fecaa75fa86b5b221453741a8898246dee919aa53bb1677112",
+      "sourceSHA256": "b46f0e63af3738fecaa75fa86b5b221453741a8898246dee919aa53bb1677112",
+      "comparison": "exact-bytes",
+      "version": "3.0.0-alpha.23"
+    },
+    {
+      "url": "https://chatgpt-studio.pages.dev/updates/windows/alpha.yml",
+      "status": 200,
+      "bytes": 2402,
+      "actualSHA256": "ccfde281b9983890ad790bed2cd47b700d89142c0d58bf931aabc9b52e85891f",
+      "sourceSHA256": "ccfde281b9983890ad790bed2cd47b700d89142c0d58bf931aabc9b52e85891f",
+      "comparison": "exact-bytes",
+      "version": "3.0.0-alpha.24"
+    },
+    {
+      "url": "https://chatgpt.xincreates.com/updates/macos.json",
+      "status": 200,
+      "bytes": 698,
+      "actualSHA256": "b46f0e63af3738fecaa75fa86b5b221453741a8898246dee919aa53bb1677112",
+      "sourceSHA256": "b46f0e63af3738fecaa75fa86b5b221453741a8898246dee919aa53bb1677112",
+      "comparison": "exact-bytes",
+      "version": "3.0.0-alpha.23"
+    },
+    {
+      "url": "https://chatgpt.xincreates.com/updates/windows/alpha.yml",
+      "status": 200,
+      "bytes": 2402,
+      "actualSHA256": "ccfde281b9983890ad790bed2cd47b700d89142c0d58bf931aabc9b52e85891f",
+      "sourceSHA256": "ccfde281b9983890ad790bed2cd47b700d89142c0d58bf931aabc9b52e85891f",
+      "comparison": "exact-bytes",
+      "version": "3.0.0-alpha.24"
+    },
+    {
+      "url": "https://chatgpt.xincreates.com/app.js",
+      "status": 200,
+      "bytes": 7087,
+      "actualSHA256": "e4e5eecd24322e5f1104f43aacd625d80a5b7f188de4add38520b2246ebbb8d4",
+      "sourceSHA256": "e4e5eecd24322e5f1104f43aacd625d80a5b7f188de4add38520b2246ebbb8d4",
+      "comparison": "exact-bytes"
+    },
+    {
+      "url": "https://chatgpt.xincreates.com/styles.css",
+      "status": 200,
+      "bytes": 36578,
+      "actualSHA256": "df4ee39f9cd53992e7c2e718c83f941afe238fadc1c2c84ae8a7a72a11fcf1a1",
+      "sourceSHA256": "df4ee39f9cd53992e7c2e718c83f941afe238fadc1c2c84ae8a7a72a11fcf1a1",
+      "comparison": "exact-bytes"
+    }
+  ],
+  "verification": {
+    "httpResponses": 9,
+    "exactByteMatches": 6,
+    "exactMilestoneAndNonEmailLinksMatches": 3,
+    "allSourceLinksUnchanged": true,
+    "browserRun": false,
+    "screenshotsTaken": false,
+    "appBuildOrDeviceUpdate": false,
+    "dependenciesInstalledOrUpgraded": false
+  },
+  "temporaryUploadStagesCleaned": true,
+  "taskCreatedWranglerLogCleaned": true
+}
