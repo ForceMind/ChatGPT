@@ -165,6 +165,29 @@ class HandoffAcceptance(NativeAXMixin,network.NetworkAcceptance):
             if observed.get('rootWindowId')!=int(cursor.get('window-id','-1')) or observed.get('chosenWindow',{}).get('isFocused') is not True:return False
         return True
 
+    @staticmethod
+    def action_geometry_ready(rows,target):
+        by_index={row['nodeIndex']:row for row in rows};chain=[target];cursor=target
+        while cursor.get('parentIndex') is not None:
+            cursor=by_index.get(cursor['parentIndex'])
+            if cursor is None:return False
+            chain.append(cursor)
+        root=chain[-1];observed=root.get('uiSnapshot',{})
+        if observed.get('rootWindowId')!=int(root.get('window-id','-1')) or observed.get('chosenWindow',{}).get('isFocused') is not True:return False
+        x1,y1,x2,y2=target['rectangle'];x,y=(x1+x2)//2,(y1+y2)//2
+        for node in chain:
+            left,top,right,bottom=node['rectangle']
+            if node.get('visible-to-user','true')!='true' or not (left<=x<right and top<=y<bottom):return False
+        ordered=list(reversed(chain));inside_viewport=False
+        for parent,child in zip(ordered,ordered[1:]):
+            if parent.get('class') in ('android.widget.ScrollView','android.widget.HorizontalScrollView','android.widget.ListView','android.widget.AbsListView'):inside_viewport=True
+            if not inside_viewport and child is not target:
+                # Outer form frames must share screen coordinates with the focused root.
+                # Content inside a scroll viewport may legitimately extend beyond its bounds.
+                left,top,right,bottom=child['rectangle'];x1,y1,x2,y2=parent['rectangle']
+                if not (x1<=left<right<=x2 and y1<=top<bottom<=y2):return False
+        return True
+
     def action_node(self,rows,label,description=False,prefix=False,popup=False):
         key='content-desc' if description else 'text'
         matches=[row for row in rows if row.get('package')==PACKAGE
@@ -172,7 +195,9 @@ class HandoffAcceptance(NativeAXMixin,network.NetworkAcceptance):
                  and row.get('enabled')=='true' and row.get('visible-to-user','true')=='true']
         if not matches:return None
         assert len(matches)==1,'Ambiguous native task action: '+label
-        target=matches[0];by_index={row['nodeIndex']:row for row in rows};cursor=target
+        target=matches[0]
+        if not self.action_geometry_ready(rows,target):return None
+        by_index={row['nodeIndex']:row for row in rows};cursor=target
         while cursor is not None and cursor.get('class')!='android.widget.ListView':
             cursor=by_index.get(cursor.get('parentIndex'))
         if popup and cursor is None:return None
@@ -217,6 +242,7 @@ class HandoffAcceptance(NativeAXMixin,network.NetworkAcceptance):
                     # Transitions can expose no viewport or overlapping viewports. Read again
                     # inside the original deadline; only a unique real container permits input.
                     continue
+                if not self.action_geometry_ready(rows,containers[0]):continue
                 assert swipes<20,'Native task action absent after bounded scroll: '+label
                 x1,y1,x2,y2=containers[0]['rectangle'];x=(x1+x2)//2
                 top,bottom=y1+(y2-y1)//5,y2-(y2-y1)//5

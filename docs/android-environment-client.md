@@ -16,6 +16,8 @@
 
 第一次续验 `42368635085` / job `128391980774` / artifact `13572559534` 已越过前四个任务，但第五项在附件选择前失败。更早AX证据显示资产操作菜单根[28,406][1052,1514]，ListView上沿却为163；harness点击512,982后实际把原文件标为收藏，并未打开任务表单，后续零滚动容器是错误页面的表现。只对spinner启用几何校验不足，现纯harness修正扩大到所有可见ListView菜单：原center不变，不一致只读重取、不tap或scroll；0/多容器也只在原45秒内等真正唯一。原15秒、20次scroll上限、实际tap次数和App全部不改。原两次错误及排除通过的来源都随recovery记录保留，不将其改写为App业务修复。
 
+第二次续验 `42369738440` / job `128395232848` / artifact `13573770384` 在首项跨账号checkbox前失败，jobs仍为空。原AX显示普通表单也暂缺根偏移(28,63)：点击前checkbox y805..889，实际正常y868..952，input tap512,847落在框上方；外层frame y42又在focused root y63之外。现harness普通控件与scroll也要求focused root、外层frame和可见祖先几何一致，保持原center一次tap，不直接赋值勾选、不绕跨账号安全断言。ScrollView内部长内容允许合法超出viewport，但点击中心必须落在各可见clip。App与原APK仍未改，失败来源另列。
+
 ## 前一迭代：Android 15 两项首错定位（历史证据保留）
 
 用户已批准继续定位 TLS startup reset 与旧 WebView 导航超时。专用 `android-stability-diagnostics.yml` 仅在 Actions 构建并运行原 Android15 TLS 场景，以及保留完整 synthetic 客户端前置的原导航用例；不重复后台长测。已增加仅测试启用的核心错误枚举、导航步骤/保护状态与失败摘要，保留原完整Java异常栈、断言、操作次数和超时。已定位并修正本轮强制刷新保存竞争；原首次后退超时与正向 TLS reset 仍不能宣称根因已解决。
