@@ -17,6 +17,8 @@ import (
 
 	xerrors "github.com/xtls/xray-core/common/errors"
 	xlog "github.com/xtls/xray-core/common/log"
+	xretry "github.com/xtls/xray-core/common/retry"
+	"github.com/xtls/xray-core/common/session"
 )
 
 const testDiagnosticLimit = 128
@@ -29,19 +31,26 @@ type testDiagnosticHandler struct {
 	rows    []string
 }
 
+var testDiagnosticsMu sync.Mutex
 var testDiagnostics = &testDiagnosticHandler{}
 
+var _ session.TrackedRequestErrorFeedback = (*testDiagnosticHandler)(nil)
+
 func beginTestDiagnostics() *testDiagnosticHandler {
+	testDiagnosticsMu.Lock()
+	defer testDiagnosticsMu.Unlock()
 	testDiagnostics.Lock()
-	defer testDiagnostics.Unlock()
-	testDiagnostics.active = true
-	testDiagnostics.started = time.Now()
-	testDiagnostics.count = 0
-	testDiagnostics.rows = nil
+	testDiagnostics.active = false
+	testDiagnostics.Unlock()
+	// A previous connection retains its tracker through the old core context.
+	// Give each startup a separate buffer so late feedback cannot cross sessions.
+	testDiagnostics = &testDiagnosticHandler{active: true, started: time.Now()}
 	return testDiagnostics
 }
 
 func endTestDiagnostics() {
+	testDiagnosticsMu.Lock()
+	defer testDiagnosticsMu.Unlock()
 	testDiagnostics.Lock()
 	defer testDiagnostics.Unlock()
 	testDiagnostics.active = false
@@ -51,6 +60,8 @@ func endTestDiagnostics() {
 // messages, configuration, destinations, credentials or request/response bytes.
 // Android calls it only behind BuildConfig.NETWORK_TEST, before stopping a route.
 func TestDiagnostics() string {
+	testDiagnosticsMu.Lock()
+	defer testDiagnosticsMu.Unlock()
 	testDiagnostics.Lock()
 	defer testDiagnostics.Unlock()
 	dropped := testDiagnostics.count - uint64(len(testDiagnostics.rows))
@@ -78,9 +89,21 @@ func (h *testDiagnosticHandler) Handle(message xlog.Message) {
 	case xlog.Severity_Error:
 		severity = "error"
 	}
-	source := diagnosticSource()
+	err, _ := general.Content.(error)
+	h.record(diagnosticSource(), severity, err)
+}
+
+// SubmitError observes the typed error passed to Xray's public context tracker.
+// It does not return, rewrite, retry or otherwise handle the failed connection.
+func (h *testDiagnosticHandler) SubmitError(err error) {
+	if err != nil {
+		h.record("outbound-feedback", "error", err)
+	}
+}
+
+func (h *testDiagnosticHandler) record(source, severity string, err error) {
 	chain := "no-error"
-	if err, ok := general.Content.(error); ok {
+	if err != nil {
 		parts := make([]string, 0, 8)
 		for depth := 0; err != nil && depth < 8; depth++ {
 			parts = append(parts, diagnosticErrorType(err)+":"+diagnosticErrorCategory(err))
@@ -165,6 +188,10 @@ func diagnosticErrorType(err error) string {
 func diagnosticErrorCategory(err error) string {
 	// Match identities and typed errors only. Every emitted value is fixed.
 	switch {
+	case errors.Is(err, xretry.ErrRetryFailed):
+		// Xray keeps individual failed dials in a private message slice. This
+		// sentinel proves exhaustion only; it does not identify those dial causes.
+		return "retry-exhausted"
 	case errors.Is(err, syscall.ECONNRESET):
 		return "reset"
 	case errors.Is(err, syscall.ECONNREFUSED):

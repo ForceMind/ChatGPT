@@ -6,6 +6,10 @@
 
 本批不改变正式客户端的登录/恢复格式或保活策略，不合并 main、不公开发布或部署。上一可安装候选仍是下方 `2026.11.07-1001`；诊断构建即使成功，也不替代完整候选验收或表示两个根因已解决。
 
+首轮取证：`42350115528` / `145fc5632ca66e8c71bc6079ce4e3bed041c9be8` 构建通过（17份XML、85项Android单元、失败/错误/跳过均0；Go诊断及16项夹具测试通过）。TLS job `128338288799` / artifact `13565842539` 的正向原场景通过，初次probe在567ms完成；错误hostname/CA负例的reset不等于原正向首错，原根因仍未知。核心日志确有来源枚举，但Xray会在outbound日志前把cause格式化进私有message；下一轮改用其公开typed错误反馈接口，不打印/格式化原文，仍不能恢复retry私有message中的逐次dial原因。
+
+导航 job `128338288841` / artifact `13566185043` 失败于 `force-refresh`，原后退/前进步骤本轮已通过。新增状态实证：guard已到recovery-start，serial15/epoch6/URL不变，captureTicket从6推进到8后recovery-cancelled，无action-approved或新page-start，原草稿/存储保留。源码对应JS采集后提前清inflight、IO保存未结束时4秒poll可启动新capture，旧导航保存因ticket失效取消。当前修正覆盖采集至保存确认的inflight生命周期，保留原票据/归属/成功门及2秒、7秒、30秒预算；尚待Actions。此证据只确证本次强制刷新竞争，不能先认定原后退超时同根。
+
 ## 当前开发：日期版本、本地导出与资产任务
 
 本轮已交付 `2026.11.07-1001` 固定签名候选：Gecko 本地导出与资产/Skill 自动任务均通过 Android 9/15 的合成验收。下载、原始失败及边界见下方“最新交付”；正式版迁入与真实服务、手机验收仍未完成。

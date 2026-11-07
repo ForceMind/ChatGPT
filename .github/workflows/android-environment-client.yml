@@ -82,7 +82,7 @@ jobs:
             android/network-poc/app/libs/
             android/network-poc/corebridge/bin/
             android/app/libs/licenses/
-          key: formal-network-core-go1273-ndk282-${{ hashFiles('android/network-poc/corebridge/go.mod', 'android/network-poc/corebridge/go.sum', 'android/network-poc/corebridge/networkcore.go', 'android/network-poc/scripts/build-core.sh', 'android/scripts/prepare-network-core.sh') }}
+          key: formal-network-core-go1273-ndk282-${{ hashFiles('android/network-poc/corebridge/go.mod', 'android/network-poc/corebridge/go.sum', 'android/network-poc/corebridge/**/*.go', 'android/network-poc/scripts/build-core.sh', 'android/scripts/prepare-network-core.sh') }}
       - run: bash android/scripts/prepare-network-core.sh
         if: ${{ !inputs.reuse_application_build && !inputs.reuse_beta7_checks }}
       - name: Prepare the owned network trust and node inputs
@@ -206,7 +206,7 @@ jobs:
             android/network-poc/app/libs/
             android/network-poc/corebridge/bin/
             android/app/libs/licenses/
-          key: formal-network-core-go1273-ndk282-${{ hashFiles('android/network-poc/corebridge/go.mod', 'android/network-poc/corebridge/go.sum', 'android/network-poc/corebridge/networkcore.go', 'android/network-poc/scripts/build-core.sh', 'android/scripts/prepare-network-core.sh') }}
+          key: formal-network-core-go1273-ndk282-${{ hashFiles('android/network-poc/corebridge/go.mod', 'android/network-poc/corebridge/go.sum', 'android/network-poc/corebridge/**/*.go', 'android/network-poc/scripts/build-core.sh', 'android/scripts/prepare-network-core.sh') }}
       - run: bash android/scripts/prepare-network-core.sh
       - name: Restore the existing test signer
         env:

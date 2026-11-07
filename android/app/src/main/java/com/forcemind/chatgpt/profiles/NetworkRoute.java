@@ -218,9 +218,7 @@ public final class NetworkRoute {
                     Throwable cause = e;
                     for (int depth = 0; cause != null && depth < 8; depth++, cause = cause.getCause()) {
                         details.append("\ncause=").append(cause.getClass().getName());
-                        StackTraceElement[] frames = cause.getStackTrace();
-                        for (int index = 0; index < frames.length && index < 48; index++) details.append("\n  at ").append(frames[index]);
-                        if (frames.length > 48) details.append("\n  frames=truncated");
+                        for (StackTraceElement frame : cause.getStackTrace()) details.append("\n  at ").append(frame);
                     }
                     android.util.Log.e("NetworkIntegrationCI", details.toString());
                     if (diagnosticsStarted) logCoreDiagnostics(generation);

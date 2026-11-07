@@ -135,19 +135,22 @@ final class PageRecoveryManager {
     }
     private void capture(Session s,boolean force){capture(s,force,null);}
     private void capture(Session s,boolean force,Consumer<Boolean> completion){
-        Consumer<Boolean> done=success->{if(completion!=null)completion.accept(success);};
-        if(!valid(s)||!s.installed||s.loading||s.restoring||s.inflight||s.blocked||s.waitingOffline||s.preview!=null&&!s.liveReady){done.accept(false);return;}s.inflight=true;long ticket=++s.captureTicket,serial=s.serial;
+        if(!valid(s)||!s.installed||s.loading||s.restoring||s.inflight||s.blocked||s.waitingOffline||s.preview!=null&&!s.liveReady){if(completion!=null)completion.accept(false);return;}s.inflight=true;long ticket=++s.captureTicket,serial=s.serial;
+        java.util.concurrent.atomic.AtomicBoolean completed=new java.util.concurrent.atomic.AtomicBoolean();
+        // Keep this capture exclusive through encrypted IO and its main-thread acknowledgement.
+        // Releasing after JavaScript alone lets the next poll invalidate a pending navigation save.
+        Consumer<Boolean> done=success->{if(!completed.compareAndSet(false,true))return;boolean current=valid(s)&&s.serial==serial&&s.captureTicket==ticket;if(current)s.inflight=false;if(completion!=null)completion.accept(success&&current);};
         handler.postDelayed(()->{if(valid(s)&&s.serial==serial&&s.inflight&&s.captureTicket==ticket){s.inflight=false;s.captureTicket++;notice("网页繁忙，最近的修改尚未保存，请稍候或手动备份。");done.accept(false);}},2000);
-        evaluate(s,"capture",String.valueOf(force),value->{if(s.captureTicket!=ticket){done.accept(false);return;}s.inflight=false;String status=value.optString("status");if(status.equals("oversize")){notice("草稿超过 10 万字符，本地未保存，请手动备份。");done.accept(false);return;}
-            if(status.equals("same")){if(completion!=null)IO.execute(()->handler.post(()->done.accept(valid(s)&&s.serial==serial)));else if(s.currentPage!=null&&!s.currentPage.has("image"))capturePicture(s,s.currentPage,s.url,serial,ticket,false);return;}
-            if(!status.equals("captured")){if(completion!=null)unprotectedDraftEmpty(s.web,done);return;}
+        evaluate(s,"capture",String.valueOf(force),value->{if(completed.get()||s.serial!=serial||s.captureTicket!=ticket){done.accept(false);return;}String status=value.optString("status");if(status.equals("oversize")){notice("草稿超过 10 万字符，本地未保存，请手动备份。");done.accept(false);return;}
+            if(status.equals("same")){if(completion!=null)IO.execute(()->handler.post(()->done.accept(true)));else{done.accept(true);if(s.currentPage!=null&&!s.currentPage.has("image"))capturePicture(s,s.currentPage,s.url,serial,ticket,false);}return;}
+            if(!status.equals("captured")){if(completion!=null)unprotectedDraftEmpty(s.web,done);else done.accept(false);return;}
             try{if(!Objects.equals(s.url,PageRecoveryRecord.url(value.getString("url")))){done.accept(false);return;}JSONObject record=new JSONObject().put("schema",1).put("accountId",s.account).put("storageId",s.storage).put("tabId",s.tab).put("url",s.url).put("draft",value.getString("draft")).put("scroll",value.getDouble("scroll")).put("ratio",value.getDouble("ratio")).put("capturedAt",System.currentTimeMillis());
                 if(value.has("anchor"))record.put("anchor",value.getJSONObject("anchor"));if(!s.alternative.isEmpty()&&!s.alternative.equals(record.getString("draft")))record.put("alternativeDraft",s.alternative);
                 if(value.has("page")){JSONObject rawPage=new JSONObject(value.getJSONObject("page").toString());rawPage.remove("image");rawPage.remove("imageCapturedAt");JSONObject page=PageSnapshot.normalize(rawPage,s.url);
                     if(s.currentPage!=null&&s.currentPage.has("image")){page.put("image",s.currentPage.getString("image"));page.put("imageCapturedAt",s.currentPage.getLong("imageCapturedAt"));}record.put("page",page);
                 }else if(s.currentPage!=null)record.put("page",s.currentPage);PageRecoveryRecord.normalize(record);rememberHistory(s,record);
                 if(record.toString().getBytes(StandardCharsets.UTF_8).length>1024*1024&&record.optJSONObject("page")!=null){record.getJSONObject("page").remove("image");record.getJSONObject("page").remove("imageCapturedAt");}
-                JSONObject savedPage=record.optJSONObject("page");String pageURL=s.url;IO.execute(()->{try{boolean changed=store.save(record,s.generation);handler.post(()->{if(valid(s)&&s.serial==serial){if(changed){s.currentRecord=record;s.currentPage=savedPage;}JSONObject current=s.currentPage;if(completion==null&&current!=null&&s.captureTicket==ticket)capturePicture(s,current,pageURL,serial,ticket,force);}done.accept(valid(s)&&s.serial==serial&&s.captureTicket==ticket);});}catch(Exception e){handler.post(()->{if(valid(s))notice("本地草稿保存未完成，请手动备份；不会写入未加密内容。");done.accept(false);});}});
+                JSONObject savedPage=record.optJSONObject("page");String pageURL=s.url;IO.execute(()->{try{boolean changed=store.save(record,s.generation);handler.post(()->{boolean current=valid(s)&&s.serial==serial&&s.captureTicket==ticket&&!completed.get();if(current){if(changed){s.currentRecord=record;s.currentPage=savedPage;}JSONObject page=s.currentPage;if(completion==null&&page!=null)capturePicture(s,page,pageURL,serial,ticket,force);}done.accept(current);});}catch(Exception e){handler.post(()->{if(valid(s))notice("本地草稿保存未完成，请手动备份；不会写入未加密内容。");done.accept(false);});}});
             }catch(Exception e){notice("页面草稿或阅读位置无效，本次未保存。");done.accept(false);}
         });
     }

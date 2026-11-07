@@ -8,6 +8,7 @@ import (
     "sync"
 
     xlog "github.com/xtls/xray-core/common/log"
+    "github.com/xtls/xray-core/common/session"
     "github.com/xtls/xray-core/core"
     _ "github.com/xtls/xray-core/main/distro/all"
 )
@@ -39,6 +40,9 @@ func start(config string, diagnostics bool) error {
     // Xray Close shuts listeners, but accepted TCP streams inherit this context.
     // Own its cancellation so Stop also interrupts active HTTP/CONNECT requests.
     ctx, cancel := context.WithCancel(context.Background())
+    // Preserve the original typed outbound error before Xray's logger flattens
+    // it into a message. Only the CI entry point installs this passive observer.
+    if diagnostics { ctx = session.TrackedConnectionError(ctx, diagnosticHandler) }
     next, err := core.NewWithContext(ctx, c)
     if err != nil {
         cancel()
