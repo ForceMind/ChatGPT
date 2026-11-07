@@ -24,9 +24,25 @@ TLS 首轮 job `128343890742` / artifact `13566935493` 的正向启动为582/518
 
 上一轮属于实质进展，未将未复现作为完成。继续只读核对发现：原Activity恢复02:14:35.087，原第二次菜单关闭02:14:39.083，紧邻首次4秒poll；这支持优先检查第一次后退的排序，但缺少原phase/URL/capture计数，不能作同根证明。固定Xray VLESS的五次快速dial失败带0/200/400/600/800ms退避，合计2000ms；原2053ms与此分支相容，仍非其实际耗尽证明。HTTP CONNECT在派发outbound前已回复200，因此Java进入TLS握手不代表outer TLS/VLESS已建立。
 
-用户已明确同意新增两项Android15合成时序验证：后发poll与真实保存重叠的单变量旧early-release对照/修正版，以及先发poll时点击原后退的保护拒绝。测试钩子仅ENVIRONMENT_TEST+owned fixture+显式case启用；不伪造票据/保存结果，不替换存储，真实IO门控在原2秒内，保留2/7/30秒及原4000ms轮询。旧early-release对照不是原历史APK复现，原新document断言必须真实失败并单列expected failure，不能计入fixed pass。原完整synthetic前置及导航先照常执行，新增case分别保留日志/JSON和原数据复核。当前实现中，尚未运行。
+用户已明确同意新增两项Android15合成时序验证：后发poll与真实保存重叠的单变量旧early-release对照/修正版，以及先发poll时点击原后退的保护拒绝。测试钩子仅ENVIRONMENT_TEST+owned fixture+显式case启用；不伪造票据/保存结果，不替换存储，真实IO门控在原2秒内，保留2/7/30秒及原4000ms轮询。旧early-release对照不是原历史APK复现，原新document断言真实失败并单列expected failure，不计入fixed pass。原完整synthetic前置及导航先照常执行，新增case分别保留日志/JSON和原数据复核，实际结果见下表。
 
 TLS同一原场景的必要取证补充：host只记录owned端口SYN/FIN/RST文本元数据，不保存payload；network-config前和首错后只读记录loopback/Owned A/B allow计数和REJECT聚合，后者不是UID专属，不能直接归因App。不加预检连接/应用重试/等待。另在Actions以固定retry函数和立即失败闭包验证真实五次退避时序及typed耗尽形状，不能把该代码级对照当原网络故障复现。所有构建与运行仍仅Actions，不截图/真实服务/个人设备，不合并main、发布或部署。
+
+定向验证构建 `42355022185` / `263db3713870538808903a91aa75e3cd037628ac` 已通过：实际17份JUnit XML共85项，失败/错误/跳过均0；Go、16项夹具、lint和包检查通过。独立verbose证据 `13568125301` / `stability-code-evidence/retry-timing.txt` 实际执行固定retry五次立即失败闭包，测得2002ms，返回typed retry-exhausted；这是注入代码级对照，不是实际节点复现。
+
+导航 [job `128353716253`](https://github.com/ForceMind/ChatGPT/actions/runs/42355022185/job/128353716253) / artifact `13568230600` 全部完成，原main为OK(1 test)、全部原flags保持。三个case的raw instrument、navigation/timing JSON和最终旧数据复核分别保存；严格拒绝运行器异常，已直接复核原始baseline失败栈及汇总。
+
+| 受控case | 实际票据与行为 | 实际门控 | 判定 |
+| --- | --- | --- | --- |
+| baseline-late-poll | 只恢复旧提前释放一行，真实poll使7→8；真实保存changed与解密读回均成功，取消1/批准0/新页面0；原新document断言真实超时，唯一stack为对应AssertionError，Tests run1/Failures1，无运行器异常 | 9ms | expected-original-assertion-failure，未改记为修正版通过 |
+| fixed-late-poll | 相同真实poll期间仍为7；310201ms保存完成，310203ms批准，310222ms产生新页面；真实changed/读回及全部原positive断言通过 | 34ms | fixed-original-assertions-pass |
+| fixed-early-poll | 原后退在318214ms被保护拒绝，318398ms才保存完成；capture3/serial5不变，无批准/新页面，原next document、草稿/模型及Cookie/storage保持；真实changed/读回成功 | 374ms | safe-refusal-pass |
+
+三组均在1250ms门控及原2秒预算以内，未放宽7秒或30秒。最终另跑原旧子集raw OK(1 test)：1旧账号/2标签/2密文record及payload/asset/index/network/preferences全部哈希和record与原expect、case前精确一致，无重新seed/clear或helper停止页面。因果验证确证修正覆盖后发poll抢票据；先发poll的安全拒绝是独立路径，不据此反推缺日志的历史first-back必然是哪一种排序。
+
+TLS [job `128353716199`](https://github.com/ForceMind/ChatGPT/actions/runs/42355022185/job/128353716199) / artifact `13568350394` 的5次正向probe为588/509/540/519/544ms，未复现正向reset；两个凭证负例正确拒绝，实际typed retry-exhausted后显式恢复。原noDirect/noReplay/draftCookieIdentityPreserved与sendCount0保持。before计数快照IPv4/6均exit0、预期ruleCount各1；guestClockSample与前后host时钟完整，首个节点SYN及origin SYN可在约30ms采样界内对应Java绝对elapsedRealtime阶段。capture正常退出，2377条文本记录、kernel dropped0，无payload或pcap文件。成功关闭同样存在FIN→RST，因此RST本身不是startup失败证据。成功case没有after-first-error快照，首错快照分支仍未在新版本发生的错误中实证。
+
+本批已完成获批的确定性导航对照及TLS被动取证验证，源码和报告仅同步dev；未作完整Android9/15候选发布回归或替换可安装候选。正向TLS原首错仍缺带新取证的失败样本，不能仅凭2002ms代码级相容、成功样本或负例链认定根因。历史first-back归因同样保留未知，主目标保持未完成，不继续无新证据的机械重跑，不合并main、公开发布或部署。
 
 ## 当前开发：日期版本、本地导出与资产任务
 
