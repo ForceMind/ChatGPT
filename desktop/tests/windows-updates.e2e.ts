@@ -7,8 +7,9 @@ import path from 'node:path';
 import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { shellWindow } from './helpers/shell';
+import packageInfo from '../package.json' with { type: 'json' };
 const desktop = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
-const next = '3.0.0-alpha.999';
+const next = `${Number(packageInfo.version.split('.')[0]) + 1}.0.0`;
 const digest = (bytes: Buffer, algorithm: string, encoding: 'hex' | 'base64') =>
   createHash(algorithm).update(bytes).digest(encoding);
 for (const mode of ['automatic', 'manual'] as const)

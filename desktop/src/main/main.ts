@@ -1438,7 +1438,7 @@ async function dispatch(c: Command): Promise<void> {
         !!resumeURL(closingContents.getURL(), fixtureOrigin) &&
         !(await deadline(
           closingContents.executeJavaScript(
-            `!![...document.querySelectorAll('input[type="password"],input[autocomplete="one-time-code"]')].find(e=>e.getClientRects().length)`
+            `!!document.querySelector('input[type="password"],input[autocomplete="one-time-code"]')`
           ),
           500
         ).catch(() => true));

@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "product": "ChatGPT Studio",
+  "version": "3.0.0-alpha.24",
+  "prerelease": true,
+  "sourceCommit": "6412dad85abeee8d889b628afb910e77da6117e4",
+  "publishedAt": "2026-11-05T06:08:34Z",
+  "publicationRecord": "docs/releases/windows-alpha.24-publication.json",
+  "artifacts": [
+    {
+      "file": "ChatGPT-Studio-3.0.0-alpha.24-windows-x64-setup.exe",
+      "platform": "windows",
+      "purpose": "installer",
+      "bytes": 131359974,
+      "sha256": "623b6f4784e54ef759ebce344b65fba3f3e6d6ceaa8d269fa919373d2ab4dfd2",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.24/ChatGPT-Studio-3.0.0-alpha.24-windows-x64-setup.exe"
+    },
+    {
+      "file": "ChatGPT-Studio-3.0.0-alpha.24-windows-x64.zip",
+      "platform": "windows",
+      "purpose": "portable",
+      "bytes": 181294882,
+      "sha256": "009fb5988890dcdd60b07eabd6d0c96b8dc2e56a6bf72658bc5423398520c80e",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.24/ChatGPT-Studio-3.0.0-alpha.24-windows-x64.zip"
+    }
+  ]
+}

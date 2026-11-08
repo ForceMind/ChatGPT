@@ -265,8 +265,19 @@ test('Desktop keeps native pages through close/reopen, account/tab switches and 
     await visible(
       `const password=document.createElement('input');password.type='password';password.value='LOCAL-FIXTURE-CREDENTIAL';document.body.append(password);password.focus();`
     );
-    await shell.evaluate((id) => window.profiles.command({ type: 'tab:close', id }), otherTab);
-    await shell.evaluate(() => window.profiles.command({ type: 'tab:restore' }));
+    const authBefore = await visible(
+      `({instance:window.instance,url:location.href,passwords:[...document.querySelectorAll('input[type="password"]')].map(e=>({rects:e.getClientRects().length,display:getComputedStyle(e).display}))})`
+    );
+    writeFileSync(
+      info.outputPath('auth-before-close.json'),
+      JSON.stringify({ state: await state(), page: authBefore })
+    );
+    const closed = await shell.evaluate((id) => window.profiles.command({ type: 'tab:close', id }), otherTab);
+    writeFileSync(info.outputPath('auth-close-reply.json'), JSON.stringify({ reply: closed, state: await state() }));
+    expect(closed.ok).toBe(true);
+    const restored = await shell.evaluate(() => window.profiles.command({ type: 'tab:restore' }));
+    writeFileSync(info.outputPath('auth-restore-reply.json'), JSON.stringify({ reply: restored, state: await state() }));
+    expect(restored.ok).toBe(true);
     await ready();
     expect(await visible('window.instance')).not.toBe(authInstance);
     expect(await visible('!!document.querySelector("input[type=password]")')).toBe(false);

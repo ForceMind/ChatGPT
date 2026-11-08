@@ -40,7 +40,7 @@ for (const mode of ['quit', 'idle', 'manual'] as const)
       const current = path.join(root, 'Installed.app'),
         newDir = path.join(root, 'new');
       mkdirSync(newDir);
-      const next = '3.0.0-alpha.999';
+      const next = `${Number(packageInfo.version.split('.')[0]) + 1}.0.0`;
       const bundle = (dir: string, version: string) => {
         mkdirSync(path.join(dir, 'Contents/MacOS'), { recursive: true });
         execFileSync(

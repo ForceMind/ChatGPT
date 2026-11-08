@@ -21,3 +21,5 @@
 ## 运行与交付记录
 
 桌面源码 `6d337d7` 已推送并启动 Mac `42501547295`、Windows `42501551123`。Mac 完整 check 通过并进入页面验收；Windows 的格式门禁报 124 文件差异。仓库已有 LF 源字节，旧 Windows branding workflow 也专门禁用了 autocrlf；本次用 `.gitattributes` 对 desktop 设置 text=auto/eol=lf，保留二进制并固定检出，不整体格式化、不改 Prettier 或 lint 规则。该提交不改 desktop 树；Mac 原验证继续，Windows 使用新检出策略验证。尚未发布新正式 Release。
+
+首轮 Mac 界面 5 项失败：站点缺 alpha.24 统一清单；更新夹具固定 alpha.999 已低于日期版，三种路径不触发升级；认证字段关闭恢复实例检查失败。Windows 固定 LF 后完整 check 通过，后续更新夹具同样报当前 idle 而非 available。现补基于已发布原记录的 alpha.24 清单，测试新版改为当前 major+1 的真实更高版本，原升级断言和预算不变。关闭标签的认证字段防护加强为主文档存在 password/OTP 字段即不缓存该 view，不依赖布局可见性，不清 Cookie/账号空间，不改后台保活；原恢复用例增加命令成功断言与仅含布局/标识的诊断，原新实例/无密码断言保留。上述修改待下一轮完整 CI，不把静态修正写成通过。

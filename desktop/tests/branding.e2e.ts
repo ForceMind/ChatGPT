@@ -5,7 +5,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { shellWindow } from './helpers/shell';
-import { validManifest } from '../src/shared/updates';
+import { validManifest, versionParts } from '../src/shared/updates';
 const desktop = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
 
 test('Studio display name preserves legacy internal identity and isolated storage', async ({}, info) => {
@@ -118,7 +118,10 @@ test('Studio website renders canonical pages and preserves legacy update feeds',
     windows: versionFor('windows'),
     android: versionFor('android')
   };
-  for (const version of Object.values(platformVersions)) expect(version).toMatch(/^\d+\.\d+\.\d+-alpha\.\d+$/);
+  for (const version of Object.values(platformVersions)) {
+    expect(typeof version).toBe('string');
+    expect(versionParts(version!)).toBeDefined();
+  }
   expect(platformVersions.macos).toBe(feed.version);
   const manifest = (version: string) =>
     JSON.parse(readFileSync(path.join(desktop, '../docs/releases', version + '.json'), 'utf8'));
