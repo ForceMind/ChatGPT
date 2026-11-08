@@ -12,9 +12,9 @@ TIME_ZONE = 'Asia/Shanghai'
 DEFAULT_FILE = Path('android/app/build/android-version.json')
 
 
-def validate_version(value):
+def validate_version(value, expected_version_code=VERSION_CODE):
     assert isinstance(value, dict) and type(value.get('schema')) is int and value['schema'] == 1, 'Unknown Android version metadata'
-    assert type(value.get('versionCode')) is int and value['versionCode'] == VERSION_CODE, 'Unexpected candidate version code'
+    assert type(value.get('versionCode')) is int and value['versionCode'] == expected_version_code, 'Unexpected candidate version code'
     assert value.get('timeZone') == TIME_ZONE, 'Android candidate time zone differs'
     name = value.get('versionName', '')
     assert re.fullmatch(r'\d{4}\.\d{2}\.\d{2}-\d{4}', name), 'Expected YYYY.MM.DD-HHmm'
@@ -23,9 +23,9 @@ def validate_version(value):
     return value
 
 
-def load_version(path=None):
+def load_version(path=None, expected_version_code=VERSION_CODE):
     source = Path(path or os.environ.get('STUDIO_ANDROID_VERSION_FILE', str(DEFAULT_FILE)))
-    return validate_version(json.loads(source.read_text(encoding='utf-8')))
+    return validate_version(json.loads(source.read_text(encoding='utf-8')), expected_version_code)
 
 
 def apk_filename(version_name, arch='arm64'):
@@ -49,8 +49,8 @@ def validate_receipt(receipt, require_human_filename=False):
     return metadata
 
 
-def assert_apk_version(badging, metadata, build_config=None):
-    validate_version(metadata)
+def assert_apk_version(badging, metadata, build_config=None, expected_version_code=VERSION_CODE):
+    validate_version(metadata, expected_version_code)
     code = re.search(r"versionCode='(\d+)'", badging)
     name = re.search(r"versionName='([^']+)'", badging)
     assert code and int(code[1]) == metadata['versionCode'] and name and name[1] == metadata['versionName'], 'APK version differs from shared metadata'

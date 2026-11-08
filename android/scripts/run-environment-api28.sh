@@ -3,8 +3,11 @@
 set -euo pipefail
 test "${GITHUB_ACTIONS:-}" = true
 studio_target="${1:-synthetic}"
-case "$studio_target" in human|synthetic) ;; *) echo 'Only the approved human/synthetic upgrade targets may run.' >&2; exit 1 ;; esac
-studio_evidence=android/app/build/environment-client-evidence
+case "$studio_target" in
+  human|synthetic) studio_evidence=android/app/build/environment-client-evidence ;;
+  android/scripts/run-regular-environment-client.py) studio_evidence=android/app/build/regular-environment-evidence ;;
+  *) echo 'Only the approved upgrade targets or regular compatibility script may run.' >&2; exit 1 ;;
+esac
 mkdir -p "$studio_evidence"
 # The emulator executable links libpulse even with -no-audio. The previous runner installed it implicitly.
 sudo apt-get update -qq
@@ -59,10 +62,14 @@ studio_adb shell settings put global transition_animation_scale 0
 studio_adb shell settings put global animator_duration_scale 0
 studio_adb shell settings put system screen_off_timeout 2147483647
 python3 android/network-poc/scripts/install-webview.py --provider android/app/build/environment-provider-input/provider --output "$studio_evidence/provider"
-if [ "$studio_target" = synthetic ]; then
+if [ "$studio_target" = synthetic ] || [ "$studio_target" = android/scripts/run-regular-environment-client.py ]; then
   studio_adb push android/app/build/environment-touch/input.jar /data/local/tmp/studio-poc-input.jar
   studio_adb push android/app/build/environment-ascii/input.jar /data/local/tmp/studio-poc-ascii-input.jar
-  python3 android/scripts/run-environment-client.py
+  if [ "$studio_target" = synthetic ]; then
+    python3 android/scripts/run-environment-client.py
+  else
+    python3 android/scripts/run-regular-environment-client.py
+  fi
 else
   python3 android/scripts/environment_upgrade.py --target human
 fi
