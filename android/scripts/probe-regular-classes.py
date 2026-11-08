@@ -5,8 +5,9 @@ assert os.environ.get('GITHUB_ACTIONS')=='true' and os.environ.get('GITHUB_REPOS
 def text(args):return subprocess.check_output(['adb',*args],text=True).strip()
 assert text(['shell','getprop','ro.kernel.qemu'])=='1'
 assert not text(['shell','pm','list','packages','com.forcemind.chatgpt.profiles'])
-r=json.loads(Path('input/receipt.json').read_text());assert Path(r['file']).name==r['file']
-subprocess.run(['adb','install','-t',str(Path('input')/r['file'])],check=True)
+inputs=Path(os.environ.get('STUDIO_CLASS_PROBE_INPUT','input'))
+r=json.loads((inputs/'receipt.json').read_text());assert Path(r['file']).name==r['file']
+subprocess.run(['adb','install','-t',str(inputs/r['file'])],check=True)
 subprocess.run(['adb','push','probe/probe.jar','/data/local/tmp/studio-class-probe.jar'],check=True)
 subprocess.run(['adb','shell','chmod','444','/data/local/tmp/studio-class-probe.jar'],check=True)
 p=text(['shell','pm','path','com.forcemind.chatgpt.profiles']);assert p.startswith('package:') and '\n' not in p

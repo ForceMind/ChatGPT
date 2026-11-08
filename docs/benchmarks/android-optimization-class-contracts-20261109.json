@@ -1,0 +1,33 @@
+{
+  "sourceSHA": "d2a427d98142e0dcc253ca96e3b7814d19fbe7b1",
+  "sourceRun": 42517652274,
+  "apkSHA256": "5921e23b6926dead4f85c5128635626faca231f77f6a6970cc67b12460c7fdba",
+  "schema": 1,
+  "complete": true,
+  "readOnly": true,
+  "applicationConstructorsInvoked": false,
+  "webpagesOpened": 0,
+  "rows": [
+    {
+      "requested": "com.forcemind.chatgpt.profiles.EnvironmentBrowserActivity$Slot0",
+      "present": true,
+      "name": "com.forcemind.chatgpt.profiles.EnvironmentBrowserActivity$Slot0",
+      "simpleName": "EnvironmentBrowserActivity$Slot0",
+      "enclosing": null
+    },
+    {
+      "requested": "com.forcemind.chatgpt.profiles.EnvironmentBrowserActivity$Slot1",
+      "present": true,
+      "name": "com.forcemind.chatgpt.profiles.EnvironmentBrowserActivity$Slot1",
+      "simpleName": "EnvironmentBrowserActivity$Slot1",
+      "enclosing": null
+    },
+    {
+      "requested": "androidx.tracing.Trace",
+      "present": false,
+      "errorClass": "java.lang.ClassNotFoundException"
+    }
+  ],
+  "probeRun": 42521215095,
+  "scope": "Read-only class loading; no constructors or pages"
+}

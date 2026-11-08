@@ -70,10 +70,12 @@ def main():
     assert text.count(needle) == 1
     replacement = ('            minifyEnabled ' + ('false' if mode == 'baseline' else 'true') + '\n'
                    '            shrinkResources ' + ('true' if mode == 'resources' else 'false') + '\n'
-                   "            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'optimization-keep.pro'\n")
+                   "            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'optimization-keep.pro'\n"
+                   "            if (environmentTest) proguardFiles 'optimization-ci-keep.pro'\n")
     path.write_text(text.replace(needle, replacement))
     edits.append({'path': str(path), 'beforeSHA256': sha(old), 'afterSHA256': sha(path.read_bytes())})
-    Path('android/app/optimization-keep.pro').write_text('-keep class go.** { *; }\n-keep class studio.networkcore.** { *; }\n# CI-only classes: named trust proof and manifest file provider; absent in human APK.\n-keep class com.forcemind.chatgpt.profiles.GeneratedNetworkTrust { public static java.lang.String PEM; }\n-keep class com.forcemind.chatgpt.profiles.EnvironmentNetworkFilesProvider { *; }\n')
+    Path('android/app/optimization-keep.pro').write_text('-keep class go.** { *; }\n-keep class studio.networkcore.** { *; }\n# Slot selection uses getSimpleName; retain both ends of the nested identity.\n-keepattributes InnerClasses,EnclosingMethod\n-keep,allowoptimization class com.forcemind.chatgpt.profiles.EnvironmentBrowserActivity { <init>(); }\n-keep,allowoptimization class com.forcemind.chatgpt.profiles.EnvironmentBrowserActivity$Slot* { <init>(); }\n# CI-only classes: named trust proof and manifest file provider; absent in human APK.\n-keep class com.forcemind.chatgpt.profiles.GeneratedNetworkTrust { public static java.lang.String PEM; }\n-keep class com.forcemind.chatgpt.profiles.EnvironmentNetworkFilesProvider { *; }\n')
+    Path('android/app/optimization-ci-keep.pro').write_text('# AndroidJUnitRunner expects Trace via the unshrunk test runtime classpath.\n-keep class androidx.tracing.** { *; }\n')
     # Same strict evidence provenance checks, bound to this dedicated workflow.
     path = Path('android/scripts/regular_evidence_source.py'); old = path.read_bytes(); text = old.decode()
     needle = "WORKFLOW = '.github/workflows/android-regular-full-client.yml'"

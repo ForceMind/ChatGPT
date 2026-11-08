@@ -127,6 +127,35 @@ jobs:
         studio_navigation_args=(-PregularNavigationTest -PregularWorkbenchTest)
         bash android/environment-poc/gradlew -p android --no-daemon -PenvironmentClient -PregularEnvironmentClient -PregularEnvironmentCi -PenvironmentTest "${studio_navigation_args[@]}" :app:assembleRelease :app:assembleReleaseAndroidTest
         python3 android/scripts/prepare-regular-ci-inputs.py
+    - name: Compile read-only class identity smoke check
+      run: |
+        mkdir -p probe/classes probe/evidence
+        javac --release 8 -classpath "$ANDROID_HOME/platforms/android-36/android.jar" -d probe/classes android/scripts/android/OptimizationClassProbe.java
+        "$ANDROID_HOME/build-tools/35.0.0/d8" --min-api 28 --lib "$ANDROID_HOME/platforms/android-36/android.jar" --output probe/probe.jar probe/classes/com/forcemind/chatgpt/pocinput/*.class
+        test -c /dev/kvm
+        sudo chmod a+rw /dev/kvm
+    - name: Inspect actual compiled class identities before launching all functional jobs
+      uses: reactivecircus/android-emulator-runner@v2
+      env:
+        STUDIO_CLASS_PROBE_INPUT: android/app/build/regular-environment-input
+        SOURCE_RUN: ${{ github.run_id }}
+      with:
+        api-level: 35
+        target: google_apis
+        arch: x86_64
+        disable-animations: true
+        emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -writable-system -memory 4096
+        script: python3 android/scripts/probe-regular-classes.py
+    - name: Require original nested Slot names and CI tracing class
+      run: |
+        python3 - <<'PY'
+        import json,pathlib
+        d=json.loads(pathlib.Path('probe/evidence/classes.json').read_text())
+        assert d['complete'] is True and d['webpagesOpened']==0
+        for row,name in zip(d['rows'][:2],['Slot0','Slot1']):
+            assert row['present'] and row['simpleName']==name and row['enclosing']=='com.forcemind.chatgpt.profiles.EnvironmentBrowserActivity'
+        assert d['rows'][2]['present'] is True
+        PY
     - uses: actions/upload-artifact@v4
       with:
         name: regular-environment-ci-input
@@ -198,6 +227,7 @@ jobs:
         retention-days: 14
         path: |
           android/app/build/optimization/
+          probe/evidence/
           android/app/build/outputs/mapping/
           android/app/build/reports/
   accept:
