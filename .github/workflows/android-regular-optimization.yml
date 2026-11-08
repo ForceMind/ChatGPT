@@ -159,6 +159,7 @@ jobs:
         for row,name in zip(d['rows'][:2],['Slot0','Slot1']):
             assert row['present'] and row['simpleName']==name and row['enclosing']=='com.forcemind.chatgpt.profiles.EnvironmentBrowserActivity'
         assert d['rows'][2]['present'] is True
+        assert d['workspaceApi']['present'] and d['workspaceApi']['accountsType']=='java.util.List' and d['workspaceApi']['freshReturnType']=='com.forcemind.chatgpt.profiles.WorkspaceState'
         PY
     - uses: actions/upload-artifact@v4
       with:

@@ -17,6 +17,9 @@ public final class OptimizationClassProbe {
    catch(ClassNotFoundException|LinkageError error){row.put("present",false).put("errorClass",error.getClass().getName());}
    rows.put(row);
   }
-  System.out.println(new JSONObject().put("schema",1).put("complete",true).put("readOnly",true).put("applicationConstructorsInvoked",false).put("webpagesOpened",0).put("rows",rows).toString());
+  JSONObject abi=new JSONObject();
+  try{Class<?> state=Class.forName("com.forcemind.chatgpt.profiles.WorkspaceState",false,loader);abi.put("present",true).put("accountsType",state.getDeclaredField("accounts").getType().getName()).put("freshReturnType",state.getDeclaredMethod("fresh").getReturnType().getName());}
+  catch(ReflectiveOperationException|LinkageError error){abi.put("present",false).put("errorClass",error.getClass().getName());}
+  System.out.println(new JSONObject().put("schema",1).put("complete",true).put("readOnly",true).put("applicationConstructorsInvoked",false).put("webpagesOpened",0).put("rows",rows).put("workspaceApi",abi).toString());
  }
 }
