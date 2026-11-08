@@ -365,6 +365,7 @@ if (regularLegacyNetworkTest) {
     def legacyProviders = layout.buildDirectory.dir('generated/regular-legacy-network-providers')
     def legacyResources = layout.buildDirectory.dir('generated/regular-legacy-network-res')
     tasks.register('copyRegularLegacyNetworkTests', Sync) {
+        inputs.file('src/androidTest/java/com/forcemind/chatgpt/profiles/NetworkBenchmarkTest.java')
         from 'src/androidTest/java'
         include '**/NetworkIntegrationTest.java', '**/NetworkFileSafetyTest.java', '**/NetworkSystemProxy.java', '**/WorkbenchTest.java', '**/FixtureFilesProvider.java'
         into legacyTests
@@ -375,6 +376,12 @@ if (regularLegacyNetworkTest) {
             .replace('context.getPackageName().endsWith(".debug")', '(context.getPackageName().equals("com.forcemind.chatgpt.profiles") && BuildConfig.ENVIRONMENT_NETWORK_TEST)')
         }
         doLast {
+            def benchmark = file('src/androidTest/java/com/forcemind/chatgpt/profiles/NetworkBenchmarkTest.java').getText('UTF-8')
+            def helperStart = benchmark.indexOf('    static boolean goMapped(Context context)throws Exception{')
+            def helperEnd = benchmark.indexOf('    private void configure(', helperStart)
+            if (helperStart < 0 || helperEnd <= helperStart) throw new GradleException('Go mapping helper boundary changed; review required')
+            def helper = new File(legacyTests.get().asFile, 'com/forcemind/chatgpt/profiles/NetworkBenchmarkTest.java')
+            helper.setText('package com.forcemind.chatgpt.profiles;\nimport android.content.Context;\nimport java.io.File;\nimport java.nio.file.Files;\nimport java.nio.charset.StandardCharsets;\nimport static org.junit.Assert.*;\nfinal class NetworkBenchmarkTest {\n' + benchmark.substring(helperStart, helperEnd) + '}\n', 'UTF-8')
             def workbench = new File(legacyTests.get().asFile, 'com/forcemind/chatgpt/profiles/WorkbenchTest.java')
             def body = workbench.getText('UTF-8')
             def start = body.indexOf('    private void screenshot(String name)throws Exception{')
