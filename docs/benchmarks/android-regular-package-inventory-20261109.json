@@ -1,0 +1,133 @@
+{
+  "schema": 1,
+  "recordedAt": "2026-11-08T18:43:56.255467+00:00",
+  "kind": "static-apk-inventory",
+  "file": "ChatGPT-Studio-2026.11.08-1923-android-arm64.apk",
+  "versionName": "2026.11.08-1923",
+  "versionCode": 3000035,
+  "bytes": 241931130,
+  "sha256": "177ef874c6c904a653aecb3ffc61a76ef45ebc8e69cb80c6addbdb9e74806259",
+  "releaseManifest": "docs/releases/2026.11.9.json",
+  "groups": {
+    "other": {
+      "entries": 184,
+      "storedBytes": 171884,
+      "rawBytes": 511410,
+      "percentOfAPK": 0.07
+    },
+    "assets": {
+      "entries": 13,
+      "storedBytes": 14584617,
+      "rawBytes": 15444203,
+      "percentOfAPK": 6.03
+    },
+    "dex": {
+      "entries": 3,
+      "storedBytes": 16703504,
+      "rawBytes": 16703504,
+      "percentOfAPK": 6.9
+    },
+    "native-libraries": {
+      "entries": 14,
+      "storedBytes": 210007848,
+      "rawBytes": 210007848,
+      "percentOfAPK": 86.8
+    },
+    "resources": {
+      "entries": 85,
+      "storedBytes": 271522,
+      "rawBytes": 292047,
+      "percentOfAPK": 0.11
+    }
+  },
+  "largestEntries": [
+    {
+      "path": "lib/arm64-v8a/libxul.so",
+      "storedBytes": 153828744,
+      "rawBytes": 153828744,
+      "compressionMethod": 0
+    },
+    {
+      "path": "lib/arm64-v8a/libgojni.so",
+      "storedBytes": 33507504,
+      "rawBytes": 33507504,
+      "compressionMethod": 0
+    },
+    {
+      "path": "assets/omni.ja",
+      "storedBytes": 14536689,
+      "rawBytes": 15158323,
+      "compressionMethod": 8
+    },
+    {
+      "path": "classes.dex",
+      "storedBytes": 8454452,
+      "rawBytes": 8454452,
+      "compressionMethod": 0
+    },
+    {
+      "path": "classes3.dex",
+      "storedBytes": 8248492,
+      "rawBytes": 8248492,
+      "compressionMethod": 0
+    },
+    {
+      "path": "lib/arm64-v8a/libcrashtools.so",
+      "storedBytes": 5949176,
+      "rawBytes": 5949176,
+      "compressionMethod": 0
+    },
+    {
+      "path": "lib/arm64-v8a/libgkcodecs.so",
+      "storedBytes": 5136272,
+      "rawBytes": 5136272,
+      "compressionMethod": 0
+    },
+    {
+      "path": "lib/arm64-v8a/libcrashhelper.so",
+      "storedBytes": 3435168,
+      "rawBytes": 3435168,
+      "compressionMethod": 0
+    },
+    {
+      "path": "lib/arm64-v8a/libnss3.so",
+      "storedBytes": 2878856,
+      "rawBytes": 2878856,
+      "compressionMethod": 0
+    },
+    {
+      "path": "lib/arm64-v8a/libmozavcodec.so",
+      "storedBytes": 2121336,
+      "rawBytes": 2121336,
+      "compressionMethod": 0
+    },
+    {
+      "path": "lib/arm64-v8a/libmozglue.so",
+      "storedBytes": 1201696,
+      "rawBytes": 1201696,
+      "compressionMethod": 0
+    },
+    {
+      "path": "lib/arm64-v8a/libfreebl3.so",
+      "storedBytes": 854368,
+      "rawBytes": 854368,
+      "compressionMethod": 0
+    }
+  ],
+  "buildConfiguration": {
+    "file": "android/app/build.gradle",
+    "releaseMinifyEnabled": false,
+    "releaseShrinkResourcesExplicitlyEnabled": false
+  },
+  "findings": [
+    "Current regular release does not enable R8 minification. Prior optimized PoC results do not prove current client size or runtime performance.",
+    "Native libraries dominate package size. R8 does not directly shrink Go or Gecko native code.",
+    "corebridge imports the full Xray distro; a minimal registration set is a proposal requiring configuration and transport regression, not a proven safe deletion.",
+    "Stored native entries cannot simply be compressed without checking Android native library loading and 16 KiB alignment requirements."
+  ],
+  "runtimeMeasured": false,
+  "cpuMemoryMeasured": false,
+  "applicationCodeChanged": false,
+  "personalDataAccessed": false,
+  "buildOrBrowserTestsRun": false
+}
