@@ -1,0 +1,73 @@
+name: Inspect optimized Android reflection contracts
+'on':
+  push:
+    branches: [dev]
+    paths: ['.github/workflows/android-optimization-class-probe.yml']
+  workflow_dispatch:
+    inputs:
+      source_run:
+        type: string
+        required: true
+permissions:
+  contents: read
+  actions: read
+jobs:
+  probe:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SOURCE_RUN: ${{ inputs.source_run }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools platforms;android-35 build-tools;35.0.0
+      - name: Verify candidate provenance and successful build
+        run: |
+          python3 - <<'PY'
+          import json,os,subprocess
+          id=os.environ['SOURCE_RUN'];assert id.isdecimal()
+          r=json.loads(subprocess.check_output(['gh','api','repos/ForceMind/ChatGPT/actions/runs/'+id]))
+          assert r['path']=='.github/workflows/android-regular-optimization.yml' and r['event']=='workflow_dispatch' and r['head_branch']=='dev'
+          jobs=json.loads(subprocess.check_output(['gh','api','repos/ForceMind/ChatGPT/actions/runs/'+id+'/jobs?per_page=100']))['jobs']
+          b=[j for j in jobs if j['name']=='build'];assert len(b)==1 and b[0]['conclusion']=='success'
+          with open(os.environ['GITHUB_ENV'],'a') as f:f.write('APP_SOURCE_SHA='+r['head_sha']+'\n')
+          PY
+      - uses: actions/download-artifact@v4
+        with:
+          name: regular-environment-ci-input
+          run-id: ${{ inputs.source_run }}
+          github-token: ${{ github.token }}
+          path: input
+      - name: Verify bytes and compile metadata reader
+        run: |
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib
+          r=json.loads(pathlib.Path('input/receipt.json').read_text());assert r['ciOnly'] and r['sourceSHA']==os.environ['APP_SOURCE_SHA']
+          p=pathlib.Path('input')/r['file'];assert p.name==r['file'] and p.stat().st_size==r['bytes'] and hashlib.sha256(p.read_bytes()).hexdigest()==r['sha256']
+          PY
+          mkdir -p probe/classes probe/evidence
+          javac --release 8 -classpath "$ANDROID_HOME/platforms/android-35/android.jar" -d probe/classes android/scripts/android/OptimizationClassProbe.java
+          "$ANDROID_HOME/build-tools/35.0.0/d8" --min-api 28 --lib "$ANDROID_HOME/platforms/android-35/android.jar" --output probe/probe.jar probe/classes/com/forcemind/chatgpt/pocinput/*.class
+          test -c /dev/kvm
+          sudo chmod a+rw /dev/kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -writable-system -memory 4096
+          script: python3 android/scripts/probe-regular-classes.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: optimization-class-contracts
+          retention-days: 14
+          path: probe/evidence/
