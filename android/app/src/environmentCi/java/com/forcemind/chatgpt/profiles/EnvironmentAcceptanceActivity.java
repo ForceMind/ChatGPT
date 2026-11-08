@@ -15,6 +15,9 @@ import org.json.JSONObject;
 public final class EnvironmentAcceptanceActivity extends Activity {
     private static final String MANIFEST="environment-acceptance.json";
     private EnvironmentNetworkControl networkControl;
+    private String controlRequestId,controlAction,controlAccount,controlErrorClass;
+    private Integer controlTab;
+    private boolean controlCompleted,controlSucceeded;
     @Override public void onCreate(Bundle saved){
         if(!BuildConfig.ENVIRONMENT_TEST)throw new SecurityException("Environment acceptance disabled");
         super.onCreate(saved);dispatch(getIntent());
@@ -29,15 +32,31 @@ public final class EnvironmentAcceptanceActivity extends Activity {
             if(intent==null)throw new IllegalArgumentException("Missing explicit action");String action=intent.getStringExtra("action");
             if(action!=null&&action.startsWith("network-")){if(!BuildConfig.ENVIRONMENT_NETWORK_TEST)throw new SecurityException("Network fixture disabled");networkControl=new EnvironmentNetworkControl(this);networkControl.run(intent);return;}
             if(!"prepare".equals(action)&&!"open".equals(action)&&!"record".equals(action))throw new IllegalArgumentException("Unknown action");
-            Bundle extras=intent.getExtras();if(extras!=null)for(String key:extras.keySet())if(!"action".equals(key)&&(!("open".equals(action)||"record".equals(action))||!"account".equals(key)&&!"tab".equals(key)))throw new IllegalArgumentException("Unknown input");
+            Bundle extras=intent.getExtras();if(extras!=null)for(String key:extras.keySet())if(!"action".equals(key)&&!("requestId".equals(key)&&"com.forcemind.chatgpt.profiles".equals(getPackageName()))&&(!("open".equals(action)||"record".equals(action))||!"account".equals(key)&&!"tab".equals(key)))throw new IllegalArgumentException("Unknown input");
+            bindControlRequest(intent,action);
             if("prepare".equals(action))prepare();else if("record".equals(action))record(intent);else open(intent);
+            if(controlRequestId!=null){controlSucceeded=true;controlCompleted=true;}
             setResult(RESULT_OK);finish();
         }catch(Exception error){
+            if(controlRequestId!=null&&intent!=null&&controlRequestId.equals(intent.getStringExtra("requestId"))){controlSucceeded=false;controlCompleted=true;controlErrorClass=error.getClass().getName();}
             if(intent!=null&&"record".equals(intent.getStringExtra("action"))){
                 try{writeProbe(new JSONObject().put("schema",1).put("complete",false).put("errorClass",error.getClass().getName()).put("sampledAt",System.currentTimeMillis()));}catch(Exception writeError){android.util.Log.e("EnvironmentAcceptance","Probe output failed: "+writeError.getClass().getName());}
             }else android.util.Log.e("EnvironmentAcceptance","Acceptance command rejected",error);
             setResult(RESULT_CANCELED);finish();
         }
+    }
+    private void bindControlRequest(Intent intent,String action)throws Exception{
+        if(!intent.hasExtra("requestId"))return;
+        if(!BuildConfig.ENVIRONMENT_TEST||!BuildConfig.ENVIRONMENT_CLIENT||!"com.forcemind.chatgpt.profiles".equals(getPackageName()))throw new SecurityException("Regular CI control requests only");
+        Object raw=intent.getExtras().get("requestId");
+        if(!(raw instanceof String)||!((String)raw).matches("[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}"))throw new IllegalArgumentException("Invalid control request ID");
+        String requestId=(String)raw;
+        if(controlRequestId!=null)throw new IllegalStateException("Control request already bound");
+        File target=new File(getFilesDir(),"environment-control-"+requestId+".json");
+        if(target.exists()||new File(target.getPath()+".new").exists())throw new IllegalStateException("Control request already used");
+        controlRequestId=requestId;controlAction=action;
+        controlAccount="prepare".equals(action)?null:intent.getStringExtra("account");
+        controlTab="prepare".equals(action)?null:Integer.valueOf(intent.getIntExtra("tab",-1));
     }
     private File manifest(){return new File(getFilesDir(),MANIFEST);}
     private static String origin(){
@@ -120,6 +139,25 @@ public final class EnvironmentAcceptanceActivity extends Activity {
         try(java.io.FileOutputStream out=new java.io.FileOutputStream(temporary)){out.write(result.toString().getBytes(StandardCharsets.UTF_8));out.getFD().sync();}
         Files.move(temporary.toPath(),target.toPath(),StandardCopyOption.REPLACE_EXISTING,StandardCopyOption.ATOMIC_MOVE);
     }
-    @Override public void onDestroy(){if(networkControl!=null)networkControl.close();super.onDestroy();}
+    private void writeControlReceipt()throws Exception{
+        JSONObject result=new JSONObject().put("schema",1).put("requestId",controlRequestId).put("package",getPackageName()).put("action",controlAction)
+            .put("account",controlAccount==null?JSONObject.NULL:controlAccount).put("tab",controlTab==null?JSONObject.NULL:controlTab)
+            .put("complete",true).put("success",controlSucceeded).put("errorClass",controlErrorClass==null?JSONObject.NULL:controlErrorClass)
+            .put("destroyed",true).put("sampledAt",System.currentTimeMillis());
+        File target=new File(getFilesDir(),"environment-control-"+controlRequestId+".json"),temporary=new File(target.getPath()+".new");
+        if(target.exists())throw new IllegalStateException("Refuse control receipt overwrite");
+        try(java.io.FileOutputStream out=new java.io.FileOutputStream(temporary)){out.write(result.toString().getBytes(StandardCharsets.UTF_8));out.getFD().sync();}
+        Files.move(temporary.toPath(),target.toPath(),StandardCopyOption.ATOMIC_MOVE);
+    }
+    @Override public void onDestroy(){
+        if(networkControl!=null)networkControl.close();super.onDestroy();
+        if(controlRequestId!=null&&controlCompleted){
+            // Run after this destruction callback and its ActivityThread message have returned.
+            // A following control must never reuse the instance that is still finishing.
+            new android.os.Handler(android.os.Looper.getMainLooper()).post(()->{
+                try{writeControlReceipt();}catch(Exception error){android.util.Log.e("EnvironmentAcceptance","Control completion receipt failed",error);}
+            });
+        }
+    }
 
 }

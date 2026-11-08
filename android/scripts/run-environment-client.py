@@ -158,6 +158,10 @@ class Acceptance:
 
     def control(self, action, account=None, tab=0, deadline=None):
         assert action in ('prepare', 'open', 'record')
+        request_id = None
+        if PACKAGE == 'com.forcemind.chatgpt.profiles':
+            assert os.environ.get('GITHUB_ACTIONS') == 'true', 'Regular control is CI-only'
+            request_id = str(uuid.uuid4())
         shared_deadline = deadline is not None
         if deadline is None:
             deadline = time.monotonic() + 60
@@ -166,6 +170,10 @@ class Acceptance:
             if shared_deadline:
                 if remaining <= 0:
                     raise TimeoutError('Cold process exit/open exhausted its original 60-second deadline')
+                return min(cap, remaining) if cap is not None else remaining
+            if request_id is not None:
+                if remaining <= 0:
+                    raise TimeoutError('Regular CI control exhausted its original 60-second deadline')
                 return min(cap, remaining) if cap is not None else remaining
             return max(0.1, min(cap, remaining) if cap is not None else remaining)
         def private_result(relative):
@@ -191,8 +199,26 @@ class Acceptance:
         if action != 'prepare':
             assert (account, tab) in PAGE
             args += ['--es', 'account', account, '--ei', 'tab', str(tab)]
+        if request_id is not None:
+            args += ['--es', 'requestId', request_id]
         text = self.shell(*args, timeout=budget())
         assert not re.search(r'Error:|Exception|Permission Denial', text), text
+        if request_id is not None:
+            expected_account = None if action == 'prepare' else account
+            expected_tab = None if action == 'prepare' else tab
+            acknowledgement = self.wait('completed and destroyed regular control ' + action,
+                lambda: private_result('environment-control-' + request_id + '.json'),
+                lambda value: isinstance(value, dict) and value.get('schema') == 1
+                and value.get('requestId') == request_id and value.get('package') == PACKAGE
+                and value.get('action') == action and value.get('account') == expected_account
+                and value.get('tab') == expected_tab
+                and (expected_tab is None or type(value.get('tab')) is int)
+                and value.get('complete') is True and value.get('destroyed') is True,
+                timeout=budget(), interval=0.3)
+            budget()  # A successful sample cannot escape the original absolute deadline.
+            native._write_json(EVIDENCE / ('control-' + request_id + '.json'), acknowledgement)
+            assert acknowledgement.get('success') is True, 'CI control failed: ' + str(acknowledgement.get('errorClass'))
+            assert acknowledgement.get('errorClass') is None, 'Inconsistent CI control completion'
         if action == 'prepare':
             self.wait('completed private acceptance manifest',
                       lambda: private_result('environment-acceptance.json'),
@@ -210,7 +236,9 @@ class Acceptance:
                                timeout=budget(), interval=0.3)
             assert result.get('schema') == 1, 'Invalid native record probe schema'
             assert result.get('complete') is True, 'Native record probe failed: ' + str(result.get('errorClass'))
-        # open is accepted only by its existing real server/preview conditions in the caller.
+        if request_id is not None:
+            budget()
+        # Server/preview checks still authenticate open; regular CI also waits for controller destruction.
 
     def prepare_profiles(self):
         self.control('prepare')
