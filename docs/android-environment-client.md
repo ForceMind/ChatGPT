@@ -2,6 +2,8 @@
 
 ## 当前交付：常规 Android 原签候选 2026.11.08-1923
 
+2026-11-09 已同步中英文 README、官网候选入口与最新里程碑，部署现有 `chatgpt-studio` 生产站及自定义域名，源码为 `ba88cb6`。三个线上地址完成 48 项 HTTP 内容回读，包含明确记录的 Cloudflare HTML 边缘注入还原；浏览器视觉未验证。候选 Actions 下载标注登录要求与 11 月 22 日到期时间，原公开下载/国内加速/自动更新清单保持，未创建公开 Release、合并 main 或更新设备。[部署与核对记录](releases/2026-11-09-site-repository-sync.json)。独立研究对话的未提交方案没有混入本批。
+
 已完成本批批准的常规原包名/原证书候选。原签升级运行 [42493929455](https://github.com/ForceMind/ChatGPT/actions/runs/42493929455) 的 Android 9、Android 15 和最终交付门禁均成功，验收 harness 为 `645ddf11c21e63b9b6e3ceec08c28fd38f5476da`。App 编译源码仍为 `a26b4993e329268ef0f690e12fd4707f374e58d8`，此前 85 项单元测试、22 个合成功能任务及完整静态汇总的结果沿用原字节，没有重编、放宽断言或重复后台长测。
 
 - [可安装 ARM64 候选及完整报告](https://github.com/ForceMind/ChatGPT/actions/runs/42493929455/artifacts/13622283441)：`ChatGPT-Studio-2026.11.08-1923-android-arm64.apk`，code `3000035`，241,931,130 bytes，SHA-256 `177ef874c6c904a653aecb3ffc61a76ef45ebc8e69cb80c6addbdb9e74806259`。Actions ZIP 为 111,552,921 bytes，SHA-256 `238ffc8a2bccdd728ea865a018b9b855f8d075af019ef8d13652b84aada7c7c9`，保留 14 天。原包名 `com.forcemind.chatgpt.profiles`、原证书 `8b6eef928fded91f291ad954e20976b2cc6011b55e8cbec0152695fe1f05cf19`，覆盖公开 alpha.22 时不需要卸载。
