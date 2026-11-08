@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import re
+import subprocess
 import sys
 import traceback
 import uuid
@@ -25,8 +26,15 @@ def dual_engine_round_trip(acceptance, draft):
         output = acceptance.command(args, timeout=300)
     finally:
         # Retain the native first fault and semantic UI state even when JUnit fails.
-        for name in ('regular-dual-engine-switch.json', 'regular-dual-engine-switch-first-error.txt'):
+        for name in ('regular-dual-engine-switch.json', 'regular-dual-engine-switch-first-error.txt',
+                     'regular-dual-engine-scroll-ime.txt'):
             try:
+                if name == 'regular-dual-engine-scroll-ime.txt':
+                    raw = subprocess.run(['adb', 'exec-out', 'cat', '/data/user/0/' + native.PACKAGE + '/files/' + name],
+                                         stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=15)
+                    if raw.returncode == 0:
+                        (native.EVIDENCE / name).write_bytes(raw.stdout)
+                    continue
                 diagnostic = native._run(['adb', 'shell', 'cat', '/data/user/0/' + native.PACKAGE + '/files/' + name], timeout=15, check=False)
                 if diagnostic.returncode == 0:
                     (native.EVIDENCE / name).write_text(diagnostic.stdout, encoding='utf-8')

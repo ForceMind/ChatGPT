@@ -40,9 +40,11 @@ public final class UiSnapshot {
     private static volatile String rootPackage="";
     private static volatile int windowQueries,lastWindowCount=-1;
     private static volatile String errorMessage="";
-    private static long deadline;
+    private static long deadline,readDeadline;
+    private static volatile boolean cleanupAttempted,cleanupCompleted;
+    private static volatile String cleanupErrorClass="";
     private static void check()throws IOException{
-        if(SystemClock.elapsedRealtime()>=deadline)throw new IOException("AX deadline expired");
+        if(SystemClock.elapsedRealtime()>=readDeadline)throw new IOException("AX read deadline expired; cleanup reserve retained");
     }
     private static String sha(String value)throws Exception{
         StringBuilder output=new StringBuilder();
@@ -63,6 +65,9 @@ public final class UiSnapshot {
                 .put("windowsMetadataComplete",windowsComplete).put("windowPackagesComplete",packagesComplete)
                 .put("serviceFlags",serviceFlags)
                 .put("startedElapsedMillis",started).put("capturedElapsedMillis",captured)
+                .put("readDeadlineElapsedMillis",readDeadline).put("hardDeadlineElapsedMillis",deadline)
+                .put("cleanupAttempted",cleanupAttempted).put("cleanupCompleted",cleanupCompleted)
+                .put("cleanupErrorClass",cleanupErrorClass)
                 .put("finishedElapsedMillis",SystemClock.elapsedRealtime()).put("nodeCount",count)
                 .put("waitForIdle",false).put("actionsPerformed",0).put("screenshots",false)
                 .put("connectionClass","android.app.UiAutomationConnection")
@@ -135,6 +140,9 @@ public final class UiSnapshot {
             budget=Long.parseLong(args[2]);if(budget<1||budget>25000)throw new IllegalArgumentException();
         }catch(Exception invalid){finish(false,null,invalid.getClass().getName(),1);return;}
         deadline=started+budget;
+        // Leave time for normal disconnect before the watchdog can exit the
+        // process. Exiting during disconnect left Android 9's service registered.
+        readDeadline=deadline-Math.min(750,Math.max(1,budget/4));
         Thread watchdog=new Thread(new Runnable(){@Override public void run(){
             while(!EMITTED.get()){
                 long remaining=deadline-SystemClock.elapsedRealtime();
@@ -221,9 +229,9 @@ public final class UiSnapshot {
             if(root!=null)root.recycle();
             if(windows!=null)for(AccessibilityWindowInfo item:windows)item.recycle();
             if(automation!=null){
-                phase="disconnect";
-                try{UiAutomation.class.getMethod("disconnect").invoke(automation);}
-                catch(Throwable failure){if(error.isEmpty()){error=failure.getClass().getName();failedPhase="disconnect";}xml=null;}
+                phase="disconnect";cleanupAttempted=true;
+                try{UiAutomation.class.getMethod("disconnect").invoke(automation);cleanupCompleted=true;}
+                catch(Throwable failure){cleanupErrorClass=failure.getClass().getName();if(error.isEmpty()){error=cleanupErrorClass;failedPhase="disconnect";}xml=null;}
             }
             if(callbacks!=null)callbacks.quitSafely();
         }

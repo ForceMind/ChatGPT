@@ -80,6 +80,27 @@ def owned_output_counters(text, node_ports, family):
 
 
 class NetworkAcceptance(AcknowledgedNativeInput, common.Acceptance):
+    def editor(self, account, tab, document):
+        target = super().editor(account, tab, document)
+        if REGULAR and self.api == 35 and type(self) is NetworkAcceptance:
+            # One original tap only. Preserve dispatcher/window facts immediately
+            # before it; the earlier NO_INPUT_CHANNEL rejection was not a route failure.
+            observation = {'schema': 1, 'readOnly': True, 'screenshots': False,
+                           'api': self.api, 'package': PACKAGE, 'document': document,
+                           'account': account, 'tab': tab, 'nativeNode': target, 'sources': []}
+            for topic, args in (('input', ('dumpsys', 'input')),
+                                ('windows', ('dumpsys', 'window', 'windows'))):
+                text = self.shell(*args, timeout=self.input_timeout(10))
+                self.sequence += 1
+                name = f'{self.sequence:04d}-before-composer-{topic}.txt'
+                body = text.encode('utf-8')
+                (self.output / name).write_bytes(body)
+                observation['sources'].append({'file': name, 'bytes': len(body),
+                                               'sha256': hashlib.sha256(body).hexdigest()})
+            self.sequence += 1
+            native._write_json(self.output / f'{self.sequence:04d}-before-composer-window.json', observation)
+        return target
+
     def __init__(self, api, uid, fixture, output, transport):
         common.EVIDENCE = output
         common.HOST = HOST

@@ -58,6 +58,9 @@ class NativeAXMixin:
                 receipt['errorClass']=result.get('errorClass','NativeAxUnavailable')
                 return []
             assert result['phase']=='complete' and result['errorClass']==''
+            assert result['cleanupAttempted'] is True and result['cleanupCompleted'] is True
+            assert result['cleanupErrorClass']==''
+            assert result['startedElapsedMillis']<result['readDeadlineElapsedMillis']<result['hardDeadlineElapsedMillis']
             assert result['connectionClass']=='android.app.UiAutomationConnection' and result['connectionFlags']==1
             assert result['constructorSignature']=='UiAutomation(Looper,IUiAutomationConnection)'
             assert result['selection']=='unique-input-focused-application' and result['serviceFlags']&64

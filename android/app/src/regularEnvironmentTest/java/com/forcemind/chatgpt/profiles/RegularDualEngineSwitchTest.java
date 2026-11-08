@@ -44,6 +44,8 @@ public final class RegularDualEngineSwitchTest {
     private String legacyId,storageId,tabId,url,legacyName,environmentName,expectedGeckoDraft;
     private JSONObject nativeScrollReceipt,nativeScrollSnapshot;
     private JSONObject nativeScrollPreparation;
+    private String nativeScrollImeDump="";
+    private static final String SCROLL_IME_FILE="regular-dual-engine-scroll-ime.txt";
     private String nativeScrollOutput="",nativeScrollUid="";
     private String phase="setup";
     private String lastMenuImeDump="";
@@ -130,6 +132,16 @@ public final class RegularDualEngineSwitchTest {
         if(shown){rejectNative(receipt,"current-system-ime-shown");return false;}
         receipt.put("imeHiddenObserved",true);transition.put("imeHiddenObserved",true);return true;
     }
+    private boolean scrollImeHidden()throws Exception{
+        try{return menuImeHidden(nativeScrollPreparation,nativeScrollPreparation);}
+        finally{nativeScrollImeDump=lastMenuImeDump;}
+    }
+    private void saveScrollImeDump()throws Exception{
+        if(nativeScrollPreparation==null||nativeScrollImeDump.isEmpty())return;
+        byte[] original=nativeScrollImeDump.getBytes(StandardCharsets.UTF_8);
+        Files.write(RegularEnvironmentUpgradeTest.file(SCROLL_IME_FILE).toPath(),original);
+        nativeScrollPreparation.put("imeDumpFile",SCROLL_IME_FILE).put("imeDumpEncoding","UTF-8").put("imeDumpSHA256",RegularEnvironmentUpgradeTest.hash(original)).put("imeDumpBytes",original.length);
+    }
     private void stableNativeTap(String label,JSONObject transition,boolean requireImeHidden)throws Exception{
         final long deadline=android.os.SystemClock.elapsedRealtime()+45000;
         JSONObject receipt=new JSONObject().put("label",label).put("startedAt",System.currentTimeMillis()).put("requireImeHidden",requireImeHidden).put("tapCount",0).put("samples",0).put("lastRejection","none");
@@ -210,13 +222,13 @@ public final class RegularDualEngineSwitchTest {
         AtomicReference<String> previousGeometry=new AtomicReference<>();AtomicReference<JSONObject> selectedGeometry=new AtomicReference<>();AtomicInteger preparedSamples=new AtomicInteger();
         waitFor("legacy WebView layout",()->{
             assertTrue("Scroll preparation stays within the original 45s deadline",android.os.SystemClock.elapsedRealtime()<preparationDeadline);
-            boolean hidden=menuImeHidden(nativeScrollPreparation,nativeScrollPreparation);nativeScrollPreparation.put("imeDump",lastMenuImeDump);
+            boolean hidden=scrollImeHidden();
             JSONObject geometry=hidden?readingGeometry(web):null;
             if(geometry==null){preparedSamples.set(0);previousGeometry.set(null);nativeScrollPreparation.put("samples",0);return false;}
             nativeScrollPreparation.put("lastGeometry",geometry);String signature=geometry.toString();int count=signature.equals(previousGeometry.get())?preparedSamples.incrementAndGet():1;
             preparedSamples.set(count);previousGeometry.set(signature);nativeScrollPreparation.put("samples",count);
             if(count<3){nativeScrollPreparation.put("lastRejection","awaiting-three-stable-reading-viewport-samples");return false;}
-            hidden=menuImeHidden(nativeScrollPreparation,nativeScrollPreparation);nativeScrollPreparation.put("imeDump",lastMenuImeDump);JSONObject last=hidden?readingGeometry(web):null;
+            hidden=scrollImeHidden();JSONObject last=hidden?readingGeometry(web):null;
             if(last==null||!signature.equals(last.toString())){preparedSamples.set(0);previousGeometry.set(null);nativeScrollPreparation.put("samples",0).put("lastRejection","IME-or-reading-viewport-changed-at-final-refresh");return false;}
             selectedGeometry.set(last);nativeScrollPreparation.put("geometry",last).put("finalRefreshMatched",true).put("measuredAt",System.currentTimeMillis());return android.os.SystemClock.elapsedRealtime()<preparationDeadline;
         });
@@ -299,6 +311,7 @@ public final class RegularDualEngineSwitchTest {
                 round.put("stage","complete").put("mainReturnedAt",System.currentTimeMillis()).put("sameMainActivity",true).put("sameWebViewObject",true).put("sameDocument",true).put("sameDraftAndModel",true).put("sameScroll",true).put("sameProfileAndLogin",true);
             }
             RegularEnvironmentUpgradeTest.verifyNative(golden,true);assertEquals(expectedHash,RegularEnvironmentUpgradeTest.hash(RegularEnvironmentUpgradeTest.file(RegularEnvironmentUpgradeTest.EXPECTED)));
+            saveScrollImeDump();
             JSONObject proof=new JSONObject().put("schema",1).put("complete",true).put("api",api).put("package",RegularEnvironmentUpgradeTest.PACKAGE).put("versionCode",RegularEnvironmentUpgradeTest.NEW_CODE).put("signerSHA256",RegularEnvironmentUpgradeTest.signer())
                 .put("scope","separate-synthetic-legacy-Main-account; original-alpha22-golden-account-unopened").put("newInstrumentationMayColdStartGecko",true).put("geckoNoReloadRequiresExternalServerProof",true)
                 .put("originalBaselineAccountUnopened",true).put("originalBaselineAndTwoCipherRecordsUnchanged",true).put("originalExpectedSHA256",expectedHash)
@@ -309,6 +322,7 @@ public final class RegularDualEngineSwitchTest {
                 .put("nativeAccountMenusUsed",true).put("trustedNativeDraftInput",true).put("nativeReadingScroll",true).put("screenshots",false).put("realServicesAccessed",false).put("productionSignatureVerified",false);
             write("regular-dual-engine-switch.json",proof);Bundle output=new Bundle();output.putString("regularDualEngineSwitchProof",proof.toString());instrumentation.addResults(output);
         }catch(Exception|AssertionError failure){
+            try{saveScrollImeDump();}catch(Exception dumpError){failure.addSuppressed(dumpError);}
             try{
                 java.io.File error=RegularEnvironmentUpgradeTest.file("regular-dual-engine-switch-first-error.txt");
                 if(!error.exists()){

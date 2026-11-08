@@ -160,6 +160,15 @@ def verify_dual_engine(directory, api, proof, upgrade, expected, signer, before,
     assert instrument_proof['legacyDraftSHA256'] == hashlib.sha256(b'OwnedDualMainDraft').hexdigest()
     assert instrument_proof['legacyScroll'] > 100 and instrument_proof['legacyPageLoads'] == 1
     assert instrument_proof['unexpectedLegacyRequests'] == 0
+    preparation = instrument_proof['nativeScrollPreparation']
+    assert preparation['samples'] == 3 and preparation['gestureCount'] == 1
+    assert preparation['imeHiddenObserved'] is True and preparation['lastImeInputShown'] is False
+    assert preparation['finalRefreshMatched'] is True and 'imeDump' not in preparation
+    assert preparation['imeDumpFile'] == 'regular-dual-engine-scroll-ime.txt' and preparation['imeDumpEncoding'] == 'UTF-8'
+    ime_bytes = regular_file(directory / preparation['imeDumpFile']).read_bytes()
+    assert len(ime_bytes) == preparation['imeDumpBytes'] > 0
+    assert hashlib.sha256(ime_bytes).hexdigest() == digest(preparation['imeDumpSHA256'])
+    assert shared_flow.Acceptance.ime_shown(ime_bytes.decode('utf-8')) is False
     gesture = instrument_proof['nativeScrollReceipt']
     if api == 28:
         assert gesture['provider'] == 'ci-android9-shell-touchscreen'

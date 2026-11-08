@@ -2,6 +2,8 @@
 
 ## 当前任务：常规版完整验收与原签覆盖候选（已批准）
 
+最新结果：[42471670912](https://github.com/ForceMind/ChatGPT/actions/runs/42471670912)，源码 `4e95d9e147921465f794fa8542ba42ed06886690`，完整构建通过，最终 failure。实际 XML 为 17 组 / 85 项单元测试，失败/错误/跳过均 0；Lint 0 错误、45 警告。两端导航、本地导出、九项旧 WebView 资料库/Skill、旧 WebView 六组路由/文件全部通过；API28 兼容、API35 Gecko Skill、其余五组 Gecko 网络也通过。三个失败仍保留：① API35 兼容在全部业务断言结束后传输约 1.13 MB 的 Binder 报告超限，独立 IME 原文约 543k 字符为主因；现改为原文文件+严格字节/SHA 核对，不截断日志，不把失败运行改记成功。② API28 Gecko Skill 在 UI helper 断开阶段被硬超时退出打断，后续连接持续报服务 already registered；现从同一单次/外层原预算内预留正常 disconnect 时间，并强核成功读取已完成 cleanup，不延长预算或跳过状态。③ API35 REALITY 的唯一首次 tap 坐标正确，但 InputDispatcher 命中 NO_INPUT_CHANNEL 的 ActivityRecordInputSink，实际 DOM 未获焦点；路由已成功，不能误报传输故障。底层输入窗口原因尚未关闭，仅在同一原点击前补只读 dispatcher/window 原文，不补点、不扩大输入时限。上述修正仅静态检查，待同范围 Actions 验证。没有本机签名、私钥上传、main 合并、公开发布或个人设备修改。
+
 2026-11-08 续接：已回读 [42459157310](https://github.com/ForceMind/ChatGPT/actions/runs/42459157310)，源码 `443f8f6`，结果为 failure。构建、两端双内核导航、六组 Gecko VLESS、两端本地导出、API35 兼容与两端中的 API35 Skill/Workbench 通过；完整候选未通过。API28 兼容的唯一原生手势后实际滚动为 83 px，未达原 >100 阈值，测试前置没有等待键盘/视口稳定；不降低阈值或重发手势。API28 Skill 失败为一次 AX 读取耗尽原 15 秒终态预算，失败后下一次只读树确实有“已发送 · HTML 结构解读”；现将单次 AX 读取限制在同一原总预算内，给 helper 启动/退出预留时间，失败回执继续保留。旧 WebView 网络文件需要的合成系统代理 18082/18083 仍被 guest OUTPUT 拒绝，仅允许这两个夹具端口，业务 origin 18480 继续禁止直达。API28 Workbench 前七项通过后原辅助 shell 管道过早关闭导致 Android 9 UiAutomation repeater EPIPE，只修生成的测试源读取至 EOF。上述修正待下一轮同范围 Actions 验证，尚未签名、合并、发布或修改个人数据。
 
 修正已推 `dev` 的 `0488b79f854ce97270ff2e22b79b93afb99c6131`，AST、YAML、66 段 Shell 语法和差异空白检查通过。[42469798587](https://github.com/ForceMind/ChatGPT/actions/runs/42469798587) 第一次尝试在下载原 Gradle 8.13 发行包时收到上游 GitHub HTTP 504，未开始编译或功能验收；已对同一运行重试失败任务，首次日志保留。原签后回传验证的专用只读工作流和非签名 ZIP/实际 ARM64-x86 DEX 核对正在准备，未执行，也没有创建中转 Release 或上传私钥。
