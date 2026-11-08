@@ -269,12 +269,20 @@ def verify(proof,api,receipt,metadata,definitions,skill,artifact):
 
 def deliver(input_root=Path('input'),candidate=Path('candidate'),acceptance=Path('acceptance/handoff')):
     assert os.environ.get('GITHUB_ACTIONS')=='true','CI delivery only'
-    assert candidate.is_dir() and (candidate/'client-environment-and-recovery-acceptance.json').is_file()
+    if REGULAR:
+        assert candidate.is_dir()
+        baseline=read(candidate/'regular-environment-acceptance.json')
+        assert baseline['schema']==1 and baseline['complete'] is True
+    else:
+        assert candidate.is_dir() and (candidate/'client-environment-and-recovery-acceptance.json').is_file()
     assert (candidate/'gecko-vless-route-acceptance.json').is_file()
     local_exports=read(candidate/'evidence/gecko-local-exports-summary.json')
     assert local_exports['complete'] is True
     receipt=read(input_root/'gecko-network-receipt.json');metadata=validate_receipt(receipt)
     human=read(input_root/'receipt.json');assert validate_receipt(human,require_human_filename=True)==metadata
+    if REGULAR:
+        assert baseline['versionMetadata']==metadata and metadata['sourceSHA']==os.environ['GITHUB_SHA']
+        assert baseline['humanUnsignedReceipt']==human and baseline['package']==human['package']
     assert receipt['ciOnly'] is True and receipt['sourceSHA']==human['sourceSHA']
     assert local_exports['versionMetadata']==metadata and local_exports['applicationSourceSHA']==receipt['sourceSHA']
     assert local_exports['ciAPKsha256']==receipt['sha256']

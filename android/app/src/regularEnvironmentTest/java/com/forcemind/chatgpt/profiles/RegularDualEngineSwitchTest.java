@@ -43,6 +43,7 @@ public final class RegularDualEngineSwitchTest {
     private MainActivity activity;
     private String legacyId,storageId,tabId,url,legacyName,environmentName,expectedGeckoDraft;
     private JSONObject nativeScrollReceipt,nativeScrollSnapshot;
+    private JSONObject nativeScrollPreparation;
     private String nativeScrollOutput="",nativeScrollUid="";
     private String phase="setup";
     private String lastMenuImeDump="";
@@ -185,16 +186,47 @@ public final class RegularDualEngineSwitchTest {
         waitFor("trusted legacy DOM and controlled model",()->{JSONObject value=snapshot(web);return MAIN_DRAFT.equals(value.optString("draft"))&&MAIN_DRAFT.equals(value.optString("model"))&&value.optInt("trusted")>0;});
         main(()->((android.view.inputmethod.InputMethodManager)activity.getSystemService(Context.INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(web.getWindowToken(),0));
     }
+    private JSONObject readingGeometry(WebView web)throws Exception{
+        int[] at=new int[2],size=new int[2];Rect visible=new Rect();AtomicReference<Boolean> ready=new AtomicReference<>(false);
+        main(()->{web.getLocationOnScreen(at);size[0]=web.getWidth();size[1]=web.getHeight();ready.set(web.isShown()&&web.hasWindowFocus()&&web.isAttachedToWindow()&&!web.isLayoutRequested()&&size[0]>0&&size[1]>200&&web.getGlobalVisibleRect(visible)&&visible.equals(new Rect(at[0],at[1],at[0]+size[0],at[1]+size[1])));});
+        nativeScrollPreparation.put("lastNativeBounds",new JSONArray().put(at[0]).put(at[1]).put(at[0]+size[0]).put(at[1]+size[1])).put("lastGlobalVisibleBounds",bounds(visible));
+        if(!ready.get()){nativeScrollPreparation.put("lastRejection","native-viewport-not-fully-visible-or-layout-pending");return null;}
+        AtomicReference<String> raw=new AtomicReference<>();CountDownLatch done=new CountDownLatch(1);
+        main(()->web.evaluateJavascript("JSON.stringify((()=>{let r=document.querySelector('article').getBoundingClientRect(),c=document.getElementById('composer').getBoundingClientRect(),v=visualViewport;return {dpr:devicePixelRatio,innerWidth:innerWidth,innerHeight:innerHeight,visualWidth:v?v.width:innerWidth,visualHeight:v?v.height:innerHeight,visualOffsetLeft:v?v.offsetLeft:0,visualOffsetTop:v?v.offsetTop:0,visualScale:v?v.scale:1,readingBounds:[Math.max(0,r.left),Math.max(0,r.top),Math.min(innerWidth,r.right),Math.min(innerHeight,r.bottom,c.top)]};})())",value->{raw.set(value);done.countDown();}));
+        assertTrue("Read-only reading viewport observation",done.await(5,TimeUnit.SECONDS));Object decoded=new JSONTokener(raw.get()).nextValue();
+        if(decoded==JSONObject.NULL){nativeScrollPreparation.put("lastRejection","DOM-viewport-not-ready");return null;}
+        JSONObject viewport=new JSONObject(String.valueOf(decoded));nativeScrollPreparation.put("lastDOMViewport",viewport);double dpr=viewport.getDouble("dpr");JSONArray reading=viewport.getJSONArray("readingBounds");
+        if(!Double.isFinite(dpr)||dpr<=0||viewport.getDouble("innerWidth")<=0||viewport.getDouble("innerHeight")<=0||viewport.getDouble("visualWidth")<=0||viewport.getDouble("visualHeight")<=0){nativeScrollPreparation.put("lastRejection","DOM-viewport-size-invalid");return null;}
+        int x=at[0]+size[0]/2,start=at[1]+size[1]/2,end=at[1]+size[1]/5;
+        double cssX=(x-at[0])/dpr,cssStart=(start-at[1])/dpr,cssEnd=(end-at[1])/dpr;
+        if(cssX<reading.getDouble(0)||cssX>=reading.getDouble(2)||cssStart<reading.getDouble(1)||cssStart>=reading.getDouble(3)||cssEnd<reading.getDouble(1)||cssEnd>=reading.getDouble(3)){
+            nativeScrollPreparation.put("lastRejection","original-gesture-coordinates-outside-visible-reading-area");return null;
+        }
+        return new JSONObject().put("nativeBounds",new JSONArray().put(at[0]).put(at[1]).put(at[0]+size[0]).put(at[1]+size[1])).put("globalVisibleBounds",bounds(visible)).put("viewport",viewport).put("coords",new JSONArray().put(x).put(start).put(x).put(end).put(420));
+    }
     private void nativeScroll(WebView web)throws Exception{
-        waitFor("legacy WebView layout",()->{AtomicReference<Boolean> ready=new AtomicReference<>(false);main(()->ready.set(web.isShown()&&web.hasWindowFocus()&&!web.isLayoutRequested()&&web.getWidth()>0&&web.getHeight()>200));return ready.get();});
-        int[] at=new int[2],size=new int[2];main(()->{web.getLocationOnScreen(at);size[0]=web.getWidth();size[1]=web.getHeight();});
-        int x=at[0]+size[0]/2;
-        nativeScrollSnapshot=snapshot(web);
+        final long preparationDeadline=android.os.SystemClock.elapsedRealtime()+45000;
+        nativeScrollPreparation=new JSONObject().put("samples",0).put("imeHiddenObserved",false).put("gestureCount",0);
+        AtomicReference<String> previousGeometry=new AtomicReference<>();AtomicReference<JSONObject> selectedGeometry=new AtomicReference<>();AtomicInteger preparedSamples=new AtomicInteger();
+        waitFor("legacy WebView layout",()->{
+            assertTrue("Scroll preparation stays within the original 45s deadline",android.os.SystemClock.elapsedRealtime()<preparationDeadline);
+            boolean hidden=menuImeHidden(nativeScrollPreparation,nativeScrollPreparation);nativeScrollPreparation.put("imeDump",lastMenuImeDump);
+            JSONObject geometry=hidden?readingGeometry(web):null;
+            if(geometry==null){preparedSamples.set(0);previousGeometry.set(null);nativeScrollPreparation.put("samples",0);return false;}
+            nativeScrollPreparation.put("lastGeometry",geometry);String signature=geometry.toString();int count=signature.equals(previousGeometry.get())?preparedSamples.incrementAndGet():1;
+            preparedSamples.set(count);previousGeometry.set(signature);nativeScrollPreparation.put("samples",count);
+            if(count<3){nativeScrollPreparation.put("lastRejection","awaiting-three-stable-reading-viewport-samples");return false;}
+            hidden=menuImeHidden(nativeScrollPreparation,nativeScrollPreparation);nativeScrollPreparation.put("imeDump",lastMenuImeDump);JSONObject last=hidden?readingGeometry(web):null;
+            if(last==null||!signature.equals(last.toString())){preparedSamples.set(0);previousGeometry.set(null);nativeScrollPreparation.put("samples",0).put("lastRejection","IME-or-reading-viewport-changed-at-final-refresh");return false;}
+            selectedGeometry.set(last);nativeScrollPreparation.put("geometry",last).put("finalRefreshMatched",true).put("measuredAt",System.currentTimeMillis());return android.os.SystemClock.elapsedRealtime()<preparationDeadline;
+        });
+        JSONArray coords=selectedGeometry.get().getJSONArray("coords");int x=coords.getInt(0),start=coords.getInt(1),end=coords.getInt(3);
+        nativeScrollSnapshot=snapshot(web);nativeScrollPreparation.put("beforeGestureSnapshot",nativeScrollSnapshot);
         if(android.os.Build.VERSION.SDK_INT==28){
             nativeScrollUid=shell("id -u").trim();
             assertTrue("Only root or shell may invoke the owned Android9 touch helper",nativeScrollUid.equals("0")||nativeScrollUid.equals("2000"));
-            String command=(nativeScrollUid.equals("0")?"su 2000 ":"")+"env CLASSPATH=/data/local/tmp/studio-poc-input.jar app_process /system/bin com.forcemind.chatgpt.pocinput.TouchInput "+x+" "+(at[1]+size[1]/2)+" "+x+" "+(at[1]+size[1]/5)+" 420";
-            nativeScrollOutput=shell(command);
+            String command=(nativeScrollUid.equals("0")?"su 2000 ":"")+"env CLASSPATH=/data/local/tmp/studio-poc-input.jar app_process /system/bin com.forcemind.chatgpt.pocinput.TouchInput "+x+" "+start+" "+x+" "+end+" 420";
+            nativeScrollPreparation.put("gestureCount",1).put("gestureStartedAt",System.currentTimeMillis());nativeScrollOutput=shell(command);
             JSONTokener tokens=new JSONTokener(nativeScrollOutput);Object decoded=tokens.nextValue();
             assertTrue("Touch helper must emit one JSON object only",decoded instanceof JSONObject&&tokens.nextClean()==0);
             nativeScrollReceipt=(JSONObject)decoded;
@@ -208,8 +240,9 @@ public final class RegularDualEngineSwitchTest {
                 long time=event.getLong("eventTime");assertTrue("Monotonic touchscreen event times",time>=down&&time>previousTime);previousTime=time;
             }
         }else{
-            shell("input swipe "+x+" "+(at[1]+size[1]/2)+" "+x+" "+(at[1]+size[1]/5)+" 420");
+            nativeScrollPreparation.put("gestureCount",1).put("gestureStartedAt",System.currentTimeMillis());shell("input swipe "+x+" "+start+" "+x+" "+end+" 420");
         }
+        nativeScrollPreparation.put("gestureReturnedAt",System.currentTimeMillis());
         AtomicReference<Double> previous=new AtomicReference<>(-1.0);AtomicInteger stable=new AtomicInteger();
         waitFor("settled real native reading scroll",()->{nativeScrollSnapshot=snapshot(web);double value=nativeScrollSnapshot.optDouble("scroll");stable.set(value>100&&Math.abs(value-previous.get())<=1?stable.get()+1:0);previous.set(value);return stable.get()>=3;});
     }
@@ -272,13 +305,14 @@ public final class RegularDualEngineSwitchTest {
                 .put("syntheticLegacyAccountId",legacyId).put("syntheticLegacyStorageId",storageId).put("syntheticLegacyTabId",tabId).put("syntheticLegacyProfile",profile.get()).put("document",before.getString("document"))
                 .put("legacyDraftSHA256",RegularEnvironmentUpgradeTest.hash(MAIN_DRAFT.getBytes(StandardCharsets.UTF_8))).put("legacyScroll",before.getDouble("scroll")).put("legacyPageLoads",loads.get()).put("unexpectedLegacyRequests",unexpected.get()).put("roundTrips",rounds).put("menuTransitions",menuTransitions).put("nativeClicks",nativeClicks)
                 .put("nativeScrollReceipt",nativeScrollReceipt==null?JSONObject.NULL:nativeScrollReceipt)
+                .put("nativeScrollPreparation",nativeScrollPreparation)
                 .put("nativeAccountMenusUsed",true).put("trustedNativeDraftInput",true).put("nativeReadingScroll",true).put("screenshots",false).put("realServicesAccessed",false).put("productionSignatureVerified",false);
             write("regular-dual-engine-switch.json",proof);Bundle output=new Bundle();output.putString("regularDualEngineSwitchProof",proof.toString());instrumentation.addResults(output);
         }catch(Exception|AssertionError failure){
             try{
                 java.io.File error=RegularEnvironmentUpgradeTest.file("regular-dual-engine-switch-first-error.txt");
                 if(!error.exists()){
-                    JSONObject evidence=new JSONObject().put("phase",phase).put("partialRoundTrips",rounds).put("menuTransitions",menuTransitions).put("partialNativeClicks",nativeClicks).put("lastMenuImeDump",lastMenuImeDump).put("nativeScrollUid",nativeScrollUid).put("nativeScrollOutput",nativeScrollOutput).put("nativeScrollReceipt",nativeScrollReceipt==null?JSONObject.NULL:nativeScrollReceipt).put("lastScrollSnapshot",nativeScrollSnapshot==null?JSONObject.NULL:nativeScrollSnapshot);
+                    JSONObject evidence=new JSONObject().put("phase",phase).put("partialRoundTrips",rounds).put("menuTransitions",menuTransitions).put("partialNativeClicks",nativeClicks).put("lastMenuImeDump",lastMenuImeDump).put("nativeScrollUid",nativeScrollUid).put("nativeScrollOutput",nativeScrollOutput).put("nativeScrollReceipt",nativeScrollReceipt==null?JSONObject.NULL:nativeScrollReceipt).put("nativeScrollPreparation",nativeScrollPreparation==null?JSONObject.NULL:nativeScrollPreparation).put("lastScrollSnapshot",nativeScrollSnapshot==null?JSONObject.NULL:nativeScrollSnapshot);
                     try{evidence.put("currentWorkspace",workspaceSelection());}catch(Exception stateError){evidence.put("currentWorkspaceError",stateError.toString());}
                     try{evidence.put("uiHierarchy",semanticHierarchy());}catch(Exception treeError){evidence.put("uiHierarchyError",treeError.toString());}
                     try{if(activity!=null&&current()!=null)evidence.put("failureSnapshot",snapshot(current()));}catch(Exception snapshotError){evidence.put("failureSnapshotError",snapshotError.toString());}

@@ -20,7 +20,9 @@ class NativeAXMixin:
 
     def ui(self,deadline=None):
         # A new app_process and UiAutomation connection per read; never wait for page idle.
-        limits=[time.monotonic()+25]
+        # A stalled Android 9 UiAutomation connection must not consume the
+        # entire enclosing status wait. Fresh reads keep its original deadline.
+        limits=[time.monotonic()+5]
         if deadline is not None:limits.append(deadline)
         if getattr(self,"_ui_read_deadline",None) is not None:limits.append(self._ui_read_deadline)
         deadline=min(limits)
@@ -33,7 +35,14 @@ class NativeAXMixin:
         receipt={'available':False,'source':'fresh-app-process-ui-automation','requestId':request}
         self.last_ui_receipt=receipt_path.name
         try:
-            duration=max(1,int(budget(25)*1000))
+            # The helper deadline starts after adb/app_process launch. Reserve
+            # transport/exit time inside the same host deadline so its failure
+            # receipt can arrive before subprocess.run kills the adb client.
+            remaining=budget(5)
+            if remaining<=1:raise TimeoutError('Insufficient current AX budget for a guarded helper read')
+            duration=int((remaining-1)*1000)
+            receipt['helperBudgetMillis']=duration
+            receipt['hostDeadlineIncludesLaunchAndExit']=True
             command=['adb','shell','su','2000','env','GITHUB_ACTIONS=true',
                 'CLASSPATH=/data/local/tmp/studio-poc-ui-snapshot.jar','app_process','/system/bin',
                 'com.forcemind.chatgpt.pocinput.UiSnapshot',PACKAGE,request,str(duration)]

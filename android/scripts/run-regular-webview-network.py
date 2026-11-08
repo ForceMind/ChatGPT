@@ -44,6 +44,10 @@ try:
     native._root_and_block()
     # Owned fixture gates and PAC only; the business origin 18480 stays blocked.
     native._shell('iptables','-I','OUTPUT','1','-p','tcp','-d','10.0.2.2','--dport','18080','-j','ACCEPT')
+    if suite == 'network-files':
+        assert fixture['systemProxyPort'] == 18082 and fixture['pacProxyPort'] == 18083
+        for port in (18082,18083):
+            native._shell('iptables','-I','OUTPUT','1','-p','tcp','-d','10.0.2.2','--dport',str(port),'-j','ACCEPT')
     for name in ('nodeA', 'nodeB'):
         node = urllib.parse.urlsplit(fixture['transports'][transport][name])
         assert node.hostname == '10.0.2.2' and node.port in (18443,18444,19443,19444,20443,20444)

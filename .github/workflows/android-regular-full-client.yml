@@ -137,6 +137,7 @@ jobs:
         mkdir -p android/app/build/regular-network-input
         cp android/app/build/outputs/apk/release/app-release.apk android/app/build/regular-network-input/gecko-network-x86.apk
         cp android/app/build/outputs/apk/androidTest/release/app-release-androidTest.apk android/app/build/regular-network-input/network-test.apk
+        cp android/app/build/regular-environment-input/receipt.json android/app/build/regular-network-input/regular-base-ci-receipt.json
         python3 android/scripts/gecko-network-package.py
     - uses: actions/upload-artifact@v4
       with:
@@ -963,3 +964,79 @@ jobs:
         name: regular-webview-workbench-${{ matrix.api }}
         retention-days: 14
         path: android/app/build/regular-webview-workbench-evidence/
+  deliver:
+    if: github.event_name == 'workflow_dispatch'
+    needs:
+    - build
+    - accept
+    - navigation
+    - gecko-network
+    - gecko-local-exports
+    - gecko-handoff
+    - webview-network
+    - webview-workbench
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      STUDIO_REGULAR_CI_CERT_SHA256: "${{ needs.build.outputs.ci_signer }}"
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-java@v4
+      with:
+        distribution: temurin
+        java-version: '17'
+    - uses: android-actions/setup-android@v3
+      with:
+        packages: platform-tools build-tools;35.0.0
+    - uses: actions/download-artifact@v4
+      with:
+        name: regular-unsigned-review
+        path: android/app/build/regular-review
+    - uses: actions/download-artifact@v4
+      with:
+        name: regular-environment-28
+        path: android/app/build/regular-environment-evidence/api28
+    - uses: actions/download-artifact@v4
+      with:
+        name: regular-navigation-28
+        path: android/app/build/regular-navigation-evidence/api28
+    - uses: actions/download-artifact@v4
+      with:
+        name: regular-environment-35
+        path: android/app/build/regular-environment-evidence/api35
+    - uses: actions/download-artifact@v4
+      with:
+        name: regular-navigation-35
+        path: android/app/build/regular-navigation-evidence/api35
+    - uses: actions/download-artifact@v4
+      with:
+        name: environment-client-input
+        path: input
+    - uses: actions/download-artifact@v4
+      with:
+        pattern: gecko-network-??-*
+        path: acceptance/network
+    - uses: actions/download-artifact@v4
+      with:
+        pattern: gecko-local-exports-??
+        path: acceptance/local-exports
+    - uses: actions/download-artifact@v4
+      with:
+        pattern: gecko-handoff-??
+        path: acceptance/handoff
+    - uses: actions/download-artifact@v4
+      with:
+        pattern: regular-webview-network-??-*
+        path: acceptance/webview-network
+    - uses: actions/download-artifact@v4
+      with:
+        pattern: regular-webview-workbench-??
+        path: acceptance/workbench
+    - name: Require all compatibility, navigation, route, file and Skill evidence
+      run: python3 android/scripts/deliver-regular-full-client.py
+    - uses: actions/upload-artifact@v4
+      with:
+        name: ChatGPT-Studio-Android-${{ needs.build.outputs.version_name }}-FULL-CHECKS-UNSIGNED-REVIEW
+        retention-days: 14
+        if-no-files-found: error
+        path: candidate/

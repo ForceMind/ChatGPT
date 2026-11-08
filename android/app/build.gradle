@@ -404,6 +404,10 @@ if (regularLegacyNetworkTest || regularWorkbenchTest) {
             body = body.substring(0, start) + '    private void screenshot(String name)throws Exception{ System.out.println("VISUAL_ARTIFACT_DISABLED_BY_APPROVED_SCOPE "+name); }\n' + body.substring(end)
             body = body.replace('Assume.assumeTrue("Only explicit isolated fixture runs modify account fixtures",', 'assertTrue("Only explicit isolated fixture runs modify account fixtures",')
             body = body.replace('Assume.assumeTrue(android.os.Build.VERSION.SDK_INT>=29);', 'assertTrue(android.os.Build.VERSION.SDK_INT==28||android.os.Build.VERSION.SDK_INT==35);')
+            if (!body.contains('return input.read()==-1;')) throw new GradleException('Renderer process observation changed; review required')
+            // Drain shell output to EOF before closing the UiAutomation pipe;
+            // Android 9 otherwise throws EPIPE in its repeater thread.
+            body = body.replace('return input.read()==-1;', 'java.io.ByteArrayOutputStream observed=new java.io.ByteArrayOutputStream();byte[] bytes=new byte[1024];int n;while((n=input.read(bytes))!=-1)observed.write(bytes,0,n);return observed.size()==0;')
             if (body.contains('takeScreenshot(')) throw new GradleException('Screenshot call in regular workbench tests')
             workbench.setText(body, 'UTF-8')
         }
