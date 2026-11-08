@@ -97,11 +97,14 @@ if (os) {
   document.querySelector("#primary-download span").textContent = "查看客户端下载";
 }
 function locateDownload() {
+  if (["#download-android-beta", "#download-android-candidate"].includes(location.hash)) {
+    history.replaceState(null, "", "#download-android");
+  }
   // Keep existing shared links useful on phones. Explicit platform links always win.
   if (os && location.hash === "#downloads" && (os === "android" || matchMedia("(max-width: 800px)").matches)) {
     history.replaceState(null, "", `#download-${os}`);
   }
-  const platform = /^#download-(windows|macos|android|android-beta|android-candidate)$/.exec(location.hash)?.[1];
+  const platform = /^#download-(windows|macos|android)$/.exec(location.hash)?.[1];
   if (!platform) return;
   requestAnimationFrame(() => document.getElementById(`download-${platform}`)?.scrollIntoView({block:"start",behavior:"instant"}));
 }
