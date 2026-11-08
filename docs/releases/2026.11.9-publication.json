@@ -147,5 +147,8 @@
   ],
   "mainSynced": false,
   "websiteDeployed": false,
-  "personalDevicesUpdated": false
+  "personalDevicesUpdated": false,
+  "websiteCIRun": 42507528542,
+  "websiteCIConclusion": "success",
+  "currentDesktopCIRun": 42507178350
 }
