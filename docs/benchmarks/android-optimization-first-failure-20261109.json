@@ -11,5 +11,11 @@
   "gradleCompilationSucceeded": true,
   "networkRuntimeVerified": false,
   "assertionRemoved": false,
-  "followup": "Exact CI-only keep rules; original guard preserved"
+  "followup": "Exact CI-only keep rules; original guard preserved",
+  "mappingEvidence": {
+    "artifactID": 13629483368,
+    "GeneratedNetworkTrust": "com.forcemind.chatgpt.profiles.GeneratedNetworkTrust -> dx",
+    "EnvironmentNetworkFilesProvider": "original name retained"
+  },
+  "fixRuntimeVerified": false
 }

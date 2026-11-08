@@ -38,3 +38,7 @@
 首轮 R8 `42512160093` 与 resources `42512163781` 的人用/CI APK编译成功；build在网络CI包的DEX具名标记断言失败：`gecko-network-package.py:43`要求`EnvironmentNetworkFilesProvider`与`GeneratedNetworkTrust`。代码确认Trust通过Class.forName/getField("PEM")读取；仅为这两个CI专用类补精确保留规则，保留原DEX检查，不使用ignorewarnings。尚不能据此宣称网络运行通过。baseline `42512156694` 的功能矩阵继续，不重复构建。复验允许单独的harness提交，但比较器须核对相同产品基线、版本核心字段、构建覆盖前hash及原生库逐项SHA；保留各自真实harness/sourceSHA，不伪造GITHUB_SHA或删除来源字段。
 
 资源采样另起专用工作流，只有来源候选完整功能成功才允许采样，复用原APK不重建。每系统串行四个独立合成用例（1/4页×空闲/DOM流式），各预热30秒、两个120秒窗口；代理关闭，网络路由由原功能门禁独立验收，不据此宣称网络核心运行时性能改善。窗口内实例、草稿、心跳及流式计数必须持续，汇总App与归属明确的网页进程，缺失或进程替换直接失败保留raw，不以App单进程或补零估算。各独立资源用例之间只清理实际SHA匹配的CI测试APK/合成空间；升级路径中不清理，正式数据不在模拟器。保留系统/夹具观测开销与实际流式工作量，以可比性决定是否能给性能结论。
+
+已实际读取首轮R8 mapping：GeneratedNetworkTrust被改名为dx，Provider保留原名；artifact13629483368原证据保留。baseline42512156694完整24job成功；精确保留后r8复验42513553896、resources复验42513557648仍在运行。baseline原APK已进入资源运行42513822767（Android9/15），未重构/重签/重建；CPU/PSS结果仍待实际运行。
+
+资源首轮42513822767在两系统启动模拟器前被既有脚本明确允许列表拒绝，尚未运行App或进入采样；原错误“Only the approved ... script may run.”保留。不移除启动器限制，只在资源工作流临时检出中增加用户已批准的唯一新脚本路径，并提前创建诊断回执，避免后续无产物掩盖首错。原生产/旧启动器源码不改。

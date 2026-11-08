@@ -32,6 +32,8 @@ jobs:
         - 35
     steps:
     - uses: actions/checkout@v4
+    - name: Bind the exact approved resource entry in disposable bootstraps
+      run: python3 android/scripts/prepare-regular-resource-driver.py
     - uses: actions/setup-java@v4
       with:
         distribution: temurin
