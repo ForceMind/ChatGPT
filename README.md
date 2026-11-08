@@ -199,7 +199,7 @@ cd android
 
 网站是无构建依赖的静态页面，Cloudflare Pages 采用 Direct Upload；Git 推送不会自动部署官网。`site/` 部署到现有 `chatgpt-studio` 项目，沿用 `chatgpt.xincreates.com`。现用 Mac 更新接口为 `https://chatgpt.xincreates.com/updates/macos.json`，以 `site/updates/macos.json` 为唯一发布来源。`site-legacy/` 保留历史跳转规则和同源兼容清单；旧 `chatgpt-profiles` Pages 项目当前不存在，本次不重建或部署。
 
-旧站页面永久跳转到新官网；已安装 Mac App 使用的旧 `/updates/macos.json` 继续直接返回 JSON。部署后分别检查新站、旧站跳转与无 Cookie 的兼容更新接口。源码、CI 候选、公开 Release 和线上版本分别记录，不覆盖历史包与校验摘要。
+已安装 Mac App 继续从现用域名的 `/updates/macos.json` 获取 JSON。部署后检查两个现用域名、公开下载与无 Cookie 的兼容更新接口；不存在的旧 Pages 项目不计作已通过的线上跳转。源码、CI 候选、公开 Release 和线上版本分别记录，不覆盖历史包与校验摘要。
 
 ## 路线图与待完成事项
 

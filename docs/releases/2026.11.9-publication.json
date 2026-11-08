@@ -145,10 +145,16 @@
       "browser_download_url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9/windows-upgrade.json"
     }
   ],
-  "mainSynced": false,
-  "websiteDeployed": false,
+  "mainSynced": true,
+  "websiteDeployed": true,
   "personalDevicesUpdated": false,
   "websiteCIRun": 42507528542,
   "websiteCIConclusion": "success",
-  "currentDesktopCIRun": 42507178350
+  "currentDesktopCIRun": 42507178350,
+  "synchronizedSourceCommit": "1aef8bce398112824ec1b0811b9a02f3254a8992",
+  "deploymentURL": "https://98247109.chatgpt-studio.pages.dev",
+  "siteVerificationRecord": "docs/releases/2026.11.9-site-verification.json",
+  "onlineContentChecks": 21,
+  "onlineImageChecks": 18,
+  "verifiedAt": "2026-11-08T18:04:26.070083+00:00"
 }
