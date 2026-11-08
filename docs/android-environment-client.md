@@ -4,6 +4,10 @@
 
 2026-11-08 续接：已回读 [42459157310](https://github.com/ForceMind/ChatGPT/actions/runs/42459157310)，源码 `443f8f6`，结果为 failure。构建、两端双内核导航、六组 Gecko VLESS、两端本地导出、API35 兼容与两端中的 API35 Skill/Workbench 通过；完整候选未通过。API28 兼容的唯一原生手势后实际滚动为 83 px，未达原 >100 阈值，测试前置没有等待键盘/视口稳定；不降低阈值或重发手势。API28 Skill 失败为一次 AX 读取耗尽原 15 秒终态预算，失败后下一次只读树确实有“已发送 · HTML 结构解读”；现将单次 AX 读取限制在同一原总预算内，给 helper 启动/退出预留时间，失败回执继续保留。旧 WebView 网络文件需要的合成系统代理 18082/18083 仍被 guest OUTPUT 拒绝，仅允许这两个夹具端口，业务 origin 18480 继续禁止直达。API28 Workbench 前七项通过后原辅助 shell 管道过早关闭导致 Android 9 UiAutomation repeater EPIPE，只修生成的测试源读取至 EOF。上述修正待下一轮同范围 Actions 验证，尚未签名、合并、发布或修改个人数据。
 
+修正已推 `dev` 的 `0488b79f854ce97270ff2e22b79b93afb99c6131`，AST、YAML、66 段 Shell 语法和差异空白检查通过。[42469798587](https://github.com/ForceMind/ChatGPT/actions/runs/42469798587) 第一次尝试在下载原 Gradle 8.13 发行包时收到上游 GitHub HTTP 504，未开始编译或功能验收；已对同一运行重试失败任务，首次日志保留。原签后回传验证的专用只读工作流和非签名 ZIP/实际 ARM64-x86 DEX 核对正在准备，未执行，也没有创建中转 Release 或上传私钥。
+
+该运行第二次尝试的 debug 单元测试步骤通过，随后固定 Gradle 9.3.1 下载再次收到 GitHub HTTP 504，未执行功能矩阵。新增仅限当前专用 CI 的下载前置，按原 wrapper 的 URL 与 SHA-256 下载两个原版本到标准 wrapper 缓存，有限重试；不修改 wrapper 属性、依赖、构建命令或验收断言。另已写好原签回传的只读专用工作流与完整输入校验，AST/YAML/Shell 检查通过，尚未执行；它只能消费另行明确批准的私有 draft 中转，不创建/上传/删除 Release，不接触私钥。实际中转、签名与原证书覆盖仍待完整功能门禁后继续。
+
 用户已批准继续第二、三批：补齐常规 Android 的网络、文件、Skill 与刷新/强制刷新/后退/前进验证，再交可覆盖公开 alpha.22、保留登录和恢复数据的原签 ARM64 候选。全部构建、单元及合成交互测试在 GitHub Actions；不截图、不访问真实 ChatGPT 或真实节点，不重复后台长测，不合并 main、不公开发布、不更新个人设备。
 
 签名方式已明确为**本机仅签名**：正式私钥留在本机，不新增正式签名 Actions Secret。云端构建并提供可核对的未签名 APK，本机只做原证书签名，临时 APK/工具完成后清理；签名后的实际字节和原证书身份必须再经过云端升级门禁。不会用 Beta 或临时证书冒充正式原签。 已仅提取本机 keystore 的公开证书，SHA-256 与公开 alpha.22 的 `8b6eef928fded91f291ad954e20976b2cc6011b55e8cbec0152695fe1f05cf19` 一致；未导出或上传私钥。

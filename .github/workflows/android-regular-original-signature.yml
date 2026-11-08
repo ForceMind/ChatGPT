@@ -1,0 +1,212 @@
+name: Android Regular Original Signature Upgrade
+'on':
+  push:
+    branches: [dev]
+    paths: ['.github/workflows/android-regular-original-signature.yml']
+  workflow_dispatch:
+    inputs:
+      full_run:
+        description: Successful regular full-validation run ID
+        type: string
+        required: true
+      staging_release:
+        description: Explicitly approved private draft transfer release ID
+        type: string
+        required: true
+      bundle_sha256:
+        description: SHA-256 of the locally signed transfer ZIP
+        type: string
+        required: true
+permissions:
+  contents: read
+  actions: read
+jobs:
+  upgrade:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [28, 35]
+    env:
+      GH_TOKEN: ${{ github.token }}
+      STUDIO_FULL_RUN: ${{ inputs.full_run }}
+      STUDIO_STAGING_RELEASE: ${{ inputs.staging_release }}
+      STUDIO_SIGNED_BUNDLE_SHA256: ${{ inputs.bundle_sha256 }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools build-tools;35.0.0
+      - name: Read only the approved draft transfer and successful source run
+        run: |
+          python3 - <<'PY'
+          import json, os, pathlib, re, subprocess
+          assert os.environ['GITHUB_ACTIONS'] == 'true'
+          for name in ('STUDIO_FULL_RUN','STUDIO_STAGING_RELEASE'):
+              assert re.fullmatch(r'[0-9]+',os.environ[name])
+          assert re.fullmatch(r'[a-f0-9]{64}',os.environ['STUDIO_SIGNED_BUNDLE_SHA256'])
+          root=pathlib.Path('android/app/build/original-signature-transfer');root.mkdir(parents=True,exist_ok=False)
+          def api(path):
+              return subprocess.check_output(['gh','api','repos/ForceMind/ChatGPT/'+path])
+          raw=api('actions/runs/'+os.environ['STUDIO_FULL_RUN']);run=json.loads(raw)
+          assert run['repository']['full_name']=='ForceMind/ChatGPT'
+          assert run['status']=='completed' and run['conclusion']=='success'
+          assert run['event']=='workflow_dispatch' and run['head_branch']=='dev'
+          assert run['path']=='.github/workflows/android-regular-full-client.yml'
+          (root/'source-run.json').write_bytes(raw)
+          release=json.loads(api('releases/'+os.environ['STUDIO_STAGING_RELEASE']))
+          assert release['draft'] is True and release['prerelease'] is True
+          assert release['target_commitish']==run['head_sha']
+          assert re.fullmatch(r'regular-upgrade-review-[0-9]{12}',release['tag_name'])
+          assert len(release['assets'])==1
+          asset=release['assets'][0]
+          assert asset['name']=='regular-original-signed-inputs.zip' and asset['state']=='uploaded'
+          assert asset['size']>0
+          (root/'draft-transfer.json').write_text(json.dumps(release,indent=2)+'\n')
+          with (root/asset['name']).open('xb') as output:
+              subprocess.run(['gh','api','repos/ForceMind/ChatGPT/releases/assets/'+str(asset['id']),'-H','Accept: application/octet-stream'],stdout=output,check=True)
+          PY
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: ChatGPT-Studio-Android-*-FULL-CHECKS-UNSIGNED-REVIEW
+          merge-multiple: true
+          run-id: ${{ inputs.full_run }}
+          github-token: ${{ github.token }}
+          path: android/app/build/original-signature-review
+      - uses: actions/download-artifact@v4
+        with:
+          name: original-signature-input
+          run-id: ${{ inputs.full_run }}
+          github-token: ${{ github.token }}
+          path: android/app/build/original-signature-companions
+      - name: Require exact non-signing contents and equal actual signed DEX
+        run: |
+          python3 android/scripts/check-original-signed-inputs.py --review android/app/build/original-signature-review --companions android/app/build/original-signature-companions --bundle android/app/build/original-signature-transfer/regular-original-signed-inputs.zip --source-run android/app/build/original-signature-transfer/source-run.json --output android/app/build/original-signature-signed
+          curl --fail --location --retry 3 --output android/app/build/original-signature-signed/alpha22-public.apk https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.22/ChatGPT-Studio-3.0.0-alpha.22-android.apk
+      - uses: actions/download-artifact@v4
+        if: matrix.api == 28
+        with:
+          name: beta-continuation-input
+          run-id: 41993581770
+          github-token: ${{ github.token }}
+          path: android/app/build/environment-provider-input
+      - name: Enable the owned emulator acceleration
+        run: sudo chmod a+rw /dev/kvm
+      - name: Verify actual original-certificate install-r on a fresh emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          target: ${{ matrix.api == 28 && 'default' || 'google_apis' }}
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader -feature -Vulkan -writable-system
+          script: |
+            if [ '${{ matrix.api }}' = 28 ]; then python3 android/network-poc/scripts/install-webview.py --provider android/app/build/environment-provider-input/provider --output android/app/build/original-signature-provider; fi
+            python3 android/scripts/run-original-signature-upgrade.py --input android/app/build/original-signature-signed --output android/app/build/original-signature-evidence
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: regular-original-signature-${{ matrix.api }}
+          retention-days: 14
+          if-no-files-found: error
+          path: |
+            android/app/build/original-signature-evidence/
+            android/app/build/original-signature-signed/signed-input-verification.json
+            android/app/build/original-signature-transfer/source-run.json
+            android/app/build/original-signature-transfer/draft-transfer.json
+      - name: Retain the actual signed ARM64 bytes for the final two-API gate
+        if: matrix.api == 28
+        run: |
+          python3 - <<'PY'
+          import json, pathlib, shutil
+          source=pathlib.Path('android/app/build/original-signature-signed')
+          out=pathlib.Path('android/app/build/original-signed-delivery-input');out.mkdir()
+          receipt=json.loads((source/'signed-receipt.json').read_text())
+          for name in (receipt['arm64']['file'],'signed-receipt.json'):
+              shutil.copyfile(source/name,out/name)
+          review=pathlib.Path('android/app/build/original-signature-review')
+          for name in ('regular-full-validation.json','LICENSE'):
+              shutil.copyfile(review/name,out/name)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: matrix.api == 28
+        with:
+          name: regular-original-signed-delivery-input
+          retention-days: 14
+          if-no-files-found: error
+          path: android/app/build/original-signed-delivery-input/
+  deliver:
+    needs: upgrade
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: regular-original-signed-delivery-input
+          path: signed-candidate
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: regular-original-signature-??
+          path: signed-evidence
+      - name: Require both original-certificate upgrades before candidate delivery
+        env:
+          STUDIO_FULL_RUN: ${{ inputs.full_run }}
+          STUDIO_SIGNED_BUNDLE_SHA256: ${{ inputs.bundle_sha256 }}
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib
+          root=pathlib.Path('signed-candidate')
+          def read(path):return json.loads(path.read_text())
+          receipt=read(root/'signed-receipt.json');base=read(root/'regular-full-validation.json')
+          metadata=receipt['versionMetadata']
+          assert receipt['package']=='com.forcemind.chatgpt.profiles'
+          assert receipt['certificateSHA256']=='8b6eef928fded91f291ad954e20976b2cc6011b55e8cbec0152695fe1f05cf19'
+          assert base['complete'] is True and base['versionMetadata']==metadata
+          assert receipt['arm64']['inputSHA256']==base['humanUnsignedReceipt']['sha256']
+          proofs=[]
+          for api in (28,35):
+              folder=pathlib.Path('signed-evidence')/('regular-original-signature-'+str(api))
+              proof=read(folder/'original-signature-evidence/original-signature-upgrade.json')
+              binding=read(folder/'original-signature-signed/signed-input-verification.json')
+              assert proof['schema']==1 and proof['complete'] is True and proof['api']==api
+              assert proof['versionMetadata']==metadata and proof['sourceSHA']==metadata['sourceSHA']
+              assert proof['certificateSHA256']==receipt['certificateSHA256']
+              assert proof['productionSignatureUpgradeVerified'] is True and proof['originalPublicAPKUnchanged'] is True
+              assert proof['originalInstalledSHA256']=='39a06004608162884c5d2a11277eee840f5311438376bd7541adc638b1e55e53'
+              assert proof['x86HumanCodeInstalledSHA256']==receipt['humanX86']['sha256']
+              assert proof['arm64SignedReceipt']==receipt['arm64']
+              assert proof['arm64PhysicalDeviceInstalled'] is False and proof['uninstallOrClearBetweenVersions'] is False
+              for flag in ('screenshots','realServicesAccessed','personalDeviceModified'):assert proof[flag] is False
+              assert binding['complete'] is True and binding['sourceRunID']==int(os.environ['STUDIO_FULL_RUN'])
+              assert binding['signedReceipt']==receipt and binding['versionMetadata']==metadata
+              assert binding['signedBundleSHA256']==os.environ['STUDIO_SIGNED_BUNDLE_SHA256']
+              assert binding['allNonSigningEntriesUnchanged'] is True and binding['actualSignedArm64X86DexEqual'] is True
+              proofs.append(proof)
+          apk=root/receipt['arm64']['file'];assert apk.stat().st_size==receipt['arm64']['bytes']
+          digest=hashlib.sha256()
+          with apk.open('rb') as stream:
+              for chunk in iter(lambda:stream.read(65536),b''):digest.update(chunk)
+          assert digest.hexdigest()==receipt['arm64']['sha256']
+          summary={'schema':1,'complete':True,'versionMetadata':metadata,'sourceSHA':metadata['sourceSHA'],
+                   'humanSignedReceipt':receipt['arm64'],'certificateSHA256':receipt['certificateSHA256'],
+                   'fullFeatureSourceRunID':int(os.environ['STUDIO_FULL_RUN']),'originalCertificateUpgrades':proofs,
+                   'arm64PhysicalDeviceVerified':False,'realChatGPTVerified':False,'publicRelease':False,
+                   'originalKeyUploaded':False,'installableCandidateDelivered':True}
+          (root/'original-signed-candidate-acceptance.json').write_text(json.dumps(summary,indent=2)+'\n')
+          (root/'SHA256SUMS.txt').write_text(digest.hexdigest()+'  '+apk.name+'\n')
+          (root/'REVIEW.md').write_text('常规 Android 原签候选，可直接覆盖 alpha.22，无需卸载。\nAndroid 9/15 原证书 install-r、原登录/恢复数据保留及完整合成功能门禁通过。\n原签升级实际安装的是与 ARM64 DEX 完全一致的非测试 x86 伴随包；ARM64 实机与真实 ChatGPT 尚未验收。\n没有公开发布或自动更新个人设备。\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ChatGPT-Studio-Android-Original-Signed-Candidate
+          retention-days: 14
+          if-no-files-found: error
+          path: signed-candidate/

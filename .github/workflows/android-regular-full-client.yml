@@ -46,6 +46,8 @@ jobs:
           'android/network-poc/scripts/build-core.sh', 'android/scripts/prepare-network-core.sh')
           }}
     - run: bash android/scripts/prepare-network-core.sh
+    - name: Retry existing checksum-pinned Gradle distributions before compilation
+      run: python3 android/scripts/prefetch-regular-gradle.py
     - name: Check ordinary debug before selecting regular metadata
       run: |
         test ! -f android/keystore.properties
