@@ -56,3 +56,5 @@
 新证据：8576版本Slot/Trace实际APK smoke均通过，但后续AndroidJUnitRunner因kotlin.jvm.internal.Lambda缺失而在测试前崩溃。CI与主APK共享运行时依赖，R8可移除App不用而测试运行器使用的类。改为从真实DEX的类继承/接口和方法/字段引用计算精确共享测试运行时边界，以同源码未压缩CI APK的实际类型集作来源；仅CI规则保留这些明确的第三方类，不保留整个业务包，缺失业务类型直接失败要求人工审查，最多三轮显式收敛且保留每轮清单，不使用ignorewarnings。人用规则不扩张。增加构建内运行器启动smoke（不启动Activity/页面、不充作功能通过），避免再次启动昂贵而无法执行测试的矩阵。旧/新侧测试分离、四阶段数据断言及22个功能job不减。
 
 静态共享门禁42524467760按设计提前拦截了16个测试直接依赖的应用符号，没有启动完整矩阵。已读现有WorkbenchTest/NetworkIntegrationTest/EnvironmentUpgradeSeedTest/BrowserChromeNavigationTest，确认它们直接调用转换、文件/能力目录、网络配置值及CI探针/时序类型。这些类型在优化后可内联/枚举拆箱，保留旧测试入口需显式CI契约。仅将报出的16个精确类型列入带理由白名单，保留CI API并允许方法优化；其他未审查业务符号缺失仍失败。人用规则不引用这份CI清单，不能把CI包运行等同人用/原签APK验收；后续正式迁入必须单独验收人用包。没有全包keep或删除任何功能断言。
+
+R8共享语义运行时及真实运行器smoke已通过，但网络构建的新静态门禁报EncryptedPayloads内部类型。人工读取EncryptedPayloads/DevicePayloadKeys确认AES/GCM/NoPadding、HP01、handoff-v1/page-recovery-v1域、记录id/AAD及包名密钥别名均不依赖类名。仅将该测试可见返回/密文类型增加为精确CI契约，允许方法优化，不改算法、域、别名、记录或人用规则。人用优化后加密/原签升级仍要另验。未知其他业务符号仍失败；当前并未采用优化更新正式客户端。

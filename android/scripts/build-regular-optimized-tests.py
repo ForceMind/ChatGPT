@@ -7,6 +7,7 @@ assert os.environ['STUDIO_OPT_MODE'] in ['baseline','r8','resources']
 args=sys.argv[1:];assert args and all(a.startswith('-P') or a in [':app:assembleRelease',':app:assembleReleaseAndroidTest'] for a in args)
 command=['bash','android/environment-poc/gradlew','-p','android','--no-daemon',*args]
 REVIEWED_CI_API = {
+    'Lcom/forcemind/chatgpt/profiles/EncryptedPayloads;': 'Test-visible return/cipher type; audited AES-GCM domains, package aliases and HP01 encoding do not use class identity; CI-only retention, human crypto acceptance separate',
     'Lcom/forcemind/chatgpt/profiles/ConversionType;': 'Existing instrumented test directly links this helper/value/probe; preserve its CI API while allowing method optimization',
     'Lcom/forcemind/chatgpt/profiles/DocumentConversions;': 'Existing instrumented test directly links this helper/value/probe; preserve its CI API while allowing method optimization',
     'Lcom/forcemind/chatgpt/profiles/EnvironmentProbeActivity;': 'Existing instrumented test directly links this helper/value/probe; preserve its CI API while allowing method optimization',
