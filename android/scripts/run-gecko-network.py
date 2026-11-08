@@ -19,8 +19,7 @@ import urllib.parse
 import urllib.request
 import uuid
 
-import environment_upgrade as native
-from android_version import VERSION_CODE, validate_receipt
+from environment_ci_target import native, VERSION_CODE, validate_receipt, expected_signer, install, REGULAR
 
 PACKAGE = native.PACKAGE
 HOST = 'network-fixture.test'
@@ -38,6 +37,10 @@ def source_module():
 
 
 common = source_module()
+if REGULAR:
+    common.native, common.PACKAGE = native, PACKAGE
+    common.FILES = '/data/user/0/' + PACKAGE + '/files/'
+
 
 
 def owned_output_counters(text, node_ports, family):
@@ -767,7 +770,7 @@ def main():
         assert not native._shell('pm','list','packages',PACKAGE).strip(), 'Fresh package installation only'
         manifest = native._json(args.fixture);assert manifest['schemaVersion']==2 and manifest['ready'] is True
         assert native._json(args.fixture.parent/'ready.json')['ready'] is True
-        signer = native._json(Path('docs/signing/android-network-beta.json'))['certificateSHA256']
+        signer = expected_signer()
         receipt = native._json(args.receipt)
         version_metadata=validate_receipt(receipt)
         assert receipt['ciOnly'] is True and receipt['package'] == PACKAGE and receipt['versionCode'] == VERSION_CODE
@@ -787,7 +790,7 @@ def main():
         for port in ports:native._shell('iptables','-I','OUTPUT','1','-p','tcp','-d','10.0.2.2','--dport',str(port),'-j','ACCEPT')
         for tool in ('iptables','ip6tables'):native._shell(tool,'-I','OUTPUT','1','-o','lo','-j','ACCEPT')
         (args.output/'egress.txt').write_text(native._shell('iptables-save')+native._shell('ip6tables-save'))
-        native._run(['adb','install',str(args.apk)]);installed=native._installed(apk['sha256'],'gecko-network')
+        install(args.apk);installed=native._installed(apk['sha256'],'gecko-network')
         uid_text=native._shell('pm','list','packages','-U',PACKAGE).strip()
         match=re.fullmatch(r'package:'+re.escape(PACKAGE)+r' uid:(\d+)',uid_text);assert match
         uid=int(match[1]);assert native._shell('id','-u').strip()=='0'

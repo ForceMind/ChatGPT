@@ -1,7 +1,7 @@
 """Add Gecko network proof only after every real transport and OS tuple passes."""
 import hashlib, json, os, shutil
 from pathlib import Path
-from android_version import validate_receipt
+from environment_ci_target import validate_receipt, assert_receipt_pair, REGULAR
 
 assert os.environ.get('GITHUB_ACTIONS') == 'true'
 root=Path('input');out=Path('candidate')
@@ -11,7 +11,10 @@ apk=root/'gecko-network-x86.apk'
 version_metadata=validate_receipt(receipt)
 assert receipt['ciOnly'] is True
 human=json.loads((root/'receipt.json').read_text());assert validate_receipt(human,require_human_filename=True)==version_metadata
-assert receipt['signerSHA256']==human['signerSHA256']==json.loads(Path('docs/signing/android-network-beta.json').read_text())['certificateSHA256']
+if REGULAR:
+    base=json.loads((out/'regular-environment-acceptance.json').read_text())
+    assert base['complete'] is True and base['versionMetadata']==version_metadata
+assert_receipt_pair(receipt, human)
 assert apk.stat().st_size==receipt['bytes'] and receipt['file']==apk.name
 assert hashlib.sha256(apk.read_bytes()).hexdigest()==receipt['sha256']
 proofs=[]

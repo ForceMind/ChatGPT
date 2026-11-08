@@ -16,7 +16,7 @@ import traceback
 import urllib.parse
 import uuid
 
-from android_version import VERSION_CODE, validate_receipt
+from environment_ci_target import VERSION_CODE, validate_receipt, expected_signer, install
 from native_ax import NativeAXMixin
 
 _spec = importlib.util.spec_from_file_location('owned_network_acceptance', Path(__file__).with_name('run-gecko-network.py'))
@@ -246,7 +246,7 @@ def main():
         receipt = native._json(args.receipt); version = validate_receipt(receipt)
         source = os.environ.get('STUDIO_GECKO_APPLICATION_SHA',os.environ['GITHUB_SHA'])
         assert re.fullmatch(r'[a-f0-9]{40}', source) and receipt['sourceSHA'] == source
-        signer = native._json(Path('docs/signing/android-network-beta.json'))['certificateSHA256']
+        signer = expected_signer()
         assert receipt['ciOnly'] is True and receipt['package'] == PACKAGE and receipt['versionCode'] == VERSION_CODE
         assert receipt['signerSHA256'] == signer and receipt['file'] == args.apk.name
         assert receipt['bytes'] == args.apk.stat().st_size and receipt['sha256'] == native._sha(args.apk)
@@ -266,7 +266,7 @@ def main():
             native._shell('iptables','-I','OUTPUT','1','-p','tcp','-d','10.0.2.2','--dport',str(port),'-j','ACCEPT')
         for tool in ('iptables','ip6tables'): native._shell(tool,'-I','OUTPUT','1','-o','lo','-j','ACCEPT')
         (args.output/'egress.txt').write_text(native._shell('iptables-save')+native._shell('ip6tables-save'))
-        native._run(['adb','install',str(args.apk)]); installed = native._installed(apk['sha256'],'gecko-local-exports')
+        install(args.apk); installed = native._installed(apk['sha256'],'gecko-local-exports')
         match = re.fullmatch(r'package:'+re.escape(PACKAGE)+r' uid:(\d+)',native._shell('pm','list','packages','-U',PACKAGE).strip())
         assert match and native._shell('id','-u').strip() == '0'; uid = int(match[1])
         acceptance = LocalExportsAcceptance(api,uid,args.fixture,args.output)

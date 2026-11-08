@@ -14,10 +14,14 @@ if (regularEnvironmentCi && (!regularEnvironmentClient || !environmentTest || pr
     throw new GradleException('Regular CI requires regularEnvironmentClient + environmentTest, without unsignedRelease')
 if (regularEnvironmentClient && !regularEnvironmentCi && (!project.hasProperty('unsignedRelease') || environmentTest))
     throw new GradleException('Human regular environment review requires unsignedRelease and no environmentTest')
-if (regularEnvironmentClient && ['environmentNetworkTest', 'networkIntegration', 'betaUpgrade', 'betaBrowserUpgrade', 'betaNetworkUi'].any { project.hasProperty(it) })
+if (regularEnvironmentClient && ['networkIntegration', 'betaUpgrade', 'betaBrowserUpgrade', 'betaNetworkUi'].any { project.hasProperty(it) })
     throw new GradleException('Regular release cannot include isolated Beta/network acceptance modes')
 if (regularEnvironmentCi && (System.getenv('GITHUB_ACTIONS') != 'true' || !System.getenv('STUDIO_REGULAR_CI_KEYSTORE_PATH') || !System.getenv('STUDIO_REGULAR_CI_STORE_PASSWORD')))
     throw new GradleException('Regular CI requires an Actions-only ephemeral signing key')
+if (regularEnvironmentClient && project.hasProperty('environmentNetworkTest') && !regularEnvironmentCi)
+    throw new GradleException('Owned network trust is allowed only in the marked regular CI target')
+if (regularNavigationTest && project.hasProperty('environmentNetworkTest'))
+    throw new GradleException('Navigation and network fixtures use distinct CI APKs')
 def environmentBuildType = regularEnvironmentClient ? 'release' : 'networkBeta'
 def environmentPreBuild = regularEnvironmentClient ? 'preReleaseBuild' : 'preNetworkBetaBuild'
 def expectedCandidateVersionCode = regularEnvironmentClient ? 3000035 : 3000034
@@ -314,9 +318,9 @@ if (regularNavigationTest) {
 // these sources, resources, destinations, or document-provider permissions.
 if (project.hasProperty('environmentNetworkTest')) {
     if (!project.hasProperty('environmentClient') || !project.hasProperty('environmentTest')) throw new GradleException('Gecko network acceptance requires the isolated environment client fixture')
-    android.buildTypes.networkBeta.buildConfigField 'boolean', 'NETWORK_TEST', 'true'
-    android.buildTypes.networkBeta.buildConfigField 'String', 'NETWORK_HOME_URL', '"https://network-fixture.test:18480/c/a1"'
-    android.buildTypes.networkBeta.buildConfigField 'String', 'NETWORK_PROBE_URL', '"https://network-fixture.test:18480/echo"'
+    android.buildTypes[environmentBuildType].buildConfigField 'boolean', 'NETWORK_TEST', 'true'
+    android.buildTypes[environmentBuildType].buildConfigField 'String', 'NETWORK_HOME_URL', '"https://network-fixture.test:18480/c/a1"'
+    android.buildTypes[environmentBuildType].buildConfigField 'String', 'NETWORK_PROBE_URL', '"https://network-fixture.test:18480/echo"'
     def ownedCa = rootProject.file('network-poc/secure-fixture/ca.pem')
     def trustRoot = layout.buildDirectory.dir('generated/environment-network-ci').get().asFile
     tasks.register('prepareEnvironmentNetworkTrust') {
@@ -333,7 +337,7 @@ if (project.hasProperty('environmentNetworkTest')) {
             config.text='<network-security-config><base-config cleartextTrafficPermitted="false" /><domain-config><domain includeSubdomains="false">network-fixture.test</domain><domain includeSubdomains="false">files.network-fixture.test</domain><trust-anchors><certificates src="system" /><certificates src="@raw/studio_environment_network_ci_ca" /></trust-anchors></domain-config></network-security-config>'
         }
     }
-    android.sourceSets.networkBeta.java.srcDir(new File(trustRoot,'java'))
-    android.sourceSets.networkBeta.res.srcDir(new File(trustRoot,'res'))
-    tasks.matching { it.name == 'preNetworkBetaBuild' }.configureEach { dependsOn 'prepareEnvironmentNetworkTrust' }
+    android.sourceSets[environmentBuildType].java.srcDir(new File(trustRoot,'java'))
+    android.sourceSets[environmentBuildType].res.srcDir(new File(trustRoot,'res'))
+    tasks.matching { it.name == environmentPreBuild }.configureEach { dependsOn 'prepareEnvironmentNetworkTrust' }
 }

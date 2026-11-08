@@ -7,7 +7,7 @@ import traceback
 import uuid
 import xml.etree.ElementTree as ET
 
-PACKAGE = 'com.forcemind.chatgpt.profiles.networkbeta'
+from environment_ci_target import PACKAGE
 
 
 class NativeAXMixin:

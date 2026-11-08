@@ -52,6 +52,7 @@ def _inspect_apk(path, tools, signer, package, code=None, test_only=False):
     match = re.search(r"(?m)^package: name='([^']+)'", badging)
     assert match and match[1] == package
     version = re.search(r"versionCode='(\d+)'", badging)
+    version_name = re.search(r"versionName='([^']*)'", badging)
     if code is not None:
         assert version and int(version[1]) == code
     else:
@@ -61,7 +62,8 @@ def _inspect_apk(path, tools, signer, package, code=None, test_only=False):
     if test_only:
         assert any('android:testOnly' in row and re.search(r'=\(type 0x12\)0xffffffff\b', row) for row in manifest.splitlines()), 'CI candidate must declare testOnly=true'
     return {'file': path.name, 'sha256': _sha(path), 'package': package,
-            'versionCode': int(version[1]) if version else None, 'signerSHA256': signer}
+            'versionCode': int(version[1]) if version else None,
+            'versionName': version_name[1] if version_name else None, 'signerSHA256': signer}
 
 
 def _non_signing_entries(path):

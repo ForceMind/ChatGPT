@@ -28,7 +28,7 @@ import org.xmlpull.v1.XmlSerializer;
 
 /** Owned emulator shell only. One new connection and an input-focused application root, no actions. */
 public final class UiSnapshot {
-    private static final String TARGET="com.forcemind.chatgpt.profiles.networkbeta";
+    private static volatile String TARGET="com.forcemind.chatgpt.profiles.networkbeta";
     private static final AtomicBoolean EMITTED=new AtomicBoolean();
     private static volatile boolean qemu;
     private static volatile String request="",phase="guard";
@@ -122,6 +122,10 @@ public final class UiSnapshot {
     }
     private static void capture(String[] args){
         if(args.length!=3){finish(false,null,IllegalArgumentException.class.getName(),1);return;}
+        if(!"com.forcemind.chatgpt.profiles.networkbeta".equals(args[0])&&!"com.forcemind.chatgpt.profiles".equals(args[0])){
+            finish(false,null,SecurityException.class.getName(),1);return;
+        }
+        TARGET=args[0];
         long budget;
         try{
             request=UUID.fromString(args[1]).toString();if(!request.equals(args[1]))throw new IllegalArgumentException();

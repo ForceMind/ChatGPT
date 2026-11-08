@@ -10,7 +10,7 @@ import re
 import uuid
 import zipfile
 
-from android_version import validate_receipt
+from environment_ci_target import validate_receipt, assert_receipt_pair, REGULAR
 
 
 def read(path):
@@ -278,7 +278,7 @@ def deliver(input_root=Path('input'),candidate=Path('candidate'),acceptance=Path
     assert receipt['ciOnly'] is True and receipt['sourceSHA']==human['sourceSHA']
     assert local_exports['versionMetadata']==metadata and local_exports['applicationSourceSHA']==receipt['sourceSHA']
     assert local_exports['ciAPKsha256']==receipt['sha256']
-    assert receipt['signerSHA256']==human['signerSHA256']==read(Path('docs/signing/android-network-beta.json'))['certificateSHA256']
+    assert_receipt_pair(receipt, human)
     apk=input_root/receipt['file'];assert receipt['file']=='gecko-network-x86.apk'
     assert apk.stat().st_size==receipt['bytes'] and hashlib.sha256(apk.read_bytes()).hexdigest()==receipt['sha256']
     with zipfile.ZipFile(apk) as archive:skill=next(row for row in json.loads(archive.read('assets/capabilities/skills.json'))['skills'] if row['id']=='skill-001')

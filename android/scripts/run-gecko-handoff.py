@@ -16,7 +16,7 @@ import urllib.request
 import uuid
 import zipfile
 
-from android_version import VERSION_CODE, validate_receipt
+from environment_ci_target import VERSION_CODE, validate_receipt, expected_signer, install
 from native_ax import NativeAXMixin
 
 _spec=importlib.util.spec_from_file_location('owned_handoff_network',Path(__file__).with_name('run-gecko-network.py'))
@@ -441,7 +441,7 @@ def main():
         receipt=native._json(args.receipt);version=validate_receipt(receipt)
         source=os.environ.get('STUDIO_GECKO_APPLICATION_SHA',os.environ['GITHUB_SHA'])
         assert re.fullmatch(r'[a-f0-9]{40}',source) and receipt['sourceSHA']==source
-        signer=native._json(Path('docs/signing/android-network-beta.json'))['certificateSHA256']
+        signer=expected_signer()
         assert receipt['ciOnly'] is True and receipt['package']==PACKAGE and receipt['versionCode']==VERSION_CODE and receipt['signerSHA256']==signer
         assert receipt['file']==args.apk.name and receipt['bytes']==args.apk.stat().st_size and receipt['sha256']==native._sha(args.apk)
         apk=native._inspect_apk(args.apk,native._tools(),signer,PACKAGE,VERSION_CODE)
@@ -462,7 +462,7 @@ def main():
             native._shell('iptables','-I','OUTPUT','1','-p','tcp','-d','10.0.2.2','--dport',str(port),'-j','ACCEPT')
         for tool in ('iptables','ip6tables'):native._shell(tool,'-I','OUTPUT','1','-o','lo','-j','ACCEPT')
         (args.output/'egress.txt').write_text(native._shell('iptables-save')+native._shell('ip6tables-save'))
-        native._run(['adb','install',str(args.apk)]);installed=native._installed(apk['sha256'],'gecko-handoff')
+        install(args.apk);installed=native._installed(apk['sha256'],'gecko-handoff')
         match=re.fullmatch(r'package:'+re.escape(PACKAGE)+r' uid:(\d+)',native._shell('pm','list','packages','-U',PACKAGE).strip());assert match
         acceptance=HandoffAcceptance(api,int(match[1]),args.fixture,args.output);acceptance.skill=skill
         assert acceptance.owned_http('/gecko-network/control/configure',{'transport':'raw','runId':str(uuid.uuid4())})['ok'] is True

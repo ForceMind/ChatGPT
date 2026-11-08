@@ -10,7 +10,7 @@ from pathlib import Path
 import re
 import uuid
 
-from android_version import validate_receipt
+from environment_ci_target import validate_receipt, assert_receipt_pair, REGULAR
 
 
 def read(path):
@@ -224,14 +224,14 @@ def verify_proof(proof, api, receipt, metadata, definitions):
 
 def deliver(input_root=Path('input'), candidate=Path('candidate'), acceptance=Path('acceptance/local-exports')):
     assert os.environ.get('GITHUB_ACTIONS') == 'true', 'CI delivery gate only'
-    assert candidate.is_dir() and (candidate/'client-environment-and-recovery-acceptance.json').is_file()
+    assert candidate.is_dir() and (candidate/('regular-environment-acceptance.json' if REGULAR else 'client-environment-and-recovery-acceptance.json')).is_file()
     network_proofs = read(candidate/'gecko-vless-route-acceptance.json')
     assert len(network_proofs) == 6, 'Existing network gate must finish first'
     receipt = read(input_root/'gecko-network-receipt.json');metadata = validate_receipt(receipt)
     human = read(input_root/'receipt.json')
     assert validate_receipt(human,require_human_filename=True) == metadata and receipt['ciOnly'] is True
     assert receipt['sourceSHA'] == human['sourceSHA']
-    assert receipt['signerSHA256'] == human['signerSHA256'] == read(Path('docs/signing/android-network-beta.json'))['certificateSHA256']
+    assert_receipt_pair(receipt, human)
     apk = input_root/receipt['file']
     assert receipt['file'] == 'gecko-network-x86.apk' and apk.stat().st_size == receipt['bytes']
     assert hashlib.sha256(apk.read_bytes()).hexdigest() == receipt['sha256']
