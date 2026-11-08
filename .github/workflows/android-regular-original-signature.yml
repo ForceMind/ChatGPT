@@ -88,7 +88,7 @@ jobs:
       - name: Require exact non-signing contents and equal actual signed DEX
         run: |
           python3 android/scripts/check-original-signed-inputs.py --review android/app/build/original-signature-review --companions android/app/build/original-signature-companions --bundle android/app/build/original-signature-transfer/regular-original-signed-inputs.zip --source-run android/app/build/original-signature-transfer/source-run.json --output android/app/build/original-signature-signed
-          curl --fail --location --retry 3 --output android/app/build/original-signature-signed/alpha22-public.apk https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.22/ChatGPT-Studio-3.0.0-alpha.22-android.apk
+          python3 android/scripts/download-regular-baseline.py --output android/app/build/original-signature-signed/alpha22-public.apk
       - uses: actions/download-artifact@v4
         if: matrix.api == 28
         with:

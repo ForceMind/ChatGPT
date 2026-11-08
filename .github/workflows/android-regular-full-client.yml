@@ -93,9 +93,11 @@ jobs:
         keytool -genkeypair -noprompt -storetype PKCS12 -keystore "$STUDIO_REGULAR_CI_KEYSTORE_PATH" -storepass:env STUDIO_REGULAR_CI_STORE_PASSWORD -keypass:env STUDIO_REGULAR_CI_STORE_PASSWORD -alias regular-compat-ci -keyalg RSA -keysize 3072 -validity 2 -dname 'CN=Temporary regular compatibility CI'
         chmod 600 "$STUDIO_REGULAR_CI_KEYSTORE_PATH"
     - name: Authenticate original public alpha22 and change signing metadata only
+      env:
+        GH_TOKEN: ${{ github.token }}
       run: |
         mkdir -p android/app/build/regular-environment-input
-        curl --fail --location --retry 3 --output android/app/build/regular-environment-input/alpha22-public.apk https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.22/ChatGPT-Studio-3.0.0-alpha.22-android.apk
+        python3 android/scripts/download-regular-baseline.py --output android/app/build/regular-environment-input/alpha22-public.apk
         python3 - <<'PY'
         import hashlib, pathlib
         apk = pathlib.Path('android/app/build/regular-environment-input/alpha22-public.apk')
