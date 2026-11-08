@@ -24,6 +24,8 @@
 
 用户希望最终以正常三端下载呈现，官网不突出内部测试渠道术语。第一批仍是未签名审阅交付；常规原签与升级门禁通过、另行确认发布后再统一公开下载。2026-11-08 本次已单独修正官网里程碑为最新在上，23 条历史记录保留；未改变下载包、自动更新清单或发布状态。
 
+[第三轮 Actions 42445522109](https://github.com/ForceMind/ChatGPT/actions/runs/42445522109)，源码 `e1605fb37c7285a1ccfdbaf488c89b7df0a1d49e`：85 项单元测试通过，Lint 0 错误/45 警告。Android 9 已有可信手指事件及实际滚动证据，但新增窗口前置未就绪，未发出账号行点击；Android 15 已切入 Gecko，失败时原生草稿选择弹窗仍在，尚无完整双引擎通过结论。原始首错、部分往返、workspace、界面语义树和手势回执已保留。本次继续修正测试定位：刷新活动根和目标节点，核对同窗口、所属应用、可见性与完整坐标，连续三次稳定后只发一次物理点击；不改生产组件、等待预算或结果断言。
+
 ## 公开渠道：Android 独立 Beta 2026.11.07-1905
 
 用户已明确确认公开此独立Beta，并同步main/dev及现有官网。入口为 [GitHub 预发布](https://github.com/ForceMind/ChatGPT/releases/tag/android-beta-2026.11.07-1905) 与 [官网独立Beta下载](https://chatgpt.xincreates.com/#download-android-beta)。本次复用下方已通过验收的原APK字节，不重新构建或签名；正式Android alpha.22、Mac alpha.23、Windows alpha.24及其下载/自动更新仍保留原版本。

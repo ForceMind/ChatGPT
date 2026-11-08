@@ -171,8 +171,27 @@ def verify_dual_engine(directory, api, proof, upgrade, expected, signer, before,
         assert all(left['eventTime'] < right['eventTime'] for left, right in zip(events, events[1:]))
     else:
         assert gesture is None
+    clicks = instrument_proof['nativeClicks']
+    assert len(clicks) == 10
+    for click in clicks:
+        assert click['samples'] == 3 and click['tapCount'] == 1
+        assert click['finalRefreshMatched'] is True
+        assert isinstance(click['label'], str) and click['label']
+        assert type(click['windowId']) is int and click['windowId'] >= 0
+        box, root_box = click['bounds'], click['rootBounds']
+        assert len(box) == len(root_box) == 4 and all(type(value) is int for value in box + root_box)
+        assert root_box[0] <= box[0] < box[2] <= root_box[2]
+        assert root_box[1] <= box[1] < box[3] <= root_box[3]
+        assert 0 < click['startedAt'] <= click['tapStartedAt'] <= click['tapReturnedAt']
     menus = instrument_proof['menuTransitions']
     assert len(menus) == 4
+    legacy_name = menus[0]['from']
+    assert re.fullmatch(r'Owned dual engine legacy [a-f0-9]{8}', legacy_name)
+    assert [menu['nativeClickIndex'] for menu in menus] == [1, 5, 7, 9]
+    assert [click['label'] for click in clicks] == [
+        '切换账号，当前：' + legacy_name, '环境 A', '继续页面', '恢复本地草稿',
+        '切换账号，当前：环境 A', legacy_name, '切换账号，当前：' + legacy_name,
+        '环境 A', '切换账号，当前：环境 A', legacy_name]
     for menu in menus:
         assert menu['imeHiddenObserved'] is True and menu['lastImeInputShown'] is False
         assert menu['samples'] == 3 and menu['selectionTapCount'] == 1
@@ -180,6 +199,10 @@ def verify_dual_engine(directory, api, proof, upgrade, expected, signer, before,
         bounds = menu['bounds']
         assert len(bounds) == 4 and all(type(value) is int for value in bounds)
         assert bounds[0] < bounds[2] and bounds[1] < bounds[3]
+        index = menu['nativeClickIndex']
+        assert type(index) is int and 0 <= index < len(clicks)
+        assert clicks[index]['label'] == menu['to'] and clicks[index]['bounds'] == bounds
+        assert clicks[index]['windowId'] == menu['stableWindowId']
     rounds = instrument_proof['roundTrips']
     assert len(rounds) == 2
     previous = 0

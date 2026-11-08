@@ -39,6 +39,7 @@ public final class RegularDualEngineSwitchTest {
     private final AtomicInteger loads=new AtomicInteger(),unexpected=new AtomicInteger();
     private final JSONArray rounds=new JSONArray();
     private final JSONArray menuTransitions=new JSONArray();
+    private final JSONArray nativeClicks=new JSONArray();
     private MainActivity activity;
     private String legacyId,storageId,tabId,url,legacyName,environmentName,expectedGeckoDraft;
     private JSONObject nativeScrollReceipt,nativeScrollSnapshot;
@@ -88,44 +89,74 @@ public final class RegularDualEngineSwitchTest {
         AccessibilityNodeInfo root=instrumentation.getUiAutomation().getRootInActiveWindow();StringBuilder text=new StringBuilder();
         try{if(root!=null)text.append("activeRootRefresh=").append(root.refresh()).append('\n');semanticTree(root,text,0);return text.toString();}finally{if(root!=null)root.recycle();}
     }
-    private void click(String label)throws Exception{
-        AtomicReference<AccessibilityNodeInfo> selected=new AtomicReference<>();
-        waitFor("enabled native control "+label,()->{AccessibilityNodeInfo value=node(label);if(value==null)return false;if(!value.isEnabled()){value.recycle();return false;}selected.set(value);return true;});
-        AccessibilityNodeInfo value=selected.get();try{Rect box=new Rect();value.getBoundsInScreen(box);assertTrue(box.width()>0&&box.height()>0);shell("input tap "+box.centerX()+" "+box.centerY());}finally{value.recycle();}
+    private JSONArray bounds(Rect box){return new JSONArray().put(box.left).put(box.top).put(box.right).put(box.bottom);}
+    private void rejectNative(JSONObject receipt,String reason)throws Exception{receipt.put("lastRejection",reason).put("lastRejectionAt",System.currentTimeMillis());}
+    private JSONObject nativeGeometry(String label,JSONObject receipt)throws Exception{
+        AccessibilityNodeInfo root=instrumentation.getUiAutomation().getRootInActiveWindow(),target=null;AccessibilityWindowInfo window=null;
+        receipt.put("windowInfo",JSONObject.NULL).put("observedRootWindowId",JSONObject.NULL).put("observedTargetWindowId",JSONObject.NULL).put("observedRootBounds",JSONObject.NULL).put("observedTargetBounds",JSONObject.NULL);
+        try{
+            if(root==null){rejectNative(receipt,"active-root-missing");return null;}
+            // WindowInfo is a diagnostic observation only. The authoritative active
+            // UI root and its refreshed target below determine action readiness.
+            try{window=root.getWindow();if(window!=null){Rect area=new Rect();window.getBoundsInScreen(area);receipt.put("windowInfo",new JSONObject().put("id",window.getId()).put("active",window.isActive()).put("focused",window.isFocused()).put("bounds",bounds(area)));}}
+            catch(Exception observationError){receipt.put("windowInfoError",observationError.toString());}
+            if(!root.refresh()){rejectNative(receipt,"active-root-refresh-failed");return null;}
+            receipt.put("observedRootWindowId",root.getWindowId());
+            if(!RegularEnvironmentUpgradeTest.PACKAGE.contentEquals(root.getPackageName()==null?"":root.getPackageName())){rejectNative(receipt,"active-root-package-mismatch");return null;}
+            target=find(root,label);if(target==null){rejectNative(receipt,"target-label-missing");return null;}
+            if(!target.refresh()){rejectNative(receipt,"target-refresh-failed");return null;}
+            receipt.put("observedTargetWindowId",target.getWindowId());
+            if(!label.contentEquals(target.getText()==null?"":target.getText())&&!label.contentEquals(target.getContentDescription()==null?"":target.getContentDescription())){rejectNative(receipt,"refreshed-target-label-changed");return null;}
+            if(!target.isVisibleToUser()){rejectNative(receipt,"target-not-visible");return null;}
+            if(!target.isEnabled()){rejectNative(receipt,"target-disabled");return null;}
+            if(!RegularEnvironmentUpgradeTest.PACKAGE.contentEquals(target.getPackageName()==null?"":target.getPackageName())){rejectNative(receipt,"target-package-mismatch");return null;}
+            if(target.getWindowId()!=root.getWindowId()){rejectNative(receipt,"target-active-root-window-id-mismatch");return null;}
+            Rect rootBox=new Rect(),box=new Rect();root.getBoundsInScreen(rootBox);target.getBoundsInScreen(box);
+            receipt.put("observedRootBounds",bounds(rootBox)).put("observedTargetBounds",bounds(box));
+            if(rootBox.width()<=0||rootBox.height()<=0){rejectNative(receipt,"active-root-bounds-empty");return null;}
+            if(box.width()<=0||box.height()<=0){rejectNative(receipt,"target-bounds-empty");return null;}
+            if(!rootBox.contains(box)){rejectNative(receipt,"target-bounds-outside-active-root");return null;}
+            return new JSONObject().put("windowId",root.getWindowId()).put("rootBounds",bounds(rootBox)).put("bounds",bounds(box));
+        }finally{if(target!=null)target.recycle();if(window!=null)window.recycle();if(root!=null)root.recycle();}
     }
-    private void selectStableAccount(String label,JSONObject transition)throws Exception{
+    private boolean menuImeHidden(JSONObject receipt,JSONObject transition)throws Exception{
+        lastMenuImeDump=shell("dumpsys input_method");
+        Matcher visibility=Pattern.compile("\\bmInputShown\\s*=\\s*(true|false)\\b").matcher(lastMenuImeDump);
+        if(!visibility.find()){rejectNative(receipt,"current-system-ime-field-missing");throw new AssertionError("Current system IME visibility required");}
+        boolean shown=Boolean.parseBoolean(visibility.group(1));
+        if(visibility.find()){rejectNative(receipt,"current-system-ime-field-ambiguous");throw new AssertionError("Current system IME visibility must be unambiguous");}
+        receipt.put("lastImeInputShown",shown);transition.put("lastImeInputShown",shown);
+        if(shown){rejectNative(receipt,"current-system-ime-shown");return false;}
+        receipt.put("imeHiddenObserved",true);transition.put("imeHiddenObserved",true);return true;
+    }
+    private void stableNativeTap(String label,JSONObject transition,boolean requireImeHidden)throws Exception{
         final long deadline=android.os.SystemClock.elapsedRealtime()+45000;
-        AtomicReference<Rect> previous=new AtomicReference<>(),selected=new AtomicReference<>();AtomicInteger previousWindow=new AtomicInteger(-1),stable=new AtomicInteger();
-        transition.put("imeHiddenObserved",false).put("selectionTapCount",0).put("samples",0);
-        waitFor("hidden IME and stable active account row "+label,()->{
-            assertTrue("Account row selection stays within the original 45s deadline",android.os.SystemClock.elapsedRealtime()<deadline);
-            lastMenuImeDump=shell("dumpsys input_method");
-            Matcher visibility=Pattern.compile("\\bmInputShown\\s*=\\s*(true|false)\\b").matcher(lastMenuImeDump);
-            assertTrue("Current system IME visibility required",visibility.find());boolean shown=Boolean.parseBoolean(visibility.group(1));assertFalse("Current system IME visibility must be unambiguous",visibility.find());
-            transition.put("lastImeInputShown",shown);
-            if(shown){stable.set(0);previous.set(null);transition.put("samples",0);return false;}
-            transition.put("imeHiddenObserved",true);
-            AccessibilityNodeInfo root=instrumentation.getUiAutomation().getRootInActiveWindow(),target=null;AccessibilityWindowInfo window=null;
-            try{
-                if(root==null||!root.refresh())return resetAccountStability(stable,previous,transition);
-                target=find(root,label);window=root.getWindow();
-                if(target==null||!target.refresh()||!target.isVisibleToUser()||!target.isEnabled()||!RegularEnvironmentUpgradeTest.PACKAGE.contentEquals(target.getPackageName()==null?"":target.getPackageName())
-                        ||window==null||!window.isActive()||!window.isFocused()||window.getId()!=root.getWindowId()||target.getWindowId()!=window.getId())return resetAccountStability(stable,previous,transition);
-                Rect box=new Rect(),windowBox=new Rect();target.getBoundsInScreen(box);window.getBoundsInScreen(windowBox);
-                if(box.width()<=0||box.height()<=0||!windowBox.contains(box))return resetAccountStability(stable,previous,transition);
-                int count=previousWindow.get()==window.getId()&&box.equals(previous.get())?stable.incrementAndGet():1;
-                stable.set(count);previousWindow.set(window.getId());previous.set(new Rect(box));selected.set(new Rect(box));
-                transition.put("stableWindowId",window.getId()).put("bounds",new JSONArray().put(box.left).put(box.top).put(box.right).put(box.bottom)).put("samples",count);
-                return count>=3&&android.os.SystemClock.elapsedRealtime()<deadline;
-            }finally{if(target!=null)target.recycle();if(window!=null)window.recycle();if(root!=null)root.recycle();}
+        JSONObject receipt=new JSONObject().put("label",label).put("startedAt",System.currentTimeMillis()).put("requireImeHidden",requireImeHidden).put("tapCount",0).put("samples",0).put("lastRejection","none");
+        if(transition!=null)transition.put("nativeClickIndex",nativeClicks.length()).put("nativeClick",receipt).put("imeHiddenObserved",false).put("selectionTapCount",0).put("samples",0);
+        nativeClicks.put(receipt);AtomicReference<String> previousSignature=new AtomicReference<>();AtomicReference<JSONObject> selected=new AtomicReference<>();AtomicInteger stable=new AtomicInteger();
+        waitFor("stable refreshed native target "+label,()->{
+            if(android.os.SystemClock.elapsedRealtime()>=deadline){receipt.put("deadlineExceeded",true);throw new AssertionError("Native click stays within the original 45s deadline: "+label);}
+            JSONObject sample=null;
+            if(!requireImeHidden||menuImeHidden(receipt,transition))sample=nativeGeometry(label,receipt);
+            if(sample==null){stable.set(0);previousSignature.set(null);receipt.put("samples",0);if(transition!=null)transition.put("samples",0);return false;}
+            String signature=sample.toString();int count=signature.equals(previousSignature.get())?stable.incrementAndGet():1;
+            stable.set(count);previousSignature.set(signature);receipt.put("windowId",sample.getInt("windowId")).put("rootBounds",sample.getJSONArray("rootBounds")).put("bounds",sample.getJSONArray("bounds")).put("samples",count);
+            if(transition!=null)transition.put("stableWindowId",sample.getInt("windowId")).put("rootBounds",sample.getJSONArray("rootBounds")).put("bounds",sample.getJSONArray("bounds")).put("samples",count);
+            if(count<3){rejectNative(receipt,"awaiting-three-stable-geometry-samples");return false;}
+            if(requireImeHidden&&!menuImeHidden(receipt,transition)){stable.set(0);previousSignature.set(null);receipt.put("samples",0);transition.put("samples",0);return false;}
+            JSONObject last=nativeGeometry(label,receipt);
+            if(last==null||!signature.equals(last.toString())){
+                if(last!=null)rejectNative(receipt,"final-refreshed-geometry-changed");
+                stable.set(0);previousSignature.set(null);receipt.put("samples",0);if(transition!=null)transition.put("samples",0);return false;
+            }
+            selected.set(last);receipt.put("finalRefreshMatched",true);return android.os.SystemClock.elapsedRealtime()<deadline;
         });
-        assertTrue("Single account-row tap stays within the original deadline",android.os.SystemClock.elapsedRealtime()<deadline);
-        Rect box=selected.get();assertNotNull(box);transition.put("selectionTapCount",1);
-        shell("input tap "+box.centerX()+" "+box.centerY());
+        if(android.os.SystemClock.elapsedRealtime()>=deadline){receipt.put("deadlineExceeded",true);throw new AssertionError("Single native tap stays within the original deadline: "+label);}
+        JSONArray box=selected.get().getJSONArray("bounds");receipt.put("tapCount",1).put("tapStartedAt",System.currentTimeMillis());if(transition!=null)transition.put("selectionTapCount",1);
+        shell("input tap "+((box.getInt(0)+box.getInt(2))/2)+" "+((box.getInt(1)+box.getInt(3))/2));receipt.put("tapReturnedAt",System.currentTimeMillis());
     }
-    private boolean resetAccountStability(AtomicInteger stable,AtomicReference<Rect> previous,JSONObject transition)throws Exception{
-        stable.set(0);previous.set(null);transition.put("samples",0);return false;
-    }
+    private void click(String label)throws Exception{stableNativeTap(label,null,false);}
+    private void selectStableAccount(String label,JSONObject transition)throws Exception{stableNativeTap(label,transition,true);}
     private JSONObject snapshot(WebView view)throws Exception{
         AtomicReference<String> result=new AtomicReference<>();CountDownLatch done=new CountDownLatch(1);
         main(()->view.evaluateJavascript("JSON.stringify({document:window.ownedDualDocument||'',draft:document.querySelector('#prompt-textarea')?.value||'',model:window.ownedDualModel||'',trusted:window.ownedDualTrusted||0,focused:document.activeElement===document.querySelector('#prompt-textarea'),scroll:scrollY,cookie:document.cookie,storage:localStorage.getItem('owned-dual-login')})",value->{result.set(value);done.countDown();}));
@@ -239,7 +270,7 @@ public final class RegularDualEngineSwitchTest {
                 .put("scope","separate-synthetic-legacy-Main-account; original-alpha22-golden-account-unopened").put("newInstrumentationMayColdStartGecko",true).put("geckoNoReloadRequiresExternalServerProof",true)
                 .put("originalBaselineAccountUnopened",true).put("originalBaselineAndTwoCipherRecordsUnchanged",true).put("originalExpectedSHA256",expectedHash)
                 .put("syntheticLegacyAccountId",legacyId).put("syntheticLegacyStorageId",storageId).put("syntheticLegacyTabId",tabId).put("syntheticLegacyProfile",profile.get()).put("document",before.getString("document"))
-                .put("legacyDraftSHA256",RegularEnvironmentUpgradeTest.hash(MAIN_DRAFT.getBytes(StandardCharsets.UTF_8))).put("legacyScroll",before.getDouble("scroll")).put("legacyPageLoads",loads.get()).put("unexpectedLegacyRequests",unexpected.get()).put("roundTrips",rounds).put("menuTransitions",menuTransitions)
+                .put("legacyDraftSHA256",RegularEnvironmentUpgradeTest.hash(MAIN_DRAFT.getBytes(StandardCharsets.UTF_8))).put("legacyScroll",before.getDouble("scroll")).put("legacyPageLoads",loads.get()).put("unexpectedLegacyRequests",unexpected.get()).put("roundTrips",rounds).put("menuTransitions",menuTransitions).put("nativeClicks",nativeClicks)
                 .put("nativeScrollReceipt",nativeScrollReceipt==null?JSONObject.NULL:nativeScrollReceipt)
                 .put("nativeAccountMenusUsed",true).put("trustedNativeDraftInput",true).put("nativeReadingScroll",true).put("screenshots",false).put("realServicesAccessed",false).put("productionSignatureVerified",false);
             write("regular-dual-engine-switch.json",proof);Bundle output=new Bundle();output.putString("regularDualEngineSwitchProof",proof.toString());instrumentation.addResults(output);
@@ -247,7 +278,7 @@ public final class RegularDualEngineSwitchTest {
             try{
                 java.io.File error=RegularEnvironmentUpgradeTest.file("regular-dual-engine-switch-first-error.txt");
                 if(!error.exists()){
-                    JSONObject evidence=new JSONObject().put("phase",phase).put("partialRoundTrips",rounds).put("menuTransitions",menuTransitions).put("lastMenuImeDump",lastMenuImeDump).put("nativeScrollUid",nativeScrollUid).put("nativeScrollOutput",nativeScrollOutput).put("nativeScrollReceipt",nativeScrollReceipt==null?JSONObject.NULL:nativeScrollReceipt).put("lastScrollSnapshot",nativeScrollSnapshot==null?JSONObject.NULL:nativeScrollSnapshot);
+                    JSONObject evidence=new JSONObject().put("phase",phase).put("partialRoundTrips",rounds).put("menuTransitions",menuTransitions).put("partialNativeClicks",nativeClicks).put("lastMenuImeDump",lastMenuImeDump).put("nativeScrollUid",nativeScrollUid).put("nativeScrollOutput",nativeScrollOutput).put("nativeScrollReceipt",nativeScrollReceipt==null?JSONObject.NULL:nativeScrollReceipt).put("lastScrollSnapshot",nativeScrollSnapshot==null?JSONObject.NULL:nativeScrollSnapshot);
                     try{evidence.put("currentWorkspace",workspaceSelection());}catch(Exception stateError){evidence.put("currentWorkspaceError",stateError.toString());}
                     try{evidence.put("uiHierarchy",semanticHierarchy());}catch(Exception treeError){evidence.put("uiHierarchyError",treeError.toString());}
                     try{if(activity!=null&&current()!=null)evidence.put("failureSnapshot",snapshot(current()));}catch(Exception snapshotError){evidence.put("failureSnapshotError",snapshotError.toString());}
