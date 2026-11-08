@@ -1,0 +1,209 @@
+{
+  "schema": 1,
+  "decision": "do-not-promote",
+  "comparisonRun": 42533750158,
+  "comparisonArtifactID": 13638930050,
+  "staticComparisonRecord": "docs/benchmarks/android-optimization-comparison-20261109.json",
+  "latestR8FunctionalRun": 42531762889,
+  "latestR8HarnessSHA": "a24c26f08452df0e3896208dd90f4a3fee1d7eec",
+  "latestR8Conclusion": "failure",
+  "jobs": [
+    {
+      "name": "build",
+      "id": 128887294610,
+      "conclusion": "success"
+    },
+    {
+      "name": "gecko-handoff (28)",
+      "id": 128891879751,
+      "conclusion": "failure"
+    },
+    {
+      "name": "gecko-handoff (35)",
+      "id": 128891879765,
+      "conclusion": "failure"
+    },
+    {
+      "name": "accept (28)",
+      "id": 128891879777,
+      "conclusion": "failure"
+    },
+    {
+      "name": "navigation (28)",
+      "id": 128891879778,
+      "conclusion": "failure"
+    },
+    {
+      "name": "accept (35)",
+      "id": 128891879779,
+      "conclusion": "failure"
+    },
+    {
+      "name": "webview-workbench (28)",
+      "id": 128891879783,
+      "conclusion": "success"
+    },
+    {
+      "name": "gecko-local-exports (35)",
+      "id": 128891879838,
+      "conclusion": "failure"
+    },
+    {
+      "name": "gecko-local-exports (28)",
+      "id": 128891879858,
+      "conclusion": "failure"
+    },
+    {
+      "name": "navigation (35)",
+      "id": 128891879864,
+      "conclusion": "failure"
+    },
+    {
+      "name": "webview-network (28, raw)",
+      "id": 128891879905,
+      "conclusion": "failure"
+    },
+    {
+      "name": "webview-network (28, reality)",
+      "id": 128891879908,
+      "conclusion": "failure"
+    },
+    {
+      "name": "webview-network (35, raw)",
+      "id": 128891879917,
+      "conclusion": "failure"
+    },
+    {
+      "name": "webview-network (35, tls)",
+      "id": 128891879924,
+      "conclusion": "failure"
+    },
+    {
+      "name": "gecko-network (28, reality)",
+      "id": 128891879925,
+      "conclusion": "failure"
+    },
+    {
+      "name": "webview-workbench (35)",
+      "id": 128891879949,
+      "conclusion": "success"
+    },
+    {
+      "name": "gecko-network (35, reality)",
+      "id": 128891879961,
+      "conclusion": "failure"
+    },
+    {
+      "name": "webview-network (28, tls)",
+      "id": 128891879967,
+      "conclusion": "failure"
+    },
+    {
+      "name": "gecko-network (28, tls)",
+      "id": 128891879980,
+      "conclusion": "failure"
+    },
+    {
+      "name": "gecko-network (35, raw)",
+      "id": 128891879983,
+      "conclusion": "failure"
+    },
+    {
+      "name": "gecko-network (28, raw)",
+      "id": 128891879990,
+      "conclusion": "failure"
+    },
+    {
+      "name": "webview-network (35, reality)",
+      "id": 128891879996,
+      "conclusion": "failure"
+    },
+    {
+      "name": "gecko-network (35, tls)",
+      "id": 128891880037,
+      "conclusion": "failure"
+    },
+    {
+      "name": "deliver",
+      "id": 128893516654,
+      "conclusion": "skipped"
+    }
+  ],
+  "latestR8UnsignedReview": {
+    "file": "ChatGPT-Studio-2026.11.09-0252-android-arm64-UNSIGNED-REVIEW.apk",
+    "bytes": 228414766,
+    "sha256": "a59b5d154d303a53d2d2a6ebcea7a506d8e4eb8a5d3bb877ee75175f78517a4d",
+    "sourceSHA": "a24c26f08452df0e3896208dd90f4a3fee1d7eec",
+    "signing": "UNSIGNED_REVIEW_ONLY"
+  },
+  "latestR8UnsignedReviewMatchesComparisonBytes": true,
+  "observedFirstErrors": [
+    {
+      "jobID": 128891879917,
+      "stage": "WebView network instrumented callback",
+      "error": "AbstractMethodError: abstract method void wg0.a(java.lang.String, boolean)"
+    },
+    {
+      "jobID": 128891879779,
+      "stage": "Gecko page observation after four Android15 synthetic upgrade JUnit phases passed",
+      "error": "Timed out: page observation /c/a1"
+    },
+    {
+      "jobID": 128891879765,
+      "stage": "Gecko handoff route startup before file/task submission",
+      "error": "network-config not CONNECTED"
+    }
+  ],
+  "partialResource": {
+    "runID": 42514067630,
+    "api": 35,
+    "case": {
+      "pages": 1,
+      "load": "idle",
+      "initialDocuments": {
+        "/c/a1": {
+          "document": "af3b06b1-7399-4bc7-ae18-e9313ba4c350",
+          "draft": "",
+          "modelDraft": "",
+          "resourceRevisions": 0,
+          "eventSequence": 2
+        }
+      },
+      "windows": [
+        {
+          "durationSeconds": 120.55071012500002,
+          "cpuCoreSeconds": 9.92,
+          "cpuPercentOneCore": 8.231303439175283,
+          "pssMeanMiB": 435.594453125,
+          "pssPeakMiB": 446.228515625,
+          "streamRevisions": {
+            "/c/a1": 0
+          },
+          "documentsRetained": true,
+          "draftsRetained": true
+        },
+        {
+          "durationSeconds": 120.57191832200004,
+          "cpuCoreSeconds": 10.1,
+          "cpuPercentOneCore": 8.380936520768316,
+          "pssMeanMiB": 466.1119140625,
+          "pssPeakMiB": 477.92578125,
+          "streamRevisions": {
+            "/c/a1": 0
+          },
+          "documentsRetained": true,
+          "draftsRetained": true
+        }
+      ]
+    },
+    "completeSuite": false,
+    "comparativeConclusion": null,
+    "limits": "Baseline only; foreground synthetic fixture observations, not real ChatGPT or phone CPU."
+  },
+  "allFunctionalPass": false,
+  "fullPairedCpuPssCompleted": false,
+  "productionAppChanged": false,
+  "productionPrivateKeyUsed": false,
+  "personalDevicesUpdated": false,
+  "publicRelease": false
+}

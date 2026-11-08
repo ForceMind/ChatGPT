@@ -1,0 +1,422 @@
+{
+  "schema": 1,
+  "scope": "CI-only exact test-link contracts; human rule set unchanged",
+  "applicationSourceChanged": false,
+  "optimizationAllowed": true,
+  "contracts": [
+    {
+      "class": "Lcom/forcemind/chatgpt/profiles/ConversionType;",
+      "reason": "Existing instrumented test directly links this helper/value/probe; preserve its CI API while allowing method optimization",
+      "testReferences": [
+        {
+          "file": "android/app/src/test/java/com/forcemind/chatgpt/profiles/PageSelectionTest.java",
+          "line": 16
+        },
+        {
+          "file": "android/app/src/test/java/com/forcemind/chatgpt/profiles/PageSelectionTest.java",
+          "line": 17
+        },
+        {
+          "file": "android/app/src/test/java/com/forcemind/chatgpt/profiles/PageSelectionTest.java",
+          "line": 18
+        },
+        {
+          "file": "android/app/src/test/java/com/forcemind/chatgpt/profiles/PageSelectionTest.java",
+          "line": 19
+        },
+        {
+          "file": "android/app/src/androidTest/java/com/forcemind/chatgpt/profiles/WorkbenchTest.java",
+          "line": 128
+        },
+        {
+          "file": "android/app/src/androidTest/java/com/forcemind/chatgpt/profiles/WorkbenchTest.java",
+          "line": 129
+        }
+      ]
+    },
+    {
+      "class": "Lcom/forcemind/chatgpt/profiles/DocumentConversions;",
+      "reason": "Existing instrumented test directly links this helper/value/probe; preserve its CI API while allowing method optimization",
+      "testReferences": [
+        {
+          "file": "android/app/src/test/java/com/forcemind/chatgpt/profiles/DocumentConversionsTest.java",
+          "line": 20
+        },
+        {
+          "file": "android/app/src/test/java/com/forcemind/chatgpt/profiles/DocumentConversionsTest.java",
+          "line": 27
+        },
+        {
+          "file": "android/app/src/test/java/com/forcemind/chatgpt/profiles/DocumentConversionsTest.java",
+          "line": 28
+        },
+        {
+          "file": "android/app/src/test/java/com/forcemind/chatgpt/profiles/DocumentConversionsTest.java",
+          "line": 30
+        },
+        {
+          "file": "android/app/src/test/java/com/forcemind/chatgpt/profiles/DocumentConversionsTest.java",
+          "line": 32
+        },
+        {
+          "file": "android/app/src/test/java/com/forcemind/chatgpt/profiles/DocumentConversionsTest.java",
+          "line": 34
+        },
+        {
+          "file": "android/app/src/test/java/com/forcemind/chatgpt/profiles/DocumentConversionsTest.java",
+          "line": 38
+        },
+        {
+          "file": "android/app/src/test/java/com/forcemind/chatgpt/profiles/DocumentConversionsTest.java",
+          "line": 40
+        }
+      ]
+    },
+    {
+      "class": "Lcom/forcemind/chatgpt/profiles/EnvironmentProbeActivity;",
+      "reason": "Existing instrumented test directly links this helper/value/probe; preserve its CI API while allowing method optimization",
+      "testReferences": [
+        {
+          "file": "android/app/src/androidTest/java/com/forcemind/chatgpt/profiles/WorkbenchTest.java",
+          "line": 388
+        }
+      ]
+    },
+    {
+      "class": "Lcom/forcemind/chatgpt/profiles/ImageConversions;",
+      "reason": "Existing instrumented test directly links this helper/value/probe; preserve its CI API while allowing method optimization",
+      "testReferences": [
+        {
+          "file": "android/app/src/androidTest/java/com/forcemind/chatgpt/profiles/WorkbenchTest.java",
+          "line": 213
+        }
+      ]
+    },
+    {
+      "class": "Lcom/forcemind/chatgpt/profiles/MainActivity$HandoffFixture;",
+      "reason": "Existing instrumented test directly links this helper/value/probe; preserve its CI API while allowing method optimization",
+      "testReferences": [
+        {
+          "file": "android/app/src/androidTest/java/com/forcemind/chatgpt/profiles/WorkbenchTest.java",
+          "line": 434
+        },
+        {
+          "file": "android/app/src/androidTest/java/com/forcemind/chatgpt/profiles/WorkbenchTest.java",
+          "line": 544
+        }
+      ]
+    },
+    {
+      "class": "Lcom/forcemind/chatgpt/profiles/NetworkRoute$State;",
+      "reason": "Existing instrumented test directly links this helper/value/probe; preserve its CI API while allowing method optimization",
+      "testReferences": [
+        {
+          "file": "android/app/src/androidTest/java/com/forcemind/chatgpt/profiles/NetworkIntegrationTest.java",
+          "line": 104
+        },
+        {
+          "file": "android/app/src/androidTest/java/com/forcemind/chatgpt/profiles/NetworkIntegrationTest.java",
+          "line": 148
+        },
+        {
+          "file": "android/app/src/androidTest/java/com/forcemind/chatgpt/profiles/NetworkIntegrationTest.java",
+          "line": 159
+        },
+        {
+          "file": "android/app/src/androidTest/java/com/forcemind/chatgpt/profiles/NetworkRestartTest.java",
+          "line": 46
+        }
+      ]
+    },
+    {
+      "class": "Lcom/forcemind/chatgpt/profiles/NetworkSettingsStore$Data;",
+      "reason": "Existing instrumented test directly links this helper/value/probe; preserve its CI API while allowing method optimization",
+      "testReferences": [
+        {
+          "file": "android/app/src/androidTest/java/com/forcemind/chatgpt/profiles/NetworkIntegrationTest.java",
+          "line": 91
+        },
+        {
+          "file": "android/app/src/betaUpgrade/java/com/forcemind/chatgpt/profiles/BetaUpgradeTest.java",
+          "line": 37
+        },
+        {
+          "file": "android/app/src/betaUpgrade/java/com/forcemind/chatgpt/profiles/BetaUpgradeTest.java",
+          "line": 54
+        },
+        {
+          "file": "android/app/src/betaBrowserUpgrade/java/com/forcemind/chatgpt/profiles/BetaBrowserUpgradeTest.java",
+          "line": 226
+        },
+        {
+          "file": "android/app/src/betaBrowserUpgrade/java/com/forcemind/chatgpt/profiles/BetaBrowserUpgradeTest.java",
+          "line": 256
+        },
+        {
+          "file": "android/app/src/betaNetworkUi/java/com/forcemind/chatgpt/profiles/BetaPanelSeedTest.java",
+          "line": 33
+        },
+        {
+          "file": "android/app/src/betaNetworkUi/java/com/forcemind/chatgpt/profiles/NetworkPanelTest.java",
+          "line": 168
+        },
+        {
+          "file": "android/app/src/environmentTest/java/com/forcemind/chatgpt/profiles/EnvironmentUpgradeSeedTest.java",
+          "line": 72
+        }
+      ]
+    },
+    {
+      "class": "Lcom/forcemind/chatgpt/profiles/NetworkSettingsStore;",
+      "reason": "Existing instrumented test directly links this helper/value/probe; preserve its CI API while allowing method optimization",
+      "testReferences": [
+        {
+          "file": "android/app/src/androidTest/java/com/forcemind/chatgpt/profiles/NetworkBenchmarkTest.java",
+          "line": 69
+        },
+        {
+          "file": "android/app/src/androidTest/java/com/forcemind/chatgpt/profiles/NetworkIntegrationTest.java",
+          "line": 91
+        },
+        {
+          "file": "android/app/src/androidTest/java/com/forcemind/chatgpt/profiles/NetworkRestartTest.java",
+          "line": 40
+        },
+        {
+          "file": "android/app/src/betaUpgrade/java/com/forcemind/chatgpt/profiles/BetaUpgradeTest.java",
+          "line": 37
+        },
+        {
+          "file": "android/app/src/betaUpgrade/java/com/forcemind/chatgpt/profiles/BetaUpgradeTest.java",
+          "line": 54
+        },
+        {
+          "file": "android/app/src/betaBrowserUpgrade/java/com/forcemind/chatgpt/profiles/BetaBrowserUpgradeTest.java",
+          "line": 226
+        },
+        {
+          "file": "android/app/src/betaBrowserUpgrade/java/com/forcemind/chatgpt/profiles/BetaBrowserUpgradeTest.java",
+          "line": 228
+        },
+        {
+          "file": "android/app/src/betaBrowserUpgrade/java/com/forcemind/chatgpt/profiles/BetaBrowserUpgradeTest.java",
+          "line": 256
+        }
+      ]
+    },
+    {
+      "class": "Lcom/forcemind/chatgpt/profiles/NetworkTestPolicy;",
+      "reason": "Existing instrumented test directly links this helper/value/probe; preserve its CI API while allowing method optimization",
+      "testReferences": [
+        {
+          "file": "android/app/src/main/java/com/forcemind/chatgpt/profiles/NetworkTestPolicy.java",
+          "line": 8
+        },
+        {
+          "file": "android/app/src/main/java/com/forcemind/chatgpt/profiles/NetworkTestPolicy.java",
+          "line": 29
+        },
+        {
+          "file": "android/app/src/androidTest/java/com/forcemind/chatgpt/profiles/NetworkIntegrationTest.java",
+          "line": 144
+        }
+      ]
+    },
+    {
+      "class": "Lcom/forcemind/chatgpt/profiles/PageRecoveryManager$EnvironmentTiming;",
+      "reason": "Existing instrumented test directly links this helper/value/probe; preserve its CI API while allowing method optimization",
+      "testReferences": [
+        {
+          "file": "android/app/src/environmentTest/java/com/forcemind/chatgpt/profiles/BrowserChromeNavigationTest.java",
+          "line": 40
+        }
+      ]
+    },
+    {
+      "class": "Lcom/forcemind/chatgpt/profiles/PageSelection;",
+      "reason": "Existing instrumented test directly links this helper/value/probe; preserve its CI API while allowing method optimization",
+      "testReferences": [
+        {
+          "file": "android/app/src/test/java/com/forcemind/chatgpt/profiles/PageSelectionTest.java",
+          "line": 9
+        },
+        {
+          "file": "android/app/src/test/java/com/forcemind/chatgpt/profiles/PageSelectionTest.java",
+          "line": 10
+        },
+        {
+          "file": "android/app/src/test/java/com/forcemind/chatgpt/profiles/PageSelectionTest.java",
+          "line": 13
+        },
+        {
+          "file": "android/app/src/androidTest/java/com/forcemind/chatgpt/profiles/WorkbenchTest.java",
+          "line": 300
+        }
+      ]
+    },
+    {
+      "class": "Lcom/forcemind/chatgpt/profiles/RenderTasks;",
+      "reason": "Existing instrumented test directly links this helper/value/probe; preserve its CI API while allowing method optimization",
+      "testReferences": [
+        {
+          "file": "android/app/src/test/java/com/forcemind/chatgpt/profiles/RenderTasksTest.java",
+          "line": 17
+        },
+        {
+          "file": "android/app/src/test/java/com/forcemind/chatgpt/profiles/RenderTasksTest.java",
+          "line": 18
+        },
+        {
+          "file": "android/app/src/test/java/com/forcemind/chatgpt/profiles/RenderTasksTest.java",
+          "line": 20
+        },
+        {
+          "file": "android/app/src/test/java/com/forcemind/chatgpt/profiles/RenderTasksTest.java",
+          "line": 22
+        },
+        {
+          "file": "android/app/src/test/java/com/forcemind/chatgpt/profiles/RenderTasksTest.java",
+          "line": 23
+        },
+        {
+          "file": "android/app/src/test/java/com/forcemind/chatgpt/profiles/RenderTasksTest.java",
+          "line": 27
+        },
+        {
+          "file": "android/app/src/test/java/com/forcemind/chatgpt/profiles/RenderTasksTest.java",
+          "line": 28
+        },
+        {
+          "file": "android/app/src/test/java/com/forcemind/chatgpt/profiles/RenderTasksTest.java",
+          "line": 29
+        }
+      ]
+    },
+    {
+      "class": "Lcom/forcemind/chatgpt/profiles/RenderedConversions;",
+      "reason": "Existing instrumented test directly links this helper/value/probe; preserve its CI API while allowing method optimization",
+      "testReferences": [
+        {
+          "file": "android/app/src/androidTest/java/com/forcemind/chatgpt/profiles/WorkbenchTest.java",
+          "line": 300
+        },
+        {
+          "file": "android/app/src/androidTest/java/com/forcemind/chatgpt/profiles/WorkbenchTest.java",
+          "line": 302
+        },
+        {
+          "file": "android/app/src/androidTest/java/com/forcemind/chatgpt/profiles/WorkbenchTest.java",
+          "line": 303
+        }
+      ]
+    },
+    {
+      "class": "Lcom/forcemind/chatgpt/profiles/SkillCatalog;",
+      "reason": "Existing instrumented test directly links this helper/value/probe; preserve its CI API while allowing method optimization",
+      "testReferences": [
+        {
+          "file": "android/app/src/test/java/com/forcemind/chatgpt/profiles/SkillCatalogTest.java",
+          "line": 13
+        },
+        {
+          "file": "android/app/src/test/java/com/forcemind/chatgpt/profiles/SkillCatalogTest.java",
+          "line": 15
+        },
+        {
+          "file": "android/app/src/test/java/com/forcemind/chatgpt/profiles/SkillCatalogTest.java",
+          "line": 18
+        },
+        {
+          "file": "android/app/src/test/java/com/forcemind/chatgpt/profiles/SkillCatalogTest.java",
+          "line": 26
+        },
+        {
+          "file": "android/app/src/test/java/com/forcemind/chatgpt/profiles/SkillCatalogTest.java",
+          "line": 29
+        },
+        {
+          "file": "android/app/src/test/java/com/forcemind/chatgpt/profiles/SkillCatalogTest.java",
+          "line": 38
+        },
+        {
+          "file": "android/app/src/test/java/com/forcemind/chatgpt/profiles/SkillCatalogTest.java",
+          "line": 39
+        },
+        {
+          "file": "android/app/src/androidTest/java/com/forcemind/chatgpt/profiles/WorkbenchTest.java",
+          "line": 362
+        }
+      ]
+    },
+    {
+      "class": "Lcom/forcemind/chatgpt/profiles/WebInputs;",
+      "reason": "Existing instrumented test directly links this helper/value/probe; preserve its CI API while allowing method optimization",
+      "testReferences": [
+        {
+          "file": "android/app/src/androidTest/java/com/forcemind/chatgpt/profiles/WorkbenchTest.java",
+          "line": 323
+        },
+        {
+          "file": "android/app/src/androidTest/java/com/forcemind/chatgpt/profiles/WorkbenchTest.java",
+          "line": 329
+        },
+        {
+          "file": "android/app/src/androidTest/java/com/forcemind/chatgpt/profiles/WorkbenchTest.java",
+          "line": 331
+        }
+      ]
+    },
+    {
+      "class": "Lcom/forcemind/chatgpt/profiles/WorkspaceFiles;",
+      "reason": "Existing instrumented test directly links this helper/value/probe; preserve its CI API while allowing method optimization",
+      "testReferences": [
+        {
+          "file": "android/app/src/test/java/com/forcemind/chatgpt/profiles/WorkspaceFilesTest.java",
+          "line": 17
+        },
+        {
+          "file": "android/app/src/test/java/com/forcemind/chatgpt/profiles/WorkspaceFilesTest.java",
+          "line": 21
+        },
+        {
+          "file": "android/app/src/test/java/com/forcemind/chatgpt/profiles/WorkspaceFilesTest.java",
+          "line": 25
+        },
+        {
+          "file": "android/app/src/androidTest/java/com/forcemind/chatgpt/profiles/WorkbenchTest.java",
+          "line": 213
+        },
+        {
+          "file": "android/app/src/androidTest/java/com/forcemind/chatgpt/profiles/WorkbenchTest.java",
+          "line": 250
+        },
+        {
+          "file": "android/app/src/androidTest/java/com/forcemind/chatgpt/profiles/WorkbenchTest.java",
+          "line": 300
+        },
+        {
+          "file": "android/app/src/androidTest/java/com/forcemind/chatgpt/profiles/WorkbenchTest.java",
+          "line": 408
+        },
+        {
+          "file": "android/app/src/androidTest/java/com/forcemind/chatgpt/profiles/WorkbenchTest.java",
+          "line": 418
+        }
+      ]
+    },
+    {
+      "class": "Lcom/forcemind/chatgpt/profiles/EncryptedPayloads;",
+      "reason": "CI test-visible cipher return type; no class-name dependency in AES-GCM domains, HP01 framing, or package-scoped key aliases",
+      "testReferences": [
+        {
+          "file": "android/app/src/regularEnvironmentTest/java/com/forcemind/chatgpt/profiles/RegularEnvironmentUpgradeTest.java",
+          "line": 62
+        },
+        {
+          "file": "android/app/src/regularEnvironmentTest/java/com/forcemind/chatgpt/profiles/RegularEnvironmentUpgradeTest.java",
+          "line": 77
+        }
+      ]
+    }
+  ]
+}

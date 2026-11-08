@@ -1,0 +1,140 @@
+{
+  "schema": 1,
+  "kind": "apk-and-functional-comparison",
+  "complete": true,
+  "sourceInputsMatched": true,
+  "sourceScope": "Same pinned product tree and pre-overlay Gradle hash; native library SHA equality; harness source metadata retained separately",
+  "allFunctionalPass": false,
+  "rows": [
+    {
+      "mode": "baseline",
+      "runID": 42512156694,
+      "sourceSHA": "0250e2b7dfeaa1aeeaa57248841df8e6037dca0e",
+      "productBaseline": "f9f4d4e35661ccc20fc15853ffef661c592c23c3",
+      "versionMetadata": {
+        "schema": 1,
+        "versionCode": 3000035,
+        "versionName": "2026.11.09-0252",
+        "timeZone": "Asia/Shanghai",
+        "sourceSHA": "0250e2b7dfeaa1aeeaa57248841df8e6037dca0e"
+      },
+      "bytes": 241899411,
+      "sha256": "5fd8d56ab638845329ff6085686d9fdc045fed0d3902c13a339f75fb01ffc5a4",
+      "groupsStoredBytes": {
+        "other": 418823,
+        "assets": 14584617,
+        "dex": 16703504,
+        "native": 210007848
+      },
+      "nativeEntrySHA256": {
+        "lib/arm64-v8a/libclearkey.so": "d1f9dbf9199c3c2a027097dc9aa77de12ff78be0b34ba3ef45e51ff9fa3c464e",
+        "lib/arm64-v8a/libcrashhelper.so": "5f8578ea10db1859bdbbc18e0caef2be9587dbb67e5a2927b9ff7fb878d7eeef",
+        "lib/arm64-v8a/libcrashtools.so": "0e603319567f9683220bff6fc5e206010465cf5fa7d00734cfc1377b958c6aa5",
+        "lib/arm64-v8a/libfreebl3.so": "208e640ef091aef6cdd119561a21a9524baeaf929ddd61ac9686c54d477b9767",
+        "lib/arm64-v8a/libgkcodecs.so": "9a6fa4de593258bc4b1412f594e76ce8e41b968eba3dc15eadad72c4f2c024b4",
+        "lib/arm64-v8a/libgojni.so": "b859096fda8d3487ced75e9f298305d732d05f1eee28b6df02586098c1a88a46",
+        "lib/arm64-v8a/liblgpllibs.so": "907cd4fab6e6b52a2e66e32225099a597fbef8052f75a5d6c9b972aca1099f8d",
+        "lib/arm64-v8a/libmozavcodec.so": "4f0db549cb8a74c9daac86f8277ac944ed33dd05661b746c5a34ec8cbaa84a2c",
+        "lib/arm64-v8a/libmozavutil.so": "db83577f550d2a51636c5095e07f5a988f0e620685b6409733883ac5c0e7b4cb",
+        "lib/arm64-v8a/libmozglue.so": "3d0d0a69612ccdd1f37175bb14ad5b5c041c8e7a30d50ffb9eaa547280b57f30",
+        "lib/arm64-v8a/libnss3.so": "59d010ffa67bddeaae94945506f23f5b794b9761c3e918eda8d69e2ce31aa0fb",
+        "lib/arm64-v8a/libplugin-container.so": "946d1558ed7978051366ae83433a29d9b5a63b6d167e9b2e2a1509a48368c0f1",
+        "lib/arm64-v8a/libsoftokn3.so": "98b955d54934de84cc57c6d64dc983455f91fd5a413889daa128edde1cc26044",
+        "lib/arm64-v8a/libxul.so": "91b64a3e857b3aa1a739be3894d0330e705b1b6d563f8eb367cafe96fb4977af"
+      },
+      "functionalConclusion": "success",
+      "fullFunctionalPass": true,
+      "temporaryReviewOnly": true,
+      "savedBytes": 0,
+      "savedPercent": 0.0
+    },
+    {
+      "mode": "r8",
+      "runID": 42521765852,
+      "sourceSHA": "8576ac3dbf37b5a3aeff60d4ae6fc5eefc602f54",
+      "productBaseline": "f9f4d4e35661ccc20fc15853ffef661c592c23c3",
+      "versionMetadata": {
+        "schema": 1,
+        "versionCode": 3000035,
+        "versionName": "2026.11.09-0252",
+        "timeZone": "Asia/Shanghai",
+        "sourceSHA": "8576ac3dbf37b5a3aeff60d4ae6fc5eefc602f54"
+      },
+      "bytes": 228414766,
+      "sha256": "a59b5d154d303a53d2d2a6ebcea7a506d8e4eb8a5d3bb877ee75175f78517a4d",
+      "groupsStoredBytes": {
+        "other": 418780,
+        "assets": 14584597,
+        "dex": 3220248,
+        "native": 210007848
+      },
+      "nativeEntrySHA256": {
+        "lib/arm64-v8a/libclearkey.so": "d1f9dbf9199c3c2a027097dc9aa77de12ff78be0b34ba3ef45e51ff9fa3c464e",
+        "lib/arm64-v8a/libcrashhelper.so": "5f8578ea10db1859bdbbc18e0caef2be9587dbb67e5a2927b9ff7fb878d7eeef",
+        "lib/arm64-v8a/libcrashtools.so": "0e603319567f9683220bff6fc5e206010465cf5fa7d00734cfc1377b958c6aa5",
+        "lib/arm64-v8a/libfreebl3.so": "208e640ef091aef6cdd119561a21a9524baeaf929ddd61ac9686c54d477b9767",
+        "lib/arm64-v8a/libgkcodecs.so": "9a6fa4de593258bc4b1412f594e76ce8e41b968eba3dc15eadad72c4f2c024b4",
+        "lib/arm64-v8a/libgojni.so": "b859096fda8d3487ced75e9f298305d732d05f1eee28b6df02586098c1a88a46",
+        "lib/arm64-v8a/liblgpllibs.so": "907cd4fab6e6b52a2e66e32225099a597fbef8052f75a5d6c9b972aca1099f8d",
+        "lib/arm64-v8a/libmozavcodec.so": "4f0db549cb8a74c9daac86f8277ac944ed33dd05661b746c5a34ec8cbaa84a2c",
+        "lib/arm64-v8a/libmozavutil.so": "db83577f550d2a51636c5095e07f5a988f0e620685b6409733883ac5c0e7b4cb",
+        "lib/arm64-v8a/libmozglue.so": "3d0d0a69612ccdd1f37175bb14ad5b5c041c8e7a30d50ffb9eaa547280b57f30",
+        "lib/arm64-v8a/libnss3.so": "59d010ffa67bddeaae94945506f23f5b794b9761c3e918eda8d69e2ce31aa0fb",
+        "lib/arm64-v8a/libplugin-container.so": "946d1558ed7978051366ae83433a29d9b5a63b6d167e9b2e2a1509a48368c0f1",
+        "lib/arm64-v8a/libsoftokn3.so": "98b955d54934de84cc57c6d64dc983455f91fd5a413889daa128edde1cc26044",
+        "lib/arm64-v8a/libxul.so": "91b64a3e857b3aa1a739be3894d0330e705b1b6d563f8eb367cafe96fb4977af"
+      },
+      "functionalConclusion": "failure",
+      "fullFunctionalPass": false,
+      "temporaryReviewOnly": true,
+      "savedBytes": 13484645,
+      "savedPercent": 5.574
+    },
+    {
+      "mode": "resources",
+      "runID": 42521770270,
+      "sourceSHA": "8576ac3dbf37b5a3aeff60d4ae6fc5eefc602f54",
+      "productBaseline": "f9f4d4e35661ccc20fc15853ffef661c592c23c3",
+      "versionMetadata": {
+        "schema": 1,
+        "versionCode": 3000035,
+        "versionName": "2026.11.09-0252",
+        "timeZone": "Asia/Shanghai",
+        "sourceSHA": "8576ac3dbf37b5a3aeff60d4ae6fc5eefc602f54"
+      },
+      "bytes": 228320122,
+      "sha256": "4ee0f023fcf5a55d9bbdb4066322ab3b690c3542f70566d487e02c59a2604605",
+      "groupsStoredBytes": {
+        "other": 327656,
+        "assets": 14584605,
+        "dex": 3220272,
+        "native": 210007848
+      },
+      "nativeEntrySHA256": {
+        "lib/arm64-v8a/libclearkey.so": "d1f9dbf9199c3c2a027097dc9aa77de12ff78be0b34ba3ef45e51ff9fa3c464e",
+        "lib/arm64-v8a/libcrashhelper.so": "5f8578ea10db1859bdbbc18e0caef2be9587dbb67e5a2927b9ff7fb878d7eeef",
+        "lib/arm64-v8a/libcrashtools.so": "0e603319567f9683220bff6fc5e206010465cf5fa7d00734cfc1377b958c6aa5",
+        "lib/arm64-v8a/libfreebl3.so": "208e640ef091aef6cdd119561a21a9524baeaf929ddd61ac9686c54d477b9767",
+        "lib/arm64-v8a/libgkcodecs.so": "9a6fa4de593258bc4b1412f594e76ce8e41b968eba3dc15eadad72c4f2c024b4",
+        "lib/arm64-v8a/libgojni.so": "b859096fda8d3487ced75e9f298305d732d05f1eee28b6df02586098c1a88a46",
+        "lib/arm64-v8a/liblgpllibs.so": "907cd4fab6e6b52a2e66e32225099a597fbef8052f75a5d6c9b972aca1099f8d",
+        "lib/arm64-v8a/libmozavcodec.so": "4f0db549cb8a74c9daac86f8277ac944ed33dd05661b746c5a34ec8cbaa84a2c",
+        "lib/arm64-v8a/libmozavutil.so": "db83577f550d2a51636c5095e07f5a988f0e620685b6409733883ac5c0e7b4cb",
+        "lib/arm64-v8a/libmozglue.so": "3d0d0a69612ccdd1f37175bb14ad5b5c041c8e7a30d50ffb9eaa547280b57f30",
+        "lib/arm64-v8a/libnss3.so": "59d010ffa67bddeaae94945506f23f5b794b9761c3e918eda8d69e2ce31aa0fb",
+        "lib/arm64-v8a/libplugin-container.so": "946d1558ed7978051366ae83433a29d9b5a63b6d167e9b2e2a1509a48368c0f1",
+        "lib/arm64-v8a/libsoftokn3.so": "98b955d54934de84cc57c6d64dc983455f91fd5a413889daa128edde1cc26044",
+        "lib/arm64-v8a/libxul.so": "91b64a3e857b3aa1a739be3894d0330e705b1b6d563f8eb367cafe96fb4977af"
+      },
+      "functionalConclusion": "failure",
+      "fullFunctionalPass": false,
+      "temporaryReviewOnly": true,
+      "savedBytes": 13579289,
+      "savedPercent": 5.614
+    }
+  ],
+  "runtimeMeasured": false,
+  "productionAppChanged": false,
+  "productionSigningUsed": false,
+  "personalDevicesUpdated": false
+}

@@ -31,7 +31,7 @@
 
 ## 当前进度
 
-方案和静态盘点完成。baseline42512156694已24job通过；当前R8 42527113718（84eedcf）构建整体和所有前置smoke已通过，完整22功能job运行中；资源压缩42528496883已启动，冻结版本2026.11.09-0252。完整功能和最终8场景同主机三版本CPU/PSS仍未完成。所有既往错误、只读证明、精确CI契约和构建数据保留。iOS方案、README和会话库研究的原有本地改动独立保留；不改正式App/main/官网/手机，不动生产密钥、登录与恢复数据。
+本批结论：不采用两组优化更新正式客户端。三包的原字节对照、完整SHA及14个原生库逐项校验已完成（42533750158）；baseline完整24job通过，R8和资源压缩未通过完整功能门禁。最新R8复验42531762889也失败；合格配对CPU/PSS没有形成。保留原App、登录、密文和标签保活策略，不修改main/官网/手机或使用生产密钥。以下保留全过程和原失败。
 
 首轮实验源码 `0250e2b` 已推 dev；共用上海日期版本 `2026.11.09-0252`，baseline `42512156694`、r8 `42512160093`、resources `42512163781`。三组正在构建与完整回归，尚无通过或优化收益结论。另准备独立比较器，严格核对源/版本、原生库字节和完整功能结论；CPU/PSS 仍待专门测量，不混入静态缩包结果。
 
@@ -62,3 +62,21 @@ R8共享语义运行时及真实运行器smoke已通过，但网络构建的新�
 84eedcf完整R8矩阵新首错：accept28的优化后WorkspaceState List字段类型/成员ABI改变（NoSuchField c:List），WorkbenchTest.setup的WorkspaceState.fresh被优化掉（NoSuchMethod fresh）。这是原测试直接链接私有模型API的边界，不能删数据保留或工作台断言。仅CI规则为WorkspaceState及Account/Tab保留字段形状和可调用方法入口，方法体仍允许优化；人用规则不加，保持真实性边界，不据此宣称人用包升级已验收。MainActivity等其他业务类不整体keep；出现未知接口仍保留失败审查。
 
 完整矩阵实际新首错为DevicePayloadKeys.cipher方法被内联/删除，测试无法直接链接其旧ABI。CI契约改为从未优化测试DEX的实际方法/字段引用生成精确成员清单（来源仍限未优化主APK真实定义），不保留整个业务包，不把CI规则用于人用包。另人工读现有NetworkIntegrationTest反射调用，仅保留MainActivity的change/showCurrent/downloads/finishAccountChange及NetworkSession.jobs、HandoffRuntime.controls这些明确入口，不保留MainActivity全部成员。所有原始断言保持；此为测试可链接性边界，不等于生产优化包完全运行已验收。
+
+## 本批验收结论：保留原版
+
+[Actions 独立比较 42533750158](https://github.com/ForceMind/ChatGPT/actions/runs/42533750158) 实际读取三个 arm64 未签名审阅 APK。体积、SHA-256、同一冻结版本、共同产品源码及14个原生库逐项SHA通过；仅完整功能门禁因优化组失败而按设计退出非零，报告已上传。最新 R8 审阅包与表中 R8 原始字节相同。详见[原样比较 JSON](benchmarks/android-optimization-comparison-20261109.json)和[最终结果回执](benchmarks/android-optimization-outcome-20261109.json)。
+
+| 实验 | APK bytes | MiB | 相对 baseline | 功能状态 |
+| --- | ---: | ---: | ---: | --- |
+| baseline | 241899411 | 230.69 | — | 42512156694：24 job 通过 |
+| R8 | 228414766 | 217.83 | -5.574% | 42531762889：构建和两系统 WebView 工作台通过；20功能job失败、交付job跳过 |
+| R8 + 资源压缩 | 228320122 | 217.74 | -5.614% | 42521770270 构建完成，完整门禁失败；后续受同类测试契约限制的旧组已停止 |
+
+缩包主要来自 DEX（15.93→3.071MiB）；额外资源压缩仅节省94,644 bytes，约92.4KiB。Go和Gecko原生库未减少，未实施裁剪。这里比较的是重新构建的同批未签名 baseline，不直接与发布签名包做差。审阅 APK 不作为手机覆盖安装包。
+
+最新 Android15 运行的 seed/旧版冷读/新版验证/新版冷读四段 JUnit 实际通过；后续 `/c/a1` 页面观察超时。WebView 网络任务另见实际 `AbstractMethodError` 回调，Gecko handoff 在网络配置未达到 CONNECTED 时结束。没有将这些现象归为数据丢失、确定的 R8 业务回归或全部已修复。旧/新测试 ABI、共享依赖、Slot 元数据的首错和修正保留；CI 变体仍不等于人用原签包运行验收。
+
+baseline Android15 单页空闲完成两个约120秒窗口：CPU 8.23% / 8.38%（一核100%，App与归属网页进程）；PSS 435.59 / 466.11MiB。其后流式用例加载失败，且优化组未过功能门禁，因此没有完整配对 CPU/PSS，不计算优化比例。此局部数据带合成观察开销，不代表真机或真实 ChatGPT。未重复30分钟后台长测、未截图、未访问真实账号/节点。
+
+当前结束该轮候选资格判断：不扩大 CI keep 追求绿灯，不改正式客户端。若继续评估 R8，先单独给出减少私有 ABI 依赖的黑盒验收方案，再谈原签与人用包；本报告不授权启动额外浏览器场景或正式迁入。真正 CPU/PSS 热点定位与原生体积裁剪仍列后续，不能由 R8 的静态缩包推导运行收益。
