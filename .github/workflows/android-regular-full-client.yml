@@ -68,6 +68,10 @@ jobs:
         retention-days: 14
         if-no-files-found: error
         path: android/app/build/regular-review/
+    - name: Build non-test human x86 companion for original-certificate upgrade
+      run: |
+        bash android/environment-poc/gradlew -p android --no-daemon -PenvironmentClient -PregularEnvironmentClient -PunsignedRelease -PregularReviewAbi=x86_64 :app:assembleRelease
+        python3 android/scripts/package-original-signature-inputs.py --phase human-x86
     - name: Create a temporary compatibility signer in runner storage
       run: |
         python3 - <<'PY'
@@ -111,6 +115,18 @@ jobs:
       run: |-
         test -n "$STUDIO_REGULAR_CI_CERT_SHA256"
         echo "signer=$STUDIO_REGULAR_CI_CERT_SHA256" >> "$GITHUB_OUTPUT"
+    - name: Compile minimal original-certificate instrumentation without using the
+        key
+      run: |
+        python3 android/scripts/prepare-original-signature-tests.py
+        bash android/environment-poc/gradlew -p android --no-daemon -PenvironmentClient -PregularEnvironmentClient -PregularEnvironmentCi -PenvironmentTest -PoriginalSignatureTest :app:assembleReleaseAndroidTest
+        python3 android/scripts/package-original-signature-inputs.py --phase test
+    - uses: actions/upload-artifact@v4
+      with:
+        name: original-signature-input
+        retention-days: 14
+        if-no-files-found: error
+        path: android/app/build/original-signature-input/
     - name: Prepare owned nodes and trust
       run: |
         python3 -m unittest discover -s android/network-poc/scripts/tests -p test_secure_fixture.py

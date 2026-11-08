@@ -7,6 +7,12 @@ def environmentClient = project.hasProperty('environmentClient')
 def environmentTest = project.hasProperty('environmentTest')
 def regularNavigationTest = project.hasProperty('regularNavigationTest')
 def regularLegacyNetworkTest = project.hasProperty('regularLegacyNetworkTest')
+def originalSignatureTest = project.hasProperty('originalSignatureTest')
+if (originalSignatureTest && (!regularEnvironmentCi || !environmentTest || regularNavigationTest || project.hasProperty('environmentNetworkTest')))
+    throw new GradleException('Original-signature instrumentation is a separate, explicit CI source set')
+def regularReviewAbi = project.findProperty('regularReviewAbi') ?: 'arm64-v8a'
+if (project.hasProperty('regularReviewAbi') && (!regularEnvironmentClient || regularEnvironmentCi || System.getenv('GITHUB_ACTIONS') != 'true' || !(regularReviewAbi in ['arm64-v8a', 'x86_64'])))
+    throw new GradleException('Unsigned review ABI is explicit and Actions-only')
 if (regularLegacyNetworkTest && (!regularEnvironmentCi || !project.hasProperty('environmentNetworkTest')))
     throw new GradleException('Regular legacy network fixtures require the marked regular network CI target')
 if (regularNavigationTest && (!regularEnvironmentCi || !environmentTest))
@@ -108,7 +114,7 @@ android {
             if (regularEnvironmentClient) signingConfig regularEnvironmentCi ? signingConfigs.regularCiKey : null
             else if (signingFile.exists()) signingConfig signingConfigs.localRelease
             minifyEnabled false
-            ndk { abiFilters 'arm64-v8a' }
+            ndk { abiFilters(regularEnvironmentClient && !regularEnvironmentCi ? regularReviewAbi : 'arm64-v8a') }
         }
         networkBeta {
             initWith release
@@ -402,4 +408,20 @@ if (regularLegacyNetworkTest) {
     android.sourceSets.release.res.srcDir(legacyResources.get().asFile)
     tasks.matching { it.name == 'preReleaseAndroidTestBuild' }.configureEach { dependsOn 'copyRegularLegacyNetworkTests' }
     tasks.matching { it.name == 'preReleaseBuild' }.configureEach { dependsOn 'copyRegularLegacyNetworkProviders', 'copyRegularLegacyNetworkResources' }
+}
+
+// This test APK is later signed locally with the original certificate. It has
+// no general fixture provider or UI tests, and its first action verifies QEMU,
+// certificate, exact installed bytes and the non-debug/non-testOnly release.
+if (originalSignatureTest) {
+    def originalTests = layout.buildDirectory.dir('generated/original-signature-tests')
+    android.sourceSets.androidTest.java.setSrcDirs(['src/originalSignatureTest/java', originalTests.get().asFile])
+    android.sourceSets.androidTest.manifest.srcFile('src/originalSignatureTest/AndroidManifest.xml')
+    tasks.register('requireOriginalSignatureSources') {
+        doLast {
+            if (!new File(originalTests.get().asFile, 'com/forcemind/chatgpt/profiles/OriginalSignatureUpgradeData.java').isFile())
+                throw new GradleException('Run prepare-original-signature-tests.py in Actions first')
+        }
+    }
+    tasks.matching { it.name == 'preReleaseAndroidTestBuild' }.configureEach { dependsOn 'requireOriginalSignatureSources' }
 }
