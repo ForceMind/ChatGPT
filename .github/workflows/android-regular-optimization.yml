@@ -125,7 +125,7 @@ jobs:
     - name: Build separately marked temporary-key x86 compatibility inputs
       run: |
         studio_navigation_args=(-PregularNavigationTest -PregularWorkbenchTest)
-        bash android/environment-poc/gradlew -p android --no-daemon -PenvironmentClient -PregularEnvironmentClient -PregularEnvironmentCi -PenvironmentTest "${studio_navigation_args[@]}" :app:assembleRelease :app:assembleReleaseAndroidTest
+        python3 android/scripts/build-regular-optimized-tests.py -PenvironmentClient -PregularEnvironmentClient -PregularEnvironmentCi -PenvironmentTest "${studio_navigation_args[@]}" :app:assembleRelease :app:assembleReleaseAndroidTest
         python3 android/scripts/prepare-regular-ci-inputs.py
     - name: Compile read-only class identity smoke check
       run: |
@@ -145,7 +145,11 @@ jobs:
         arch: x86_64
         disable-animations: true
         emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -writable-system -memory 4096
-        script: python3 android/scripts/probe-regular-classes.py
+        script: |
+          python3 android/scripts/probe-regular-classes.py
+          adb install -t android/app/build/regular-environment-input/upgrade-test.apk
+          adb shell am instrument -w -r -e class com.forcemind.chatgpt.profiles.OptimizationRunnerSmokeTest com.forcemind.chatgpt.profiles.test/androidx.test.runner.AndroidJUnitRunner > probe/evidence/runner-smoke.txt
+          python3 -c "import pathlib,re;v=pathlib.Path('probe/evidence/runner-smoke.txt').read_text();print(v);assert re.findall(r'(?m)^OK \((\d+) test\)\s*$',v)==['1'];assert not re.search(r'FAILED|FAILURES!!!|shortMsg=',v)"
     - name: Require original nested Slot names and CI tracing class
       run: |
         python3 - <<'PY'
@@ -185,7 +189,7 @@ jobs:
         python3 android/network-poc/scripts/fixture.py --prepare-only --output android/network-poc/secure-fixture
     - name: Compile separately marked regular network fixture
       run: |
-        bash android/environment-poc/gradlew -p android --no-daemon -PenvironmentClient -PregularEnvironmentClient -PregularEnvironmentCi -PenvironmentTest -PenvironmentNetworkTest -PregularLegacyNetworkTest :app:assembleRelease :app:assembleReleaseAndroidTest
+        python3 android/scripts/build-regular-optimized-tests.py -PenvironmentClient -PregularEnvironmentClient -PregularEnvironmentCi -PenvironmentTest -PenvironmentNetworkTest -PregularLegacyNetworkTest :app:assembleRelease :app:assembleReleaseAndroidTest
         mkdir -p android/app/build/regular-network-input
         cp android/app/build/outputs/apk/release/app-release.apk android/app/build/regular-network-input/gecko-network-x86.apk
         cp android/app/build/outputs/apk/androidTest/release/app-release-androidTest.apk android/app/build/regular-network-input/network-test.apk

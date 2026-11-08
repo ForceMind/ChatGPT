@@ -31,7 +31,7 @@
 
 ## 当前进度
 
-方案和静态盘点完成；开始准备隔离的Actions覆盖脚本与工作流。候选编译、功能与资源对照尚未通过或完成。iOS方案、双语README和会话库研究的现有本地改动保留，独立于本批提交；不合并main、不公开发布、不更新官网或手机。
+方案和静态盘点完成。baseline42512156694已24job通过；当前R8复验42521765852、资源压缩复验42521770270使用实验源8576ac3，冻结版本2026.11.09-0252，包含旧/新侧测试APK、CI Trace及已证实的Slot嵌套身份保护，并在build内先跑只读smoke。两候选完整功能与最终配对CPU/PSS尚未完成。资源对照工作流采用8个同主机场景，每场景三候选各新模拟器、非空草稿、2×120秒；待当前候选完整通过再触发。iOS方案、双语README和会话库研究的现有本地改动保留，独立于本批提交；不合并main、不公开发布、不更新官网或手机。
 
 首轮实验源码 `0250e2b` 已推 dev；共用上海日期版本 `2026.11.09-0252`，baseline `42512156694`、r8 `42512160093`、resources `42512163781`。三组正在构建与完整回归，尚无通过或优化收益结论。另准备独立比较器，严格核对源/版本、原生库字节和完整功能结论；CPU/PSS 仍待专门测量，不混入静态缩包结果。
 
@@ -52,3 +52,5 @@
 拆分测试后旧版seed和冷读已实际通过，新版verify前的AndroidJUnitRunner缺失androidx.tracing.Trace。准备仅ENVIRONMENT_TEST构建引用的精确tracing保留规则，不将CI专用依赖keep引入人用包。另对getSimpleName()识别Slot的反射契约执行只读元数据诊断42521215095；不初始化App、不打开页面、无截图，结果未出前不凭猜测加大范围keep。静态构建日志盘点已落在benchmarks/android-optimization-preliminary-build-sizes-20261109.json，最终字节和功能仍待Actions核验，不宣称采用或CPU收益。
 
 只读诊断42521215095已通过并读到真实结果：Slot0/1的完整类名存在，但simpleName分别为EnvironmentBrowserActivity$Slot0/1，enclosing=null；Trace类不存在。结合slot()对简名Slot前缀的依赖，已确认R8嵌套身份契约被破坏。仅在实验规则保留EnvironmentBrowserActivity外层和Slot子类身份/构造及InnerClasses/EnclosingMethod，不保留整个业务包；CI专用Trace库通过environmentTest条件单独保留，人用包不添加该CI规则。新增构建内只读元数据smoke，先断言实际Slot简名/外层及Trace存在，再启动22个功能job，避免昂贵无效矩阵。原App源码未改。
+
+新证据：8576版本Slot/Trace实际APK smoke均通过，但后续AndroidJUnitRunner因kotlin.jvm.internal.Lambda缺失而在测试前崩溃。CI与主APK共享运行时依赖，R8可移除App不用而测试运行器使用的类。改为从真实DEX的类继承/接口和方法/字段引用计算精确共享测试运行时边界，以同源码未压缩CI APK的实际类型集作来源；仅CI规则保留这些明确的第三方类，不保留整个业务包，缺失业务类型直接失败要求人工审查，最多三轮显式收敛且保留每轮清单，不使用ignorewarnings。人用规则不扩张。增加构建内运行器启动smoke（不启动Activity/页面、不充作功能通过），避免再次启动昂贵而无法执行测试的矩阵。旧/新侧测试分离、四阶段数据断言及22个功能job不减。

@@ -9,6 +9,7 @@ import re
 import subprocess
 import shutil
 from optimization_test_overlay import legacy_upgrade_overlay
+from optimization_dex import classes_and_roots
 
 ROOT = Path(__file__).resolve().parents[2]
 MODES = ('baseline', 'r8', 'resources')
@@ -49,7 +50,9 @@ def main():
             subprocess.run(['bash', 'android/environment-poc/gradlew', '-p', 'android', '--no-daemon',
                             '-PenvironmentClient', '-PregularEnvironmentClient', '-PregularEnvironmentCi',
                             '-PenvironmentTest', '-PregularNavigationTest', '-PregularWorkbenchTest',
-                            ':app:assembleReleaseAndroidTest'], check=True)
+                            ':app:assembleRelease', ':app:assembleReleaseAndroidTest'], check=True)
+            definitions, unused = classes_and_roots('android/app/build/outputs/apk/release/app-release.apk')
+            (folder/'unminified-runtime-types.json').write_text(json.dumps(sorted(definitions),indent=2)+'\n')
             apk = folder / 'upgrade-baseline-test.apk'
             shutil.copyfile('android/app/build/outputs/apk/androidTest/release/app-release-androidTest.apk', apk)
             tools = Path(os.environ['ANDROID_HOME']) / 'build-tools/35.0.0'
@@ -71,11 +74,15 @@ def main():
     replacement = ('            minifyEnabled ' + ('false' if mode == 'baseline' else 'true') + '\n'
                    '            shrinkResources ' + ('true' if mode == 'resources' else 'false') + '\n'
                    "            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'optimization-keep.pro'\n"
-                   "            if (environmentTest) proguardFiles 'optimization-ci-keep.pro'\n")
+                   "            if (environmentTest) { proguardFiles 'optimization-ci-keep.pro'; testProguardFiles 'optimization-instrumentation-keep.pro' }\n")
     path.write_text(text.replace(needle, replacement))
     edits.append({'path': str(path), 'beforeSHA256': sha(old), 'afterSHA256': sha(path.read_bytes())})
     Path('android/app/optimization-keep.pro').write_text('-keep class go.** { *; }\n-keep class studio.networkcore.** { *; }\n# Slot selection uses getSimpleName; retain both ends of the nested identity.\n-keepattributes InnerClasses,EnclosingMethod\n-keep,allowoptimization class com.forcemind.chatgpt.profiles.EnvironmentBrowserActivity { <init>(); }\n-keep,allowoptimization class com.forcemind.chatgpt.profiles.EnvironmentBrowserActivity$Slot* { <init>(); }\n# CI-only classes: named trust proof and manifest file provider; absent in human APK.\n-keep class com.forcemind.chatgpt.profiles.GeneratedNetworkTrust { public static java.lang.String PEM; }\n-keep class com.forcemind.chatgpt.profiles.EnvironmentNetworkFilesProvider { *; }\n')
     Path('android/app/optimization-ci-keep.pro').write_text('# AndroidJUnitRunner expects Trace via the unshrunk test runtime classpath.\n-keep class androidx.tracing.** { *; }\n')
+    Path('android/app/optimization-instrumentation-keep.pro').write_text('-keepclasseswithmembers class * { @org.junit.Test <methods>; }\n')
+    smoke = Path('android/app/src/regularEnvironmentTest/java/com/forcemind/chatgpt/profiles/OptimizationRunnerSmokeTest.java')
+    assert not smoke.exists()
+    smoke.write_text('package com.forcemind.chatgpt.profiles;\nimport org.junit.Test;\nimport androidx.test.platform.app.InstrumentationRegistry;\nimport static org.junit.Assert.assertEquals;\npublic final class OptimizationRunnerSmokeTest { @Test public void runtimeStarts() { assertEquals("com.forcemind.chatgpt.profiles", InstrumentationRegistry.getInstrumentation().getTargetContext().getPackageName()); } }\n')
     # Same strict evidence provenance checks, bound to this dedicated workflow.
     path = Path('android/scripts/regular_evidence_source.py'); old = path.read_bytes(); text = old.decode()
     needle = "WORKFLOW = '.github/workflows/android-regular-full-client.yml'"
