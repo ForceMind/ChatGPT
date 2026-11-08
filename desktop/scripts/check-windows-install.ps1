@@ -7,11 +7,14 @@ $data = Join-Path $env:APPDATA 'ChatGPT Profiles'
 if (Test-Path $data) { throw 'Refusing to touch pre-existing application data.' }
 $installDir = Join-Path $env:RUNNER_TEMP ('profiles-install-' + [guid]::NewGuid().ToString('N'))
 $process = $null
+$fixture = $null
+. ./scripts/windows-owned-fixture.ps1
 $result = @{ os = [Environment]::OSVersion.VersionString; installed = $false; launched = $false; normalExit = $false; uninstalled = $false; accountDataRetained = $false }
 try {
+    $fixture = Start-StudioOwnedFixture
     $setup = Start-Process -FilePath $installer.FullName -ArgumentList @('/S', "/D=$installDir") -PassThru
     if (-not $setup.WaitForExit(120000) -or $setup.ExitCode -ne 0) { throw 'Silent installation failed or timed out' }
-    $exe = Join-Path $installDir 'ChatGPT Profiles.exe'
+    $exe = Join-Path $installDir 'ChatGPT Studio.exe'
     if (-not (Test-Path $exe)) { throw 'Installed application is missing' }
     $result.installed = $true
     $product = [Diagnostics.FileVersionInfo]::GetVersionInfo($exe)
@@ -19,7 +22,7 @@ try {
     $result.productName = $product.ProductName
     $result.productVersion = [Diagnostics.FileVersionInfo]::GetVersionInfo($exe).ProductVersion
     $result.signature = (Get-AuthenticodeSignature $exe).Status.ToString()
-    $process = Start-Process -FilePath $exe -PassThru
+    $process = Start-Process -FilePath $exe -ArgumentList $fixture.arguments -PassThru
     $deadline = [DateTime]::UtcNow.AddSeconds(45)
     do { Start-Sleep -Milliseconds 250; $process.Refresh() } until ($process.HasExited -or ($process.MainWindowHandle -ne 0 -and (Test-Path (Join-Path $data 'state.json'))) -or [DateTime]::UtcNow -gt $deadline)
     if ($process.HasExited -or $process.MainWindowHandle -eq 0) { throw 'Installed application did not open its native window' }
@@ -65,6 +68,7 @@ public static class PackageWindowCapture {
     $result.accountDataRetained = $true
 } finally {
     if ($process -and -not $process.HasExited) { $process.Kill($true) }
+    Stop-StudioOwnedFixture $fixture (Join-Path $output 'windows-install-fixture.json')
     $result | ConvertTo-Json -Depth 5 | Set-Content (Join-Path $output 'windows-smoke.json') -Encoding utf8
 }
 $result | ConvertTo-Json -Depth 5

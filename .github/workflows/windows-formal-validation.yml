@@ -114,3 +114,4 @@ jobs:
             desktop/release/windows/windows-smoke.json
             desktop/release/windows/windows-upgrade.json
             desktop/release/windows/windows-installed.png
+            desktop/release/windows/*-fixture.json
