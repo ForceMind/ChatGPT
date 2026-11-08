@@ -7,6 +7,9 @@ def environmentClient = project.hasProperty('environmentClient')
 def environmentTest = project.hasProperty('environmentTest')
 def regularNavigationTest = project.hasProperty('regularNavigationTest')
 def regularLegacyNetworkTest = project.hasProperty('regularLegacyNetworkTest')
+def regularWorkbenchTest = project.hasProperty('regularWorkbenchTest')
+if (regularWorkbenchTest && (!regularEnvironmentCi || !environmentTest || project.hasProperty('environmentNetworkTest')))
+    throw new GradleException('Regular Workbench fixtures require the ordinary non-network CI target')
 def originalSignatureTest = project.hasProperty('originalSignatureTest')
 if (originalSignatureTest && (!regularEnvironmentCi || !environmentTest || regularNavigationTest || project.hasProperty('environmentNetworkTest')))
     throw new GradleException('Original-signature instrumentation is a separate, explicit CI source set')
@@ -278,6 +281,7 @@ if (project.hasProperty('environmentClient')) {
             inputs.property('environmentTest', environmentTest)
             inputs.property('environmentNetworkTest', project.hasProperty('environmentNetworkTest'))
             inputs.property('regularLegacyNetworkTest', regularLegacyNetworkTest)
+            inputs.property('regularWorkbenchTest', regularWorkbenchTest)
             outputs.file(generatedManifest)
             doLast {
                 def base = file('src/environmentClient/AndroidManifest.xml').getText('UTF-8')
@@ -288,6 +292,7 @@ if (project.hasProperty('environmentClient')) {
                     def extra = file('src/environmentCi/AndroidManifest.xml').getText('UTF-8')
                     inner = extra.substring(extra.indexOf('<application>') + '<application>'.length(), extra.indexOf('</application>'))
                 }
+                if (regularWorkbenchTest) inner += '<activity android:name=".UploadProbeActivity" android:exported="false" />'
                 if (project.hasProperty('environmentNetworkTest')) {
                     base=base.replace('<application ', '<application android:networkSecurityConfig="@xml/studio_environment_network_security" ')
                     base=base.replace('tools:replace="android:label"','tools:replace="android:label,android:networkSecurityConfig"')
@@ -322,6 +327,7 @@ if (regularNavigationTest) {
                 .replace('EnvironmentUpgradeSeedTest.NEW_CODE', 'RegularEnvironmentUpgradeTest.NEW_CODE')
                 .replace('EnvironmentUpgradeSeedTest.PACKAGE', 'RegularEnvironmentUpgradeTest.PACKAGE')
                 .replace('EnvironmentUpgradeSeedTest.expected()', 'RegularEnvironmentUpgradeTest.expected()')
+                .replace('result.set(found);return found!=null;', 'if(found!=null&&enabled&&timingCase.isEmpty()&&java.util.Arrays.asList("后退","前进","刷新页面","强制刷新").contains(label)){JSONObject n=nativeEvidence(),r=n.getJSONObject("recovery");if(n.getBoolean("pending")||n.getBoolean("nativeBusy")||n.getBoolean("loading")||!r.getBoolean("liveReady")||r.getBoolean("inflight")||r.getBoolean("restoring")||r.getBoolean("restoreCall")){found.recycle();found=null;}}result.set(found);return found!=null;')
             }
         }
     }
@@ -341,6 +347,7 @@ if (project.hasProperty('environmentNetworkTest')) {
     def trustRoot = layout.buildDirectory.dir('generated/environment-network-ci').get().asFile
     tasks.register('prepareEnvironmentNetworkTrust') {
         inputs.file ownedCa
+        inputs.property('regularLegacyNetworkTest', regularLegacyNetworkTest)
         outputs.dir trustRoot
         doLast {
             def pem=ownedCa.getText('UTF-8')
@@ -351,6 +358,11 @@ if (project.hasProperty('environmentNetworkTest')) {
             def ca=new File(trustRoot,'res/raw/studio_environment_network_ci_ca.pem');ca.parentFile.mkdirs();ca.text=pem
             def config=new File(trustRoot,'res/xml/studio_environment_network_security.xml');config.parentFile.mkdirs()
             config.text='<network-security-config><base-config cleartextTrafficPermitted="false" /><domain-config><domain includeSubdomains="false">network-fixture.test</domain><domain includeSubdomains="false">files.network-fixture.test</domain><trust-anchors><certificates src="system" /><certificates src="@raw/studio_environment_network_ci_ca" /></trust-anchors></domain-config></network-security-config>'
+            if (regularLegacyNetworkTest) {
+                // Same owned control-plane allowance as the existing networkCi
+                // fixture. Guest OUTPUT rules restrict the host port to 18080.
+                config.text=config.text.replace('</network-security-config>', '<domain-config cleartextTrafficPermitted="true"><domain includeSubdomains="false">10.0.2.2</domain><domain includeSubdomains="false">127.0.0.1</domain></domain-config></network-security-config>')
+            }
         }
     }
     android.sourceSets[environmentBuildType].java.srcDir(new File(trustRoot,'java'))
@@ -360,7 +372,7 @@ if (project.hasProperty('environmentNetworkTest')) {
 
 // The retained WebView path uses its existing network/file assertions against
 // the same original-package CI APK. Providers remain owned, test-only sources.
-if (regularLegacyNetworkTest) {
+if (regularLegacyNetworkTest || regularWorkbenchTest) {
     def legacyTests = layout.buildDirectory.dir('generated/regular-legacy-network-tests')
     def legacyProviders = layout.buildDirectory.dir('generated/regular-legacy-network-providers')
     def legacyResources = layout.buildDirectory.dir('generated/regular-legacy-network-res')
@@ -373,7 +385,7 @@ if (regularLegacyNetworkTest) {
         filter { line -> line
             .replace('BuildConfig.APPLICATION_ID.endsWith(".networkci")', '(BuildConfig.APPLICATION_ID.equals("com.forcemind.chatgpt.profiles") && BuildConfig.ENVIRONMENT_NETWORK_TEST)')
             .replace('BuildConfig.APPLICATION_ID+".network-docs"', 'BuildConfig.APPLICATION_ID+".legacy-network-docs"')
-            .replace('context.getPackageName().endsWith(".debug")', '(context.getPackageName().equals("com.forcemind.chatgpt.profiles") && BuildConfig.ENVIRONMENT_NETWORK_TEST)')
+            .replace('context.getPackageName().endsWith(".debug")', '(context.getPackageName().equals("com.forcemind.chatgpt.profiles") && BuildConfig.ENVIRONMENT_TEST)')
         }
         doLast {
             def benchmark = file('src/androidTest/java/com/forcemind/chatgpt/profiles/NetworkBenchmarkTest.java').getText('UTF-8')

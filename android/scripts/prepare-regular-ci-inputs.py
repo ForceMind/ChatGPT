@@ -53,11 +53,13 @@ assert "versionCode='3000035'" in badging and "versionName='" + metadata['versio
 source = (root / 'generated/source/buildConfig/release/com/forcemind/chatgpt/profiles/BuildConfig.java').read_text()
 assert 'ENVIRONMENT_CLIENT = true' in source and 'ENVIRONMENT_TEST = true' in source
 assert 'NETWORK_TEST = false' in source and 'ENVIRONMENT_NETWORK_TEST = false' in source
+compiled_manifest = subprocess.check_output([str(tools/'aapt2'),'dump','xmltree',str(candidate),'--file','AndroidManifest.xml'],text=True)
 receipt = {'schema': 1, 'file': candidate.name, 'sha256': sha(candidate), 'bytes': candidate.stat().st_size,
            'package': 'com.forcemind.chatgpt.profiles', 'sourceSHA': metadata['sourceSHA'],
            'versionCode': metadata['versionCode'], 'versionName': metadata['versionName'],
            'versionMetadata': metadata, 'signerSHA256': ci_signer, 'ciOnly': True,
-           'productionSignatureVerified': False, 'temporarySignatureNotForPersonalDevices': True}
+           'productionSignatureVerified': False, 'temporarySignatureNotForPersonalDevices': True,
+           'workbenchFixture': '.UploadProbeActivity' in compiled_manifest}
 baseline_receipt = {'schema': 1, 'file': baseline.name, 'sha256': sha(baseline), 'bytes': baseline.stat().st_size,
                     'originalFile': original.name, 'originalSHA256': sha(original),
                     'signerSHA256': ci_signer, 'signatureOnlyResigned': True,
@@ -65,6 +67,10 @@ baseline_receipt = {'schema': 1, 'file': baseline.name, 'sha256': sha(baseline),
                     'productionSignatureVerifiedOnInstalledBaseline': False}
 (inputs / 'receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
 (inputs / 'baseline-receipt.json').write_text(json.dumps(baseline_receipt, indent=2) + '\n')
+(inputs / 'test-receipt.json').write_text(json.dumps({
+    'schema':1,'file':test.name,'bytes':test.stat().st_size,'sha256':sha(test),
+    'package':'com.forcemind.chatgpt.profiles.test','signerSHA256':ci_signer,'sourceSHA':metadata['sourceSHA'],
+    'ciOnly':True,'productionSignatureVerified':False},indent=2)+'\n')
 with open(os.environ['GITHUB_ENV'], 'a') as env:
     env.write('STUDIO_REGULAR_CI_CERT_SHA256=' + ci_signer + '\n')
 print(json.dumps({'ciOnly': True, 'versionName': metadata['versionName'], 'signerSHA256': ci_signer,

@@ -14,6 +14,8 @@ assert REGULAR and os.environ.get('GITHUB_ACTIONS') == 'true'
 output = Path(os.environ['STUDIO_GECKO_OUTPUT'])
 output.mkdir(parents=True, exist_ok=True)
 native.EVIDENCE = output
+suite = os.environ.get('STUDIO_REGULAR_WEBVIEW_SUITE', 'network-files')
+assert suite in ('network-files', 'workbench')
 guarded = False
 try:
     api = native._guard()
@@ -22,14 +24,15 @@ try:
     assert not native._shell('pm', 'list', 'packages', PACKAGE).strip(), 'Fresh disposable emulator required'
     receipt = native._json(Path(os.environ['STUDIO_GECKO_RECEIPT']))
     metadata = validate_receipt(receipt)
-    assert receipt['ciOnly'] is True and receipt['legacyWebviewFixture'] is True
+    assert receipt['ciOnly'] is True
+    assert receipt['workbenchFixture' if suite == 'workbench' else 'legacyWebviewFixture'] is True
     assert metadata['sourceSHA'] == os.environ['GITHUB_SHA']
     apk = Path(os.environ['STUDIO_GECKO_APK'])
     assert receipt['file'] == apk.name and receipt['sha256'] == native._sha(apk) and receipt['bytes'] == apk.stat().st_size
     signer = expected_signer()
     native._inspect_apk(apk, native._tools(), signer, PACKAGE, VERSION_CODE, test_only=True)
-    test = apk.parent / 'network-test.apk'
-    test_receipt = native._json(apk.parent / 'network-test-receipt.json')
+    test = apk.parent / ('upgrade-test.apk' if suite == 'workbench' else 'network-test.apk')
+    test_receipt = native._json(apk.parent / ('test-receipt.json' if suite == 'workbench' else 'network-test-receipt.json'))
     assert test_receipt['file'] == test.name and test_receipt['bytes'] == test.stat().st_size
     assert test_receipt['ciOnly'] is True and test_receipt['productionSignatureVerified'] is False
     assert test_receipt['package'] == PACKAGE+'.test' and test_receipt['signerSHA256'] == signer
@@ -39,6 +42,8 @@ try:
     assert transport in ('raw', 'tls', 'reality')
     fixture = native._json(Path(os.environ['STUDIO_GECKO_FIXTURE']))
     native._root_and_block()
+    # Owned fixture gates and PAC only; the business origin 18480 stays blocked.
+    native._shell('iptables','-I','OUTPUT','1','-p','tcp','-d','10.0.2.2','--dport','18080','-j','ACCEPT')
     for name in ('nodeA', 'nodeB'):
         node = urllib.parse.urlsplit(fixture['transports'][transport][name])
         assert node.hostname == '10.0.2.2' and node.port in (18443,18444,19443,19444,20443,20444)
@@ -48,8 +53,6 @@ try:
     install(apk)
     native._run(['adb','install','-t',str(test)])
     installed = native._installed(receipt['sha256'],'regular-webview-network')
-    suite = os.environ.get('STUDIO_REGULAR_WEBVIEW_SUITE', 'network-files')
-    assert suite in ('network-files', 'workbench')
     if suite == 'network-files':
         spec=importlib.util.spec_from_file_location('regular_owned_webview_route',Path(__file__).with_name('run-network-integration.py'))
         shared=importlib.util.module_from_spec(spec);spec.loader.exec_module(shared)
