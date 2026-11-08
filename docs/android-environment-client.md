@@ -1,6 +1,17 @@
 # Android 独立环境客户端：文件与任务主线
 
-## 当前任务：常规版完整验收与原签覆盖候选（已批准）
+## 当前交付：常规 Android 原签候选 2026.11.08-1923
+
+已完成本批批准的常规原包名/原证书候选。原签升级运行 [42493929455](https://github.com/ForceMind/ChatGPT/actions/runs/42493929455) 的 Android 9、Android 15 和最终交付门禁均成功，验收 harness 为 `645ddf11c21e63b9b6e3ceec08c28fd38f5476da`。App 编译源码仍为 `a26b4993e329268ef0f690e12fd4707f374e58d8`，此前 85 项单元测试、22 个合成功能任务及完整静态汇总的结果沿用原字节，没有重编、放宽断言或重复后台长测。
+
+- [可安装 ARM64 候选及完整报告](https://github.com/ForceMind/ChatGPT/actions/runs/42493929455/artifacts/13622283441)：`ChatGPT-Studio-2026.11.08-1923-android-arm64.apk`，code `3000035`，241,931,130 bytes，SHA-256 `177ef874c6c904a653aecb3ffc61a76ef45ebc8e69cb80c6addbdb9e74806259`。Actions ZIP 为 111,552,921 bytes，SHA-256 `238ffc8a2bccdd728ea865a018b9b855f8d075af019ef8d13652b84aada7c7c9`，保留 14 天。原包名 `com.forcemind.chatgpt.profiles`、原证书 `8b6eef928fded91f291ad954e20976b2cc6011b55e8cbec0152695fe1f05cf19`，覆盖公开 alpha.22 时不需要卸载。
+- 两端均实际安装固定原 SHA 的公开 alpha.22，原包未改签；执行 seed、旧包冷读、唯一一次 `install -r`、新包读取、新包冷读。四个验证阶段各 1 项 JUnit，共 8 项实际通过，未 clear/uninstall。API28 的 UID 始终为 10068，API35 始终为 10209；旧 Profile/注册绑定、HttpOnly/Secure Cookie、localStorage、IndexedDB、两份加密恢复记录、密文 payload、资产和偏好均核对保留。
+- 实际安装升级的是原签、非 debug/非 testOnly 的 x86_64 人用伴随包；源/签后全部非签名 ZIP 内容、实际 signed ARM64/x86 DEX 均一致，最终 ARM64 字节再次核验。[原签验收原样报告](releases/android-regular-2026.11.08-1923-original-upgrade-acceptance.json)为 33,035 bytes，SHA-256 `7c15577291af5c9df5c71a904a2aa006c707f1b9319c25c3035b27d143fb4198`；[两端输入绑定](releases/android-regular-2026.11.08-1923-original-upgrade-bindings.json)保留签后输入与源字节验证。
+- 临时草稿 Release `438302753` 已按授权删除，回读 404；临时标签不存在。中转 ZIP、原签 CI 伴随/测试 APK 和本机临时签名目录已清理，仅保留最终 ARM64 APK/报告；原私钥未上传。[清理记录](releases/android-regular-2026.11.08-1923-cleanup.json)保留核对结果。工作流的临时 contents:write 已撤下，恢复全局 contents:read/actions:read，最终同步结果以本批提交为准。
+
+**验收边界：**真实 ARM64 手机、OEM 后台行为、真实 ChatGPT 登录/附件发送和真实 VLESS 节点仍由用户验收。本批只用合成数据，没有截图、真实 ChatGPT/节点访问、个人设备或已有登录数据修改、main 合并、公开 Release 或官网部署。功能矩阵里一次初始代理目标检查失败后按同源码复验通过，其间歇原因仍未关闭；早先一次 Android 15 首次输入命中系统 sink 的底层原因也未宣称修复。候选通过合成门禁，不等于这些实际服务与设备场景已验收。
+
+### 本批实施与首错记录（历史）
 
 用户已明确确认仅原签升级验收 job 临时申请 `contents:write`，验收结束后恢复 `contents:read` 并删除临时草稿；不新增 Secret、上传私钥、公开发布、合并 main 或更新个人设备。本轮在原工作对话继续该任务，新的本地会话库/知识库想法已移至独立只读研究对话，不混入本次交付。
 

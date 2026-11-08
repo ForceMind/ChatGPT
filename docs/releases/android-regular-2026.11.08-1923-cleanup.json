@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "releaseID": 438302753,
+  "tag": "regular-upgrade-review-202611082234",
+  "sourceSHA": "a26b4993e329268ef0f690e12fd4707f374e58d8",
+  "bundleSHA256": "0760b78c467a6242efce4498235b4b6bd5751cd4c4acdb78e6cb0fb994b15ce5",
+  "draftWasVerifiedBeforeDelete": true,
+  "releaseDeletedVerified404": true,
+  "temporaryTagDeleted": false,
+  "temporaryTagAbsentVerified404": true,
+  "originalSignatureRunID": 42493929455,
+  "privateKeyUploaded": false,
+  "temporaryLocalSigningFolderRemoved": true,
+  "localFinalCandidate": "android/app/build/regular-original-candidate-2026.11.08-1923/ChatGPT-Studio-2026.11.08-1923-android-arm64.apk",
+  "localFinalSHA256": "177ef874c6c904a653aecb3ffc61a76ef45ebc8e69cb80c6addbdb9e74806259"
+}
