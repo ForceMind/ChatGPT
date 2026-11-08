@@ -306,7 +306,7 @@ if (regularNavigationTest) {
             }
         }
     }
-    android.sourceSets.androidTest.java.srcDir(navigationSources)
+    android.sourceSets.androidTest.java.srcDir(navigationSources.get().asFile)
     tasks.matching { it.name == 'preReleaseAndroidTestBuild' }.configureEach { dependsOn 'copyRegularNavigationTests' }
 }
 

@@ -4,9 +4,9 @@
 
 用户已批准继续第二、三批：补齐常规 Android 的网络、文件、Skill 与刷新/强制刷新/后退/前进验证，再交可覆盖公开 alpha.22、保留登录和恢复数据的原签 ARM64 候选。全部构建、单元及合成交互测试在 GitHub Actions；不截图、不访问真实 ChatGPT 或真实节点，不重复后台长测，不合并 main、不公开发布、不更新个人设备。
 
-签名方式已明确为**本机仅签名**：正式私钥留在本机，不新增正式签名 Actions Secret。云端构建并提供可核对的未签名 APK，本机只做原证书签名，临时 APK/工具完成后清理；签名后的实际字节和原证书身份必须再经过云端升级门禁。不会用 Beta 或临时证书冒充正式原签。
+签名方式已明确为**本机仅签名**：正式私钥留在本机，不新增正式签名 Actions Secret。云端构建并提供可核对的未签名 APK，本机只做原证书签名，临时 APK/工具完成后清理；签名后的实际字节和原证书身份必须再经过云端升级门禁。不会用 Beta 或临时证书冒充正式原签。 已仅提取本机 keystore 的公开证书，SHA-256 与公开 alpha.22 的 `8b6eef928fded91f291ad954e20976b2cc6011b55e8cbec0152695fe1f05cf19` 一致；未导出或上传私钥。
 
-本迭代先接入常规双内核导航专项：复用原 Gecko chrome_navigation 与 WebView BrowserChromeNavigationTest，生成常规 CI 测试源时只替换身份绑定，原页面、存储、草稿、历史、刷新次数与期限断言保持。原包升级、原 profile/密文/资产/偏好前后核对沿用第一批。专用工作流增加 navigation 模式，compatibility 模式继续保留。当前仅完成接线与 Python/YAML/Shell 静态检查，尚未运行本批 Actions；导航专项产物不代表网络/文件/Skill 总门禁或最终可安装候选完成。
+本迭代先接入常规双内核导航专项：复用原 Gecko chrome_navigation 与 WebView BrowserChromeNavigationTest，生成常规 CI 测试源时只替换身份绑定，原页面、存储、草稿、历史、刷新次数与期限断言保持。原包升级、原 profile/密文/资产/偏好前后核对沿用第一批。专用工作流增加 navigation 模式，compatibility 模式继续保留。接线与 Python/YAML/Shell 静态检查已通过；候选 `ca94a3b` 已推 dev，[导航专项 Actions 42450420699](https://github.com/ForceMind/ChatGPT/actions/runs/42450420699) 已启动，首轮在 AGP 测试源目录配置停止（Provider 不能直接传给 SourceSet）；已定点改为具体目录并保留生成任务依赖，尚无运行验证结论。原始失败运行保留。导航专项产物不代表网络/文件/Skill 总门禁或最终可安装候选完成。
 
 随后在同一常规目标复用已有 VLESS RAW/TLS/REALITY 同路由、上传/下载、本地 Blob/HTML/图片/data 导出及归属/取消、Skill 完整指令与附件/一次发送/取消/失败恢复/结果待确认流程。全部门禁通过后统一候选日期版本，核对原签名并执行实际覆盖升级，再交付候选和报告。
 
