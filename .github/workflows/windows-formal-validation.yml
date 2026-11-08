@@ -41,6 +41,8 @@ jobs:
         run: npm ci
       - name: Typecheck, state tests and build
         run: npm run check
+      - name: Verify migration version ordering and invalid inputs
+        run: ./scripts/check-windows-migration-version.ps1
       - name: Package Windows x64
         run: |
           node scripts/icon.mjs

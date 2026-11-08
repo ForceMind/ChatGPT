@@ -14,6 +14,20 @@ function Sha($Path) { $algorithm=[Security.Cryptography.SHA256]::Create();$strea
 function WriteJson($Path,$Value) { [IO.File]::WriteAllText($Path,($Value|ConvertTo-Json -Depth 50),[Text.UTF8Encoding]::new($false)) }
 function ReadJson($Path) { [IO.File]::ReadAllText($Path,[Text.Encoding]::UTF8)|ConvertFrom-Json }
 function Prop($Object,$Name) { $p=$Object.PSObject.Properties[$Name]; if($p){$p.Value} }
+# Accept the shipped alpha series and stable SemVer; reject unknown version shapes.
+function StudioVersion([string]$Text) {
+  if($Text.Length -gt 100 -or $Text -notmatch '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-alpha\.(0|[1-9][0-9]*))?$'){throw '无法识别的程序版本。'}
+  $core=[version]($Matches[1]+'.'+$Matches[2]+'.'+$Matches[3])
+  $alpha=if($Matches.ContainsKey(4)){[long]$Matches[4]}else{-1L}
+  return @{core=$core;alpha=$alpha}
+}
+function CompareStudioVersions([string]$Left,[string]$Right) {
+  $a=StudioVersion $Left;$b=StudioVersion $Right
+  $core=$a.core.CompareTo($b.core);if($core -ne 0){return $core}
+  if($a.alpha -eq $b.alpha){return 0}
+  if($a.alpha -eq -1){return 1};if($b.alpha -eq -1){return -1}
+  return $a.alpha.CompareTo($b.alpha)
+}
 function SafePath($Path) {
   $p=Full $Path
   if($p -notmatch '^[a-zA-Z]:\\' -or $p.Length -lt 4 -or $p.Substring(2).Contains(':') -or $p -match '[\x00-\x1f]'){throw '安装路径必须是本机独立目录。'}
@@ -33,7 +47,8 @@ function AsarInfo($Directory) {
     $entry=$header.files.'package.json';if(!$entry -or (Prop $entry 'unpacked') -or [long]$entry.size -gt 1048576){throw '应用身份记录无效。'}
     $at=8L+$headerSize+[long]$entry.offset;if($at -lt 0 -or $at+[long]$entry.size -gt $stream.Length){throw '应用身份记录越界。'}
     [void]$stream.Seek($at,[IO.SeekOrigin]::Begin);$pkg=([Text.Encoding]::UTF8.GetString($reader.ReadBytes([int]$entry.size))|ConvertFrom-Json)
-    if($pkg.name -ne 'chatgpt-profiles' -or $pkg.version -notmatch '^3\.0\.0-alpha\.\d+$'){throw '目录不属于可识别的ChatGPT Studio版本。'}
+    if($pkg.name -ne 'chatgpt-profiles'){throw '目录不属于可识别的ChatGPT Studio版本。'}
+    [void](StudioVersion $pkg.version)
     $unpacked=[Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
     function Walk($Node,$Prefix,$Inherited) {
       $flag=$Inherited -or [bool](Prop $Node 'unpacked');$children=Prop $Node 'files'
@@ -86,7 +101,7 @@ function Plan {
   if($source -and (Test-Path -LiteralPath $source)){
     $source=SafePath $source;$info=ProgramInfo $source
     if($uninstall -notmatch '^"([^"\r\n]+)"(?:\s+/currentuser)?\s*$' -or !(Same ([IO.Path]::GetDirectoryName($Matches[1])) $source) -or [IO.Path]::GetFileName($Matches[1]) -notin @('Uninstall ChatGPT Profiles.exe','Uninstall ChatGPT Studio.exe')){throw '卸载记录与旧程序目录不一致。'}
-    if([int]($info.Package.version.Split('.')[-1]) -gt [int]($Version.Split('.')[-1])){throw '不能以旧版本覆盖较新程序。'}
+    if((CompareStudioVersions $info.Package.version $Version) -gt 0){throw '不能以旧版本覆盖较新程序。'}
     $oldDefault=Join-Path $ProgramsRoot 'ChatGPT Profiles'
     if((Same $source $oldDefault) -and ((Same $dest $source) -or ($Requested -and (Same $Requested $source)))){$dest=Join-Path ([IO.Path]::GetDirectoryName($source)) 'ChatGPT Studio'}
     elseif($Requested -and (Same $Requested $source)){$dest=$source}

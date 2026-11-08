@@ -52,13 +52,16 @@ for platform, workflow in workflows.items():
     assert run['event'] == 'workflow_dispatch' and run['head_branch'] == 'dev'
     verified_runs[platform] = {'id': run['id'], 'sourceCommit': run['head_sha'], 'conclusion': 'success'}
 
-desktop_inputs = ['desktop/src', 'desktop/assets', 'desktop/resources', 'desktop/package.json',
+desktop_inputs = ['desktop/src', 'desktop/resources', 'desktop/package.json',
                   'desktop/package-lock.json', 'desktop/tsconfig.json', 'desktop/scripts/build.mjs',
                   'desktop/scripts/icon.mjs', 'desktop/scripts/package-mac.mjs',
                   'desktop/scripts/package-win.mjs', 'desktop/scripts/windows-update-feed.mjs', 'LICENSE']
 for platform in ('macos', 'windows'):
+    # Windows migration/NSIS resources are not included in the macOS bundle.
+    assets = ['desktop/assets'] if platform == 'windows' else [
+        'desktop/assets/icon.png', 'desktop/assets/icon.svg', 'desktop/assets/menu-bar-template.svg']
     subprocess.run(['git', 'diff', '--exit-code', manifest['runs'][platform]['sourceCommit'], 'HEAD', '--',
-                    *desktop_inputs], check=True)
+                    *desktop_inputs, *assets], check=True)
 subprocess.run(['git', 'diff', '--exit-code', manifest['androidSourceCommit'], 'HEAD', '--',
                 'android/app/src', 'android/app/build.gradle', 'android/app/proguard-rules.pro',
                 'android/network-poc/corebridge', 'desktop/resources/capabilities'], check=True)
