@@ -7,6 +7,7 @@ import android.graphics.Rect;
 import android.os.Bundle;
 import android.os.ParcelFileDescriptor;
 import android.view.accessibility.AccessibilityNodeInfo;
+import android.view.accessibility.AccessibilityWindowInfo;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
 import android.webkit.WebResourceRequest;
@@ -22,6 +23,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONTokener;
@@ -35,8 +38,13 @@ public final class RegularDualEngineSwitchTest {
     private final Instrumentation instrumentation=InstrumentationRegistry.getInstrumentation();
     private final AtomicInteger loads=new AtomicInteger(),unexpected=new AtomicInteger();
     private final JSONArray rounds=new JSONArray();
+    private final JSONArray menuTransitions=new JSONArray();
     private MainActivity activity;
     private String legacyId,storageId,tabId,url,legacyName,environmentName,expectedGeckoDraft;
+    private JSONObject nativeScrollReceipt,nativeScrollSnapshot;
+    private String nativeScrollOutput="",nativeScrollUid="";
+    private String phase="setup";
+    private String lastMenuImeDump="";
     private static final String MAIN_DRAFT="OwnedDualMainDraft";
     private interface Check { boolean ready()throws Exception; }
     private void main(Runnable action){instrumentation.runOnMainSync(action);}
@@ -65,10 +73,58 @@ public final class RegularDualEngineSwitchTest {
         try{return find(root,label);}finally{if(root!=null)root.recycle();}
     }
     private boolean visible(String label){AccessibilityNodeInfo value=node(label);if(value==null)return false;value.recycle();return true;}
+    private JSONObject workspaceSelection()throws Exception{
+        WorkspaceState state=new StateStore(RegularEnvironmentUpgradeTest.context().getFilesDir()).load();WorkspaceState.Account current=state.current();
+        return new JSONObject().put("activeAccount",state.activeAccount).put("activeTab",current.activeTab).put("accountName",current.name).put("storageId",current.storageId).put("engine",current.engine);
+    }
+    private void semanticTree(AccessibilityNodeInfo node,StringBuilder text,int depth){
+        if(node==null){text.append("no active accessibility root\n");return;}if(depth>30||text.length()>65536)return;
+        Rect box=new Rect();node.getBoundsInScreen(box);
+        text.append("depth=").append(depth).append(" window=").append(node.getWindowId()).append(" package=").append(node.getPackageName()).append(" class=").append(node.getClassName())
+            .append(" text=").append(node.getText()).append(" description=").append(node.getContentDescription()).append(" visible=").append(node.isVisibleToUser()).append(" enabled=").append(node.isEnabled()).append(" bounds=").append(box).append('\n');
+        for(int i=0;i<node.getChildCount();i++){AccessibilityNodeInfo child=node.getChild(i);try{semanticTree(child,text,depth+1);}finally{if(child!=null)child.recycle();}}
+    }
+    private String semanticHierarchy(){
+        AccessibilityNodeInfo root=instrumentation.getUiAutomation().getRootInActiveWindow();StringBuilder text=new StringBuilder();
+        try{if(root!=null)text.append("activeRootRefresh=").append(root.refresh()).append('\n');semanticTree(root,text,0);return text.toString();}finally{if(root!=null)root.recycle();}
+    }
     private void click(String label)throws Exception{
         AtomicReference<AccessibilityNodeInfo> selected=new AtomicReference<>();
         waitFor("enabled native control "+label,()->{AccessibilityNodeInfo value=node(label);if(value==null)return false;if(!value.isEnabled()){value.recycle();return false;}selected.set(value);return true;});
         AccessibilityNodeInfo value=selected.get();try{Rect box=new Rect();value.getBoundsInScreen(box);assertTrue(box.width()>0&&box.height()>0);shell("input tap "+box.centerX()+" "+box.centerY());}finally{value.recycle();}
+    }
+    private void selectStableAccount(String label,JSONObject transition)throws Exception{
+        final long deadline=android.os.SystemClock.elapsedRealtime()+45000;
+        AtomicReference<Rect> previous=new AtomicReference<>(),selected=new AtomicReference<>();AtomicInteger previousWindow=new AtomicInteger(-1),stable=new AtomicInteger();
+        transition.put("imeHiddenObserved",false).put("selectionTapCount",0).put("samples",0);
+        waitFor("hidden IME and stable active account row "+label,()->{
+            assertTrue("Account row selection stays within the original 45s deadline",android.os.SystemClock.elapsedRealtime()<deadline);
+            lastMenuImeDump=shell("dumpsys input_method");
+            Matcher visibility=Pattern.compile("\\bmInputShown\\s*=\\s*(true|false)\\b").matcher(lastMenuImeDump);
+            assertTrue("Current system IME visibility required",visibility.find());boolean shown=Boolean.parseBoolean(visibility.group(1));assertFalse("Current system IME visibility must be unambiguous",visibility.find());
+            transition.put("lastImeInputShown",shown);
+            if(shown){stable.set(0);previous.set(null);transition.put("samples",0);return false;}
+            transition.put("imeHiddenObserved",true);
+            AccessibilityNodeInfo root=instrumentation.getUiAutomation().getRootInActiveWindow(),target=null;AccessibilityWindowInfo window=null;
+            try{
+                if(root==null||!root.refresh())return resetAccountStability(stable,previous,transition);
+                target=find(root,label);window=root.getWindow();
+                if(target==null||!target.refresh()||!target.isVisibleToUser()||!target.isEnabled()||!RegularEnvironmentUpgradeTest.PACKAGE.contentEquals(target.getPackageName()==null?"":target.getPackageName())
+                        ||window==null||!window.isActive()||!window.isFocused()||window.getId()!=root.getWindowId()||target.getWindowId()!=window.getId())return resetAccountStability(stable,previous,transition);
+                Rect box=new Rect(),windowBox=new Rect();target.getBoundsInScreen(box);window.getBoundsInScreen(windowBox);
+                if(box.width()<=0||box.height()<=0||!windowBox.contains(box))return resetAccountStability(stable,previous,transition);
+                int count=previousWindow.get()==window.getId()&&box.equals(previous.get())?stable.incrementAndGet():1;
+                stable.set(count);previousWindow.set(window.getId());previous.set(new Rect(box));selected.set(new Rect(box));
+                transition.put("stableWindowId",window.getId()).put("bounds",new JSONArray().put(box.left).put(box.top).put(box.right).put(box.bottom)).put("samples",count);
+                return count>=3&&android.os.SystemClock.elapsedRealtime()<deadline;
+            }finally{if(target!=null)target.recycle();if(window!=null)window.recycle();if(root!=null)root.recycle();}
+        });
+        assertTrue("Single account-row tap stays within the original deadline",android.os.SystemClock.elapsedRealtime()<deadline);
+        Rect box=selected.get();assertNotNull(box);transition.put("selectionTapCount",1);
+        shell("input tap "+box.centerX()+" "+box.centerY());
+    }
+    private boolean resetAccountStability(AtomicInteger stable,AtomicReference<Rect> previous,JSONObject transition)throws Exception{
+        stable.set(0);previous.set(null);transition.put("samples",0);return false;
     }
     private JSONObject snapshot(WebView view)throws Exception{
         AtomicReference<String> result=new AtomicReference<>();CountDownLatch done=new CountDownLatch(1);
@@ -102,11 +158,36 @@ public final class RegularDualEngineSwitchTest {
         waitFor("legacy WebView layout",()->{AtomicReference<Boolean> ready=new AtomicReference<>(false);main(()->ready.set(web.isShown()&&web.hasWindowFocus()&&!web.isLayoutRequested()&&web.getWidth()>0&&web.getHeight()>200));return ready.get();});
         int[] at=new int[2],size=new int[2];main(()->{web.getLocationOnScreen(at);size[0]=web.getWidth();size[1]=web.getHeight();});
         int x=at[0]+size[0]/2;
-        shell("input swipe "+x+" "+(at[1]+size[1]/2)+" "+x+" "+(at[1]+size[1]/5)+" 420");
+        nativeScrollSnapshot=snapshot(web);
+        if(android.os.Build.VERSION.SDK_INT==28){
+            nativeScrollUid=shell("id -u").trim();
+            assertTrue("Only root or shell may invoke the owned Android9 touch helper",nativeScrollUid.equals("0")||nativeScrollUid.equals("2000"));
+            String command=(nativeScrollUid.equals("0")?"su 2000 ":"")+"env CLASSPATH=/data/local/tmp/studio-poc-input.jar app_process /system/bin com.forcemind.chatgpt.pocinput.TouchInput "+x+" "+(at[1]+size[1]/2)+" "+x+" "+(at[1]+size[1]/5)+" 420";
+            nativeScrollOutput=shell(command);
+            JSONTokener tokens=new JSONTokener(nativeScrollOutput);Object decoded=tokens.nextValue();
+            assertTrue("Touch helper must emit one JSON object only",decoded instanceof JSONObject&&tokens.nextClean()==0);
+            nativeScrollReceipt=(JSONObject)decoded;
+            assertEquals(2,nativeScrollReceipt.length());assertEquals("ci-android9-shell-touchscreen",nativeScrollReceipt.getString("provider"));
+            JSONArray events=nativeScrollReceipt.getJSONArray("events");assertEquals(33,events.length());
+            long down=events.getJSONObject(0).getLong("downTime"),previousTime=-1;assertTrue(down>=0);
+            for(int index=0;index<events.length();index++){
+                JSONObject event=events.getJSONObject(index);assertEquals(5,event.length());
+                assertEquals(index==0?0:index==32?1:2,event.getInt("action"));
+                assertEquals(1,event.getInt("toolType"));assertEquals(4098,event.getInt("source"));assertEquals(down,event.getLong("downTime"));
+                long time=event.getLong("eventTime");assertTrue("Monotonic touchscreen event times",time>=down&&time>previousTime);previousTime=time;
+            }
+        }else{
+            shell("input swipe "+x+" "+(at[1]+size[1]/2)+" "+x+" "+(at[1]+size[1]/5)+" 420");
+        }
         AtomicReference<Double> previous=new AtomicReference<>(-1.0);AtomicInteger stable=new AtomicInteger();
-        waitFor("settled real native reading scroll",()->{double value=snapshot(web).optDouble("scroll");stable.set(value>100&&Math.abs(value-previous.get())<=1?stable.get()+1:0);previous.set(value);return stable.get()>=3;});
+        waitFor("settled real native reading scroll",()->{nativeScrollSnapshot=snapshot(web);double value=nativeScrollSnapshot.optDouble("scroll");stable.set(value>100&&Math.abs(value-previous.get())<=1?stable.get()+1:0);previous.set(value);return stable.get()>=3;});
     }
-    private void menu(String currentName,String targetName)throws Exception{click("切换账号，当前："+currentName);click(targetName);waitFor("native account header "+targetName,()->visible("切换账号，当前："+targetName));}
+    private void menu(String currentName,String targetName)throws Exception{
+        JSONObject transition=new JSONObject().put("from",currentName).put("to",targetName).put("startedAt",System.currentTimeMillis()).put("workspaceBefore",workspaceSelection());menuTransitions.put(transition);
+        phase="menu-open: "+currentName+" -> "+targetName;transition.put("stage","opening-menu");click("切换账号，当前："+currentName);
+        phase="menu-select: "+currentName+" -> "+targetName;transition.put("stage","selecting-account");selectStableAccount(targetName,transition);transition.put("selectionTapReturnedAt",System.currentTimeMillis()).put("workspaceAfterTap",workspaceSelection());
+        phase="menu-wait-header: "+targetName;transition.put("stage","waiting-target-header");waitFor("native account header "+targetName,()->visible("切换账号，当前："+targetName));transition.put("stage","target-header-visible").put("headerVisibleAt",System.currentTimeMillis());
+    }
     private void geckoReady(boolean initial)throws Exception{
         if(initial){click("继续页面");click("恢复本地草稿");}
         waitFor("restored Gecko draft visible in the actual editor",()->visible(expectedGeckoDraft));
@@ -142,27 +223,37 @@ public final class RegularDualEngineSwitchTest {
         try{
             activity=(MainActivity)instrumentation.startActivitySync(new Intent(RegularEnvironmentUpgradeTest.context(),MainActivity.class).putExtra(EnvironmentLauncher.ACCOUNT_ID,legacyId).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
             waitFor("first intercepted Main document",()->current()!=null&&!snapshot(current()).optString("document").isEmpty());WebView original=current();
-            nativeDraft(original);nativeScroll(original);JSONObject before=snapshot(original);
+            phase="legacy-native-draft";nativeDraft(original);phase="legacy-native-scroll";nativeScroll(original);JSONObject before=snapshot(original);
             AtomicReference<String> profile=new AtomicReference<>(),cookies=new AtomicReference<>();AtomicReference<Boolean> cookieOk=new AtomicReference<>();CountDownLatch cookieDone=new CountDownLatch(1);
             main(()->WebViewCompat.getProfile(original).getCookieManager().setCookie(url,"owned_dual_auth=preserved;Path=/;Secure;HttpOnly;SameSite=Lax;Max-Age=86400",ok->{cookieOk.set(ok);cookieDone.countDown();}));assertTrue(cookieDone.await(10,TimeUnit.SECONDS));assertEquals(Boolean.TRUE,cookieOk.get());
             main(()->{profile.set(WebViewCompat.getProfile(original).getName());WebViewCompat.getProfile(original).getCookieManager().flush();cookies.set(WebViewCompat.getProfile(original).getCookieManager().getCookie(url));});
             assertEquals(WorkspaceState.profile(storageId),profile.get());assertTrue(cookies.get().contains("owned_dual_auth=preserved"));assertTrue(cookies.get().contains("owned_dual_visible=preserved"));
             for(int index=0;index<2;index++){
-                JSONObject round=new JSONObject().put("round",index+1).put("toGeckoStartedAt",System.currentTimeMillis());
-                menu(legacyName,environmentName);geckoReady(index==0);round.put("geckoReadyAt",System.currentTimeMillis()).put("expectedGeckoDraftSHA256",RegularEnvironmentUpgradeTest.hash(expectedGeckoDraft.getBytes(StandardCharsets.UTF_8)));
-                menu(environmentName,legacyName);assertLegacy(original,before,profile.get(),cookies.get());
-                round.put("mainReturnedAt",System.currentTimeMillis()).put("sameMainActivity",true).put("sameWebViewObject",true).put("sameDocument",true).put("sameDraftAndModel",true).put("sameScroll",true).put("sameProfileAndLogin",true);rounds.put(round);
+                JSONObject round=new JSONObject().put("round",index+1).put("toGeckoStartedAt",System.currentTimeMillis()).put("stage","main-to-gecko");rounds.put(round);
+                menu(legacyName,environmentName);phase="round-"+(index+1)+"-gecko-recovery";round.put("stage","gecko-recovery");geckoReady(index==0);round.put("geckoReadyAt",System.currentTimeMillis()).put("expectedGeckoDraftSHA256",RegularEnvironmentUpgradeTest.hash(expectedGeckoDraft.getBytes(StandardCharsets.UTF_8)));
+                round.put("stage","gecko-to-main");menu(environmentName,legacyName);phase="round-"+(index+1)+"-assert-legacy";round.put("stage","asserting-legacy");assertLegacy(original,before,profile.get(),cookies.get());
+                round.put("stage","complete").put("mainReturnedAt",System.currentTimeMillis()).put("sameMainActivity",true).put("sameWebViewObject",true).put("sameDocument",true).put("sameDraftAndModel",true).put("sameScroll",true).put("sameProfileAndLogin",true);
             }
             RegularEnvironmentUpgradeTest.verifyNative(golden,true);assertEquals(expectedHash,RegularEnvironmentUpgradeTest.hash(RegularEnvironmentUpgradeTest.file(RegularEnvironmentUpgradeTest.EXPECTED)));
             JSONObject proof=new JSONObject().put("schema",1).put("complete",true).put("api",api).put("package",RegularEnvironmentUpgradeTest.PACKAGE).put("versionCode",RegularEnvironmentUpgradeTest.NEW_CODE).put("signerSHA256",RegularEnvironmentUpgradeTest.signer())
                 .put("scope","separate-synthetic-legacy-Main-account; original-alpha22-golden-account-unopened").put("newInstrumentationMayColdStartGecko",true).put("geckoNoReloadRequiresExternalServerProof",true)
                 .put("originalBaselineAccountUnopened",true).put("originalBaselineAndTwoCipherRecordsUnchanged",true).put("originalExpectedSHA256",expectedHash)
                 .put("syntheticLegacyAccountId",legacyId).put("syntheticLegacyStorageId",storageId).put("syntheticLegacyTabId",tabId).put("syntheticLegacyProfile",profile.get()).put("document",before.getString("document"))
-                .put("legacyDraftSHA256",RegularEnvironmentUpgradeTest.hash(MAIN_DRAFT.getBytes(StandardCharsets.UTF_8))).put("legacyScroll",before.getDouble("scroll")).put("legacyPageLoads",loads.get()).put("unexpectedLegacyRequests",unexpected.get()).put("roundTrips",rounds)
+                .put("legacyDraftSHA256",RegularEnvironmentUpgradeTest.hash(MAIN_DRAFT.getBytes(StandardCharsets.UTF_8))).put("legacyScroll",before.getDouble("scroll")).put("legacyPageLoads",loads.get()).put("unexpectedLegacyRequests",unexpected.get()).put("roundTrips",rounds).put("menuTransitions",menuTransitions)
+                .put("nativeScrollReceipt",nativeScrollReceipt==null?JSONObject.NULL:nativeScrollReceipt)
                 .put("nativeAccountMenusUsed",true).put("trustedNativeDraftInput",true).put("nativeReadingScroll",true).put("screenshots",false).put("realServicesAccessed",false).put("productionSignatureVerified",false);
             write("regular-dual-engine-switch.json",proof);Bundle output=new Bundle();output.putString("regularDualEngineSwitchProof",proof.toString());instrumentation.addResults(output);
         }catch(Exception|AssertionError failure){
-            try{java.io.File error=RegularEnvironmentUpgradeTest.file("regular-dual-engine-switch-first-error.txt");if(!error.exists())Files.write(error.toPath(),android.util.Log.getStackTraceString(failure).getBytes(StandardCharsets.UTF_8));}catch(Exception logError){failure.addSuppressed(logError);}throw failure;
+            try{
+                java.io.File error=RegularEnvironmentUpgradeTest.file("regular-dual-engine-switch-first-error.txt");
+                if(!error.exists()){
+                    JSONObject evidence=new JSONObject().put("phase",phase).put("partialRoundTrips",rounds).put("menuTransitions",menuTransitions).put("lastMenuImeDump",lastMenuImeDump).put("nativeScrollUid",nativeScrollUid).put("nativeScrollOutput",nativeScrollOutput).put("nativeScrollReceipt",nativeScrollReceipt==null?JSONObject.NULL:nativeScrollReceipt).put("lastScrollSnapshot",nativeScrollSnapshot==null?JSONObject.NULL:nativeScrollSnapshot);
+                    try{evidence.put("currentWorkspace",workspaceSelection());}catch(Exception stateError){evidence.put("currentWorkspaceError",stateError.toString());}
+                    try{evidence.put("uiHierarchy",semanticHierarchy());}catch(Exception treeError){evidence.put("uiHierarchyError",treeError.toString());}
+                    try{if(activity!=null&&current()!=null)evidence.put("failureSnapshot",snapshot(current()));}catch(Exception snapshotError){evidence.put("failureSnapshotError",snapshotError.toString());}
+                    Files.write(error.toPath(),(android.util.Log.getStackTraceString(failure)+"\n"+evidence.toString()+"\n").getBytes(StandardCharsets.UTF_8));
+                }
+            }catch(Exception logError){failure.addSuppressed(logError);}throw failure;
         }finally{if(activity!=null){main(activity::finish);instrumentation.waitForIdleSync();}MainActivity.handoffFixture=null;}
     }
 }

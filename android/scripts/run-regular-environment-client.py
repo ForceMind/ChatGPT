@@ -21,7 +21,17 @@ def dual_engine_round_trip(acceptance, draft):
             native.PACKAGE + '.RegularDualEngineSwitchTest', '-e', 'expectedApi', str(acceptance.api),
             '-e', 'baselineScope', native.SCOPE, '-e', 'signer', native._ci_signer(),
             '-e', 'expectedDraft', draft, native.RUNNER]
-    output = acceptance.command(args, timeout=300)
+    try:
+        output = acceptance.command(args, timeout=300)
+    finally:
+        # Retain the native first fault and semantic UI state even when JUnit fails.
+        for name in ('regular-dual-engine-switch.json', 'regular-dual-engine-switch-first-error.txt'):
+            try:
+                diagnostic = native._run(['adb', 'shell', 'cat', '/data/user/0/' + native.PACKAGE + '/files/' + name], timeout=15, check=False)
+                if diagnostic.returncode == 0:
+                    (native.EVIDENCE / name).write_text(diagnostic.stdout, encoding='utf-8')
+            except Exception:
+                (native.EVIDENCE / (name + '-read-error.txt')).write_text(traceback.format_exc(), encoding='utf-8')
     (native.EVIDENCE / 'dual-engine-instrument.txt').write_text(output, encoding='utf-8')
     print(output, flush=True)
     assert re.findall(r'(?m)^OK \((\d+) test\)\s*$', output) == ['1']

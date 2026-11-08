@@ -134,6 +134,7 @@ def verify_dual_engine(directory, api, proof, upgrade, expected, signer, before,
     assert result['initialGeckoLoads'] == 1 and result['extraGeckoReloadsDuringRoundTrips'] == 0
     assert result['geckoDraftSHA256'] == proof['draftSHA256']
     instrument_proof = result['instrumentation']
+    assert read(directory / 'regular-dual-engine-switch.json') == instrument_proof
     text = regular_file(directory / 'dual-engine-instrument.txt').read_text(encoding='utf-8')
     assert re.findall(r'(?m)^OK \((\d+) test\)\s*$', text) == ['1']
     assert not re.search(r'FAILED|FAILURES!!!|shortMsg=', text)
@@ -159,6 +160,26 @@ def verify_dual_engine(directory, api, proof, upgrade, expected, signer, before,
     assert instrument_proof['legacyDraftSHA256'] == hashlib.sha256(b'OwnedDualMainDraft').hexdigest()
     assert instrument_proof['legacyScroll'] > 100 and instrument_proof['legacyPageLoads'] == 1
     assert instrument_proof['unexpectedLegacyRequests'] == 0
+    gesture = instrument_proof['nativeScrollReceipt']
+    if api == 28:
+        assert gesture['provider'] == 'ci-android9-shell-touchscreen'
+        events = gesture['events']
+        assert len(events) == 33 and [event['action'] for event in events] == [0] + [2] * 31 + [1]
+        assert all(event['toolType'] == 1 and event['source'] == 4098 for event in events)
+        assert len({event['downTime'] for event in events}) == 1
+        assert all(event['eventTime'] >= event['downTime'] for event in events)
+        assert all(left['eventTime'] < right['eventTime'] for left, right in zip(events, events[1:]))
+    else:
+        assert gesture is None
+    menus = instrument_proof['menuTransitions']
+    assert len(menus) == 4
+    for menu in menus:
+        assert menu['imeHiddenObserved'] is True and menu['lastImeInputShown'] is False
+        assert menu['samples'] == 3 and menu['selectionTapCount'] == 1
+        assert type(menu['stableWindowId']) is int and menu['stableWindowId'] >= 0
+        bounds = menu['bounds']
+        assert len(bounds) == 4 and all(type(value) is int for value in bounds)
+        assert bounds[0] < bounds[2] and bounds[1] < bounds[3]
     rounds = instrument_proof['roundTrips']
     assert len(rounds) == 2
     previous = 0
@@ -339,6 +360,7 @@ def verify_api(directory, api, metadata, shared_flow):
                'upgrade-expected.json', 'native-after-environment.json', 'ci-candidate-receipt.json',
                'acceptance-manifest.json', 'functional-server.json', 'server.json',
                'dual-engine-round-trip.json', 'dual-engine-instrument.txt', 'dual-engine-after-server.json',
+               'regular-dual-engine-switch.json',
                'seed.txt', 'verify-old.txt',
                'verify-new.txt', 'verify-new-cold.txt', 'verify-after-environment.txt')
     return {'api': api, 'functional': proof, 'independentFixture': server,

@@ -6,6 +6,8 @@
 
 首轮两端均在旧包 seed 的 origin 比较停止：Android JSONObject 把 `/` 编为 `\/`，WebView 的 JavaScript JSON 回调保留 `/`，地址本身一致。修正仅先解码 JSON，再严格比较完整 origin；保留原等待预算和全部存储/签名断言，失败运行和两端首错日志不删除。另补此前已批准的真实双引擎界面往返：复用既有 Main CI 拦截页面，用额外合成 WebView 账号两次经原生账号菜单往返 Gecko A0；检查同 Activity/WebView、文档、草稿、滚动及 Profile/登录，外部 HTTPS 证据只允许 instrumentation 冷启时的一次初载，往返不得额外重载。原 alpha.22 基线账号不开页，原两份密文继续逐字节检查。该补证尚待 Actions，不将静态实现写成已通过。
 
+[第二轮 Actions 42444073976](https://github.com/ForceMind/ChatGPT/actions/runs/42444073976)，源码 `60ff71429e09a5a4c7b4cd56e32a408425b9c69b`：构建成功；两端已通过前四段原包 seed/冷读/覆盖升级/升级后冷读，以及 Gecko 的两组环境、热切换、冷恢复和冲突保护（原始 `functional-server.json` 已保留）。新增双引擎用例尚未通过，最终 native-after 核对和交付门禁未完成。Android 9 在原生阅读滚动停止，日志显示旧 `input swipe` 为 TOOL_TYPE_UNKNOWN 且 downTime 逐事件变化；定点改用既有 33 事件手指触摸辅助程序，保持原阈值和期限。Android 15 已完成首次 Gecko 恢复与返回 Main，第二次菜单切换未出现系统 START；同一时段存在 IME 显隐动画，坐标过渡是待验证推断。下一轮保留界面语义、workspace、部分往返和原始首错；目标账号行在原 45 秒期限内确认 IME 隐藏、活动窗口及坐标连续三次稳定后只点一次，保持全部结果断言，不预先归咎客户端。
+
 已核事实：常规版包名为 `com.forcemind.chatgpt.profiles`，公开alpha.22内部序号3000022，原APK SHA-256为 `39a06004608162884c5d2a11277eee840f5311438376bd7541adc638b1e55e53`，原签名指纹 `8b6eef928fded91f291ad954e20976b2cc6011b55e8cbec0152695fe1f05cf19`；独立Beta的包名和证书均不同。原 Gradle 仅给 networkBeta 接入 Gecko；本批复用同一组件，在显式常规构建参数下接入 release。WorkspaceState旧账号默认engine=webview，storageId/profile名独立保存。正式原私钥是否可用尚未核实；不会读取密码或上传私钥。
 
 拟采用旧账号保留原WebView/登录/存储空间，新建账号才可选Gecko语言与时区环境。复用已实现的网络、资产、Skill、恢复与标签UI，不重写引擎、不自动把旧Profile改成Gecko。保留原包名、Provider身份、加密别名和记录格式；正式签名与Beta签名明确分离，禁止debug/Beta钥匙作为正式签名回退。用户可见版本继续日期时间，常规渠道单独记录包名和单调升级序号，不改已发布Beta元数据。
