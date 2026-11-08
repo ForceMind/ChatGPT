@@ -87,6 +87,9 @@ test('version ordering prevents alpha lexical mistakes, downgrades and invalid v
   assert(newerVersion('3.0.0-alpha.12', '3.0.0-alpha.9'));
   assert(!newerVersion('3.0.0-alpha.9', '3.0.0-alpha.12'));
   assert(newerVersion('3.0.0', '3.0.0-rc.99'));
+  assert(newerVersion('2026.11.9', '3.0.0-alpha.24'));
+  assert(!newerVersion('3.0.0-alpha.24', '2026.11.9'));
+  assert(!newerVersion('2026.11.09', '3.0.0-alpha.24'));
   assert(!newerVersion('3.0.0-alpha.99', '3.0.0'));
   assert(!newerVersion('3.0.0-alpha.12', '3.0.0-alpha.12'));
   assert(!newerVersion('3.00.0', '2.0.0'));

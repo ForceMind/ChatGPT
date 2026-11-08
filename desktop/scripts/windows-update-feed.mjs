@@ -1,12 +1,14 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { versionParts } from '../src/shared/updates.ts';
 /** JSON is valid YAML for the generic updater; both hashes come from the same CI bytes. */
 export function windowsUpdateFeed(info, notes, date) {
   if (
     info.platform !== 'win32' ||
     info.architecture !== 'x64' ||
-    !/^3\.\d+\.\d+-alpha\.[1-9]\d*$/.test(info.version) ||
+    typeof info.version !== 'string' ||
+    !versionParts(info.version) ||
     !Array.isArray(info.artifacts) ||
     typeof notes !== 'string' ||
     notes.length > 5000 ||
