@@ -1,0 +1,38 @@
+name: Compare regular Android optimization evidence
+'on':
+  push:
+    branches: [dev]
+    paths: ['.github/workflows/android-optimization-compare.yml']
+  workflow_dispatch:
+    inputs:
+      baseline_run:
+        type: string
+        required: true
+      r8_run:
+        type: string
+        required: true
+      resources_run:
+        type: string
+        required: true
+permissions:
+  contents: read
+  actions: read
+jobs:
+  compare:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+      STUDIO_BASELINE_RUN: ${{ inputs.baseline_run }}
+      STUDIO_R8_RUN: ${{ inputs.r8_run }}
+      STUDIO_RESOURCES_RUN: ${{ inputs.resources_run }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 android/scripts/compare-regular-optimization.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: optimization-comparison
+          retention-days: 14
+          path: optimization-comparison/comparison.json

@@ -46,7 +46,7 @@ def main():
                    "            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'optimization-keep.pro'\n")
     path.write_text(text.replace(needle, replacement))
     edits.append({'path': str(path), 'beforeSHA256': sha(old), 'afterSHA256': sha(path.read_bytes())})
-    Path('android/app/optimization-keep.pro').write_text('-keep class go.** { *; }\n-keep class studio.networkcore.** { *; }\n')
+    Path('android/app/optimization-keep.pro').write_text('-keep class go.** { *; }\n-keep class studio.networkcore.** { *; }\n# CI-only classes: named trust proof and manifest file provider; absent in human APK.\n-keep class com.forcemind.chatgpt.profiles.GeneratedNetworkTrust { public static java.lang.String PEM; }\n-keep class com.forcemind.chatgpt.profiles.EnvironmentNetworkFilesProvider { *; }\n')
     # Same strict evidence provenance checks, bound to this dedicated workflow.
     path = Path('android/scripts/regular_evidence_source.py'); old = path.read_bytes(); text = old.decode()
     needle = "WORKFLOW = '.github/workflows/android-regular-full-client.yml'"

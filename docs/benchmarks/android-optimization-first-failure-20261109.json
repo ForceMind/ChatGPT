@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "phase": "static-ci-network-dex-proof",
+  "runs": {
+    "r8": 42512160093,
+    "resources": 42512163781
+  },
+  "errorFile": "android/scripts/gecko-network-package.py",
+  "errorLine": 43,
+  "assertion": "assert b'EnvironmentNetworkFilesProvider' in dex and b'GeneratedNetworkTrust' in dex",
+  "gradleCompilationSucceeded": true,
+  "networkRuntimeVerified": false,
+  "assertionRemoved": false,
+  "followup": "Exact CI-only keep rules; original guard preserved"
+}
