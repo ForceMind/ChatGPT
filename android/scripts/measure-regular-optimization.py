@@ -77,12 +77,14 @@ def main():
     result={'schema':1,'complete':False,'sourceOrigin':origin,'harnessSHA':os.environ['GITHUB_SHA'],'mode':origin['mode'],'cases':[],
             'windowSeconds':120,'warmupSeconds':30,'windowsPerCase':2,'sampleIntervalSeconds':5,
             'hostNode':os.uname().nodename,'scope':'Synthetic foreground Gecko pages with the unchanged 500ms observation transport; not physical-device or real ChatGPT performance',
-            'syntheticCasesIndependent':True,'dataRetentionCoveredByParentFunctionalGates':True,'backgroundPolicyChanged':False,'screenshots':False,'proxyEnabled':False}
+            'syntheticCasesIndependent':True,'dataRetentionCoveredByParentFunctionalGates':True,'samplerSHA256':hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),'backgroundPolicyChanged':False,'screenshots':False,'proxyEnabled':False}
     sampler=parsers.Sampler(OUT,120,30,5)
     native._guard()
     auxv=subprocess.check_output(['adb','exec-out','cat','/proc/self/auxv']);hz,width=parsers.parse_auxv_clktck(auxv)
     result['environment']={'api':native._shell('getprop','ro.build.version.sdk'),'fingerprint':native._shell('getprop','ro.build.fingerprint'),'clockTicksPerSecond':hz,'auxvWordBytes':width}
     (OUT/'kernel-auxv.bin').write_bytes(auxv)
+    (OUT/'host-cpu.txt').write_bytes(subprocess.check_output(['lscpu']))
+    (OUT/'guest-cpu.txt').write_text(native._shell('cat','/proc/cpuinfo'))
     active=None
     try:
         pages=int(os.environ['STUDIO_RESOURCE_PAGES']);load=os.environ['STUDIO_RESOURCE_LOAD']
@@ -95,13 +97,16 @@ def main():
             upgrade=native.run_upgrade('synthetic')
             active=flow.Acceptance(upgrade);active.tls_server();active.prepare_profiles()
             targets=[('A',0)] if pages==1 else [('A',0),('A',1),('B',0),('C',0)]
-            for account,tab in targets:active.open(account,tab)
+            for account,tab in targets:
+                active.http('/configure',{'path':flow.PAGE[(account,tab)],'initialDraft':'OwnedResource-'+account+str(tab)})
+                active.open(account,tab)
             active.open('A',0)
             def observe():
                 state=active.status();observed={}
                 for account,tab in targets:
                     path=flow.PAGE[(account,tab)];row=active.latest(state,path)
                     assert row and row['resourceMode']==load and row['sendClicks']==0
+                    assert row['draft']==row['modelDraft']=='OwnedResource-'+account+str(tab)
                     observed[path]={k:row[k] for k in ['document','draft','modelDraft','resourceRevisions','eventSequence','visibility']}
                 assert sum(state['pageCounts'].values())==pages,'Unexpected extra page loads'
                 assert observed['/c/a1']['visibility']=='visible','The foreground measurement tab must remain visible'

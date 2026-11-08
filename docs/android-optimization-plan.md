@@ -46,3 +46,5 @@
 新证据：resources复验42513557648的accept28在旧版seed前因AndroidJUnitRunner/FileTestStorage引用混淆类nt而崩溃，原公开alpha.22未含该类。不能把新版优化后的测试APK直接用于旧未优化App。现构建未混淆的旧侧测试APK，在旧版seed/冷读后，仅替换目标App并将测试APK更新为与新App映射匹配的版本；四阶段、原始SHA、同签/UID/记录保留断言不变，不重建旧App、不清理升级数据。不同侧测试APK均核对临时证书、SHA和明确用途。
 
 资源首个1页空闲样本已完成两个120秒窗口，但跨用例重新建夹具后流式页未出现HTTP请求，整组失败。保留partial，不宣称测量完成；后续按原批准的四场景拆为独立新模拟器，并在每个OS/页数/负载组合的同一runner上顺序跑baseline/r8/resources，消除独立runner硬件差异。窗口数量/预热/预算和全部断言不变，只修正实验隔离与匹配方法；不把独立用例串行夹具问题宣称为产品回归。TLS35的首错为probe-owned-target约2046ms、coreRunning=true、originalGeneration=true、SocketException/reset；与既往现象相似但根因未知，未机械重试或宣称修复。
+
+最终资源方法：8个OS/页数/负载组合，各自同一runner、三个版本各新模拟器；全部每版本每场景预热30秒、2×120秒不变。采集host/guest CPU资料、同一采样脚本SHA及可见前台页证明；初始草稿改为固定非空合成文本，记录真实工作量和完整归属进程。新用例不再在同一App安装周期中更换NSS夹具CA；原串行失败保留，不将消除试验污染写成修复产品。
