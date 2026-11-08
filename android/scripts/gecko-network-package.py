@@ -1,7 +1,7 @@
 """Receipt for the separately marked CI target; never distribute it as a human APK."""
 import hashlib, json, os, re, subprocess, zipfile
 from pathlib import Path
-from environment_ci_target import load_version, assert_apk_version, PACKAGE, REGULAR, expected_signer
+from environment_ci_target import load_version, assert_apk_version, PACKAGE, REGULAR, expected_signer, native
 
 assert os.environ.get('GITHUB_ACTIONS') == 'true'
 root = Path('android/app/build')
@@ -26,7 +26,12 @@ assert 'raw/studio_environment_network_ci_ca' in resources, 'Owned CA resource m
 assert 'xml/studio_environment_network_security' in resources, 'Owned trust policy missing from the compiled resource table'
 assert 'android:networkSecurityConfig' in compiled_manifest, 'Owned trust policy is not attached to the application'
 if REGULAR:
-    assert any('android:testOnly' in row and '(type 0x12)0xffffffff' in row for row in compiled_manifest.splitlines()), 'Marked regular CI APK required'
+    # Use the same typed aapt verifier as the regular upgrade gate, rather than
+    # depending on aapt2's presentation of boolean attributes.
+    native.EVIDENCE = inputs / 'inspection'
+    native.EVIDENCE.mkdir(parents=True, exist_ok=True)
+    (native.EVIDENCE / 'aapt2-manifest.txt').write_text(compiled_manifest)
+    native._inspect_apk(apk, tools, signer, PACKAGE, version_metadata['versionCode'], test_only=True)
 with zipfile.ZipFile(apk) as archive:
     manifest = json.loads(archive.read('assets/studio-environment/manifest.json'))
     assert 'https://network-fixture.test/*' in manifest['content_scripts'][0]['matches']
