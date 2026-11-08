@@ -9,7 +9,7 @@ import re
 import subprocess
 import shutil
 from optimization_test_overlay import legacy_upgrade_overlay
-from optimization_dex import classes_and_roots
+from optimization_dex import classes_and_roots, business_members
 
 ROOT = Path(__file__).resolve().parents[2]
 MODES = ('baseline', 'r8', 'resources')
@@ -55,6 +55,17 @@ def main():
             (folder/'unminified-runtime-types.json').write_text(json.dumps(sorted(definitions),indent=2)+'\n')
             apk = folder / 'upgrade-baseline-test.apk'
             shutil.copyfile('android/app/build/outputs/apk/androidTest/release/app-release-androidTest.apk', apk)
+            contracts=business_members(apk,definitions)
+            (folder/'business-test-api.json').write_text(json.dumps(contracts,indent=2)+'\n')
+            with Path('android/app/optimization-ci-keep.pro').open('a') as rules:
+                rules.write('\n# Exact original member ABI directly linked by existing instrumented tests.\n')
+                for descriptor,members in contracts.items():
+                    cls=descriptor[1:-1].replace('/','.')
+                    assert re.fullmatch(r'[A-Za-z0-9_.$]+',cls)
+                    rules.write('-keep,allowoptimization class '+cls+'\n-keepclassmembers class '+cls+' {\n')
+                    for member in members:rules.write('    '+member+'\n')
+                    rules.write('}\n')
+
             tools = Path(os.environ['ANDROID_HOME']) / 'build-tools/35.0.0'
             certs = subprocess.check_output([str(tools/'apksigner'),'verify','--print-certs',str(apk)],text=True)
             signer = re.findall(r'certificate SHA-256 digest: ([a-f0-9]+)',certs); assert len(signer)==1
@@ -83,6 +94,8 @@ def main():
     smoke = Path('android/app/src/regularEnvironmentTest/java/com/forcemind/chatgpt/profiles/OptimizationRunnerSmokeTest.java')
     assert not smoke.exists()
     smoke.write_text('package com.forcemind.chatgpt.profiles;\nimport org.junit.Test;\nimport androidx.test.platform.app.InstrumentationRegistry;\nimport static org.junit.Assert.assertEquals;\npublic final class OptimizationRunnerSmokeTest { @Test public void runtimeStarts() { assertEquals("com.forcemind.chatgpt.profiles", InstrumentationRegistry.getInstrumentation().getTargetContext().getPackageName()); } }\n')
+    with Path('android/app/optimization-ci-keep.pro').open('a') as rules:
+        rules.write('# Exact reflective members directly named by existing instrumented tests.\n-keepclassmembers class com.forcemind.chatgpt.profiles.MainActivity { *** change(...); *** showCurrent(...); *** downloads(...); *** finishAccountChange(...); }\n-keepclassmembers class com.forcemind.chatgpt.profiles.NetworkSession { *** jobs; }\n-keepclassmembers class com.forcemind.chatgpt.profiles.HandoffRuntime { *** controls; }\n')
     # Same strict evidence provenance checks, bound to this dedicated workflow.
     path = Path('android/scripts/regular_evidence_source.py'); old = path.read_bytes(); text = old.decode()
     needle = "WORKFLOW = '.github/workflows/android-regular-full-client.yml'"

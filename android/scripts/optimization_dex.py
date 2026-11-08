@@ -50,3 +50,46 @@ def classes_and_roots(apk):
                 add(u32(po+proto*12+4));types(u32(po+proto*12+8))
     assert definitions,'No DEX class definitions'
     return definitions,roots
+
+
+def business_members(apk, available):
+    """Exact original member ABI linked by unminified tests, not whole packages."""
+    result={}
+    primitive={'V':'void','Z':'boolean','B':'byte','S':'short','C':'char','I':'int','J':'long','F':'float','D':'double'}
+    def java(t):
+        dimensions=len(t)-len(t.lstrip('['));t=t.lstrip('[')
+        return (primitive[t] if t in primitive else t[1:-1].replace('/','.'))+'[]'*dimensions
+    with zipfile.ZipFile(apk) as archive:
+        for name in archive.namelist():
+            if not name.endswith('.dex'):continue
+            d=archive.read(name)
+            def u32(at):assert 0<=at<=len(d)-4;return struct.unpack_from('<I',d,at)[0]
+            def u16(at):assert 0<=at<=len(d)-2;return struct.unpack_from('<H',d,at)[0]
+            ss,so=u32(56),u32(60);ts,to=u32(64),u32(68);ps,po=u32(72),u32(76)
+            def string(index):
+                assert index<ss;at=u32(so+index*4)
+                for n in range(5):
+                    assert at<len(d);v=d[at];at+=1
+                    if v<128:break
+                else:raise ValueError('Invalid DEX string')
+                return d[at:d.index(b'\0',at)].decode('ascii')
+            def typ(i):assert i<ts;return string(u32(to+i*4))
+            def owner(i):
+                t=typ(i)
+                return t if t.startswith('Lcom/forcemind/chatgpt/profiles/') and t in available else None
+            fs,fo=u32(80),u32(84)
+            for i in range(fs):
+                at=fo+i*8;cls=owner(u16(at))
+                if cls:result.setdefault(cls,set()).add(java(typ(u16(at+2)))+' '+string(u32(at+4))+';')
+            ms,mo=u32(88),u32(92)
+            for i in range(ms):
+                at=mo+i*8;cls=owner(u16(at));pi=u16(at+2);assert pi<ps
+                if not cls:continue
+                member=string(u32(at+4))
+                if member=='<clinit>':continue
+                offset=u32(po+pi*12+8);params=[]
+                if offset:
+                    for n in range(u32(offset)):params.append(java(typ(u16(offset+4+n*2))))
+                prefix='' if member=='<init>' else java(typ(u32(po+pi*12+4)))+' '
+                result.setdefault(cls,set()).add(prefix+member+'('+','.join(params)+');')
+    return {cls:sorted(members) for cls,members in sorted(result.items())}
