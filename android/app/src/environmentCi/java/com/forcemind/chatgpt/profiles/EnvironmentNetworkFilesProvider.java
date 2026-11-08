@@ -17,7 +17,9 @@ public final class EnvironmentNetworkFilesProvider extends DocumentsProvider {
     private static final String[] DOCUMENT={DocumentsContract.Document.COLUMN_DOCUMENT_ID,DocumentsContract.Document.COLUMN_DISPLAY_NAME,DocumentsContract.Document.COLUMN_MIME_TYPE,DocumentsContract.Document.COLUMN_FLAGS,DocumentsContract.Document.COLUMN_SIZE};
     private File payload;
     @Override public boolean onCreate(){
-        if(!BuildConfig.ENVIRONMENT_NETWORK_TEST||!BuildConfig.ENVIRONMENT_TEST||getContext()==null||!getContext().getPackageName().equals("com.forcemind.chatgpt.profiles.networkbeta"))return false;
+        if(!BuildConfig.ENVIRONMENT_NETWORK_TEST||!BuildConfig.ENVIRONMENT_TEST||getContext()==null)return false;
+        String owner=getContext().getPackageName();
+        if(!owner.equals(BuildConfig.APPLICATION_ID)||!(owner.equals("com.forcemind.chatgpt.profiles.networkbeta")||owner.equals("com.forcemind.chatgpt.profiles")))return false;
         try{
             payload=new File(getContext().getFilesDir().getCanonicalFile(),"gecko-network-owned-upload.bin");
             byte[] unit="owned-gecko-network-upload\n".getBytes(StandardCharsets.UTF_8),bytes=new byte[unit.length*1024];for(int i=0;i<1024;i++)System.arraycopy(unit,0,bytes,i*unit.length,unit.length);

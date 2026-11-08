@@ -1,17 +1,25 @@
 """Real formal activity on a fresh CI emulator; no screenshots or external service access."""
 import argparse,json,os,re,shlex,subprocess
 from pathlib import Path
-PACKAGE='com.forcemind.chatgpt.profiles.networkci'
+REGULAR=os.environ.get('STUDIO_ANDROID_CI_TARGET')=='regular'
+PACKAGE='com.forcemind.chatgpt.profiles' if REGULAR else 'com.forcemind.chatgpt.profiles.networkci'
 def adb(*args,timeout=30):
  return subprocess.check_output(['adb',*args],text=True,timeout=timeout)
+def report_command(name):
+ assert name in ('formal-network-result.json','formal-network-files.json')
+ return ['adb','exec-out','cat','/data/user/0/'+PACKAGE+'/files/'+name] if REGULAR else ['adb','exec-out','run-as',PACKAGE,'cat','files/'+name]
 def main():
- p=argparse.ArgumentParser();p.add_argument('--transport',choices=['raw','tls','reality'],required=True);p.add_argument('--output',required=True);a=p.parse_args()
+ p=argparse.ArgumentParser();p.add_argument('--transport',choices=['raw','tls','reality'],required=True);p.add_argument('--output',required=True);p.add_argument('--regular-files-only',action='store_true');a=p.parse_args()
+ assert a.regular_files_only is REGULAR, 'Explicit regular scope required; legacy default remains unchanged'
  assert os.environ.get('GITHUB_ACTIONS')=='true' and adb('shell','getprop','ro.kernel.qemu').strip()=='1'
  output=Path(a.output);output.mkdir(parents=True,exist_ok=True)
  fixture=json.loads(Path('android/network-poc/secure-fixture/fixture.json').read_text());assert json.loads(Path('android/network-poc/secure-fixture/ready.json').read_text())['ready']
  node=fixture['transports'][a.transport]
  # Clearing is confined to this synthetic CI identity on the disposable emulator.
- assert PACKAGE.endswith('.networkci');assert 'Success' in adb('shell','pm','clear',PACKAGE)
+ if not REGULAR:
+  assert PACKAGE.endswith('.networkci');assert 'Success' in adb('shell','pm','clear',PACKAGE)
+ else:
+  assert PACKAGE=='com.forcemind.chatgpt.profiles' and adb('shell','id','-u').strip()=='0'
  arguments={'class':'com.forcemind.chatgpt.profiles.NetworkIntegrationTest','nodeA':node['nodeA'],'nodeB':node['nodeB'],'transport':a.transport,'origin':'https://network-fixture.test:18480','sourceSHA':os.environ['GITHUB_SHA']}
  command=['am','instrument','-w','-r']
  for key,value in arguments.items():command+=['-e',key,value]
@@ -20,7 +28,7 @@ def main():
  text=result.stdout
  for secret in (node['nodeA'],node['nodeB']):text=text.replace(secret,'<synthetic-node>')
  (output/'instrumentation.txt').write_text(text);print(text)
- read=subprocess.run(['adb','exec-out','run-as',PACKAGE,'cat','files/formal-network-result.json'],text=True,capture_output=True,timeout=15)
+ read=subprocess.run(report_command('formal-network-result.json'),text=True,capture_output=True,timeout=15)
  if read.returncode==0:(output/'result.json').write_text(read.stdout)
  assert result.returncode==0 and re.findall(r'(?m)^OK \((\d+) test\)\s*$',text)==['1'] and not re.search(r'FAILURES!!!|INSTRUMENTATION_FAILED|shortMsg=',text),'Formal client test failed; see actual report/log'
  assert read.returncode==0
@@ -46,7 +54,7 @@ def main():
  safe=result.stdout
  for secret in (node['nodeA'],node['nodeB']):safe=safe.replace(secret,'<synthetic-node>')
  (output/'file-safety-instrumentation.txt').write_text(safe);print(safe)
- read=subprocess.run(['adb','exec-out','run-as',PACKAGE,'cat','files/formal-network-files.json'],text=True,capture_output=True,timeout=15)
+ read=subprocess.run(report_command('formal-network-files.json'),text=True,capture_output=True,timeout=15)
  if read.returncode==0:(output/'file-safety.json').write_text(read.stdout)
  assert result.returncode==0 and re.findall(r'(?m)^OK \((\d+) test\)\s*$',safe)==['1'] and not re.search(r'FAILURES!!!|INSTRUMENTATION_FAILED|shortMsg=',safe),'File and system routing test failed'
  assert read.returncode==0
@@ -71,6 +79,9 @@ def main():
   assert len([e for e in gates if e['opid']==state['opid'] and e['opCount']==1 and e['syntheticAccount']==state['syntheticAccount']])==1
  (output/'file-safety-verified.json').write_text(json.dumps({'complete':True,'sourceSHA':os.environ['GITHUB_SHA'],'api':proof['api'],'transport':a.transport,'exactRequests':32,'gatedOperations':5,'realSystemPicker':True,'proxyRestored':True,'temporaryOwnerRemoved':True,'screenshots':False,'realChatGPT':False},indent=2)+'\n')
  print('FORMAL_FILE_SAFETY_VERIFIED '+json.dumps(proof))
+ if REGULAR:
+  (output/'regular-webview-files-scope.json').write_text(json.dumps({'complete':True,'package':PACKAGE,'scope':'network-and-file-safety','restartSuiteRepeated':False,'sourceSHA':os.environ['GITHUB_SHA'],'screenshots':False,'realChatGPT':False},indent=2)+'\n')
+  return
  # Role/proxy restoration was verified above before ending this CI process.
  subprocess.run(['adb','shell','am','force-stop',PACKAGE],check=True,capture_output=True,timeout=15)
  restore=[]

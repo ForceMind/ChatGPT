@@ -6,6 +6,9 @@ def regularEnvironmentCi = project.hasProperty('regularEnvironmentCi')
 def environmentClient = project.hasProperty('environmentClient')
 def environmentTest = project.hasProperty('environmentTest')
 def regularNavigationTest = project.hasProperty('regularNavigationTest')
+def regularLegacyNetworkTest = project.hasProperty('regularLegacyNetworkTest')
+if (regularLegacyNetworkTest && (!regularEnvironmentCi || !project.hasProperty('environmentNetworkTest')))
+    throw new GradleException('Regular legacy network fixtures require the marked regular network CI target')
 if (regularNavigationTest && (!regularEnvironmentCi || !environmentTest))
     throw new GradleException('Regular navigation is an explicit CI-only test source set')
 if (regularEnvironmentClient && !environmentClient)
@@ -268,6 +271,7 @@ if (project.hasProperty('environmentClient')) {
             inputs.property('regularEnvironmentCi', regularEnvironmentCi)
             inputs.property('environmentTest', environmentTest)
             inputs.property('environmentNetworkTest', project.hasProperty('environmentNetworkTest'))
+            inputs.property('regularLegacyNetworkTest', regularLegacyNetworkTest)
             outputs.file(generatedManifest)
             doLast {
                 def base = file('src/environmentClient/AndroidManifest.xml').getText('UTF-8')
@@ -282,6 +286,10 @@ if (project.hasProperty('environmentClient')) {
                     base=base.replace('<application ', '<application android:networkSecurityConfig="@xml/studio_environment_network_security" ')
                     base=base.replace('tools:replace="android:label"','tools:replace="android:label,android:networkSecurityConfig"')
                     inner += '<provider android:name=".EnvironmentNetworkFilesProvider" android:authorities="${applicationId}.network-docs" android:exported="true" android:permission="android.permission.MANAGE_DOCUMENTS" android:grantUriPermissions="true"><intent-filter><action android:name="android.content.action.DOCUMENTS_PROVIDER" /></intent-filter></provider>'
+                    if (regularLegacyNetworkTest) {
+                        inner += '<provider android:name=".NetworkDocumentsProvider" android:authorities="${applicationId}.legacy-network-docs" android:exported="true" android:permission="android.permission.MANAGE_DOCUMENTS" android:grantUriPermissions="true"><intent-filter><action android:name="android.content.action.DOCUMENTS_PROVIDER" /></intent-filter></provider>'
+                        inner += '<receiver android:name=".NetworkProxyAdminReceiver" android:exported="true" android:permission="android.permission.BIND_DEVICE_ADMIN"><meta-data android:name="android.app.device_admin" android:resource="@xml/network_ci_admin" /><intent-filter><action android:name="android.app.action.DEVICE_ADMIN_ENABLED" /></intent-filter></receiver>'
+                    }
                 }
                 def target = generatedManifest.get().asFile; target.parentFile.mkdirs()
                 target.setText(base.replace('</application>', inner + '</application>'),'UTF-8')
@@ -321,6 +329,7 @@ if (project.hasProperty('environmentNetworkTest')) {
     android.buildTypes[environmentBuildType].buildConfigField 'boolean', 'NETWORK_TEST', 'true'
     android.buildTypes[environmentBuildType].buildConfigField 'String', 'NETWORK_HOME_URL', '"https://network-fixture.test:18480/c/a1"'
     android.buildTypes[environmentBuildType].buildConfigField 'String', 'NETWORK_PROBE_URL', '"https://network-fixture.test:18480/echo"'
+    if (regularLegacyNetworkTest) android.buildTypes[environmentBuildType].buildConfigField 'String', 'NETWORK_HOME_URL', '"https://network-fixture.test:18480/joint/studio-home/page"'
     def ownedCa = rootProject.file('network-poc/secure-fixture/ca.pem')
     def trustRoot = layout.buildDirectory.dir('generated/environment-network-ci').get().asFile
     tasks.register('prepareEnvironmentNetworkTrust') {
@@ -340,4 +349,39 @@ if (project.hasProperty('environmentNetworkTest')) {
     android.sourceSets[environmentBuildType].java.srcDir(new File(trustRoot,'java'))
     android.sourceSets[environmentBuildType].res.srcDir(new File(trustRoot,'res'))
     tasks.matching { it.name == environmentPreBuild }.configureEach { dependsOn 'prepareEnvironmentNetworkTrust' }
+}
+
+// The retained WebView path uses its existing network/file assertions against
+// the same original-package CI APK. Providers remain owned, test-only sources.
+if (regularLegacyNetworkTest) {
+    def legacyTests = layout.buildDirectory.dir('generated/regular-legacy-network-tests')
+    def legacyProviders = layout.buildDirectory.dir('generated/regular-legacy-network-providers')
+    def legacyResources = layout.buildDirectory.dir('generated/regular-legacy-network-res')
+    tasks.register('copyRegularLegacyNetworkTests', Sync) {
+        from 'src/androidTest/java'
+        include '**/NetworkIntegrationTest.java', '**/NetworkFileSafetyTest.java', '**/NetworkSystemProxy.java'
+        into legacyTests
+        filteringCharset = 'UTF-8'
+        filter { line -> line
+            .replace('BuildConfig.APPLICATION_ID.endsWith(".networkci")', '(BuildConfig.APPLICATION_ID.equals("com.forcemind.chatgpt.profiles") && BuildConfig.ENVIRONMENT_NETWORK_TEST)')
+            .replace('BuildConfig.APPLICATION_ID+".network-docs"', 'BuildConfig.APPLICATION_ID+".legacy-network-docs"')
+        }
+    }
+    tasks.register('copyRegularLegacyNetworkProviders', Sync) {
+        from 'src/networkCi/java'
+        include '**/NetworkDocumentsProvider.java', '**/NetworkProxyAdminReceiver.java'
+        into legacyProviders
+        filteringCharset = 'UTF-8'
+        filter { line -> line.replace('getContext().getPackageName().endsWith(".networkci")', '(BuildConfig.NETWORK_TEST && BuildConfig.ENVIRONMENT_TEST && getContext().getPackageName().equals("com.forcemind.chatgpt.profiles"))') }
+    }
+    tasks.register('copyRegularLegacyNetworkResources', Sync) {
+        from 'src/networkCi/res'
+        include 'xml/network_ci_admin.xml'
+        into legacyResources
+    }
+    android.sourceSets.androidTest.java.srcDir(legacyTests.get().asFile)
+    android.sourceSets.release.java.srcDir(legacyProviders.get().asFile)
+    android.sourceSets.release.res.srcDir(legacyResources.get().asFile)
+    tasks.matching { it.name == 'preReleaseAndroidTestBuild' }.configureEach { dependsOn 'copyRegularLegacyNetworkTests' }
+    tasks.matching { it.name == 'preReleaseBuild' }.configureEach { dependsOn 'copyRegularLegacyNetworkProviders', 'copyRegularLegacyNetworkResources' }
 }

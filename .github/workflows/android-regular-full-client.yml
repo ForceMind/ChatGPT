@@ -117,9 +117,10 @@ jobs:
         python3 android/network-poc/scripts/fixture.py --prepare-only --output android/network-poc/secure-fixture
     - name: Compile separately marked regular network fixture
       run: |
-        bash android/environment-poc/gradlew -p android --no-daemon -PenvironmentClient -PregularEnvironmentClient -PregularEnvironmentCi -PenvironmentTest -PenvironmentNetworkTest :app:assembleRelease
+        bash android/environment-poc/gradlew -p android --no-daemon -PenvironmentClient -PregularEnvironmentClient -PregularEnvironmentCi -PenvironmentTest -PenvironmentNetworkTest -PregularLegacyNetworkTest :app:assembleRelease :app:assembleReleaseAndroidTest
         mkdir -p android/app/build/regular-network-input
         cp android/app/build/outputs/apk/release/app-release.apk android/app/build/regular-network-input/gecko-network-x86.apk
+        cp android/app/build/outputs/apk/androidTest/release/app-release-androidTest.apk android/app/build/regular-network-input/network-test.apk
         python3 android/scripts/gecko-network-package.py
     - uses: actions/upload-artifact@v4
       with:
@@ -200,8 +201,8 @@ jobs:
     - name: Compile the existing native ASCII helper outside the APK
       run: |
         mkdir -p android/app/build/environment-ascii/classes
-        javac --release 8 -classpath "$ANDROID_HOME/platforms/android-36/android.jar" -d android/app/build/environment-ascii/classes android/scripts/android/AsciiInput.java
-        "$ANDROID_HOME/build-tools/35.0.0/d8" --min-api 28 --lib "$ANDROID_HOME/platforms/android-36/android.jar" --output android/app/build/environment-ascii/input.jar android/app/build/environment-ascii/classes/com/forcemind/chatgpt/pocinput/AsciiInput.class
+        javac --release 8 -classpath "$ANDROID_HOME/platforms/android-36/android.jar" -d android/app/build/environment-ascii/classes android/scripts/android/AsciiInput.java android/scripts/android/AsciiInputStream.java
+        "$ANDROID_HOME/build-tools/35.0.0/d8" --min-api 28 --lib "$ANDROID_HOME/platforms/android-36/android.jar" --output android/app/build/environment-ascii/input.jar android/app/build/environment-ascii/classes/com/forcemind/chatgpt/pocinput/*.class
     - name: Compile the existing Android9 touch helper outside the APK
       if: matrix.api == 28
       run: |
@@ -275,8 +276,8 @@ jobs:
     - name: Compile the existing native ASCII helper outside the APK
       run: |
         mkdir -p android/app/build/environment-ascii/classes
-        javac --release 8 -classpath "$ANDROID_HOME/platforms/android-36/android.jar" -d android/app/build/environment-ascii/classes android/scripts/android/AsciiInput.java
-        "$ANDROID_HOME/build-tools/35.0.0/d8" --min-api 28 --lib "$ANDROID_HOME/platforms/android-36/android.jar" --output android/app/build/environment-ascii/input.jar android/app/build/environment-ascii/classes/com/forcemind/chatgpt/pocinput/AsciiInput.class
+        javac --release 8 -classpath "$ANDROID_HOME/platforms/android-36/android.jar" -d android/app/build/environment-ascii/classes android/scripts/android/AsciiInput.java android/scripts/android/AsciiInputStream.java
+        "$ANDROID_HOME/build-tools/35.0.0/d8" --min-api 28 --lib "$ANDROID_HOME/platforms/android-36/android.jar" --output android/app/build/environment-ascii/input.jar android/app/build/environment-ascii/classes/com/forcemind/chatgpt/pocinput/*.class
     - name: Compile the existing Android9 touch helper outside the APK
       if: matrix.api == 28
       run: |
@@ -689,3 +690,133 @@ jobs:
         name: gecko-handoff-${{ matrix.api }}
         retention-days: 14
         path: android/app/build/gecko-handoff-evidence/
+  webview-network:
+    if: github.event_name == 'workflow_dispatch'
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        api:
+        - 28
+        - 35
+        transport:
+        - raw
+        - tls
+        - reality
+    env:
+      STUDIO_GECKO_APPLICATION_SHA: "${{ github.sha }}"
+      STUDIO_GECKO_TRANSPORT: "${{ matrix.transport }}"
+      STUDIO_GECKO_FIXTURE: android/network-poc/secure-fixture/fixture.json
+      STUDIO_GECKO_APK: android/app/build/environment-client-input/gecko-network-x86.apk
+      STUDIO_GECKO_RECEIPT: android/app/build/environment-client-input/gecko-network-receipt.json
+      STUDIO_GECKO_OUTPUT: android/app/build/regular-webview-network-evidence
+      STUDIO_REGULAR_CI_CERT_SHA256: "${{ needs.build.outputs.ci_signer }}"
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-java@v4
+      with:
+        distribution: temurin
+        java-version: '17'
+    - uses: android-actions/setup-android@v3
+      with:
+        packages: platform-tools
+    - run: |
+        sdkmanager 'platforms;android-36' 'build-tools;35.0.0'
+        sudo apt-get update -qq
+        sudo apt-get install -y libnss3-tools tcpdump
+    - uses: actions/download-artifact@v4
+      with:
+        name: environment-client-input
+        run-id: "${{ github.run_id }}"
+        github-token: "${{ github.token }}"
+        path: android/app/build/environment-client-input
+    - uses: actions/download-artifact@v4
+      with:
+        name: gecko-network-fixture
+        run-id: "${{ github.run_id }}"
+        github-token: "${{ github.token }}"
+        path: android/network-poc/secure-fixture
+    - uses: actions/download-artifact@v4
+      with:
+        name: gecko-network-host-core
+        run-id: "${{ github.run_id }}"
+        github-token: "${{ github.token }}"
+        path: android/network-poc/corebridge/bin
+    - uses: actions/download-artifact@v4
+      if: matrix.api == 28
+      with:
+        name: beta-continuation-input
+        run-id: 41993581770
+        github-token: "${{ github.token }}"
+        path: android/app/build/environment-provider-input
+    - name: Start owned legacy WebView route fixtures
+      run: |
+        mkdir -p "$STUDIO_GECKO_OUTPUT"
+        chmod +x android/network-poc/corebridge/bin/xray
+        python3 android/network-poc/scripts/fixture.py --core android/network-poc/corebridge/bin/xray --output android/network-poc/secure-fixture > "$RUNNER_TEMP/formal-network-fixture.log" 2>&1 &
+        for attempt in $(seq 1 40); do
+          if [ -f android/network-poc/secure-fixture/ready.json ]; then break; fi
+          sleep 1
+        done
+        test -f android/network-poc/secure-fixture/ready.json
+        test -c /dev/kvm
+        sudo chmod a+rw /dev/kvm
+    - name: Observe owned TCP connection lifecycle headers without payload capture
+      run: |
+        sudo tcpdump -nn -tt -l -s 96 -i any 'tcp and (port 18480 or port 18443 or port 18444 or port 19443 or port 19444 or port 20443 or port 20444) and (tcp[tcpflags] & (tcp-syn|tcp-fin|tcp-rst) != 0)' > "$STUDIO_GECKO_OUTPUT/owned-tcp-lifecycle-headers.log" 2> "$STUDIO_GECKO_OUTPUT/owned-tcp-capture-stderr.txt" &
+        echo $! > "$RUNNER_TEMP/studio-owned-tcp.pid"
+    - name: Compile the existing native input helper outside the app
+      run: |
+        mkdir -p android/app/build/environment-ascii/classes
+        javac --release 8 -classpath "$ANDROID_HOME/platforms/android-36/android.jar" -d android/app/build/environment-ascii/classes android/scripts/android/AsciiInput.java android/scripts/android/AsciiInputStream.java
+        "$ANDROID_HOME/build-tools/35.0.0/d8" --min-api 28 --lib "$ANDROID_HOME/platforms/android-36/android.jar" --output android/app/build/environment-ascii/input.jar android/app/build/environment-ascii/classes/com/forcemind/chatgpt/pocinput/*.class
+    - name: Compile the existing Android9 touch helper
+      if: matrix.api == 28
+      run: |
+        mkdir -p android/app/build/environment-touch/classes
+        javac --release 8 -classpath "$ANDROID_HOME/platforms/android-36/android.jar" -d android/app/build/environment-touch/classes android/scripts/android/TouchInput.java
+        "$ANDROID_HOME/build-tools/35.0.0/d8" --min-api 28 --lib "$ANDROID_HOME/platforms/android-36/android.jar" --output android/app/build/environment-touch/input.jar android/app/build/environment-touch/classes/com/forcemind/chatgpt/pocinput/TouchInput.class
+    - uses: reactivecircus/android-emulator-runner@v2
+      if: matrix.api == 28
+      with:
+        api-level: 28
+        target: default
+        arch: x86_64
+        profile: pixel_2
+        disable-animations: true
+        emulator-options: "-no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect
+          -writable-system -memory 3072"
+        script: |
+          python3 android/network-poc/scripts/install-webview.py --provider android/app/build/environment-provider-input/provider --output android/app/build/gecko-network-evidence/provider
+          adb push android/app/build/environment-ascii/input.jar /data/local/tmp/studio-poc-ascii-input.jar
+          adb push android/app/build/environment-touch/input.jar /data/local/tmp/studio-poc-input.jar
+          python3 android/scripts/run-regular-webview-network.py
+    - name: Run the same approved network scenarios on ready Android15
+      if: matrix.api == 35
+      run: bash android/scripts/run-environment-api35.sh android/scripts/run-regular-webview-network.py
+    - name: Preserve owned node process logs even after the first error
+      if: always()
+      run: |
+        mkdir -p "$STUDIO_GECKO_OUTPUT/node-logs"
+        if [ -f "$RUNNER_TEMP/studio-owned-tcp.pid" ]; then
+          studio_capture_pid=$(cat "$RUNNER_TEMP/studio-owned-tcp.pid")
+          if kill -0 "$studio_capture_pid" 2>/dev/null; then
+            sudo kill -INT "$studio_capture_pid"
+            if timeout 5 tail --pid="$studio_capture_pid" -f /dev/null; then
+              echo 'exited-after-interrupt' > "$STUDIO_GECKO_OUTPUT/owned-tcp-capture-stop.txt"
+            else
+              echo 'exit-not-observed-within-budget' > "$STUDIO_GECKO_OUTPUT/owned-tcp-capture-stop.txt"
+            fi
+          fi
+        fi
+        if compgen -G 'android/network-poc/secure-fixture/fixture-*.log' > /dev/null; then
+          cp android/network-poc/secure-fixture/fixture-*.log "$STUDIO_GECKO_OUTPUT/node-logs/"
+        fi
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: regular-webview-network-${{ matrix.api }}-${{ matrix.transport }}
+        retention-days: 14
+        path: android/app/build/regular-webview-network-evidence/

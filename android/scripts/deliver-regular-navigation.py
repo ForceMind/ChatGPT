@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Gate a navigation review, without presenting it as the final signed candidate."""
 import importlib.util
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -23,6 +24,24 @@ for api in (28, 35):
     assert proof['package'] == receipt['package'] and proof['sourceSHA'] == metadata['sourceSHA']
     assert proof['versionMetadata'] == metadata and proof['ciCandidateReceipt']['versionMetadata'] == metadata
     assert proof['sendCount'] == 0
+    assert proof['inputDeadlineSeconds'] == 75 and proof['inputMode'] == 'acknowledged-native-stream'
+    assert proof['claimsBatchOrderingFixed'] is False
+    prefixes, keys = proof['nativePrefixReceipts'], proof['nativeKeyboardReceipts']
+    assert prefixes and len(prefixes) == len(keys)
+    draft = prefixes[-1]['expectedPrefix']
+    assert hashlib.sha256(draft.encode()).hexdigest() == proof['draftSHA256'] and len(draft) == len(prefixes)
+    for index, (prefix, keyboard) in enumerate(zip(prefixes, keys)):
+        assert prefix['index'] == index and prefix['complete'] is True
+        assert prefix['expectedPrefix'] == prefix['draft'] == prefix['modelDraft'] == draft[:index+1]
+        assert prefix['inputIdentityField'] == 'url' and prefix['inputIdentity'] == 'https://environment-fixture.test:18480/c/a1'
+        assert prefix['inputCount'] == prefix['trustedInputCount'] == index+1
+        assert keyboard['textLength'] == 1 and keyboard['textSHA256'] == hashlib.sha256(draft[index].encode()).hexdigest()
+        assert keyboard['provider'] == 'ci-paced-ascii-keyboard' and keyboard['complete'] is True
+        assert keyboard['api'] == api and keyboard['uid'] == 2000 and keyboard['qemu'] is True
+        assert keyboard['paceMillis'] == 40 and keyboard['injectionMode'] == 2
+        assert keyboard['events'] and all(e['accepted'] is True and e['waitForFinish'] is True for e in keyboard['events'])
+    streams = proof['nativeInputStreams']
+    assert len(streams) == 1 and streams[0]['complete'] is True and streams[0]['exitCode'] == 0
     shared.flags(proof, ('productionSignatureVerified', 'screenshots', 'realServicesAccessed', 'backgroundLongTestsRepeated'), False)
     for key, filename in (('geckoNavigation', 'gecko-chrome-navigation.json'), ('webviewNavigation', 'browser-chrome-legacy.json')):
         result = proof[key]

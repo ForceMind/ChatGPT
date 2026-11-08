@@ -10,6 +10,7 @@ import traceback
 import uuid
 
 import regular_environment_upgrade as native
+from owned_ascii_input import AcknowledgedNativeInput
 
 
 def module(name, filename):
@@ -34,7 +35,13 @@ def main():
         assert len(devices) == 1 and devices[0].split()[1:] == ['device']
         upgrade = native.run_upgrade('synthetic')
         receipt = native._json(native.INPUT / 'receipt.json')
-        acceptance = shared.Acceptance(upgrade)
+        class NavigationAcceptance(AcknowledgedNativeInput, shared.Acceptance):
+            input_identity_field = 'url'
+        acceptance = NavigationAcceptance(upgrade)
+        acceptance.output = native.EVIDENCE
+        acceptance._input_deadline = None
+        acceptance.input_prefix_receipts = []
+        acceptance.input_stream_receipts = []
         acceptance.tls_server()
         acceptance.prepare_profiles()
         _, first = acceptance.open('A', 0)
@@ -53,6 +60,9 @@ def main():
                  'ciCandidateReceipt': receipt, 'legacyUpgrade': upgrade,
                  'geckoNavigation': gecko, 'webviewNavigation': webview,
                  'legacyAfterNavigation': retained, 'draftSHA256': hashlib.sha256(draft.encode()).hexdigest(),
+                 'nativePrefixReceipts': acceptance.input_prefix_receipts, 'nativeInputStreams': acceptance.input_stream_receipts,
+                 'nativeKeyboardReceipts': acceptance.keyboard_events, 'inputDeadlineSeconds': 75,
+                 'inputMode': 'acknowledged-native-stream', 'claimsBatchOrderingFixed': False,
                  'sendCount': acceptance.status()['sendCount'], 'productionSignatureVerified': False,
                  'screenshots': False, 'realServicesAccessed': False, 'backgroundLongTestsRepeated': False}
         assert proof['sendCount'] == 0

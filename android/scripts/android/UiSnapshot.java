@@ -38,6 +38,8 @@ public final class UiSnapshot {
     private static volatile boolean windowsComplete,packagesComplete;
     private static volatile String windowsJson="[]",activeJson="null",chosenJson="null";
     private static volatile String rootPackage="";
+    private static volatile int windowQueries,lastWindowCount=-1;
+    private static volatile String errorMessage="";
     private static long deadline;
     private static void check()throws IOException{
         if(SystemClock.elapsedRealtime()>=deadline)throw new IOException("AX deadline expired");
@@ -66,7 +68,8 @@ public final class UiSnapshot {
                 .put("connectionClass","android.app.UiAutomationConnection")
                 .put("constructorSignature","UiAutomation(Looper,IUiAutomationConnection)")
                 .put("connectionFlags",UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES)
-                .put("errorClass",error);
+                .put("errorClass",error).put("errorMessage",errorMessage)
+                .put("windowQueries",windowQueries).put("lastWindowCount",lastWindowCount);
             if(complete)value.put("xml",xml).put("xmlSHA256",sha(xml));
             System.out.println(value.toString());System.out.flush();
         }catch(Throwable failure){System.err.println("AX receipt unavailable: "+failure.getClass().getName());}
@@ -166,8 +169,15 @@ public final class UiSnapshot {
             AccessibilityServiceInfo observed=automation.getServiceInfo();if(observed==null)throw new IOException("AX service flags unavailable");
             serviceFlags=observed.flags;
             if((serviceFlags&AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS)==0)throw new IOException("Interactive AX windows unavailable");
-            phase="windows";windows=automation.getWindows();check();
-            if(windows==null||windows.isEmpty()||windows.size()>64)throw new IOException("AX window list unavailable");
+            phase="windows";
+            // Window tracking begins asynchronously after the service flags are
+            // installed. Wait within this same read deadline, without reconnecting.
+            while(true){
+                check();windows=automation.getWindows();windowQueries++;lastWindowCount=windows==null?-1:windows.size();check();
+                if(windows!=null&&!windows.isEmpty())break;
+                SystemClock.sleep(Math.min(40,Math.max(1,deadline-SystemClock.elapsedRealtime())));
+            }
+            if(windows.size()>64)throw new IOException("AX window list limit exceeded");
             JSONArray metadata=new JSONArray();int focusedApplications=0;
             for(AccessibilityWindowInfo item:windows){
                 check();metadata.put(new JSONObject().put("id",item.getId()).put("type",item.getType())
@@ -206,7 +216,7 @@ public final class UiSnapshot {
             xml=buffer.toString();if(xml.length()>4*1024*1024)throw new IOException("Owned AX XML limit exceeded");check();
         }catch(Throwable failure){
             Throwable cause=failure instanceof InvocationTargetException&&failure.getCause()!=null?failure.getCause():failure;
-            error=cause.getClass().getName();failedPhase=phase;xml=null;
+            error=cause.getClass().getName();errorMessage=String.valueOf(cause.getMessage());failedPhase=phase;xml=null;
         }finally{
             if(root!=null)root.recycle();
             if(windows!=null)for(AccessibilityWindowInfo item:windows)item.recycle();

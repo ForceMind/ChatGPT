@@ -45,5 +45,17 @@ receipt = {'schema':1,'file':apk.name,'bytes':apk.stat().st_size,
            'sha256':hashlib.sha256(apk.read_bytes()).hexdigest(),'sourceSHA':os.environ['GITHUB_SHA'],
            'package':PACKAGE,'versionCode':version_metadata['versionCode'],
            'versionName':version_metadata['versionName'],'versionMetadata':version_metadata,'signerSHA256':signer,'ciOnly':True,'productionSignatureVerified':False}
+if REGULAR:
+    receipt['legacyWebviewFixture'] = '.NetworkDocumentsProvider' in compiled_manifest
+    if receipt['legacyWebviewFixture']:
+        test = inputs / 'network-test.apk'
+        assert test.is_file(), 'The regular legacy tests must be compiled with this fixture'
+        native._inspect_apk(test, tools, signer, PACKAGE + '.test')
+        with zipfile.ZipFile(test) as archive:
+            assert any(b'NetworkIntegrationTest' in archive.read(name) for name in archive.namelist() if name.endswith('.dex'))
+        (inputs / 'network-test-receipt.json').write_text(json.dumps({
+            'schema':1,'file':test.name,'bytes':test.stat().st_size,'sha256':hashlib.sha256(test.read_bytes()).hexdigest(),
+            'package':PACKAGE+'.test','signerSHA256':signer,'sourceSHA':version_metadata['sourceSHA'],
+            'ciOnly':True,'productionSignatureVerified':False},indent=2)+'\n')
 (apk.parent/'gecko-network-receipt.json').write_text(json.dumps(receipt, indent=2)+'\n')
 print(json.dumps(receipt))
