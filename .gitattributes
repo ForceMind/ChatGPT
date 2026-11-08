@@ -1,2 +1,4 @@
 # The manifest hashes exact bytes; checkout must not rewrite capability JSON.
 desktop/resources/capabilities/*.json text eol=lf
+# Keep Prettier's committed LF on Windows; auto preserves binary assets.
+desktop/** text=auto eol=lf

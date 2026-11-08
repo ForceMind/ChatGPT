@@ -20,4 +20,4 @@
 
 ## 运行与交付记录
 
-待追加实际 CI、发布、主分支同步和生产回读结果。尚未发布新正式 Release。
+桌面源码 `6d337d7` 已推送并启动 Mac `42501547295`、Windows `42501551123`。Mac 完整 check 通过并进入页面验收；Windows 的格式门禁报 124 文件差异。仓库已有 LF 源字节，旧 Windows branding workflow 也专门禁用了 autocrlf；本次用 `.gitattributes` 对 desktop 设置 text=auto/eol=lf，保留二进制并固定检出，不整体格式化、不改 Prettier 或 lint 规则。该提交不改 desktop 树；Mac 原验证继续，Windows 使用新检出策略验证。尚未发布新正式 Release。
