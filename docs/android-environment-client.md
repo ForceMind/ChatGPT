@@ -2,6 +2,12 @@
 
 ## 当前任务：常规版完整验收与原签覆盖候选（已批准）
 
+本机原签已完成：`ChatGPT-Studio-2026.11.08-1923-android-arm64.apk` / code `3000035` / 241,931,130 bytes，SHA-256 `177ef874c6c904a653aecb3ffc61a76ef45ebc8e69cb80c6addbdb9e74806259`。实际 apksigner 核对三份 APK 均为原正式证书 `8b6eef928fded91f291ad954e20976b2cc6011b55e8cbec0152695fe1f05cf19`，签名前后全部非签名 ZIP 内容相同；签后 ARM64/x86 各 14 个原生库均实测保持 16 KiB ZIP 对齐。原签收据见 [signed-receipt](releases/android-regular-2026.11.08-1923-signed-receipt.json)，完整功能汇总见 [full-validation](releases/android-regular-2026.11.08-1923-full-validation.json)（561,256 bytes，SHA-256 `1071aa57b8c7262ed366d81c99ff6c54e5c29ea83af663ce62a5f0a06df1b46b`）。
+
+已制作仅含三份签后 APK 与收据的临时 CI 回传 ZIP，222,262,103 bytes，SHA-256 `0760b78c467a6242efce4498235b4b6bd5751cd4c4acdb78e6cb0fb994b15ce5`；尚未上传。临时 JRE、SDK 和两份未签名 APK 输入均已清理，原私钥、现有正式 App、手机和登录/恢复数据未改。**原证书 install-r 升级验证仍未完成**；下一步需要将签后实际字节回传 Actions，临时不公开 draft Release 的创建/上传/测试后删除尚待明确授权。未合并 main、公开发布或更新官网。
+
+完整功能与静态门禁已通过：[恢复汇总 42478410411](https://github.com/ForceMind/ChatGPT/actions/runs/42478410411) / harness `9b68bb736d12bb22ecb9c75ecbb08e990f771fdc`，复用 App `a26b499` 和功能运行 `42475341878` 的原字节，未重编或新增浏览器动作。最终未签名完整审阅产物 `13616426453`，ZIP SHA-256 `bf88ba790be637488e04aa930685c6c53d936b733e1fba1100c7a7483b83c52e`；原签伴随输入 `13616198346`，ZIP SHA-256 `20e87019883624c7f1d81d00a3c8a2388b421e586b89f17a8eb94b7c1905116a`。来源见证 `13616357512` 保存 23 个成功任务、25 份确切产物和两份 SHA。首次连接失败仍保留，未宣称根因修复。本机正下载已验证输入，并准备已校官方摘要的临时 Java 17/Build Tools 35，只做签名；尚未签名、原证书覆盖升级、公开发布或更新设备。系统 Java 未安装，原私钥未上传。
+
 当前可复用的完整功能结果：[42475341878](https://github.com/ForceMind/ChatGPT/actions/runs/42475341878)，App 源码 `a26b4993e329268ef0f690e12fd4707f374e58d8`，编译日期版本 `2026.11.08-1923`，ARM64 未签名包 SHA-256 `83794d64626fb1d3d03d69f7d5304d925ccf3a3920f427b79026d282d064e5bb`。首轮 21/22 功能任务通过；API35 本地导出在初始代理目标检查返回 FAILED、没有退回直连，尚未执行导出。完整原报告保留为 artifact `13615760838`。按原源码仅重验该失败任务一次后，其原连接及完整导出断言通过，成功报告为 `13615529053`；间歇连接失败原因仍未根除，不能宣称修复。两端兼容、两端导航、两端 Gecko Skill、本地导出、十二组双引擎路由/文件与两端 Workbench 合计 22 项均有本轮通过结果。
 
 随后静态汇总失败原因已确证：同名 artifact 下载器选中旧失败 ID `13615760838`（11:32），未选成功 ID `13615529053`（11:44）；数字 ID 与实际创建顺序相反。新增仅静态的恢复汇总入口，按最新成功任务的实际起止时间唯一绑定产物 ID，核对官方 ZIP digest、App 源码、临时证书、23 个成功 job，再运行原全部数据/功能断言。旧失败产物不删除、不覆盖；不重编 APK 或重跑页面。App 编译 SHA 与当前汇总 harness SHA/run ID 分开记录，原签消费端继续核对二者和实际字节，不能用新工具提交冒充重新编译的 App。此接线仅 AST/YAML/Shell 静态通过，尚未执行恢复汇总，也没有本机签名或中转 Release。

@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "package": "com.forcemind.chatgpt.profiles",
+  "certificateSHA256": "8b6eef928fded91f291ad954e20976b2cc6011b55e8cbec0152695fe1f05cf19",
+  "versionMetadata": {
+    "schema": 1,
+    "versionCode": 3000035,
+    "versionName": "2026.11.08-1923",
+    "timeZone": "Asia/Shanghai",
+    "sourceSHA": "a26b4993e329268ef0f690e12fd4707f374e58d8"
+  },
+  "sourceSHA": "a26b4993e329268ef0f690e12fd4707f374e58d8",
+  "privateKeyUploaded": false,
+  "productionSignatureUpgradeVerified": false,
+  "publicRelease": false,
+  "arm64": {
+    "file": "ChatGPT-Studio-2026.11.08-1923-android-arm64.apk",
+    "bytes": 241931130,
+    "sha256": "177ef874c6c904a653aecb3ffc61a76ef45ebc8e69cb80c6addbdb9e74806259",
+    "inputSHA256": "83794d64626fb1d3d03d69f7d5304d925ccf3a3920f427b79026d282d064e5bb",
+    "nonSigningEntriesUnchanged": true
+  },
+  "humanX86": {
+    "file": "ChatGPT-Studio-2026.11.08-1923-ORIGINAL-CERT-CI-x86_64.apk",
+    "bytes": 263766864,
+    "sha256": "6177afcc1001aad8603847b34e87857f633304518360611af365e0fa0416a4ff",
+    "inputSHA256": "00d71ae2acaa6c064f9fb984bce37d1719b2a80b30c40edcafdb504ab6203798",
+    "nonSigningEntriesUnchanged": true
+  },
+  "instrumentation": {
+    "file": "ChatGPT-Studio-2026.11.08-1923-GUARDED-UPGRADE-TEST.apk",
+    "bytes": 758430,
+    "sha256": "128ab753f50e6cb1373e85bb264b4f2ad31ce05df375f27488f2d95704d41b62",
+    "inputSHA256": "a04932bacfd1a2a171cc98d9a8e695e824dba3ca35283904f0ed091899bc8c98",
+    "nonSigningEntriesUnchanged": true
+  }
+}
