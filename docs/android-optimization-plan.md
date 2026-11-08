@@ -42,3 +42,7 @@
 已实际读取首轮R8 mapping：GeneratedNetworkTrust被改名为dx，Provider保留原名；artifact13629483368原证据保留。baseline42512156694完整24job成功；精确保留后r8复验42513553896、resources复验42513557648仍在运行。baseline原APK已进入资源运行42513822767（Android9/15），未重构/重签/重建；CPU/PSS结果仍待实际运行。
 
 资源首轮42513822767在两系统启动模拟器前被既有脚本明确允许列表拒绝，尚未运行App或进入采样；原错误“Only the approved ... script may run.”保留。不移除启动器限制，只在资源工作流临时检出中增加用户已批准的唯一新脚本路径，并提前创建诊断回执，避免后续无产物掩盖首错。原生产/旧启动器源码不改。
+
+新证据：resources复验42513557648的accept28在旧版seed前因AndroidJUnitRunner/FileTestStorage引用混淆类nt而崩溃，原公开alpha.22未含该类。不能把新版优化后的测试APK直接用于旧未优化App。现构建未混淆的旧侧测试APK，在旧版seed/冷读后，仅替换目标App并将测试APK更新为与新App映射匹配的版本；四阶段、原始SHA、同签/UID/记录保留断言不变，不重建旧App、不清理升级数据。不同侧测试APK均核对临时证书、SHA和明确用途。
+
+资源首个1页空闲样本已完成两个120秒窗口，但跨用例重新建夹具后流式页未出现HTTP请求，整组失败。保留partial，不宣称测量完成；后续按原批准的四场景拆为独立新模拟器，并在每个OS/页数/负载组合的同一runner上顺序跑baseline/r8/resources，消除独立runner硬件差异。窗口数量/预热/预算和全部断言不变，只修正实验隔离与匹配方法；不把独立用例串行夹具问题宣称为产品回归。TLS35的首错为probe-owned-target约2046ms、coreRunning=true、originalGeneration=true、SocketException/reset；与既往现象相似但根因未知，未机械重试或宣称修复。

@@ -7,6 +7,8 @@ import os
 from pathlib import Path
 import re
 import subprocess
+import shutil
+from optimization_test_overlay import legacy_upgrade_overlay
 
 ROOT = Path(__file__).resolve().parents[2]
 MODES = ('baseline', 'r8', 'resources')
@@ -25,7 +27,7 @@ def main():
     stamp = os.environ['STUDIO_OPT_VERSION']
     assert re.fullmatch(r'\d{4}\.\d{2}\.\d{2}-\d{4}', stamp)
     datetime.strptime(stamp, '%Y.%m.%d-%H%M')
-    parser = argparse.ArgumentParser(); parser.add_argument('--phase', choices=['overlay', 'version'], required=True)
+    parser = argparse.ArgumentParser(); parser.add_argument('--phase', choices=['overlay', 'version', 'legacy-tests'], required=True)
     args = parser.parse_args()
     os.chdir(ROOT)
     output = Path('android/app/build/optimization'); output.mkdir(parents=True, exist_ok=True)
@@ -34,6 +36,31 @@ def main():
         assert not target.exists()
         target.write_text(json.dumps({'schema': 1, 'versionCode': 3000035, 'versionName': stamp,
                                      'timeZone': 'Asia/Shanghai', 'sourceSHA': os.environ['GITHUB_SHA']}, indent=2) + '\n')
+        return
+    if args.phase == 'legacy-tests':
+        gradle = Path('android/app/build.gradle'); original = gradle.read_bytes(); text = original.decode()
+        text, count = re.subn(r'            minifyEnabled (?:true|false)\n', '            minifyEnabled false\n', text)
+        assert count == 1
+        text, count = re.subn(r'            shrinkResources (?:true|false)\n', '            shrinkResources false\n', text)
+        assert count == 1
+        folder = Path('android/app/build/optimization-old-side-test'); folder.mkdir(exist_ok=False)
+        try:
+            gradle.write_text(text)
+            subprocess.run(['bash', 'android/environment-poc/gradlew', '-p', 'android', '--no-daemon',
+                            '-PenvironmentClient', '-PregularEnvironmentClient', '-PregularEnvironmentCi',
+                            '-PenvironmentTest', '-PregularNavigationTest', '-PregularWorkbenchTest',
+                            ':app:assembleReleaseAndroidTest'], check=True)
+            apk = folder / 'upgrade-baseline-test.apk'
+            shutil.copyfile('android/app/build/outputs/apk/androidTest/release/app-release-androidTest.apk', apk)
+            tools = Path(os.environ['ANDROID_HOME']) / 'build-tools/35.0.0'
+            certs = subprocess.check_output([str(tools/'apksigner'),'verify','--print-certs',str(apk)],text=True)
+            signer = re.findall(r'certificate SHA-256 digest: ([a-f0-9]+)',certs); assert len(signer)==1
+            (folder/'baseline-test-receipt.json').write_text(json.dumps({
+                'schema':1,'file':apk.name,'bytes':apk.stat().st_size,'sha256':sha(apk.read_bytes()),
+                'sourceSHA':os.environ['GITHUB_SHA'],'signerSHA256':signer[0],
+                'compiledAgainstUnminified':True,'ciOnly':True,'productionSigningUsed':False},indent=2)+'\n')
+        finally:
+            gradle.write_bytes(original)
         return
     subprocess.run(['git', 'diff', '--exit-code', BASE, 'HEAD', '--', 'android/app',
                     'android/network-poc/corebridge', 'desktop/resources/capabilities'], check=True)
@@ -53,6 +80,23 @@ def main():
     assert text.count(needle) == 1
     path.write_text(text.replace(needle, "WORKFLOW = '.github/workflows/android-regular-optimization.yml'"))
     edits.append({'path': str(path), 'beforeSHA256': sha(old), 'afterSHA256': sha(path.read_bytes())})
+    path = Path('android/scripts/prepare-regular-ci-inputs.py'); old = path.read_bytes()
+    appendix = '''
+# Explicit unminified old-side instrumentation; never modify the original app.
+old_side = Path('android/app/build/optimization-old-side-test')
+old_test_receipt = json.loads((old_side/'baseline-test-receipt.json').read_text())
+assert old_test_receipt['ciOnly'] is True and old_test_receipt['compiledAgainstUnminified'] is True
+assert old_test_receipt['sourceSHA'] == os.environ['GITHUB_SHA'] and old_test_receipt['signerSHA256'] == ci_signer
+assert sha(old_side/old_test_receipt['file']) == old_test_receipt['sha256']
+shutil.copyfile(old_side/old_test_receipt['file'], inputs/old_test_receipt['file'])
+shutil.copyfile(old_side/'baseline-test-receipt.json', inputs/'baseline-test-receipt.json')
+'''
+    path.write_text(old.decode()+appendix)
+    edits.append({'path':str(path),'beforeSHA256':sha(old),'afterSHA256':sha(path.read_bytes())})
+    path = Path('android/scripts/regular_environment_upgrade.py'); old = path.read_bytes(); text = old.decode()
+    text = legacy_upgrade_overlay(text)
+    path.write_text(text)
+    edits.append({'path':str(path),'beforeSHA256':sha(old),'afterSHA256':sha(path.read_bytes())})
     receipt = {'schema': 1, 'mode': mode, 'versionName': stamp, 'harnessSHA': os.environ['GITHUB_SHA'],
                'productBaseline': BASE, 'ciOnlyOverlay': True, 'productionSigningUsed': False, 'edits': edits}
     (output / 'overlay.json').write_text(json.dumps(receipt, indent=2) + '\n')

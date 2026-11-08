@@ -1,9 +1,12 @@
 """Synthetic regular-client foreground samples, only on fresh Actions emulators."""
 import hashlib,importlib.util,json,os,re,statistics,subprocess,time,traceback
 from pathlib import Path
+from optimization_test_overlay import legacy_upgrade_overlay
 
 ROOT=Path(__file__).resolve().parents[2]
-OUT=ROOT/'android/app/build/regular-resource-evidence'
+RESOURCE_MODE=os.environ.get('STUDIO_RESOURCE_MODE','single')
+assert RESOURCE_MODE in ('baseline','r8','resources','single')
+OUT=ROOT/'android/app/build/regular-resource-evidence'/RESOURCE_MODE
 PACKAGE='com.forcemind.chatgpt.profiles'
 
 
@@ -23,6 +26,7 @@ def configure():
     # Keep the real GITHUB_SHA as the harness identity. Bind only the APK source
     # guard to the separately API-verified successful parent workflow.
     path=Path('android/scripts/regular_environment_upgrade.py');old=path.read_bytes();text=old.decode()
+    if Path('android/app/build/regular-environment-input/baseline-test-receipt.json').exists():text=legacy_upgrade_overlay(text)
     needle="assert receipt['sourceSHA'] == os.environ['GITHUB_SHA']"
     assert text.count(needle)==1
     text=text.replace(needle,"assert receipt['sourceSHA'] == os.environ['STUDIO_RESOURCE_APP_SOURCE_SHA']")
@@ -72,7 +76,7 @@ def main():
     parsers=module('regular_resource_parsers',ROOT/'android/network-poc/scripts/measure-resources.py')
     result={'schema':1,'complete':False,'sourceOrigin':origin,'harnessSHA':os.environ['GITHUB_SHA'],'mode':origin['mode'],'cases':[],
             'windowSeconds':120,'warmupSeconds':30,'windowsPerCase':2,'sampleIntervalSeconds':5,
-            'scope':'Synthetic foreground Gecko pages with the unchanged 500ms observation transport; not physical-device or real ChatGPT performance',
+            'hostNode':os.uname().nodename,'scope':'Synthetic foreground Gecko pages with the unchanged 500ms observation transport; not physical-device or real ChatGPT performance',
             'syntheticCasesIndependent':True,'dataRetentionCoveredByParentFunctionalGates':True,'backgroundPolicyChanged':False,'screenshots':False,'proxyEnabled':False}
     sampler=parsers.Sampler(OUT,120,30,5)
     native._guard()
@@ -81,8 +85,11 @@ def main():
     (OUT/'kernel-auxv.bin').write_bytes(auxv)
     active=None
     try:
-        for pages,load in [(1,'idle'),(1,'stream'),(4,'idle'),(4,'stream')]:
+        pages=int(os.environ['STUDIO_RESOURCE_PAGES']);load=os.environ['STUDIO_RESOURCE_LOAD']
+        assert pages in (1,4) and load in ('idle','stream')
+        for pages,load in [(pages,load)]:
             name=str(pages)+'-'+load;folder=OUT/name;folder.mkdir()
+            print('Starting resource case '+origin['mode']+' '+name,flush=True)
             native.EVIDENCE=folder/'setup';flow.EVIDENCE=native.EVIDENCE;native.EVIDENCE.mkdir()
             os.environ['STUDIO_RESOURCE_LOAD']=load
             upgrade=native.run_upgrade('synthetic')
@@ -95,11 +102,13 @@ def main():
                 for account,tab in targets:
                     path=flow.PAGE[(account,tab)];row=active.latest(state,path)
                     assert row and row['resourceMode']==load and row['sendClicks']==0
-                    observed[path]={k:row[k] for k in ['document','draft','modelDraft','resourceRevisions','eventSequence']}
+                    observed[path]={k:row[k] for k in ['document','draft','modelDraft','resourceRevisions','eventSequence','visibility']}
                 assert sum(state['pageCounts'].values())==pages,'Unexpected extra page loads'
+                assert observed['/c/a1']['visibility']=='visible','The foreground measurement tab must remain visible'
                 return observed
             initial=observe();case={'pages':pages,'load':load,'initialDocuments':initial,'windows':[]}
             for window in range(2):
+                print('Warmup 30 seconds; window '+str(window+1)+'/2',flush=True)
                 time.sleep(30);before=observe();samples=[];start=time.monotonic()
                 for index in range(25):
                     time.sleep(max(0,start+index*5-time.monotonic()))
@@ -114,6 +123,7 @@ def main():
                     samples.append({'timeMonotonic':time.monotonic(),'processes':processes,'geckoPIDs':gecko,'excludedUnrelated':excluded})
                     write(folder/(str(window)+'-samples.json'),samples)
                     if index==0:start=samples[0]['timeMonotonic']
+                    if index%6==0:print('Window '+str(window+1)+' sample '+str(index+1)+'/25',flush=True)
                 after=observe();elapsed=samples[-1]['timeMonotonic']-samples[0]['timeMonotonic'];assert elapsed>=120
                 first={p['pid']:p for p in samples[0]['processes']};cpu={pid:0.0 for pid in first}
                 for old,new in zip(samples,samples[1:]):
@@ -131,6 +141,7 @@ def main():
                     'pssMeanMiB':statistics.mean(sum(p['pssKiB'] for p in s['processes'])/1024 for s in samples),
                     'pssPeakMiB':max(sum(p['pssKiB'] for p in s['processes'])/1024 for s in samples),'streamRevisions':revisions,'documentsRetained':True,'draftsRetained':True})
                 write(folder/'case.json',case)
+                print('Resource window complete: '+str(case['windows'][-1]),flush=True)
             result['cases'].append(case);write(OUT/'report.json',result)
             active.close();active=None
             # End a complete independent synthetic trial. Never clear data in an

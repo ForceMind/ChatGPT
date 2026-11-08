@@ -8,28 +8,41 @@ name: Android regular optimization resource comparison
     - ".github/workflows/android-optimization-resources.yml"
   workflow_dispatch:
     inputs:
-      source_run:
+      baseline_run:
         type: string
         required: true
-        description: Successful optimization run to sample without rebuilding
+        description: Successful baseline functional run
+      r8_run:
+        type: string
+        required: true
+        description: Successful r8 functional run
+      resources_run:
+        type: string
+        required: true
+        description: Successful resources functional run
 permissions:
   contents: read
   actions: read
 env:
   STUDIO_ANDROID_CI_TARGET: regular
   STUDIO_REGULAR_VALIDATION_SCRIPT: android/scripts/measure-regular-optimization.py
-  STUDIO_RESOURCE_SOURCE_RUN: "${{ inputs.source_run }}"
 jobs:
   resources:
     if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/dev'
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
         api:
         - 28
         - 35
+        pages:
+        - 1
+        - 4
+        load:
+        - idle
+        - stream
     steps:
     - uses: actions/checkout@v4
     - name: Bind the exact approved resource entry in disposable bootstraps
@@ -49,19 +62,39 @@ jobs:
     - uses: actions/download-artifact@v4
       with:
         name: regular-environment-ci-input
-        path: android/app/build/regular-environment-input
-        run-id: "${{ inputs.source_run }}"
+        run-id: "${{ inputs.baseline_run }}"
         github-token: "${{ github.token }}"
+        path: android/app/build/resource-cohort/baseline/input
     - uses: actions/download-artifact@v4
       with:
         name: optimization-build-diagnostics
-        run-id: "${{ inputs.source_run }}"
+        run-id: "${{ inputs.baseline_run }}"
         github-token: "${{ github.token }}"
-        path: android/app/build/resource-build-diagnostics
-    - name: Verify successful source run and bind original APK metadata
-      env:
-        GH_TOKEN: "${{ github.token }}"
-      run: python3 android/scripts/bind-regular-resource-origin.py
+        path: android/app/build/resource-cohort/baseline/diagnostics
+    - uses: actions/download-artifact@v4
+      with:
+        name: regular-environment-ci-input
+        run-id: "${{ inputs.r8_run }}"
+        github-token: "${{ github.token }}"
+        path: android/app/build/resource-cohort/r8/input
+    - uses: actions/download-artifact@v4
+      with:
+        name: optimization-build-diagnostics
+        run-id: "${{ inputs.r8_run }}"
+        github-token: "${{ github.token }}"
+        path: android/app/build/resource-cohort/r8/diagnostics
+    - uses: actions/download-artifact@v4
+      with:
+        name: regular-environment-ci-input
+        run-id: "${{ inputs.resources_run }}"
+        github-token: "${{ github.token }}"
+        path: android/app/build/resource-cohort/resources/input
+    - uses: actions/download-artifact@v4
+      with:
+        name: optimization-build-diagnostics
+        run-id: "${{ inputs.resources_run }}"
+        github-token: "${{ github.token }}"
+        path: android/app/build/resource-cohort/resources/diagnostics
     - uses: actions/download-artifact@v4
       if: matrix.api == 28
       with:
@@ -84,16 +117,38 @@ jobs:
       run: |
         test -c /dev/kvm
         sudo chmod a+rw /dev/kvm
-    - name: Run the approved original-package flow on fresh Android9
-      if: matrix.api == 28
-      run: bash android/scripts/run-environment-api28.sh "$STUDIO_REGULAR_VALIDATION_SCRIPT"
-    - name: Run the approved original-package flow on fresh Android15
-      if: matrix.api == 35
-      run: bash android/scripts/run-environment-api35.sh "$STUDIO_REGULAR_VALIDATION_SCRIPT"
+    - name: Measure baseline on the same scenario host with a fresh emulator
+      env:
+        GH_TOKEN: "${{ github.token }}"
+        STUDIO_RESOURCE_SOURCE_RUN: "${{ inputs.baseline_run }}"
+        STUDIO_RESOURCE_MODE: baseline
+        STUDIO_RESOURCE_PAGES: "${{ matrix.pages }}"
+        STUDIO_RESOURCE_LOAD: "${{ matrix.load }}"
+      run: python3 android/scripts/run-regular-resource-cohort-mode.py --api ${{ matrix.api
+        }}
+    - name: Measure r8 on the same scenario host with a fresh emulator
+      env:
+        GH_TOKEN: "${{ github.token }}"
+        STUDIO_RESOURCE_SOURCE_RUN: "${{ inputs.r8_run }}"
+        STUDIO_RESOURCE_MODE: r8
+        STUDIO_RESOURCE_PAGES: "${{ matrix.pages }}"
+        STUDIO_RESOURCE_LOAD: "${{ matrix.load }}"
+      run: python3 android/scripts/run-regular-resource-cohort-mode.py --api ${{ matrix.api
+        }}
+    - name: Measure resources on the same scenario host with a fresh emulator
+      env:
+        GH_TOKEN: "${{ github.token }}"
+        STUDIO_RESOURCE_SOURCE_RUN: "${{ inputs.resources_run }}"
+        STUDIO_RESOURCE_MODE: resources
+        STUDIO_RESOURCE_PAGES: "${{ matrix.pages }}"
+        STUDIO_RESOURCE_LOAD: "${{ matrix.load }}"
+      run: python3 android/scripts/run-regular-resource-cohort-mode.py --api ${{ matrix.api
+        }}
     - uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: regular-optimization-resources-${{ matrix.api }}
+        name: regular-optimization-resources-${{ matrix.api }}-${{ matrix.pages }}-${{
+          matrix.load }}
         retention-days: 14
         if-no-files-found: error
         path: android/app/build/regular-resource-evidence/
