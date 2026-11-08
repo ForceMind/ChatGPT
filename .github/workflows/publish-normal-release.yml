@@ -1,0 +1,84 @@
+name: Stage verified three-platform normal release
+'on':
+  push:
+    branches: [dev]
+    paths: ['.github/workflows/publish-normal-release.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: read
+jobs:
+  stage:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Read the frozen normal-release manifest
+        id: source
+        run: |
+          python3 - <<'PY'
+          import json,os,pathlib,re
+          version=json.loads(pathlib.Path('desktop/package.json').read_text())['version']
+          assert re.fullmatch(r'[1-9][0-9]*\.[1-9][0-9]*\.[1-9][0-9]*',version)
+          m=json.loads(pathlib.Path('docs/releases/'+version+'.json').read_text())
+          assert m['version']==version and m['prerelease'] is False
+          with open(os.environ['GITHUB_OUTPUT'],'a') as output:
+              for key in ('macos','windows','android'):
+                  value=m['runs'][key]['id'];assert type(value) is int and value>0
+                  output.write(key+'='+str(value)+'\n')
+          PY
+      - uses: actions/download-artifact@v4
+        with:
+          name: mac-arm64-dmg
+          run-id: ${{ steps.source.outputs.macos }}
+          github-token: ${{ github.token }}
+          path: promotion/mac-dmg
+      - uses: actions/download-artifact@v4
+        with:
+          name: mac-arm64-zip
+          run-id: ${{ steps.source.outputs.macos }}
+          github-token: ${{ github.token }}
+          path: promotion/mac-zip
+      - uses: actions/download-artifact@v4
+        with:
+          name: mac-release-info
+          run-id: ${{ steps.source.outputs.macos }}
+          github-token: ${{ github.token }}
+          path: promotion/mac-info
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows-x64-installer
+          run-id: ${{ steps.source.outputs.windows }}
+          github-token: ${{ github.token }}
+          path: promotion/win-installer
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows-x64-zip
+          run-id: ${{ steps.source.outputs.windows }}
+          github-token: ${{ github.token }}
+          path: promotion/win-zip
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows-acceptance-evidence
+          run-id: ${{ steps.source.outputs.windows }}
+          github-token: ${{ github.token }}
+          path: promotion/win-evidence
+      - uses: actions/download-artifact@v4
+        with:
+          name: ChatGPT-Studio-Android-Original-Signed-Candidate
+          run-id: ${{ steps.source.outputs.android }}
+          github-token: ${{ github.token }}
+          path: promotion/android
+      - name: Verify the exact packages and upload only to the existing draft
+        run: python3 desktop/scripts/publish-normal-release.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: normal-release-staging-receipt
+          retention-days: 30
+          path: promotion/normal-staging-receipt.json
