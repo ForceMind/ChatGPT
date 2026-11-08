@@ -3,6 +3,7 @@
 import importlib.util
 import os
 from pathlib import Path
+import re
 import sys
 import traceback
 import urllib.parse
@@ -47,15 +48,41 @@ try:
     install(apk)
     native._run(['adb','install','-t',str(test)])
     installed = native._installed(receipt['sha256'],'regular-webview-network')
-    spec=importlib.util.spec_from_file_location('regular_owned_webview_route',Path(__file__).with_name('run-network-integration.py'))
-    shared=importlib.util.module_from_spec(spec);spec.loader.exec_module(shared)
-    sys.argv=[str(spec.origin),'--transport',transport,'--output',str(output),'--regular-files-only']
-    shared.main()
-    for name in ('verified.json','file-safety-verified.json','regular-webview-files-scope.json'):
-        assert native._json(output/name)['complete'] is True
+    suite = os.environ.get('STUDIO_REGULAR_WEBVIEW_SUITE', 'network-files')
+    assert suite in ('network-files', 'workbench')
+    if suite == 'network-files':
+        spec=importlib.util.spec_from_file_location('regular_owned_webview_route',Path(__file__).with_name('run-network-integration.py'))
+        shared=importlib.util.module_from_spec(spec);spec.loader.exec_module(shared)
+        sys.argv=[str(spec.origin),'--transport',transport,'--output',str(output),'--regular-files-only']
+        shared.main()
+        for name in ('verified.json','file-safety-verified.json','regular-webview-files-scope.json'):
+            assert native._json(output/name)['complete'] is True
+    else:
+        assert transport == 'raw'
+        methods = ('realDocumentUrisImportToTheInitiatingAccountAndPreviewAllThreeKinds',
+                   'allProjectSkillsAreVisibleAndNativeSearchFiltersThem',
+                   'nativeImageConversionsProduceRealCopiesAndKeepSourceBytes',
+                   'nativeDocumentMenuProducesOwnedJsonAndRendersItsActualContent',
+                   'markdownConvertsToRealStaticHtmlAndPreviewShowsItsBody',
+                   'rendererFailureKeepsOriginalCleansTaskAndAllowsRetry',
+                   'publicBrowserInputsCarryChooserMarkerActualFilesAndNativeText',
+                   'assetDialogHandsActualFilesToTargetWebpageAndSendsOnce',
+                   'originalRoleAloneUsesNoDefaultSkillAndSubmitsExactlyOnce')
+        classes = ','.join('com.forcemind.chatgpt.profiles.WorkbenchTest#'+method for method in methods)
+        result = native._run(['adb','shell','am','instrument','-w','-r','-e','class',classes,
+                              '-e','fixtureMode','true',native.RUNNER], timeout=900, check=False)
+        (output/'workbench-instrument.txt').write_text(result.stdout)
+        print(result.stdout, flush=True)
+        assert result.returncode == 0 and re.findall(r'(?m)^OK \((\d+) tests\)\s*$',result.stdout) == [str(len(methods))]
+        assert not re.search(r'FAILURES!!!|INSTRUMENTATION_FAILED|shortMsg=|AssumptionViolated|Ignored',result.stdout)
+        native._write_json(output/'regular-workbench.json',{
+            'schema':1,'complete':True,'api':api,'package':PACKAGE,'sourceSHA':metadata['sourceSHA'],
+            'methods':methods,'tests':len(methods),'failures':0,'skipped':0,'screenshots':False,
+            'visualArtifactsDisabledByApprovedScope':True,'functionalAssertionsPreserved':True,
+            'realServicesAccessed':False,'productionSignatureVerified':False})
     native._write_json(output/'regular-webview-network.json',{
         'schema':1,'complete':True,'api':api,'transport':transport,'package':PACKAGE,
-        'sourceSHA':metadata['sourceSHA'],'versionMetadata':metadata,'ciReceipt':receipt,
+        'sourceSHA':metadata['sourceSHA'],'versionMetadata':metadata,'ciReceipt':receipt,'suite':suite,
         'candidateInstalledSHA256':installed,'productionSignatureVerified':False,
         'screenshots':False,'realServicesAccessed':False,'backgroundLongTestsRepeated':False})
 except Exception:

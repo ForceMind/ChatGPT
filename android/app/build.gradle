@@ -289,6 +289,7 @@ if (project.hasProperty('environmentClient')) {
                     if (regularLegacyNetworkTest) {
                         inner += '<provider android:name=".NetworkDocumentsProvider" android:authorities="${applicationId}.legacy-network-docs" android:exported="true" android:permission="android.permission.MANAGE_DOCUMENTS" android:grantUriPermissions="true"><intent-filter><action android:name="android.content.action.DOCUMENTS_PROVIDER" /></intent-filter></provider>'
                         inner += '<receiver android:name=".NetworkProxyAdminReceiver" android:exported="true" android:permission="android.permission.BIND_DEVICE_ADMIN"><meta-data android:name="android.app.device_admin" android:resource="@xml/network_ci_admin" /><intent-filter><action android:name="android.app.action.DEVICE_ADMIN_ENABLED" /></intent-filter></receiver>'
+                        inner += '<activity android:name=".UploadProbeActivity" android:exported="false" />'
                     }
                 }
                 def target = generatedManifest.get().asFile; target.parentFile.mkdirs()
@@ -359,17 +360,33 @@ if (regularLegacyNetworkTest) {
     def legacyResources = layout.buildDirectory.dir('generated/regular-legacy-network-res')
     tasks.register('copyRegularLegacyNetworkTests', Sync) {
         from 'src/androidTest/java'
-        include '**/NetworkIntegrationTest.java', '**/NetworkFileSafetyTest.java', '**/NetworkSystemProxy.java'
+        include '**/NetworkIntegrationTest.java', '**/NetworkFileSafetyTest.java', '**/NetworkSystemProxy.java', '**/WorkbenchTest.java', '**/FixtureFilesProvider.java'
         into legacyTests
         filteringCharset = 'UTF-8'
         filter { line -> line
             .replace('BuildConfig.APPLICATION_ID.endsWith(".networkci")', '(BuildConfig.APPLICATION_ID.equals("com.forcemind.chatgpt.profiles") && BuildConfig.ENVIRONMENT_NETWORK_TEST)')
             .replace('BuildConfig.APPLICATION_ID+".network-docs"', 'BuildConfig.APPLICATION_ID+".legacy-network-docs"')
+            .replace('context.getPackageName().endsWith(".debug")', '(context.getPackageName().equals("com.forcemind.chatgpt.profiles") && BuildConfig.ENVIRONMENT_NETWORK_TEST)')
+        }
+        doLast {
+            def workbench = new File(legacyTests.get().asFile, 'com/forcemind/chatgpt/profiles/WorkbenchTest.java')
+            def body = workbench.getText('UTF-8')
+            def start = body.indexOf('    private void screenshot(String name)throws Exception{')
+            def end = body.indexOf('    private String htmlBody(', start)
+            if (start < 0 || end <= start) throw new GradleException('Workbench screenshot boundary changed; review required')
+            // The user forbids screenshots. Omit only this visual-artifact helper;
+            // file bytes, preview/content, conversions and task assertions stay intact.
+            body = body.substring(0, start) + '    private void screenshot(String name)throws Exception{ System.out.println("VISUAL_ARTIFACT_DISABLED_BY_APPROVED_SCOPE "+name); }\n' + body.substring(end)
+            body = body.replace('Assume.assumeTrue("Only explicit isolated fixture runs modify account fixtures",', 'assertTrue("Only explicit isolated fixture runs modify account fixtures",')
+            body = body.replace('Assume.assumeTrue(android.os.Build.VERSION.SDK_INT>=29);', 'assertTrue(android.os.Build.VERSION.SDK_INT==28||android.os.Build.VERSION.SDK_INT==35);')
+            if (body.contains('takeScreenshot(')) throw new GradleException('Screenshot call in regular workbench tests')
+            workbench.setText(body, 'UTF-8')
         }
     }
     tasks.register('copyRegularLegacyNetworkProviders', Sync) {
         from 'src/networkCi/java'
-        include '**/NetworkDocumentsProvider.java', '**/NetworkProxyAdminReceiver.java'
+        from 'src/debug/java'
+        include '**/NetworkDocumentsProvider.java', '**/NetworkProxyAdminReceiver.java', '**/UploadProbeActivity.java', '**/EnvironmentProbeActivity.java'
         into legacyProviders
         filteringCharset = 'UTF-8'
         filter { line -> line.replace('getContext().getPackageName().endsWith(".networkci")', '(BuildConfig.NETWORK_TEST && BuildConfig.ENVIRONMENT_TEST && getContext().getPackageName().equals("com.forcemind.chatgpt.profiles"))') }
@@ -380,6 +397,7 @@ if (regularLegacyNetworkTest) {
         into legacyResources
     }
     android.sourceSets.androidTest.java.srcDir(legacyTests.get().asFile)
+    android.sourceSets.androidTest.manifest.srcFile('src/androidTest/AndroidManifest.xml')
     android.sourceSets.release.java.srcDir(legacyProviders.get().asFile)
     android.sourceSets.release.res.srcDir(legacyResources.get().asFile)
     tasks.matching { it.name == 'preReleaseAndroidTestBuild' }.configureEach { dependsOn 'copyRegularLegacyNetworkTests' }
