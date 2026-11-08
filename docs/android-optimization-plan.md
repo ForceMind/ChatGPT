@@ -48,3 +48,5 @@
 资源首个1页空闲样本已完成两个120秒窗口，但跨用例重新建夹具后流式页未出现HTTP请求，整组失败。保留partial，不宣称测量完成；后续按原批准的四场景拆为独立新模拟器，并在每个OS/页数/负载组合的同一runner上顺序跑baseline/r8/resources，消除独立runner硬件差异。窗口数量/预热/预算和全部断言不变，只修正实验隔离与匹配方法；不把独立用例串行夹具问题宣称为产品回归。TLS35的首错为probe-owned-target约2046ms、coreRunning=true、originalGeneration=true、SocketException/reset；与既往现象相似但根因未知，未机械重试或宣称修复。
 
 最终资源方法：8个OS/页数/负载组合，各自同一runner、三个版本各新模拟器；全部每版本每场景预热30秒、2×120秒不变。采集host/guest CPU资料、同一采样脚本SHA及可见前台页证明；初始草稿改为固定非空合成文本，记录真实工作量和完整归属进程。新用例不再在同一App安装周期中更换NSS夹具CA；原串行失败保留，不将消除试验污染写成修复产品。
+
+拆分测试后旧版seed和冷读已实际通过，新版verify前的AndroidJUnitRunner缺失androidx.tracing.Trace。准备仅ENVIRONMENT_TEST构建引用的精确tracing保留规则，不将CI专用依赖keep引入人用包。另对getSimpleName()识别Slot的反射契约执行只读元数据诊断42521215095；不初始化App、不打开页面、无截图，结果未出前不凭猜测加大范围keep。静态构建日志盘点已落在benchmarks/android-optimization-preliminary-build-sizes-20261109.json，最终字节和功能仍待Actions核验，不宣称采用或CPU收益。

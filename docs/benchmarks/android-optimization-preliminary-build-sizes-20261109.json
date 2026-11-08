@@ -1,0 +1,44 @@
+{
+  "kind": "build-log-only-size-inventory",
+  "functionalAcceptanceComplete": false,
+  "rows": [
+    {
+      "mode": "baseline",
+      "sourceSHA": "0250e2b7dfeaa1aeeaa57248841df8e6037dca0e",
+      "file": "ChatGPT-Studio-2026.11.09-0252-android-arm64-UNSIGNED-REVIEW.apk",
+      "bytes": 241899411,
+      "sha256": "5fd8d56ab638845329ff6085686d9fdc045fed0d3902c13a339f75fb01ffc5a4",
+      "runID": 42512156694,
+      "buildJobID": 128827341161,
+      "savedBytes": 0,
+      "savedPercent": 0.0
+    },
+    {
+      "mode": "r8",
+      "sourceSHA": "d2a427d98142e0dcc253ca96e3b7814d19fbe7b1",
+      "file": "ChatGPT-Studio-2026.11.09-0252-android-arm64-UNSIGNED-REVIEW.apk",
+      "bytes": 228414766,
+      "sha256": "d984192e13eedd1fca7bcb7cc9fc3a7668da65aee80c2a4d6531276bc3b5a543",
+      "runID": 42517649065,
+      "buildJobID": 128844083475,
+      "savedBytes": 13484645,
+      "savedPercent": 5.574
+    },
+    {
+      "mode": "resources",
+      "sourceSHA": "d2a427d98142e0dcc253ca96e3b7814d19fbe7b1",
+      "file": "ChatGPT-Studio-2026.11.09-0252-android-arm64-UNSIGNED-REVIEW.apk",
+      "bytes": 228320122,
+      "sha256": "ddf220737edee9a6addddf046410f926749e588cbe10bb5795b4fde3d7f231a7",
+      "runID": 42517652274,
+      "buildJobID": 128844092543,
+      "savedBytes": 13579289,
+      "savedPercent": 5.614
+    }
+  ],
+  "limits": [
+    "Build-log metadata only; final APK bytes/native equivalence must still be verified in Actions.",
+    "Functional validation incomplete; no recommendation to update production.",
+    "Runtime CPU/PSS comparison not complete; no performance saving claimed."
+  ]
+}
