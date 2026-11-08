@@ -137,7 +137,10 @@ test('Studio website renders canonical pages and preserves legacy update feeds',
   const release = {
     artifacts: [
       ...mac.artifacts.filter(
-        (item: { platform: string; purpose?: string }) => item.platform === 'macos' && item.purpose !== 'legacy-updater'
+        (item: { platform: string; file: string; purpose?: string }) =>
+          item.platform === 'macos' &&
+          item.purpose !== 'legacy-updater' &&
+          /^ChatGPT-Studio-.*\.(dmg|zip)$/.test(item.file)
       ),
       ...windows.artifacts.filter((item: { platform: string }) => item.platform === 'windows'),
       {

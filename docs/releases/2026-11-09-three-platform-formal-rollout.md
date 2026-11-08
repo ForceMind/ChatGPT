@@ -4,7 +4,7 @@
 
 ## 当前执行顺序
 
-1. 官网重复入口与 Actions 404：已移除两个额外 Android 面板，旧分享锚点转到唯一 Android 卡片，源码 `ec5ed08`。部署 `e1d9f438.chatgpt-studio.pages.dev`，回读处理中；新正式包通过前仍保留原公开 APK，不冒称最新版。
+1. 官网重复入口与 Actions 404：已移除两个额外 Android 面板，旧分享锚点转到唯一 Android 卡片，源码 `ec5ed08`。部署 `e1d9f438.chatgpt-studio.pages.dev`，三域名 HTTP 回读已验证：恰好三个下载卡片、一个 Android 入口、无 Actions 下载链接；新正式包通过前仍保留原公开 APK，不冒称最新版。
 2. 冻结桌面日期版本 `2026.11.9`（SemVer 年.月.日，兼容现有更新器和 Windows 文件版本），依赖、格式和 lint 规则不改。以待 CI 验证提交推 dev，构建/完整 npm run check/界面与安装升级验证在 Actions。
 3. Mac：运行现有 macOS release workflow，arm64、macos-15；验证真实安装助手、加密恢复和菜单栏。当前为 ad-hoc 签名、未经 Apple 公证，不冒称 Developer ID 签名。
 4. Windows：运行现有 Windows workflow，x64、windows-2025；完整界面、原生输入、安装/卸载保留数据及 NSIS 升级。报告中列 Windows Server runner 具体版本，不冒称 Win10/11 实机；当前无 Authenticode。
@@ -23,3 +23,5 @@
 桌面源码 `6d337d7` 已推送并启动 Mac `42501547295`、Windows `42501551123`。Mac 完整 check 通过并进入页面验收；Windows 的格式门禁报 124 文件差异。仓库已有 LF 源字节，旧 Windows branding workflow 也专门禁用了 autocrlf；本次用 `.gitattributes` 对 desktop 设置 text=auto/eol=lf，保留二进制并固定检出，不整体格式化、不改 Prettier 或 lint 规则。该提交不改 desktop 树；Mac 原验证继续，Windows 使用新检出策略验证。尚未发布新正式 Release。
 
 首轮 Mac 界面 5 项失败：站点缺 alpha.24 统一清单；更新夹具固定 alpha.999 已低于日期版，三种路径不触发升级；认证字段关闭恢复实例检查失败。Windows 固定 LF 后完整 check 通过，后续更新夹具同样报当前 idle 而非 available。现补基于已发布原记录的 alpha.24 清单，测试新版改为当前 major+1 的真实更高版本，原升级断言和预算不变。关闭标签的认证字段防护加强为主文档存在 password/OTP 字段即不缓存该 view，不依赖布局可见性，不清 Cookie/账号空间，不改后台保活；原恢复用例增加命令成功断言与仅含布局/标识的诊断，原新实例/无密码断言保留。上述修改待下一轮完整 CI，不把静态修正写成通过。
+
+最新源码 `9cc7ecd`：Desktop CI 成功；Mac `42503190684` 完整 check 成功，24 个页面用例通过、1 个 Windows 专用跳过、1 个站点清单失败（旧 Mac manifest 的 blockmap 和兼容 ZIP 被误计为主下载）。修正为仅匹配 Studio DMG/ZIP，保留五个主下载断言。恢复、热切换和三种更新安装用例已实际通过。Windows `42503194662` 完整 check 成功，19 个页面用例通过、23 个平台专用跳过；最后安装包迁移用例在打包步骤前执行，报 windows-build-info.json 不存在。新增专用 windows-formal-validation.yml 将原打包步骤前移，完整用例、安装升级及后台留存步骤均保留，不改原 windows.yml。两项修正待下一轮 Actions，未发布正式包。

@@ -1,0 +1,114 @@
+name: Three-platform Windows formal validation
+on:
+  push:
+    branches: [dev]
+    paths: ['.github/workflows/windows-formal-validation.yml']
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Optional existing draft release matching the package version
+        required: false
+        default: ''
+        type: string
+permissions:
+  contents: write
+jobs:
+  windows:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/dev'
+    runs-on: windows-2025
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify optional draft target
+        if: inputs.release_tag != ''
+        shell: pwsh
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          $version = (Get-Content desktop/package.json | ConvertFrom-Json).version
+          if ($env:RELEASE_TAG -ne "v$version") { throw 'Release tag/version mismatch' }
+          $release = gh release view $env:RELEASE_TAG --json isDraft,targetCommitish | ConvertFrom-Json
+          if (!$release.isDraft -or $release.targetCommitish -ne $env:GITHUB_SHA) { throw 'Draft/source mismatch' }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '26.7.0'
+      - name: Install dependencies
+        run: npm ci
+      - name: Typecheck, state tests and build
+        run: npm run check
+      - name: Package Windows x64
+        run: |
+          node scripts/icon.mjs
+          node scripts/package-win.mjs
+      - name: Windows isolation and interface acceptance
+        run: npx playwright test --max-failures=1 --reporter=list,json
+        env:
+          DEBUG: pw:browser
+          PLAYWRIGHT_JSON_OUTPUT_FILE: test-results/windows-ui.json
+      - name: Native first-script language and login popup acceptance
+        run: node scripts/check-native-preferences.mjs
+      - name: Install, launch and uninstall acceptance
+        shell: pwsh
+        run: ./scripts/check-windows-install.ps1
+      - name: Actual NSIS upgrade with shipping updater modules
+        shell: pwsh
+        run: ./scripts/check-windows-upgrade.ps1
+      - name: Native background retention without automation flags
+        run: node scripts/measure-resources.mjs --label windows-public-release --keepalive-ms 330000 --output test-results/windows-native-retention.json
+      - name: Upload verified packages to draft
+        if: inputs.release_tag != ''
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          $info = Get-Content release/windows/windows-build-info.json | ConvertFrom-Json
+          if ($info.sourceCommit -ne $env:GITHUB_SHA) { throw 'Package/source mismatch' }
+          if ((gh release view $env:RELEASE_TAG --json isDraft --jq .isDraft) -ne 'true') { throw 'Release must remain a draft' }
+          $files = @($info.artifacts | Where-Object { $_.file -match '(\.exe|\.zip)$' } | ForEach-Object { "release/windows/$($_.file)" })
+          gh release upload $env:RELEASE_TAG @files release/windows/windows-build-info.json
+          if ($LASTEXITCODE -ne 0) { throw 'Release upload failed' }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-release-info
+          retention-days: 90
+          path: |
+            desktop/release/windows/windows-build-info.json
+            desktop/release/windows/alpha.yml
+            desktop/release/windows/SHA256SUMS.txt
+            desktop/release/windows/windows-smoke.json
+            desktop/release/windows/windows-upgrade.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-x64-installer
+          compression-level: 0
+          retention-days: 90
+          path: |
+            desktop/release/windows/*-setup.exe
+            desktop/release/windows/windows-build-info.json
+            desktop/release/windows/SHA256SUMS.txt
+            desktop/release/windows/alpha.yml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-x64-zip
+          compression-level: 0
+          retention-days: 90
+          path: desktop/release/windows/*.zip
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-acceptance-evidence
+          path: |
+            desktop/test-results/
+            desktop/playwright-report/
+            desktop/release/windows/windows-smoke.json
+            desktop/release/windows/windows-upgrade.json
+            desktop/release/windows/windows-installed.png
