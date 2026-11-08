@@ -8,6 +8,7 @@ import re
 import shutil
 import subprocess
 from environment_ci_target import assert_receipt_pair
+from regular_evidence_source import source_sha, provenance
 
 assert os.environ.get('GITHUB_ACTIONS') == 'true'
 assert os.environ.get('STUDIO_ANDROID_CI_TARGET') == 'regular'
@@ -51,7 +52,7 @@ assert [proof['api'] for proof in navigation_report['apiProofs']]==[28,35]
 for proof in navigation_report['apiProofs']:
     assert proof['ciCandidateReceipt']==basic_receipt
     assert proof['legacyUpgrade']['candidateInstalledSHA256']==basic_receipt['sha256']
-assert metadata['sourceSHA'] == os.environ['GITHUB_SHA']
+assert metadata['sourceSHA'] == source_sha()
 shutil.copyfile(candidate/'receipt.json','input/receipt.json')
 invoke('deliver-gecko-network.py')  # Also enforces both local-export gates.
 invoke('deliver-gecko-handoff.py')
@@ -93,8 +94,10 @@ for api in (28,35):
     assert proof['functionalAssertionsPreserved'] is True and proof['realServicesAccessed'] is False
     instrument(root/'workbench-instrument.txt',9)
     workbench.append(proof)
+origin = provenance()
+assert origin is not None and origin['sourceSHA'] == metadata['sourceSHA']
 report={'schema':1,'complete':True,'scope':'regular-feature-validation-before-original-signing',
-        'versionMetadata':metadata,'humanUnsignedReceipt':human,'legacyWebViewRoutes':legacy,
+        'versionMetadata':metadata,'provenance':origin,'humanUnsignedReceipt':human,'legacyWebViewRoutes':legacy,
         'legacyWorkbench':workbench,'networkFileSkillGatesComplete':True,'navigationGatesComplete':True,
         'compatibilityRecoveryGatesComplete':True,'originalSignatureUpgradeVerified':False,
         'installableCandidateDelivered':False,'publicRelease':False}

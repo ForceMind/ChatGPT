@@ -1,0 +1,64 @@
+name: Android Regular Static Delivery Resume
+'on':
+  push:
+    branches: [dev]
+    paths: ['.github/workflows/android-regular-delivery-resume.yml']
+  workflow_dispatch:
+    inputs:
+      source_run:
+        type: string
+        required: true
+        description: Existing full run with build and all 22 functional jobs successful
+permissions:
+  contents: read
+  actions: read
+jobs:
+  deliver:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+      STUDIO_ANDROID_CI_TARGET: regular
+      STUDIO_SOURCE_RUN: ${{ inputs.source_run }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools build-tools;35.0.0
+      - name: Authenticate all existing successful jobs and select their exact artifacts
+        run: python3 android/scripts/download-regular-evidence.py --run-id "$STUDIO_SOURCE_RUN"
+      - name: Run the unchanged compatibility, navigation, route, file and Skill assertions
+        run: python3 android/scripts/deliver-regular-full-client.py
+      - name: Read the original compiled candidate version
+        id: version
+        run: |
+          python3 - <<'PY'
+          import json, os, pathlib, re
+          value=json.loads(pathlib.Path('candidate/receipt.json').read_text())['versionName']
+          assert re.fullmatch(r'\d{4}\.\d{2}\.\d{2}-\d{4}',value)
+          with open(os.environ['GITHUB_OUTPUT'],'a') as output:output.write('name='+value+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ChatGPT-Studio-Android-${{ steps.version.outputs.name }}-FULL-CHECKS-UNSIGNED-REVIEW
+          retention-days: 14
+          if-no-files-found: error
+          path: candidate/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: original-signature-input
+          retention-days: 14
+          if-no-files-found: error
+          path: android/app/build/original-signature-input/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: regular-static-delivery-provenance
+          retention-days: 14
+          if-no-files-found: warn
+          path: android/app/build/regular-evidence-source.json

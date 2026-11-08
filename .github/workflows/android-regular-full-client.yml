@@ -985,6 +985,7 @@ jobs:
     timeout-minutes: 20
     env:
       STUDIO_REGULAR_CI_CERT_SHA256: "${{ needs.build.outputs.ci_signer }}"
+      GH_TOKEN: "${{ github.token }}"
     steps:
     - uses: actions/checkout@v4
     - uses: actions/setup-java@v4
@@ -994,50 +995,8 @@ jobs:
     - uses: android-actions/setup-android@v3
       with:
         packages: platform-tools build-tools;35.0.0
-    - uses: actions/download-artifact@v4
-      with:
-        name: regular-unsigned-review
-        path: android/app/build/regular-review
-    - uses: actions/download-artifact@v4
-      with:
-        name: regular-environment-28
-        path: android/app/build/regular-environment-evidence/api28
-    - uses: actions/download-artifact@v4
-      with:
-        name: regular-navigation-28
-        path: android/app/build/regular-navigation-evidence/api28
-    - uses: actions/download-artifact@v4
-      with:
-        name: regular-environment-35
-        path: android/app/build/regular-environment-evidence/api35
-    - uses: actions/download-artifact@v4
-      with:
-        name: regular-navigation-35
-        path: android/app/build/regular-navigation-evidence/api35
-    - uses: actions/download-artifact@v4
-      with:
-        name: environment-client-input
-        path: input
-    - uses: actions/download-artifact@v4
-      with:
-        pattern: gecko-network-??-*
-        path: acceptance/network
-    - uses: actions/download-artifact@v4
-      with:
-        pattern: gecko-local-exports-??
-        path: acceptance/local-exports
-    - uses: actions/download-artifact@v4
-      with:
-        pattern: gecko-handoff-??
-        path: acceptance/handoff
-    - uses: actions/download-artifact@v4
-      with:
-        pattern: regular-webview-network-??-*
-        path: acceptance/webview-network
-    - uses: actions/download-artifact@v4
-      with:
-        pattern: regular-webview-workbench-??
-        path: acceptance/workbench
+    - name: Select exact artifacts from the latest successful functional jobs
+      run: python3 android/scripts/download-regular-evidence.py --run-id "$GITHUB_RUN_ID"
     - name: Require all compatibility, navigation, route, file and Skill evidence
       run: python3 android/scripts/deliver-regular-full-client.py
     - uses: actions/upload-artifact@v4

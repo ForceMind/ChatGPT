@@ -58,7 +58,8 @@ def payload(path):
 run = read(args.source_run)
 assert run['repository']['full_name'] == 'ForceMind/ChatGPT'
 assert run['event'] == 'workflow_dispatch' and run['head_branch'] == 'dev'
-assert run['path'] == '.github/workflows/android-regular-full-client.yml'
+assert run['path'] in ('.github/workflows/android-regular-full-client.yml',
+                       '.github/workflows/android-regular-delivery-resume.yml')
 assert run['status'] == 'completed' and run['conclusion'] == 'success'
 report = read(args.review / 'regular-full-validation.json')
 assert report['schema'] == 1 and report['complete'] is True
@@ -67,14 +68,32 @@ for flag in ('networkFileSkillGatesComplete', 'navigationGatesComplete', 'compat
     assert report[flag] is True
 assert report['originalSignatureUpgradeVerified'] is False and report['publicRelease'] is False
 metadata = report['versionMetadata']
-assert metadata['sourceSHA'] == run['head_sha']
+origin = report['provenance']
+assert origin['schema'] == 1 and origin['complete'] is True
+assert origin['harnessRunID'] == run['id'] and origin['harnessSourceSHA'] == run['head_sha']
+assert origin['sourceSHA'] == metadata['sourceSHA']
+functional = origin['sourceRun']
+assert functional['id'] == origin['sourceRunID'] and functional['head_sha'] == metadata['sourceSHA']
+assert functional['repository']['full_name'] == 'ForceMind/ChatGPT'
+assert functional['path'] == '.github/workflows/android-regular-full-client.yml'
+assert functional['event'] == 'workflow_dispatch' and functional['head_branch'] == 'dev'
+assert len(origin['validatedJobs']) == 23
+assert len({row['name'] for row in origin['validatedJobs']}) == 23
+assert all(row['status'] == 'completed' and row['conclusion'] == 'success' for row in origin['validatedJobs'])
+if run['path'] == '.github/workflows/android-regular-delivery-resume.yml':
+    assert origin['sourceMode'] == 'delivery-resume' and origin['sourceRunID'] != run['id']
+else:
+    assert origin['sourceMode'] == 'current-run' and origin['sourceRunID'] == run['id']
+stage = read(args.bundle.parent / 'draft-transfer.json')
+assert stage['draft'] is True and stage['prerelease'] is True
+assert stage['target_commitish'] == metadata['sourceSHA']
 human = report['humanUnsignedReceipt']
 assert human == read(args.review / 'receipt.json') and human['versionMetadata'] == metadata
 assert human['package'] == 'com.forcemind.chatgpt.profiles' and human['signing'] == 'UNSIGNED_REVIEW_ONLY'
 companion = read(args.companions / 'human-x86-receipt.json')
 test = read(args.companions / 'test-receipt.json')
 for item in (companion, test):
-    assert item['versionMetadata'] == metadata and item['sourceSHA'] == run['head_sha']
+    assert item['versionMetadata'] == metadata and item['sourceSHA'] == metadata['sourceSHA']
 assert companion['sameDexAsHumanArm64'] is True and companion['arm64UnsignedSHA256'] == human['sha256']
 inputs = {'arm64': member(args.review, human), 'humanX86': member(args.companions, companion),
           'instrumentation': member(args.companions, test)}
@@ -87,7 +106,7 @@ with zipfile.ZipFile(args.bundle) as archive:
     receipt = json.loads(archive.read('signed-receipt.json'))
     assert receipt['schema'] == 1 and receipt['package'] == human['package']
     assert receipt['certificateSHA256'] == human['productionCertificateExpectedSHA256']
-    assert receipt['versionMetadata'] == metadata and receipt['sourceSHA'] == run['head_sha']
+    assert receipt['versionMetadata'] == metadata and receipt['sourceSHA'] == metadata['sourceSHA']
     assert receipt['privateKeyUploaded'] is False and receipt['publicRelease'] is False
     assert set(names) == {'signed-receipt.json'} | {receipt[role]['file'] for role in inputs}
     args.output.mkdir(parents=True, exist_ok=False)
@@ -106,10 +125,11 @@ for role, source in inputs.items():
 arm_dex = {name: value for name, value in payloads['arm64'].items() if name.endswith('.dex')}
 x86_dex = {name: value for name, value in payloads['humanX86'].items() if name.endswith('.dex')}
 assert arm_dex and arm_dex == x86_dex
-proof = {'schema': 1, 'complete': True, 'sourceRunID': run['id'], 'sourceSHA': run['head_sha'],
+proof = {'schema': 1, 'complete': True, 'sourceRunID': run['id'], 'sourceSHA': metadata['sourceSHA'],
+         'functionalSourceRunID': origin['sourceRunID'], 'deliveryRunID': run['id'],
          'harnessSourceSHA': os.environ['GITHUB_SHA'], 'versionMetadata': metadata,
          'signedBundleSHA256': expected_bundle, 'signedReceipt': receipt,
          'allNonSigningEntriesUnchanged': True, 'actualSignedArm64X86DexEqual': True,
          'originalKeyUploaded': False, 'productionSignatureUpgradeVerified': False}
 (args.output / 'signed-input-verification.json').write_text(json.dumps(proof, indent=2) + '\n')
-print(json.dumps({'complete': True, 'sourceRunID': run['id'], 'sourceSHA': run['head_sha']}))
+print(json.dumps({'complete': True, 'sourceRunID': run['id'], 'sourceSHA': metadata['sourceSHA']}))

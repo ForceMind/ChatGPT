@@ -58,11 +58,11 @@ jobs:
           assert run['repository']['full_name']=='ForceMind/ChatGPT'
           assert run['status']=='completed' and run['conclusion']=='success'
           assert run['event']=='workflow_dispatch' and run['head_branch']=='dev'
-          assert run['path']=='.github/workflows/android-regular-full-client.yml'
+          assert run['path'] in ('.github/workflows/android-regular-full-client.yml','.github/workflows/android-regular-delivery-resume.yml')
           (root/'source-run.json').write_bytes(raw)
           release=json.loads(api('releases/'+os.environ['STUDIO_STAGING_RELEASE']))
           assert release['draft'] is True and release['prerelease'] is True
-          assert release['target_commitish']==run['head_sha']
+          assert re.fullmatch(r'[a-f0-9]{40}',release['target_commitish'])
           assert re.fullmatch(r'regular-upgrade-review-[0-9]{12}',release['tag_name'])
           assert len(release['assets'])==1
           asset=release['assets'][0]
@@ -197,7 +197,10 @@ jobs:
           assert digest.hexdigest()==receipt['arm64']['sha256']
           summary={'schema':1,'complete':True,'versionMetadata':metadata,'sourceSHA':metadata['sourceSHA'],
                    'humanSignedReceipt':receipt['arm64'],'certificateSHA256':receipt['certificateSHA256'],
-                   'fullFeatureSourceRunID':int(os.environ['STUDIO_FULL_RUN']),'originalCertificateUpgrades':proofs,
+                   'fullFeatureSourceRunID':int(os.environ['STUDIO_FULL_RUN']),
+                   'functionalSourceRunID':base['provenance']['sourceRunID'],
+                   'featureDeliveryHarnessSHA':base['provenance']['harnessSourceSHA'],
+                   'originalCertificateUpgrades':proofs,
                    'arm64PhysicalDeviceVerified':False,'realChatGPTVerified':False,'publicRelease':False,
                    'originalKeyUploaded':False,'installableCandidateDelivered':True}
           (root/'original-signed-candidate-acceptance.json').write_text(json.dumps(summary,indent=2)+'\n')

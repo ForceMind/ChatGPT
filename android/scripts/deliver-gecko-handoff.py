@@ -11,6 +11,7 @@ import uuid
 import zipfile
 
 from environment_ci_target import validate_receipt, assert_receipt_pair, REGULAR
+from regular_evidence_source import source_sha
 
 
 def read(path):
@@ -281,7 +282,7 @@ def deliver(input_root=Path('input'),candidate=Path('candidate'),acceptance=Path
     receipt=read(input_root/'gecko-network-receipt.json');metadata=validate_receipt(receipt)
     human=read(input_root/'receipt.json');assert validate_receipt(human,require_human_filename=True)==metadata
     if REGULAR:
-        assert baseline['versionMetadata']==metadata and metadata['sourceSHA']==os.environ['GITHUB_SHA']
+        assert baseline['versionMetadata']==metadata and metadata['sourceSHA']==source_sha()
         assert baseline['humanUnsignedReceipt']==human and baseline['package']==human['package']
     assert receipt['ciOnly'] is True and receipt['sourceSHA']==human['sourceSHA']
     assert local_exports['versionMetadata']==metadata and local_exports['applicationSourceSHA']==receipt['sourceSHA']

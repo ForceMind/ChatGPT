@@ -12,6 +12,7 @@ import zipfile
 
 import regular_environment_upgrade as native
 from regular_version import assert_apk_version, validate_version
+from regular_evidence_source import source_sha
 
 HASH = re.compile(r'[a-f0-9]{64}')
 PROOF_FLAGS = ('encryptedPayloadPreserved', 'assetPreserved', 'preferencesPreserved',
@@ -53,7 +54,7 @@ def inspect_human(folder):
     assert receipt['schema'] == 1 and receipt['versionMetadata'] == metadata
     for field in ('versionCode', 'versionName', 'sourceSHA'):
         assert receipt[field] == metadata[field], field
-    assert metadata['sourceSHA'] == os.environ['GITHUB_SHA']
+    assert metadata['sourceSHA'] == source_sha()
     assert receipt['package'] == native.PACKAGE and receipt['versionCode'] == native.NEW_CODE
     assert receipt['file'] == 'ChatGPT-Studio-' + metadata['versionName'] + '-android-arm64-UNSIGNED-REVIEW.apk'
     assert receipt['signing'] == 'UNSIGNED_REVIEW_ONLY' and receipt['abi'] == ['arm64-v8a'] and receipt['minAndroid'] == 9
