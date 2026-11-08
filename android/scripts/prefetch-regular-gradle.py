@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import re
 import subprocess
+import time
 import urllib.parse
 
 assert os.environ.get('GITHUB_ACTIONS') == 'true', 'Runner-only dependency download'
@@ -40,10 +41,37 @@ for relative in ('android/gradle/wrapper/gradle-wrapper.properties',
     partial = destination.with_name(name + '.studio-prefetch.part')
     assert not partial.exists(), 'Refuse to reuse a partial dependency download'
     try:
-        subprocess.run(['curl', '--fail', '--location', '--silent', '--show-error',
-                        '--retry', '3', '--retry-all-errors', '--retry-delay', '2',
-                        '--connect-timeout', '15', '--max-time', '120',
-                        '--output', str(partial), url], check=True)
+        primary = subprocess.run(['curl', '--fail', '--location', '--silent', '--show-error',
+                                  '--retry', '3', '--retry-all-errors', '--retry-delay', '2',
+                                  '--connect-timeout', '15', '--max-time', '120',
+                                  '--output', str(partial), url])
+        transport = 'canonical-wrapper-url'
+        if primary.returncode:
+            # The canonical URL redirects to this same official release asset.
+            # Avoid repeatedly reusing a failing/cached browser-download redirect.
+            tag = {'gradle-8.13-bin.zip': 'v8.13.0', 'gradle-9.3.1-bin.zip': 'v9.3.1'}[name]
+            release = json.loads(subprocess.check_output([
+                'gh', 'api', 'repos/gradle/gradle-distributions/releases/tags/' + tag], timeout=60))
+            assert release['tag_name'] == tag
+            assets = [item for item in release['assets'] if item['name'] == name]
+            assert len(assets) == 1
+            asset = assets[0]
+            assert asset['browser_download_url'] == 'https://github.com/gradle/gradle-distributions/releases/download/' + tag + '/' + name
+            if asset.get('digest') is not None:
+                assert asset['digest'] == 'sha256:' + expected
+            for attempt in range(3):
+                with partial.open('wb') as output:
+                    result = subprocess.run([
+                        'gh', 'api', 'repos/gradle/gradle-distributions/releases/assets/' + str(asset['id']),
+                        '-H', 'Accept: application/octet-stream', '-H', 'Cache-Control: no-cache',
+                        '--method', 'GET', '-f', 'studio_ci_request=' + os.environ['GITHUB_RUN_ID'] + '-' + str(attempt)
+                    ], stdout=output, timeout=120)
+                if result.returncode == 0:
+                    break
+                if attempt < 2:
+                    time.sleep(2)
+            assert result.returncode == 0 and partial.stat().st_size == asset['size'], 'Official Gradle asset download failed'
+            transport = 'same-official-release-asset-api'
         digest = hashlib.sha256()
         with partial.open('rb') as stream:
             for part in iter(lambda: stream.read(65536), b''):
@@ -52,7 +80,8 @@ for relative in ('android/gradle/wrapper/gradle-wrapper.properties',
         partial.replace(destination)
         proofs.append({'properties': relative, 'url': url, 'file': name,
                        'sha256': expected, 'bytes': destination.stat().st_size,
-                       'checksumVerified': True, 'wrapperPropertiesChanged': False})
+                       'checksumVerified': True, 'wrapperPropertiesChanged': False,
+                       'transport': transport, 'canonicalURLExitCode': primary.returncode})
         print('Verified existing pinned distribution: ' + name, flush=True)
     finally:
         partial.unlink(missing_ok=True)

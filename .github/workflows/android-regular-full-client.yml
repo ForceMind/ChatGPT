@@ -47,6 +47,8 @@ jobs:
           }}
     - run: bash android/scripts/prepare-network-core.sh
     - name: Retry existing checksum-pinned Gradle distributions before compilation
+      env:
+        GH_TOKEN: ${{ github.token }}
       run: python3 android/scripts/prefetch-regular-gradle.py
     - name: Check ordinary debug before selecting regular metadata
       run: |
