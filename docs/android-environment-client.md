@@ -2,6 +2,12 @@
 
 ## 当前任务：常规版完整验收与原签覆盖候选（已批准）
 
+用户已明确确认仅原签升级验收 job 临时申请 `contents:write`，验收结束后恢复 `contents:read` 并删除临时草稿；不新增 Secret、上传私钥、公开发布、合并 main 或更新个人设备。本轮在原工作对话继续该任务，新的本地会话库/知识库想法已移至独立只读研究对话，不混入本次交付。
+
+自动审批拒绝了上述 job 权限改动的提交/推送，明确理由是 `contents:read → contents:write` 扩大仓库安全权限，现有临时草稿中转授权未明确覆盖这一边界。命令未执行，远端仍为 `bd36cb3`，权限改动只保留本地。首轮完整日志另存本批取证目录。拟仅在专用原签验收任务临时申请该权限，完成后立即恢复只读并删除已授权的临时草稿；当前等待这项权限的明确确认，不新增 Secret，不上传私钥。
+
+2026-11-08 用户已明确授权临时草稿中转，验收后删除。已创建 draft `regular-upgrade-review-202611082234`（Release `438302753`），唯一资产 `724198996` 为签后输入 ZIP；实际大小 222,262,103 bytes、官方 digest 与本机 `0760b78c…94b15ce5` 一致，`draft=true`，私钥未上传。首轮原签验证 [42490879575](https://github.com/ForceMind/ChatGPT/actions/runs/42490879575) 在两端读取该草稿时返回 `HTTP 403 Resource not accessible by integration`，尚未进入 APK/模拟器验收，原日志保留。仅给专用 upgrade job 申请 GitHub 草稿读取所需 push 对应的 contents:write，所有 Release 操作脚本仍为 GET、draft/目标源码/实际字节守卫保留；最终 deliver job 仍只读。不新增 Secret、不发布、不改个人设备或登录数据。
+
 本机原签已完成：`ChatGPT-Studio-2026.11.08-1923-android-arm64.apk` / code `3000035` / 241,931,130 bytes，SHA-256 `177ef874c6c904a653aecb3ffc61a76ef45ebc8e69cb80c6addbdb9e74806259`。实际 apksigner 核对三份 APK 均为原正式证书 `8b6eef928fded91f291ad954e20976b2cc6011b55e8cbec0152695fe1f05cf19`，签名前后全部非签名 ZIP 内容相同；签后 ARM64/x86 各 14 个原生库均实测保持 16 KiB ZIP 对齐。原签收据见 [signed-receipt](releases/android-regular-2026.11.08-1923-signed-receipt.json)，完整功能汇总见 [full-validation](releases/android-regular-2026.11.08-1923-full-validation.json)（561,256 bytes，SHA-256 `1071aa57b8c7262ed366d81c99ff6c54e5c29ea83af663ce62a5f0a06df1b46b`）。
 
 已制作仅含三份签后 APK 与收据的临时 CI 回传 ZIP，222,262,103 bytes，SHA-256 `0760b78c467a6242efce4498235b4b6bd5751cd4c4acdb78e6cb0fb994b15ce5`；尚未上传。临时 JRE、SDK 和两份未签名 APK 输入均已清理，原私钥、现有正式 App、手机和登录/恢复数据未改。**原证书 install-r 升级验证仍未完成**；下一步需要将签后实际字节回传 Actions，临时不公开 draft Release 的创建/上传/测试后删除尚待明确授权。未合并 main、公开发布或更新官网。

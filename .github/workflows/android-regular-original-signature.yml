@@ -23,6 +23,12 @@ permissions:
 jobs:
   upgrade:
     if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/dev'
+    # GitHub restricts draft release access to identities with push access.
+    # This job only reads the explicitly approved draft; it never publishes it.
+    # Temporary user-approved grant; restore read-only after this validation.
+    permissions:
+      contents: write
+      actions: read
     runs-on: ubuntu-latest
     timeout-minutes: 35
     strategy:
