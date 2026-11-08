@@ -1,6 +1,10 @@
 # Android 独立环境客户端：文件与任务主线
 
-## 当前交付：常规 Android 原签候选 2026.11.08-1923
+## 当前发布：常规 Android 2026.11.08-1923
+
+已纳入三平台正常 Release [v2026.11.9](https://github.com/ForceMind/ChatGPT/releases/tag/v2026.11.9)。[公开 APK](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9/ChatGPT-Studio-2026.11.08-1923-android-arm64.apk) 保留原签名与原包名，可覆盖 alpha.22；请勿先卸载。官网每个平台只有一个最新下载入口，临时 Actions 候选和独立 Beta 从主下载区撤下。APK 字节与下述原签验收完全一致，未重编或重签；独立 Beta 数据不自动搬迁。实际 CI OS、文件摘要与验证边界见[统一发布清单](releases/2026.11.9.json)。真实手机、ChatGPT 与节点仍待验收，历史间歇问题没有宣称全部解决。
+
+## 原签候选验收过程（历史）
 
 2026-11-09 已同步中英文 README、官网候选入口与最新里程碑，部署现有 `chatgpt-studio` 生产站及自定义域名，源码为 `ba88cb6`。三个线上地址完成 48 项 HTTP 内容回读，包含明确记录的 Cloudflare HTML 边缘注入还原；浏览器视觉未验证。候选 Actions 下载标注登录要求与 11 月 22 日到期时间，原公开下载/国内加速/自动更新清单保持，未创建公开 Release、合并 main 或更新设备。[部署与核对记录](releases/2026-11-09-site-repository-sync.json)。独立研究对话的未提交方案没有混入本批。
 

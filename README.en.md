@@ -4,7 +4,7 @@
   <p>Independent accounts. Immersive browsing. Local asset workflows.</p>
   <p><a href="README.md">简体中文</a> · <strong>English</strong></p>
   <p>
-    <a href="https://github.com/ForceMind/ChatGPT/releases"><img alt="Published prereleases" src="https://img.shields.io/github/v/release/ForceMind/ChatGPT?include_prereleases&amp;sort=date&amp;label=pre-release&amp;labelColor=171717&amp;color=555555" /></a>
+    <a href="https://github.com/ForceMind/ChatGPT/releases"><img alt="Current release" src="https://img.shields.io/github/v/release/ForceMind/ChatGPT?sort=semver&amp;label=release&amp;labelColor=171717&amp;color=555555" /></a>
     <a href="https://github.com/ForceMind/ChatGPT/actions/workflows/android.yml"><img alt="Android CI" src="https://img.shields.io/github/actions/workflow/status/ForceMind/ChatGPT/android.yml?branch=main&amp;label=Android%20CI&amp;labelColor=171717&amp;color=555555" /></a>
     <img alt="Electron 44.9" src="https://img.shields.io/badge/Electron-44.9-555555?logo=electron&amp;logoColor=white&amp;labelColor=171717" />
     <img alt="Java 17" src="https://img.shields.io/badge/Java-17-555555?labelColor=171717" />
@@ -13,23 +13,13 @@
   <p><a href="https://chatgpt-studio.pages.dev/">Website</a> · <a href="#download-and-install">Download</a> · <a href="#getting-started">Guide</a> · <a href="#technical-direction-and-architecture">Architecture</a> · <a href="#roadmap">Roadmap</a> · <a href="https://github.com/ForceMind/ChatGPT/issues">Issues</a></p>
 </div>
 
-**Regular Android original-signer candidate: 2026.11.08-1923.** Includes isolated account locale/timezone, dual-engine navigation/recovery, VLESS routing, assets and Skill tasks. It retains the original package/signing identity and can update alpha.22 without uninstalling. 85 unit tests, 22 synthetic functional jobs and original-certificate upgrades on Android 9/15 pass. [Candidate ZIP and reports (GitHub login required)](https://github.com/ForceMind/ChatGPT/actions/runs/42493929455/artifacts/13622283441) · [Scope and known limitations](docs/android-environment-client.md). Artifact available until 2026-11-22 23:19 Asia/Shanghai. This is not a public Release; physical devices, real ChatGPT and real nodes remain unverified, and intermittent issues remain open.
+ChatGPT Studio brings independent ChatGPT account spaces, live tabs and local asset workflows into one immersive client. Launch directly into ChatGPT without an address bar or an OpenAI API key.
 
-**Android independent Beta prerelease: 2026.11.07-1905.** Per-account locale/timezone, independent browsing and network routing, file/Skill tasks and the save-concurrency fix pass Android 9/15 synthetic acceptance. [Download APK](https://github.com/ForceMind/ChatGPT/releases/download/android-beta-2026.11.07-1905/ChatGPT-Studio-2026.11.07-1905-android-arm64.apk) · [Public Release and evidence](https://github.com/ForceMind/ChatGPT/releases/tag/android-beta-2026.11.07-1905) · [Installation and known limits](docs/android-environment-client.md). Overlay an existing fixed-signer Beta with the same signature; sign-in, assets and recovery stay separate from the regular app with no automatic migration. Real ChatGPT, nodes and OEM devices remain unverified; historical intermittent TLS resets and first-back behavior are not fully explained.
+**Current normal release: [2026.11.9](https://github.com/ForceMind/ChatGPT/releases/tag/v2026.11.9)** — one current download for macOS, Windows and Android. [Release notes](docs/releases/2026.11.9-notes.md) · [Packages, hashes and actual CI OS](docs/releases/2026.11.9.json).
 
-ChatGPT Studio brings independent ChatGPT account spaces, tabs, downloaded assets, previews, conversions and reviewed file tasks into one application. Launch directly into the website with a white, gray and black interface and no address bar. Each device signs in independently; no OpenAI API key is required.
+Android ships the unchanged original-signer build **2026.11.08-1923** (code 3000035), supporting in-place upgrades from alpha.22 without uninstalling. Existing accounts retain WebView and their data; new accounts can select isolated locale/timezone. Includes direct tab selection, reload, back/forward, dual-engine recovery, VLESS routing and file/Skill tasks. Independent Beta data stays separate.
 
-> Previously named **ChatGPT Profiles**. The current regular-client public prereleases are **3.0.0-alpha.23** for macOS, **3.0.0-alpha.24** for Windows and **3.0.0-alpha.22** for Android. Platforms update independently. Legacy filenames, internal identifiers and data locations are retained for upgrade compatibility.
-
-**Desktop alpha.21 is published:** original agent roles, a design-patch Skill, Windows updates and encrypted offline snapshots. See the [release manifest](docs/releases/3.0.0-alpha.21.json) and [original candidate/acceptance receipt](docs/releases/3.0.0-alpha.21-desktop-candidate.json).
-
-**Windows alpha.24 prerelease:** Studio installation directory, executable, uninstaller and shortcut targets; safe legacy-default migration, retained custom paths and rollback. Existing sign-in/recovery identities are preserved. [Release](https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.24) · [Notes and validation scope](docs/releases/windows-alpha.24-notes.md).
-
-**macOS alpha.23 is published:** download progress, verification/preparation states, manual checks, retries and immediate installation. Existing account/recovery identities and background retention are preserved. [Release](https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.23) · [Original packages, sources and verification scope](docs/releases/3.0.0-alpha.23.json). Downloads and the current Mac update feed are updated.
-
-**Android alpha.22 is published:** encrypted read-only conversation/image snapshots, offline reopening, 121 Skills and 32 original roles. The existing package identity and certificate are retained for in-place upgrades. See [release notes](docs/releases/3.0.0-alpha.22-notes.md), [CI acceptance](docs/releases/3.0.0-alpha.22-android-candidate.json) and [signature receipt](docs/releases/3.0.0-alpha.22-android-signed-candidate.json). Physical-device and live-account acceptance remain pending.
-
-**Android engine migration research:** the independent PoC passed 17 recovery, touch and lifecycle cases on each Android 9/15 emulator. The arm64 experimental release APK decreased from 196.08 MiB to 185.08 MiB. The environment engine is now integrated into the regular original-signer candidate above; public downloads have not been replaced. The non-debuggable optimized release passed 17 cases on each x86_64 Android 9/15 emulator; real ChatGPT and physical-device acceptance remain pending. [Size/touch evidence](docs/benchmarks/android-phase2-package-touch-lifecycle.json) · [Optimized release runtime](docs/benchmarks/android-optimized-release-runtime.json).
+Previously named **ChatGPT Profiles**. Legacy storage identities remain for sign-in and encrypted recovery compatibility. Synthetic CI acceptance does not replace real ChatGPT, node or physical-device acceptance; historical intermittent TLS/input issues remain documented.
 
 ![Actual historical macOS window, before the rename](docs/images/macos-immersive.png)
 
@@ -39,7 +29,7 @@ ChatGPT Studio brings independent ChatGPT account spaces, tabs, downloaded asset
 - **Tabs:** create, pin, reorder, close and restore tabs per account. Android includes phone/tablet card views, filtering, search and renaming. Desktop does not proactively freeze or discard open pages.
 - **Local asset library:** account ownership, imports and downloads, categories, search, favorites, tags, derived files and a recoverable trash.
 - **Preview and conversion:** images, PDF, HTML, Markdown, text, CSV and supported media. Specialized formats can open in associated system applications. Conversions create new files and preserve originals.
-- **Reviewed tasks:** select files, a target account and a Skill, then follow preparation, upload, instruction entry, readiness, a single application-level send and confirmation. The app does not automatically execute an uncertain send again. The independent Android Beta does not guarantee exactly-once browser transport or third-party server processing. [Boundary and validation scope](docs/android-environment-client.md)
+- **Reviewed tasks:** select files, a target account and a Skill, then follow preparation, upload, instruction entry, readiness, a single application-level send and confirmation. The app does not automatically execute an uncertain send again. Android tasks do not guarantee exactly-once browser transport or third-party server processing. [Boundary and validation scope](docs/android-environment-client.md)
 - **Capabilities:** desktop builds include 121 Skills and 32 original roles, with 24 internet-related roles first. Android retains 120 task Skills. Roles support standalone or combined Skill/file tasks, with steps, deliverables and checks.
 - **Local recovery:** saved account/tab state, drafts and reading positions. macOS also provides encrypted read-only conversation snapshots and confirmed updates.
 
@@ -50,7 +40,7 @@ This is an independently maintained, unofficial client. It does not include a Ch
 | Layer | Current implementation | Design choice |
 | --- | --- | --- |
 | Desktop | Electron 44, React 19, TypeScript, esbuild | Shared macOS/Windows implementation; website content is isolated from local management interfaces |
-| Android | Java 17, AndroidX WebKit, System WebView; Gecko and pinned Go/Xray JNI in the independent Beta | Preserve existing sign-in spaces; require runtime multi-profile support |
+| Android | Java 17, AndroidX WebKit, System WebView; Gecko and pinned Go/Xray JNI in the regular dual-engine client | Preserve existing sign-in spaces; require runtime multi-profile support |
 | Assets | Local files, constrained HTML/media previews, PDF and data conversion | Keep processing and derived copies on the device; review account, files and instructions before sending |
 | Recovery | Platform encryption and account/storage/tab-bound records | Preserve existing website drafts and avoid duplicate sends |
 | Delivery | GitHub Actions, GitHub Releases, Cloudflare Pages | Traceable builds, checksums and static website deployments |
@@ -68,39 +58,31 @@ flowchart LR
   Android --> Recovery
 ```
 
-Devices do not synchronize sign-in credentials. The Gecko engine is integrated into the regular original-signer candidate with synthetic upgrade acceptance. Existing alpha.22 accounts remain on WebView; the public download is unchanged, and independent Beta data stays separate. iPhone/iPad, proxy support and delta updates remain in the roadmap.
+Devices do not synchronize sign-in credentials. The regular client includes Gecko with original-signer synthetic upgrade acceptance. Existing alpha.22 accounts remain on WebView, and independent Beta data stays separate. iPhone/iPad, proxy support and delta updates remain in the roadmap.
 
 ## Download and install
 
 | Platform | Version | Downloads | Requirements |
 | --- | --- | --- | --- |
-| macOS · Apple Silicon | 3.0.0-alpha.23 | [DMG](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.23/ChatGPT-Studio-3.0.0-alpha.23-mac-arm64.dmg) · [ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.23/ChatGPT-Studio-3.0.0-alpha.23-mac-arm64.zip) | macOS 13+ |
-| Windows · x64 | 3.0.0-alpha.24 | [EXE](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.24/ChatGPT-Studio-3.0.0-alpha.24-windows-x64-setup.exe) · [Portable ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.24/ChatGPT-Studio-3.0.0-alpha.24-windows-x64.zip) | Windows 10/11, 64-bit |
-| Android · Phone/tablet | 3.0.0-alpha.22 | [APK](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.22/ChatGPT-Studio-3.0.0-alpha.22-android.apk) | Android 9+, WebView with multi-profile support |
+| macOS · Apple Silicon | 2026.11.9 | [DMG](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9/ChatGPT-Studio-2026.11.9-mac-arm64.dmg) · [ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9/ChatGPT-Studio-2026.11.9-mac-arm64.zip) | macOS 13+ |
+| Windows · x64 | 2026.11.9 | [EXE](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9/ChatGPT-Studio-2026.11.9-windows-x64-setup.exe) · [Portable ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9/ChatGPT-Studio-2026.11.9-windows-x64.zip) | Windows 10 / 11 · x64 |
+| Android · Phone/tablet | 2026.11.08-1923 | [APK](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9/ChatGPT-Studio-2026.11.08-1923-android-arm64.apk) | Android 9+ · ARM64 |
 
-### Independent Android Beta
+### Historical Beta
 
-**2026.11.07-1905** · Android 9+ · arm64 · 230.7 MiB (241,907,607 bytes). [Original APK](https://github.com/ForceMind/ChatGPT/releases/download/android-beta-2026.11.07-1905/ChatGPT-Studio-2026.11.07-1905-android-arm64.apk) · [Release and evidence](https://github.com/ForceMind/ChatGPT/releases/tag/android-beta-2026.11.07-1905) · [Website Beta downloads](https://chatgpt-studio.pages.dev/#download-android-beta). The website also offers optional third-party gh-proxy.org acceleration while retaining the original link.
-
-The fixed Beta package identity and signature allow overlay upgrades of an existing Beta with the same signature. It coexists with alpha.22 above; sign-in, asset and recovery spaces remain separate, with no automatic migration of regular-app data. This does not imply overlay compatibility with earlier temporary-signer network test packages. Verify the APK SHA-256 before installation:
-
-```text
-8555c1b1e8ad64659bdccd8832c84302a2a8986f049235d9d9f77eae416d4125
-```
-
-Android 9/15 synthetic acceptance passes; real ChatGPT, nodes and OEM devices remain unverified. Historical intermittent TLS resets and first-back behavior are not fully explained. An application-level send does not guarantee exactly-once network/server processing; inspect the original conversation when a result is uncertain. [Full scope and installation guide](docs/android-environment-client.md).
+The independent Beta remains in [release history](https://github.com/ForceMind/ChatGPT/releases/tag/android-beta-2026.11.07-1905). It has a separate package/signing/data identity; the regular APK does not automatically import its data. Use the single regular download above.
 
 ### Regular-client installation
 
 **macOS:** open the DMG and drag the app into Applications. Current packages are ad-hoc signed and not notarized. If macOS blocks the first launch, verify the source/checksum and consult [Apple's installation guidance](https://support.apple.com/en-us/102445).
 
-**Windows:** run the EXE or extract the ZIP. alpha.24 uses `ChatGPT Studio.exe` and Studio names for the default installation directory, uninstaller and shortcuts. Both variants use the current user's data directory. Authenticode signing is not configured.
+**Windows:** run the EXE or extract the ZIP. Current builds use `ChatGPT Studio.exe` and Studio names for the default installation directory, uninstaller and shortcuts. Both variants use the current user's data directory. Authenticode signing is not configured.
 
 **Android:** allow installation from your chosen download source when prompted. Updates retain the existing release certificate. If the installed WebView lacks multi-profile support, update System WebView/Chrome first; the app does not substitute a shared sign-in space.
 
-The [website](https://chatgpt-studio.pages.dev/) provides GitHub downloads and optional third-party acceleration links. Compare downloads with `SHA256SUMS.txt` in the Release. The current version is a **prerelease**; stable-only tools may report no Latest release. The version badge above includes prereleases, and the table links directly to the published assets.
+The [website](https://chatgpt-studio.pages.dev/) provides GitHub downloads and optional third-party acceleration links. Compare downloads with `SHA256SUMS.txt` in the Release. The current release is a normal Release and is marked Latest. Historical prereleases remain available.
 
-Use [alpha.23 SHA256SUMS.txt](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.23/SHA256SUMS.txt) for Mac packages and [alpha.22 SHA256SUMS.txt](https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.22/SHA256SUMS.txt) for Android. Historical packages and checksums remain available.
+Use [SHA256SUMS.txt](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9/SHA256SUMS.txt) for all current packages. Historical checksums remain available.
 
 ### Android alpha.19
 
@@ -139,7 +121,7 @@ Closing a macOS window retains pages in the background. A full process exit requ
 | Draft and reading-position recovery | Available | Available | Available |
 | Encrypted conversation snapshots/offline reading | Available | Available in alpha.21 | Available in alpha.22 |
 | Confirmed download and exit/idle installation | Available | alpha.21 current-user EXE; no idle installation | Planned |
-| Per-account language/timezone | Available | Available | Integrated and synthetically verified in the regular original-signer candidate; public package remains alpha.22 |
+| Per-account language/timezone | Available | Available | Integrated and synthetically verified in the regular original-signer client; public package remains alpha.22 |
 
 Conversion options include PNG/JPEG/WebP, SVG rasterization, HTML/Markdown to PDF, selected PDF pages to images, and CSV/JSON conversion. Details and limits are documented in the [desktop](desktop/README.md) and [Android](android/README.md) guides.
 
@@ -219,13 +201,12 @@ Cloudflare Pages uses Direct Upload; a Git push does not deploy the site automat
 | Android encrypted offline snapshots and 121 Skills / 32 original roles | Published alpha.22 with the existing certificate; [CI/artifact receipt](docs/releases/3.0.0-alpha.22-android-candidate.json). Physical-device acceptance pending |
 | macOS account-menu backdrop, coordinated painting and tab force refresh | Published alpha.22; [packages and native acceptance](docs/releases/3.0.0-alpha.22-macos-candidate.json). Live-account compatibility remains pending |
 | macOS download progress and manual updates | Published alpha.23; transfer, verification/preparation states, checks, retries and immediate installation. [Packages and verification](docs/releases/3.0.0-alpha.23.json) |
-| Android per-account locale/timezone engine migration | Fixed-signer **2026.11.07-1905** is published as an independent Beta: three-account/four-tab isolation, live switching, rotation, cold recovery and draft conflicts pass Android 9/15 synthetic acceptance. Same-signer 33→34 upgrades preserve login, encrypted records and assets. Regular-client migration and original-certificate upgrades pass in candidate 2026.11.08-1923; public release and real-service/device acceptance remain pending. [Beta and scope](docs/android-environment-client.md) |
-| Regular Android original-signer candidate | 2026.11.08-1923 passes original-certificate install-r and legacy sign-in/encrypted recovery retention on Android 9/15. Public release and real devices/services remain pending. [Report](docs/releases/android-regular-2026.11.08-1923-original-upgrade-acceptance.json) |
+| Android per-account locale/timezone engine migration | Published in the regular 2026.11.08-1923 build within normal Release 2026.11.9. Existing accounts retain WebView and their data; new accounts can select isolated locale/timezone. Android 9/15 synthetic acceptance passes; real-service/device acceptance remains pending. [Scope](docs/android-environment-client.md) |
+| Regular Android original-signer upgrades | Published: original-certificate install-r preserves legacy login, encrypted recovery and assets on Android 9/15 without uninstalling. Real devices/services remain pending. [Report](docs/releases/android-regular-2026.11.08-1923-original-upgrade-acceptance.json) |
 | System/Chrome passkeys, signed Touch ID and stable signing | Not integrated or dependent on unavailable certificates/device acceptance |
 | Original agent presets and design-patch Skill | Published in desktop alpha.21: 32 roles, standalone/combined tasks, favorites and task recovery |
-| In-app proxy/VLESS | **2026.11.07-1905** passes all six Android 9/15 RAW/TLS/REALITY cases for Gecko pages, real system-picker uploads and downloads, including exits, bytes, ownership, busy protection, invalid identities, core failure and recovery. The historical positive TLS reset remains unexplained; its evidence is retained and passing this matrix is not presented as resolving its cause. Published with the independent Beta and now integrated into the regular original-signer candidate; the public regular Android download remains alpha.22. Real nodes/services/devices remain pending; no free nodes supplied. [Evidence and limits](docs/android-environment-client.md) |
-| Standalone Android network test package | Signed arm64 APK delivered as “ChatGPT Studio 测试版”, with a separate application ID and sign-in/recovery space alongside the regular app. Real nodes and device acceptance are user-managed. The temporary test signer does not guarantee future overlay upgrades. Available as a separate [GitHub prerelease](https://github.com/ForceMind/ChatGPT/releases/tag/v3.0.0-alpha.24-candidate.1-standalone); regular downloads remain unchanged. [Install guide](docs/android-network-standalone-preview.md) · [Build receipt](docs/releases/android-network-standalone-preview.1.json) · [Publication receipt](docs/releases/android-network-standalone-preview.1-publication.json) |
-| Fixed-signer independent Android Beta | **2026.11.07-1905** is publicly released with local exports, asset→GPT/Skill tasks and the encrypted-save concurrency fix. Full Android 9/15 candidate evidence and final gates pass, including API35 original navigation and three controlled real-save cases; the old-line expected failure is classified separately. Complete prompts, progress, cancellation, no automatic re-execution of uncertain tasks and both task crash gates are checked. A harness-only geometry fix resumes the identical APK; source provenance and failures are retained. Application-level once-send does not guarantee transport/server exactly-once processing. Historical first-back behavior remains not fully explained. Real services/OEM devices remain pending; the regular original-signer candidate separately passes migration acceptance; sign-in/recovery spaces stay separate with no automatic migration. [Public Release](https://github.com/ForceMind/ChatGPT/releases/tag/android-beta-2026.11.07-1905) · [Installation and report](docs/android-environment-client.md) |
+| In-app proxy/VLESS | Published with regular Android: synthetic Android 9/15 RAW/TLS/REALITY webpage, upload/download, ownership, busy protection, core failure and recovery checks pass. No free nodes supplied; real nodes/services/OEM devices remain pending. Historical TLS resets are not all root-caused. [Evidence](docs/android-environment-client.md) |
+| Historical standalone Android tests / Beta | Retained in release history with separate package, signature and data spaces; no automatic data migration. They are no longer parallel recommended downloads. [History and evidence](docs/android-environment-client.md) |
 | iPhone/iPad, Intel Mac, Linux and store distribution | Outside the current iteration; no packages |
 | Delta updates | Not implemented; native updates require restart |
 

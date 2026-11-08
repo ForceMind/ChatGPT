@@ -1,0 +1,151 @@
+{
+  "schema": 1,
+  "version": "2026.11.9",
+  "releaseID": 438403006,
+  "tag": "v2026.11.9",
+  "releaseURL": "https://github.com/ForceMind/ChatGPT/releases/tag/v2026.11.9",
+  "draft": false,
+  "prerelease": false,
+  "publishedAt": "2026-11-08T17:55:29Z",
+  "targetCommit": "f9f4d4e35661ccc20fc15853ffef661c592c23c3",
+  "stagingRun": 42507179194,
+  "stagingReceipt": "docs/releases/2026.11.9-staging.json",
+  "verifiedAssets": [
+    {
+      "id": 724735085,
+      "name": "android-original-upgrade.json",
+      "size": 33035,
+      "digest": "sha256:7c15577291af5c9df5c71a904a2aa006c707f1b9319c25c3035b27d143fb4198",
+      "browser_download_url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9/android-original-upgrade.json"
+    },
+    {
+      "id": 724733350,
+      "name": "ChatGPT-Profiles-2026.11.9-mac-arm64.zip",
+      "size": 155181718,
+      "digest": "sha256:4a05ffadcc58df49402325b1522149975d8261b6ccebfefa7747a744668df68d",
+      "browser_download_url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9/ChatGPT-Profiles-2026.11.9-mac-arm64.zip"
+    },
+    {
+      "id": 724733661,
+      "name": "ChatGPT-Studio-2026.11.08-1923-android-arm64.apk",
+      "size": 241931130,
+      "digest": "sha256:177ef874c6c904a653aecb3ffc61a76ef45ebc8e69cb80c6addbdb9e74806259",
+      "browser_download_url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9/ChatGPT-Studio-2026.11.08-1923-android-arm64.apk"
+    },
+    {
+      "id": 724734031,
+      "name": "ChatGPT-Studio-2026.11.9-mac-arm64.dmg",
+      "size": 155112514,
+      "digest": "sha256:b170691253a089b8c4b29a4fc684886402ca648db4e8cdd8e701a29cb324a6c4",
+      "browser_download_url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9/ChatGPT-Studio-2026.11.9-mac-arm64.dmg"
+    },
+    {
+      "id": 724734320,
+      "name": "ChatGPT-Studio-2026.11.9-mac-arm64.zip",
+      "size": 155067744,
+      "digest": "sha256:a24d0dd6161b4796ce70a0028305d5c6be0f658d67742d130484ee29767b40f1",
+      "browser_download_url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9/ChatGPT-Studio-2026.11.9-mac-arm64.zip"
+    },
+    {
+      "id": 724734601,
+      "name": "ChatGPT-Studio-2026.11.9-windows-x64-setup.exe",
+      "size": 131358778,
+      "digest": "sha256:d5a2fbce5d5239b42f14270813d90da16a6e83c17b48422ce28a802d1c59cf6a",
+      "browser_download_url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9/ChatGPT-Studio-2026.11.9-windows-x64-setup.exe"
+    },
+    {
+      "id": 724734795,
+      "name": "ChatGPT-Studio-2026.11.9-windows-x64.zip",
+      "size": 181295709,
+      "digest": "sha256:4499e6e9625325f0b200975e0971afa2f77c33b8e244daf03b780e4811924f6e",
+      "browser_download_url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9/ChatGPT-Studio-2026.11.9-windows-x64.zip"
+    },
+    {
+      "id": 724735112,
+      "name": "mac-recovery-verification.json",
+      "size": 902,
+      "digest": "sha256:371908e69856d662fce48e757441808b1688a4238014a8cfe4e7bd87fbe7d8f7",
+      "browser_download_url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9/mac-recovery-verification.json"
+    },
+    {
+      "id": 724735156,
+      "name": "mac-ui-verification.json",
+      "size": 364,
+      "digest": "sha256:cac21f50b234a0690653e6de5ce51d9dce4829f2d8d6df3288795879903399b8",
+      "browser_download_url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9/mac-ui-verification.json"
+    },
+    {
+      "id": 724735230,
+      "name": "mac-update-verification.json",
+      "size": 1703,
+      "digest": "sha256:1ca3630e2c9e188a47faec2831695865298c6970006f16e64046ff1a7e50388d",
+      "browser_download_url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9/mac-update-verification.json"
+    },
+    {
+      "id": 724735285,
+      "name": "menu-bar-package.json",
+      "size": 1846,
+      "digest": "sha256:24b31cde03310ce80bcb0f324c5d21fb633688a7e21e9fe4fb7bd481aaf83544",
+      "browser_download_url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9/menu-bar-package.json"
+    },
+    {
+      "id": 724735319,
+      "name": "release-info.json",
+      "size": 6175,
+      "digest": "sha256:738474acf6f58c52589ca79ac9804e672d9ad06156eb3933aa9c30998c9fdc12",
+      "browser_download_url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9/release-info.json"
+    },
+    {
+      "id": 724735035,
+      "name": "SHA256SUMS.txt",
+      "size": 1762,
+      "digest": "sha256:728e60205ae063e8aa9fa04a863cd85bc2421b4ff9d4219f12afed248bf931fe",
+      "browser_download_url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9/SHA256SUMS.txt"
+    },
+    {
+      "id": 724735359,
+      "name": "windows-branding-verification.json",
+      "size": 4706,
+      "digest": "sha256:8fe290a91a9a6110f575bc3c3ca7f0bd2539df72e149c7fd00565f2b2fd4e382",
+      "browser_download_url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9/windows-branding-verification.json"
+    },
+    {
+      "id": 724735401,
+      "name": "windows-install-fixture.json",
+      "size": 151,
+      "digest": "sha256:913d9f4b5d35187907c5575752dac06f7457a10d798781997da705a028eb3efd",
+      "browser_download_url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9/windows-install-fixture.json"
+    },
+    {
+      "id": 724735457,
+      "name": "windows-native-retention.json",
+      "size": 13036,
+      "digest": "sha256:f3832ff0739c0d9ce390304b271cf08137498ec8457765f3841a624ac3b55acb",
+      "browser_download_url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9/windows-native-retention.json"
+    },
+    {
+      "id": 724735502,
+      "name": "windows-smoke.json",
+      "size": 363,
+      "digest": "sha256:74b5fb3d7b1bf6eeed65e07cac74bb3fd36822641ca1813a329d00aa70e5592b",
+      "browser_download_url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9/windows-smoke.json"
+    },
+    {
+      "id": 724735541,
+      "name": "windows-upgrade-fixture.json",
+      "size": 64,
+      "digest": "sha256:6193db5e42ce44bd095336549811ff4181dfac659b17188d409c5930393380c1",
+      "browser_download_url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9/windows-upgrade-fixture.json"
+    },
+    {
+      "id": 724735584,
+      "name": "windows-upgrade.json",
+      "size": 640,
+      "digest": "sha256:7b0f0d6d1f44edc66cd4661fb2effa6c1caa65977059e07aa5faefec69d513f1",
+      "browser_download_url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9/windows-upgrade.json"
+    }
+  ],
+  "mainSynced": false,
+  "websiteDeployed": false,
+  "personalDevicesUpdated": false
+}

@@ -1,0 +1,65 @@
+{
+  "verifiedAt": "2026-11-08T17:57:03.512294+00:00",
+  "official": [
+    {
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9/ChatGPT-Studio-2026.11.9-mac-arm64.dmg",
+      "status": 200,
+      "bytes": 155112514,
+      "finalHost": "release-assets.githubusercontent.com",
+      "ok": true
+    },
+    {
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9/ChatGPT-Studio-2026.11.9-mac-arm64.zip",
+      "status": 200,
+      "bytes": 155067744,
+      "finalHost": "release-assets.githubusercontent.com",
+      "ok": true
+    },
+    {
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9/ChatGPT-Profiles-2026.11.9-mac-arm64.zip",
+      "status": 200,
+      "bytes": 155181718,
+      "finalHost": "release-assets.githubusercontent.com",
+      "ok": true
+    },
+    {
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9/ChatGPT-Studio-2026.11.9-windows-x64-setup.exe",
+      "status": 200,
+      "bytes": 131358778,
+      "finalHost": "release-assets.githubusercontent.com",
+      "ok": true
+    },
+    {
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9/ChatGPT-Studio-2026.11.9-windows-x64.zip",
+      "status": 200,
+      "bytes": 181295709,
+      "finalHost": "release-assets.githubusercontent.com",
+      "ok": true
+    },
+    {
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9/ChatGPT-Studio-2026.11.08-1923-android-arm64.apk",
+      "status": 200,
+      "bytes": 241931130,
+      "finalHost": "release-assets.githubusercontent.com",
+      "ok": true
+    }
+  ],
+  "optionalThirdPartyMirrors": [
+    {
+      "url": "https://gh-proxy.org/https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9/ChatGPT-Studio-2026.11.9-mac-arm64.dmg",
+      "status": 200,
+      "bytes": 155112514,
+      "finalHost": "gh-proxy.org",
+      "ok": true
+    },
+    {
+      "url": "https://gh-proxy.org/https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9/ChatGPT-Studio-2026.11.08-1923-android-arm64.apk",
+      "status": 200,
+      "bytes": 241931130,
+      "finalHost": "gh-proxy.org",
+      "ok": true
+    }
+  ],
+  "latestTag": "v2026.11.9",
+  "allOfficialDownloadsAccessible": true
+}

@@ -1,0 +1,124 @@
+{
+  "schema": 1,
+  "complete": true,
+  "releaseID": 438403006,
+  "tag": "v2026.11.9",
+  "sourceCommit": "f9f4d4e35661ccc20fc15853ffef661c592c23c3",
+  "publisherCommit": "1cab4913038ad0af8316f66c9b0468af584a7c3c",
+  "verifiedRuns": {
+    "macos": {
+      "id": 42504496888,
+      "sourceCommit": "553e22eb843343d2c3708028b9339d465d7d7d52",
+      "conclusion": "success"
+    },
+    "windows": {
+      "id": 42505793683,
+      "sourceCommit": "f9f4d4e35661ccc20fc15853ffef661c592c23c3",
+      "conclusion": "success"
+    },
+    "android": {
+      "id": 42493929455,
+      "sourceCommit": "645ddf11c21e63b9b6e3ceec08c28fd38f5476da",
+      "conclusion": "success"
+    }
+  },
+  "assets": [
+    {
+      "file": "ChatGPT-Profiles-2026.11.9-mac-arm64.zip",
+      "bytes": 155181718,
+      "sha256": "4a05ffadcc58df49402325b1522149975d8261b6ccebfefa7747a744668df68d"
+    },
+    {
+      "file": "ChatGPT-Studio-2026.11.08-1923-android-arm64.apk",
+      "bytes": 241931130,
+      "sha256": "177ef874c6c904a653aecb3ffc61a76ef45ebc8e69cb80c6addbdb9e74806259"
+    },
+    {
+      "file": "ChatGPT-Studio-2026.11.9-mac-arm64.dmg",
+      "bytes": 155112514,
+      "sha256": "b170691253a089b8c4b29a4fc684886402ca648db4e8cdd8e701a29cb324a6c4"
+    },
+    {
+      "file": "ChatGPT-Studio-2026.11.9-mac-arm64.zip",
+      "bytes": 155067744,
+      "sha256": "a24d0dd6161b4796ce70a0028305d5c6be0f658d67742d130484ee29767b40f1"
+    },
+    {
+      "file": "ChatGPT-Studio-2026.11.9-windows-x64-setup.exe",
+      "bytes": 131358778,
+      "sha256": "d5a2fbce5d5239b42f14270813d90da16a6e83c17b48422ce28a802d1c59cf6a"
+    },
+    {
+      "file": "ChatGPT-Studio-2026.11.9-windows-x64.zip",
+      "bytes": 181295709,
+      "sha256": "4499e6e9625325f0b200975e0971afa2f77c33b8e244daf03b780e4811924f6e"
+    },
+    {
+      "file": "SHA256SUMS.txt",
+      "bytes": 1762,
+      "sha256": "728e60205ae063e8aa9fa04a863cd85bc2421b4ff9d4219f12afed248bf931fe"
+    },
+    {
+      "file": "android-original-upgrade.json",
+      "bytes": 33035,
+      "sha256": "7c15577291af5c9df5c71a904a2aa006c707f1b9319c25c3035b27d143fb4198"
+    },
+    {
+      "file": "mac-recovery-verification.json",
+      "bytes": 902,
+      "sha256": "371908e69856d662fce48e757441808b1688a4238014a8cfe4e7bd87fbe7d8f7"
+    },
+    {
+      "file": "mac-ui-verification.json",
+      "bytes": 364,
+      "sha256": "cac21f50b234a0690653e6de5ce51d9dce4829f2d8d6df3288795879903399b8"
+    },
+    {
+      "file": "mac-update-verification.json",
+      "bytes": 1703,
+      "sha256": "1ca3630e2c9e188a47faec2831695865298c6970006f16e64046ff1a7e50388d"
+    },
+    {
+      "file": "menu-bar-package.json",
+      "bytes": 1846,
+      "sha256": "24b31cde03310ce80bcb0f324c5d21fb633688a7e21e9fe4fb7bd481aaf83544"
+    },
+    {
+      "file": "release-info.json",
+      "bytes": 6175,
+      "sha256": "738474acf6f58c52589ca79ac9804e672d9ad06156eb3933aa9c30998c9fdc12"
+    },
+    {
+      "file": "windows-branding-verification.json",
+      "bytes": 4706,
+      "sha256": "8fe290a91a9a6110f575bc3c3ca7f0bd2539df72e149c7fd00565f2b2fd4e382"
+    },
+    {
+      "file": "windows-install-fixture.json",
+      "bytes": 151,
+      "sha256": "913d9f4b5d35187907c5575752dac06f7457a10d798781997da705a028eb3efd"
+    },
+    {
+      "file": "windows-native-retention.json",
+      "bytes": 13036,
+      "sha256": "f3832ff0739c0d9ce390304b271cf08137498ec8457765f3841a624ac3b55acb"
+    },
+    {
+      "file": "windows-smoke.json",
+      "bytes": 363,
+      "sha256": "74b5fb3d7b1bf6eeed65e07cac74bb3fd36822641ca1813a329d00aa70e5592b"
+    },
+    {
+      "file": "windows-upgrade-fixture.json",
+      "bytes": 64,
+      "sha256": "6193db5e42ce44bd095336549811ff4181dfac659b17188d409c5930393380c1"
+    },
+    {
+      "file": "windows-upgrade.json",
+      "bytes": 640,
+      "sha256": "7b0f0d6d1f44edc66cd4661fb2effa6c1caa65977059e07aa5faefec69d513f1"
+    }
+  ],
+  "draft": true,
+  "public": false
+}

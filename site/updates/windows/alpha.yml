@@ -3,21 +3,21 @@
   "appId": "com.forcemind.chatgpt.profiles",
   "platform": "win32",
   "architecture": "x64",
-  "version": "3.0.0-alpha.24",
-  "releaseDate": "2026-11-05T06:04:07.334Z",
-  "releaseNotes": "# ChatGPT Studio · Windows alpha.24\n\n本次仅更新 Windows x64，macOS 继续 alpha.23，Android 继续 alpha.22。\n\n- 新装默认目录、主程序和卸载程序统一使用 ChatGPT Studio。\n- 经过身份与文件校验的旧默认程序目录安全迁移到 Studio；自定义安装目录保留原位置。\n- 同步更新桌面、开始菜单和已有快捷方式目标，更新器兼容旧、新程序名。\n- 修正更新提示中的旧品牌文案，保留既有登录、加密恢复身份及标签保活策略。\n- 安装遇到目标占用或未知文件时拒绝覆盖；迁移失败支持程序和注册信息回退。\n\n安装前从应用菜单退出旧版，无需卸载或删除账号数据。用户数据目录仍使用 `ChatGPT Profiles`，这是保留登录和恢复数据的兼容身份，不是遗漏更名。EXE 支持当前用户安装后的确认更新；ZIP 为免安装手动替换。完整应用更新需要重启。\n\n安装包未做 Windows 代码签名，可能出现 SmartScreen 或未知发布者提示。请核对 `SHA256SUMS.windows.txt`。\n\n验证：复用 Actions 41975812832 的原始 EXE/ZIP；完整 `npm run check` 通过，106 项单元测试中 105 通过、1 项平台跳过。六项安装、升级、合成页面存储与失败回退验收通过。没有截图、真实 ChatGPT 或真实账号验收；任务栏固定快捷方式目标已验证，Explorer 图标缓存外观未验证。\n",
+  "version": "2026.11.9",
+  "releaseDate": "2026-11-08T17:55:29Z",
+  "releaseNotes": "# ChatGPT Studio · 2026.11.9\n\n本批将 macOS、Windows 和常规 Android 统一到一个正常 Release，官网每个平台只有一个最新下载入口。历史 Beta 与预发布保留在 Release 历史，不再作为并列推荐。\n\n## 本次内容\n\n- macOS / Windows 使用日期版本 `2026.11.9`；沿用独立账号、标签切换不重载、后台保活、资产库与 Skill 任务、加密恢复和更新进度。\n- 关闭含密码或一次性验证码输入字段的标签时，不保留该标签的内存实例；不会清除账号 Cookie、登录空间或已存恢复记录。普通标签的关闭恢复与后台保活策略保持。\n- Windows 的程序、默认安装目录、卸载程序和快捷方式继续使用 Studio，旧默认目录经过校验迁移，自定义目录保留，失败支持回退。\n- 常规 Android 使用已验收的原签 `2026.11.08-1923`（versionCode 3000035）原始字节，沿用 `com.forcemind.chatgpt.profiles`，可覆盖 alpha.22，无需卸载。新增账号可选独立语言和时区，既有账号保留原 WebView 与登录；包含双内核页面恢复、顶部可点选标签、刷新、强制刷新、后退/前进、VLESS 同路由、文件和 Skill 任务。\n- 官网移除额外 Android Beta/候选面板及需要登录的临时 Actions 下载地址，正常下载使用公开 Release 附件，并保留可选第三方国内加速。\n\n## 安装与兼容\n\n先从应用菜单退出旧版再覆盖安装；不要删除用户数据或先卸载 Android。独立 Beta 是另一个包名和数据空间，本包不会自动搬迁它的数据。\n\nmacOS 构建仅 Apple Silicon，临时签名、未做 Apple 公证；Windows x64 未配置 Authenticode。正式发布渠道不代表已取得平台签名或商店审核。完整桌面程序更新需要重启；Android 仍手动安装。\n\n## 验证边界\n\nWindows Server 2025 x64 通过 105 项单元（1 平台跳过）、14 项迁移版本检查、20 项 E2E（23 平台专用跳过）、六项安装迁移、原生启动/卸载保留数据、alpha.18 更新器升级及 8 标签 330,276 ms 后台留存。Mac 15.8.2 arm64 已通过 106 项单元与 25 项页面验收（1 项 Windows 专用跳过），以及包内恢复、菜单栏和两种 ZIP 的升级验证。构建与合成页面、安装升级验证均在 GitHub Actions；实际运行、数量和文件 SHA-256 以同目录 `2026.11.9.json` 与三平台发布记录为准。本批必需门禁已通过，原失败及根因修正保留在三平台发布记录。\n\nAndroid 复用已通过的 Android 9 / 15 模拟器完整功能与原证书覆盖升级证据，核对 UID、Cookie/网站存储、资产、加密草稿和恢复记录保留；ARM64 出包与 x86_64 验收代码一致性单列，不冒充 ARM64 手机安装验收。\n\n未访问真实 ChatGPT、个人账号或真实代理节点；厂商手机、真实附件发送、语音、登录提供方与节点兼容仍待真实环境验收。历史 TLS reset、首次连接与输入警告存在尚未完全归因的记录，不能把一次合成通过写成根因全部解决。应用层一次发送也不保证网络或第三方服务端只执行一次。\n\niPhone/iPad 暂无安装包，不在本批范围；系统后台挂起限制需要通过前台页面保留、本地状态恢复和受系统管理的后台任务设计处理，不承诺网页无限后台驻留。\n",
   "files": [
     {
-      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.24/ChatGPT-Studio-3.0.0-alpha.24-windows-x64-setup.exe",
-      "size": 131359974,
-      "sha256": "623b6f4784e54ef759ebce344b65fba3f3e6d6ceaa8d269fa919373d2ab4dfd2",
-      "sha512": "9/z2F3vKfUHgnGQP2y5bDSibfkonx9VpnpZCQxjSWPccOXqu9w+j/gW8PnsdtUkyfVx3c/nzVS+mJfER1c4dNQ=="
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9/ChatGPT-Studio-2026.11.9-windows-x64-setup.exe",
+      "size": 131358778,
+      "sha256": "d5a2fbce5d5239b42f14270813d90da16a6e83c17b48422ce28a802d1c59cf6a",
+      "sha512": "I0TbLiYKtjJGrLPME2RKTr/GH0DH4QdhR7IrCqe+if6MFOTglgQW2kKKbPXTHsxQvLdQs6e1R5QNkp2+h2DZJQ=="
     },
     {
-      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v3.0.0-alpha.24/ChatGPT-Studio-3.0.0-alpha.24-windows-x64.zip",
-      "size": 181294882,
-      "sha256": "009fb5988890dcdd60b07eabd6d0c96b8dc2e56a6bf72658bc5423398520c80e",
-      "sha512": "4t6/jrKHgtQhveAl93gH65W+r0fpLmyyDqIdCLihQbq/i3i99ZgIdsFMAKi4X3fUhOXuGZexkKBOx39q97oF3Q=="
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9/ChatGPT-Studio-2026.11.9-windows-x64.zip",
+      "size": 181295709,
+      "sha256": "4499e6e9625325f0b200975e0971afa2f77c33b8e244daf03b780e4811924f6e",
+      "sha512": "kvBl6IUwVi7x8wpFoohaf7S7I7Qh9ZcAtvpBeLk4FiXOuoJqAsSLoHZKxcOq2KAOjN9W2ZCNWBkQznMmarGnMg=="
     }
   ]
 }
