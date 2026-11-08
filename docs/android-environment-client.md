@@ -1,6 +1,33 @@
 # Android 独立环境客户端：文件与任务主线
 
-## 当前迭代：常规 Android 兼容接入第一批（已确认，待 Actions 验证）
+## 第一批交付：常规 Android 兼容接入（2026.11.08-1233）
+
+第一批已完成约定的合成 CI 验收，尚未正式签名或公开发布。常规包名 `com.forcemind.chatgpt.profiles`，日期版本 `2026.11.08-1233`，内部序号 `3000035`。复用已有 Beta 组件与验收流程，旧账号保留 WebView，新建账号可选择独立语言/时区；新建账号入口由代码核对，环境运行与恢复由本批 CI 取证。
+
+- [未签名 ARM64 审阅包及完整报告](https://github.com/ForceMind/ChatGPT/actions/runs/42446947967/artifacts/13603888296)（Actions artifact，保留 14 天）。APK 为 `ChatGPT-Studio-2026.11.08-1233-android-arm64-UNSIGNED-REVIEW.apk`，241,899,411 bytes / **230.69 MiB**，最低 Android 9，16 KiB 对齐。
+- [完整 Actions 结果](https://github.com/ForceMind/ChatGPT/actions/runs/42446947967)：构建、Android 9、Android 15、交付门禁均成功；源码 `24c7cde14c85958f9cf166ac960513d4818566f5`。
+- [原样归档验收报告](releases/android-regular-2026.11.08-1233-review.json)：SHA-256 `f3f0daeb8a9ccd9db45618cc42af669a04ff574f51dd4eb2901d9ddb23d484fe`。完整报告从实际交付 ZIP 的末尾通过 65,557 bytes HTTP Range 读取，未将 APK 下载到本机。
+- APK SHA-256：`75e290975e70c86ae1dcf4f2b4c753ae4bfff067835b965dc50f555e86765287`。
+
+| 验收项 | 实际证据与范围 |
+| --- | --- |
+| 构建检查 | 17 组 / 85 项单元测试，失败、错误、跳过均为 0；Lint 0 错误、45 警告。 |
+| 原包升级 | 使用已公开 alpha.22 原 APK，验证原 SHA、签名和 7,376,521 bytes；只用一次性 CI 密钥替换签名，非签名 ZIP 内容一致，未重建旧 App。API28/35 均实际覆盖安装，UID 保持。 |
+| 旧账号与登录空间 | 原 account/storage/profile 与 Chromium 注册绑定、HttpOnly/Secure Cookie、localStorage、IndexedDB、两份加密恢复与草稿、密文 payload、资产和偏好在 seed、旧包冷读、升级、新包冷读、环境使用后五个阶段保留；旧账号默认 WebView，未增加环境字段。 |
+| 新独立环境 | A/C 使用 zh-CN + Asia/Shanghai，B 使用 en-US + America/New_York；实际检查网页、Worker、HTTP Accept-Language、Cookie/localStorage/IndexedDB 隔离，同环境不同账号也使用不同存储上下文。 |
+| 热切与恢复 | 新 Gecko 三账号四页热切保留文档、草稿和滚动；两次冷恢复各只加载一个新文档，原生加密会话/草稿有效；网页草稿冲突先保留原值，再由原生按钮选择恢复。没有自动发送消息。 |
+| 真实双引擎界面 | 另建独立合成 WebView 账号，经原生账号菜单执行两次 Main→Gecko A0→Main；保持同 MainActivity/WebView、document、草稿、滚动、Profile 与登录。旧页加载一次；新 instrumentation 内 Gecko A0 初次恢复加载一次，随后往返额外重载为 0。原 alpha.22 基线账号未在 Main 打开，其原两份密文仍逐字节保留。 |
+| 测试动作 | Android 9 复用已有 33 事件手指辅助程序；菜单/恢复控件使用刷新后的活动 UI 根坐标，连续三次稳定、最终再次核对后，每次只做一次物理点击。两端均记录 10 次菜单/恢复点击和两次完整往返。 |
+| 包与签名隔离 | 人用审阅包未签名、非 debug/非 testOnly、无 CI 入口/证书/fixture URL，ARM64 ELF 与 ZIP 均 16 KiB 对齐。CI 候选为原包名 x86_64 + testOnly，使用独立的一次性 CI 签名；没有读取正式或 Beta 私钥。 |
+
+**使用边界：**审阅 APK 没有签名，不能安装或覆盖手机正式版；本次安装的是临时 CI 签名的模拟器目标，不能称为正式原证书覆盖升级验收。Android 9 使用已批准的 WebView 124 provider；Android 15 为全新模拟器。真实 ChatGPT、真实节点、OEM 手机和 ARM64 实机尚未验收。本批没有修改后台保活策略、个人设备、正式 App 或现有登录数据，没有截图、重跑后台长测、合并 main、公开发布或部署 Android。包体大于原 WebView-only alpha.22，当前没有新的 CPU/内存实测结论。
+
+**后续顺序：**第二批沿同一常规目标补齐网络/下载/上传/本地文件/Skill 的完整严门禁与测试配置隔离；第三批在单独确认正式签名方式后交可原签覆盖的安装候选。普通三端公开下载呈现与官网统一在正式升级门禁通过、用户另行确认发布后执行。本次完成仅指第一批。
+
+## 第一批实施与首错记录（历史）
+
+以下保留各轮当时状态；最终结果以上方交付记录为准。
+
 
 按用户要求逐项推进，先做常规渠道接入与升级兼容，后续真实服务验收、历史故障收尾、通行密钥等不并行展开。用户已确认第一批；常规 release 接线、独立日期版本与兼容测试代码已提交到 dev 的 `33b802dc801e5fe74920da241fdfd264c4263ae8`。Python AST、XML、工作流 YAML/Shell 静态检查通过；[首轮 Actions 42442563528](https://github.com/ForceMind/ChatGPT/actions/runs/42442563528) 构建成功，85 项单元测试全通过，Lint 0 错误/45 警告；Android 9/15 运行验证未通过，尚未产生通过验收的交付包。
 
