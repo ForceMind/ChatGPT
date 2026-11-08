@@ -5,11 +5,59 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import re
 import sys
 import traceback
 import uuid
 
 import regular_environment_upgrade as native
+
+
+def dual_engine_round_trip(acceptance, draft):
+    """Exercise real engine UI routes in a new instrumentation process, not across it."""
+    before = acceptance.status()
+    native._write_json(native.EVIDENCE / 'functional-server.json', before)
+    args = ['adb', 'shell', 'am', 'instrument', '-w', '-r', '-e', 'class',
+            native.PACKAGE + '.RegularDualEngineSwitchTest', '-e', 'expectedApi', str(acceptance.api),
+            '-e', 'baselineScope', native.SCOPE, '-e', 'signer', native._ci_signer(),
+            '-e', 'expectedDraft', draft, native.RUNNER]
+    output = acceptance.command(args, timeout=300)
+    (native.EVIDENCE / 'dual-engine-instrument.txt').write_text(output, encoding='utf-8')
+    print(output, flush=True)
+    assert re.findall(r'(?m)^OK \((\d+) test\)\s*$', output) == ['1']
+    assert not re.search(r'FAILED|FAILURES!!!|shortMsg=', output)
+    entries = re.findall(r'(?m)^INSTRUMENTATION_RESULT: regularDualEngineSwitchProof=(\{[^\r\n]+\})\s*$', output)
+    assert len(entries) == 1
+    instrument = json.loads(entries[0])
+    assert instrument['schema'] == 1 and instrument['complete'] is True and instrument['api'] == acceptance.api
+    after = acceptance.status()
+    # Instrumentation starts its own app process. One initial A0 load is expected;
+    # repeated account-menu round trips inside that process must add none.
+    counts = dict(before['pageCounts'])
+    counts['/c/a1'] += 1
+    assert after['pageCounts'] == counts, 'Engine round trips loaded extra Gecko documents'
+    for path, documents in before['pages'].items():
+        for document, previous in documents.items():
+            current = after['pages'][path][document]
+            for key in ('document', 'draft', 'modelDraft', 'scroll'):
+                assert current[key] == previous[key], 'Earlier functional page state changed: ' + key
+    old_documents = set(before['pages']['/c/a1'])
+    new_documents = set(after['pages']['/c/a1']) - old_documents
+    assert len(new_documents) == 1
+    document = next(iter(new_documents))
+    page = after['pages']['/c/a1'][document]
+    acceptance.assert_environment(page, 'A')
+    assert page['draft'] == page['modelDraft'] == draft and page['scroll'] > 200
+    assert after['sendCount'] == after['rejectedEventCount'] == 0
+    native._write_json(native.EVIDENCE / 'dual-engine-after-server.json', after)
+    result = {'schema': 1, 'complete': True, 'api': acceptance.api, 'instrumentation': instrument,
+              'instrumentationStartsNewProcess': True, 'initialGeckoLoads': 1,
+              'extraGeckoReloadsDuringRoundTrips': 0, 'geckoDocument': document,
+              'geckoDraftSHA256': hashlib.sha256(draft.encode()).hexdigest(),
+              'earlierFunctionalDocumentsUnchanged': True, 'productionSignatureVerified': False,
+              'originalBaselineMainActivityOpened': False, 'screenshots': False}
+    native._write_json(native.EVIDENCE / 'dual-engine-round-trip.json', result)
+    return result
 
 
 def main():
@@ -62,6 +110,7 @@ def main():
         conflict_record = acceptance.record(draft, saved_scroll - 80)
         final = acceptance.status()
         assert final['sendCount'] == 0 and final['rejectedEventCount'] == 0
+        dual_engine = dual_engine_round_trip(acceptance, draft)
         retained = native.verify_after_environment()
         assert retained['complete'] and retained['legacyAccountPreserved']
         proof = {'schema': 1, 'complete': True, 'api': upgrade['api'], 'package': native.PACKAGE,
@@ -69,6 +118,7 @@ def main():
                  'versionMetadata': ci_receipt['versionMetadata'], 'ciCandidateReceipt': ci_receipt,
                  'productionSignatureVerified': False, 'legacyUpgrade': upgrade,
                  'legacyAfterEnvironmentUse': retained, 'manifest': acceptance.manifest,
+                 'dualEngineRoundTrip': dual_engine,
                  'languageTimeZoneAndWorkerVerified': True, 'httpAcceptLanguageVerified': True,
                  'cookieLocalStorageIndexedDBAccountIsolation': True,
                  'sameEnvironmentDifferentStorageContexts': True,

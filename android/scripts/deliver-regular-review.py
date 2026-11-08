@@ -88,6 +88,7 @@ def inspect_human(folder):
         assert libs and any(name.endswith('/libxul.so') for name in libs)
         assert all(name.startswith('lib/arm64-v8a/') for name in libs)
         forbidden = (b'EnvironmentAcceptanceActivity', b'RegularEnvironmentUpgradeTest', b'EnvironmentUpgradeSeedTest',
+                     b'RegularDualEngineSwitchTest',
                      b'EnvironmentNetworkControl', b'EnvironmentNetworkFilesProvider', b'GeneratedNetworkTrust',
                      b'EnvironmentLocalExportProbe', b'EnvironmentHandoffProbe',
                      b'environment-fixture.test', b'network-fixture.test')
@@ -108,6 +109,96 @@ def instrument(directory, label, expected):
     assert not re.search(r'FAILED|FAILURES!!!|shortMsg=', text), label
     entries = re.findall(r'(?m)^INSTRUMENTATION_RESULT: regularEnvironmentUpgradeProof=(\{[^\r\n]+\})\s*$', text)
     assert len(entries) == 1 and json.loads(entries[0]) == expected, label
+
+
+
+def fixture_core(server):
+    """Ignore lifecycle event metadata, retaining every measured business invariant."""
+    fields = ('document', 'account', 'path', 'url', 'draft', 'modelDraft', 'scroll',
+              'language', 'languages', 'timeZone', 'offsetMinutes', 'fixedDate',
+              'worker', 'workerError', 'localStorage', 'indexedDB', 'localError',
+              'idbError', 'envLogin', 'acceptLanguage', 'visibleCookies', 'cookie', 'sendClicks')
+    return {'pageCounts': server['pageCounts'],
+            'pages': {path: {doc: {key: page[key] for key in fields} for doc, page in documents.items()}
+                      for path, documents in server['pages'].items()},
+            'sendCount': server['sendCount'], 'rejectedEventCount': server['rejectedEventCount'],
+            'sends': server['sends'], 'downloads': server['downloads']}
+
+
+def verify_dual_engine(directory, api, proof, upgrade, expected, signer, before, shared_flow):
+    result = read(directory / 'dual-engine-round-trip.json')
+    assert result == proof['dualEngineRoundTrip'] and result['schema'] == 1 and result['complete'] is True
+    assert result['api'] == api
+    flags(result, ('instrumentationStartsNewProcess', 'earlierFunctionalDocumentsUnchanged'))
+    flags(result, ('productionSignatureVerified', 'originalBaselineMainActivityOpened', 'screenshots'), False)
+    assert result['initialGeckoLoads'] == 1 and result['extraGeckoReloadsDuringRoundTrips'] == 0
+    assert result['geckoDraftSHA256'] == proof['draftSHA256']
+    instrument_proof = result['instrumentation']
+    text = regular_file(directory / 'dual-engine-instrument.txt').read_text(encoding='utf-8')
+    assert re.findall(r'(?m)^OK \((\d+) test\)\s*$', text) == ['1']
+    assert not re.search(r'FAILED|FAILURES!!!|shortMsg=', text)
+    entries = re.findall(r'(?m)^INSTRUMENTATION_RESULT: regularDualEngineSwitchProof=(\{[^\r\n]+\})\s*$', text)
+    assert len(entries) == 1 and json.loads(entries[0]) == instrument_proof
+    assert instrument_proof['schema'] == 1 and instrument_proof['complete'] is True and instrument_proof['api'] == api
+    assert instrument_proof['package'] == native.PACKAGE and instrument_proof['versionCode'] == native.NEW_CODE
+    assert instrument_proof['signerSHA256'] == signer
+    assert instrument_proof['scope'] == 'separate-synthetic-legacy-Main-account; original-alpha22-golden-account-unopened'
+    flags(instrument_proof, ('newInstrumentationMayColdStartGecko', 'geckoNoReloadRequiresExternalServerProof',
+                             'originalBaselineAccountUnopened', 'originalBaselineAndTwoCipherRecordsUnchanged',
+                             'nativeAccountMenusUsed', 'trustedNativeDraftInput', 'nativeReadingScroll'))
+    flags(instrument_proof, ('screenshots', 'realServicesAccessed', 'productionSignatureVerified'), False)
+    assert instrument_proof['originalExpectedSHA256'] == upgrade['seed']['expectedSHA256']
+    account_id, storage_id = instrument_proof['syntheticLegacyAccountId'], instrument_proof['syntheticLegacyStorageId']
+    assert re.fullmatch(r'[a-f0-9-]{36}', account_id) and re.fullmatch(r'[a-f0-9-]{36}', storage_id)
+    assert re.fullmatch(r'[a-f0-9-]{36}', instrument_proof['syntheticLegacyTabId'])
+    assert account_id != expected['accountId'] and storage_id != expected['storageId']
+    assert account_id not in {a['id'] for a in proof['manifest']['accounts'].values()}
+    assert storage_id not in {a['storageId'] for a in proof['manifest']['accounts'].values()}
+    assert instrument_proof['syntheticLegacyProfile'] == 'profile-' + storage_id
+    assert re.fullmatch(r'[a-f0-9-]{36}', instrument_proof['document'])
+    assert instrument_proof['legacyDraftSHA256'] == hashlib.sha256(b'OwnedDualMainDraft').hexdigest()
+    assert instrument_proof['legacyScroll'] > 100 and instrument_proof['legacyPageLoads'] == 1
+    assert instrument_proof['unexpectedLegacyRequests'] == 0
+    rounds = instrument_proof['roundTrips']
+    assert len(rounds) == 2
+    previous = 0
+    for index, row in enumerate(rounds, 1):
+        assert row['round'] == index and row['expectedGeckoDraftSHA256'] == proof['draftSHA256']
+        for key in ('toGeckoStartedAt', 'geckoReadyAt', 'mainReturnedAt'):
+            assert type(row[key]) is int and row[key] > 0
+        assert previous <= row['toGeckoStartedAt'] <= row['geckoReadyAt'] <= row['mainReturnedAt']
+        previous = row['mainReturnedAt']
+        flags(row, ('sameMainActivity', 'sameWebViewObject', 'sameDocument',
+                    'sameDraftAndModel', 'sameScroll', 'sameProfileAndLogin'))
+    after = read(directory / 'dual-engine-after-server.json')
+    final = read(directory / 'server.json')
+    counts = dict(before['pageCounts'])
+    counts['/c/a1'] += 1
+    assert after['pageCounts'] == counts and counts['/c/a1'] == 4
+    for server in (after, final):
+        assert server['schema'] == 1 and server['host'] == 'environment-fixture.test' and server['port'] == 18480
+        assert server['sendCount'] == server['rejectedEventCount'] == 0 and server['sends'] == server['downloads'] == []
+        for label, paths in (('A', ('/c/a1', '/c/a2')), ('B', ('/c/b1',)), ('C', ('/c/c1',))):
+            for path in paths:
+                assert server['pages'][path]
+                for document, page in server['pages'][path].items():
+                    assert document == page['document']
+                    shared_flow.Acceptance.assert_environment(None, page, label)
+    before_core, after_core = fixture_core(before), fixture_core(after)
+    for path, documents in before_core['pages'].items():
+        assert set(documents).issubset(after_core['pages'][path])
+        for document, page in documents.items():
+            assert after_core['pages'][path][document] == page, 'Earlier functional document changed'
+        if path != '/c/a1':
+            assert set(after_core['pages'][path]) == set(documents)
+    new_documents = set(after['pages']['/c/a1']) - set(before['pages']['/c/a1'])
+    assert new_documents == {result['geckoDocument']}
+    assert len(after['pages']['/c/a1']) == 4
+    new_page = after['pages']['/c/a1'][result['geckoDocument']]
+    assert new_page['draft'] == new_page['modelDraft'] and new_page['scroll'] > 200
+    assert hashlib.sha256(new_page['draft'].encode()).hexdigest() == proof['draftSHA256']
+    assert fixture_core(final) == after_core, 'Final fixture business state differs from completed round trips'
+    return after, fixture_core(final)
 
 
 def verify_api(directory, api, metadata, shared_flow):
@@ -193,7 +284,7 @@ def verify_api(directory, api, metadata, shared_flow):
     assert expected['storageId'] not in {a['storageId'] for a in accounts.values()}
     assert accounts['A']['environmentSlot'] == accounts['C']['environmentSlot'] != accounts['B']['environmentSlot']
     assert {a['environmentSlot'] for a in accounts.values()} == {0, 1}
-    server = read(directory / 'server.json')
+    server = read(directory / 'functional-server.json')
     assert server['schema'] == 1 and server['host'] == 'environment-fixture.test' and server['port'] == 18480
     assert server['pageCounts'] == {'/c/a1': 3, '/c/a2': 1, '/c/b1': 1, '/c/c1': 1, '/c/navigation': 0}
     assert server['sendCount'] == server['rejectedEventCount'] == 0 and server['sends'] == [] and server['downloads'] == []
@@ -238,16 +329,20 @@ def verify_api(directory, api, metadata, shared_flow):
             flags(attempt, ('complete', 'processExitVerified', 'openCommandReturned'))
             assert attempt['before'] and attempt['after'] == [] and attempt['exitObservations'][-1]['processes'] == []
             assert attempt['forceStopAttempts'] == attempt['openAttempts'] == 1
-            assert attempt['deadlineSeconds'] == 60 and attempt['elapsedMillis'] > 0 and attempt['remainingMillisBeforeOpen'] > 0
+            assert attempt['deadlineSeconds'] == 60 and 0 < attempt['elapsedMillis'] <= 60000 and attempt['remainingMillisBeforeOpen'] > 0
     else:
         assert exits == [] and proof['nativeTouchReceipts']
         for touch in proof['nativeTouchReceipts']:
             assert touch['provider'] == 'ci-android9-shell-touchscreen' and len(touch['events']) == 33
+    dual_fixture, final_core = verify_dual_engine(directory, api, proof, upgrade, expected, signer, server, shared_flow)
     sources = ('regular-functional.json', 'verified-synthetic.json', 'signature-only-baseline.json',
                'upgrade-expected.json', 'native-after-environment.json', 'ci-candidate-receipt.json',
-               'acceptance-manifest.json', 'server.json', 'seed.txt', 'verify-old.txt',
+               'acceptance-manifest.json', 'functional-server.json', 'server.json',
+               'dual-engine-round-trip.json', 'dual-engine-instrument.txt', 'dual-engine-after-server.json',
+               'seed.txt', 'verify-old.txt',
                'verify-new.txt', 'verify-new-cold.txt', 'verify-after-environment.txt')
     return {'api': api, 'functional': proof, 'independentFixture': server,
+            'dualEngineAfterFixture': dual_fixture, 'finalFixtureCore': final_core,
             'originalExpectedState': expected,
             'evidenceSHA256': {name: sha(regular_file(directory / name)) for name in sources}}
 
@@ -281,9 +376,12 @@ def main():
               'sameSourceHumanAndCiCandidates': True, 'sameTemporaryCISignature': True,
               'productionCertificateUpgradeVerified': False, 'humanUnsignedApkInstalled': False,
               'legacyWebViewProfilePreserved': True, 'newGeckoEnvironmentHotSwitchVerified': True,
-              'legacyMainToGeckoUiSwitchVerified': False, 'personalDeviceVerified': False,
+              'legacyMainToGeckoUiSwitchVerified': True,
+              'legacyMainUiSwitchScope': 'Separate synthetic legacy account in the candidate; original alpha.22 golden MainActivity not opened.',
+              'originalBaselineMainActivityUiSwitchVerified': False,
+              'crossInstrumentationProcessPageRetentionClaimed': False, 'personalDeviceVerified': False,
               'realChatGPTVerified': False, 'publicRelease': False,
-              'scope': 'Original alpha.22 non-signing payload, temporary-CI-key install -r preservation; new Gecko A/B/C environments on API28/API35 owned fixtures only.'}
+              'scope': 'Original alpha.22 non-signing payload, temporary-CI-key install -r preservation; Gecko A/B/C environment checks; two real Main-WebView to Gecko menu round trips with a separate synthetic legacy account on API28/API35 owned fixtures.'}
     args.output_dir.mkdir(parents=True, exist_ok=False)
     allowed = (receipt['file'], 'receipt.json', 'android-version.json', 'SHA256SUMS.txt', 'LICENSE')
     for name in allowed:
@@ -302,7 +400,9 @@ API28/35 的合成升级使用原公开 alpha.22 APK，仅替换签名元数据�
 
 已核对旧账号的 account/storage/profile 注册绑定、HttpOnly/Secure Cookie、localStorage、IndexedDB、加密恢复/草稿、密文、资产及偏好在覆盖安装与冷读后保留；新候选将旧账号识别为默认 WebView。
 新 Gecko 环境 A/B/C 的两组语言与时区、Worker、HTTP Accept-Language、账号存储隔离、热切换不重载、冷恢复和草稿冲突保护已有合成 CI 证据。
-旧档案通过无 Activity 的独立 WebView/Profile 核对；没有把实际旧 MainActivity 与新 Gecko 页面之间的 UI 切换作为已验收能力。
+双引擎切换另建独立的合成 legacyMain 账号：通过真实账号菜单执行两次 Main WebView→Gecko A→Main 往返，保留同一 MainActivity/WebView/document/草稿/滚动/Profile 与登录数据；legacy 页仅加载一次，未发现额外请求。
+该阶段由新 instrumentation 进程开始，允许 Gecko A0 首次恢复加载一个新文档；随后两次真实菜单往返没有额外 Gecko 加载，新文档恢复原有草稿与滚动。这里没有宣称跨 instrumentation 进程保留同一个页面对象。
+原 alpha.22 基线账号没有在 MainActivity 打开；它仍通过独立 WebView/Profile 与两条原加密恢复记录等只读校验。真实 UI 切换证据属于候选中独立合成账号，不替代原基线账号自身的 Main UI 验收。
 真实 ChatGPT、个人手机、真实登录/网络服务、后台长测和第二批下载/网络/Skill 门禁不在本批验收范围；本批未截图。
 
 详细证据及输入哈希见 regular-environment-acceptance.json。交付目录仅包含本审阅 APK、版本/哈希/许可证和验收报告，不包含 CI APK、签名密钥或 fixture CA。
