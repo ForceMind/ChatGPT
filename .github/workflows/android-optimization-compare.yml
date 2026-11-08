@@ -14,6 +14,11 @@ name: Compare regular Android optimization evidence
       resources_run:
         type: string
         required: true
+      resource_run:
+        type: string
+        required: false
+        default: ''
+        description: Optional completed matched-host resource cohort
 permissions:
   contents: read
   actions: read
@@ -27,12 +32,17 @@ jobs:
       STUDIO_BASELINE_RUN: ${{ inputs.baseline_run }}
       STUDIO_R8_RUN: ${{ inputs.r8_run }}
       STUDIO_RESOURCES_RUN: ${{ inputs.resources_run }}
+      STUDIO_RESOURCE_RUN: ${{ inputs.resource_run }}
     steps:
       - uses: actions/checkout@v4
       - run: python3 android/scripts/compare-regular-optimization.py
+      - if: inputs.resource_run != ''
+        run: python3 android/scripts/summarize-regular-optimization-resources.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: optimization-comparison
           retention-days: 14
-          path: optimization-comparison/comparison.json
+          path: |
+            optimization-comparison/comparison.json
+            optimization-comparison/resource-comparison.json
