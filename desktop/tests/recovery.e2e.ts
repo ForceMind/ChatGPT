@@ -276,7 +276,10 @@ test('Desktop keeps native pages through close/reopen, account/tab switches and 
     writeFileSync(info.outputPath('auth-close-reply.json'), JSON.stringify({ reply: closed, state: await state() }));
     expect(closed.ok).toBe(true);
     const restored = await shell.evaluate(() => window.profiles.command({ type: 'tab:restore' }));
-    writeFileSync(info.outputPath('auth-restore-reply.json'), JSON.stringify({ reply: restored, state: await state() }));
+    writeFileSync(
+      info.outputPath('auth-restore-reply.json'),
+      JSON.stringify({ reply: restored, state: await state() })
+    );
     expect(restored.ok).toBe(true);
     await ready();
     expect(await visible('window.instance')).not.toBe(authInstance);
