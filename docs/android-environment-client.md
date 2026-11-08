@@ -2,7 +2,7 @@
 
 ## 当前迭代：常规 Android 兼容接入第一批（已确认，待 Actions 验证）
 
-按用户要求逐项推进，先做常规渠道接入与升级兼容，后续真实服务验收、历史故障收尾、通行密钥等不并行展开。用户已确认第一批；常规 release 接线、独立日期版本与兼容测试代码正在集成，尚未运行本批 Actions，不能称为已通过。
+按用户要求逐项推进，先做常规渠道接入与升级兼容，后续真实服务验收、历史故障收尾、通行密钥等不并行展开。用户已确认第一批；常规 release 接线、独立日期版本与兼容测试代码已提交到 dev 的 `33b802dc801e5fe74920da241fdfd264c4263ae8`。Python AST、XML、工作流 YAML/Shell 静态检查通过；[Actions 42442563528](https://github.com/ForceMind/ChatGPT/actions/runs/42442563528) 已手动触发，目前等待运行器，尚无构建或测试通过结论，未产生可交付审阅包。
 
 已核事实：常规版包名为 `com.forcemind.chatgpt.profiles`，公开alpha.22内部序号3000022，原APK SHA-256为 `39a06004608162884c5d2a11277eee840f5311438376bd7541adc638b1e55e53`，原签名指纹 `8b6eef928fded91f291ad954e20976b2cc6011b55e8cbec0152695fe1f05cf19`；独立Beta的包名和证书均不同。原 Gradle 仅给 networkBeta 接入 Gecko；本批复用同一组件，在显式常规构建参数下接入 release。WorkspaceState旧账号默认engine=webview，storageId/profile名独立保存。正式原私钥是否可用尚未核实；不会读取密码或上传私钥。
 
