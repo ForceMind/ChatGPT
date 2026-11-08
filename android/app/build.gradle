@@ -5,6 +5,9 @@ def regularEnvironmentClient = project.hasProperty('regularEnvironmentClient')
 def regularEnvironmentCi = project.hasProperty('regularEnvironmentCi')
 def environmentClient = project.hasProperty('environmentClient')
 def environmentTest = project.hasProperty('environmentTest')
+def regularNavigationTest = project.hasProperty('regularNavigationTest')
+if (regularNavigationTest && (!regularEnvironmentCi || !environmentTest))
+    throw new GradleException('Regular navigation is an explicit CI-only test source set')
 if (regularEnvironmentClient && !environmentClient)
     throw new GradleException('Regular environment release requires -PenvironmentClient')
 if (regularEnvironmentCi && (!regularEnvironmentClient || !environmentTest || project.hasProperty('unsignedRelease')))
@@ -283,6 +286,28 @@ if (project.hasProperty('environmentClient')) {
         android.sourceSets[environmentBuildType].manifest.srcFile(generatedManifest.get().asFile)
         tasks.matching { it.name == environmentPreBuild }.configureEach { dependsOn 'prepareEnvironmentCiManifest' }
     }
+}
+
+// Reuse the existing browser/navigation tests. Only the identity binding changes;
+// the Beta sources and all browser assertions remain authoritative and unchanged.
+if (regularNavigationTest) {
+    def navigationSources = layout.buildDirectory.dir('generated/regular-navigation-tests')
+    tasks.register('copyRegularNavigationTests', Sync) {
+        from 'src/environmentTest/java'
+        include '**/BrowserChromeNavigationTest.java', '**/EnvironmentUpgradeSeedTest.java'
+        into navigationSources
+        filteringCharset = 'UTF-8'
+        filesMatching('**/BrowserChromeNavigationTest.java') {
+            filter { line -> line
+                .replace('EnvironmentUpgradeSeedTest.verifyIdentity(', 'RegularEnvironmentUpgradeTest.identity(')
+                .replace('EnvironmentUpgradeSeedTest.NEW_CODE', 'RegularEnvironmentUpgradeTest.NEW_CODE')
+                .replace('EnvironmentUpgradeSeedTest.PACKAGE', 'RegularEnvironmentUpgradeTest.PACKAGE')
+                .replace('EnvironmentUpgradeSeedTest.expected()', 'RegularEnvironmentUpgradeTest.expected()')
+            }
+        }
+    }
+    android.sourceSets.androidTest.java.srcDir(navigationSources)
+    tasks.matching { it.name == 'preReleaseAndroidTestBuild' }.configureEach { dependsOn 'copyRegularNavigationTests' }
 }
 
 // Exact owned CA/probe only in the Gecko network fixture. Human builds never add

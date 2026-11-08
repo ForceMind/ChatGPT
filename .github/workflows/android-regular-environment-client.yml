@@ -4,9 +4,17 @@ on:
     branches: [dev]
     paths: ['.github/workflows/android-regular-environment-client.yml']
   workflow_dispatch:
+    inputs:
+      validation_suite:
+        type: choice
+        default: compatibility
+        options: [compatibility, navigation]
+        description: Approved regular-package suite
 permissions:
   contents: read
   actions: read
+env:
+  STUDIO_REGULAR_VALIDATION_SCRIPT: ${{ inputs.validation_suite == 'navigation' && 'android/scripts/run-regular-navigation.py' || 'android/scripts/run-regular-environment-client.py' }}
 jobs:
   build:
     if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/dev'
@@ -87,7 +95,9 @@ jobs:
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" sign --ks "$STUDIO_REGULAR_CI_KEYSTORE_PATH" --ks-key-alias regular-compat-ci --ks-pass env:STUDIO_REGULAR_CI_STORE_PASSWORD --key-pass env:STUDIO_REGULAR_CI_STORE_PASSWORD --out android/app/build/regular-environment-input/alpha22-ci-resigned.apk android/app/build/regular-environment-input/alpha22-public.apk
       - name: Build separately marked temporary-key x86 compatibility inputs
         run: |
-          bash android/environment-poc/gradlew -p android --no-daemon -PenvironmentClient -PregularEnvironmentClient -PregularEnvironmentCi -PenvironmentTest :app:assembleRelease :app:assembleReleaseAndroidTest
+          studio_navigation_args=()
+          if [ "${{ inputs.validation_suite }}" = navigation ]; then studio_navigation_args+=(-PregularNavigationTest); fi
+          bash android/environment-poc/gradlew -p android --no-daemon -PenvironmentClient -PregularEnvironmentClient -PregularEnvironmentCi -PenvironmentTest "${studio_navigation_args[@]}" :app:assembleRelease :app:assembleReleaseAndroidTest
           python3 android/scripts/prepare-regular-ci-inputs.py
       - uses: actions/upload-artifact@v4
         with:
@@ -168,10 +178,10 @@ jobs:
           sudo chmod a+rw /dev/kvm
       - name: Run the approved original-package flow on fresh Android9
         if: matrix.api == 28
-        run: bash android/scripts/run-environment-api28.sh android/scripts/run-regular-environment-client.py
+        run: bash android/scripts/run-environment-api28.sh "$STUDIO_REGULAR_VALIDATION_SCRIPT"
       - name: Run the approved original-package flow on fresh Android15
         if: matrix.api == 35
-        run: bash android/scripts/run-environment-api35.sh android/scripts/run-regular-environment-client.py
+        run: bash android/scripts/run-environment-api35.sh "$STUDIO_REGULAR_VALIDATION_SCRIPT"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -205,10 +215,15 @@ jobs:
           name: regular-environment-35
           path: android/app/build/regular-environment-evidence/api35
       - name: Gate the review artifact on both fresh compatibility proofs
-        run: python3 android/scripts/deliver-regular-review.py
+        run: |
+          if [ "${{ inputs.validation_suite }}" = navigation ]; then
+            python3 android/scripts/deliver-regular-navigation.py
+          else
+            python3 android/scripts/deliver-regular-review.py
+          fi
       - uses: actions/upload-artifact@v4
         with:
-          name: ChatGPT-Studio-Android-${{ needs.build.outputs.version_name }}-UNSIGNED-REVIEW
+          name: ChatGPT-Studio-Android-${{ needs.build.outputs.version_name }}-${{ inputs.validation_suite || 'compatibility' }}-UNSIGNED-REVIEW
           retention-days: 14
           if-no-files-found: error
           path: android/app/build/regular-review-delivery/
