@@ -1,0 +1,158 @@
+{
+  "schema": 1,
+  "product": "ChatGPT Studio",
+  "version": "2026.11.9",
+  "prerelease": false,
+  "sourceCommit": "f9f4d4e35661ccc20fc15853ffef661c592c23c3",
+  "androidSourceCommit": "a26b4993e329268ef0f690e12fd4707f374e58d8",
+  "runs": {
+    "macos": {
+      "id": 42504496888,
+      "sourceCommit": "553e22eb843343d2c3708028b9339d465d7d7d52"
+    },
+    "windows": {
+      "id": 42505793683,
+      "sourceCommit": "f9f4d4e35661ccc20fc15853ffef661c592c23c3"
+    },
+    "android": {
+      "id": 42493929455,
+      "sourceCommit": "645ddf11c21e63b9b6e3ceec08c28fd38f5476da"
+    }
+  },
+  "checks": {
+    "macos": {
+      "os": "macOS 15.8.2 (24H232)",
+      "architecture": "arm64",
+      "checkExitCode": 0,
+      "unitTests": {
+        "total": 106,
+        "passed": 106,
+        "skipped": 0,
+        "failed": 0
+      },
+      "e2e": {
+        "passed": 25,
+        "skipped": 1,
+        "failed": 0,
+        "flaky": 0
+      },
+      "packagedUpgrade": "canonical ZIP and legacy alpha.18 installer ZIP; account data unchanged",
+      "nativeRecovery": true,
+      "menuBar": true
+    },
+    "windows": {
+      "os": "Windows Server 2025 Datacenter (10.0.26100)",
+      "architecture": "x64",
+      "checkExitCode": 0,
+      "unitTests": {
+        "total": 106,
+        "passed": 105,
+        "skipped": 1,
+        "failed": 0
+      },
+      "migrationVersionChecks": 14,
+      "e2e": {
+        "passed": 20,
+        "skipped": 23,
+        "failed": 0,
+        "flaky": 0
+      },
+      "installationMigrationCases": 6,
+      "installLaunchUninstallDataPreserved": true,
+      "shippingUpdaterFromAlpha18": true,
+      "retention": {
+        "tabs": 8,
+        "durationMs": 330276,
+        "stable": true,
+        "active": true,
+        "passed": true
+      }
+    },
+    "android": {
+      "os": [
+        "Android 9 API 28",
+        "Android 15 API 35"
+      ],
+      "testedArchitecture": "x86_64 emulator",
+      "deliveredArchitecture": "arm64-v8a",
+      "unitTests": 85,
+      "functionalJobs": 22,
+      "functionalRun": 42475341878,
+      "fullValidationRun": 42478410411,
+      "originalSignatureUpgradeStages": 8,
+      "originalPackage": "com.forcemind.chatgpt.profiles",
+      "originalCertificateSHA256": "8b6eef928fded91f291ad954e20976b2cc6011b55e8cbec0152695fe1f05cf19",
+      "uninstallOrClearBetweenVersions": false,
+      "packagesRebuiltOrResigned": false,
+      "arm64DEXMatchesTestedHumanX86": true
+    }
+  },
+  "signing": {
+    "macos": "ad-hoc; not notarized",
+    "windows": "unsigned; no Authenticode",
+    "android": "original production certificate; private key not uploaded"
+  },
+  "limits": {
+    "allHistoricalOSVersionsVerified": false,
+    "physicalDevicesVerified": false,
+    "realChatGPTVerified": false,
+    "realNodesVerified": false,
+    "androidIndependentBetaDataMigrated": false,
+    "personalDeviceUpdated": false,
+    "knownIntermittentAndroidIssues": "Historical TLS reset, initial proxy target check and input sink warning are not all root-caused; synthetic passes are not real-service acceptance."
+  },
+  "artifacts": [
+    {
+      "file": "ChatGPT-Studio-2026.11.9-mac-arm64.dmg",
+      "platform": "macos",
+      "purpose": "installer",
+      "bytes": 155112514,
+      "sha256": "b170691253a089b8c4b29a4fc684886402ca648db4e8cdd8e701a29cb324a6c4",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9/ChatGPT-Studio-2026.11.9-mac-arm64.dmg"
+    },
+    {
+      "file": "ChatGPT-Studio-2026.11.9-mac-arm64.zip",
+      "platform": "macos",
+      "purpose": "installer",
+      "bytes": 155067744,
+      "sha256": "a24d0dd6161b4796ce70a0028305d5c6be0f658d67742d130484ee29767b40f1",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9/ChatGPT-Studio-2026.11.9-mac-arm64.zip"
+    },
+    {
+      "file": "ChatGPT-Profiles-2026.11.9-mac-arm64.zip",
+      "platform": "macos",
+      "purpose": "legacy-updater",
+      "bytes": 155181718,
+      "sha256": "4a05ffadcc58df49402325b1522149975d8261b6ccebfefa7747a744668df68d",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9/ChatGPT-Profiles-2026.11.9-mac-arm64.zip"
+    },
+    {
+      "file": "ChatGPT-Studio-2026.11.9-windows-x64-setup.exe",
+      "bytes": 131358778,
+      "sha256": "d5a2fbce5d5239b42f14270813d90da16a6e83c17b48422ce28a802d1c59cf6a",
+      "sha512": "I0TbLiYKtjJGrLPME2RKTr/GH0DH4QdhR7IrCqe+if6MFOTglgQW2kKKbPXTHsxQvLdQs6e1R5QNkp2+h2DZJQ==",
+      "platform": "windows",
+      "purpose": "installer",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9/ChatGPT-Studio-2026.11.9-windows-x64-setup.exe"
+    },
+    {
+      "file": "ChatGPT-Studio-2026.11.9-windows-x64.zip",
+      "bytes": 181295709,
+      "sha256": "4499e6e9625325f0b200975e0971afa2f77c33b8e244daf03b780e4811924f6e",
+      "sha512": "kvBl6IUwVi7x8wpFoohaf7S7I7Qh9ZcAtvpBeLk4FiXOuoJqAsSLoHZKxcOq2KAOjN9W2ZCNWBkQznMmarGnMg==",
+      "platform": "windows",
+      "purpose": "portable",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9/ChatGPT-Studio-2026.11.9-windows-x64.zip"
+    },
+    {
+      "file": "ChatGPT-Studio-2026.11.08-1923-android-arm64.apk",
+      "bytes": 241931130,
+      "sha256": "177ef874c6c904a653aecb3ffc61a76ef45ebc8e69cb80c6addbdb9e74806259",
+      "platform": "android",
+      "purpose": "installer",
+      "buildVersion": "2026.11.08-1923",
+      "versionCode": 3000035,
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9/ChatGPT-Studio-2026.11.08-1923-android-arm64.apk"
+    }
+  ]
+}

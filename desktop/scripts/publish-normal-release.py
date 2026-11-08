@@ -79,6 +79,16 @@ upgrade = read(unique('promotion/win-evidence', 'windows-upgrade.json'))
 assert upgrade['sourceCommit'] == manifest['runs']['windows']['sourceCommit']
 assert all(upgrade[k] is True for k in ('installed', 'identityRetained', 'launch', 'temporaryCleanup'))
 assert upgrade['prepared']['newVersion'] == version
+smoke = read(unique('promotion/win-evidence', 'windows-smoke.json'))
+assert all(smoke[k] is True for k in ('installed', 'launched', 'normalExit', 'uninstalled', 'accountDataRetained'))
+brand_paths = [p for p in Path('promotion/win-evidence').rglob('verified.json') if p.parent.name == 'windows-branding']
+assert len(brand_paths) == 1
+branding = read(brand_paths[0])
+assert branding['complete'] is True and branding['sourceSHA'] == manifest['runs']['windows']['sourceCommit']
+assert len(branding['cases']) == 6 and all(p['complete'] is True for p in branding['cases'])
+for name in ('windows-install-fixture.json', 'windows-upgrade-fixture.json'):
+    owned = read(unique('promotion/win-evidence', name))
+    assert owned['synthetic'] is True and len(owned['requests']) > 0
 retention = read(unique('promotion/win-evidence', 'windows-native-retention.json'))['retention']
 assert all(retention[k] is True for k in ('passed', 'stable', 'active')) and retention['durationMs'] >= 330000
 assert len(retention['before']) == len(retention['after']) == 8
@@ -127,9 +137,14 @@ release_info = {**manifest, 'publisherCommit': os.environ['GITHUB_SHA'], 'verifi
 for folder, name in [('promotion/mac-info', 'mac-ui-verification.json'),
                      ('promotion/mac-info', 'mac-update-verification.json'),
                      ('promotion/mac-info', 'mac-recovery-verification.json'),
+                     ('promotion/mac-info', 'menu-bar-package.json'),
+                     ('promotion/win-evidence', 'windows-smoke.json'),
+                     ('promotion/win-evidence', 'windows-install-fixture.json'),
+                     ('promotion/win-evidence', 'windows-upgrade-fixture.json'),
                      ('promotion/win-evidence', 'windows-upgrade.json'),
                      ('promotion/win-evidence', 'windows-native-retention.json')]:
     shutil.copyfile(unique(folder, name), out / name)
+shutil.copyfile(brand_paths[0], out / 'windows-branding-verification.json')
 shutil.copyfile('promotion/android/original-signed-candidate-acceptance.json', out / 'android-original-upgrade.json')
 checksums = ''.join(digest(p) + '  ' + p.name + '\n' for p in sorted(out.iterdir()))
 (out / 'SHA256SUMS.txt').write_text(checksums)
