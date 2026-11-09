@@ -1,0 +1,49 @@
+name: Android Formal Upgrade Harness
+on:
+  push:
+    branches: [dev]
+    paths: ['.github/workflows/android-formal-upgrade-harness.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 1.27.3
+          cache: false
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platforms;android-36 build-tools;35.0.0
+      - name: Compile the pinned product API for the baseline seed
+        run: |
+          git diff --exit-code f9f4d4e35661ccc20fc15853ffef661c592c23c3 HEAD -- android/app android/network-poc/corebridge
+          test ! -f android/keystore.properties
+          bash android/scripts/prepare-network-core.sh
+          bash android/gradlew -p android --no-daemon :app:compileDebugJavaWithJavac
+      - name: Package the independent verifier without an original certificate
+        run: |
+          mapfile -t classes < <(find android/app/build/intermediates/javac/debug -type d -name classes)
+          test "${#classes[@]}" = 1
+          python3 android/scripts/prepare-formal-upgrade-harness.py --classes "${classes[0]}" --output "$RUNNER_TEMP/formal-upgrade-harness"
+          bash android/gradlew -p "$RUNNER_TEMP/formal-upgrade-harness" --no-daemon assembleRelease
+          mkdir -p "$RUNNER_TEMP/formal-upgrade-input"
+          cp "$RUNNER_TEMP"/formal-upgrade-harness/build/outputs/apk/release/*-unsigned.apk "$RUNNER_TEMP/formal-upgrade-input/formal-upgrade-harness-unsigned.apk"
+          cd "$RUNNER_TEMP/formal-upgrade-input"
+          sha256sum formal-upgrade-harness-unsigned.apk > SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: formal-upgrade-harness-unsigned
+          path: ${{ runner.temp }}/formal-upgrade-input/
+          if-no-files-found: error
