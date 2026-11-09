@@ -2,7 +2,17 @@ import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { createHash, createPrivateKey, randomUUID, X509Certificate } from 'node:crypto';
 import { createServer } from 'node:https';
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync, existsSync, readdirSync, rmSync } from 'node:fs';
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  writeFileSync,
+  existsSync,
+  readdirSync,
+  rmSync,
+  openSync,
+  closeSync
+} from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { _electron as electron } from '@playwright/test';
@@ -42,6 +52,38 @@ function dataHashes(root) {
   walk(root);
   return result;
 }
+async function downloadPublishedInstaller(artifact, destination) {
+  const url = new URL(artifact.url);
+  assert.equal(url.origin, 'https://github.com');
+  const match = /^\/ForceMind\/ChatGPT\/releases\/download\/([^/]+)\/([^/]+)$/.exec(url.pathname);
+  assert(match);
+  if (!process.env.GH_TOKEN && !process.env.GITHUB_TOKEN) {
+    const response = await fetch(url);
+    assert(response.ok, 'Public baseline HTTP status ' + response.status);
+    writeFileSync(destination, Buffer.from(await response.arrayBuffer()), { flag: 'wx' });
+    assert.equal(sha(destination), artifact.sha256);
+    return;
+  }
+  const release = JSON.parse(
+    execFileSync('gh', ['api', 'repos/ForceMind/ChatGPT/releases/tags/' + match[1]], { encoding: 'utf8' })
+  );
+  assert.equal(release.tag_name, match[1]);
+  assert.equal(release.draft, false);
+  const assets = release.assets.filter((asset) => asset.name === match[2] && asset.state === 'uploaded');
+  assert.equal(assets.length, 1);
+  assert.equal(assets[0].size, artifact.bytes);
+  const output = openSync(destination, 'wx');
+  try {
+    execFileSync(
+      'gh',
+      ['api', 'repos/ForceMind/ChatGPT/releases/assets/' + assets[0].id, '-H', 'Accept: application/octet-stream'],
+      { stdio: ['ignore', output, 'inherit'], timeout: 180000 }
+    );
+  } finally {
+    closeSync(output);
+  }
+  assert.equal(sha(destination), artifact.sha256);
+}
 export async function runWindowsBrandingMatrix() {
   assert.equal(process.env.GITHUB_ACTIONS, 'true');
   assert.equal(process.platform, 'win32');
@@ -61,18 +103,12 @@ export async function runWindowsBrandingMatrix() {
   const old = readJSON('../docs/releases/3.0.0-alpha.21.json').artifacts.find((a) =>
     a.file.endsWith('-windows-x64-setup.exe')
   );
-  const response = await fetch(old.url);
-  assert(response.ok);
-  writeFileSync(baseline, Buffer.from(await response.arrayBuffer()));
-  assert.equal(sha(baseline), old.sha256);
+  await downloadPublishedInstaller(old, baseline);
   const publicRelease = readJSON('../docs/releases/2026.11.9.json').artifacts.find((a) =>
     a.file.endsWith('-windows-x64-setup.exe')
   );
   const publicInstaller = path.join(root, 'public-baseline.exe');
-  const publicResponse = await fetch(publicRelease.url);
-  assert(publicResponse.ok);
-  writeFileSync(publicInstaller, Buffer.from(await publicResponse.arrayBuffer()));
-  assert.equal(sha(publicInstaller), publicRelease.sha256);
+  await downloadPublishedInstaller(publicRelease, publicInstaller);
   const tlsConfig = { key: path.join(root, 'fixture-key.json'), cer: path.join(root, 'fixture.cer') };
   writeFileSync(path.join(root, 'tls.json'), JSON.stringify(tlsConfig));
   ps('Tls', { Config: path.join(root, 'tls.json'), Output: path.join(root, 'thumbprint') });
@@ -362,6 +398,10 @@ export async function runWindowsBrandingMatrix() {
       complete: true,
       sourceSHA: process.env.GITHUB_SHA,
       version: build.version,
+      baselines: [
+        { file: old.file, sha256: old.sha256 },
+        { file: publicRelease.file, sha256: publicRelease.sha256 }
+      ],
       cases,
       requests,
       screenshots: false,
