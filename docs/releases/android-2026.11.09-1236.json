@@ -1,0 +1,63 @@
+{
+  "schema": 1,
+  "versionMetadata": {
+    "schema": 1,
+    "versionCode": 3000036,
+    "versionName": "2026.11.09-1236",
+    "timeZone": "Asia/Shanghai",
+    "sourceSHA": "3a40aa59dccfbac5db03592705e63c3eaa78fd46"
+  },
+  "arm64": {
+    "file": "ChatGPT-Studio-2026.11.09-1236-android-arm64.apk",
+    "bytes": 228463145,
+    "sha256": "032482a06cd408bf32c58b9186e3c6bf4f80a98f877e985100a8d5f0c1231e58",
+    "inputSHA256": "2b7d8c3e06623e3aca3b351377f56220868942503149ffdce4124e2045fe653b",
+    "nonSigningEntriesUnchanged": true
+  },
+  "productionCertificateSHA256": "8b6eef928fded91f291ad954e20976b2cc6011b55e8cbec0152695fe1f05cf19",
+  "functionalRun": 42562845595,
+  "harnessBuildRun": 42565722911,
+  "originalUpgradeRun": 42570223892,
+  "performanceReportRun": 42562185770,
+  "publicBaselineVersion": "2026.11.08-1923",
+  "publicBaselineCode": 3000035,
+  "sameCandidateDexAcrossABIs": true,
+  "originalUpgradeEmulators": [
+    {
+      "api": 28,
+      "installedBaselineX86SHA256": "6177afcc1001aad8603847b34e87857f633304518360611af365e0fa0416a4ff",
+      "installedCandidateX86SHA256": "5161b3730b3abb99d13af5a031d3ecfe26838ba4cd7723ec4fce67c217cd3276",
+      "sameProductionSignature": true,
+      "noUninstallOrClear": true,
+      "verifiedPhases": [
+        "seed",
+        "oldCold",
+        "upgraded",
+        "upgradedCold"
+      ],
+      "verifiedLegacyTabs": 2,
+      "encryptedRecoveryRecords": 2,
+      "cookieStorageIndexedDbPreserved": true,
+      "assetsPreserved": true
+    },
+    {
+      "api": 35,
+      "installedBaselineX86SHA256": "6177afcc1001aad8603847b34e87857f633304518360611af365e0fa0416a4ff",
+      "installedCandidateX86SHA256": "5161b3730b3abb99d13af5a031d3ecfe26838ba4cd7723ec4fce67c217cd3276",
+      "sameProductionSignature": true,
+      "noUninstallOrClear": true,
+      "verifiedPhases": [
+        "seed",
+        "oldCold",
+        "upgraded",
+        "upgradedCold"
+      ],
+      "verifiedLegacyTabs": 2,
+      "encryptedRecoveryRecords": 2,
+      "cookieStorageIndexedDbPreserved": true,
+      "assetsPreserved": true
+    }
+  ],
+  "physicalDeviceVerified": false,
+  "realChatGPTVerified": false
+}
