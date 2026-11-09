@@ -4,11 +4,21 @@ on:
     branches: [dev]
     paths: ['.github/workflows/android-formal-upgrade-harness.yml']
   workflow_dispatch:
+    inputs:
+      staging_release:
+        description: Approved private draft ID for the signed verification inputs
+        type: string
+        default: ''
+      bundle_sha256:
+        description: SHA-256 of the local verification input bundle
+        type: string
+        default: ''
 permissions:
   contents: read
+  actions: read
 jobs:
   build:
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/dev'
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/dev' && inputs.staging_release == '' && inputs.bundle_sha256 == ''
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -47,3 +57,76 @@ jobs:
           name: formal-upgrade-harness-unsigned
           path: ${{ runner.temp }}/formal-upgrade-input/
           if-no-files-found: error
+  verify:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/dev' && inputs.staging_release != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [28, 35]
+    env:
+      GH_TOKEN: ${{ github.token }}
+      STUDIO_FORMAL_RUN: '42562845595'
+      STUDIO_FORMAL_HARNESS_RUN: '42565722911'
+      STUDIO_FORMAL_SOURCE_SHA: '3a40aa59dccfbac5db03592705e63c3eaa78fd46'
+      STUDIO_STAGING_RELEASE: ${{ inputs.staging_release }}
+      STUDIO_SIGNED_BUNDLE_SHA256: ${{ inputs.bundle_sha256 }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bind the approved draft and successful source runs
+        run: python3 android/scripts/download-formal-upgrade-inputs.py
+      - uses: actions/download-artifact@v4
+        with:
+          name: original-signature-input
+          run-id: ${{ env.STUDIO_FORMAL_RUN }}
+          github-token: ${{ github.token }}
+          path: android/app/build/formal-upgrade-companions/
+      - uses: actions/download-artifact@v4
+        with:
+          name: formal-upgrade-harness-unsigned
+          run-id: ${{ env.STUDIO_FORMAL_HARNESS_RUN }}
+          github-token: ${{ github.token }}
+          path: android/app/build/formal-upgrade-harness/
+      - name: Require exact non-signing contents
+        run: |
+          python3 android/scripts/check-formal-upgrade-inputs.py \
+            --bundle android/app/build/formal-original-upgrade-inputs.zip \
+            --companions android/app/build/formal-upgrade-companions \
+            --harness android/app/build/formal-upgrade-harness \
+            --output android/app/build/formal-upgrade-signed
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools build-tools;35.0.0
+      - uses: actions/download-artifact@v4
+        if: matrix.api == 28
+        with:
+          name: beta-continuation-input
+          run-id: 41993581770
+          github-token: ${{ github.token }}
+          path: android/app/build/environment-provider-input
+      - run: sudo chmod a+rw /dev/kvm
+      - name: Verify original-certificate install-r on a fresh emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          target: ${{ matrix.api == 28 && 'default' || 'google_apis' }}
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader -feature -Vulkan -writable-system
+          script: |
+            if [ '${{ matrix.api }}' = 28 ]; then python3 android/network-poc/scripts/install-webview.py --provider android/app/build/environment-provider-input/provider --output android/app/build/formal-upgrade-provider; fi
+            python3 android/scripts/run-original-signature-upgrade.py --current-regular --input android/app/build/formal-upgrade-signed --output android/app/build/formal-upgrade-evidence
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: formal-upgrade-evidence-${{ matrix.api }}
+          path: |
+            android/app/build/formal-upgrade-evidence/
+            android/app/build/formal-upgrade-provider/
+          if-no-files-found: ignore
