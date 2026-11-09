@@ -91,6 +91,15 @@ def main():
     Path('android/app/optimization-keep.pro').write_text('-keep class go.** { *; }\n-keep class studio.networkcore.** { *; }\n# Slot selection uses getSimpleName; retain both ends of the nested identity.\n-keepattributes InnerClasses,EnclosingMethod\n-keep,allowoptimization class com.forcemind.chatgpt.profiles.EnvironmentBrowserActivity { <init>(); }\n-keep,allowoptimization class com.forcemind.chatgpt.profiles.EnvironmentBrowserActivity$Slot* { <init>(); }\n# CI-only classes: named trust proof and manifest file provider; absent in human APK.\n-keep class com.forcemind.chatgpt.profiles.GeneratedNetworkTrust { public static java.lang.String PEM; }\n-keep class com.forcemind.chatgpt.profiles.EnvironmentNetworkFilesProvider { *; }\n')
     Path('android/app/optimization-ci-keep.pro').write_text('# AndroidJUnitRunner expects Trace via the unshrunk test runtime classpath.\n-keep class androidx.tracing.** { *; }\n# Test-visible DTO ABI: field shape stays fixed, callable bodies may optimize.\n-keep,allowoptimization class com.forcemind.chatgpt.profiles.WorkspaceState { <methods>; }\n-keepclassmembers class com.forcemind.chatgpt.profiles.WorkspaceState { <fields>; }\n-keep,allowoptimization class com.forcemind.chatgpt.profiles.WorkspaceState$Account { <methods>; }\n-keepclassmembers class com.forcemind.chatgpt.profiles.WorkspaceState$Account { <fields>; }\n-keep,allowoptimization class com.forcemind.chatgpt.profiles.WorkspaceState$Tab { <methods>; }\n-keepclassmembers class com.forcemind.chatgpt.profiles.WorkspaceState$Tab { <fields>; }\n')
     Path('android/app/optimization-instrumentation-keep.pro').write_text('-keepclasseswithmembers class * { @org.junit.Test <methods>; }\n')
+    with Path('android/app/optimization-keep.pro').open('a') as rules:
+        rules.write('\n# GeckoView DebugConfig initializes SnakeYAML, which requires non-root packages.\n'
+                    '# Mozilla bug 2089508; names only, keep shrinking and optimization enabled.\n'
+                    '-keepnames class org.yaml.snakeyaml.**\n')
+    with Path('android/app/optimization-ci-keep.pro').open('a') as rules:
+        rules.write('\n# The test APK implements this callback; its name and parameter order are ABI.\n'
+                    '-keep interface com.forcemind.chatgpt.profiles.NetworkRoute$Listener {\n'
+                    '    void complete(boolean, java.lang.String);\n'
+                    '}\n')
     smoke = Path('android/app/src/regularEnvironmentTest/java/com/forcemind/chatgpt/profiles/OptimizationRunnerSmokeTest.java')
     assert not smoke.exists()
     smoke.write_text('package com.forcemind.chatgpt.profiles;\nimport org.junit.Test;\nimport androidx.test.platform.app.InstrumentationRegistry;\nimport static org.junit.Assert.assertEquals;\npublic final class OptimizationRunnerSmokeTest { @Test public void runtimeStarts() { assertEquals("com.forcemind.chatgpt.profiles", InstrumentationRegistry.getInstrumentation().getTargetContext().getPackageName()); } }\n')

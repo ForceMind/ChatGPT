@@ -126,6 +126,9 @@ jobs:
       run: |
         studio_navigation_args=(-PregularNavigationTest -PregularWorkbenchTest)
         python3 android/scripts/build-regular-optimized-tests.py -PenvironmentClient -PregularEnvironmentClient -PregularEnvironmentCi -PenvironmentTest "${studio_navigation_args[@]}" :app:assembleRelease :app:assembleReleaseAndroidTest
+        if [[ "$STUDIO_OPT_MODE" != baseline ]]; then
+          cp -R android/app/build/outputs/mapping android/app/build/optimization/upgrade-mapping
+        fi
         python3 android/scripts/prepare-regular-ci-inputs.py
     - name: Compile read-only class identity smoke check
       run: |
