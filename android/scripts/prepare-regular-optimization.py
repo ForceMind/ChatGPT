@@ -104,6 +104,10 @@ def main():
         rules.write('\n# The test APK implements this callback; its name and parameter order are ABI.\n'
                     '-keep interface com.forcemind.chatgpt.profiles.NetworkRoute$Listener {\n'
                     '    void complete(boolean, java.lang.String);\n'
+                    '}\n'
+                    '# Navigation instrumentation checks the target APK build flag reflectively.\n'
+                    '-keep class com.forcemind.chatgpt.profiles.BuildConfig {\n'
+                    '    public static final boolean ENVIRONMENT_TEST;\n'
                     '}\n')
     smoke = Path('android/app/src/regularEnvironmentTest/java/com/forcemind/chatgpt/profiles/OptimizationRunnerSmokeTest.java')
     assert not smoke.exists()

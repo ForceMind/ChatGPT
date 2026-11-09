@@ -31,6 +31,8 @@
 
 ## 当前进度
 
+复验 `42547212114`（`fd2e51e`）已通过 Android 15 完整账号与恢复验收、双系统 Gecko 本地导出，以及 Android 15 Gecko 附件与 Skill。两个导航任务的旧 WebView 测试入口均因反射找不到 `BuildConfig` 失败，下一次复验仅为测试包保留 `ENVIRONMENT_TEST`。Android 9 的 Gecko 附件任务触发未归属的 native crash 门槛，原日志记录的进程标签为 `cmd`。Android 9 WebView TLS 未生成应用验收报告。两项继续保留在完整回归。
+
 复验 `42544883808`（`a3749e9`）在 Android 15 通过旧版种子写入、旧版冷读、新版验证、新版冷读四段。Gecko 已进入会话初始化，原 `DebugConfig` 崩溃未在该日志出现，但打开首个标签时 `EnvironmentBridgeService` 因缺少反射方法 `CIBuild.installLocalExportProbe(File)` 退出。Android 15 WebView RAW 的首个网络用例通过，后续文件安全用例因缺少 `CIBuild.installHandoffProbe(File)` 失败。两个方法的精确保留规则纳入下一次 R8 复验。恢复、网络和资源对照仍是发布门槛。
 
 本批结论：不采用两组优化更新正式客户端。三包的原字节对照、完整SHA及14个原生库逐项校验已完成（42533750158）；baseline完整24job通过，R8和资源压缩未通过完整功能门禁。最新R8复验42531762889也失败；合格配对CPU/PSS没有形成。保留原App、登录、密文和标签保活策略，不修改main/官网/手机或使用生产密钥。以下保留全过程和原失败。
