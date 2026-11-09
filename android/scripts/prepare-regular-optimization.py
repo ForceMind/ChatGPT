@@ -94,7 +94,12 @@ def main():
     with Path('android/app/optimization-keep.pro').open('a') as rules:
         rules.write('\n# GeckoView DebugConfig initializes SnakeYAML, which requires non-root packages.\n'
                     '# Mozilla bug 2089508; names only, keep shrinking and optimization enabled.\n'
-                    '-keepnames class org.yaml.snakeyaml.**\n')
+                    '-keepnames class org.yaml.snakeyaml.**\n'
+                    '# Build-specific bootstrap methods are located by reflection.\n'
+                    '-keep class com.forcemind.chatgpt.profiles.CIBuild {\n'
+                    '    static void installLocalExportProbe(java.io.File);\n'
+                    '    static void installHandoffProbe(java.io.File);\n'
+                    '}\n')
     with Path('android/app/optimization-ci-keep.pro').open('a') as rules:
         rules.write('\n# The test APK implements this callback; its name and parameter order are ABI.\n'
                     '-keep interface com.forcemind.chatgpt.profiles.NetworkRoute$Listener {\n'
