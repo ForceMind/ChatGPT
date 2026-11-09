@@ -8,7 +8,7 @@ from pathlib import Path
 import re
 import subprocess
 import shutil
-from optimization_test_overlay import legacy_upgrade_overlay
+from optimization_test_overlay import legacy_upgrade_overlay, upgrade_file_oracle
 from optimization_dex import classes_and_roots, business_members
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -119,11 +119,24 @@ shutil.copyfile(old_side/'baseline-test-receipt.json', inputs/'baseline-test-rec
     text = legacy_upgrade_overlay(text)
     path.write_text(text)
     edits.append({'path':str(path),'beforeSHA256':sha(old),'afterSHA256':sha(path.read_bytes())})
+    test_dir = Path('android/app/src/regularEnvironmentTest/java/com/forcemind/chatgpt/profiles')
+    shared = test_dir / 'RegularEnvironmentUpgradeTest.java'
+    verifier = test_dir / 'RegularEnvironmentUpgradeVerifyTest.java'
+    helper = test_dir / 'OptimizationUpgradeFiles.java'
+    assert not helper.exists()
+    replacements = upgrade_file_oracle(shared.read_text(), verifier.read_text())
+    for test, content in zip((shared, verifier), replacements, strict=True):
+        before = sha(test.read_bytes())
+        test.write_text(content)
+        edits.append({'path':str(test),'beforeSHA256':before,'afterSHA256':sha(test.read_bytes())})
+    shutil.copyfile('android/scripts/android/OptimizationUpgradeFiles.java', helper)
+    edits.append({'path':str(helper),'beforeSHA256':None,'afterSHA256':sha(helper.read_bytes())})
     receipt = {'schema': 1, 'mode': mode, 'versionName': stamp, 'harnessSHA': os.environ['GITHUB_SHA'],
                'productBaseline': BASE, 'ciOnlyOverlay': True, 'productionSigningUsed': False, 'edits': edits}
     (output / 'overlay.json').write_text(json.dumps(receipt, indent=2) + '\n')
     (output / 'overlay.diff').write_bytes(subprocess.check_output(['git', 'diff', '--',
-                                                               'android/app/build.gradle', 'android/scripts/regular_evidence_source.py']))
+                                                               'android/app/build.gradle', str(shared), str(verifier),
+                                                               'android/scripts/regular_evidence_source.py']))
 
 
 if __name__ == '__main__':
