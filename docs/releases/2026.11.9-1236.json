@@ -71,5 +71,98 @@
       "inputSHA256": "2b7d8c3e06623e3aca3b351377f56220868942503149ffdce4124e2045fe653b",
       "nonSigningEntriesUnchanged": true
     }
-  ]
+  ],
+  "publication": {
+    "release": {
+      "assets": [
+        {
+          "browser_download_url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9-1236/ChatGPT-Studio-2026.11.09-1236-android-arm64.apk",
+          "digest": "sha256:032482a06cd408bf32c58b9186e3c6bf4f80a98f877e985100a8d5f0c1231e58",
+          "id": 726413699,
+          "name": "ChatGPT-Studio-2026.11.09-1236-android-arm64.apk",
+          "size": 228463145,
+          "state": "uploaded"
+        },
+        {
+          "browser_download_url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9-1236/SHA256SUMS.txt",
+          "digest": "sha256:ca7016af18b8945feb89f6007a9c21c152d7aa0dad838ee7a949ce73e056ce21",
+          "id": 726413703,
+          "name": "SHA256SUMS.txt",
+          "size": 115,
+          "state": "uploaded"
+        }
+      ],
+      "draft": false,
+      "html_url": "https://github.com/ForceMind/ChatGPT/releases/tag/v2026.11.9-1236",
+      "id": 438788825,
+      "prerelease": false,
+      "tag_name": "v2026.11.9-1236",
+      "target_commitish": "3a40aa59dccfbac5db03592705e63c3eaa78fd46"
+    },
+    "website": {
+      "deployment": "https://7e5667ea.chatgpt-studio.pages.dev",
+      "checks": [
+        {
+          "url": "https://7e5667ea.chatgpt-studio.pages.dev/",
+          "status": 200,
+          "matchesLocal": true,
+          "sha256": "f1f871007661f66ad50af9ef81a8a60545525de254656d4d3b1f5e9cef877212"
+        },
+        {
+          "url": "https://7e5667ea.chatgpt-studio.pages.dev/updates/macos.json",
+          "status": 200,
+          "matchesLocal": true,
+          "sha256": "e0a358b46eba061cd0bf35e1322632d4658ba653d976e189a97c4fac7b687bba"
+        },
+        {
+          "url": "https://7e5667ea.chatgpt-studio.pages.dev/updates/windows/alpha.yml",
+          "status": 200,
+          "matchesLocal": true,
+          "sha256": "f3c4a0674bd5c67914bd52944c954ab286dc2c7d6c44be7c21e96e88c0525734"
+        },
+        {
+          "url": "https://chatgpt-studio.pages.dev/",
+          "status": 200,
+          "matchesLocal": true,
+          "sha256": "f1f871007661f66ad50af9ef81a8a60545525de254656d4d3b1f5e9cef877212"
+        },
+        {
+          "url": "https://chatgpt-studio.pages.dev/updates/macos.json",
+          "status": 200,
+          "matchesLocal": true,
+          "sha256": "e0a358b46eba061cd0bf35e1322632d4658ba653d976e189a97c4fac7b687bba"
+        },
+        {
+          "url": "https://chatgpt-studio.pages.dev/updates/windows/alpha.yml",
+          "status": 200,
+          "matchesLocal": true,
+          "sha256": "f3c4a0674bd5c67914bd52944c954ab286dc2c7d6c44be7c21e96e88c0525734"
+        },
+        {
+          "url": "https://chatgpt.xincreates.com/",
+          "status": 200,
+          "matchesLocal": false,
+          "sha256": "9c124bda0b2b97a33591ba18c397b3aab4a0c8453b55cad5dcb708ce8b893019",
+          "emailProtectionNormalizationMatchesLocal": true
+        },
+        {
+          "url": "https://chatgpt.xincreates.com/updates/macos.json",
+          "status": 200,
+          "matchesLocal": true,
+          "sha256": "e0a358b46eba061cd0bf35e1322632d4658ba653d976e189a97c4fac7b687bba"
+        },
+        {
+          "url": "https://chatgpt.xincreates.com/updates/windows/alpha.yml",
+          "status": 200,
+          "matchesLocal": true,
+          "sha256": "f3c4a0674bd5c67914bd52944c954ab286dc2c7d6c44be7c21e96e88c0525734"
+        }
+      ],
+      "allOnlineChecksPassed": true
+    },
+    "acceleratedRangeVerified": true,
+    "privateTransferDeleted": true,
+    "temporaryPermissionsRevertedAt": "e5f37a1de769d90c8babc867fa47874c1f4bfacd",
+    "browserRenderingVerified": false
+  }
 }
