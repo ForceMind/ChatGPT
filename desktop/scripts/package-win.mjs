@@ -19,6 +19,15 @@ execFileSync(
   builderOptions
 );
 const unpacked = path.join(output, 'win-unpacked');
+const [publish] = pkg.build.win.publish;
+assert.equal(pkg.build.win.publish.length, 1);
+assert.equal(publish.provider, 'generic');
+assert.equal(publish.url, 'https://chatgpt.xincreates.com/updates/windows/');
+assert.equal(publish.channel, 'alpha');
+writeFileSync(
+  path.join(unpacked, 'resources/app-update.yml'),
+  JSON.stringify({ ...publish, updaterCacheDirName: pkg.name + '-updater' }, null, 2) + '\n'
+);
 function inventoryFiles(directory, inventory) {
   for (const item of readdirSync(directory, { withFileTypes: true })) {
     const file = path.join(directory, item.name);

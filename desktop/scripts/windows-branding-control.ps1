@@ -1,4 +1,4 @@
-﻿param([string]$Operation,[string]$File,[string]$Directory,[string]$Data,[string]$Config,[string]$Output,[string]$Evidence,[string]$Executable='ChatGPT Profiles.exe',[switch]$FailCommit)
+﻿param([string]$Operation,[string]$File,[string]$Directory,[string]$Data,[string]$Config,[string]$Output,[string]$Evidence,[string]$Executable='ChatGPT Profiles.exe',[switch]$FailCommit,[switch]$RequireUpdater)
 $ErrorActionPreference='Stop'
 if($env:GITHUB_ACTIONS -ne 'true'){throw 'Disposable CI only'}
 switch($Operation){
@@ -37,9 +37,13 @@ switch($Operation){
     $installKey=$items[0].PSChildName -replace '\.nsis$',''
     $location=(Get-ItemProperty -LiteralPath ('HKCU:\Software\'+$installKey)).InstallLocation
     if([IO.Path]::GetFullPath($location).TrimEnd('\') -ne [IO.Path]::GetFullPath($Directory).TrimEnd('\')){throw 'Automatic update installation registry not updated'}
+    if($RequireUpdater){
+      $updater=Get-Content -Raw -Encoding utf8 (Join-Path $Directory 'resources\app-update.yml')|ConvertFrom-Json
+      if($updater.provider -ne 'generic' -or $updater.url -ne 'https://chatgpt.xincreates.com/updates/windows/' -or $updater.channel -ne 'alpha' -or $updater.updaterCacheDirName -ne 'chatgpt-profiles-updater'){throw 'Shipped automatic update configuration is missing or invalid'}
+    }
     $shell=New-Object -ComObject WScript.Shell;$links=@()
     foreach($folder in @([Environment]::GetFolderPath('DesktopDirectory'),[Environment]::GetFolderPath('Programs'))){$path=Join-Path $folder 'ChatGPT Studio.lnk';if(!(Test-Path -LiteralPath $path)){throw 'Shortcut missing'};$link=$shell.CreateShortcut($path);if($link.TargetPath -ne $exe){throw 'Shortcut still targets old program'};$links+=@{path=$path;target=$link.TargetPath}}
-    @{productName=$info.ProductName;productVersion=$info.ProductVersion;installLocation=$location;uninstaller=$items[0].UninstallString;links=$links}|ConvertTo-Json -Depth 6|Set-Content -Encoding utf8 $Output
+    @{productName=$info.ProductName;productVersion=$info.ProductVersion;installLocation=$location;updaterConfigVerified=[bool]$RequireUpdater;uninstaller=$items[0].UninstallString;links=$links}|ConvertTo-Json -Depth 6|Set-Content -Encoding utf8 $Output
   }
   Pin {
     $folder=Join-Path $env:APPDATA 'Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar';[void][IO.Directory]::CreateDirectory($folder)

@@ -243,9 +243,9 @@ export async function runWindowsBrandingMatrix() {
     if (result.exitCode !== 0) console.log(JSON.stringify(result));
     return result;
   }
-  function inspect(directory) {
+  function inspect(directory, candidate = true) {
     const output = path.join(root, 'inspection.json');
-    ps('Inspect', { Directory: directory, Output: output });
+    ps('Inspect', { Directory: directory, Output: output, RequireUpdater: candidate || undefined });
     return readJSON(output);
   }
   function clearOwned(directory) {
@@ -342,7 +342,7 @@ export async function runWindowsBrandingMatrix() {
     assert.equal(sha(path.join(nested, 'ChatGPT Studio.exe')), nestedExeSHA);
     assert.deepEqual(dataHashes(data), nestedData);
     assert.deepEqual(readdirSync(modern), ['ChatGPT Profiles']);
-    inspect(nested);
+    inspect(nested, false);
     await launch(path.join(nested, 'ChatGPT Studio.exe'), false);
     cases.push({ name: 'nested-post-uninstall-rollback', complete: true, dataBytesUnchanged: true });
     const retry = install(installer);
