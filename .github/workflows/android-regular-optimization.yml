@@ -16,12 +16,17 @@ name: Android Regular Optimization Evidence
         type: string
         description: Same frozen Shanghai timestamp for all three modes
         required: true
+      formal_candidate:
+        type: boolean
+        description: Build the next original-package R8 version for signature review
+        default: false
 permissions:
   contents: read
   actions: read
 env:
   STUDIO_OPT_MODE: ${{ inputs.mode }}
   STUDIO_OPT_VERSION: ${{ inputs.version_name }}
+  STUDIO_OPT_FORMAL: ${{ inputs.formal_candidate && 'true' || 'false' }}
   STUDIO_ANDROID_CI_TARGET: regular
   STUDIO_REGULAR_VALIDATION_SCRIPT: android/scripts/run-regular-environment-client.py
 jobs:

@@ -14,6 +14,8 @@ from optimization_dex import classes_and_roots, business_members
 ROOT = Path(__file__).resolve().parents[2]
 MODES = ('baseline', 'r8', 'resources')
 BASE = 'f9f4d4e35661ccc20fc15853ffef661c592c23c3'
+EXPERIMENT_CODE = 3000035
+FORMAL_CANDIDATE_CODE = 3000036
 
 
 def sha(data):
@@ -25,6 +27,10 @@ def main():
     assert os.environ.get('GITHUB_REPOSITORY') == 'ForceMind/ChatGPT'
     assert os.environ.get('GITHUB_REF') == 'refs/heads/dev'
     mode = os.environ['STUDIO_OPT_MODE']; assert mode in MODES
+    formal = os.environ.get('STUDIO_OPT_FORMAL', 'false')
+    assert formal in ('true', 'false')
+    assert formal == 'false' or mode == 'r8', 'Only R8 was approved for the formal candidate'
+    version_code = FORMAL_CANDIDATE_CODE if formal == 'true' else EXPERIMENT_CODE
     stamp = os.environ['STUDIO_OPT_VERSION']
     assert re.fullmatch(r'\d{4}\.\d{2}\.\d{2}-\d{4}', stamp)
     datetime.strptime(stamp, '%Y.%m.%d-%H%M')
@@ -35,7 +41,7 @@ def main():
     if args.phase == 'version':
         target = Path('android/app/build/regular-android-version.json')
         assert not target.exists()
-        target.write_text(json.dumps({'schema': 1, 'versionCode': 3000035, 'versionName': stamp,
+        target.write_text(json.dumps({'schema': 1, 'versionCode': version_code, 'versionName': stamp,
                                      'timeZone': 'Asia/Shanghai', 'sourceSHA': os.environ['GITHUB_SHA']}, indent=2) + '\n')
         return
     if args.phase == 'legacy-tests':
@@ -149,8 +155,21 @@ shutil.copyfile(old_side/'baseline-test-receipt.json', inputs/'baseline-test-rec
         edits.append({'path':str(test),'beforeSHA256':before,'afterSHA256':sha(test.read_bytes())})
     shutil.copyfile('android/scripts/android/OptimizationUpgradeFiles.java', helper)
     edits.append({'path':str(helper),'beforeSHA256':None,'afterSHA256':sha(helper.read_bytes())})
+    if version_code != EXPERIMENT_CODE:
+        for path in (
+            Path('android/app/build.gradle'), shared,
+            Path('android/scripts/regular_version.py'),
+            Path('android/scripts/prepare-regular-ci-inputs.py'),
+            Path('android/scripts/regular_environment_upgrade.py'),
+        ):
+            original = path.read_bytes()
+            needle = str(EXPERIMENT_CODE).encode()
+            assert original.count(needle) == 1, f'Unexpected release version contract in {path}'
+            path.write_bytes(original.replace(needle, str(version_code).encode()))
+            edits.append({'path': str(path), 'beforeSHA256': sha(original), 'afterSHA256': sha(path.read_bytes())})
     receipt = {'schema': 1, 'mode': mode, 'versionName': stamp, 'harnessSHA': os.environ['GITHUB_SHA'],
-               'productBaseline': BASE, 'ciOnlyOverlay': True, 'productionSigningUsed': False, 'edits': edits}
+               'productBaseline': BASE, 'versionCode': version_code, 'formalCandidate': formal == 'true',
+               'ciOnlyOverlay': True, 'productionSigningUsed': False, 'edits': edits}
     (output / 'overlay.json').write_text(json.dumps(receipt, indent=2) + '\n')
     (output / 'overlay.diff').write_bytes(subprocess.check_output(['git', 'diff', '--',
                                                                'android/app/build.gradle', str(shared), str(verifier),
