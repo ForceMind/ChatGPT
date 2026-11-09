@@ -13,7 +13,9 @@
 
 实现已进入待 CI 验证状态。仅在 GitHub Actions 的 Windows 2025 临时运行器构建和验证，使用回环 TLS 页面及合成数据，不截图。
 
-使用 `Windows Studio Branding Candidate` 工作流，先在 desktop 运行 `npm run check`，再构建 EXE 与 ZIP。合成矩阵保留现有六项，新增旧 Profiles 嵌套迁移、当前 Studio 嵌套迁移、嵌套失败回退、回退后重试、父目录含其他文件时拒绝迁移五项。
+当前使用 `Desktop CI` 的 `windows_candidate` 手动入口，先在 desktop 运行 `npm run check`，再构建 EXE 与 ZIP。合成矩阵保留现有六项，新增旧 Profiles 嵌套迁移、当前 Studio 嵌套迁移、嵌套失败回退、回退后重试、父目录含其他文件时拒绝迁移五项。
+
+首轮 `42580793891` 遇到 GitHub 二进制下载 HTTP 504，未执行迁移场景。改用官方 Electron Release API 取件，并核对锁定 npm 包中自带的 SHA-256；工作流修改限于 desktop-ci.yml。`42582588504` 通过完整检查并产出 EXE / ZIP，但当前公开版基线下载失败，安装场景仍未开始。基线取件也改用官方 Release API，保留原文件大小及摘要校验，继续在 `42583493631` 验收。原失败记录保留。
 
 候选下载、实际测试数量、摘要及剩余问题将在本文件记录。
 
