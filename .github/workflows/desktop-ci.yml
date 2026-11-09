@@ -6,6 +6,10 @@ on:
     paths: ['desktop/**', '.github/workflows/desktop-ci.yml']
   workflow_dispatch:
     inputs:
+      windows_candidate:
+        description: Build and validate the Windows nested-directory repair candidate
+        type: boolean
+        default: false
       cpu_validation:
         description: Same arm64 macOS runner; synthetic CPU baseline/candidate and 30-minute hidden retention
         type: boolean
@@ -21,11 +25,79 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: desktop-ci-${{ github.ref }}-${{ github.event_name == 'workflow_dispatch' && ((inputs.cpu_validation && inputs.candidate_package) || (inputs.promote_release && (inputs.cpu_validation || inputs.candidate_package))) && 'invalid' || github.event_name == 'workflow_dispatch' && inputs.promote_release && 'promotion' || github.event_name == 'workflow_dispatch' && inputs.candidate_package && 'package' || github.event_name == 'workflow_dispatch' && inputs.cpu_validation && 'cpu' || 'checks' }}
+  group: desktop-ci-${{ github.ref }}-${{ github.event_name == 'workflow_dispatch' && inputs.windows_candidate && 'windows' || github.event_name == 'workflow_dispatch' && ((inputs.cpu_validation && inputs.candidate_package) || (inputs.promote_release && (inputs.cpu_validation || inputs.candidate_package))) && 'invalid' || github.event_name == 'workflow_dispatch' && inputs.promote_release && 'promotion' || github.event_name == 'workflow_dispatch' && inputs.candidate_package && 'package' || github.event_name == 'workflow_dispatch' && inputs.cpu_validation && 'cpu' || 'checks' }}
   cancel-in-progress: ${{ !(github.event_name == 'workflow_dispatch' && inputs.promote_release) }}
 jobs:
+  windows-candidate:
+    if: github.event_name == 'workflow_dispatch' && inputs.windows_candidate && !inputs.cpu_validation && !inputs.candidate_package && !inputs.promote_release
+    name: Windows nested installation candidate
+    runs-on: windows-2025
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - run: git config --global core.autocrlf false
+        working-directory: .
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '26.7.0'
+      - name: Install locked dependencies without the failed binary download route
+        run: npm ci --ignore-scripts
+      - name: Verify and install the official Electron binary
+        run: node scripts/prepare-windows-electron.mjs
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Full required desktop check
+        run: npm run check
+      - name: Parse migration scripts and check version ordering
+        shell: pwsh
+        run: |
+          foreach($file in @('assets/windows-migration.ps1','scripts/windows-branding-control.ps1')) {
+            $tokens=$null; $errors=$null
+            [void][Management.Automation.Language.Parser]::ParseFile((Resolve-Path $file),[ref]$tokens,[ref]$errors)
+            if($errors.Count){$errors|Format-List;throw "PowerShell parse failed: $file"}
+          }
+          ./scripts/check-windows-migration-version.ps1
+      - name: Package installer and ZIP with one bounded retry for dependency transport
+        shell: pwsh
+        run: |
+          node scripts/icon.mjs
+          if($LASTEXITCODE -ne 0){throw 'Icon generation failed'}
+          for($attempt=0;$attempt -lt 2;$attempt++){
+            node scripts/package-win.mjs
+            if($LASTEXITCODE -eq 0){break}
+            if($attempt -eq 1){throw 'Windows packaging failed; preserve the original error above'}
+            Start-Sleep -Seconds 5
+          }
+      - name: Verify installation migration, recovery and automatic update registration
+        run: npx playwright test tests/windows-branding.e2e.ts --workers=1 --reporter=list,json
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_FILE: test-results/windows-branding-playwright.json
+          DEBUG: pw:browser
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: ChatGPT-Studio-Windows-Nested-Candidate
+          retention-days: 14
+          path: |
+            desktop/release/windows/*-setup.exe
+            desktop/release/windows/*.zip
+            desktop/release/windows/SHA256SUMS.txt
+            desktop/release/windows/windows-build-info.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-nested-evidence
+          retention-days: 14
+          path: |
+            desktop/test-results/
+            desktop/release/windows/dependency-download.json
+            desktop/release/windows/windows-build-info.json
+            desktop/assets/windows-payload.generated.json
   check:
-    if: github.event_name != 'workflow_dispatch' || (!inputs.cpu_validation && !inputs.candidate_package && !inputs.promote_release)
+    if: github.event_name != 'workflow_dispatch' || (!inputs.cpu_validation && !inputs.candidate_package && !inputs.promote_release && !inputs.windows_candidate)
     name: Typecheck, lint, format and unit tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -50,7 +122,7 @@ jobs:
       - name: Unit tests
         run: npm test
   build:
-    if: github.event_name != 'workflow_dispatch' || (!inputs.cpu_validation && !inputs.candidate_package && !inputs.promote_release)
+    if: github.event_name != 'workflow_dispatch' || (!inputs.cpu_validation && !inputs.candidate_package && !inputs.promote_release && !inputs.windows_candidate)
     name: Build on macOS
     runs-on: macos-15
     timeout-minutes: 20
@@ -69,7 +141,7 @@ jobs:
       - name: Build main process, native helpers and renderer
         run: npm run build
   cpu-validation:
-    if: github.event_name == 'workflow_dispatch' && inputs.cpu_validation && !inputs.candidate_package && !inputs.promote_release
+    if: github.event_name == 'workflow_dispatch' && inputs.cpu_validation && !inputs.candidate_package && !inputs.promote_release && !inputs.windows_candidate
     name: Native macOS CPU comparison and background retention
     runs-on: macos-15
     timeout-minutes: 120
@@ -153,16 +225,16 @@ jobs:
             desktop/test-results/
             desktop/playwright-report/
   invalid-manual-inputs:
-    if: github.event_name == 'workflow_dispatch' && ((inputs.cpu_validation && inputs.candidate_package) || (inputs.promote_release && (inputs.cpu_validation || inputs.candidate_package)))
+    if: github.event_name == 'workflow_dispatch' && ((inputs.cpu_validation && inputs.candidate_package) || (inputs.promote_release && (inputs.cpu_validation || inputs.candidate_package)) || (inputs.windows_candidate && (inputs.cpu_validation || inputs.candidate_package || inputs.promote_release)))
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
       - name: Reject mutually exclusive validation modes
         run: |
-          echo '::error::Select only one of cpu_validation, candidate_package or promote_release.'
+          echo '::error::Select only one of cpu_validation, candidate_package, promote_release or windows_candidate.'
           exit 1
   candidate-package:
-    if: github.event_name == 'workflow_dispatch' && inputs.candidate_package && !inputs.cpu_validation && !inputs.promote_release
+    if: github.event_name == 'workflow_dispatch' && inputs.candidate_package && !inputs.cpu_validation && !inputs.promote_release && !inputs.windows_candidate
     name: Validate and package local macOS arm64 candidate
     runs-on: macos-15
     timeout-minutes: 60
@@ -292,7 +364,7 @@ jobs:
             desktop/test-results/
             desktop/playwright-report/
   promote-release:
-    if: github.event_name == 'workflow_dispatch' && inputs.promote_release && !inputs.cpu_validation && !inputs.candidate_package
+    if: github.event_name == 'workflow_dispatch' && inputs.promote_release && !inputs.cpu_validation && !inputs.candidate_package && !inputs.windows_candidate
     name: Promote verified original alpha.23 macOS artifacts
     runs-on: ubuntu-latest
     timeout-minutes: 40
