@@ -192,7 +192,7 @@ Cloudflare Pages uses Direct Upload; a Git push does not deploy the site automat
 
 | Area | Status |
 | --- | --- |
-| Current iteration: Windows nested installation | Candidate in Actions. Migrate the registered Studio/Profiles child to the canonical Studio directory, with data preservation, shortcut/uninstall/update registration and rollback checks. [Plan and evidence](docs/windows-installation-plan.md) |
+| Current iteration: Windows nested installation | Candidate ready. Full check and 11 packaged installation cases pass, including data preservation, rollback/retry and installed updater configuration. [Download and evidence](docs/windows-installation-plan.md) |
 | Windows publisher signing | Pending trusted certificate or verified signing service. Current packages still show an unknown publisher. [Signing prerequisites](docs/windows-installation-plan.md#后续顺序) |
 | Android R8 optimization | Published as 2026.11.09-1236. APK size reduced by 5.57%; matched CPU/PSS results vary by scenario. [Evidence](docs/android-optimization-plan.md) |
 | Real macOS account upload/first-message/single-send acceptance | Deferred manual acceptance; isolated flows pass |

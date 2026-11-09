@@ -1,0 +1,213 @@
+{
+  "schema": 1,
+  "version": "2026.11.9",
+  "kind": "windows-nested-installation-candidate",
+  "sourceSHA": "848f449c872ccdbdc761dd16af1678112a038c40",
+  "runID": 42588467252,
+  "runURL": "https://github.com/ForceMind/ChatGPT/actions/runs/42588467252",
+  "artifactID": 13660553000,
+  "artifactURL": "https://github.com/ForceMind/ChatGPT/actions/runs/42588467252/artifacts/13660553000",
+  "artifactRequiresGitHubLogin": true,
+  "artifacts": [
+    {
+      "file": "ChatGPT-Studio-2026.11.9-windows-x64-setup.exe",
+      "bytes": 131359298,
+      "sha256": "1c0339f8b2f5ee97f8cbcc39eb37144865c7627042c96e45e548cf17b10a4975",
+      "sha512": "cjJ9qkwVghEzJ0xbz4fiDm5apomtVlmXmy3Ug7M1ksgeH2fVErZ5E4g/2tMB6bqkg9VEhFaM1LwlS3JzAY3bCw=="
+    },
+    {
+      "file": "ChatGPT-Studio-2026.11.9-windows-x64-setup.exe.blockmap",
+      "bytes": 137210,
+      "sha256": "b83bf17a39d294a8e7cd7f77392035ae359b504494eee057c6ad29af45c449c9",
+      "sha512": "aGcvb+bTfoFRD5RaOGZr3yblu+xBimyqgASW0LDRUXydtD/SYKwJE0rlOG+mjj95KdnkfMx1gdWgWeN7kWvJUA=="
+    },
+    {
+      "file": "ChatGPT-Studio-2026.11.9-windows-x64.zip",
+      "bytes": 181295981,
+      "sha256": "ce56629b671f7ae68d550dafe4e44e2da387fd432b31f926cd1caf676cd86a31",
+      "sha512": "1tJlyijgKDKbrQ6C1NCc2ReO1V+HiMYuWEbeoTfvDTTL/3/fy4E/25zp9jK3pPrCTzMVE6/OKV1n8odg/JS5fg=="
+    }
+  ],
+  "signing": "unsigned",
+  "publicRelease": false,
+  "platform": "Windows Server 2025 x64 disposable GitHub runner",
+  "validation": {
+    "npmRunCheck": "passed",
+    "unitTests": 106,
+    "passed": 105,
+    "failed": 0,
+    "skipped": 1,
+    "migrationVersionChecks": 14,
+    "packagedMatrixCases": 11,
+    "packagedPlaywrightTests": 1,
+    "screenshots": false,
+    "realChatGPT": false,
+    "personalDevicesModified": false
+  },
+  "cases": [
+    {
+      "name": "new-default",
+      "complete": true,
+      "directory": "C:\\Users\\runneradmin\\AppData\\Local\\Programs\\ChatGPT Studio",
+      "links": [
+        {
+          "target": "C:\\Users\\runneradmin\\AppData\\Local\\Programs\\ChatGPT Studio\\ChatGPT Studio.exe",
+          "path": "C:\\Users\\runneradmin\\Desktop\\ChatGPT Studio.lnk"
+        },
+        {
+          "target": "C:\\Users\\runneradmin\\AppData\\Local\\Programs\\ChatGPT Studio\\ChatGPT Studio.exe",
+          "path": "C:\\Users\\runneradmin\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\ChatGPT Studio.lnk"
+        }
+      ],
+      "productVersion": "2026.11.9.0",
+      "updaterConfigVerified": true,
+      "productName": "ChatGPT Studio",
+      "uninstaller": "\"C:\\Users\\runneradmin\\AppData\\Local\\Programs\\ChatGPT Studio\\Uninstall ChatGPT Studio.exe\" /currentuser",
+      "installLocation": "C:\\Users\\runneradmin\\AppData\\Local\\Programs\\ChatGPT Studio"
+    },
+    {
+      "name": "legacy-default-migrated",
+      "complete": true,
+      "source": "C:\\Users\\runneradmin\\AppData\\Local\\Programs\\ChatGPT Profiles",
+      "target": "C:\\Users\\runneradmin\\AppData\\Local\\Programs\\ChatGPT Studio",
+      "cookieAndStoragePreserved": true,
+      "dataBytesUnchanged": true,
+      "pinnedLinkTargetUpdated": true,
+      "links": [
+        {
+          "target": "C:\\Users\\runneradmin\\AppData\\Local\\Programs\\ChatGPT Studio\\ChatGPT Studio.exe",
+          "path": "C:\\Users\\runneradmin\\Desktop\\ChatGPT Studio.lnk"
+        },
+        {
+          "target": "C:\\Users\\runneradmin\\AppData\\Local\\Programs\\ChatGPT Studio\\ChatGPT Studio.exe",
+          "path": "C:\\Users\\runneradmin\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\ChatGPT Studio.lnk"
+        }
+      ],
+      "productVersion": "2026.11.9.0",
+      "updaterConfigVerified": true,
+      "productName": "ChatGPT Studio",
+      "uninstaller": "\"C:\\Users\\runneradmin\\AppData\\Local\\Programs\\ChatGPT Studio\\Uninstall ChatGPT Studio.exe\" /currentuser",
+      "installLocation": "C:\\Users\\runneradmin\\AppData\\Local\\Programs\\ChatGPT Studio"
+    },
+    {
+      "name": "custom-kept",
+      "complete": true,
+      "source": "D:\\a\\_temp\\studio-branding-1UWTfX\\custom-location",
+      "target": "D:\\a\\_temp\\studio-branding-1UWTfX\\custom-location",
+      "cookieAndStoragePreserved": true,
+      "dataBytesUnchanged": true,
+      "pinnedLinkTargetUpdated": true,
+      "links": [
+        {
+          "target": "D:\\a\\_temp\\studio-branding-1UWTfX\\custom-location\\ChatGPT Studio.exe",
+          "path": "C:\\Users\\runneradmin\\Desktop\\ChatGPT Studio.lnk"
+        },
+        {
+          "target": "D:\\a\\_temp\\studio-branding-1UWTfX\\custom-location\\ChatGPT Studio.exe",
+          "path": "C:\\Users\\runneradmin\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\ChatGPT Studio.lnk"
+        }
+      ],
+      "productVersion": "2026.11.9.0",
+      "updaterConfigVerified": true,
+      "productName": "ChatGPT Studio",
+      "uninstaller": "\"D:\\a\\_temp\\studio-branding-1UWTfX\\custom-location\\Uninstall ChatGPT Studio.exe\" /currentuser",
+      "installLocation": "D:\\a\\_temp\\studio-branding-1UWTfX\\custom-location"
+    },
+    {
+      "name": "nested-profiles-flattened",
+      "complete": true,
+      "source": "C:\\Users\\runneradmin\\AppData\\Local\\Programs\\ChatGPT Studio\\ChatGPT Profiles",
+      "target": "C:\\Users\\runneradmin\\AppData\\Local\\Programs\\ChatGPT Studio",
+      "dataBytesUnchanged": true,
+      "cookieAndStoragePreserved": true,
+      "automaticUpdateRegistered": true,
+      "pinnedLinkTargetUpdated": true,
+      "links": [
+        {
+          "target": "C:\\Users\\runneradmin\\AppData\\Local\\Programs\\ChatGPT Studio\\ChatGPT Studio.exe",
+          "path": "C:\\Users\\runneradmin\\Desktop\\ChatGPT Studio.lnk"
+        },
+        {
+          "target": "C:\\Users\\runneradmin\\AppData\\Local\\Programs\\ChatGPT Studio\\ChatGPT Studio.exe",
+          "path": "C:\\Users\\runneradmin\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\ChatGPT Studio.lnk"
+        }
+      ],
+      "productVersion": "2026.11.9.0",
+      "updaterConfigVerified": true,
+      "productName": "ChatGPT Studio",
+      "uninstaller": "\"C:\\Users\\runneradmin\\AppData\\Local\\Programs\\ChatGPT Studio\\Uninstall ChatGPT Studio.exe\" /currentuser",
+      "installLocation": "C:\\Users\\runneradmin\\AppData\\Local\\Programs\\ChatGPT Studio"
+    },
+    {
+      "name": "nested-studio-flattened",
+      "complete": true,
+      "source": "C:\\Users\\runneradmin\\AppData\\Local\\Programs\\ChatGPT Studio\\ChatGPT Profiles",
+      "target": "C:\\Users\\runneradmin\\AppData\\Local\\Programs\\ChatGPT Studio",
+      "dataBytesUnchanged": true,
+      "cookieAndStoragePreserved": true,
+      "automaticUpdateRegistered": true,
+      "pinnedLinkTargetUpdated": true,
+      "links": [
+        {
+          "target": "C:\\Users\\runneradmin\\AppData\\Local\\Programs\\ChatGPT Studio\\ChatGPT Studio.exe",
+          "path": "C:\\Users\\runneradmin\\Desktop\\ChatGPT Studio.lnk"
+        },
+        {
+          "target": "C:\\Users\\runneradmin\\AppData\\Local\\Programs\\ChatGPT Studio\\ChatGPT Studio.exe",
+          "path": "C:\\Users\\runneradmin\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\ChatGPT Studio.lnk"
+        }
+      ],
+      "productVersion": "2026.11.9.0",
+      "updaterConfigVerified": true,
+      "productName": "ChatGPT Studio",
+      "uninstaller": "\"C:\\Users\\runneradmin\\AppData\\Local\\Programs\\ChatGPT Studio\\Uninstall ChatGPT Studio.exe\" /currentuser",
+      "installLocation": "C:\\Users\\runneradmin\\AppData\\Local\\Programs\\ChatGPT Studio"
+    },
+    {
+      "name": "nested-post-uninstall-rollback",
+      "complete": true,
+      "dataBytesUnchanged": true
+    },
+    {
+      "name": "nested-retry-after-rollback",
+      "complete": true
+    },
+    {
+      "name": "nested-foreign-parent-file-refused",
+      "complete": true
+    },
+    {
+      "name": "forced-post-uninstall-failure-rollback",
+      "complete": true,
+      "oldExeRestored": true,
+      "cookiesAndStoragePreserved": true
+    },
+    {
+      "name": "unknown-old-file-refused",
+      "complete": true
+    },
+    {
+      "name": "occupied-new-target-refused",
+      "complete": true
+    }
+  ],
+  "limits": [
+    "Synthetic silent install/upgrade and owned loopback pages; real Windows device and installer directory picker await user acceptance.",
+    "Existing application version retained at 2026.11.9; identify this candidate by its source SHA and artifact digest.",
+    "Trusted Authenticode signing awaits certificate or signing-service identity verification.",
+    "Automatic-update registration and installed configuration verified; live updater downloads on the user device remain to be accepted."
+  ],
+  "artifactDigest": "sha256:05841dcd933cc56da47e5037554ac00e654799d27b98b5d98f325697407eeb39",
+  "artifactExpiresAt": "2026-11-23T08:57:53Z",
+  "dependencyInput": {
+    "version": "44.9.1",
+    "name": "electron-v44.9.1-win32-x64.zip",
+    "assetID": 657968858,
+    "bytes": 158389896,
+    "sha256": "41bd7900bd42d0f49110a81617876137041fbbf473466920248ddb076349ef91",
+    "source": "Official Electron Release API; locked npm package checksum",
+    "sourceSHA": "848f449c872ccdbdc761dd16af1678112a038c40"
+  },
+  "installedUpdateConfigVerified": true,
+  "rollbackInventoryIncludesGeneratedResources": true
+}

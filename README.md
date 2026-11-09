@@ -205,7 +205,7 @@ cd android
 
 | 优先级 / 阶段 | 工作 | 当前状态 |
 | --- | --- | --- |
-| 当前小批次 | Windows 嵌套目录修复候选 | Actions 构建与合成升级验收中；覆盖程序迁移、数据保留、快捷方式 / 卸载 / 更新记录、失败回退及重试。[计划与证据](docs/windows-installation-plan.md) |
+| 当前小批次 | Windows 嵌套目录修复候选 | 候选已交付；完整检查及 11 项打包安装场景通过，覆盖数据保留、回退重试及实际安装后的更新配置。[下载与证据](docs/windows-installation-plan.md) |
 | 发布签名 | Windows 可信发布者 | 待可信代码签名证书或完成身份验证的签名服务；当前包仍显示“未知发布者”。[前置条件](docs/windows-installation-plan.md#后续顺序) |
 | 已发布 | Android R8 优化 | 2026.11.09-1236；包体减少约 5.57%，CPU/PSS 结果随场景变化。[完整证据](docs/android-optimization-plan.md) |
 | 待人工验收 | Mac 真实账号的附件上传、首条消息与一次发送 | 用户稍后验收；隔离回归已通过 |
