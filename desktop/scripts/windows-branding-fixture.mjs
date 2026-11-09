@@ -53,6 +53,7 @@ export async function runWindowsBrandingMatrix() {
   const programs = path.join(process.env.LOCALAPPDATA, 'Programs');
   const legacy = path.join(programs, 'ChatGPT Profiles');
   const modern = path.join(programs, 'ChatGPT Studio');
+  const nested = path.join(modern, 'ChatGPT Profiles');
   assert(!existsSync(data) && !existsSync(legacy) && !existsSync(modern), 'Refuse existing data or programs');
   const build = readJSON('release/windows/windows-build-info.json');
   const installer = path.resolve('release/windows', build.artifacts.find((a) => a.file.endsWith('-setup.exe')).file);
@@ -64,6 +65,14 @@ export async function runWindowsBrandingMatrix() {
   assert(response.ok);
   writeFileSync(baseline, Buffer.from(await response.arrayBuffer()));
   assert.equal(sha(baseline), old.sha256);
+  const publicRelease = readJSON('../docs/releases/2026.11.9.json').artifacts.find((a) =>
+    a.file.endsWith('-windows-x64-setup.exe')
+  );
+  const publicInstaller = path.join(root, 'public-baseline.exe');
+  const publicResponse = await fetch(publicRelease.url);
+  assert(publicResponse.ok);
+  writeFileSync(publicInstaller, Buffer.from(await publicResponse.arrayBuffer()));
+  assert.equal(sha(publicInstaller), publicRelease.sha256);
   const tlsConfig = { key: path.join(root, 'fixture-key.json'), cer: path.join(root, 'fixture.cer') };
   writeFileSync(path.join(root, 'tls.json'), JSON.stringify(tlsConfig));
   ps('Tls', { Config: path.join(root, 'tls.json'), Output: path.join(root, 'thumbprint') });
@@ -174,6 +183,10 @@ export async function runWindowsBrandingMatrix() {
       assert.equal(proof.cookies[0]?.value, token);
       assert.equal(proof.storage, token);
     }
+    if (!seed && path.basename(executable) === 'ChatGPT Studio.exe') {
+      const shell = await app.firstWindow();
+      await shell.waitForFunction(async () => (await window.profiles.snapshot()).update?.installMode === 'automatic');
+    }
     await app.close();
     app = undefined;
     return identity;
@@ -203,6 +216,10 @@ export async function runWindowsBrandingMatrix() {
     ps('Uninstall', { Directory: directory });
     if (before) assert.deepEqual(dataHashes(data), before, 'Uninstall must retain every synthetic user-data byte');
     if (existsSync(directory)) rmSync(directory, { recursive: true });
+    if (directory === nested && existsSync(modern)) {
+      assert.deepEqual(readdirSync(modern), [], 'Nested rollback must remove only the empty new program directories');
+      rmSync(modern);
+    }
     if (existsSync(data)) rmSync(data, { recursive: true });
   }
   try {
@@ -244,6 +261,69 @@ export async function runWindowsBrandingMatrix() {
       rmSync(pinned);
       clearOwned(target);
     }
+    for (const currentProgram of [false, true]) {
+      const oldInstaller = currentProgram ? publicInstaller : baseline;
+      const oldName = currentProgram ? 'ChatGPT Studio.exe' : 'ChatGPT Profiles.exe';
+      assert.equal(install(oldInstaller, nested).exitCode, 0);
+      await launch(path.join(nested, oldName), true);
+      const before = dataHashes(data);
+      const pinned = path.join(
+        process.env.APPDATA,
+        'Microsoft/Internet Explorer/Quick Launch/User Pinned/TaskBar',
+        'Studio-Nested-' + nonce + '.lnk'
+      );
+      ps('Pin', { File: pinned, Directory: nested, Executable: oldName });
+      const result = install(installer);
+      assert.equal(result.exitCode, 0);
+      assert.equal(path.dirname(result.proof.backup), programs, 'Nested rollback backup must be outside the target');
+      assert.deepEqual(dataHashes(data), before);
+      assert(!existsSync(nested), 'Legacy child must be removed after flattening');
+      const inspectedNested = inspect(modern);
+      ps('CheckPin', { File: pinned, Directory: modern });
+      await launch(path.join(modern, 'ChatGPT Studio.exe'), false);
+      cases.push({
+        name: currentProgram ? 'nested-studio-flattened' : 'nested-profiles-flattened',
+        complete: true,
+        source: nested,
+        target: modern,
+        dataBytesUnchanged: true,
+        cookieAndStoragePreserved: true,
+        automaticUpdateRegistered: true,
+        pinnedLinkTargetUpdated: true,
+        ...inspectedNested
+      });
+      rmSync(pinned);
+      clearOwned(modern);
+    }
+    assert.equal(install(publicInstaller, nested).exitCode, 0);
+    await launch(path.join(nested, 'ChatGPT Studio.exe'), true);
+    const nestedData = dataHashes(data);
+    const nestedExeSHA = sha(path.join(nested, 'ChatGPT Studio.exe'));
+    const nestedFailure = install(installer, undefined, true);
+    assert.notEqual(nestedFailure.exitCode, 0);
+    assert(nestedFailure.proof?.rolledBack && !nestedFailure.proof?.committed);
+    assert.equal(sha(path.join(nested, 'ChatGPT Studio.exe')), nestedExeSHA);
+    assert.deepEqual(dataHashes(data), nestedData);
+    assert.deepEqual(readdirSync(modern), ['ChatGPT Profiles']);
+    inspect(nested);
+    await launch(path.join(nested, 'ChatGPT Studio.exe'), false);
+    cases.push({ name: 'nested-post-uninstall-rollback', complete: true, dataBytesUnchanged: true });
+    const retry = install(installer);
+    assert.equal(retry.exitCode, 0, 'Nested rollback must allow a direct retry');
+    inspect(modern);
+    await launch(path.join(modern, 'ChatGPT Studio.exe'), false);
+    cases.push({ name: 'nested-retry-after-rollback', complete: true });
+    clearOwned(modern);
+    assert.equal(install(publicInstaller, nested).exitCode, 0);
+    const foreign = path.join(modern, 'user-owned-note.txt');
+    writeFileSync(foreign, nonce);
+    const rejectedNested = install(installer);
+    assert.notEqual(rejectedNested.exitCode, 0);
+    assert.equal(readFileSync(foreign, 'utf8'), nonce);
+    assert(existsSync(path.join(nested, 'ChatGPT Studio.exe')));
+    rmSync(foreign);
+    clearOwned(nested);
+    cases.push({ name: 'nested-foreign-parent-file-refused', complete: true });
     assert.equal(install(baseline).exitCode, 0);
     await launch(path.join(legacy, 'ChatGPT Profiles.exe'), true);
     const beforeRollback = dataHashes(data);

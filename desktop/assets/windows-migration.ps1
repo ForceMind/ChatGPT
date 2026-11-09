@@ -91,6 +91,13 @@ function SnapshotLinks($Source,$Backup) {
   $shell=New-Object -ComObject WScript.Shell;$links=@();$index=0
   foreach($folder in LinkPaths){if(!(Test-Path -LiteralPath $folder)){continue};foreach($file in Get-ChildItem -LiteralPath $folder -Filter '*.lnk' -Recurse -File){$link=$shell.CreateShortcut($file.FullName);if($link.TargetPath -and ((Same $link.TargetPath (Join-Path $Source 'ChatGPT Profiles.exe')) -or (Same $link.TargetPath (Join-Path $Source 'ChatGPT Studio.exe')))){$copy=Join-Path $Backup ('link-'+$index+'.bin');Copy-Item -LiteralPath $file.FullName -Destination $copy;$links+=@{path=$file.FullName;copy=$copy;sha256=(Sha $file.FullName);pinned=$file.FullName.Contains('\User Pinned\')};$index++}}};return ,$links
 }
+function NestedLegacyTarget($Source,$Target) {
+  return (Same $Target (Join-Path $ProgramsRoot 'ChatGPT Studio')) -and (Same $Source (Join-Path $Target 'ChatGPT Profiles'))
+}
+function BackupParent($Source,$Target) {
+  if(NestedLegacyTarget $Source $Target){return [IO.Path]::GetDirectoryName($Target)}
+  return [IO.Path]::GetDirectoryName($Source)
+}
 function Plan {
   if($InstallMode -ne 'CurrentUser'){throw '此候选仅支持当前用户安装。'}
   $g=[Guid]$AppGuid;$guidPattern='\{?'+[regex]::Escape($g.ToString())+'\}?'
@@ -103,12 +110,19 @@ function Plan {
     if($uninstall -notmatch '^"([^"\r\n]+)"(?:\s+/currentuser)?\s*$' -or !(Same ([IO.Path]::GetDirectoryName($Matches[1])) $source) -or [IO.Path]::GetFileName($Matches[1]) -notin @('Uninstall ChatGPT Profiles.exe','Uninstall ChatGPT Studio.exe')){throw '卸载记录与旧程序目录不一致。'}
     if((CompareStudioVersions $info.Package.version $Version) -gt 0){throw '不能以旧版本覆盖较新程序。'}
     $oldDefault=Join-Path $ProgramsRoot 'ChatGPT Profiles'
+    $modernDefault=Join-Path $ProgramsRoot 'ChatGPT Studio'
+    $nestedDefault=Join-Path $modernDefault 'ChatGPT Profiles'
     if((Same $source $oldDefault) -and ((Same $dest $source) -or ($Requested -and (Same $Requested $source)))){$dest=Join-Path ([IO.Path]::GetDirectoryName($source)) 'ChatGPT Studio'}
+    elseif((Same $source $nestedDefault) -and ((Same $dest $source) -or (Same $dest $modernDefault))){$dest=$modernDefault}
     elseif($Requested -and (Same $Requested $source)){$dest=$source}
-    if(!(Same $source $dest) -and ((Within $source $dest) -or (Within $dest $source))){throw '新旧程序目录不能相互包含。'}
+    if(!(Same $source $dest) -and ((Within $source $dest) -or (Within $dest $source)) -and !(NestedLegacyTarget $source $dest)){throw '新旧程序目录不能相互包含。'}
     $active=$true
   }elseif($source -and (Same $source (Join-Path $ProgramsRoot 'ChatGPT Profiles')) -and (Same $dest $source)){$dest=Join-Path $ProgramsRoot 'ChatGPT Studio'}
-  if((Test-Path -LiteralPath $dest) -and @((Get-ChildItem -LiteralPath $dest -Force)).Count -gt 0 -and (!$active -or !(Same $dest $source))){throw '目标目录已有内容，未覆盖；请选择独立空目录。'}
+  if((Test-Path -LiteralPath $dest) -and (!$active -or !(Same $dest $source))){
+    $entries=@(Get-ChildItem -LiteralPath $dest -Force)
+    $ownedNested=$active -and (NestedLegacyTarget $source $dest) -and $entries.Count -eq 1 -and $entries[0].PSIsContainer -and (Same $entries[0].FullName $source)
+    if($entries.Count -gt 0 -and !$ownedNested){throw '目标目录已有内容，未覆盖；请选择独立空目录。'}
+  }
   return @{schema=1;source=$source;destination=$dest;active=$active;prepared=$false;committed=$false;rolledBack=$false;backup=$null;files=@();links=@();registry=@();newFiles=@();error=$null;version=$Version;installKey=$InstallKey;uninstallKey=$UninstallKey}
 }
 function WaitForApp {
@@ -126,7 +140,7 @@ function Prepare {
   $script:studioState.registry=@((RegistrySnapshot $InstallKey),(RegistrySnapshot $UninstallKey))
   if($script:studioState.active){
     $info=ProgramInfo $script:studioState.source;$script:studioState.files=Tree $script:studioState.source $info
-    $backup=Join-Path ([IO.Path]::GetDirectoryName($script:studioState.source)) ('.ChatGPTStudio-rollback-'+[Guid]::NewGuid().ToString('N'));[void](New-Item -ItemType Directory -Path $backup);[IO.File]::SetAttributes($backup,([IO.File]::GetAttributes($backup) -bor [IO.FileAttributes]::Hidden));$script:studioState.backup=$backup
+    $backup=Join-Path (BackupParent $script:studioState.source $script:studioState.destination) ('.ChatGPTStudio-rollback-'+[Guid]::NewGuid().ToString('N'));[void](New-Item -ItemType Directory -Path $backup);[IO.File]::SetAttributes($backup,([IO.File]::GetAttributes($backup) -bor [IO.FileAttributes]::Hidden));$script:studioState.backup=$backup
     SaveState
     foreach($item in $script:studioState.files){$target=Join-Path $backup ('program\'+$item.path.Replace('/','\'));if($target.Length -gt 248){throw '备份路径过长，未移除旧程序。'};[void][IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($target));Copy-Item -LiteralPath (Join-Path $script:studioState.source $item.path) -Destination $target;if((Sha $target) -ne $item.sha256 -or (Sha (Join-Path $script:studioState.source $item.path)) -ne $item.sha256){throw '旧程序在备份时发生变化，未移除。'}}
     $script:studioState.links=SnapshotLinks $script:studioState.source $backup
@@ -148,7 +162,7 @@ function RestoreRegistry($Snapshot) {
 function RemoveBackup {
   if(!$script:studioState.backup){return}
   $backup=SafePath $script:studioState.backup
-  if([IO.Path]::GetFileName($backup) -notmatch '^\.ChatGPTStudio-rollback-[a-f0-9]{32}$' -or !(Same ([IO.Path]::GetDirectoryName($backup)) ([IO.Path]::GetDirectoryName($script:studioState.source)))){throw '备份归属不明确，未删除。'}
+  if([IO.Path]::GetFileName($backup) -notmatch '^\.ChatGPTStudio-rollback-[a-f0-9]{32}$' -or !(Same ([IO.Path]::GetDirectoryName($backup)) (BackupParent $script:studioState.source $script:studioState.destination))){throw '备份归属不明确，未删除。'}
   if(Test-Path -LiteralPath $backup){Remove-Item -LiteralPath $backup -Recurse -Force}
 }
 function Rollback {
@@ -157,6 +171,14 @@ function Rollback {
   if($script:studioState.prepared){
     $dest=SafePath $Destination
     foreach($item in $script:studioState.newFiles){$target=Join-Path $dest $item.path;if(Test-Path -LiteralPath $target){[void](SafePath ([IO.Path]::GetDirectoryName($target)));if((Sha $target) -ne $item.sha256){throw '回退检测到程序文件被改动，备份已保留。'};Remove-Item -LiteralPath $target -Force}}
+    if($script:studioState.active -and (NestedLegacyTarget $script:studioState.source $dest)){
+      foreach($directory in @(Get-ChildItem -LiteralPath $dest -Recurse -Directory -Force|Sort-Object {$_.FullName.Length} -Descending)){
+        if(!(Within $directory.FullName $script:studioState.source)){
+          [void](SafePath $directory.FullName)
+          if(@(Get-ChildItem -LiteralPath $directory.FullName -Force).Count -eq 0){[IO.Directory]::Delete($directory.FullName,$false)}
+        }
+      }
+    }
     if($script:studioState.active){
       $source=SafePath $script:studioState.source
       foreach($item in $script:studioState.files){$target=Join-Path $source $item.path;if((Test-Path -LiteralPath $target) -and (Sha $target) -ne $item.sha256){throw '旧位置已有不同内容，备份已保留。'};[void][IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($target));Copy-Item -LiteralPath (Join-Path $script:studioState.backup ('program\'+$item.path)) -Destination $target -Force}
@@ -176,7 +198,7 @@ function Commit {
   if($script:studioState.active -and !(Same $dest $script:studioState.source) -and (Test-Path -LiteralPath $script:studioState.source)){if(@(Get-ChildItem -LiteralPath $script:studioState.source -Recurse -File -Force).Count -gt 0){throw '旧程序仍有残留，正在回退。'};foreach($directory in @(Get-ChildItem -LiteralPath $script:studioState.source -Recurse -Directory -Force|Sort-Object {$_.FullName.Length} -Descending)){[IO.Directory]::Delete($directory.FullName,$false)};[IO.Directory]::Delete($script:studioState.source,$false)}
   if($env:GITHUB_ACTIONS -eq 'true'-and$env:STUDIO_MIGRATION_FAIL_AFTER_INSTALL -eq '1'){throw 'Synthetic commit failure after legacy uninstall'}
   $shell=New-Object -ComObject WScript.Shell
-  foreach($entry in $script:studioState.links){$path=$entry.path;if(!(Test-Path -LiteralPath $path)){Copy-Item -LiteralPath $entry.copy -Destination $path};$link=$shell.CreateShortcut($path);$old=Join-Path $script:studioState.source 'ChatGPT Profiles.exe';if((Same $link.TargetPath $old) -or (Same $link.TargetPath (Join-Path $dest 'ChatGPT Studio.exe'))){$link.TargetPath=Join-Path $dest 'ChatGPT Studio.exe';if($link.WorkingDirectory -and (Same $link.WorkingDirectory $script:studioState.source)){$link.WorkingDirectory=$dest};if(!$link.IconLocation -or $link.IconLocation.StartsWith($old,[StringComparison]::OrdinalIgnoreCase)){$link.IconLocation=(Join-Path $dest 'ChatGPT Studio.exe')+',0'};$link.Description='ChatGPT Studio';$link.Save();if(!$entry.pinned -and [IO.Path]::GetFileName($path) -eq 'ChatGPT Profiles.lnk'){$newLink=Join-Path ([IO.Path]::GetDirectoryName($path)) 'ChatGPT Studio.lnk';if(!(Test-Path -LiteralPath $newLink)){Move-Item -LiteralPath $path -Destination $newLink}else{$existing=$shell.CreateShortcut($newLink);if(Same $existing.TargetPath (Join-Path $dest 'ChatGPT Studio.exe')){Remove-Item -LiteralPath $path -Force}else{throw '新快捷方式已被其他内容占用，正在回退。'}}}}}
+  foreach($entry in $script:studioState.links){$path=$entry.path;if(!(Test-Path -LiteralPath $path)){Copy-Item -LiteralPath $entry.copy -Destination $path};$link=$shell.CreateShortcut($path);$old=Join-Path $script:studioState.source 'ChatGPT Profiles.exe';$oldStudio=Join-Path $script:studioState.source 'ChatGPT Studio.exe';if((Same $link.TargetPath $old) -or (Same $link.TargetPath $oldStudio) -or (Same $link.TargetPath (Join-Path $dest 'ChatGPT Studio.exe'))){$link.TargetPath=Join-Path $dest 'ChatGPT Studio.exe';if($link.WorkingDirectory -and (Same $link.WorkingDirectory $script:studioState.source)){$link.WorkingDirectory=$dest};if(!$link.IconLocation -or $link.IconLocation.StartsWith($old,[StringComparison]::OrdinalIgnoreCase) -or $link.IconLocation.StartsWith($oldStudio,[StringComparison]::OrdinalIgnoreCase)){$link.IconLocation=(Join-Path $dest 'ChatGPT Studio.exe')+',0'};$link.Description='ChatGPT Studio';$link.Save();if(!$entry.pinned -and [IO.Path]::GetFileName($path) -eq 'ChatGPT Profiles.lnk'){$newLink=Join-Path ([IO.Path]::GetDirectoryName($path)) 'ChatGPT Studio.lnk';if(!(Test-Path -LiteralPath $newLink)){Move-Item -LiteralPath $path -Destination $newLink}else{$existing=$shell.CreateShortcut($newLink);if(Same $existing.TargetPath (Join-Path $dest 'ChatGPT Studio.exe')){Remove-Item -LiteralPath $path -Force}else{throw '新快捷方式已被其他内容占用，正在回退。'}}}}}
   $script:studioState.destination=$dest;$script:studioState.committed=$true;SaveState;Proof
   RemoveBackup
 }

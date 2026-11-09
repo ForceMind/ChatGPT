@@ -1,4 +1,4 @@
-﻿param([string]$Operation,[string]$File,[string]$Directory,[string]$Data,[string]$Config,[string]$Output,[string]$Evidence,[switch]$FailCommit)
+﻿param([string]$Operation,[string]$File,[string]$Directory,[string]$Data,[string]$Config,[string]$Output,[string]$Evidence,[string]$Executable='ChatGPT Profiles.exe',[switch]$FailCommit)
 $ErrorActionPreference='Stop'
 if($env:GITHUB_ACTIONS -ne 'true'){throw 'Disposable CI only'}
 switch($Operation){
@@ -26,17 +26,22 @@ switch($Operation){
     $items=@(Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*' -ErrorAction SilentlyContinue|Where-Object {$_.DisplayName -eq 'ChatGPT Studio'})
     if($items.Count -ne 1){throw 'Expected exactly one owned uninstall entry'}
     if($items[0].UninstallString -notlike ('*'+$Directory+'\Uninstall ChatGPT Studio.exe*')){throw 'Uninstall target not updated'}
+    $installKey=$items[0].PSChildName -replace '\.nsis$',''
+    $location=(Get-ItemProperty -LiteralPath ('HKCU:\Software\'+$installKey)).InstallLocation
+    if([IO.Path]::GetFullPath($location).TrimEnd('\') -ne [IO.Path]::GetFullPath($Directory).TrimEnd('\')){throw 'Automatic update installation registry not updated'}
     $shell=New-Object -ComObject WScript.Shell;$links=@()
     foreach($folder in @([Environment]::GetFolderPath('DesktopDirectory'),[Environment]::GetFolderPath('Programs'))){$path=Join-Path $folder 'ChatGPT Studio.lnk';if(!(Test-Path -LiteralPath $path)){throw 'Shortcut missing'};$link=$shell.CreateShortcut($path);if($link.TargetPath -ne $exe){throw 'Shortcut still targets old program'};$links+=@{path=$path;target=$link.TargetPath}}
-    @{productName=$info.ProductName;productVersion=$info.ProductVersion;uninstaller=$items[0].UninstallString;links=$links}|ConvertTo-Json -Depth 6|Set-Content -Encoding utf8 $Output
+    @{productName=$info.ProductName;productVersion=$info.ProductVersion;installLocation=$location;uninstaller=$items[0].UninstallString;links=$links}|ConvertTo-Json -Depth 6|Set-Content -Encoding utf8 $Output
   }
   Pin {
     $folder=Join-Path $env:APPDATA 'Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar';[void][IO.Directory]::CreateDirectory($folder)
     if(Test-Path -LiteralPath $File){throw 'Synthetic pin already exists'}
-    $link=(New-Object -ComObject WScript.Shell).CreateShortcut($File);$link.TargetPath=Join-Path $Directory 'ChatGPT Profiles.exe';$link.WorkingDirectory=$Directory;$link.Description='Owned CI pinned shortcut';$link.Save()
+    if($Executable -notin @('ChatGPT Profiles.exe','ChatGPT Studio.exe')){throw 'Unexpected synthetic executable'}
+    $link=(New-Object -ComObject WScript.Shell).CreateShortcut($File);$link.TargetPath=Join-Path $Directory $Executable;$link.WorkingDirectory=$Directory;$link.IconLocation=$link.TargetPath+',0';$link.Description='Owned CI pinned shortcut';$link.Save()
   }
   CheckPin {
     $link=(New-Object -ComObject WScript.Shell).CreateShortcut($File);if($link.TargetPath -ne (Join-Path $Directory 'ChatGPT Studio.exe')){throw 'Pinned shortcut target not updated'}
+    if($link.WorkingDirectory -ne $Directory -or $link.IconLocation -ne ((Join-Path $Directory 'ChatGPT Studio.exe')+',0')){throw 'Pinned shortcut directory or icon not updated'}
   }
   Tls {
     $c=Get-Content -Raw -Encoding utf8 $Config|ConvertFrom-Json
