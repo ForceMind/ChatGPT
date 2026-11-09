@@ -59,5 +59,17 @@
     }
   ],
   "physicalDeviceVerified": false,
-  "realChatGPTVerified": false
+  "realChatGPTVerified": false,
+  "version": "2026.11.9-1236",
+  "artifacts": [
+    {
+      "platform": "android",
+      "purpose": "installer",
+      "file": "ChatGPT-Studio-2026.11.09-1236-android-arm64.apk",
+      "bytes": 228463145,
+      "sha256": "032482a06cd408bf32c58b9186e3c6bf4f80a98f877e985100a8d5f0c1231e58",
+      "inputSHA256": "2b7d8c3e06623e3aca3b351377f56220868942503149ffdce4124e2045fe653b",
+      "nonSigningEntriesUnchanged": true
+    }
+  ]
 }
