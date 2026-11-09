@@ -5,6 +5,7 @@ import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { windowsUpdateFeed } from './windows-update-feed.mjs';
+import assert from 'node:assert/strict';
 
 if (process.platform !== 'win32' || process.arch !== 'x64') throw new Error('请在 Windows x64 构建环境运行。');
 const root = fileURLToPath(new URL('..', import.meta.url));
@@ -18,12 +19,11 @@ execFileSync(
   builderOptions
 );
 const unpacked = path.join(output, 'win-unpacked');
-const inventory = [];
-function inventoryFiles(directory) {
+function inventoryFiles(directory, inventory) {
   for (const item of readdirSync(directory, { withFileTypes: true })) {
     const file = path.join(directory, item.name);
     if (item.isSymbolicLink()) throw Error('Installer payload must not contain links');
-    if (item.isDirectory()) inventoryFiles(file);
+    if (item.isDirectory()) inventoryFiles(file, inventory);
     else
       inventory.push({
         path: path.relative(unpacked, file).split(path.sep).join('/'),
@@ -31,11 +31,17 @@ function inventoryFiles(directory) {
       });
   }
 }
-inventoryFiles(unpacked);
-writeFileSync(
-  path.join(root, 'assets/windows-payload.generated.json'),
-  JSON.stringify({ version: pkg.version, files: inventory }, null, 2)
-);
+function writeInventory() {
+  const inventory = [];
+  inventoryFiles(unpacked, inventory);
+  inventory.sort((a, b) => a.path.localeCompare(b.path));
+  writeFileSync(
+    path.join(root, 'assets/windows-payload.generated.json'),
+    JSON.stringify({ version: pkg.version, files: inventory }, null, 2)
+  );
+  return inventory;
+}
+writeInventory();
 execFileSync(
   process.execPath,
   [
@@ -52,6 +58,28 @@ execFileSync(
   ],
   builderOptions
 );
+// NSIS adds the updater config and elevation helper after the unpacked build.
+// Rebuild the installer with those exact bytes included in its rollback manifest.
+const finalInventory = writeInventory();
+execFileSync(
+  process.execPath,
+  [
+    builder,
+    '--win',
+    'nsis',
+    '--x64',
+    '--prepackaged',
+    unpacked,
+    '--publish',
+    'never',
+    `--config.directories.output=${output}`
+  ],
+  builderOptions
+);
+const verifiedInventory = [];
+inventoryFiles(unpacked, verifiedInventory);
+verifiedInventory.sort((a, b) => a.path.localeCompare(b.path));
+assert.deepEqual(verifiedInventory, finalInventory, 'Installer payload changed after the rollback manifest was frozen');
 const executableName = pkg.build.win.executableName || pkg.build.productName;
 const exe = path.join(output, 'win-unpacked', executableName + '.exe');
 const bytes = readFileSync(exe);
