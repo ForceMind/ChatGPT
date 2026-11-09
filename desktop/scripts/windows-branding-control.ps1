@@ -17,7 +17,15 @@ switch($Operation){
     $p=Start-Process $uninstaller.FullName -ArgumentList '/S' -PassThru
     if(!$p.WaitForExit(120000) -or $p.ExitCode -ne 0){throw 'Uninstall failed'}
     $end=[DateTime]::UtcNow.AddSeconds(30)
-    while(((Test-Path -LiteralPath (Join-Path $Directory 'ChatGPT Studio.exe')) -or (Test-Path -LiteralPath (Join-Path $Directory 'ChatGPT Profiles.exe'))) -and [DateTime]::UtcNow -lt $end){Start-Sleep -Milliseconds 200}
+    $pending=$true
+    do {
+      try {
+        if(Test-Path -LiteralPath $Directory){[void](Get-ChildItem -LiteralPath $Directory -Force)}
+        $pending=(Test-Path -LiteralPath (Join-Path $Directory 'ChatGPT Studio.exe')) -or (Test-Path -LiteralPath (Join-Path $Directory 'ChatGPT Profiles.exe'))
+      }catch [UnauthorizedAccessException]{$pending=$true}
+      if($pending){Start-Sleep -Milliseconds 200}
+    }while($pending -and [DateTime]::UtcNow -lt $end)
+    if($pending){throw 'Uninstaller did not finish removing the program within 30 seconds'}
   }
   Inspect {
     $exe=Join-Path $Directory 'ChatGPT Studio.exe';if(!(Test-Path -LiteralPath $exe)){throw 'New executable missing'}
