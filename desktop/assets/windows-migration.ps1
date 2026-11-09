@@ -171,7 +171,7 @@ function Rollback {
   if($script:studioState.prepared){
     $dest=SafePath $Destination
     foreach($item in $script:studioState.newFiles){$target=Join-Path $dest $item.path;if(Test-Path -LiteralPath $target){[void](SafePath ([IO.Path]::GetDirectoryName($target)));if((Sha $target) -ne $item.sha256){throw '回退检测到程序文件被改动，备份已保留。'};Remove-Item -LiteralPath $target -Force}}
-    if($script:studioState.active -and (NestedLegacyTarget $script:studioState.source $dest)){
+    if($script:studioState.active -and !(Same $script:studioState.source $dest) -and (Test-Path -LiteralPath $dest)){
       foreach($directory in @(Get-ChildItem -LiteralPath $dest -Recurse -Directory -Force|Sort-Object {$_.FullName.Length} -Descending)){
         if(!(Within $directory.FullName $script:studioState.source)){
           [void](SafePath $directory.FullName)

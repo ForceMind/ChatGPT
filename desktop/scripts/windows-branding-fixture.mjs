@@ -9,6 +9,7 @@ import {
   writeFileSync,
   existsSync,
   readdirSync,
+  rmdirSync,
   rmSync,
   openSync,
   closeSync
@@ -254,7 +255,7 @@ export async function runWindowsBrandingMatrix() {
     if (existsSync(directory)) rmSync(directory, { recursive: true });
     if (directory === nested && existsSync(modern)) {
       assert.deepEqual(readdirSync(modern), [], 'Nested rollback must remove only the empty new program directories');
-      rmSync(modern);
+      rmdirSync(modern);
     }
     if (existsSync(data)) rmSync(data, { recursive: true });
   }
@@ -382,6 +383,7 @@ export async function runWindowsBrandingMatrix() {
     writeFileSync(unknown, nonce);
     const rejected = install(installer);
     assert.notEqual(rejected.exitCode, 0);
+    assert(rejected.proof?.error.includes('user-owned-note.txt'), 'Reject the unknown old file itself');
     assert.equal(readFileSync(unknown, 'utf8'), nonce);
     assert(existsSync(path.join(legacy, 'ChatGPT Profiles.exe')));
     rmSync(unknown);
