@@ -1,0 +1,188 @@
+{
+  "schema": 1,
+  "version": "2026.11.11",
+  "sourceSHA": "42c56dcf92f83c96f30b7b4d7f44d3b9843286eb",
+  "sourceRunID": 42771715875,
+  "release": {
+    "id": 440037399,
+    "tag_name": "v2026.11.11",
+    "html_url": "https://github.com/ForceMind/ChatGPT/releases/tag/v2026.11.11",
+    "target_commitish": "42c56dcf92f83c96f30b7b4d7f44d3b9843286eb",
+    "draft": false,
+    "prerelease": false,
+    "published_at": "2026-11-10T07:03:24Z"
+  },
+  "assets": [
+    {
+      "id": 730454628,
+      "name": "ChatGPT-Profiles-2026.11.11-mac-arm64.zip",
+      "size": 155191338,
+      "digest": "sha256:cf505a6342509914e708f59e47766533a695d89fd306a7dccb0e82e58627b741",
+      "state": "uploaded",
+      "browser_download_url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.11/ChatGPT-Profiles-2026.11.11-mac-arm64.zip"
+    },
+    {
+      "id": 730454866,
+      "name": "ChatGPT-Studio-2026.11.11-mac-arm64.dmg",
+      "size": 155103951,
+      "digest": "sha256:f4f253456aaca00d2e1a902cdd390073efeb3e43b233bb8c638777210daa05b3",
+      "state": "uploaded",
+      "browser_download_url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.11/ChatGPT-Studio-2026.11.11-mac-arm64.dmg"
+    },
+    {
+      "id": 730455122,
+      "name": "ChatGPT-Studio-2026.11.11-mac-arm64.zip",
+      "size": 155075493,
+      "digest": "sha256:182626dea556ce47cf6ee9667859febf78c87816675dc39aa96f1035630a150e",
+      "state": "uploaded",
+      "browser_download_url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.11/ChatGPT-Studio-2026.11.11-mac-arm64.zip"
+    },
+    {
+      "id": 730455400,
+      "name": "ChatGPT-Studio-2026.11.11-windows-x64-setup.exe",
+      "size": 131368084,
+      "digest": "sha256:c261a32f907f924ab065d2457fcf29fba24f9f857c00aab8810cadab784113d5",
+      "state": "uploaded",
+      "browser_download_url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.11/ChatGPT-Studio-2026.11.11-windows-x64-setup.exe"
+    },
+    {
+      "id": 730455619,
+      "name": "ChatGPT-Studio-2026.11.11-windows-x64.zip",
+      "size": 181302169,
+      "digest": "sha256:42d8a7b5904c18fcbd8aab5e99a859c598be7d7bf899eac8379adbc1c028ed45",
+      "state": "uploaded",
+      "browser_download_url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.11/ChatGPT-Studio-2026.11.11-windows-x64.zip"
+    },
+    {
+      "id": 730455897,
+      "name": "release-info.json",
+      "size": 2316,
+      "digest": "sha256:d34a2812b93fcece929dbb820ceb2083b1fa5afec273855ddb0ba1af1a2270ac",
+      "state": "uploaded",
+      "browser_download_url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.11/release-info.json"
+    },
+    {
+      "id": 730455955,
+      "name": "SHA256SUMS.txt",
+      "size": 542,
+      "digest": "sha256:ee773b663e71da9f9ab4e860f1da266b05fdfc7465ce2d20d689f5089a700b36",
+      "state": "uploaded",
+      "browser_download_url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.11/SHA256SUMS.txt"
+    }
+  ],
+  "desktopAcceptance": {
+    "macos-15": {
+      "unitTotal": 111,
+      "unitPassed": 111,
+      "unitSkipped": 0,
+      "tabStripPassed": 1
+    },
+    "windows-2025": {
+      "unitTotal": 111,
+      "unitPassed": 110,
+      "unitSkipped": 1,
+      "tabStripPassed": 1
+    },
+    "screenshots": false,
+    "realAccountsUsed": false,
+    "popupSelection": "native menu item callback"
+  },
+  "website": {
+    "deploymentId": "2ae80521-5c48-4afc-a9b7-dec2cc28eab5",
+    "deployment": "https://2ae80521.chatgpt-studio.pages.dev",
+    "productionBranch": "main",
+    "sourceSHA": "6175b6c79facabe5bbe24c8cfcfbc4a6c33d56bd",
+    "publicDownloadRangeStatus": 206,
+    "androidFeedUnchanged": true,
+    "checks": [
+      {
+        "url": "https://2ae80521.chatgpt-studio.pages.dev/",
+        "status": 200,
+        "sha256": "0b53667e9a4980e1b298e72a97f9f58139d4761f40a8a8b190509374b0f5bade",
+        "bytes": 51195,
+        "androidAPKLinks": 1,
+        "firstMilestone": "desktop-tab-strip-20261111"
+      },
+      {
+        "url": "https://2ae80521.chatgpt-studio.pages.dev/updates/macos.json",
+        "status": 200,
+        "sha256": "474ed57336174ed19b557e896829e1b92c312c3ef65bde2d4de2e6fd885a23d9",
+        "bytes": 454,
+        "version": "2026.11.11"
+      },
+      {
+        "url": "https://2ae80521.chatgpt-studio.pages.dev/updates/windows/alpha.yml",
+        "status": 200,
+        "sha256": "d282004ffdd90c8e398f1b2517b7c67e7264268b646f556e45a0faf80fe37321",
+        "bytes": 1479,
+        "version": "2026.11.11"
+      },
+      {
+        "url": "https://2ae80521.chatgpt-studio.pages.dev/updates/android.json",
+        "status": 200,
+        "sha256": "67f3f03f363e376f094b9acdcb5b5c272fe54f08dbce7ce83b3fe390e9c96902",
+        "bytes": 478,
+        "version": "2026.11.10-1309"
+      },
+      {
+        "url": "https://chatgpt-studio.pages.dev/",
+        "status": 200,
+        "sha256": "0b53667e9a4980e1b298e72a97f9f58139d4761f40a8a8b190509374b0f5bade",
+        "bytes": 51195,
+        "androidAPKLinks": 1,
+        "firstMilestone": "desktop-tab-strip-20261111"
+      },
+      {
+        "url": "https://chatgpt-studio.pages.dev/updates/macos.json",
+        "status": 200,
+        "sha256": "474ed57336174ed19b557e896829e1b92c312c3ef65bde2d4de2e6fd885a23d9",
+        "bytes": 454,
+        "version": "2026.11.11"
+      },
+      {
+        "url": "https://chatgpt-studio.pages.dev/updates/windows/alpha.yml",
+        "status": 200,
+        "sha256": "d282004ffdd90c8e398f1b2517b7c67e7264268b646f556e45a0faf80fe37321",
+        "bytes": 1479,
+        "version": "2026.11.11"
+      },
+      {
+        "url": "https://chatgpt-studio.pages.dev/updates/android.json",
+        "status": 200,
+        "sha256": "67f3f03f363e376f094b9acdcb5b5c272fe54f08dbce7ce83b3fe390e9c96902",
+        "bytes": 478,
+        "version": "2026.11.10-1309"
+      },
+      {
+        "url": "https://chatgpt.xincreates.com/",
+        "status": 200,
+        "sha256": "6e7a35c0fcc9ae5d01c6832bb7aa9c3e9c80c6ee57a2f9b4bc7ae85670820895",
+        "bytes": 52025,
+        "androidAPKLinks": 1,
+        "firstMilestone": "desktop-tab-strip-20261111",
+        "cloudflareEdgeTransformsNormalized": true
+      },
+      {
+        "url": "https://chatgpt.xincreates.com/updates/macos.json",
+        "status": 200,
+        "sha256": "474ed57336174ed19b557e896829e1b92c312c3ef65bde2d4de2e6fd885a23d9",
+        "bytes": 454,
+        "version": "2026.11.11"
+      },
+      {
+        "url": "https://chatgpt.xincreates.com/updates/windows/alpha.yml",
+        "status": 200,
+        "sha256": "d282004ffdd90c8e398f1b2517b7c67e7264268b646f556e45a0faf80fe37321",
+        "bytes": 1479,
+        "version": "2026.11.11"
+      },
+      {
+        "url": "https://chatgpt.xincreates.com/updates/android.json",
+        "status": 200,
+        "sha256": "67f3f03f363e376f094b9acdcb5b5c272fe54f08dbce7ce83b3fe390e9c96902",
+        "bytes": 478,
+        "version": "2026.11.10-1309"
+      }
+    ]
+  }
+}
