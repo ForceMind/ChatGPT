@@ -1,13 +1,13 @@
 {
   "schema": 1,
-  "version": "2026.11.9",
-  "publishedAt": "2026-11-08T17:55:29Z",
-  "notes": "2026.11.9：三平台正常发布；保留账号、标签热切换、后台保活及加密恢复。关闭含认证字段的标签不保留内存实例。支持真实下载进度、手动检查和确认安装；完整应用更新需要重启。",
+  "version": "2026.11.10",
+  "publishedAt": "2026-11-10T03:49:23.073032+00:00",
+  "notes": "2026.11.10：Mac / Windows 更新下载显示百分比、文件大小、阶段及失败重试；Windows 补齐更新配置并修复嵌套程序目录迁移。",
   "files": {
     "arm64": {
-      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9/ChatGPT-Profiles-2026.11.9-mac-arm64.zip",
-      "size": 155181718,
-      "sha256": "4a05ffadcc58df49402325b1522149975d8261b6ccebfefa7747a744668df68d"
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.10/ChatGPT-Profiles-2026.11.10-mac-arm64.zip",
+      "size": 155190438,
+      "sha256": "8c78b73c40a82cab7918918dd9a982db92908f16306468fc9a677ef7e7df6edc"
     }
   }
 }

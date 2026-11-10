@@ -15,7 +15,7 @@
 
 在独立账号空间中使用 ChatGPT，管理保持在线的标签、会话与本地资产。启动直接进入网页，白灰黑界面、无地址栏，无需配置 OpenAI API Key。
 
-**当前正式版** · [macOS 与 Windows 2026.11.9](https://github.com/ForceMind/ChatGPT/releases/tag/v2026.11.9) · [Android 2026.11.09-1236](https://github.com/ForceMind/ChatGPT/releases/tag/v2026.11.9-1236)。
+**当前正式版** · [macOS 与 Windows 2026.11.10](https://github.com/ForceMind/ChatGPT/releases/tag/v2026.11.10) · [Android 2026.11.09-1236](https://github.com/ForceMind/ChatGPT/releases/tag/v2026.11.9-1236)。
 
 Android 使用原签 **2026.11.09-1236**（构建号 3000036），可覆盖安装，请勿先卸载。旧账号沿用原 WebView 和登录，新账号可选独立语言 / 时区；包含直接点选顶部标签、刷新、后退 / 前进、双内核恢复、VLESS 同路由及文件 / Skill 任务。独立 Beta 的数据空间仍保留，不自动迁移。
 
@@ -62,12 +62,12 @@ flowchart LR
 
 ## 下载与安装
 
-### 公开预发布版
+### 当前正式版
 
 | 平台 | 版本 | 下载 | 要求 |
 | --- | --- | --- | --- |
-| macOS · Apple Silicon | 2026.11.9 | [DMG](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9/ChatGPT-Studio-2026.11.9-mac-arm64.dmg) · [ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9/ChatGPT-Studio-2026.11.9-mac-arm64.zip) | macOS 13+ |
-| Windows · x64 | 2026.11.9 | [EXE](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9/ChatGPT-Studio-2026.11.9-windows-x64-setup.exe) · [免安装 ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9/ChatGPT-Studio-2026.11.9-windows-x64.zip) | Windows 10 / 11 · x64 |
+| macOS · Apple Silicon | 2026.11.10 | [DMG](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.10/ChatGPT-Studio-2026.11.10-mac-arm64.dmg) · [ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.10/ChatGPT-Studio-2026.11.10-mac-arm64.zip) | macOS 13+ |
+| Windows · x64 | 2026.11.10 | [EXE](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.10/ChatGPT-Studio-2026.11.10-windows-x64-setup.exe) · [免安装 ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.10/ChatGPT-Studio-2026.11.10-windows-x64.zip) | Windows 10 / 11 · x64 |
 | Android · 手机 / 平板 | 2026.11.09-1236 | [APK](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9-1236/ChatGPT-Studio-2026.11.09-1236-android-arm64.apk) | Android 9+ · ARM64 |
 
 ### 历史 Beta
@@ -84,7 +84,7 @@ flowchart LR
 
 [官网](https://chatgpt-studio.pages.dev/)提供原始 GitHub 下载和可选国内加速入口。第三方加速不可用时可改用原始链接；下载后可与对应 Release 的 SHA256SUMS.txt 核对。
 
-安装包校验清单 · [macOS 与 Windows](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9/SHA256SUMS.txt) · [Android](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9-1236/SHA256SUMS.txt)。
+安装包校验清单 · [macOS 与 Windows](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.10/SHA256SUMS.txt) · [Android](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9-1236/SHA256SUMS.txt)。
 
 当前版本为正常 Release，GitHub 标记为 Latest；历史预发布与校验清单继续保留。
 
@@ -134,7 +134,7 @@ Android 常规客户端可直接点选顶部标签，右侧提供刷新与更多
 | 平台 | 当前数据位置 |
 | --- | --- |
 | macOS | ~/Library/Application Support/ChatGPT Profiles/ |
-| Windows · x64 | 2026.11.9 | [EXE](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9/ChatGPT-Studio-2026.11.9-windows-x64-setup.exe) · [免安装 ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9/ChatGPT-Studio-2026.11.9-windows-x64.zip) | Windows 10 / 11 · x64 |
+| Windows · x64 | 2026.11.10 | [EXE](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.10/ChatGPT-Studio-2026.11.10-windows-x64-setup.exe) · [免安装 ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.10/ChatGPT-Studio-2026.11.10-windows-x64.zip) | Windows 10 / 11 · x64 |
 | Android | 原应用私有目录，包名保持不变 |
 
 更名不迁移或删除这些数据目录。macOS alpha.20 的应用文件、系统名称与可执行文件统一为 ChatGPT Studio；旧版自动更新仍使用专用的 ChatGPT-Profiles ZIP，首次启动时校验签名并迁移到同级 ChatGPT Studio.app，不覆盖已有同名应用。内部存储名、应用标识与既有加密身份保留为兼容标识；Windows alpha.24 程序文件、默认安装目录和快捷方式已统一 Studio。常规升级无需卸载或清理账号数据。
@@ -205,7 +205,7 @@ cd android
 
 | 优先级 / 阶段 | 工作 | 当前状态 |
 | --- | --- | --- |
-| 当前小批次 | Mac / Windows 更新体验候选 | 2026.11.10；完整检查及合成更新 / 安装回归通过，含真实百分比、文件大小、阶段提示与重试。[下载与证据](docs/update-experience-plan.md) |
+| 已发布 | Mac / Windows 更新体验 2026.11.10 | 真实百分比、文件大小、阶段提示及重试；完整检查与合成更新 / 安装回归通过。[记录与后续](docs/update-experience-plan.md) |
 | 后续批次 | Android 应用内更新 | 下载、校验与系统安装确认已有方案，尚未实现。[范围](docs/update-experience-plan.md#第二批-android) |
 | 待用户验收 | Windows 嵌套目录修复候选 | 候选已交付；完整检查及 11 项打包安装场景通过，覆盖数据保留、回退重试及实际安装后的更新配置。[下载与证据](docs/windows-installation-plan.md) |
 | 发布签名 | Windows 可信发布者 | 待可信代码签名证书或完成身份验证的签名服务；当前包仍显示“未知发布者”。[前置条件](docs/windows-installation-plan.md#后续顺序) |

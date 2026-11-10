@@ -1,6 +1,6 @@
 # 三端更新体验计划
 
-第一批 Mac / Windows 已交付更新体验候选，第二批 Android 保留为后续方案。沿用白灰黑、无地址栏和现有沉浸布局。Windows 嵌套目录与更新下载继续等待实机验收，可信发布者签名的前置条件见 [Windows 计划](windows-installation-plan.md)。
+第一批 Mac / Windows 更新体验已正式发布为 2026.11.10，第二批 Android 继续按下文推进。沿用白灰黑、无地址栏和现有沉浸布局。Windows 嵌套目录与更新下载仍待实机验收，可信发布者签名的前置条件见 [Windows 计划](windows-installation-plan.md)。
 
 ## 现有代码与缺口
 
@@ -45,11 +45,13 @@ Android 原生入口涉及 MainActivity、EnvironmentBrowserActivity 和共用�
 
 ## 当前状态
 
+2026.11.10 已按确认范围正式发布，复用同源码已验收 CI 字节。桌面官网下载、自动更新清单及部署回读见 [正式发布记录](releases/2026.11.10-publication.json)。Android 的公开下载仍为 2026.11.09-1236。以下保留候选验收记录。
+
 第一批已完成候选 `2026.11.10`，来源 `ed6f9e35c40be8c4d31cafabe56057dcc7b4a5e6`，Actions `42749099128` 两端均成功。Mac 完整检查 108 项单元全部通过、4 项适用更新 E2E 通过；Windows 108 项单元中 107 通过、1 项平台跳过，2 项适用更新 E2E 通过。跨平台测试按预期分别跳过其余平台专用用例。实际进度、检查失败重试、Mac 下载断流重试、菜单关闭重开、安装准备 / 退出 / 空闲安装以及 Windows EXE / ZIP 回归通过。两端报告无 PNG、录像或 trace 工件。
 
 [Mac 候选](https://github.com/ForceMind/ChatGPT/actions/runs/42749099128/artifacts/13732523592) 含 Apple Silicon DMG / ZIP；[Windows 候选](https://github.com/ForceMind/ChatGPT/actions/runs/42749099128/artifacts/13733315059) 含 x64 EXE / ZIP。均需 GitHub 登录，工件有效期至 2026-11-24。Windows 使用 `ChatGPT-Studio-2026.11.10-windows-x64-setup.exe`，Mac 使用 Studio DMG / ZIP；Profiles ZIP 为兼容更新格式。完整摘要与来源见 [候选记录](releases/desktop-update-experience-2026.11.10-candidate.json)。
 
-本次仅交候选，官网、正式 Release 与公开自动更新清单未切换。Mac 仍为临时签名且未公证，Windows 仍未配置 Authenticode。验证为 GitHub Actions 合成更新 / 安装场景，个人设备、真实网络和签名信任仍待实机验收。Android 应用内更新尚未实现。
+候选验收阶段保留既有公开版本，后续按上述正式发布记录切换。Mac 仍为临时签名且未公证，Windows 仍未配置 Authenticode。验证为 GitHub Actions 合成更新 / 安装场景，个人设备、真实网络和签名信任仍待实机验收。Android 应用内更新尚未实现。
 
 以下保留中间验证记录。
 
