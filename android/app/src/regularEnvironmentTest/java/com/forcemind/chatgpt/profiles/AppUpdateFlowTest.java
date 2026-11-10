@@ -231,6 +231,10 @@ public final class AppUpdateFlowTest {
         mode("valid");
         click("重新检查", false);
         click("下载更新", false);
+        see("重试下载", false);
+        assertFalse(RegularEnvironmentUpgradeTest.file("app-update/download.part.apk").exists());
+        assertFalse(RegularEnvironmentUpgradeTest.file("app-update/ready.apk").exists());
+        click("重试下载", false);
         see("安装更新", false);
         assertTrue(RegularEnvironmentUpgradeTest.file("app-update/ready.apk").isFile());
 

@@ -49,6 +49,7 @@ class Fixture(ThreadingHTTPServer):
         self.mode = 'current'
         self.requests = []
         self.authorized = False
+        self.valid_downloads = 0
 
     def metadata(self, mode):
         return {
@@ -113,6 +114,12 @@ class Handler(BaseHTTPRequestHandler):
                 file = self.server.test if mode == 'wrong-package' else self.server.target
                 self.reply(200, file.stat().st_size)
                 with file.open('rb') as apk:
+                    if mode == 'valid':
+                        self.server.valid_downloads += 1
+                        if self.server.valid_downloads == 1:
+                            # Close the first response early. Retry must use the same offer.
+                            self.wfile.write(apk.read(256 * 1024))
+                            return
                     while block := apk.read(256 * 1024):
                         self.wfile.write(block)
                         if mode == 'slow':
@@ -193,8 +200,10 @@ def installed_uid():
 
 
 def files_before(golden):
+    asset_directory = f"assets/{golden['accountId']}"
     files = ['workspace.json', 'regular-environment-upgrade-expected.json', 'regular-upgrade-payload.bin',
-             f"assets/{golden['accountId']}/index.json", *[row['path'] for row in golden['recoveries']]]
+             f'{asset_directory}/index.json', f"{asset_directory}/{golden['assetId']}.bin",
+             *[row['path'] for row in golden['recoveries']]]
     result = {}
     for name in files:
         digest = common._shell('sha256sum', DATA + '/files/' + name).split()[0]
@@ -264,11 +273,14 @@ def run(args):
             assert not any(row['credentialHeader'] for row in update_requests)
             for mode in MODES:
                 assert sum(row['mode'] == mode and row['path'] == '/android.json' for row in update_requests) == 1
-                assert sum(row['mode'] == mode and row['path'] == '/update.apk' for row in update_requests) == int(mode not in NO_DOWNLOAD)
+                downloads = 2 if mode == 'valid' else int(mode not in NO_DOWNLOAD)
+                assert sum(row['mode'] == mode and row['path'] == '/update.apk' for row in update_requests) == downloads
             golden = json.loads(common._shell('cat', EXPECTED))
             original = files_before(golden)
             for row in golden['recoveries']:
                 assert original[row['path']] == row['sha256']
+            assert original[f"assets/{golden['accountId']}/{golden['assetId']}.bin"] == golden['assetSHA256']
+            assert original['regular-upgrade-payload.bin'] == golden['payloadSHA256']
             assert old_uid == golden['uid'] == installed_uid()
             assert 'versionCode=3000037 ' in common._shell('dumpsys', 'package', PACKAGE)
             confirm_system_install()
