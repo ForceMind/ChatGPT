@@ -52,7 +52,9 @@ Android 原生入口涉及 MainActivity、EnvironmentBrowserActivity 和共用�
 
 ## 当前状态
 
-第二批已接入两引擎共用的更新弹层、固定线路且不发送账号 Cookie 的下载、前台任务进度与取消、APK 校验及系统安装确认。验证源码为 `2509863`。[Android 9 / 15 合成验收](https://github.com/ForceMind/ChatGPT/actions/runs/42756110302) 已启动，候选仍待通过验收。合成 APK 使用一次性 CI 证书，不能作为正式签名升级包安装。
+第二批已接入两引擎共用的更新弹层、固定线路且不发送账号 Cookie 的下载、前台任务进度与取消、APK 校验及系统安装确认。[首轮构建](https://github.com/ForceMind/ChatGPT/actions/runs/42755456395) 通过 Android 单元测试和 ARM64 lint / 构建，在审阅包脚本解析最低 SDK 字段时停止。已修正解析，保留最低 API 28 和 ARM64 库检查。
+
+[Android 9 / 15 合成验收](https://github.com/ForceMind/ChatGPT/actions/runs/42756806400) 使用源码 `fe6fc16`。夹具通过合成 VLESS 节点核对请求来源，给同一更新地址预置账号 Cookie，并要求更新清单和 APK 请求都没有凭据。候选仍待通过运行验收。合成 APK 使用一次性 CI 证书，不能作为正式签名升级包安装。
 
 [官网 Android 清单源码](../site/updates/android.json) 已按已公开的原签名 Android 2026.11.09-1236 发布收据生成，含实际包体大小、SHA-256 和正式证书指纹。清单目前仅在仓库中，部署后才可作为候选的真实检查入口。验收使用模拟器本机夹具，正式 APK 和下载入口沿用当前线上版本。
 
