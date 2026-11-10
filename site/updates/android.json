@@ -1,11 +1,11 @@
 {
   "schema": 1,
   "packageName": "com.forcemind.chatgpt.profiles",
-  "versionName": "2026.11.09-1236",
-  "versionCode": 3000036,
-  "size": 228463145,
+  "versionName": "2026.11.10-1309",
+  "versionCode": 3000037,
+  "size": 228495913,
   "abi": "arm64-v8a",
-  "sha256": "032482a06cd408bf32c58b9186e3c6bf4f80a98f877e985100a8d5f0c1231e58",
+  "sha256": "e27445d606a50f27564020077fa65111d638fb1f2343179680535823186f2958",
   "certificateSHA256": "8b6eef928fded91f291ad954e20976b2cc6011b55e8cbec0152695fe1f05cf19",
-  "url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9-1236/ChatGPT-Studio-2026.11.09-1236-android-arm64.apk"
+  "url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.10-1309/ChatGPT-Studio-2026.11.10-1309-android-arm64.apk"
 }

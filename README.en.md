@@ -15,9 +15,9 @@
 
 ChatGPT Studio brings independent ChatGPT account spaces, live tabs and local asset workflows into one immersive client. Launch directly into ChatGPT without an address bar or an OpenAI API key.
 
-**Current releases** · [macOS and Windows 2026.11.10](https://github.com/ForceMind/ChatGPT/releases/tag/v2026.11.10) · [Android 2026.11.09-1236](https://github.com/ForceMind/ChatGPT/releases/tag/v2026.11.9-1236).
+**Current releases** · [macOS and Windows 2026.11.10](https://github.com/ForceMind/ChatGPT/releases/tag/v2026.11.10) · [Android 2026.11.10-1309](https://github.com/ForceMind/ChatGPT/releases/tag/v2026.11.10-1309).
 
-Android ships original-signer build **2026.11.09-1236** (code 3000036). Install over the current release to preserve app data. Existing accounts retain WebView and their data; new accounts can select isolated locale/timezone. Includes direct tab selection, reload, back/forward, dual-engine recovery, VLESS routing and file/Skill tasks. Independent Beta data stays separate.
+Android ships original-signer build **2026.11.10-1309** (code 3000037). Install over the current release to preserve app data. Existing accounts retain WebView and their data; new accounts can select isolated locale/timezone. Includes direct tab selection, reload, back/forward, dual-engine recovery, VLESS routing and file/Skill tasks. Independent Beta data stays separate.
 
 Previously named **ChatGPT Profiles**. Legacy storage identities remain for sign-in and encrypted recovery compatibility. Synthetic CI acceptance does not replace real ChatGPT, node or physical-device acceptance; historical intermittent TLS/input issues remain documented.
 
@@ -66,7 +66,7 @@ Devices do not synchronize sign-in credentials. The regular client includes Geck
 | --- | --- | --- | --- |
 | macOS · Apple Silicon | 2026.11.10 | [DMG](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.10/ChatGPT-Studio-2026.11.10-mac-arm64.dmg) · [ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.10/ChatGPT-Studio-2026.11.10-mac-arm64.zip) | macOS 13+ |
 | Windows · x64 | 2026.11.10 | [EXE](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.10/ChatGPT-Studio-2026.11.10-windows-x64-setup.exe) · [Portable ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.10/ChatGPT-Studio-2026.11.10-windows-x64.zip) | Windows 10 / 11 · x64 |
-| Android · Phone/tablet | 2026.11.09-1236 | [APK](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9-1236/ChatGPT-Studio-2026.11.09-1236-android-arm64.apk) | Android 9+ · ARM64 |
+| Android · Phone/tablet | 2026.11.10-1309 | [APK](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.10-1309/ChatGPT-Studio-2026.11.10-1309-android-arm64.apk) | Android 9+ · ARM64 |
 
 ### Historical Beta
 
@@ -82,7 +82,7 @@ The independent Beta remains in [release history](https://github.com/ForceMind/C
 
 The [website](https://chatgpt-studio.pages.dev/) provides GitHub downloads and optional third-party acceleration links. Compare downloads with `SHA256SUMS.txt` in the Release. The current release is a normal Release and is marked Latest. Historical prereleases remain available.
 
-Package checksums · [macOS and Windows](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.10/SHA256SUMS.txt) · [Android](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9-1236/SHA256SUMS.txt).
+Package checksums · [macOS and Windows](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.10/SHA256SUMS.txt) · [Android](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.10-1309/SHA256SUMS.txt).
 
 ### Android alpha.19
 
@@ -94,7 +94,7 @@ App-owned desktop UI now uses clearer type and contrast, with 15px body text, 14
 
 Android opens directly into the webpage with account, tabs and more controls. A searchable tab sheet supports pinning, renaming, sorting, closing and restoring recent tabs. Browser-style bottom controls and developer diagnostics are removed from normal menus. Foreground switches reuse the original webpage, draft, scroll and generation context without a background service. Window recreation reuses pages; process termination requires reloading before restoring saved drafts and positions. See the [macOS alpha.20 release manifest](docs/releases/3.0.0-alpha.20.json), [Windows alpha.18 manifest](docs/releases/3.0.0-alpha.18.json) and [Android alpha.19 record](docs/releases/3.0.0-alpha.19-android.json) for exact binaries, sources and signatures.
 
-macOS checks for updates at launch and at noon in Shanghai time. After confirmation it downloads and verifies a complete ZIP. Installation can run immediately, on exit or after the app has been idle under the configured safeguards. Native application updates require a restart; delta updates are not implemented. Windows alpha.21 current-user EXE installations check at launch and Shanghai noon, download after confirmation, then install on exit or explicit restart. ZIP/shared/unrecognized installations provide verified saving for manual replacement. Windows idle and delta updates are not implemented. Android still updates manually.
+macOS checks for updates at launch and at noon in Shanghai time. After confirmation it downloads and verifies a complete ZIP. Installation can run immediately, on exit or after the app has been idle under the configured safeguards. Native application updates require a restart; delta updates are not implemented. Windows alpha.21 current-user EXE installations check at launch and Shanghai noon, download after confirmation, then install on exit or explicit restart. ZIP/shared/unrecognized installations provide verified saving for manual replacement. Windows idle and delta updates are not implemented. Android can check for updates in More → App updates, download in the background, and open the system installation prompt. Earlier versions need a manual in-place upgrade first.
 
 ## Getting started
 

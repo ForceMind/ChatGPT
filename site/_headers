@@ -12,3 +12,6 @@
 
 /updates/macos.json
   Cache-Control: no-store
+
+/updates/android.json
+  Cache-Control: no-store
