@@ -165,6 +165,7 @@ for (const mode of ['automatic', 'manual'] as const)
         const target = app as any;
         target.acceptDownload = true;
         target.updateTransferEvents = [];
+        // eslint-disable-next-line @typescript-eslint/no-require-imports -- Serialized callback observes the existing Electron main-process updater module.
         const prototype = require('electron-updater').NsisUpdater.prototype;
         const emit = prototype.emit;
         prototype.emit = function (event: string, ...args: any[]) {
