@@ -28,5 +28,141 @@
     35
   ],
   "physicalDeviceVerified": false,
-  "release": "https://github.com/ForceMind/ChatGPT/releases/tag/v2026.11.10-1309"
+  "release": "https://github.com/ForceMind/ChatGPT/releases/tag/v2026.11.10-1309",
+  "publication": {
+    "release": {
+      "assets": [
+        {
+          "browser_download_url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.10-1309/ChatGPT-Studio-2026.11.10-1309-android-arm64.apk",
+          "digest": "sha256:e27445d606a50f27564020077fa65111d638fb1f2343179680535823186f2958",
+          "id": 730307375,
+          "name": "ChatGPT-Studio-2026.11.10-1309-android-arm64.apk",
+          "size": 228495913,
+          "state": "uploaded"
+        },
+        {
+          "browser_download_url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.10-1309/SHA256SUMS.txt",
+          "digest": "sha256:b68abb27c75e226f4b93745061cb25cbafe9e3e411b92d80d127712dbca17a9c",
+          "id": 730307374,
+          "name": "SHA256SUMS.txt",
+          "size": 115,
+          "state": "uploaded"
+        }
+      ],
+      "draft": false,
+      "html_url": "https://github.com/ForceMind/ChatGPT/releases/tag/v2026.11.10-1309",
+      "id": 439999441,
+      "prerelease": false,
+      "published_at": "2026-11-10T06:24:45Z",
+      "tag_name": "v2026.11.10-1309",
+      "target_commitish": "86cd8baeef1abeab04edfbb7ddc5b8bd3741546d"
+    },
+    "apkPublicRangeStatus": 206,
+    "website": {
+      "deploymentId": "2e97c6ff-2e6f-472b-a9f0-47aaa7a588c6",
+      "productionBranch": "main",
+      "deployment": "https://2e97c6ff.chatgpt-studio.pages.dev",
+      "sourceSHA": "cab5e780de74636c7dd99db463fe3b8e7ebf0212",
+      "checks": [
+        {
+          "url": "https://2e97c6ff.chatgpt-studio.pages.dev/",
+          "status": 200,
+          "bytes": 50658,
+          "sha256": "04521580e4715c53b74823368d455dbfa0e979a061d73e3f1d987cc77c3436c1",
+          "androidAPKLinks": 1,
+          "firstMilestone": "android-update-20261110"
+        },
+        {
+          "url": "https://2e97c6ff.chatgpt-studio.pages.dev/updates/android.json",
+          "status": 200,
+          "bytes": 478,
+          "sha256": "67f3f03f363e376f094b9acdcb5b5c272fe54f08dbce7ce83b3fe390e9c96902",
+          "versionName": "2026.11.10-1309",
+          "versionCode": 3000037,
+          "cacheControl": [
+            "public, max-age=0, must-revalidate, no-store"
+          ]
+        },
+        {
+          "url": "https://2e97c6ff.chatgpt-studio.pages.dev/updates/macos.json",
+          "status": 200,
+          "bytes": 543,
+          "sha256": "062b8b0bf1e3c09419c7c246a56625c21db6e7e2c7e52760e4c8c78170974914"
+        },
+        {
+          "url": "https://2e97c6ff.chatgpt-studio.pages.dev/updates/windows/alpha.yml",
+          "status": 200,
+          "bytes": 2154,
+          "sha256": "bf3153349fcc1f562b05a243e3a624ae1e420bcec32cb938d76b1029d82f9b7a"
+        },
+        {
+          "url": "https://chatgpt-studio.pages.dev/",
+          "status": 200,
+          "bytes": 50658,
+          "sha256": "04521580e4715c53b74823368d455dbfa0e979a061d73e3f1d987cc77c3436c1",
+          "androidAPKLinks": 1,
+          "firstMilestone": "android-update-20261110"
+        },
+        {
+          "url": "https://chatgpt-studio.pages.dev/updates/android.json",
+          "status": 200,
+          "bytes": 478,
+          "sha256": "67f3f03f363e376f094b9acdcb5b5c272fe54f08dbce7ce83b3fe390e9c96902",
+          "versionName": "2026.11.10-1309",
+          "versionCode": 3000037,
+          "cacheControl": [
+            "public, max-age=0, must-revalidate, no-store"
+          ]
+        },
+        {
+          "url": "https://chatgpt-studio.pages.dev/updates/macos.json",
+          "status": 200,
+          "bytes": 543,
+          "sha256": "062b8b0bf1e3c09419c7c246a56625c21db6e7e2c7e52760e4c8c78170974914"
+        },
+        {
+          "url": "https://chatgpt-studio.pages.dev/updates/windows/alpha.yml",
+          "status": 200,
+          "bytes": 2154,
+          "sha256": "bf3153349fcc1f562b05a243e3a624ae1e420bcec32cb938d76b1029d82f9b7a"
+        },
+        {
+          "url": "https://chatgpt.xincreates.com/",
+          "status": 200,
+          "bytes": 51488,
+          "sha256": "3c682f8b389b7c03c0f52039a7e5f68d8e5eb1abc19f1d44b138a06a64136e58",
+          "cloudflareEdgeTransformsNormalized": [
+            "email-protection",
+            "web-analytics"
+          ],
+          "androidAPKLinks": 1,
+          "firstMilestone": "android-update-20261110"
+        },
+        {
+          "url": "https://chatgpt.xincreates.com/updates/android.json",
+          "status": 200,
+          "bytes": 478,
+          "sha256": "67f3f03f363e376f094b9acdcb5b5c272fe54f08dbce7ce83b3fe390e9c96902",
+          "versionName": "2026.11.10-1309",
+          "versionCode": 3000037,
+          "cacheControl": [
+            "public, max-age=0, must-revalidate, no-store"
+          ]
+        },
+        {
+          "url": "https://chatgpt.xincreates.com/updates/macos.json",
+          "status": 200,
+          "bytes": 543,
+          "sha256": "062b8b0bf1e3c09419c7c246a56625c21db6e7e2c7e52760e4c8c78170974914"
+        },
+        {
+          "url": "https://chatgpt.xincreates.com/updates/windows/alpha.yml",
+          "status": 200,
+          "bytes": 2154,
+          "sha256": "bf3153349fcc1f562b05a243e3a624ae1e420bcec32cb938d76b1029d82f9b7a"
+        }
+      ],
+      "desktopFeedsUnchanged": true
+    }
+  }
 }

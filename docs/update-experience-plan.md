@@ -62,11 +62,11 @@ Android 候选 `2026.11.10-1309`（versionCode `3000037`）在 [Actions 42760062
 
 [ARM64 未签名审阅包](https://github.com/ForceMind/ChatGPT/actions/runs/42760062840/artifacts/13737886115) 和 [双版本验收收据](https://github.com/ForceMind/ChatGPT/actions/runs/42760062840/artifacts/13737374398) 来自源码 `86cd8baeef1abeab04edfbb7ddc5b8bd3741546d`。APK 为 228,464,162 字节，SHA-256 为 `712c72798aefc5b822665a0862c470df010d93c7e79ffa6e2dc60226923f3970`。模拟器使用一次性 CI 证书。
 
-本机原签名候选为 `android/release/2026.11.10-1309/ChatGPT-Studio-2026.11.10-1309-android-arm64.apk`。使用与 Android 正式版相同的证书，保留 APK 中全部 292 个非签名条目的内容。apksigner 按最低 API 28 验证 v3 签名通过。签后为 228,495,913 字节，SHA-256 为 `e27445d606a50f27564020077fa65111d638fb1f2343179680535823186f2958`。本机签名工件没有安装到个人设备，也没有公开发布。
+本机原签名候选为 `android/release/2026.11.10-1309/ChatGPT-Studio-2026.11.10-1309-android-arm64.apk`。使用与 Android 正式版相同的证书，保留 APK 中全部 292 个非签名条目的内容。apksigner 按最低 API 28 验证 v3 签名通过。签后为 228,495,913 字节，SHA-256 为 `e27445d606a50f27564020077fa65111d638fb1f2343179680535823186f2958`。本机签名工件没有安装到个人设备。正式发布复用这份 APK 的原始字节。
 
-[官网 Android 清单源码](../site/updates/android.json) 已按已公开的原签名 Android 2026.11.09-1236 发布收据生成，含实际包体大小、SHA-256 和正式证书指纹。清单目前仅在仓库中，部署后才可作为候选的真实检查入口。验收使用模拟器本机夹具，正式 APK 和下载入口沿用当前线上版本。
+Android 2026.11.10-1309 已[正式发布](https://github.com/ForceMind/ChatGPT/releases/tag/v2026.11.10-1309)。官网仅保留一个 Android APK 链接，新的里程碑排在首位。[线上更新清单](https://chatgpt.xincreates.com/updates/android.json) 已回读并匹配正式 APK 的构建号、大小、SHA-256 和证书指纹。首次使用应用内更新需先手动覆盖安装此版。下载、部署和 HTTP 回读证据见[正式发布记录](releases/2026.11.10-1309.json)。
 
-2026.11.10 已按确认范围正式发布，复用同源码已验收 CI 字节。桌面官网下载、自动更新清单及部署回读见 [正式发布记录](releases/2026.11.10-publication.json)。Android 的公开下载仍为 2026.11.09-1236。以下为第一批桌面候选验收记录。
+2026.11.10 已按确认范围正式发布，复用同源码已验收 CI 字节。桌面官网下载、自动更新清单及部署回读见 [正式发布记录](releases/2026.11.10-publication.json)。以下为第一批桌面候选验收记录。
 
 第一批已完成候选 `2026.11.10`，来源 `ed6f9e35c40be8c4d31cafabe56057dcc7b4a5e6`，Actions `42749099128` 两端均成功。Mac 完整检查 108 项单元全部通过、4 项适用更新 E2E 通过；Windows 108 项单元中 107 通过、1 项平台跳过，2 项适用更新 E2E 通过。跨平台测试按预期分别跳过其余平台专用用例。实际进度、检查失败重试、Mac 下载断流重试、菜单关闭重开、安装准备 / 退出 / 空闲安装以及 Windows EXE / ZIP 回归通过。两端报告无 PNG、录像或 trace 工件。
 
