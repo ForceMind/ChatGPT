@@ -16,7 +16,7 @@ public final class AppUpdateInstalledTest {
         JSONObject golden = AppUpdateBrowserData.expected();
         assertEquals(golden.getInt("uid"), android.os.Process.myUid());
         OptimizationUpgradeFiles.verify(golden, true);
-        AppUpdateBrowserData.registryBarrier(golden, false);
+        AppUpdateBrowserData.verifyExistingRegistry(golden);
         AppUpdateBrowserData.browser(golden, false);
         OptimizationUpgradeFiles.verify(golden, true);
     }

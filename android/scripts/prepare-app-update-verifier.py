@@ -20,9 +20,16 @@ parts = [
     source[:source.index('    static int identity(')],
     source[source.index('    static JSONObject expected()'):source.index('    static void save(')],
     source[source.index('    static void sameJson('):source.index('    static void verifyNative(')],
-    source[source.index('    static String js('):source.index('    static void execute(')],
+    source[source.index('    static String js('):source.index('    static void registryBarrier(')],
 ]
-reader = ''.join(parts).replace('RegularEnvironmentUpgradeTest', 'AppUpdateBrowserData') + '}\n'
+registry_read = '''    static void verifyExistingRegistry(JSONObject expected) throws Exception {
+        JSONObject binding = registry(expected);
+        assertNotNull("Original Chromium registration must already persist", binding);
+        sameJson(expected.getJSONObject("browserRegistry"), binding);
+    }
+}
+'''
+reader = ''.join(parts).replace('RegularEnvironmentUpgradeTest', 'AppUpdateBrowserData') + registry_read
 for symbol in ('WorkspaceState', 'StateStore', 'DevicePayloadKeys', 'AssetLedger', 'PageRecoveryStore'):
     assert symbol not in reader
 destination = output / 'src/main/java' / package.replace('.', '/')

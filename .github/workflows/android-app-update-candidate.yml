@@ -50,11 +50,6 @@ jobs:
           for file,code,name in [('app-update-version.json',3000037,stamp),('app-update-target.json',3000038,'2099.01.01-0000')]:
               (root/file).write_text(json.dumps({'schema':1,'versionCode':code,'versionName':name,'timeZone':'Asia/Shanghai','sourceSHA':os.environ['GITHUB_SHA']},indent=2)+'\n')
           PY
-      - name: Build R8 arm64 original-package review APK
-        run: |
-          test ! -f android/keystore.properties
-          bash android/environment-poc/gradlew -p android --no-daemon -PenvironmentClient -PregularEnvironmentClient -PappUpdateCandidate -PunsignedRelease -PandroidVersionFile=android/app/build/app-update-version.json :app:lintRelease :app:assembleRelease
-          python3 android/scripts/package-app-update-review.py
       - name: Create a disposable same-signer upgrade fixture
         run: |
           password=$(openssl rand -hex 24)
@@ -64,6 +59,16 @@ jobs:
           chmod 600 "$key"
           echo "STUDIO_REGULAR_CI_STORE_PASSWORD=$password" >> "$GITHUB_ENV"
           echo "STUDIO_REGULAR_CI_KEYSTORE_PATH=$key" >> "$GITHUB_ENV"
+      - name: Build and sign the independent post-install verifier
+        run: |
+          python3 android/scripts/prepare-app-update-verifier.py --output "$RUNNER_TEMP/app-update-verifier"
+          bash android/gradlew -p "$RUNNER_TEMP/app-update-verifier" --no-daemon assembleRelease
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" sign --ks "$STUDIO_REGULAR_CI_KEYSTORE_PATH" --ks-key-alias regular-compat-ci --ks-pass env:STUDIO_REGULAR_CI_STORE_PASSWORD --key-pass env:STUDIO_REGULAR_CI_STORE_PASSWORD --out android/app/build/app-update-ci/installed-test.apk "$RUNNER_TEMP"/app-update-verifier/build/outputs/apk/release/*-unsigned.apk
+      - name: Build R8 arm64 original-package review APK
+        run: |
+          test ! -f android/keystore.properties
+          bash android/environment-poc/gradlew -p android --no-daemon -PenvironmentClient -PregularEnvironmentClient -PappUpdateCandidate -PunsignedRelease -PandroidVersionFile=android/app/build/app-update-version.json :app:lintRelease :app:assembleRelease
+          python3 android/scripts/package-app-update-review.py
       - name: Build the non-test R8 x86 install target and sign only in CI
         run: |
           bash android/environment-poc/gradlew -p android --no-daemon -PenvironmentClient -PregularEnvironmentClient -PappUpdateCandidate -PappUpdateTestTarget -PunsignedRelease -PregularReviewAbi=x86_64 -PandroidVersionFile=android/app/build/app-update-target.json :app:assembleRelease
@@ -74,11 +79,6 @@ jobs:
           cp android/app/build/outputs/apk/release/app-release.apk android/app/build/app-update-ci/source.apk
           cp android/app/build/outputs/apk/androidTest/release/app-release-androidTest.apk android/app/build/app-update-ci/source-test.apk
           cp android/network-poc/corebridge/bin/xray android/app/build/app-update-ci/xray
-      - name: Build and sign the independent post-install verifier
-        run: |
-          python3 android/scripts/prepare-app-update-verifier.py --output "$RUNNER_TEMP/app-update-verifier"
-          bash android/gradlew -p "$RUNNER_TEMP/app-update-verifier" --no-daemon assembleRelease
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" sign --ks "$STUDIO_REGULAR_CI_KEYSTORE_PATH" --ks-key-alias regular-compat-ci --ks-pass env:STUDIO_REGULAR_CI_STORE_PASSWORD --key-pass env:STUDIO_REGULAR_CI_STORE_PASSWORD --out android/app/build/app-update-ci/installed-test.apk "$RUNNER_TEMP"/app-update-verifier/build/outputs/apk/release/*-unsigned.apk
       - uses: actions/upload-artifact@v4
         if: success()
         with:
