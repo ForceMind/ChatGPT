@@ -64,6 +64,10 @@ for (const mode of ['automatic', 'manual'] as const)
     const gate = new Promise<void>((resolve) => {
       release = resolve;
     });
+    let finishDownload!: () => void;
+    const transferGate = new Promise<void>((resolve) => {
+      finishDownload = resolve;
+    });
     const server = createServer(async (q, r) => {
       if (q.url?.startsWith('/updates/windows/alpha.yml')) {
         await gate;
@@ -77,6 +81,13 @@ for (const mode of ['automatic', 'manual'] as const)
         if (q.url === '/installer.exe') exeRequests++;
         else zipRequests++;
         r.writeHead(200, { 'Content-Length': body.length });
+        if (mode === 'automatic' && q.url === '/installer.exe') {
+          await new Promise((resolve) => setTimeout(resolve, 1200));
+          r.write(body.subarray(0, Math.floor(body.length / 2)));
+          await transferGate;
+          if (!r.destroyed) r.end(body.subarray(Math.floor(body.length / 2)));
+          return;
+        }
         r.end(body);
         return;
       }
@@ -154,6 +165,22 @@ for (const mode of ['automatic', 'manual'] as const)
       await shell.evaluate(() => window.profiles.command({ type: 'update:check' }));
       if (mode === 'automatic') {
         await expect
+          .poll(async () => (await shell.evaluate(() => window.profiles.snapshot())).update?.transferredBytes || 0)
+          .toBeGreaterThan(0);
+        const header = shell.getByRole('button', { name: '查看应用更新', exact: true });
+        await header.click();
+        const card = shell.getByRole('group', { name: '应用更新', exact: true });
+        await expect(card).toHaveAttribute('data-update-stage', 'download');
+        await expect(card.locator('.update-bytes')).toContainText('MB');
+        await expect(header).toContainText('%');
+        await header.click();
+        await expect(card).toHaveCount(0);
+        await expect(header).toContainText('%');
+        await header.click();
+        await expect(card.locator('.update-bytes')).toContainText('MB');
+        await header.click();
+        finishDownload();
+        await expect
           .poll(async () => {
             const s = (await shell.evaluate(() => window.profiles.snapshot())).update;
             if (s?.phase === 'error') throw Error(s.message);
@@ -165,7 +192,8 @@ for (const mode of ['automatic', 'manual'] as const)
         expect(existsSync(marker)).toBe(false);
         await shell.locator('.current-account').click();
         await expect(shell.getByRole('menuitem', { name: /更新 .* 已准备/ })).toBeVisible();
-        await shell.screenshot({ path: info.outputPath('windows-update-ready.png') });
+        if (!process.env.STUDIO_UPDATE_NO_SCREENSHOTS)
+          await shell.screenshot({ path: info.outputPath('windows-update-ready.png') });
       } else {
         await expect.poll(() => existsSync(saved)).toBe(true);
         expect(readFileSync(saved).equals(zip)).toBe(true);
@@ -192,6 +220,7 @@ for (const mode of ['automatic', 'manual'] as const)
       } else expect(existsSync(marker)).toBe(false);
     } finally {
       release();
+      finishDownload();
       await app?.close().catch(() => {});
       server.closeAllConnections();
       await new Promise<void>((resolve) => server.close(() => resolve()));

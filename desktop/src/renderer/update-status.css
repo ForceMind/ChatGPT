@@ -106,6 +106,27 @@
 .update-status-phase {
   font-weight: 600;
 }
+.update-stages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  padding: 0;
+  list-style: none;
+  color: #595959;
+  font-size: var(--studio-type-meta);
+}
+.update-stages [aria-current='step'] {
+  color: #202020;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.update-stages [data-complete='true'] {
+  color: #343434;
+}
+.update-bytes {
+  font-variant-numeric: tabular-nums;
+}
 .update-status-version,
 .update-status-message {
   color: #454545;

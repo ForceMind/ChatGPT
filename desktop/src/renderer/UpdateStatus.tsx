@@ -14,6 +14,7 @@ function updateLabel(status?: UpdateState): string {
     case 'available':
       return '发现可用更新';
     case 'downloading':
+      if (status.stage === 'connect') return '正在连接下载源';
       if (status.stage === 'prepare') return '正在准备安装';
       if (status.stage === 'verify') return '正在校验更新';
       if ((downloadProgress(status) ?? 0) >= 100) return '校验/准备安装';
@@ -27,13 +28,29 @@ function updateLabel(status?: UpdateState): string {
   }
 }
 
-function DownloadProgress({ status }: { status: UpdateState }) {
-  if (status.phase !== 'downloading') return null;
+function DownloadProgress({ status, compact = false }: { status: UpdateState; compact?: boolean }) {
+  if (status.phase !== 'downloading' && (status.phase !== 'error' || downloadProgress(status) === undefined))
+    return null;
   const value = downloadProgress(status);
+  const total = status.totalBytes;
+  const received = status.transferredBytes;
+  const bytes =
+    Number.isSafeInteger(total) &&
+    total! > 0 &&
+    Number.isSafeInteger(received) &&
+    received! >= 0 &&
+    received! <= total!;
   return (
-    <div className="update-download">
-      <progress className="update-progress" aria-label="更新下载进度" max={100} value={value} />
-      <span className="update-percent">{value === undefined ? '等待进度' : `${Math.floor(value)}%`}</span>
+    <div>
+      <div className="update-download">
+        <progress className="update-progress" aria-label="更新下载进度" max={100} value={value} />
+        <span className="update-percent">{value === undefined ? '等待进度' : `${Math.floor(value)}%`}</span>
+      </div>
+      {!compact && bytes && (
+        <p className="update-bytes">
+          {(received! / 1_000_000).toFixed(1)} / {(total! / 1_000_000).toFixed(1)} MB
+        </p>
+      )}
     </div>
   );
 }
@@ -65,7 +82,7 @@ export function UpdateStatusButton({
       onClick={onClick}
     >
       <span className="update-status-button-label">{label}</span>
-      <DownloadProgress status={status} />
+      <DownloadProgress status={status} compact />
     </button>
   );
 }
@@ -84,6 +101,15 @@ export function UpdateStatusCard({
   const ready = phase === 'ready';
   const manual = status?.installMode === 'manual';
   const pending = phase === 'checking' || phase === 'downloading';
+  const stages = ['检查更新', '下载文件', '校验文件', '准备安装'];
+  const active =
+    phase === 'checking' || status?.stage === 'check'
+      ? 0
+      : phase === 'ready' || status?.stage === 'prepare' || status?.stage === 'install'
+        ? 3
+        : status?.stage === 'verify'
+          ? 2
+          : 1;
   return (
     <div
       className="update-status-card"
@@ -99,6 +125,19 @@ export function UpdateStatusCard({
       <p className="update-status-phase" role="status">
         {label}
       </p>
+      {phase !== 'idle' && phase !== 'available' && (
+        <ol className="update-stages" aria-label="更新步骤">
+          {stages.map((stage, index) => (
+            <li
+              key={stage}
+              aria-current={active === index ? 'step' : undefined}
+              data-complete={index < active || phase === 'ready'}
+            >
+              {stage}
+            </li>
+          ))}
+        </ol>
+      )}
       {status?.version && status.version !== currentVersion && (
         <p className="update-status-version">
           {phase === 'idle' ? '官网公开版本' : '目标版本'} {status.version}
@@ -121,7 +160,17 @@ export function UpdateStatusCard({
             </span>
           )}
           <span>
-            {ready ? (manual ? '保存更新安装包' : '立即安装并重启') : phase === 'available' ? '下载更新' : '检查更新'}
+            {ready
+              ? manual
+                ? '保存更新安装包'
+                : '立即安装并重启'
+              : phase === 'available'
+                ? '下载更新'
+                : phase === 'error'
+                  ? status?.stage === 'check'
+                    ? '重试检查'
+                    : '重试更新'
+                  : '检查更新'}
           </span>
         </span>
       </button>

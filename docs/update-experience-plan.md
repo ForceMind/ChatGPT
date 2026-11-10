@@ -45,6 +45,6 @@ Android 原生入口涉及 MainActivity、EnvironmentBrowserActivity 和共用�
 
 ## 当前状态
 
-已只读核对上述桌面下载和展示入口、Android 菜单及官网接口，形成方案。产品代码尚未修改，未启动新的界面测试。第一批和第二批各交可安装候选及报告，再安排正式发布。
+用户确认继续第一批。Mac / Windows 已接入下载字节、明确阶段和可操作失败提示，保留现有安装与保活流程；待 Actions 完整检查和批准的合成交互验收。Mac 合成下载加入断流后重试，Windows 使用受控真实流式下载核对百分比 / 字节及菜单关闭重开。测试截图按本批范围关闭。Android 仍待第二批实现。
 
 Android 下载与安装机制按官方文档核对。[DownloadManager](https://developer.android.com/reference/android/app/DownloadManager) · [安装来源权限](https://developer.android.com/reference/android/content/pm/PackageManager#canRequestPackageInstalls()) · [系统安装确认](https://developer.android.com/reference/android/content/pm/PackageInstaller.SessionParams#setRequireUserAction(int))

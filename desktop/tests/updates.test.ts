@@ -149,7 +149,8 @@ test('streamed downloads verify real bytes, follow only allowed hosts, and rejec
   const root = mkdtempSync(path.join(realpathSync(os.tmpdir()), 'update-download-'));
   try {
     const file = manifest().files.arm64!,
-      progress: number[] = [];
+      progress: number[] = [],
+      transferred: number[] = [];
     let calls = 0;
     const fetch: FetchUpdate = async (url, input) => {
       assert.equal(input.credentials, 'omit');
@@ -166,12 +167,19 @@ test('streamed downloads verify real bytes, follow only allowed hosts, and rejec
       file.url,
       file,
       root,
-      (p) => progress.push(p),
+      (p, received, total) => {
+        progress.push(p);
+        transferred.push(received);
+        assert.equal(total, file.size);
+      },
       new AbortController().signal
     );
     assert.equal(calls, 2);
     assert.deepEqual(readFileSync(result), bytes);
     assert.equal(progress.at(-1), 100);
+    assert.equal(transferred[0], 0);
+    assert.equal(transferred.at(-1), bytes.length);
+    assert(transferred.every((value, index) => index === 0 || value >= transferred[index - 1]));
     rmSync(result);
     await assert.rejects(
       downloadUpdate(

@@ -16,10 +16,11 @@ import {
   shanghaiDay,
   validManifest,
   acceleratedURL,
+  updateFailureMessage,
   type UpdateManifest,
   type UpdateStatus
 } from '../shared/updates';
-import { readManifest, downloadUpdate, safeDirectory, type FetchUpdate } from './update-download';
+import { readManifest, downloadUpdate, safeDirectory, UpdateDownloadError, type FetchUpdate } from './update-download';
 import { stageUpdate, launchInstaller, readInstallResult, type StagedUpdate } from './update-install';
 type Saved = {
   schema: 1;
@@ -169,7 +170,7 @@ export class UpdateManager {
             : '已是最新公开版本'
         });
       } catch (error) {
-        this.set({ phase: 'error', message: error instanceof Error ? error.message : '暂时无法连接更新服务' });
+        this.set({ phase: 'error', stage: 'check', message: updateFailureMessage('check', error) });
       }
     })();
     this.checking = operation;
@@ -203,8 +204,10 @@ export class UpdateManager {
     this.set({
       phase: 'downloading',
       version: manifest.version,
-      stage: 'download',
+      stage: 'connect',
       progress: 0,
+      transferredBytes: 0,
+      totalBytes: file.size,
       message: '正在连接下载源，可继续使用'
     });
     let zip: string | undefined, staged: StagedUpdate | undefined;
@@ -214,24 +217,27 @@ export class UpdateManager {
         accelerated ? acceleratedURL(file.url) : file.url,
         file,
         this.directory,
-        (p) =>
+        (p, transferredBytes, totalBytes) =>
           this.set({
             phase: 'downloading',
             version: manifest.version,
             progress: p,
+            transferredBytes,
+            totalBytes,
             stage: p === 100 ? 'verify' : 'download',
             message: p === 100 ? '正在校验并准备更新' : '后台下载中，可继续使用'
           }),
         this.controller.signal
       );
-      if (!this.bundle) throw Error('更新包已校验。开发模式不替换 App；请在已安装客户端中使用自动更新');
       this.set({
+        ...this.status,
         phase: 'downloading',
         version: manifest.version,
         stage: 'prepare',
         progress: 100,
         message: '更新包已校验，正在准备安装'
       });
+      if (!this.bundle) throw Error('更新包已校验。开发模式不替换 App；请在已安装客户端中使用自动更新');
       staged = await stageUpdate(
         zip,
         file,
@@ -254,16 +260,23 @@ export class UpdateManager {
       if (staged) rmSync(staged.candidate, { recursive: true, force: true });
       if (zip && existsSync(zip)) unlinkSync(zip);
       if (this.saved.ready?.zip === zip) this.saved.ready = undefined;
+      const stage = error instanceof UpdateDownloadError ? error.stage : this.status.stage;
+      const message =
+        !this.bundle && zip
+          ? '更新包已校验。开发模式不替换 App；请在已安装客户端中使用自动更新'
+          : updateFailureMessage(stage, error);
       this.set(
         this.controller.signal.aborted
           ? { phase: 'available', version: manifest.version, message: '更新下载已中断，下次检查可重试' }
           : {
+              ...this.status,
               phase: 'error',
               version: manifest.version,
-              message: error instanceof Error ? error.message : '更新下载失败，当前版本仍可使用'
+              stage,
+              message
             }
       );
-      throw error;
+      throw new Error(message, { cause: error });
     } finally {
       clearTimeout(timer);
       this.controller = undefined;
@@ -277,7 +290,17 @@ export class UpdateManager {
   }
   async installOnQuit(allowRelaunch = true): Promise<void> {
     if (!this.saved.ready || this.status.phase !== 'ready') return;
-    await launchInstaller(this.saved.ready.staged, allowRelaunch ? this.restart : false);
+    try {
+      await launchInstaller(this.saved.ready.staged, allowRelaunch ? this.restart : false);
+    } catch (error) {
+      this.set({
+        phase: 'error',
+        stage: 'install',
+        version: this.saved.ready.manifest.version,
+        message: updateFailureMessage('install')
+      });
+      throw new Error(this.status.message, { cause: error });
+    }
   }
   restartAfterInstall(background = false): void {
     if (this.status.phase !== 'ready') throw Error('请等待更新下载完成');

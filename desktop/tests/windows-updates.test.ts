@@ -287,3 +287,36 @@ test('oversized transfer progress cancels the download and never reaches install
   assert(s.calls.cancelled > 0);
   assert.deepEqual(s.calls.installs, []);
 });
+test('Windows progress uses advertised bytes and rejects late regression while verification runs', async (t) => {
+  const s = setup(t);
+  await s.manager.check();
+  s.backend.download = async () => {
+    s.progress({ percent: 99, transferred: 5, total: exe.length });
+    assert.equal(s.manager.status.progress, Math.floor(500 / exe.length));
+    assert.equal(s.manager.status.transferredBytes, 5);
+    assert.equal(s.manager.status.totalBytes, exe.length);
+    s.progress({ percent: 100, transferred: exe.length, total: exe.length });
+    assert.equal(s.manager.status.stage, 'verify');
+    s.progress({ percent: 50, transferred: 5, total: exe.length });
+    assert.equal(s.manager.status.stage, 'verify');
+    assert.equal(s.manager.status.progress, 100);
+    writeFileSync(s.file, exe);
+    return [s.file];
+  };
+  await s.manager.download();
+  assert.equal(s.manager.status.phase, 'ready');
+});
+test('check failures retain their stage and can be checked again without exposing backend details', async (t) => {
+  const s = setup(t);
+  const check = s.backend.check;
+  s.backend.check = async () => {
+    throw Error('https://secret.invalid/?token=private');
+  };
+  await s.manager.check();
+  assert.equal(s.manager.status.stage, 'check');
+  assert.equal(s.manager.status.phase, 'error');
+  assert(!s.manager.status.message?.includes('private'));
+  s.backend.check = check;
+  await s.manager.check();
+  assert.equal(s.manager.status.phase, 'available');
+});

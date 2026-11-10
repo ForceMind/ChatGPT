@@ -10,12 +10,27 @@ export type UpdateStatus = {
   phase: 'idle' | 'checking' | 'available' | 'downloading' | 'ready' | 'error';
   version?: string;
   progress?: number;
-  stage?: 'download' | 'verify' | 'prepare';
+  transferredBytes?: number;
+  totalBytes?: number;
+  stage?: 'check' | 'connect' | 'download' | 'verify' | 'prepare' | 'install';
   idleEnabled?: boolean;
   idleDeadline?: number;
   message?: string;
   installMode?: 'automatic' | 'manual';
 };
+export function updateFailureMessage(stage?: UpdateStatus['stage'], error?: unknown): string {
+  const messages = {
+    check: '版本检查未完成，请重试检查。',
+    connect: '无法连接下载源，请检查网络后重试。',
+    verify: '更新文件校验未通过，请重新下载。',
+    prepare: '安装准备未完成，请重新准备更新。',
+    install: '安装校验或启动未完成，请重试更新或使用官网下载的安装包。',
+    download: '更新下载未完成，请检查网络后重试。'
+  };
+  const message = messages[stage || 'download'];
+  const status = error instanceof Error ? /^更新服务器返回 (\d{3})$/.exec(error.message) : null;
+  return status ? message + `（HTTP ${status[1]}）` : message;
+}
 const versionPattern = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/;
 export function versionParts(value: string): (number | string)[] | undefined {
   if (value.length > 100) return;

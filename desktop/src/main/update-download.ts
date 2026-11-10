@@ -5,6 +5,14 @@ import path from 'node:path';
 import type { UpdateFile } from '../shared/updates';
 export const UPDATE_FEED = 'https://chatgpt.xincreates.com/updates/macos.json';
 export type FetchUpdate = (url: string, options: RequestInit) => Promise<Response>;
+export class UpdateDownloadError extends Error {
+  constructor(
+    readonly stage: 'connect' | 'download' | 'verify',
+    cause: unknown
+  ) {
+    super(cause instanceof Error ? cause.message : '更新下载未完成', { cause });
+  }
+}
 export function safeDirectory(directory: string): string {
   mkdirSync(directory, { recursive: true, mode: 0o700 });
   const stat = lstatSync(directory);
@@ -88,44 +96,54 @@ export async function downloadUpdate(
   url: string,
   file: UpdateFile,
   directory: string,
-  onProgress: (percent: number) => void,
+  onProgress: (percent: number, transferredBytes: number, totalBytes: number) => void,
   signal: AbortSignal
 ): Promise<string> {
   safeDirectory(directory);
   const partial = path.join(directory, randomUUID() + '.part'),
     target = path.join(directory, randomUUID() + '.zip');
   let handle;
+  let stage: 'connect' | 'download' | 'verify' = 'connect';
   try {
     const response = await updateResponse(fetch, url, signal),
       length = response.headers.get('content-length');
+    stage = 'verify';
     if (length !== null && Number(length) !== file.size) {
       await response.body?.cancel();
       throw Error('更新包大小不符');
     }
     const reader = response.body?.getReader();
     if (!reader) throw Error('更新包为空');
+    stage = 'download';
     handle = await open(partial, 'wx', 0o600);
     const hash = createHash('sha256');
     let bytes = 0,
-      last = -1;
+      last = 0,
+      lastNotification = Date.now();
+    onProgress(0, 0, file.size);
     try {
       for (;;) {
         signal.throwIfAborted();
         const next = await reader.read();
         if (next.done) break;
         bytes += next.value.length;
-        if (bytes > file.size) throw Error('更新包超过声明大小');
+        if (bytes > file.size) {
+          stage = 'verify';
+          throw Error('更新包超过声明大小');
+        }
         hash.update(next.value);
         await handle.writeFile(next.value);
         const percent = Math.floor((bytes * 100) / file.size);
-        if (percent !== last) {
+        if (percent !== last || Date.now() - lastNotification >= 500) {
           last = percent;
-          onProgress(percent);
+          lastNotification = Date.now();
+          onProgress(percent, bytes, file.size);
         }
       }
     } finally {
       await reader.cancel();
     }
+    stage = 'verify';
     if (bytes !== file.size || hash.digest('hex') !== file.sha256) throw Error('更新包校验失败，已丢弃下载内容');
     await handle.sync();
     await handle.close();
@@ -136,7 +154,7 @@ export async function downloadUpdate(
   } catch (error) {
     await handle?.close();
     if (existsSync(partial)) unlinkSync(partial);
-    throw error;
+    throw new UpdateDownloadError(stage, error);
   }
 }
 export async function verifyUpdate(file: string, expected: UpdateFile, signal?: AbortSignal): Promise<void> {

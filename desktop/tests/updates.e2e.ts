@@ -116,6 +116,11 @@ for (const mode of ['quit', 'idle', 'manual'] as const)
         if (req.url === '/archive.zip') {
           archiveRequests++;
           res.writeHead(200, { 'Content-Length': bytes.length });
+          if (mode === 'manual' && archiveRequests === 1) {
+            res.write(bytes.subarray(0, Math.floor(bytes.length / 3)));
+            setTimeout(() => res.destroy(), 50);
+            return;
+          }
           if (mode === 'manual') {
             const first = Math.floor(bytes.length / 3),
               second = Math.floor((bytes.length * 2) / 3);
@@ -205,6 +210,16 @@ for (const mode of ['quit', 'idle', 'manual'] as const)
       });
       await shell.evaluate(() => window.profiles.command({ type: 'update:check' }));
       if (mode === 'manual') {
+        await expect
+          .poll(async () => (await shell.evaluate(() => window.profiles.snapshot())).update?.phase)
+          .toBe('error');
+        expect((await shell.evaluate(() => window.profiles.snapshot())).update?.stage).toBe('download');
+        await shell.getByRole('button', { name: '查看应用更新', exact: true }).click();
+        const failedCard = shell.getByRole('group', { name: '应用更新', exact: true });
+        await expect(failedCard).toContainText('更新下载未完成');
+        await failedCard.getByRole('menuitem', { name: '重试更新', exact: true }).click();
+      }
+      if (mode === 'manual') {
         const header = shell.getByRole('button', { name: '查看应用更新', exact: true });
         await expect(header).toBeVisible();
         await expect
@@ -227,6 +242,15 @@ for (const mode of ['quit', 'idle', 'manual'] as const)
         expect(firstProgress).toBeGreaterThan(0);
         expect(firstProgress).toBeLessThan(100);
         expect(firstProgress).toBe(Math.floor((archiveBytesSent * 100) / bytes.length));
+        const liveStatus = (await shell.evaluate(() => window.profiles.snapshot())).update;
+        expect(liveStatus?.transferredBytes).toBe(archiveBytesSent);
+        expect(liveStatus?.totalBytes).toBe(bytes.length);
+        await expect(card.locator('.update-bytes')).toContainText('MB');
+        await header.click();
+        await expect(card).toHaveCount(0);
+        await expect(header).toContainText(String(firstProgress) + '%');
+        await header.click();
+        await expect(card.locator('.update-bytes')).toContainText('MB');
         await expect(shell.locator('.drag-space')).toBeVisible();
         expect(
           await shell
@@ -258,7 +282,8 @@ for (const mode of ['quit', 'idle', 'manual'] as const)
           originalSize
         );
         await expect.poll(() => shell.evaluate(() => innerWidth)).toBe(originalSize[0]);
-        await shell.screenshot({ path: info.outputPath('macos-update-real-download-progress.png') });
+        if (!process.env.STUDIO_UPDATE_NO_SCREENSHOTS)
+          await shell.screenshot({ path: info.outputPath('macos-update-real-download-progress.png') });
         nextChunk();
         await expect
           .poll(() => progress.evaluate((element) => (element as HTMLProgressElement).value))
@@ -310,12 +335,13 @@ for (const mode of ['quit', 'idle', 'manual'] as const)
           app!.evaluate(({ app }) => (app as any).testUpdateDialogs.filter((d: any) => d.title === '更新已准备').length)
         )
         .toBe(1);
-      expect(archiveRequests).toBe(1);
+      expect(archiveRequests).toBe(mode === 'manual' ? 2 : 1);
       expect(versionRequests).toBeGreaterThanOrEqual(2);
       expect(readFileSync(path.join(current, 'Contents/Info.plist'), 'utf8')).toContain(packageInfo.version);
       await shell.locator('.current-account').click();
       await expect(shell.getByRole('menuitem', { name: /更新 .* 已准备/ })).toBeVisible();
-      await shell.screenshot({ path: info.outputPath('macos-update-ready.png') });
+      if (!process.env.STUDIO_UPDATE_NO_SCREENSHOTS)
+        await shell.screenshot({ path: info.outputPath('macos-update-ready.png') });
       const closed = app.waitForEvent('close');
       if (mode === 'manual') {
         await app.evaluate(({ app }) => {
@@ -386,7 +412,8 @@ for (const mode of ['quit', 'idle', 'manual'] as const)
               .isFocused()
           )
         ).toBe(false);
-        await note.screenshot({ path: info.outputPath('macos-idle-update-countdown.png') });
+        if (!process.env.STUDIO_UPDATE_NO_SCREENSHOTS)
+          await note.screenshot({ path: info.outputPath('macos-idle-update-countdown.png') });
         await note.getByRole('button', { name: '取消本次自动安装' }).click();
         await expect
           .poll(async () => (await shell.evaluate(() => window.profiles.snapshot())).update?.idleDeadline)
@@ -522,9 +549,9 @@ test('manual update checks expose real failures, retry and distinguish a newer i
     const card = shell.getByRole('group', { name: '应用更新', exact: true });
     await expect(card).toHaveAttribute('data-update-phase', 'error');
     await expect(card).toContainText(failure!.message!);
-    await expect(card.getByRole('menuitem', { name: '检查更新', exact: true })).toBeEnabled();
+    await expect(card.getByRole('menuitem', { name: '重试检查', exact: true })).toBeEnabled();
     const beforeRetry = versionRequests;
-    await card.getByRole('menuitem', { name: '检查更新', exact: true }).click();
+    await card.getByRole('menuitem', { name: '重试检查', exact: true }).click();
     await expect.poll(() => versionRequests).toBeGreaterThan(beforeRetry);
     await expect.poll(async () => (await status())?.phase).toBe('idle');
     expect((await status())?.version).toBe(publicVersion);

@@ -2,9 +2,16 @@ import { copyFile, rename, unlink } from 'node:fs/promises';
 import { existsSync, lstatSync, readFileSync, writeFileSync, renameSync, unlinkSync, realpathSync } from 'node:fs';
 import path from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
-import { newerVersion, noonDue, shanghaiDay, acceleratedURL, type UpdateStatus } from '../shared/updates';
+import {
+  newerVersion,
+  noonDue,
+  shanghaiDay,
+  acceleratedURL,
+  updateFailureMessage,
+  type UpdateStatus
+} from '../shared/updates';
 import { windowsRelease, type WindowsRelease, type WindowsArtifact } from '../shared/windows-updates';
-import { safeDirectory, verifyUpdate, downloadUpdate, type FetchUpdate } from './update-download';
+import { safeDirectory, verifyUpdate, downloadUpdate, UpdateDownloadError, type FetchUpdate } from './update-download';
 import type { UpdateService, UpdateSummary } from './update-service';
 
 export type WindowsUpdateBackend = {
@@ -45,6 +52,7 @@ export class WindowsUpdateManager implements UpdateService {
   private installFailure?: Error;
   private activeFile?: WindowsArtifact;
   private oversized = false;
+  private lastProgressAt = 0;
   private sessionEnding = false;
   private readonly unsubscribe: (() => void)[];
   constructor(private readonly options: Options) {
@@ -74,6 +82,7 @@ export class WindowsUpdateManager implements UpdateService {
       options.backend.progress((value) => {
         const expected = this.activeFile;
         if (this.disposed || !expected || this.status.phase !== 'downloading') return;
+        if (this.status.stage !== 'connect' && this.status.stage !== 'download') return;
         if (
           (value.transferred !== undefined && value.transferred > expected.size) ||
           (value.total !== undefined && value.total > expected.size)
@@ -83,19 +92,37 @@ export class WindowsUpdateManager implements UpdateService {
           options.backend.cancel();
           return;
         }
-        if (Number.isFinite(value.percent))
+        if (Number.isFinite(value.percent)) {
+          const transferredBytes =
+            Number.isSafeInteger(value.transferred) && value.transferred! >= 0 ? value.transferred : undefined;
+          const percent =
+            transferredBytes === undefined
+              ? Math.max(0, Math.min(100, Math.floor(value.percent)))
+              : Math.floor((transferredBytes * 100) / expected.size);
+          if (
+            percent === this.status.progress &&
+            this.status.stage === 'download' &&
+            Date.now() - this.lastProgressAt < 500
+          )
+            return;
+          this.lastProgressAt = Date.now();
           this.set({
             phase: 'downloading',
             version: this.release?.version,
-            progress: Math.max(0, Math.min(100, Math.floor(value.percent))),
+            progress: percent,
+            transferredBytes,
+            totalBytes: expected.size,
+            stage: percent === 100 ? 'verify' : 'download',
             message: '后台下载中，可继续使用'
           });
+        }
       }),
       options.backend.error((error) => {
         if (this.installing) {
           this.installFailure = error;
           this.set({
             phase: 'error',
+            stage: 'install',
             version: this.release?.version,
             message: '安装程序未能启动。当前账号已保存，可重新检查更新或使用官网安装包。'
           });
@@ -175,8 +202,8 @@ export class WindowsUpdateManager implements UpdateService {
         // Approval is bound to these exact bytes and version, never a future release.
         if (this.saved.approved === this.fingerprint(release)) await this.download(false);
         return this.manifest;
-      } catch {
-        this.set({ phase: 'error', message: '暂时无法检查 Windows 更新，请稍后重试；当前应用仍可使用。' });
+      } catch (error) {
+        this.set({ phase: 'error', stage: 'check', message: updateFailureMessage('check', error) });
         return;
       }
     })();
@@ -209,7 +236,16 @@ export class WindowsUpdateManager implements UpdateService {
     this.controller = new AbortController();
     this.activeFile = artifact;
     this.oversized = false;
-    this.set({ phase: 'downloading', version: release.version, progress: 0, message: '后台下载中，可继续使用' });
+    this.lastProgressAt = 0;
+    this.set({
+      phase: 'downloading',
+      stage: 'prepare',
+      version: release.version,
+      progress: 0,
+      transferredBytes: 0,
+      totalBytes: artifact.size,
+      message: '正在准备下载'
+    });
     const timer = setTimeout(
       () => {
         this.controller?.abort();
@@ -220,6 +256,7 @@ export class WindowsUpdateManager implements UpdateService {
     timer.unref();
     try {
       if (this.options.mode === 'automatic') await this.options.preflight();
+      this.set({ ...this.status, stage: 'connect', message: '正在连接下载源' });
       this.saved.approved = this.fingerprint(release);
       this.persist();
       let file: string;
@@ -253,13 +290,29 @@ export class WindowsUpdateManager implements UpdateService {
             accelerated ? acceleratedURL(artifact.url) : artifact.url,
             artifact,
             this.directory,
-            (p) =>
-              this.set({ phase: 'downloading', version: release.version, progress: p, message: '正在下载免安装 ZIP' }),
+            (p, transferredBytes, totalBytes) =>
+              this.set({
+                phase: 'downloading',
+                stage: p === 100 ? 'verify' : 'download',
+                version: release.version,
+                progress: p,
+                transferredBytes,
+                totalBytes,
+                message: '正在下载免安装 ZIP'
+              }),
             this.controller.signal
           );
       }
       this.controller.signal.throwIfAborted();
-      this.set({ phase: 'downloading', version: release.version, progress: 100, message: '正在校验更新文件' });
+      this.set({
+        phase: 'downloading',
+        stage: 'verify',
+        version: release.version,
+        progress: 100,
+        transferredBytes: artifact.size,
+        totalBytes: artifact.size,
+        message: '正在校验更新文件'
+      });
       await verifyUpdate(file, artifact, this.controller.signal);
       if (this.options.mode === 'automatic') await this.options.verifyInstaller(file, release.version);
       this.controller.signal.throwIfAborted();
@@ -278,10 +331,13 @@ export class WindowsUpdateManager implements UpdateService {
       this.saved.approved = undefined;
       this.persist();
       const aborted = this.controller.signal.aborted && !this.oversized;
+      const stage = this.oversized ? 'verify' : error instanceof UpdateDownloadError ? error.stage : this.status.stage;
       this.set({
+        ...this.status,
         phase: aborted ? 'available' : 'error',
         version: release.version,
-        message: aborted ? '下载已中断，下次检查可重试。' : '更新下载或校验未完成，当前应用与账号数据已保留。'
+        stage,
+        message: aborted ? '下载已中断，下次检查可重试。' : updateFailureMessage(stage, error)
       });
       throw new Error(this.status.message, { cause: error });
     } finally {
@@ -323,6 +379,7 @@ export class WindowsUpdateManager implements UpdateService {
       this.persist();
       this.set({
         phase: 'error',
+        stage: 'install',
         version: this.release.version,
         message: '安装前校验或准备未完成，当前应用保持。请重新检查更新。'
       });
