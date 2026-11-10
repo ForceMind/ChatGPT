@@ -56,7 +56,13 @@ Android 原生入口涉及 MainActivity、EnvironmentBrowserActivity 和共用�
 
 [Android 9 / 15 合成验收](https://github.com/ForceMind/ChatGPT/actions/runs/42756806400) 使用源码 `fe6fc16`。夹具通过合成 VLESS 节点核对请求来源，给同一更新地址预置账号 Cookie，并要求更新清单和 APK 请求都没有凭据。候选仍待通过运行验收。合成 APK 使用一次性 CI 证书，不能作为正式签名升级包安装。
 
-两轮构建已生成 ARM64 审阅 APK。Android 15 在直连和合成 VLESS 两轮都通过更新入口、下载校验、系统确认和原 UID 覆盖安装，安装后文件摘要一致；原测试 APK 冷启动时缺少 Kotlin 运行时，完整冷启动验收失败。已改用独立验证 APK，继续读取 Cookie、localStorage、IndexedDB，并使用原密钥解密草稿。Android 9 在合法 APK 校验时未进入安装就绪状态。按 Android 9 AOSP 的归档签名收集逻辑同时请求旧标志和 SigningInfo，仍核对当前签名证书。两项修正都等待双版本 Actions 验证。
+两轮构建已生成 ARM64 审阅 APK。Android 15 在直连和合成 VLESS 两轮都通过更新入口、下载校验、系统确认和原 UID 覆盖安装，安装后文件摘要一致；原测试 APK 冷启动时缺少 Kotlin 运行时，完整冷启动验收失败。已改用独立验证 APK，继续读取 Cookie、localStorage、IndexedDB，并使用原密钥解密草稿。Android 9 在合法 APK 校验时未进入安装就绪状态。按 Android 9 AOSP 的归档签名收集逻辑同时请求旧标志和 SigningInfo，仍核对当前签名证书。两项修正已通过下述双版本 Actions 验证。
+
+Android 候选 `2026.11.10-1309`（versionCode `3000037`）在 [Actions 42760062840](https://github.com/ForceMind/ChatGPT/actions/runs/42760062840) 通过 Android 9（API 28）和 Android 15（API 35）合成验收及交付门槛。每端 15 次更新清单与 APK 请求均经过选中的合成 VLESS 线路，凭据请求为 0。实测两引擎入口共用任务、后台进度、取消、断流后用同一清单重试、坏包拒绝、安装权限和系统确认；临时同签覆盖保留 UID、七个数据文件、WebView 登录标记、localStorage、IndexedDB，并在冷启动后用原密钥解密两份草稿。未运行个人设备或真实账号，工件中没有截图。
+
+[ARM64 未签名审阅包](https://github.com/ForceMind/ChatGPT/actions/runs/42760062840/artifacts/13737886115) 和 [双版本验收收据](https://github.com/ForceMind/ChatGPT/actions/runs/42760062840/artifacts/13737374398) 来自源码 `86cd8baeef1abeab04edfbb7ddc5b8bd3741546d`。APK 为 228,464,162 字节，SHA-256 为 `712c72798aefc5b822665a0862c470df010d93c7e79ffa6e2dc60226923f3970`。模拟器使用一次性 CI 证书。
+
+本机原签名候选为 `android/release/2026.11.10-1309/ChatGPT-Studio-2026.11.10-1309-android-arm64.apk`。使用与 Android 正式版相同的证书，保留 APK 中全部 292 个非签名条目的内容。apksigner 按最低 API 28 验证 v3 签名通过。签后为 228,495,913 字节，SHA-256 为 `e27445d606a50f27564020077fa65111d638fb1f2343179680535823186f2958`。本机签名工件没有安装到个人设备，也没有公开发布。
 
 [官网 Android 清单源码](../site/updates/android.json) 已按已公开的原签名 Android 2026.11.09-1236 发布收据生成，含实际包体大小、SHA-256 和正式证书指纹。清单目前仅在仓库中，部署后才可作为候选的真实检查入口。验收使用模拟器本机夹具，正式 APK 和下载入口沿用当前线上版本。
 
@@ -66,7 +72,7 @@ Android 原生入口涉及 MainActivity、EnvironmentBrowserActivity 和共用�
 
 [Mac 候选](https://github.com/ForceMind/ChatGPT/actions/runs/42749099128/artifacts/13732523592) 含 Apple Silicon DMG / ZIP；[Windows 候选](https://github.com/ForceMind/ChatGPT/actions/runs/42749099128/artifacts/13733315059) 含 x64 EXE / ZIP。均需 GitHub 登录，工件有效期至 2026-11-24。Windows 使用 `ChatGPT-Studio-2026.11.10-windows-x64-setup.exe`，Mac 使用 Studio DMG / ZIP；Profiles ZIP 为兼容更新格式。完整摘要与来源见 [候选记录](releases/desktop-update-experience-2026.11.10-candidate.json)。
 
-候选验收阶段保留既有公开版本，后续按上述正式发布记录切换。Mac 仍为临时签名且未公证，Windows 仍未配置 Authenticode。验证为 GitHub Actions 合成更新 / 安装场景，个人设备、真实网络和签名信任仍待实机验收。Android 应用内更新尚未实现。
+候选验收阶段保留既有公开版本，后续按上述正式发布记录切换。Mac 仍为临时签名且未公证，Windows 仍未配置 Authenticode。桌面验证为 GitHub Actions 合成更新 / 安装场景，个人设备、真实网络和签名信任仍待实机验收。Android 候选和验收范围见上文。
 
 以下保留中间验证记录。
 
