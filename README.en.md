@@ -193,7 +193,7 @@ Cloudflare Pages uses Direct Upload; a Git push does not deploy the site automat
 | Area | Status |
 | --- | --- |
 | Published: desktop update experience | macOS/Windows 2026.11.10 includes real percentage and byte counts, stage feedback and retries. Full checks and owned update/install tests pass. [Record and next batch](docs/update-experience-plan.md) |
-| Next batch: Android in-app updates | Planned download/verification/system-install flow; not implemented. [Scope](docs/update-experience-plan.md#第二批-android) |
+| Android in-app updates | Released in 2026.11.10-1309. Supports manual checks, background download progress, verification and system-confirmed installation. Android 9 and 15 synthetic acceptance passed; vendor devices remain to be tested. [Release record](docs/releases/2026.11.10-1309.json) |
 | Awaiting device acceptance: Windows nested installation | Candidate ready. Full check and 11 packaged installation cases pass, including data preservation, rollback/retry and installed updater configuration. [Download and evidence](docs/windows-installation-plan.md) |
 | Windows publisher signing | Pending trusted certificate or verified signing service. Current packages still show an unknown publisher. [Signing prerequisites](docs/windows-installation-plan.md#后续顺序) |
 | Android R8 optimization | Published as 2026.11.09-1236. APK size reduced by 5.57%; matched CPU/PSS results vary by scenario. [Evidence](docs/android-optimization-plan.md) |

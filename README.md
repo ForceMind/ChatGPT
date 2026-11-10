@@ -206,7 +206,7 @@ cd android
 | 优先级 / 阶段 | 工作 | 当前状态 |
 | --- | --- | --- |
 | 已发布 | Mac / Windows 更新体验 2026.11.10 | 真实百分比、文件大小、阶段提示及重试；完整检查与合成更新 / 安装回归通过。[记录与后续](docs/update-experience-plan.md) |
-| 后续批次 | Android 应用内更新 | 下载、校验与系统安装确认已有方案，尚未实现。[范围](docs/update-experience-plan.md#第二批-android) |
+| 已发布 | Android 应用内更新 | 2026.11.10-1309 起支持手动检查、后台下载进度、校验和系统确认覆盖安装。Android 9 / 15 合成验收通过，厂商真机待验。[发布记录](docs/releases/2026.11.10-1309.json) |
 | 待用户验收 | Windows 嵌套目录修复候选 | 候选已交付；完整检查及 11 项打包安装场景通过，覆盖数据保留、回退重试及实际安装后的更新配置。[下载与证据](docs/windows-installation-plan.md) |
 | 发布签名 | Windows 可信发布者 | 待可信代码签名证书或完成身份验证的签名服务；当前包仍显示“未知发布者”。[前置条件](docs/windows-installation-plan.md#后续顺序) |
 | 已发布 | Android R8 优化 | 2026.11.09-1236；包体减少约 5.57%，CPU/PSS 结果随场景变化。[完整证据](docs/android-optimization-plan.md) |
