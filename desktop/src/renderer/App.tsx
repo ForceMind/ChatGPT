@@ -19,7 +19,16 @@ import {
   type Snapshot
 } from '../shared/model';
 import { Icon, Mark, type IconName } from './icons';
-import { MORE_TABS_WIDTH, TAB_GAP, TAB_MAX_WIDTH, TAB_MIN_WIDTH, allTabsFit, splitTabs } from './tab-strip';
+import {
+  MORE_TABS_WIDTH,
+  TAB_EDGE_WIDTH,
+  TAB_GAP,
+  TAB_MAX_WIDTH,
+  TAB_MIN_WIDTH,
+  allTabsFit,
+  splitTabs,
+  windowsTabWidth
+} from './tab-strip';
 import { useTabScroll } from './use-tab-scroll';
 import './style.css';
 const Workbench = lazy(() => import('./Workbench').then((module) => ({ default: module.Workbench })));
@@ -95,7 +104,14 @@ function App() {
   const scrollTabs = state?.platform === 'darwin' || state?.platform === 'win32';
   const activeProfile = state?.profiles.find((p) => p.id === state.activeProfileId);
   const tabs = state?.tabs.filter((t) => t.profileId === activeProfile?.id) ?? [];
-  const tabScroll = useTabScroll(shellReady && scrollTabs, activeProfile?.activeTabId, tabs.length, tabStripWidth);
+  const tabWidth = state?.platform === 'win32' ? windowsTabWidth(tabStripWidth) : TAB_MIN_WIDTH;
+  const tabScroll = useTabScroll(
+    shellReady && scrollTabs,
+    activeProfile?.activeTabId,
+    tabs.length,
+    tabStripWidth,
+    tabWidth
+  );
   useLayoutEffect(() => {
     const strip = tabStrip.current;
     if (!shellReady || !strip) return;
@@ -303,7 +319,7 @@ function App() {
   const profile = activeProfile!;
   const tab = tabs.find((t) => t.id === profile.activeTabId)!;
   const status = state.tabStatus[tab.id];
-  const scrollable = scrollTabs && !allTabsFit(tabs.length, tabStripWidth);
+  const scrollable = scrollTabs && !allTabsFit(tabs.length, tabStripWidth, tabWidth);
   const { visible: stripTabs, hidden: menuTabs } = scrollTabs
     ? { visible: tabs, hidden: [] }
     : splitTabs(tabs, tab.id, tabStripWidth);
@@ -335,7 +351,8 @@ function App() {
   const stripStyle = {
     '--tab-strip-ideal': tabs.length * TAB_MAX_WIDTH + (tabs.length - 1) * TAB_GAP + 'px',
     '--tab-max-width': TAB_MAX_WIDTH + 'px',
-    '--tab-min-width': TAB_MIN_WIDTH + 'px',
+    '--tab-min-width': tabWidth + 'px',
+    '--tab-edge-width': TAB_EDGE_WIDTH + 'px',
     '--tab-gap': TAB_GAP + 'px',
     '--more-tabs-width': MORE_TABS_WIDTH + 'px'
   } as CSSProperties;

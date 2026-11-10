@@ -157,6 +157,8 @@ test('narrow tab strip scrolls both ways and switches side-menu tabs without rel
         const tabs = [...viewport.querySelectorAll('.tab')];
         return {
           scroll: viewport.scrollLeft,
+          viewportWidth: clip.width,
+          tabWidth: tabs[0]?.getBoundingClientRect().width,
           visible: tabs.filter((tab) => {
             const rect = tab.getBoundingClientRect();
             return rect.left >= clip.left - 1 && rect.right <= clip.right + 1;
@@ -193,7 +195,9 @@ test('narrow tab strip scrolls both ways and switches side-menu tabs without rel
       expect((await snapshot()).tabs.map((item) => item.title)).toEqual(order);
       await expect.poll(() => inspectPage(id)).toEqual(prior.page);
     };
-    await expect.poll(async () => (await position()).visible).toBeGreaterThan(1);
+    await expect
+      .poll(async () => (await position()).visible, { message: JSON.stringify(await position()) })
+      .toBeGreaterThan(1);
     await expect.poll(async () => (await position()).activeVisible).toBe(true);
     await chooseFromEdge('left', '2');
     await track.hover();

@@ -111,8 +111,6 @@
 
 .workspace:is([data-platform=win32], [data-platform=darwin]) .tab.active { border: 2px solid #252525; }
 .tab-strip[data-scrollable=true] .tabs {
-  -webkit-app-region: no-drag;
-  app-region: no-drag;
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: none;
@@ -122,12 +120,12 @@
   flex: 0 0 var(--tab-min-width);
 }
 .tab-edge {
-  flex: 0 0 24px;
+  flex: 0 0 var(--tab-edge-width);
 }
 .tab-edge-trigger {
   display: grid;
   place-items: center;
-  width: 24px;
+  width: var(--tab-edge-width);
   height: 32px;
   padding: 0;
   border: 1px solid #dedede;

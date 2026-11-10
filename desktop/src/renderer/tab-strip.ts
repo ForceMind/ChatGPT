@@ -1,10 +1,16 @@
 export const TAB_MIN_WIDTH = 132;
 export const TAB_MAX_WIDTH = 220;
 export const TAB_GAP = 4;
+export const TAB_EDGE_WIDTH = 24;
 export const MORE_TABS_WIDTH = 104;
 
-export function allTabsFit(count: number, width: number): boolean {
-  return count <= 1 || count * TAB_MIN_WIDTH + (count - 1) * TAB_GAP <= width;
+export function windowsTabWidth(stripWidth: number): number {
+  const pairWidth = Math.floor((stripWidth - 2 * TAB_EDGE_WIDTH - 3 * TAB_GAP) / 2);
+  return Math.max(108, Math.min(TAB_MIN_WIDTH, pairWidth));
+}
+
+export function allTabsFit(count: number, width: number, tabWidth = TAB_MIN_WIDTH): boolean {
+  return count <= 1 || count * tabWidth + (count - 1) * TAB_GAP <= width;
 }
 
 function visibleTabCount(count: number, width: number): number {
@@ -24,11 +30,11 @@ export function splitTabs<T extends { id: string }>(tabs: readonly T[], activeId
   return { visible, hidden };
 }
 
-export function tabEdges(count: number, width: number, left: number) {
-  const step = TAB_MIN_WIDTH + TAB_GAP;
+export function tabEdges(count: number, width: number, left: number, tabWidth = TAB_MIN_WIDTH) {
+  const step = tabWidth + TAB_GAP;
   const tolerance = 0.5;
   const leftCount = Math.max(0, Math.min(count, Math.ceil((left - tolerance) / step)));
-  const rightStart = Math.max(0, Math.min(count, Math.floor((left + width - TAB_MIN_WIDTH + tolerance) / step) + 1));
+  const rightStart = Math.max(0, Math.min(count, Math.floor((left + width - tabWidth + tolerance) / step) + 1));
   return { leftCount, rightStart };
 }
 
