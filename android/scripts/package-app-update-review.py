@@ -20,7 +20,9 @@ source = root / 'outputs/apk/release/app-release-unsigned.apk'
 tools = Path(os.environ['ANDROID_HOME']) / 'build-tools/35.0.0'
 badging = subprocess.check_output([str(tools / 'aapt2'), 'dump', 'badging', str(source)], text=True)
 assert "name='com.forcemind.chatgpt.profiles' versionCode='3000037' versionName='" + stamp + "'" in badging
-assert "native-code: 'arm64-v8a'" in badging and "sdkVersion:'28'" in badging
+print(badging)
+minimum = re.findall(r"^(?:minSdkVersion|sdkVersion):'(\d+)'$", badging, re.MULTILINE)
+assert minimum == ['28'], f'Expected API 28 minimum, got {minimum}'
 assert 'application-debuggable' not in badging
 manifest = subprocess.check_output([str(tools / 'aapt'), 'dump', 'xmltree', str(source), 'AndroidManifest.xml'], text=True)
 for name in ('AppUpdateActivity', 'AppUpdateService', 'AppUpdateInstallReceiver', 'REQUEST_INSTALL_PACKAGES'):
@@ -28,6 +30,9 @@ for name in ('AppUpdateActivity', 'AppUpdateService', 'AppUpdateInstallReceiver'
 for name in ('android:testOnly', 'EnvironmentAcceptanceActivity', 'app_update_test_security'):
     assert name not in manifest
 with zipfile.ZipFile(source) as apk:
+    libs = [name for name in apk.namelist() if name.startswith('lib/') and name.endswith('.so')]
+    assert libs and all(name.startswith('lib/arm64-v8a/') for name in libs), 'Expected ARM64-only native libraries'
+    assert any(name.endswith('/libxul.so') for name in libs), 'Missing Gecko native engine'
     dex = [name for name in apk.namelist() if name.endswith('.dex')]
     assert dex and all(b'http://127.0.0.1:18777' not in apk.read(name) for name in dex)
 assert subprocess.run([str(tools / 'apksigner'), 'verify', str(source)], capture_output=True).returncode != 0
