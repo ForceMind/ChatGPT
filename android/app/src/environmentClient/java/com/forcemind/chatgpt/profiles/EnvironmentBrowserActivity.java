@@ -352,6 +352,7 @@ public class EnvironmentBrowserActivity extends ComponentActivity implements Env
         StudioPageActions.action(sheet,"强制刷新","重新获取当前页面内容","refresh",enabled,()->{sheet.dismiss();pageAction(target,PageCommand.FORCE_REFRESH);});
         sheet.row("查看网页任务","进度、结果和目标对话","",()->{sheet.dismiss();showHandoffHistory();}).setContentDescription("查看网页任务");
         sheet.row("标签管理","切换或关闭标签页","",()->{sheet.dismiss();tabs();});
+        if(BuildConfig.APP_UPDATES_ENABLED)sheet.row("应用更新","","",()->{sheet.dismiss();AppUpdateActivity.open(this);});
         sheet.row("新建标签页","","plus",()->{sheet.dismiss();newTab();});sheet.row("账号管理","","user",()->{sheet.dismiss();accounts();});sheet.row("资产库","","folder",()->{sheet.dismiss();assets(false);});sheet.row("能力库","","spark",()->{sheet.dismiss();assets(true);});sheet.row("网络设置","","",()->{sheet.dismiss();startActivity(new Intent(this,MainActivity.class).putExtra("networkSettings",true));});sheet.row("恢复草稿","查看本地保存的草稿","",()->{sheet.dismiss();recoverySheet();});sheet.show();
     }
     private void recoverySheet(){

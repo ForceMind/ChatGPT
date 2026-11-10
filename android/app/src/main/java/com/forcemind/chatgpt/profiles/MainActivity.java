@@ -457,6 +457,7 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
         sheet.row("资产库","","folder",()->{sheet.dismiss();startActivity(new Intent(this,AssetWorkbenchActivity.class).putExtra(AssetWorkbenchActivity.ACCOUNT,state.activeAccount));});
         sheet.row("能力库","","spark",()->{sheet.dismiss();startActivity(new Intent(this,AssetWorkbenchActivity.class).putExtra(AssetWorkbenchActivity.ACCOUNT,state.activeAccount).putExtra("skills",true));});
         sheet.row("网络",memory.network().status(),"",()->{sheet.dismiss();NetworkSheet.show(this,memory.network());});
+        if(BuildConfig.APP_UPDATES_ENABLED)sheet.row("应用更新","","",()->{sheet.dismiss();AppUpdateActivity.open(this);});
         sheet.row("处理记录","","file",()->{sheet.dismiss();showHandoffHistory();});
         sheet.row("账号管理","","account",()->{sheet.dismiss();manageAccount();});sheet.show();
     }

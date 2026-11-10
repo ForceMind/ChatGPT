@@ -5,6 +5,15 @@ def regularEnvironmentClient = project.hasProperty('regularEnvironmentClient')
 def regularEnvironmentCi = project.hasProperty('regularEnvironmentCi')
 def environmentClient = project.hasProperty('environmentClient')
 def environmentTest = project.hasProperty('environmentTest')
+def appUpdateCandidate = project.hasProperty('appUpdateCandidate')
+def appUpdateTest = project.hasProperty('appUpdateTest')
+def appUpdateTestTarget = project.hasProperty('appUpdateTestTarget')
+if (appUpdateCandidate && !regularEnvironmentClient)
+    throw new GradleException('App updates require the regular Android package')
+if (appUpdateTest && (!appUpdateCandidate || !regularEnvironmentCi || !environmentTest || project.hasProperty('environmentNetworkTest')))
+    throw new GradleException('App update fixtures require the separate regular CI variant')
+if (appUpdateTestTarget && (!appUpdateCandidate || regularEnvironmentCi || environmentTest || System.getenv('GITHUB_ACTIONS') != 'true'))
+    throw new GradleException('The synthetic install target is Actions-only')
 def regularNavigationTest = project.hasProperty('regularNavigationTest')
 def regularLegacyNetworkTest = project.hasProperty('regularLegacyNetworkTest')
 def regularWorkbenchTest = project.hasProperty('regularWorkbenchTest')
@@ -36,7 +45,7 @@ if (regularNavigationTest && project.hasProperty('environmentNetworkTest'))
     throw new GradleException('Navigation and network fixtures use distinct CI APKs')
 def environmentBuildType = regularEnvironmentClient ? 'release' : 'networkBeta'
 def environmentPreBuild = regularEnvironmentClient ? 'preReleaseBuild' : 'preNetworkBetaBuild'
-def expectedCandidateVersionCode = regularEnvironmentClient ? 3000035 : 3000034
+def expectedCandidateVersionCode = regularEnvironmentClient ? (appUpdateCandidate ? (appUpdateTestTarget ? 3000038 : 3000037) : 3000035) : 3000034
 
 // One Actions-generated minute is shared by every candidate ABI and CI mode.
 // Never read the clock during Gradle configuration or reconstruct a reused version.
@@ -80,6 +89,9 @@ android {
         buildConfigField 'String', 'NETWORK_PROBE_URL', '""'
         buildConfigField 'boolean', 'ENVIRONMENT_CLIENT', 'false'
         buildConfigField 'boolean', 'ENVIRONMENT_TEST', 'false'
+        buildConfigField 'boolean', 'APP_UPDATES_ENABLED', 'false'
+        buildConfigField 'boolean', 'APP_UPDATE_TEST', 'false'
+        buildConfigField 'String', 'APP_UPDATE_TEST_ORIGIN', '""'
         buildConfigField 'boolean', 'ENVIRONMENT_NETWORK_TEST', 'false'
         buildConfigField 'String', 'ENVIRONMENT_HOME_URL', '""'
     }
@@ -114,9 +126,16 @@ android {
     buildTypes {
         debug { applicationIdSuffix '.debug'; versionNameSuffix '-dev' }
         release {
+            buildConfigField 'boolean', 'APP_UPDATES_ENABLED', appUpdateCandidate.toString()
+            buildConfigField 'boolean', 'APP_UPDATE_TEST', appUpdateTest.toString()
+            buildConfigField 'String', 'APP_UPDATE_TEST_ORIGIN', appUpdateTest ? '"http://127.0.0.1:18777"' : '""'
             if (regularEnvironmentClient) signingConfig regularEnvironmentCi ? signingConfigs.regularCiKey : null
             else if (signingFile.exists()) signingConfig signingConfigs.localRelease
             minifyEnabled false
+            if (appUpdateCandidate && !regularEnvironmentCi) {
+                minifyEnabled true
+                proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'app-update-r8.pro'
+            }
             ndk { abiFilters(regularEnvironmentClient && !regularEnvironmentCi ? regularReviewAbi : 'arm64-v8a') }
         }
         networkBeta {
@@ -251,6 +270,7 @@ if (project.hasProperty('environmentClient')) {
     dependencies.add(environmentBuildType + 'Implementation', 'org.mozilla.geckoview:geckoview:158.0.20261021001945')
     android.sourceSets[environmentBuildType].java.srcDir('src/environmentClient/java')
     android.sourceSets[environmentBuildType].java.srcDir(project.hasProperty('environmentTest') ? 'src/environmentCi/java' : 'src/environmentProduction/java')
+    if (appUpdateTest) android.sourceSets[environmentBuildType].res.srcDir('src/appUpdateTest/res')
     def environmentAssets = layout.buildDirectory.dir('generated/environment-assets')
     tasks.register('copyEnvironmentAssets', Sync) {
         inputs.property('environmentTest', project.hasProperty('environmentTest'))
@@ -282,6 +302,8 @@ if (project.hasProperty('environmentClient')) {
             inputs.property('environmentNetworkTest', project.hasProperty('environmentNetworkTest'))
             inputs.property('regularLegacyNetworkTest', regularLegacyNetworkTest)
             inputs.property('regularWorkbenchTest', regularWorkbenchTest)
+            inputs.property('appUpdateCandidate', appUpdateCandidate)
+            inputs.property('appUpdateTest', appUpdateTest)
             outputs.file(generatedManifest)
             doLast {
                 def base = file('src/environmentClient/AndroidManifest.xml').getText('UTF-8')
@@ -292,6 +314,13 @@ if (project.hasProperty('environmentClient')) {
                     def extra = file('src/environmentCi/AndroidManifest.xml').getText('UTF-8')
                     inner = extra.substring(extra.indexOf('<application>') + '<application>'.length(), extra.indexOf('</application>'))
                 }
+                if (appUpdateCandidate) {
+                    base = base.replace('<application ', '<uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" /><uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" /><application ')
+                    inner += '<activity android:name=".AppUpdateActivity" android:exported="false" android:launchMode="singleTop" android:theme="@style/AppUpdateHostTheme" />'
+                    inner += '<service android:name=".AppUpdateService" android:exported="false" android:foregroundServiceType="dataSync" android:stopWithTask="false" />'
+                    inner += '<receiver android:name=".AppUpdateInstallReceiver" android:exported="false" />'
+                }
+                if (appUpdateTest) base = base.replace('<application ', '<application android:networkSecurityConfig="@xml/app_update_test_security" ')
                 if (regularWorkbenchTest) inner += '<activity android:name=".UploadProbeActivity" android:exported="false" />'
                 if (project.hasProperty('environmentNetworkTest')) {
                     base=base.replace('<application ', '<application android:networkSecurityConfig="@xml/studio_environment_network_security" ')
