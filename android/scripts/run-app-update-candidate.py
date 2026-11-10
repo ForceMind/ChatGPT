@@ -265,7 +265,11 @@ def run(args):
             process = start_node(args.input / 'xray', identity)
             result = instrument('AppUpdateFlowTest#downloadAndRequestSystemConfirmation', signer, 'source', 480,
                                 extras=('-e', 'ownedUpdateNode', node))
-            assert 'INSTRUMENTATION_RESULT: appUpdateSourceProof=' in result
+            matches = re.findall(r'(?m)^INSTRUMENTATION_RESULT: appUpdateSourceProof=([^\r\n]+)$', result)
+            assert len(matches) == 1
+            steps = set(matches[0].split(','))
+            assert steps == {'both-entries', 'progress', 'background', 'route-lease', 'cancel', 'bad-packages',
+                             'retry', 'permission', 'live-tabs', 'draft', 'system-confirmation'}
             assert fixture.authorized
             assert any(row['path'] == '/probe' for row in fixture.requests)
             assert all(row['throughSelectedLine'] for row in fixture.requests)
@@ -301,7 +305,7 @@ def run(args):
                 'complete': True, 'api': api, 'sourceSHA': os.environ['GITHUB_SHA'],
                 'source': source_info, 'target': target_info, 'temporarySigner': signer, 'uid': old_uid,
                 'preservedFileSHA256': original, 'coldCookieLocalStorageIndexedDb': True,
-                'systemConfirmationTapped': True, 'requests': fixture.requests,
+                'systemConfirmationTapped': True, 'steps': sorted(steps), 'requests': fixture.requests,
             })
         finally:
             if process is not None and process.poll() is None:

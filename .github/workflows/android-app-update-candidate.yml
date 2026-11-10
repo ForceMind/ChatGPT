@@ -148,3 +148,29 @@ jobs:
           path: |
             android/app/build/app-update-evidence/
             android/app/build/app-update-provider/
+  delivery:
+    needs: emulator
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: android-app-update-unsigned-review
+          path: android/app/build/app-update-review
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: android-app-update-api-*
+          path: android/app/build/app-update-evidence
+      - name: Bind both acceptance reports to the ARM64 review APK
+        run: |
+          python3 android/scripts/verify-app-update-candidate.py \
+            --review android/app/build/app-update-review \
+            --evidence android/app/build/app-update-evidence \
+            --out android/app/build/app-update-acceptance.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-app-update-acceptance
+          retention-days: 14
+          path: android/app/build/app-update-acceptance.json
+          if-no-files-found: error
