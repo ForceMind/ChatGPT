@@ -75,7 +75,12 @@ export class WindowsUpdateManager implements UpdateService {
         this.saved = { schema: 1, noonDay: raw.noonDay, approved: raw.approved, zip: raw.zip };
       } catch {
         if (!lstatSync(file).isSymbolicLink()) renameSync(file, file + '.corrupt-' + randomUUID());
-        this.status = { ...this.status, phase: 'error', message: '更新记录需要重新确认，当前应用与账号数据保持。' };
+        this.status = {
+          ...this.status,
+          phase: 'error',
+          stage: 'check',
+          message: '更新记录需要重新确认，当前应用与账号数据保持。'
+        };
       }
     }
     this.unsubscribe = [

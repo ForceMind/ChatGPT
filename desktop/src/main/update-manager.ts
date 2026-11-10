@@ -119,8 +119,8 @@ export class UpdateManager {
               message: '上次未能安装，可在退出时重试；旧版与登录数据已保留'
             }
           : { phase: 'error', message: '上次更新未能安装，当前 App 与登录数据已保留。请重试或手动安装。' };
-    } catch (error) {
-      this.status = { phase: 'error', message: error instanceof Error ? error.message : '更新记录无法读取' };
+    } catch {
+      this.status = { phase: 'error', stage: 'check', message: '更新记录无法读取，请重新检查更新。' };
     }
   }
   private persist(): void {

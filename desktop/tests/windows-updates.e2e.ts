@@ -82,8 +82,10 @@ for (const mode of ['automatic', 'manual'] as const)
         else zipRequests++;
         r.writeHead(200, { 'Content-Length': body.length });
         if (mode === 'automatic' && q.url === '/installer.exe') {
+          r.flushHeaders();
+          r.write(body.subarray(0, 1));
           await new Promise((resolve) => setTimeout(resolve, 1200));
-          r.write(body.subarray(0, Math.floor(body.length / 2)));
+          r.write(body.subarray(1, Math.floor(body.length / 2)));
           await transferGate;
           if (!r.destroyed) r.end(body.subarray(Math.floor(body.length / 2)));
           return;
