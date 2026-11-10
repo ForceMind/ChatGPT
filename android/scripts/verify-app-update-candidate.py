@@ -18,7 +18,8 @@ assert os.environ.get('GITHUB_REF') == 'refs/heads/dev'
 receipt = json.loads((args.review / 'receipt.json').read_text())
 assert receipt['versionMetadata']['sourceSHA'] == os.environ['GITHUB_SHA']
 assert receipt['package'] == 'com.forcemind.chatgpt.profiles'
-assert receipt['versionMetadata']['versionCode'] == 3000037
+auto = os.environ.get('STUDIO_APP_UPDATE_AUTO') == 'true'
+assert receipt['versionMetadata']['versionCode'] == (3000038 if auto else 3000037)
 assert receipt['signing'] == 'UNSIGNED_REVIEW_ONLY' and receipt['abi'] == 'arm64-v8a'
 assert receipt['r8'] and receipt['alignment16KiB'] and not receipt['ciEndpointIncluded']
 assert Path(receipt['file']).name == receipt['file']
@@ -29,11 +30,23 @@ with apk.open('rb') as stream:
 
 results = []
 for api in (28, 35):
-    paths = (args.evidence / f'android-app-update-api-{api}').rglob('report.json')
+    evidence = args.evidence / f'android-app-update-api-{api}'
+    paths = evidence.rglob('auto-report.json' if auto else 'report.json')
     reports = [json.loads(path.read_text()) for path in paths]
-    report, = [row for row in reports if 'systemConfirmationTapped' in row]
+    report, = reports if auto else [row for row in reports if 'systemConfirmationTapped' in row]
     assert report['complete'] is True and report['api'] == api and report['sourceSHA'] == os.environ['GITHUB_SHA']
     assert report['source']['versionName'] == receipt['versionMetadata']['versionName']
+    if auto:
+        assert report['source']['versionCode'] == 3000038 and report['source']['package'] == receipt['package']
+        assert report['syntheticOnly'] and not report['screenshots']
+        assert set(report['steps']) == {'startup', 'engine-dedupe', 'noon-job', 'foreground-notice',
+                                        'missed-slot', 'manual-check', 'explicit-download'}
+        assert [row['path'] for row in report['requests']] == ['/android.json'] * 4 + ['/update.apk']
+        assert all(row['throughSelectedLine'] and not row['credentialHeader'] for row in report['requests'])
+        assert not any(path.suffix.lower() in {'.png','.jpg','.jpeg','.webm','.mp4'}
+                       for path in evidence.rglob('*') if path.is_file())
+        results.append(report)
+        continue
     assert report['source']['versionCode'] == 3000037 and report['target']['versionCode'] == 3000038
     for key in ('source', 'target'):
         assert report[key]['package'] == receipt['package']
@@ -48,7 +61,7 @@ for api in (28, 35):
     assert sum(row.get('mode') == 'valid' and row['path'] == '/update.apk' for row in requests) == 2
     results.append(report)
 
-for key in ('source', 'target', 'temporarySigner'):
+for key in (('source',) if auto else ('source', 'target', 'temporarySigner')):
     assert results[0][key] == results[1][key]
 assert args.out.parent.is_dir() and not args.out.exists()
 args.out.write_text(json.dumps({
@@ -56,6 +69,7 @@ args.out.write_text(json.dumps({
     'runId': os.environ['GITHUB_RUN_ID'],
     'review': receipt,
     'android9And15SyntheticAcceptance': True,
+    'automaticChecks': auto,
     'physicalDeviceTested': False,
     'productionSignatureUpgradeTested': False,
     'reports': results,

@@ -13,13 +13,15 @@ assert os.environ.get('GITHUB_REPOSITORY') == 'ForceMind/ChatGPT'
 assert os.environ.get('GITHUB_REF') == 'refs/heads/dev'
 root = Path('android/app/build')
 version = json.loads((root / 'app-update-version.json').read_text())
-assert version['versionCode'] == 3000037 and version['sourceSHA'] == os.environ['GITHUB_SHA']
+auto = os.environ.get('STUDIO_APP_UPDATE_AUTO') == 'true'
+code = 3000038 if auto else 3000037
+assert version['versionCode'] == code and version['sourceSHA'] == os.environ['GITHUB_SHA']
 stamp = version['versionName']
 assert re.fullmatch(r'\d{4}\.\d{2}\.\d{2}-\d{4}', stamp)
 source = root / 'outputs/apk/release/app-release-unsigned.apk'
 tools = Path(os.environ['ANDROID_HOME']) / 'build-tools/35.0.0'
 badging = subprocess.check_output([str(tools / 'aapt2'), 'dump', 'badging', str(source)], text=True)
-assert "name='com.forcemind.chatgpt.profiles' versionCode='3000037' versionName='" + stamp + "'" in badging
+assert f"name='com.forcemind.chatgpt.profiles' versionCode='{code}' versionName='{stamp}'" in badging
 print(badging)
 minimum = re.findall(r"^(?:minSdkVersion|sdkVersion):'(\d+)'$", badging, re.MULTILINE)
 assert minimum == ['28'], f'Expected API 28 minimum, got {minimum}'
@@ -27,6 +29,7 @@ assert 'application-debuggable' not in badging
 manifest = subprocess.check_output([str(tools / 'aapt'), 'dump', 'xmltree', str(source), 'AndroidManifest.xml'], text=True)
 for name in ('AppUpdateActivity', 'AppUpdateService', 'AppUpdateInstallReceiver', 'REQUEST_INSTALL_PACKAGES'):
     assert name in manifest
+assert ('AppUpdateCheckJob' in manifest) == auto
 for name in ('android:testOnly', 'EnvironmentAcceptanceActivity', 'app_update_test_security'):
     assert name not in manifest
 with zipfile.ZipFile(source) as apk:

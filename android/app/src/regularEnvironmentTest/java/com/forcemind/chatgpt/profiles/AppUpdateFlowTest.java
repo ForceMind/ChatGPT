@@ -210,6 +210,113 @@ public final class AppUpdateFlowTest {
         recoveryProof("reopened-retry-confirmation");
     }
 
+    private int autoRequests(String key) throws Exception {
+        HttpURLConnection request = (HttpURLConnection) new URL(ORIGIN + "/control/stats").openConnection(Proxy.NO_PROXY);
+        try {
+            request.setConnectTimeout(5000);
+            request.setReadTimeout(5000);
+            assertEquals(200, request.getResponseCode());
+            try (java.io.InputStream input = request.getInputStream()) {
+                byte[] bytes = new byte[512];
+                int size = input.read(bytes);
+                assertTrue(size > 0);
+                return new JSONObject(new String(bytes, 0, size, StandardCharsets.UTF_8)).getInt(key);
+            }
+        } finally { request.disconnect(); }
+    }
+
+    private void expectAutoRequests(String key, int expected) throws Exception {
+        long deadline = SystemClock.elapsedRealtime() + 45000;
+        int count;
+        do {
+            count = autoRequests(key);
+            if (count >= expected) break;
+            SystemClock.sleep(150);
+        } while (SystemClock.elapsedRealtime() < deadline);
+        assertEquals(key, expected, count);
+    }
+
+    @Test public void automaticNoonAndExplicitDownload() throws Exception {
+        assertTrue(BuildConfig.APP_UPDATE_TEST && BuildConfig.APP_UPDATE_AUTO);
+        assertEquals(3000038, code());
+        assertEquals(RegularEnvironmentUpgradeTest.args().getString("signer"), RegularEnvironmentUpgradeTest.signer());
+        AtomicReference<java.time.Instant> now = new AtomicReference<>(java.time.Instant.parse("2026-11-10T03:50:00Z"));
+        AppUpdateAuto.clockForTest(now::get);
+        String node = RegularEnvironmentUpgradeTest.args().getString("ownedUpdateNode");
+        assertNotNull(node);
+        assertTrue(node.matches("vless://[0-9a-f-]{36}@127\\.0\\.0\\.1:18778"));
+        NetworkSettingsStore.Data route = new NetworkSettingsStore.Data();
+        route.nodes.add(NetworkNode.parse(node, "Owned update line"));
+        route.selected = 0;
+        route.enabled = true;
+        new NetworkSettingsStore(context).write(route);
+        WorkspaceState state = new StateStore(context.getFilesDir()).update(workspace -> {
+            WorkspaceState.Account legacy = workspace.current();
+            legacy.name = "Owned auto WebView";
+            workspace.addEnvironmentAccount("Owned auto Gecko", "", WorkspaceState.COLORS[1], "en-US", "UTC");
+            workspace.activeAccount = legacy.id;
+        });
+        WorkspaceState.Account gecko = state.accounts.stream().filter(WorkspaceState.Account::isEnvironment).findFirst().get();
+        MainActivity.handoffFixture = (owner, request) -> new android.webkit.WebResourceResponse(
+                "text/html", "UTF-8", new ByteArrayInputStream("<p>Owned update fixture</p>".getBytes(StandardCharsets.UTF_8)));
+        instrument.startActivitySync(new Intent(context, MainActivity.class).setAction(Intent.ACTION_MAIN)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+        expectAutoRequests("feed", 1);
+        waitFor("startup check completed", 20, () -> onMain(() -> task().phase() == AppUpdateTask.Phase.IDLE));
+        assertEquals(0, autoRequests("apk"));
+
+        click("切换账号，当前：Owned auto WebView", false);
+        click("Owned auto Gecko", false);
+        see("切换账号，当前：Owned auto Gecko", false);
+        assertEquals(1, autoRequests("feed"));
+        mode("resume");
+        ui.executeShellCommand("input keyevent KEYCODE_HOME").close();
+        waitFor("app is backgrounded", 15, () -> {
+            AccessibilityNodeInfo root = ui.getRootInActiveWindow();
+            return root != null && !PACKAGE.contentEquals(root.getPackageName());
+        });
+        now.set(java.time.Instant.parse("2026-11-10T04:00:00Z"));
+        ui.executeShellCommand("cmd jobscheduler run -f " + PACKAGE + " " + AppUpdateAuto.JOB).close();
+        expectAutoRequests("feed", 2);
+        waitFor("background update available", 20, () -> onMain(() -> task().phase() == AppUpdateTask.Phase.AVAILABLE));
+        AccessibilityNodeInfo root = ui.getRootInActiveWindow();
+        assertNotNull(root);
+        assertFalse(PACKAGE.contentEquals(root.getPackageName()));
+        assertEquals(0, autoRequests("apk"));
+
+        Intent openGecko = new Intent().setClassName(context, "com.forcemind.chatgpt.profiles.EnvironmentBrowserActivity$Slot" + gecko.environmentSlot)
+                .putExtra(EnvironmentLauncher.ACCOUNT_ID, gecko.id).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        context.startActivity(openGecko);
+        see("发现新版本", false);
+        click("稍后", false);
+        assertEquals(2, autoRequests("feed"));
+        assertEquals(0, autoRequests("apk"));
+
+        ui.executeShellCommand("input keyevent KEYCODE_HOME").close();
+        waitFor("app is backgrounded on the next day", 15, () -> {
+            AccessibilityNodeInfo background = ui.getRootInActiveWindow();
+            return background != null && !PACKAGE.contentEquals(background.getPackageName());
+        });
+        now.set(java.time.Instant.parse("2026-11-11T04:30:00Z"));
+        context.startActivity(openGecko);
+        expectAutoRequests("feed", 3);
+        see("发现新版本", false);
+        click("查看更新", false);
+        see("下载更新", false);
+        assertEquals(0, autoRequests("apk"));
+        click("重新检查", false);
+        expectAutoRequests("feed", 4);
+        see("下载更新", false);
+        assertEquals(0, autoRequests("apk"));
+        click("下载更新", false);
+        expectAutoRequests("apk", 1);
+        see("安装更新", false);
+        assertTrue(RegularEnvironmentUpgradeTest.file("app-update/ready.apk").isFile());
+        Bundle result = new Bundle();
+        result.putString("appUpdateAutoProof", "startup,engine-dedupe,noon-job,foreground-notice,missed-slot,manual-check,explicit-download");
+        instrument.addResults(result);
+    }
+
     @Test public void downloadAndRequestSystemConfirmation() throws Exception {
         assertTrue(BuildConfig.APP_UPDATE_TEST);
         assertEquals(3000037, code());

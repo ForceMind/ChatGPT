@@ -32,6 +32,7 @@ final class AppUpdateTask {
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
     private final ArrayList<Runnable> observers = new ArrayList<>();
     private AppUpdateTransfer transfer;
+    private boolean automaticCheck;
     private AppUpdateRelease offer, ready;
     private Intent confirmation;
     private int installSession = -1;
@@ -74,6 +75,16 @@ final class AppUpdateTask {
                 if (offer.code <= installed) offer = null;
                 phase = Phase.ERROR;
                 message = "上次下载已中断，请重试";
+            } else if (ready == null && BuildConfig.APP_UPDATE_AUTO) {
+                String pending = saved.getString("available", null);
+                if (pending != null) {
+                    AppUpdateRelease release = AppUpdateRelease.parse(pending, BuildConfig.APP_UPDATE_TEST);
+                    if (release.code > installed) {
+                        offer = release;
+                        phase = Phase.AVAILABLE;
+                        message = "发现新版本 " + release.name;
+                    } else saved.edit().remove("available").apply();
+                }
             }
         } catch (Exception invalid) {
             phase = Phase.ERROR;
@@ -120,24 +131,68 @@ final class AppUpdateTask {
 
     void check() {
         if (!canCheck()) return;
-        offer = null;
-        AppUpdateTransfer job = start(Phase.CHECKING, "正在检查更新");
-        if (job == null) return;
+        check(BrowserMemory.get(context).network().routes, null);
+    }
+
+    boolean checkAutomatically(NetworkRoute route, java.util.function.Consumer<Boolean> finished) {
+        if (!canCheck() || saved.getBoolean("downloading", false) || phase == Phase.ERROR && offer != null)
+            return false;
+        return check(route, finished);
+    }
+
+    void cancelAutomaticCheck() {
+        if (automaticCheck && phase == Phase.CHECKING && transfer != null) transfer.cancel();
+    }
+
+    private boolean check(NetworkRoute route, java.util.function.Consumer<Boolean> finished) {
+        final AppUpdateTransfer job;
+        try { job = new AppUpdateTransfer(route); }
+        catch (RuntimeException unavailable) {
+            if (finished == null) state(Phase.ERROR, "当前线路尚未就绪，请连接后重试");
+            return false;
+        }
+        transfer = job;
+        automaticCheck = finished != null;
+        state(Phase.CHECKING, "正在检查更新");
         worker.execute(() -> {
+            AppUpdateRelease found;
             try (AppUpdateTransfer owned = job) {
                 AppUpdateRelease release = AppUpdateRelease.parse(owned.feed(BuildConfig.APP_UPDATE_TEST), BuildConfig.APP_UPDATE_TEST);
                 android.content.pm.PackageInfo current = AppUpdatePackage.installed(context);
                 requireCompatible(release, current);
+                found = release.code > current.getLongVersionCode() ? release : null;
+            } catch (Exception invalid) {
                 main.post(() -> {
                     transfer = null;
-                    offer = release.code > current.getLongVersionCode() ? release : null;
-                    state(offer == null ? Phase.IDLE : Phase.AVAILABLE,
-                            offer == null ? "当前没有可用更新" : "发现新版本 " + release.name);
+                    automaticCheck = false;
+                    if (finished == null) state(Phase.ERROR, "检查更新未完成，请确认线路后重试");
+                    else {
+                        state(offer == null ? Phase.IDLE : Phase.AVAILABLE,
+                                offer == null ? "可以手动检查更新" : "发现新版本 " + offer.name);
+                        finished.accept(false);
+                    }
                 });
-            } catch (Exception invalid) {
-                main.post(() -> { transfer = null; state(Phase.ERROR, "检查更新未完成，请确认线路后重试"); });
+                return;
             }
+            main.post(() -> {
+                transfer = null;
+                automaticCheck = false;
+                if (finished != null && job.cancelled()) {
+                    state(offer == null ? Phase.IDLE : Phase.AVAILABLE, offer == null ? "可以手动检查更新" : "发现新版本 " + offer.name);
+                    finished.accept(false);
+                    return;
+                }
+                offer = found;
+                if (BuildConfig.APP_UPDATE_AUTO) {
+                    if (offer == null) saved.edit().remove("available").apply();
+                    else saved.edit().putString("available", offer.metadata.toString()).apply();
+                }
+                state(offer == null ? Phase.IDLE : Phase.AVAILABLE,
+                        offer == null ? "当前没有可用更新" : "发现新版本 " + offer.name);
+                if (finished != null) finished.accept(true);
+            });
         });
+        return true;
     }
 
     private void requireCompatible(AppUpdateRelease release, android.content.pm.PackageInfo current) throws Exception {

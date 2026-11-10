@@ -6,8 +6,11 @@ def regularEnvironmentCi = project.hasProperty('regularEnvironmentCi')
 def environmentClient = project.hasProperty('environmentClient')
 def environmentTest = project.hasProperty('environmentTest')
 def appUpdateCandidate = project.hasProperty('appUpdateCandidate')
+def appUpdateAuto = project.hasProperty('appUpdateAuto')
 def appUpdateTest = project.hasProperty('appUpdateTest')
 def appUpdateTestTarget = project.hasProperty('appUpdateTestTarget')
+if (appUpdateAuto && !appUpdateCandidate)
+    throw new GradleException('Automatic update candidate requires appUpdateCandidate')
 if (appUpdateCandidate && !regularEnvironmentClient)
     throw new GradleException('App updates require the regular Android package')
 if (appUpdateTest && (!appUpdateCandidate || !regularEnvironmentCi || !environmentTest || project.hasProperty('environmentNetworkTest')))
@@ -45,7 +48,7 @@ if (regularNavigationTest && project.hasProperty('environmentNetworkTest'))
     throw new GradleException('Navigation and network fixtures use distinct CI APKs')
 def environmentBuildType = regularEnvironmentClient ? 'release' : 'networkBeta'
 def environmentPreBuild = regularEnvironmentClient ? 'preReleaseBuild' : 'preNetworkBetaBuild'
-def expectedCandidateVersionCode = regularEnvironmentClient ? (appUpdateCandidate ? (appUpdateTestTarget ? 3000038 : 3000037) : 3000035) : 3000034
+def expectedCandidateVersionCode = regularEnvironmentClient ? (appUpdateCandidate ? ((appUpdateTestTarget ? 3000038 : 3000037) + (appUpdateAuto ? 1 : 0)) : 3000035) : 3000034
 
 // One Actions-generated minute is shared by every candidate ABI and CI mode.
 // Never read the clock during Gradle configuration or reconstruct a reused version.
@@ -90,6 +93,7 @@ android {
         buildConfigField 'boolean', 'ENVIRONMENT_CLIENT', 'false'
         buildConfigField 'boolean', 'ENVIRONMENT_TEST', 'false'
         buildConfigField 'boolean', 'APP_UPDATES_ENABLED', 'false'
+        buildConfigField 'boolean', 'APP_UPDATE_AUTO', 'false'
         buildConfigField 'boolean', 'APP_UPDATE_TEST', 'false'
         buildConfigField 'String', 'APP_UPDATE_TEST_ORIGIN', '""'
         buildConfigField 'boolean', 'ENVIRONMENT_NETWORK_TEST', 'false'
@@ -127,6 +131,7 @@ android {
         debug { applicationIdSuffix '.debug'; versionNameSuffix '-dev' }
         release {
             buildConfigField 'boolean', 'APP_UPDATES_ENABLED', appUpdateCandidate.toString()
+            buildConfigField 'boolean', 'APP_UPDATE_AUTO', appUpdateAuto.toString()
             buildConfigField 'boolean', 'APP_UPDATE_TEST', appUpdateTest.toString()
             buildConfigField 'String', 'APP_UPDATE_TEST_ORIGIN', appUpdateTest ? '"http://127.0.0.1:18777"' : '""'
             if (regularEnvironmentClient) signingConfig regularEnvironmentCi ? signingConfigs.regularCiKey : null
@@ -303,6 +308,7 @@ if (project.hasProperty('environmentClient')) {
             inputs.property('regularLegacyNetworkTest', regularLegacyNetworkTest)
             inputs.property('regularWorkbenchTest', regularWorkbenchTest)
             inputs.property('appUpdateCandidate', appUpdateCandidate)
+            inputs.property('appUpdateAuto', appUpdateAuto)
             inputs.property('appUpdateTest', appUpdateTest)
             outputs.file(generatedManifest)
             doLast {
@@ -320,6 +326,7 @@ if (project.hasProperty('environmentClient')) {
                     inner += '<service android:name=".AppUpdateService" android:exported="false" android:foregroundServiceType="dataSync" android:stopWithTask="false" />'
                     inner += '<receiver android:name=".AppUpdateInstallReceiver" android:exported="false" />'
                 }
+                if (appUpdateAuto) inner += '<service android:name=".AppUpdateCheckJob" android:exported="true" android:permission="android.permission.BIND_JOB_SERVICE" />'
                 if (appUpdateTest) base = base.replace('<application ', '<application android:networkSecurityConfig="@xml/app_update_test_security" ')
                 if (regularWorkbenchTest) inner += '<activity android:name=".UploadProbeActivity" android:exported="false" />'
                 if (project.hasProperty('environmentNetworkTest')) {

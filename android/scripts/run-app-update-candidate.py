@@ -37,7 +37,7 @@ SYSTEM_INSTALLERS = {
 class Fixture(ThreadingHTTPServer):
     daemon_threads = True
 
-    def __init__(self, target, test, signer, source_name, target_name):
+    def __init__(self, target, test, signer, source_name, target_name, source_code=3000037, target_code=3000038):
         super().__init__(('127.0.0.1', PORT), Handler)
         self.target = target
         self.test = test
@@ -48,6 +48,8 @@ class Fixture(ThreadingHTTPServer):
         self.signer = signer
         self.source_name = source_name
         self.target_name = target_name
+        self.source_code = source_code
+        self.target_code = target_code
         self.mode = 'current'
         self.requests = []
         self.authorized = False
@@ -57,7 +59,7 @@ class Fixture(ThreadingHTTPServer):
         return {
             'schema': 1, 'packageName': PACKAGE,
             'versionName': self.source_name if mode == 'current' else self.target_name,
-            'versionCode': {'current': 3000037, 'wrong-version': 3000039}.get(mode, 3000038),
+            'versionCode': {'current': self.source_code, 'wrong-version': self.target_code + 1}.get(mode, self.target_code),
             'size': {'not-an-apk': len(CORRUPT), 'wrong-package': self.test_size}.get(mode, self.size),
             'sha256': {'bad-digest': '0' * 64, 'not-an-apk': hashlib.sha256(CORRUPT).hexdigest(),
                        'wrong-package': self.test_sha}.get(mode, self.sha),
@@ -79,7 +81,14 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path.startswith('/control/'):
             action = self.path.removeprefix('/control/')
-            if action in MODES:
+            if action == 'stats':
+                stats = {'feed': sum(row['path']=='/android.json' for row in self.server.requests),
+                         'apk': sum(row['path']=='/update.apk' for row in self.server.requests)}
+                body = json.dumps(stats).encode()
+                self.reply(200, len(body), 'application/json')
+                self.wfile.write(body)
+                return
+            if action in MODES or action == 'resume':
                 self.server.mode = action
             elif action == 'authorize' and not self.server.authorized:
                 common._shell('appops', 'set', PACKAGE, 'REQUEST_INSTALL_PACKAGES', 'allow')
@@ -336,6 +345,28 @@ def verify_recovery(fixture, signer, node, api, source_info, target_info, old_ui
     })
 
 
+def verify_auto(fixture, signer, node, api, source_info, target_info, old_uid):
+    log = instrument('AppUpdateFlowTest#automaticNoonAndExplicitDownload', signer, 'auto-check', 360,
+                     extras=('-e', 'ownedUpdateNode', node))
+    steps, = re.findall(r'(?m)^INSTRUMENTATION_RESULT: appUpdateAutoProof=([^\r\n]+)$', log)
+    assert set(steps.split(',')) == {'startup', 'engine-dedupe', 'noon-job', 'foreground-notice',
+                                     'missed-slot', 'manual-check', 'explicit-download'}
+    requests = [row for row in fixture.requests if 'mode' in row]
+    assert [(row['path'], row['mode']) for row in requests] == [
+        ('/android.json', 'current'), ('/android.json', 'resume'), ('/android.json', 'resume'),
+        ('/android.json', 'resume'), ('/update.apk', 'resume')]
+    assert all(row['throughSelectedLine'] and not row['credentialHeader'] for row in requests)
+    ready = common._shell('sha256sum', DATA + '/files/app-update/ready.apk').split()[0]
+    assert ready == target_info['sha256']
+    assert old_uid == installed_uid()
+    recovery_installed_digest(source_info['sha256'])
+    common._write_json(common.EVIDENCE / 'auto-report.json', {
+        'complete': True, 'api': api, 'sourceSHA': os.environ['GITHUB_SHA'],
+        'source': source_info, 'steps': steps.split(','), 'requests': requests,
+        'screenshots': False, 'syntheticOnly': True,
+    })
+
+
 def run(args):
     api = common._guard()
     assert api == args.api
@@ -350,11 +381,13 @@ def run(args):
     signer = signer_of(source)
     assert signer not in (common.PRODUCTION_SIGNER, common.BETA_SIGNER)
     tools = common._tools()
-    source_info = common._inspect_apk(source, tools, signer, PACKAGE, 3000037, test_only=True)
-    target_info = common._inspect_apk(target, tools, signer, PACKAGE, 3000038)
+    source_code = 3000038 if args.auto_only else 3000037
+    target_code = source_code + 1
+    source_info = common._inspect_apk(source, tools, signer, PACKAGE, source_code, test_only=True)
+    target_info = common._inspect_apk(target, tools, signer, PACKAGE, target_code)
     assert 'android:testOnly' not in (common.EVIDENCE / 'target-manifest.txt').read_text()
     common._inspect_apk(test, tools, signer, common.TEST_PACKAGE)
-    if not args.recovery_only:
+    if not args.recovery_only and not args.auto_only:
         common._inspect_apk(verifier, tools, signer, VERIFY_PACKAGE, 1)
         manifest = (common.EVIDENCE / 'installed-test-manifest.txt').read_text()
         assert manifest.count('E: instrumentation ') == 1
@@ -363,7 +396,7 @@ def run(args):
                    for line in manifest.splitlines())
     common._run(['adb', 'install', '-t', str(source)])
     common._run(['adb', 'install', '-t', str(test)])
-    if args.recovery_only:
+    if args.recovery_only or args.auto_only:
         recovery_installed_digest(source_info['sha256'])
     else:
         common._installed(source_info['sha256'], 'updater-source')
@@ -372,12 +405,15 @@ def run(args):
 
     identity = str(uuid.uuid4())
     node = f'vless://{identity}@127.0.0.1:{NODE_PORT}'
-    with Fixture(target, test, signer, source_info['versionName'], target_info['versionName']) as fixture:
+    with Fixture(target, test, signer, source_info['versionName'], target_info['versionName'], source_code, target_code) as fixture:
         worker = threading.Thread(target=fixture.serve_forever, daemon=True)
         worker.start()
         process = None
         try:
             process = start_node(args.input / 'xray', identity)
+            if args.auto_only:
+                verify_auto(fixture, signer, node, api, source_info, target_info, old_uid)
+                return
             if args.recovery_only:
                 verify_recovery(fixture, signer, node, api, source_info, target_info, old_uid)
                 return
@@ -448,7 +484,9 @@ if __name__ == '__main__':
     parser.add_argument('--input', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--api', type=int, choices=(28, 35), required=True)
-    parser.add_argument('--recovery-only', action='store_true')
+    modes = parser.add_mutually_exclusive_group()
+    modes.add_argument('--recovery-only', action='store_true')
+    modes.add_argument('--auto-only', action='store_true')
     args = parser.parse_args()
     assert os.environ.get('GITHUB_ACTIONS') == 'true'
     common.EVIDENCE = args.output

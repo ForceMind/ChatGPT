@@ -296,6 +296,11 @@ public final class EnvironmentBridgeService extends Service implements Applicati
         else if(message.what==14||message.what==16){localControl(message.what,clients.get(token),message.getData());return true;}
         else if(message.what==15){beginLocal(clients.get(token),message.getData());return true;}
         else if(message.what==17){handoffRpc(clients.get(token),message.getData());return true;}
+        else if(message.what==21&&BuildConfig.APP_UPDATE_AUTO){
+            Client client=clients.get(token);
+            if(client!=null&&client.foreground)AppUpdateAuto.get(this).environmentPrompted(message.getData().getLong("code"));
+            return true;
+        }
         else if(message.what>=6&&message.what<=9){leaseMessage(message.what,clients.get(token),message.getData());return true;}
         else return true;
         broadcast(); return true;
@@ -355,6 +360,7 @@ public final class EnvironmentBridgeService extends Service implements Applicati
         boolean foreground = false;
         for (Client client : clients.values()) foreground |= client.foreground;
         memory.setEnvironmentForeground(foreground);
+        if(BuildConfig.APP_UPDATE_AUTO) AppUpdateAuto.get(this).environment(foreground ? this::offerUpdate : null);
         for(Import task:new ArrayList<>(incomingFiles.values()))if(!task.valid())task.cancel();
         for(Lease lease:new ArrayList<>(leases.values()))if(!lease.valid())finishLease(lease,true);
         for(LocalExport task:new ArrayList<>(localExports.values()))if(!task.valid())finishLocal(task,false,"本地文件来源已失效");
@@ -372,6 +378,20 @@ public final class EnvironmentBridgeService extends Service implements Applicati
             }
         } catch (org.json.JSONException impossible) { throw new IllegalStateException("Invalid internal route state", impossible); }
     }
+    private void offerUpdate(AppUpdateRelease release) {
+        for (Client client : new ArrayList<>(clients.values())) {
+            if (!client.foreground) continue;
+            Message offer = Message.obtain(null, 20);
+            Bundle data = new Bundle();
+            data.putLong("code", release.code);
+            data.putString("name", release.name);
+            data.putLong("size", release.size);
+            offer.setData(data);
+            try { client.destination.send(offer); return; }
+            catch (RemoteException dead) { remove(client.token); }
+        }
+    }
+
     @Override public void onDestroy() {
         handoffClosed=true;for(HandoffHandle handle:new ArrayList<>(handoffs.values()))abandonHandoff(handle);
         if (network != null) network.removePanelObserver(changed);
@@ -382,6 +402,7 @@ public final class EnvironmentBridgeService extends Service implements Applicati
         for(LocalExport task:new ArrayList<>(localExports.values()))finishLocal(task,false,"本地文件保存已中断");
         for(Import task:new ArrayList<>(incomingFiles.values()))task.cancel();incomingFiles.clear();imports.shutdown();
         if (memory != null) memory.setEnvironmentForeground(false);
+        if (BuildConfig.APP_UPDATE_AUTO) AppUpdateAuto.get(this).environment(null);
         if (current.get() == this) current = new WeakReference<>(null);
         super.onDestroy();
     }

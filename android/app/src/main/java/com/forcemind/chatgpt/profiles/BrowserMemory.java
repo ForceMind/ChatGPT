@@ -13,6 +13,7 @@ import org.json.*;
 final class BrowserMemory {
     private static BrowserMemory instance;
     static synchronized BrowserMemory get(Context context){if(instance==null)instance=new BrowserMemory(context.getApplicationContext());return instance;}
+    static synchronized NetworkSession existingNetwork() { return instance == null ? null : instance.network; }
     final Context context;
     final Map<String,WebView> views=new LinkedHashMap<>();
     final Map<String,String> accounts=new HashMap<>(),storage=new HashMap<>(),popupOwners=new HashMap<>();
@@ -30,7 +31,7 @@ final class BrowserMemory {
     void closeNetwork() { NetworkSession value=network;network=null;if(value!=null)value.close(); }
     boolean networkReady() { NetworkSession value = network; return value != null && value.ready(); }
     String accountOf(WebView web) { for (Map.Entry<String,WebView> entry : views.entrySet()) if (entry.getValue() == web) return accounts.get(entry.getKey()); throw new IllegalStateException("文件页面已关闭"); }
-    void networkChanged() { if (network == null) return; for (WebView view : new ArrayList<>(views.values())) view.getSettings().setBlockNetworkLoads(!network.ready()); MainActivity activity = owner(); if (activity != null) activity.networkChanged(); }
+    void networkChanged() { if (network == null) return; for (WebView view : new ArrayList<>(views.values())) view.getSettings().setBlockNetworkLoads(!network.ready()); MainActivity activity = owner(); if (activity != null) activity.networkChanged(); if (BuildConfig.APP_UPDATE_AUTO) AppUpdateAuto.routeChanged(); }
 
     private WeakReference<MainActivity> owner=new WeakReference<>(null);
     private final Set<android.app.Activity> visibleActivities=Collections.newSetFromMap(new WeakHashMap<>());
@@ -47,7 +48,7 @@ final class BrowserMemory {
             @Override public void onActivityDestroyed(android.app.Activity activity){}
         });
         try{((ConnectivityManager)context.getSystemService(Context.CONNECTIVITY_SERVICE)).registerDefaultNetworkCallback(new ConnectivityManager.NetworkCallback(){
-            @Override public void onAvailable(Network network){diagnostics.event("network-available",null,null,null);}
+            @Override public void onAvailable(Network network){diagnostics.event("network-available",null,null,null);if(BuildConfig.APP_UPDATE_AUTO)handler.post(AppUpdateAuto::routeChanged);}
             @Override public void onLost(Network network){diagnostics.event("network-lost",null,null,null);}
         });}catch(RuntimeException ignored){}
     }

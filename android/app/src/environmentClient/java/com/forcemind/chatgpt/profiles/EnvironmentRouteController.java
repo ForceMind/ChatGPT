@@ -85,7 +85,18 @@ final class EnvironmentRouteController {
             public void onDisconnect(WebExtension.Port source){if(source==port){port=null;block("网络连接正在恢复");}}
         });apply();
     }
+    java.util.function.BiFunction<String, Long, Boolean> updatePrompt;
     private boolean receive(Message message){
+        if(message.what==20&&BuildConfig.APP_UPDATE_AUTO){
+            Bundle data=message.getData();
+            if(!closed&&foreground&&updatePrompt!=null&&updatePrompt.apply(data.getString("name",""),data.getLong("size"))&&service!=null){
+                try{
+                    Message ack=Message.obtain(null,21);ack.replyTo=inbox;
+                    Bundle proof=new Bundle();proof.putLong("code",data.getLong("code"));ack.setData(proof);service.send(ack);
+                }catch(RemoteException disconnected){/* Next foreground can prompt again. */}
+            }
+            return true;
+        }
         if(message.what==18){receiveHandoffReply(message.getData());return true;}
         if(message.what==19){receiveHandoffEvent(message.getData());return true;}
         if(message.what==12){try{JSONObject result=new JSONObject(message.getData().getString("payload",""));java.util.function.Consumer<JSONObject> callback=calls.remove(result.optString("call"));if(callback!=null)callback.accept(result);}catch(Exception invalid){block("文件线路确认失败");}return true;}
