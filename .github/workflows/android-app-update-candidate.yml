@@ -4,6 +4,11 @@ name: Android App Update Candidate
     branches: [dev]
     paths: ['.github/workflows/android-app-update-candidate.yml']
   workflow_dispatch:
+    inputs:
+      recovery_only:
+        description: Run only synthetic exit, restart and install cancellation checks
+        type: boolean
+        default: false
 permissions:
   contents: read
   actions: read
@@ -60,11 +65,13 @@ jobs:
           echo "STUDIO_REGULAR_CI_STORE_PASSWORD=$password" >> "$GITHUB_ENV"
           echo "STUDIO_REGULAR_CI_KEYSTORE_PATH=$key" >> "$GITHUB_ENV"
       - name: Build and sign the independent post-install verifier
+        if: ${{ !inputs.recovery_only }}
         run: |
           python3 android/scripts/prepare-app-update-verifier.py --output "$RUNNER_TEMP/app-update-verifier"
           bash android/gradlew -p "$RUNNER_TEMP/app-update-verifier" --no-daemon assembleRelease
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" sign --ks "$STUDIO_REGULAR_CI_KEYSTORE_PATH" --ks-key-alias regular-compat-ci --ks-pass env:STUDIO_REGULAR_CI_STORE_PASSWORD --key-pass env:STUDIO_REGULAR_CI_STORE_PASSWORD --out android/app/build/app-update-ci/installed-test.apk "$RUNNER_TEMP"/app-update-verifier/build/outputs/apk/release/*-unsigned.apk
       - name: Build R8 arm64 original-package review APK
+        if: ${{ !inputs.recovery_only }}
         run: |
           test ! -f android/keystore.properties
           bash android/environment-poc/gradlew -p android --no-daemon -PenvironmentClient -PregularEnvironmentClient -PappUpdateCandidate -PunsignedRelease -PandroidVersionFile=android/app/build/app-update-version.json :app:lintRelease :app:assembleRelease
@@ -80,7 +87,7 @@ jobs:
           cp android/app/build/outputs/apk/androidTest/release/app-release-androidTest.apk android/app/build/app-update-ci/source-test.apk
           cp android/network-poc/corebridge/bin/xray android/app/build/app-update-ci/xray
       - uses: actions/upload-artifact@v4
-        if: success()
+        if: success() && !inputs.recovery_only
         with:
           name: android-app-update-unsigned-review
           path: android/app/build/app-update-review/
@@ -143,7 +150,7 @@ jobs:
           emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader -feature -Vulkan -writable-system
           script: |
             if [ '${{ matrix.api }}' = 28 ]; then python3 android/network-poc/scripts/install-webview.py --provider android/app/build/environment-provider-input/provider --output android/app/build/app-update-provider; fi
-            python3 android/scripts/run-app-update-candidate.py --input android/app/build/app-update-ci --output android/app/build/app-update-evidence --api ${{ matrix.api }}
+            python3 android/scripts/run-app-update-candidate.py --input android/app/build/app-update-ci --output android/app/build/app-update-evidence --api ${{ matrix.api }} ${{ inputs.recovery_only && '--recovery-only' || '' }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -154,6 +161,7 @@ jobs:
             android/app/build/app-update-evidence/
             android/app/build/app-update-provider/
   delivery:
+    if: ${{ !inputs.recovery_only }}
     needs: emulator
     runs-on: ubuntu-latest
     timeout-minutes: 10

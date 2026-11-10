@@ -119,6 +119,90 @@ public final class AppUpdateFlowTest {
         assertEquals(3000037, code());
     }
 
+    private void openRecoveryFixture() throws Exception {
+        assertTrue(BuildConfig.APP_UPDATE_TEST);
+        assertEquals(3000037, code());
+        assertEquals(RegularEnvironmentUpgradeTest.args().getString("signer"), RegularEnvironmentUpgradeTest.signer());
+        MainActivity.handoffFixture = (owner, request) -> new android.webkit.WebResourceResponse(
+                "text/html", "UTF-8", new ByteArrayInputStream("<p>Owned offline fixture</p>".getBytes(StandardCharsets.UTF_8)));
+        instrument.startActivitySync(new Intent(context, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+        NetworkRoute route = onMain(() -> BrowserMemory.get(context).network().routes);
+        waitFor("owned recovery line connected", 30, () -> route.snapshot().state == NetworkRoute.State.CONNECTED);
+        openUpdate();
+    }
+
+    private void recoveryProof(String stage) {
+        Bundle result = new Bundle();
+        result.putString("appUpdateRecoveryStage", stage + ":" + android.os.Process.myPid());
+        instrument.addResults(result);
+    }
+
+    @Test public void startDownloadBeforeExit() throws Exception {
+        String node = RegularEnvironmentUpgradeTest.args().getString("ownedUpdateNode");
+        assertNotNull(node);
+        assertTrue(node.matches("vless://[0-9a-f-]{36}@127\\.0\\.0\\.1:18778"));
+        NetworkSettingsStore.Data route = new NetworkSettingsStore.Data();
+        route.nodes.add(NetworkNode.parse(node, "Owned update line"));
+        route.selected = 0;
+        route.enabled = true;
+        new NetworkSettingsStore(context).write(route);
+        openRecoveryFixture();
+        click("检查更新", false);
+        see("发现新版本", true);
+        click("下载更新", false);
+        waitFor("partial download with persisted offer", 30, () -> onMain(() ->
+                task().phase() == AppUpdateTask.Phase.DOWNLOADING && task().received() > 0
+                && task().received() < task().release().size));
+        assertTrue(RegularEnvironmentUpgradeTest.file("app-update/download.part.apk").length() > 0);
+        assertFalse(RegularEnvironmentUpgradeTest.file("app-update/ready.apk").exists());
+        recoveryProof("partial");
+    }
+
+    @Test public void retryAfterDownloadExit() throws Exception {
+        openRecoveryFixture();
+        see("上次下载已中断，请重试", false);
+        see("重试下载", false);
+        waitFor("old incomplete file removed", 10,
+                () -> !RegularEnvironmentUpgradeTest.file("app-update/download.part.apk").exists());
+        click("重试下载", false);
+        see("安装更新", false);
+        assertTrue(RegularEnvironmentUpgradeTest.file("app-update/ready.apk").isFile());
+        recoveryProof("ready");
+    }
+
+    private void cancelOwnedSystemPrompt() {
+        waitFor("real system installer cancel button", 30, () -> {
+            AccessibilityNodeInfo root = ui.getRootInActiveWindow();
+            if (root == null || root.getPackageName() == null) return false;
+            String owner = root.getPackageName().toString();
+            if (!java.util.Arrays.asList("com.android.packageinstaller", "com.google.android.packageinstaller",
+                    "com.android.permissioncontroller", "com.google.android.permissioncontroller").contains(owner)) return false;
+            for (String label : new String[]{"Cancel", "CANCEL", "取消"}) {
+                AccessibilityNodeInfo button = find(root, label, false);
+                if (button != null && button.isEnabled() && button.isClickable()
+                        && button.performAction(AccessibilityNodeInfo.ACTION_CLICK)) return true;
+            }
+            return false;
+        });
+    }
+
+    @Test public void installAfterReadyExitAndRetryAfterCancel() throws Exception {
+        openRecoveryFixture();
+        see("更新已下载，可以安装", false);
+        assertTrue(context.getPackageManager().canRequestPackageInstalls());
+        for (int attempt = 0; attempt < 2; attempt++) {
+            click("安装更新", false);
+            see("确认安装", false);
+            click("确认安装", false);
+            cancelOwnedSystemPrompt();
+            see("安装未完成，可以重试", false);
+            see("安装更新", false);
+            assertEquals(3000037, code());
+            assertTrue(RegularEnvironmentUpgradeTest.file("app-update/ready.apk").isFile());
+        }
+        recoveryProof("reopened-and-cancelled-twice");
+    }
+
     @Test public void downloadAndRequestSystemConfirmation() throws Exception {
         assertTrue(BuildConfig.APP_UPDATE_TEST);
         assertEquals(3000037, code());

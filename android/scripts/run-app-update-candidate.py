@@ -235,6 +235,60 @@ def confirm_system_install():
     raise AssertionError('System-owned package installation confirmation was not actionable')
 
 
+def verify_recovery(fixture, signer, node, api, source_info, target_info, old_uid):
+    partial = DATA + '/files/app-update/download.part.apk'
+    ready = DATA + '/files/app-update/ready.apk'
+    prefs = DATA + '/shared_prefs/app-update-v1.xml'
+    pids = []
+
+    def phase(method, expected, extras=()):
+        log = instrument('AppUpdateFlowTest#' + method, signer, expected, 150, extras=extras)
+        proof = re.findall(r'(?m)^INSTRUMENTATION_RESULT: appUpdateRecoveryStage=([^:\r\n]+):(\d+)\s*$', log)
+        assert len(proof) == 1
+        stage, pid = proof[0]
+        assert stage == expected and pid not in pids
+        pids.append(pid)
+
+    def force_stop():
+        common._shell('am', 'force-stop', PACKAGE)
+        assert not common._run(['adb', 'shell', 'pidof', PACKAGE], check=False).stdout.strip()
+
+    def digest(path):
+        return common._shell('sha256sum', path).split()[0]
+
+    fixture.mode = 'slow'
+    phase('startDownloadBeforeExit', 'partial', extras=('-e', 'ownedUpdateNode', node))
+    force_stop()
+    partial_bytes = int(common._shell('stat', '-c', '%s', partial).strip())
+    assert 0 < partial_bytes < fixture.size
+    assert common._run(['adb', 'shell', 'test', '-e', ready], check=False).returncode != 0
+    settings = ElementTree.fromstring(common._shell('cat', prefs))
+    assert any(item.get('name') == 'downloading' and item.get('value') == 'true' for item in settings)
+
+    fixture.mode = 'resume'
+    phase('retryAfterDownloadExit', 'ready')
+    force_stop()
+    assert digest(ready) == target_info['sha256']
+    assert common._run(['adb', 'shell', 'test', '-e', partial], check=False).returncode != 0
+    common._shell('appops', 'set', PACKAGE, 'REQUEST_INSTALL_PACKAGES', 'allow')
+    phase('installAfterReadyExitAndRetryAfterCancel', 'reopened-and-cancelled-twice')
+    assert digest(ready) == target_info['sha256']
+    assert old_uid == installed_uid()
+    installed = common._installed(source_info['sha256'], 'updater-after-system-cancel')
+    assert 'versionCode=3000037 ' in common._shell('dumpsys', 'package', PACKAGE)
+    requests = [row for row in fixture.requests if 'mode' in row]
+    assert [(row['path'], row['mode']) for row in requests] == [
+        ('/android.json', 'slow'), ('/update.apk', 'slow'), ('/update.apk', 'resume')]
+    assert all(row['throughSelectedLine'] and not row['credentialHeader'] for row in requests)
+    common._write_json(common.EVIDENCE / 'recovery-report.json', {
+        'complete': True, 'api': api, 'sourceSHA': os.environ['GITHUB_SHA'], 'processIds': pids,
+        'interruptedBytes': partial_bytes, 'downloadRetriedWithoutNewManifest': True,
+        'verifiedApkReusedAfterRestart': True, 'systemCancelPrompts': 2,
+        'installedPackageSHA256Unchanged': installed, 'verifiedUpdateSHA256': target_info['sha256'],
+        'requests': requests, 'syntheticOnly': True, 'screenshots': False,
+    })
+
+
 def run(args):
     api = common._guard()
     assert api == args.api
@@ -253,12 +307,13 @@ def run(args):
     target_info = common._inspect_apk(target, tools, signer, PACKAGE, 3000038)
     assert 'android:testOnly' not in (common.EVIDENCE / 'target-manifest.txt').read_text()
     common._inspect_apk(test, tools, signer, common.TEST_PACKAGE)
-    common._inspect_apk(verifier, tools, signer, VERIFY_PACKAGE, 1)
-    manifest = (common.EVIDENCE / 'installed-test-manifest.txt').read_text()
-    assert manifest.count('E: instrumentation ') == 1
-    assert any('android:targetPackage' in line and '"' + PACKAGE + '"' in line for line in manifest.splitlines())
-    assert any('android:name' in line and '"androidx.test.runner.AndroidJUnitRunner"' in line
-               for line in manifest.splitlines())
+    if not args.recovery_only:
+        common._inspect_apk(verifier, tools, signer, VERIFY_PACKAGE, 1)
+        manifest = (common.EVIDENCE / 'installed-test-manifest.txt').read_text()
+        assert manifest.count('E: instrumentation ') == 1
+        assert any('android:targetPackage' in line and '"' + PACKAGE + '"' in line for line in manifest.splitlines())
+        assert any('android:name' in line and '"androidx.test.runner.AndroidJUnitRunner"' in line
+                   for line in manifest.splitlines())
     common._run(['adb', 'install', '-t', str(source)])
     common._run(['adb', 'install', '-t', str(test)])
     common._installed(source_info['sha256'], 'updater-source')
@@ -273,6 +328,9 @@ def run(args):
         process = None
         try:
             process = start_node(args.input / 'xray', identity)
+            if args.recovery_only:
+                verify_recovery(fixture, signer, node, api, source_info, target_info, old_uid)
+                return
             result = instrument('AppUpdateFlowTest#downloadAndRequestSystemConfirmation', signer, 'source', 480,
                                 extras=('-e', 'ownedUpdateNode', node))
             matches = re.findall(r'(?m)^INSTRUMENTATION_RESULT: appUpdateSourceProof=([^\r\n]+)$', result)
@@ -340,6 +398,7 @@ if __name__ == '__main__':
     parser.add_argument('--input', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--api', type=int, choices=(28, 35), required=True)
+    parser.add_argument('--recovery-only', action='store_true')
     args = parser.parse_args()
     assert os.environ.get('GITHUB_ACTIONS') == 'true'
     common.EVIDENCE = args.output
