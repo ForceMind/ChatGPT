@@ -1,0 +1,245 @@
+{
+  "schema": 1,
+  "version": "2026.11.10",
+  "kind": "desktop-update-experience-candidate",
+  "sourceSHA": "ed6f9e35c40be8c4d31cafabe56057dcc7b4a5e6",
+  "runID": 42749099128,
+  "runURL": "https://github.com/ForceMind/ChatGPT/actions/runs/42749099128",
+  "publicRelease": false,
+  "platformReports": [
+    {
+      "platform": "macOS",
+      "jobID": 129608239099,
+      "version": "2026.11.10",
+      "signing": "ad-hoc, not notarized",
+      "architecture": "arm64",
+      "artifacts": [
+        {
+          "file": "ChatGPT-Profiles-2026.11.10-mac-arm64.zip",
+          "sha256": "8c78b73c40a82cab7918918dd9a982db92908f16306468fc9a677ef7e7df6edc"
+        },
+        {
+          "file": "ChatGPT-Studio-2026.11.10-mac-arm64.dmg",
+          "sha256": "9badad4bccceb238acb05a0060885f65c1e9714de6b0220459faa6f6461c8219"
+        },
+        {
+          "file": "ChatGPT-Studio-2026.11.10-mac-arm64.zip",
+          "sha256": "3a7c1a8394530420c7865a29c2e85020192cd68b28ef076b47a887df38ae256d"
+        }
+      ],
+      "unitSummary": [
+        "ℹ tests 108",
+        "ℹ pass 108",
+        "ℹ fail 0",
+        "ℹ skipped 0"
+      ],
+      "e2eSummary": [
+        "  4 passed (38.9s)"
+      ],
+      "sourceSHA": "ed6f9e35c40be8c4d31cafabe56057dcc7b4a5e6"
+    },
+    {
+      "platform": "Windows",
+      "jobID": 129608238672,
+      "version": "2026.11.10",
+      "signing": "unsigned",
+      "sourceSHA": "ed6f9e35c40be8c4d31cafabe56057dcc7b4a5e6",
+      "architecture": "x64",
+      "artifacts": [
+        {
+          "file": "ChatGPT-Studio-2026.11.10-windows-x64-setup.exe",
+          "bytes": 131366630,
+          "sha256": "b30661e5f1203f5d6acf24bb6905c1b2641c9a3193cd8a95423b9bdad0ca3214",
+          "sha512": "dTOblyVHW1EFRPcF4lqMMMJaAaElxbrKjATCVghb3JbpSVgm9X86Nn6gzIhR+p1R9QgQ7D37D4zZzd2Dnj2l/Q=="
+        },
+        {
+          "file": "ChatGPT-Studio-2026.11.10-windows-x64.zip",
+          "bytes": 181301590,
+          "sha256": "1ebd79ff510e3cdc8edb0441116a78b1904faebd91c6410cde5e12c0665dc0ee",
+          "sha512": "5FQNXgf79UGGs7cHMGRNEpP3P66YKqwGb+eAH7W8AfipIJXrATywxTdbaWMKSIpZwjAtHxYKTla4x0d9UiQGaw=="
+        }
+      ],
+      "unitSummary": [
+        "ℹ tests 108",
+        "ℹ pass 107",
+        "ℹ fail 0",
+        "ℹ skipped 1"
+      ],
+      "e2eSummary": [
+        "  2 passed (10.0s)"
+      ]
+    }
+  ],
+  "artifactMetadata": [
+    {
+      "digest": "sha256:4e033874d70b205886bb882190d51a4cdc9b7025b9d0ad6f2e50597fb9a2677c",
+      "expired": false,
+      "expires_at": "2026-11-24T03:29:44Z",
+      "id": 13733315059,
+      "name": "ChatGPT-Studio-Update-Candidate-Windows",
+      "size_in_bytes": 312458602,
+      "url": "https://github.com/ForceMind/ChatGPT/actions/runs/42749099128/artifacts/13733315059"
+    },
+    {
+      "digest": "sha256:d982b871253db92028cae1fbf84de1fcbc4f7a38408251b61bf2672ba0136491",
+      "expired": false,
+      "expires_at": "2027-02-08T03:23:16Z",
+      "id": 13732743288,
+      "name": "update-experience-evidence-Windows",
+      "size_in_bytes": 2783,
+      "url": "https://github.com/ForceMind/ChatGPT/actions/runs/42749099128/artifacts/13732743288"
+    },
+    {
+      "digest": "sha256:b8af5e5b4504773062fa9e196c86076d31593bda205bdb1e833376c955b8af84",
+      "expired": false,
+      "expires_at": "2026-11-24T03:27:54Z",
+      "id": 13732523592,
+      "name": "ChatGPT-Studio-Update-Candidate-macOS",
+      "size_in_bytes": 464385289,
+      "url": "https://github.com/ForceMind/ChatGPT/actions/runs/42749099128/artifacts/13732523592"
+    },
+    {
+      "digest": "sha256:0abc8cc85e849c6a8b8ee9ec77bb30157786e64cb79e28fc32a0a2c5bb67f156",
+      "expired": false,
+      "expires_at": "2027-02-08T03:23:16Z",
+      "id": 13732448752,
+      "name": "update-experience-evidence-macOS",
+      "size_in_bytes": 2595,
+      "url": "https://github.com/ForceMind/ChatGPT/actions/runs/42749099128/artifacts/13732448752"
+    }
+  ],
+  "validation": {
+    "macOS": {
+      "unitTests": 108,
+      "passed": 108,
+      "skipped": 0,
+      "e2ePassed": 4,
+      "e2ePlatformSkipped": 2
+    },
+    "Windows": {
+      "unitTests": 108,
+      "passed": 107,
+      "skipped": 1,
+      "e2ePassed": 2,
+      "e2ePlatformSkipped": 4
+    },
+    "screenshots": false,
+    "video": false,
+    "trace": false,
+    "realChatGPT": false,
+    "personalDevicesModified": false
+  },
+  "limits": [
+    "Synthetic update and installation regression on macos-15 arm64 and windows-2025 x64 runners.",
+    "Desktop application versions use 2026.11.10; public feeds and releases remain at their previous versions.",
+    "Mac ad-hoc signing and Windows unsigned packages retain their existing platform trust limitations.",
+    "Android application updater remains in the second planned batch."
+  ],
+  "behaviorEvidence": {
+    "macOS": {
+      "synthetic": true,
+      "stats": {
+        "startTime": "2026-11-10T03:25:25.486Z",
+        "duration": 38887.82,
+        "expected": 4,
+        "skipped": 2,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "attachments": [
+        {
+          "name": "real-download-progress.json",
+          "proof": {
+            "bytes": 3008,
+            "firstProgress": 33,
+            "secondProgress": 66,
+            "completedProgress": 100,
+            "phaseWhilePreparationHeld": "downloading",
+            "extractionActuallyCompleted": true
+          }
+        },
+        {
+          "name": "manual-check-retry.json",
+          "proof": {
+            "firstFailure": {
+              "phase": "error",
+              "stage": "check",
+              "message": "版本检查未完成，请重试检查。（HTTP 503）"
+            },
+            "final": {
+              "phase": "idle",
+              "version": "3.0.0-alpha.22",
+              "message": "当前版本较新，官网最新公开版本为 3.0.0-alpha.22"
+            },
+            "versionRequests": 3,
+            "archiveRequests": 0
+          }
+        }
+      ]
+    },
+    "Windows": {
+      "synthetic": true,
+      "stats": {
+        "startTime": "2026-11-10T03:26:12.601Z",
+        "duration": 9964.098,
+        "expected": 2,
+        "skipped": 4,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "attachments": [
+        {
+          "name": "verified-update-transfer.json",
+          "proof": {
+            "mode": "automatic",
+            "status": {
+              "phase": "ready",
+              "version": "2027.0.0",
+              "message": "更新已校验，下次退出时安装。",
+              "installMode": "automatic"
+            },
+            "events": [
+              {
+                "event": "download-progress",
+                "progress": {
+                  "total": 4198400,
+                  "delta": 393216,
+                  "transferred": 393216,
+                  "percent": 9.365853658536585,
+                  "bytesPerSecond": 327407
+                }
+              },
+              {
+                "event": "download-progress",
+                "progress": {
+                  "total": 4198400,
+                  "delta": 3805184,
+                  "transferred": 4198400,
+                  "percent": 100,
+                  "bytesPerSecond": 1919707
+                }
+              }
+            ],
+            "exeRequests": 1,
+            "zipRequests": 0
+          }
+        },
+        {
+          "name": "verified-update-transfer.json",
+          "proof": {
+            "mode": "manual",
+            "status": {
+              "phase": "available",
+              "version": "2027.0.0",
+              "message": "ZIP 已保存，退出应用后可手动替换；账号目录保持。",
+              "installMode": "manual"
+            },
+            "events": [],
+            "exeRequests": 0,
+            "zipRequests": 1
+          }
+        }
+      ]
+    }
+  }
+}
