@@ -30,6 +30,21 @@ for (const mode of ['automatic', 'manual'] as const)
       ['/nologo', '/target:winexe', '/out:' + installer, source],
       { stdio: 'pipe' }
     );
+    const eventHook = path.join(root, 'observe-updater.cjs');
+    writeFileSync(
+      eventHook,
+      `
+      const app = require('electron').app;
+      app.updateTransferEvents = [];
+      const prototype = require(${JSON.stringify(path.join(desktop, 'node_modules/electron-updater'))}).NsisUpdater.prototype;
+      const emit = prototype.emit;
+      prototype.emit = function(event, ...args) {
+        if(event === 'download-progress') app.updateTransferEvents.push({event, progress: args[0]});
+        if(event === 'error') app.updateTransferEvents.push({event, code: args[0]?.code, message: args[0]?.message});
+        return Reflect.apply(emit, this, [event, ...args]);
+      };
+    `
+    );
     const exe = readFileSync(installer),
       zip = Buffer.from(
         'UEsDBBQAAAAIAEIFW11RwddZNwAAADcAAAALAAAAZml4dHVyZS50eHQLSy3KTMtMTVEIz8xLyS8vVojyDFAAMvJy8hNTFNIyK0pKi1KtFfJSy1KLFDLziksSc3JSU/QAUEsBAhQDFAAAAAgAQgVbXVHB11k3AAAANwAAAAsAAAAAAAAAAAAAAIABAAAAAGZpeHR1cmUudHh0UEsFBgAAAAABAAEAOQAAAGAAAAAAAA==',
@@ -107,7 +122,7 @@ for (const mode of ['automatic', 'manual'] as const)
       app = await test.step('launch isolated Windows application', () =>
         electron.launch({
           timeout: 20000,
-          args: [desktop],
+          args: ['-r', eventHook, desktop],
           env: {
             ...process.env,
             PROFILES_E2E: '1',
@@ -162,18 +177,7 @@ for (const mode of ['automatic', 'manual'] as const)
         );
       });
       await app.evaluate(({ app }) => {
-        const target = app as any;
-        target.acceptDownload = true;
-        target.updateTransferEvents = [];
-        // eslint-disable-next-line @typescript-eslint/no-require-imports -- Serialized callback observes the existing Electron main-process updater module.
-        const prototype = require('electron-updater').NsisUpdater.prototype;
-        const emit = prototype.emit;
-        prototype.emit = function (event: string, ...args: any[]) {
-          if (event === 'download-progress') target.updateTransferEvents.push({ event, progress: args[0] });
-          if (event === 'error')
-            target.updateTransferEvents.push({ event, code: args[0]?.code, message: args[0]?.message });
-          return Reflect.apply(emit, this, [event, ...args]);
-        };
+        (app as any).acceptDownload = true;
       });
       await shell.evaluate(() => window.profiles.command({ type: 'update:check' }));
       if (mode === 'automatic') {
