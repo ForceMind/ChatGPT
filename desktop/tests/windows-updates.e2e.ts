@@ -226,6 +226,16 @@ for (const mode of ['automatic', 'manual'] as const)
         expect(zipRequests).toBe(1);
         expect(existsSync(marker)).toBe(false);
       }
+      await info.attach('verified-update-transfer.json', {
+        contentType: 'application/json',
+        body: JSON.stringify({
+          mode,
+          status: (await shell.evaluate(() => window.profiles.snapshot())).update,
+          events: await app.evaluate(({ app }) => (app as any).updateTransferEvents),
+          exeRequests,
+          zipRequests
+        })
+      });
       const closing = app.waitForEvent('close');
       await app.evaluate(({ app }) => app.quit());
       await closing;

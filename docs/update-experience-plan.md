@@ -47,4 +47,8 @@ Android 原生入口涉及 MainActivity、EnvironmentBrowserActivity 和共用�
 
 用户确认继续第一批。Mac / Windows 已接入下载字节、明确阶段和可操作失败提示，保留现有安装与保活流程；待 Actions 完整检查和批准的合成交互验收。Mac 合成下载加入断流后重试，Windows 使用受控真实流式下载核对百分比 / 字节及菜单关闭重开。测试截图按本批范围关闭。Android 仍待第二批实现。
 
+源码 `c02e068` 的 `42746875706` 中，Mac 完整检查、合成更新 / 安装回归及候选打包均通过。Windows 完整检查通过，但等待中途下载字节超时，未放宽断言；后续仅在同一 Windows 夹具中保留 SDK 原生进度 / 错误及当前状态，不重复已通过的 Mac 任务。两端候选交付目标尚未完成。
+
+Windows 原生事件取证确认 4 KiB EXE 夹具下载期间没有 SDK 进度事件。改为带有效 PE overlay 的 4 MiB 可执行夹具后，`42748704538` 的原生进度、字节 / 百分比、菜单关闭重开、实际安装执行和原数据保留验收通过，原门槛及超时保留。本批交付版本提升为 `2026.11.10`，仅改 package / lock 的版本元数据，按同一最终源码生成 Mac 和 Windows 候选。
+
 Android 下载与安装机制按官方文档核对。[DownloadManager](https://developer.android.com/reference/android/app/DownloadManager) · [安装来源权限](https://developer.android.com/reference/android/content/pm/PackageManager#canRequestPackageInstalls()) · [系统安装确认](https://developer.android.com/reference/android/content/pm/PackageInstaller.SessionParams#setRequireUserAction(int))
