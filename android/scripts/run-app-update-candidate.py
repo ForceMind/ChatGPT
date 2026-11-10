@@ -1,0 +1,259 @@
+#!/usr/bin/env python3
+"""Exercise the shared updater and confirm replacement through the emulator's package installer."""
+import argparse
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import threading
+import time
+from xml.etree import ElementTree
+
+import regular_environment_upgrade as common
+
+PACKAGE = common.PACKAGE
+PORT = 18777
+ORIGIN = f'http://127.0.0.1:{PORT}'
+DATA = '/data/user/0/' + PACKAGE
+EXPECTED = DATA + '/files/regular-environment-upgrade-expected.json'
+CORRUPT = b'Owned CI fixture, intentionally not an Android APK.'
+NO_DOWNLOAD = {'current', 'wrong-certificate'}
+MODES = NO_DOWNLOAD | {'slow', 'bad-digest', 'not-an-apk', 'wrong-version', 'wrong-package', 'valid'}
+SYSTEM_INSTALLERS = {
+    'com.android.packageinstaller', 'com.google.android.packageinstaller',
+    'com.android.permissioncontroller', 'com.google.android.permissioncontroller',
+}
+
+
+class Fixture(ThreadingHTTPServer):
+    daemon_threads = True
+
+    def __init__(self, target, test, signer, source_name, target_name):
+        super().__init__(('127.0.0.1', PORT), Handler)
+        self.target = target
+        self.test = test
+        self.test_size = test.stat().st_size
+        self.test_sha = common._sha(test)
+        self.size = target.stat().st_size
+        self.sha = common._sha(target)
+        self.signer = signer
+        self.source_name = source_name
+        self.target_name = target_name
+        self.mode = 'current'
+        self.requests = []
+        self.authorized = False
+
+    def metadata(self, mode):
+        return {
+            'schema': 1, 'packageName': PACKAGE,
+            'versionName': self.source_name if mode == 'current' else self.target_name,
+            'versionCode': {'current': 3000037, 'wrong-version': 3000039}.get(mode, 3000038),
+            'size': {'not-an-apk': len(CORRUPT), 'wrong-package': self.test_size}.get(mode, self.size),
+            'sha256': {'bad-digest': '0' * 64, 'not-an-apk': hashlib.sha256(CORRUPT).hexdigest(),
+                       'wrong-package': self.test_sha}.get(mode, self.sha),
+            'certificateSHA256': '0' * 64 if mode == 'wrong-certificate' else self.signer,
+            'abi': 'x86_64', 'url': ORIGIN + '/update.apk',
+        }
+
+
+class Handler(BaseHTTPRequestHandler):
+    def log_message(self, *_):
+        pass
+
+    def reply(self, status, size, content_type='application/octet-stream'):
+        self.send_response(status)
+        self.send_header('Content-Type', content_type)
+        self.send_header('Content-Length', str(size))
+        self.end_headers()
+
+    def do_GET(self):
+        if self.path.startswith('/control/'):
+            action = self.path.removeprefix('/control/')
+            if action in MODES:
+                self.server.mode = action
+            elif action == 'authorize' and not self.server.authorized:
+                common._shell('appops', 'set', PACKAGE, 'REQUEST_INSTALL_PACKAGES', 'allow')
+                self.server.authorized = True
+            else:
+                self.reply(404, 0)
+                return
+            self.reply(204, 0)
+            return
+
+        mode = self.server.mode
+        credentials = any(self.headers.get(name) is not None for name in ('Cookie', 'Cookie2', 'Authorization'))
+        self.server.requests.append({'path': self.path, 'mode': mode, 'credentialHeader': credentials})
+        if credentials:
+            self.reply(403, 0)
+            return
+        try:
+            if self.path == '/android.json':
+                data = json.dumps(self.server.metadata(mode)).encode()
+                self.reply(200, len(data), 'application/json')
+                self.wfile.write(data)
+            elif self.path == '/update.apk' and mode == 'not-an-apk':
+                self.reply(200, len(CORRUPT))
+                self.wfile.write(CORRUPT)
+            elif self.path == '/update.apk':
+                file = self.server.test if mode == 'wrong-package' else self.server.target
+                self.reply(200, file.stat().st_size)
+                with file.open('rb') as apk:
+                    while block := apk.read(256 * 1024):
+                        self.wfile.write(block)
+                        if mode == 'slow':
+                            time.sleep(0.18)
+            else:
+                self.reply(404, 0)
+        except (BrokenPipeError, ConnectionResetError):
+            # The real client cancels its own request in this mode.
+            if mode != 'slow':
+                raise
+
+
+def block_egress():
+    common._root_and_block()
+    for binary in ('iptables', 'ip6tables'):
+        common._shell(binary, '-I', 'OUTPUT', '1', '-o', 'lo', '-j', 'ACCEPT')
+        common._shell(binary, '-C', 'OUTPUT', '-o', 'lo', '-j', 'ACCEPT')
+    rules = common._shell('iptables-save') + common._shell('ip6tables-save')
+    (common.EVIDENCE / 'native-egress.txt').write_text(rules)
+    common._run(['adb', 'reverse', f'tcp:{PORT}', f'tcp:{PORT}'])
+
+
+def signer_of(apk):
+    result = common._run([str(common._tools() / 'apksigner'), 'verify', '--print-certs', str(apk)]).stdout
+    signers = re.findall(r'certificate SHA-256 digest: ([a-f0-9]{64})', result)
+    assert len(signers) == 1
+    return signers[0]
+
+
+def instrument(class_name, signer, label, timeout):
+    result = common._run(['adb', 'shell', 'am', 'instrument', '-w', '-r', '-e', 'class',
+                          PACKAGE + '.' + class_name, '-e', 'signer', signer, common.RUNNER],
+                         timeout=timeout, check=False)
+    (common.EVIDENCE / (label + '-instrument.txt')).write_text(result.stdout)
+    print(result.stdout, flush=True)
+    assert result.returncode == 0 and re.findall(r'(?m)^OK \((\d+) test\)\s*$', result.stdout) == ['1']
+    assert not re.search(r'FAILURES!!!|INSTRUMENTATION_FAILED|shortMsg=|AssumptionViolated', result.stdout)
+    return result.stdout
+
+
+def installed_uid():
+    output = common._shell('pm', 'list', 'packages', '-U', PACKAGE)
+    return int(re.search(r'(?m)^package:' + re.escape(PACKAGE) + r' uid:(\d+)\s*$', output)[1])
+
+
+def files_before(golden):
+    files = ['workspace.json', 'regular-environment-upgrade-expected.json', 'regular-upgrade-payload.bin',
+             f"assets/{golden['accountId']}/index.json", *[row['path'] for row in golden['recoveries']]]
+    result = {}
+    for name in files:
+        digest = common._shell('sha256sum', DATA + '/files/' + name).split()[0]
+        assert re.fullmatch(r'[a-f0-9]{64}', digest), name
+        result[name] = digest
+    return result
+
+
+def confirm_system_install():
+    deadline = time.monotonic() + 45
+    latest = ''
+    while time.monotonic() < deadline:
+        dumped = common._run(['adb', 'shell', 'uiautomator', 'dump', '/data/local/tmp/update-window.xml'],
+                             timeout=15, check=False)
+        if dumped.returncode == 0 and 'dumped to' in dumped.stdout:
+            latest = common._shell('cat', '/data/local/tmp/update-window.xml')
+            nodes = list(ElementTree.fromstring(latest).iter('node'))
+            for node in nodes:
+                if (node.get('package') in SYSTEM_INSTALLERS and node.get('clickable') == 'true'
+                        and node.get('enabled') == 'true' and node.get('text', '').casefold() in ('install', 'update')):
+                    (common.EVIDENCE / 'system-confirmation.xml').write_text(latest)
+                    x0, y0, x1, y1 = map(int, re.findall(r'\d+', node.get('bounds', '')))
+                    common._shell('input', 'tap', str((x0 + x1) // 2), str((y0 + y1) // 2))
+                    return
+        time.sleep(0.5)
+    (common.EVIDENCE / 'last-window.xml').write_text(latest)
+    raise AssertionError('System-owned package installation confirmation was not actionable')
+
+
+def run(args):
+    api = common._guard()
+    assert api == args.api
+    devices = common._run(['adb', 'devices']).stdout.strip().splitlines()[1:]
+    assert len(devices) == 1 and re.fullmatch(r'emulator-\d+\s+device', devices[0])
+    assert not common._shell('pm', 'list', 'packages', PACKAGE).strip()
+    assert not common._shell('pm', 'list', 'packages', common.TEST_PACKAGE).strip()
+    block_egress()
+    source, target, test = (args.input / name for name in ('source.apk', 'target.apk', 'source-test.apk'))
+    signer = signer_of(source)
+    assert signer not in (common.PRODUCTION_SIGNER, common.BETA_SIGNER)
+    tools = common._tools()
+    source_info = common._inspect_apk(source, tools, signer, PACKAGE, 3000037, test_only=True)
+    target_info = common._inspect_apk(target, tools, signer, PACKAGE, 3000038)
+    assert 'android:testOnly' not in (common.EVIDENCE / 'target-manifest.txt').read_text()
+    common._inspect_apk(test, tools, signer, common.TEST_PACKAGE)
+    common._run(['adb', 'install', '-t', str(source)])
+    common._run(['adb', 'install', '-t', str(test)])
+    common._installed(source_info['sha256'], 'updater-source')
+    old_uid = installed_uid()
+    common._shell('appops', 'set', PACKAGE, 'REQUEST_INSTALL_PACKAGES', 'deny')
+
+    with Fixture(target, test, signer, source_info['versionName'], target_info['versionName']) as fixture:
+        worker = threading.Thread(target=fixture.serve_forever, daemon=True)
+        worker.start()
+        try:
+            result = instrument('AppUpdateFlowTest#downloadAndRequestSystemConfirmation', signer, 'source', 480)
+            assert 'INSTRUMENTATION_RESULT: appUpdateSourceProof=' in result
+            assert fixture.authorized
+            assert not any(row['credentialHeader'] for row in fixture.requests)
+            for mode in MODES:
+                assert sum(row['mode'] == mode and row['path'] == '/android.json' for row in fixture.requests) == 1
+                assert sum(row['mode'] == mode and row['path'] == '/update.apk' for row in fixture.requests) == int(mode not in NO_DOWNLOAD)
+            golden = json.loads(common._shell('cat', EXPECTED))
+            original = files_before(golden)
+            for row in golden['recoveries']:
+                assert original[row['path']] == row['sha256']
+            assert old_uid == golden['uid'] == installed_uid()
+            assert 'versionCode=3000037 ' in common._shell('dumpsys', 'package', PACKAGE)
+            confirm_system_install()
+            deadline = time.monotonic() + 90
+            while time.monotonic() < deadline:
+                if 'versionCode=3000038 ' in common._shell('dumpsys', 'package', PACKAGE):
+                    break
+                time.sleep(0.5)
+            else:
+                raise AssertionError('System confirmation did not replace the app')
+            common._installed(target_info['sha256'], 'updater-installed-target')
+            assert old_uid == installed_uid()
+            assert original == files_before(golden), 'Owned workspace/recovery/asset bytes changed during replacement'
+            common._shell('am', 'force-stop', PACKAGE)
+            instrument('AppUpdateInstalledTest#readLoginAfterInstall', signer, 'installed', 180)
+            assert original == files_before(golden), 'Owned data changed after cold browser read'
+            common._write_json(common.EVIDENCE / 'report.json', {
+                'complete': True, 'api': api, 'sourceSHA': os.environ['GITHUB_SHA'],
+                'source': source_info, 'target': target_info, 'temporarySigner': signer, 'uid': old_uid,
+                'preservedFileSHA256': original, 'coldCookieLocalStorageIndexedDb': True,
+                'systemConfirmationTapped': True, 'requests': fixture.requests,
+            })
+        finally:
+            fixture.shutdown()
+            common._write_json(common.EVIDENCE / 'fixture-requests.json', fixture.requests)
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--input', type=Path, required=True)
+    parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--api', type=int, choices=(28, 35), required=True)
+    args = parser.parse_args()
+    assert os.environ.get('GITHUB_ACTIONS') == 'true'
+    common.EVIDENCE = args.output
+    args.output.mkdir(parents=True, exist_ok=False)
+    try:
+        run(args)
+    except Exception:
+        common._record_failure()
+        raise
+    finally:
+        common._logcat('app-update')
