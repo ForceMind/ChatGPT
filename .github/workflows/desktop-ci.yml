@@ -6,6 +6,10 @@ on:
     paths: ['desktop/**', '.github/workflows/desktop-ci.yml']
   workflow_dispatch:
     inputs:
+      publish_update_experience:
+        description: Publish the verified 2026.11.10 desktop candidate bytes without rebuilding
+        type: boolean
+        default: false
       update_platform:
         description: Select the update candidate platform while retaining successful evidence from the other OS
         type: choice
@@ -34,11 +38,48 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: desktop-ci-${{ github.ref }}-${{ github.event_name == 'workflow_dispatch' && inputs.update_candidates && 'updates' || github.event_name == 'workflow_dispatch' && inputs.windows_candidate && 'windows' || github.event_name == 'workflow_dispatch' && ((inputs.cpu_validation && inputs.candidate_package) || (inputs.promote_release && (inputs.cpu_validation || inputs.candidate_package))) && 'invalid' || github.event_name == 'workflow_dispatch' && inputs.promote_release && 'promotion' || github.event_name == 'workflow_dispatch' && inputs.candidate_package && 'package' || github.event_name == 'workflow_dispatch' && inputs.cpu_validation && 'cpu' || 'checks' }}
-  cancel-in-progress: ${{ !(github.event_name == 'workflow_dispatch' && inputs.promote_release) }}
+  group: desktop-ci-${{ github.ref }}-${{ github.event_name == 'workflow_dispatch' && inputs.publish_update_experience && 'publish-updates' || github.event_name == 'workflow_dispatch' && inputs.update_candidates && 'updates' || github.event_name == 'workflow_dispatch' && inputs.windows_candidate && 'windows' || github.event_name == 'workflow_dispatch' && ((inputs.cpu_validation && inputs.candidate_package) || (inputs.promote_release && (inputs.cpu_validation || inputs.candidate_package))) && 'invalid' || github.event_name == 'workflow_dispatch' && inputs.promote_release && 'promotion' || github.event_name == 'workflow_dispatch' && inputs.candidate_package && 'package' || github.event_name == 'workflow_dispatch' && inputs.cpu_validation && 'cpu' || 'checks' }}
+  cancel-in-progress: ${{ !(github.event_name == 'workflow_dispatch' && (inputs.promote_release || inputs.publish_update_experience)) }}
 jobs:
+  publish-update-experience:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/dev' && inputs.publish_update_experience && !inputs.update_candidates && !inputs.windows_candidate && !inputs.cpu_validation && !inputs.candidate_package && !inputs.promote_release
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '26.7.0'
+      - uses: actions/download-artifact@v4
+        with:
+          artifact-ids: '13732523592'
+          run-id: 42749099128
+          github-token: ${{ github.token }}
+          path: promotion/update-mac
+          merge-multiple: true
+      - uses: actions/download-artifact@v4
+        with:
+          artifact-ids: '13733315059'
+          run-id: 42749099128
+          github-token: ${{ github.token }}
+          path: promotion/update-windows
+          merge-multiple: true
+      - name: Verify original CI bytes and publish the approved desktop release
+        run: python3 desktop/scripts/publish-update-experience.py
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PUBLISH_DESKTOP_UPDATES: 'true'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: desktop-update-publication-metadata
+          path: promotion/desktop-update-metadata/
+          if-no-files-found: warn
   update-candidates:
-    if: github.event_name == 'workflow_dispatch' && inputs.update_candidates && !inputs.windows_candidate && !inputs.cpu_validation && !inputs.candidate_package && !inputs.promote_release
+    if: github.event_name == 'workflow_dispatch' && inputs.update_candidates && !inputs.windows_candidate && !inputs.cpu_validation && !inputs.candidate_package && !inputs.promote_release && !inputs.publish_update_experience
     runs-on: ${{ matrix.os }}
     timeout-minutes: 50
     strategy:
@@ -97,7 +138,7 @@ jobs:
           name: update-experience-evidence-${{ runner.os }}
           path: desktop/test-results/
   windows-candidate:
-    if: github.event_name == 'workflow_dispatch' && inputs.windows_candidate && !inputs.cpu_validation && !inputs.candidate_package && !inputs.promote_release && !inputs.update_candidates
+    if: github.event_name == 'workflow_dispatch' && inputs.windows_candidate && !inputs.cpu_validation && !inputs.candidate_package && !inputs.promote_release && !inputs.update_candidates && !inputs.publish_update_experience
     name: Windows nested installation candidate
     runs-on: windows-2025
     timeout-minutes: 45
@@ -166,7 +207,7 @@ jobs:
             desktop/release/windows/windows-build-info.json
             desktop/assets/windows-payload.generated.json
   check:
-    if: github.event_name != 'workflow_dispatch' || (!inputs.cpu_validation && !inputs.candidate_package && !inputs.promote_release && !inputs.windows_candidate && !inputs.update_candidates)
+    if: github.event_name != 'workflow_dispatch' || (!inputs.cpu_validation && !inputs.candidate_package && !inputs.promote_release && !inputs.windows_candidate && !inputs.update_candidates && !inputs.publish_update_experience)
     name: Typecheck, lint, format and unit tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -191,7 +232,7 @@ jobs:
       - name: Unit tests
         run: npm test
   build:
-    if: github.event_name != 'workflow_dispatch' || (!inputs.cpu_validation && !inputs.candidate_package && !inputs.promote_release && !inputs.windows_candidate && !inputs.update_candidates)
+    if: github.event_name != 'workflow_dispatch' || (!inputs.cpu_validation && !inputs.candidate_package && !inputs.promote_release && !inputs.windows_candidate && !inputs.update_candidates && !inputs.publish_update_experience)
     name: Build on macOS
     runs-on: macos-15
     timeout-minutes: 20
@@ -210,7 +251,7 @@ jobs:
       - name: Build main process, native helpers and renderer
         run: npm run build
   cpu-validation:
-    if: github.event_name == 'workflow_dispatch' && inputs.cpu_validation && !inputs.candidate_package && !inputs.promote_release && !inputs.windows_candidate && !inputs.update_candidates
+    if: github.event_name == 'workflow_dispatch' && inputs.cpu_validation && !inputs.candidate_package && !inputs.promote_release && !inputs.windows_candidate && !inputs.update_candidates && !inputs.publish_update_experience
     name: Native macOS CPU comparison and background retention
     runs-on: macos-15
     timeout-minutes: 120
@@ -294,7 +335,7 @@ jobs:
             desktop/test-results/
             desktop/playwright-report/
   invalid-manual-inputs:
-    if: github.event_name == 'workflow_dispatch' && ((inputs.cpu_validation && inputs.candidate_package) || (inputs.promote_release && (inputs.cpu_validation || inputs.candidate_package)) || (inputs.windows_candidate && (inputs.cpu_validation || inputs.candidate_package || inputs.promote_release)) || (inputs.update_candidates && (inputs.windows_candidate || inputs.cpu_validation || inputs.candidate_package || inputs.promote_release)))
+    if: github.event_name == 'workflow_dispatch' && ((inputs.cpu_validation && inputs.candidate_package) || (inputs.promote_release && (inputs.cpu_validation || inputs.candidate_package)) || (inputs.windows_candidate && (inputs.cpu_validation || inputs.candidate_package || inputs.promote_release)) || (inputs.update_candidates && (inputs.windows_candidate || inputs.cpu_validation || inputs.candidate_package || inputs.promote_release)) || (inputs.publish_update_experience && (inputs.update_candidates || inputs.windows_candidate || inputs.cpu_validation || inputs.candidate_package || inputs.promote_release)))
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
@@ -303,7 +344,7 @@ jobs:
           echo '::error::Select only one of cpu_validation, candidate_package, promote_release or windows_candidate.'
           exit 1
   candidate-package:
-    if: github.event_name == 'workflow_dispatch' && inputs.candidate_package && !inputs.cpu_validation && !inputs.promote_release && !inputs.windows_candidate && !inputs.update_candidates
+    if: github.event_name == 'workflow_dispatch' && inputs.candidate_package && !inputs.cpu_validation && !inputs.promote_release && !inputs.windows_candidate && !inputs.update_candidates && !inputs.publish_update_experience
     name: Validate and package local macOS arm64 candidate
     runs-on: macos-15
     timeout-minutes: 60
@@ -433,7 +474,7 @@ jobs:
             desktop/test-results/
             desktop/playwright-report/
   promote-release:
-    if: github.event_name == 'workflow_dispatch' && inputs.promote_release && !inputs.cpu_validation && !inputs.candidate_package && !inputs.windows_candidate && !inputs.update_candidates
+    if: github.event_name == 'workflow_dispatch' && inputs.promote_release && !inputs.cpu_validation && !inputs.candidate_package && !inputs.windows_candidate && !inputs.update_candidates && !inputs.publish_update_experience
     name: Promote verified original alpha.23 macOS artifacts
     runs-on: ubuntu-latest
     timeout-minutes: 40
