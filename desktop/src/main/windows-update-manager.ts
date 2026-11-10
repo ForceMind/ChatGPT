@@ -244,7 +244,7 @@ export class WindowsUpdateManager implements UpdateService {
     this.lastProgressAt = 0;
     this.set({
       phase: 'downloading',
-      stage: 'prepare',
+      stage: 'preflight',
       version: release.version,
       progress: 0,
       transferredBytes: 0,

@@ -14,6 +14,7 @@ function updateLabel(status?: UpdateState): string {
     case 'available':
       return '发现可用更新';
     case 'downloading':
+      if (status.stage === 'preflight') return '正在准备下载';
       if (status.stage === 'connect') return '正在连接下载源';
       if (status.stage === 'prepare') return '正在准备安装';
       if (status.stage === 'verify') return '正在校验更新';

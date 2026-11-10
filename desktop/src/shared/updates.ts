@@ -12,7 +12,7 @@ export type UpdateStatus = {
   progress?: number;
   transferredBytes?: number;
   totalBytes?: number;
-  stage?: 'check' | 'connect' | 'download' | 'verify' | 'prepare' | 'install';
+  stage?: 'check' | 'preflight' | 'connect' | 'download' | 'verify' | 'prepare' | 'install';
   idleEnabled?: boolean;
   idleDeadline?: number;
   message?: string;
@@ -22,6 +22,7 @@ export function updateFailureMessage(stage?: UpdateStatus['stage'], error?: unkn
   const messages = {
     check: '版本检查未完成，请重试检查。',
     connect: '无法连接下载源，请检查网络后重试。',
+    preflight: '下载准备未完成，请检查安装目录权限后重试。',
     verify: '更新文件校验未通过，请重新下载。',
     prepare: '安装准备未完成，请重新准备更新。',
     install: '安装校验或启动未完成，请重试更新或使用官网下载的安装包。',
