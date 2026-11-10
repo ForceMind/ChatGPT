@@ -33,7 +33,7 @@ test('narrow tab strip keeps the active tab and switches overflow tabs without l
       args: [desktop],
       env: { ...process.env, PROFILES_E2E: '1', PROFILES_TEST_DATA: data, PROFILES_FIXTURE_ORIGIN: origin }
     });
-    const shell = await shellWindow(app, { width: 1160, height: 640 });
+    const shell = await shellWindow(app, { width: 1000, height: 640 });
     const snapshot = () => shell.evaluate(() => window.profiles.snapshot());
     const active = async () => {
       const state = await snapshot();
