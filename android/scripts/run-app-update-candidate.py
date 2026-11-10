@@ -235,14 +235,50 @@ def confirm_system_install():
     raise AssertionError('System-owned package installation confirmation was not actionable')
 
 
+def recovery_installed_digest(expected):
+    paths = common._shell('pm', 'path', PACKAGE).strip().splitlines()
+    assert len(paths) == 1 and re.fullmatch(r'package:/data/app/[A-Za-z0-9_~=/.-]+/base\.apk', paths[0])
+    digest = common._shell('sha256sum', paths[0][8:]).split()[0]
+    assert digest == expected
+    return digest
+
+
+def interrupt_active_download(signer, node):
+    marker = DATA + '/files/app-update-exit-proof.txt'
+    command = ['adb', 'shell', 'am', 'instrument', '-w', '-r', '-e', 'class',
+               PACKAGE + '.AppUpdateFlowTest#startDownloadBeforeExit', '-e', 'signer', signer,
+               '-e', 'ownedUpdateNode', node, common.RUNNER]
+    with (common.EVIDENCE / 'partial-instrument.txt').open('w') as output:
+        probe = subprocess.Popen(command, stdout=output, stderr=subprocess.STDOUT)
+        try:
+            end = time.monotonic() + 85
+            while time.monotonic() < end:
+                assert probe.poll() is None, 'Fixture ended before the host interrupted the live download'
+                result = common._run(['adb', 'shell', 'cat', marker], check=False)
+                proof = re.fullmatch(r'(\d+):(\d+)', result.stdout.strip()) if result.returncode == 0 else None
+                if proof:
+                    pid, partial = proof.groups()
+                    assert pid in common._shell('pidof', PACKAGE).split()
+                    assert int(partial) > 0
+                    common._shell('am', 'force-stop', PACKAGE)
+                    probe.wait(timeout=15)
+                    return pid, int(partial)
+                time.sleep(0.25)
+            raise AssertionError('No evidence of a live, partial download')
+        finally:
+            if probe.poll() is None:
+                probe.terminate()
+                probe.wait(timeout=10)
+
+
 def verify_recovery(fixture, signer, node, api, source_info, target_info, old_uid):
     partial = DATA + '/files/app-update/download.part.apk'
     ready = DATA + '/files/app-update/ready.apk'
     prefs = DATA + '/shared_prefs/app-update-v1.xml'
     pids = []
 
-    def phase(method, expected, extras=()):
-        log = instrument('AppUpdateFlowTest#' + method, signer, expected, 150, extras=extras)
+    def phase(method, expected):
+        log = instrument('AppUpdateFlowTest#' + method, signer, expected, 150)
         proof = re.findall(r'(?m)^INSTRUMENTATION_RESULT: appUpdateRecoveryStage=([^:\r\n]+):(\d+)\s*$', log)
         assert len(proof) == 1
         stage, pid = proof[0]
@@ -257,10 +293,11 @@ def verify_recovery(fixture, signer, node, api, source_info, target_info, old_ui
         return common._shell('sha256sum', path).split()[0]
 
     fixture.mode = 'slow'
-    phase('startDownloadBeforeExit', 'partial', extras=('-e', 'ownedUpdateNode', node))
-    force_stop()
+    pid, observed_partial = interrupt_active_download(signer, node)
+    pids.append(pid)
+    assert not common._run(['adb', 'shell', 'pidof', PACKAGE], check=False).stdout.strip()
     partial_bytes = int(common._shell('stat', '-c', '%s', partial).strip())
-    assert 0 < partial_bytes < fixture.size
+    assert 0 < observed_partial <= partial_bytes < fixture.size
     assert common._run(['adb', 'shell', 'test', '-e', ready], check=False).returncode != 0
     settings = ElementTree.fromstring(common._shell('cat', prefs))
     assert any(item.get('name') == 'downloading' and item.get('value') == 'true' for item in settings)
@@ -271,20 +308,30 @@ def verify_recovery(fixture, signer, node, api, source_info, target_info, old_ui
     assert digest(ready) == target_info['sha256']
     assert common._run(['adb', 'shell', 'test', '-e', partial], check=False).returncode != 0
     common._shell('appops', 'set', PACKAGE, 'REQUEST_INSTALL_PACKAGES', 'allow')
-    phase('installAfterReadyExitAndRetryAfterCancel', 'reopened-and-cancelled-twice')
+    phase('installAfterReadyExitAndRetryAfterCancel', 'reopened-retry-confirmation')
     assert digest(ready) == target_info['sha256']
     assert old_uid == installed_uid()
-    installed = common._installed(source_info['sha256'], 'updater-after-system-cancel')
+    recovery_installed_digest(source_info['sha256'])
     assert 'versionCode=3000037 ' in common._shell('dumpsys', 'package', PACKAGE)
     requests = [row for row in fixture.requests if 'mode' in row]
     assert [(row['path'], row['mode']) for row in requests] == [
         ('/android.json', 'slow'), ('/update.apk', 'slow'), ('/update.apk', 'resume')]
     assert all(row['throughSelectedLine'] and not row['credentialHeader'] for row in requests)
+    confirm_system_install()
+    deadline = time.monotonic() + 90
+    while time.monotonic() < deadline:
+        if 'versionCode=3000038 ' in common._shell('dumpsys', 'package', PACKAGE):
+            break
+        time.sleep(0.5)
+    else:
+        raise AssertionError('Retried system confirmation did not install the verified APK')
+    installed = recovery_installed_digest(target_info['sha256'])
+    assert old_uid == installed_uid()
     common._write_json(common.EVIDENCE / 'recovery-report.json', {
         'complete': True, 'api': api, 'sourceSHA': os.environ['GITHUB_SHA'], 'processIds': pids,
         'interruptedBytes': partial_bytes, 'downloadRetriedWithoutNewManifest': True,
-        'verifiedApkReusedAfterRestart': True, 'systemCancelPrompts': 2,
-        'installedPackageSHA256Unchanged': installed, 'verifiedUpdateSHA256': target_info['sha256'],
+        'verifiedApkReusedAfterRestart': True, 'systemCancelPrompts': 1,
+        'originalVersionRetainedAfterCancel': True, 'installedAfterRetrySHA256': installed, 'uidPreserved': True,
         'requests': requests, 'syntheticOnly': True, 'screenshots': False,
     })
 
@@ -316,7 +363,10 @@ def run(args):
                    for line in manifest.splitlines())
     common._run(['adb', 'install', '-t', str(source)])
     common._run(['adb', 'install', '-t', str(test)])
-    common._installed(source_info['sha256'], 'updater-source')
+    if args.recovery_only:
+        recovery_installed_digest(source_info['sha256'])
+    else:
+        common._installed(source_info['sha256'], 'updater-source')
     old_uid = installed_uid()
     common._shell('appops', 'set', PACKAGE, 'REQUEST_INSTALL_PACKAGES', 'deny')
 

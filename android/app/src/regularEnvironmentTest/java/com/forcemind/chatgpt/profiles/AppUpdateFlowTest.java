@@ -155,7 +155,13 @@ public final class AppUpdateFlowTest {
                 && task().received() < task().release().size));
         assertTrue(RegularEnvironmentUpgradeTest.file("app-update/download.part.apk").length() > 0);
         assertFalse(RegularEnvironmentUpgradeTest.file("app-update/ready.apk").exists());
-        recoveryProof("partial");
+        String marker = android.os.Process.myPid() + ":" +
+                RegularEnvironmentUpgradeTest.file("app-update/download.part.apk").length();
+        java.nio.file.Files.write(RegularEnvironmentUpgradeTest.file("app-update-exit-proof.txt").toPath(),
+                marker.getBytes(StandardCharsets.UTF_8));
+        // Host must force-stop this live download. A normal test teardown may cancel it first.
+        SystemClock.sleep(120000);
+        fail("Owned emulator did not interrupt the live download");
     }
 
     @Test public void retryAfterDownloadExit() throws Exception {
@@ -190,17 +196,18 @@ public final class AppUpdateFlowTest {
         openRecoveryFixture();
         see("更新已下载，可以安装", false);
         assertTrue(context.getPackageManager().canRequestPackageInstalls());
-        for (int attempt = 0; attempt < 2; attempt++) {
-            click("安装更新", false);
-            see("确认安装", false);
-            click("确认安装", false);
-            cancelOwnedSystemPrompt();
-            see("安装未完成，可以重试", false);
-            see("安装更新", false);
-            assertEquals(3000037, code());
-            assertTrue(RegularEnvironmentUpgradeTest.file("app-update/ready.apk").isFile());
-        }
-        recoveryProof("reopened-and-cancelled-twice");
+        click("安装更新", false);
+        see("确认安装", false);
+        click("确认安装", false);
+        cancelOwnedSystemPrompt();
+        see("安装未完成，可以重试", false);
+        see("安装更新", false);
+        assertEquals(3000037, code());
+        assertTrue(RegularEnvironmentUpgradeTest.file("app-update/ready.apk").isFile());
+        click("安装更新", false);
+        see("确认安装", false);
+        click("确认安装", false);
+        recoveryProof("reopened-retry-confirmation");
     }
 
     @Test public void downloadAndRequestSystemConfirmation() throws Exception {
