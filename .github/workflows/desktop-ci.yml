@@ -11,7 +11,7 @@ on:
         type: boolean
         default: false
       windows_tabs_candidate:
-        description: Verify the Windows full tab picker and build a private candidate artifact
+        description: Verify Windows tab scrolling and build a private candidate artifact
         type: boolean
         default: false
       public_upgrade:
@@ -184,7 +184,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: success()
         with:
-          name: ${{ inputs.macos_tabs_candidate && 'ChatGPT-Studio-Mac-Tab-Picker' || inputs.windows_tabs_candidate && 'ChatGPT-Studio-Windows-Tab-Picker' || format('ChatGPT-Studio-Update-Candidate-{0}', runner.os) }}
+          name: ${{ inputs.macos_tabs_candidate && 'ChatGPT-Studio-Mac-Tab-Picker' || inputs.windows_tabs_candidate && 'ChatGPT-Studio-Windows-Tab-Scroll' || format('ChatGPT-Studio-Update-Candidate-{0}', runner.os) }}
           retention-days: 14
           path: |
             desktop/release/*.dmg

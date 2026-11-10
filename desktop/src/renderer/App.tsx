@@ -20,7 +20,7 @@ import {
 } from '../shared/model';
 import { Icon, Mark, type IconName } from './icons';
 import { MORE_TABS_WIDTH, TAB_GAP, TAB_MAX_WIDTH, TAB_MIN_WIDTH, allTabsFit, splitTabs } from './tab-strip';
-import { useMacTabScroll } from './use-mac-tab-scroll';
+import { useTabScroll } from './use-tab-scroll';
 import './style.css';
 const Workbench = lazy(() => import('./Workbench').then((module) => ({ default: module.Workbench })));
 import { BROWSER_LANGUAGES, DEFAULT_LANGUAGE } from '../shared/profile-preferences';
@@ -92,10 +92,10 @@ function App() {
   const tabStrip = useRef<HTMLDivElement>(null);
   const [tabStripWidth, setTabStripWidth] = useState(0);
   const shellReady = !!state && !fatal;
-  const isMac = state?.platform === 'darwin';
+  const scrollTabs = state?.platform === 'darwin' || state?.platform === 'win32';
   const activeProfile = state?.profiles.find((p) => p.id === state.activeProfileId);
   const tabs = state?.tabs.filter((t) => t.profileId === activeProfile?.id) ?? [];
-  const macScroll = useMacTabScroll(shellReady && isMac, activeProfile?.activeTabId, tabs.length, tabStripWidth);
+  const tabScroll = useTabScroll(shellReady && scrollTabs, activeProfile?.activeTabId, tabs.length, tabStripWidth);
   useLayoutEffect(() => {
     const strip = tabStrip.current;
     if (!shellReady || !strip) return;
@@ -303,12 +303,10 @@ function App() {
   const profile = activeProfile!;
   const tab = tabs.find((t) => t.id === profile.activeTabId)!;
   const status = state.tabStatus[tab.id];
-  const overflow = !allTabsFit(tabs.length, tabStripWidth);
-  const macOverflow = isMac && overflow;
-  const collapsed = state.platform === 'win32' && overflow;
-  const { visible, hidden } = splitTabs(tabs, tab.id, tabStripWidth);
-  const stripTabs = isMac ? tabs : collapsed ? [tab] : visible;
-  const menuTabs = isMac ? [] : collapsed ? tabs : hidden;
+  const scrollable = scrollTabs && !allTabsFit(tabs.length, tabStripWidth);
+  const { visible: stripTabs, hidden: menuTabs } = scrollTabs
+    ? { visible: tabs, hidden: [] }
+    : splitTabs(tabs, tab.id, tabStripWidth);
   const tabEdge = (side: 'left' | 'right', entries: typeof tabs) => (
     <div className="tab-edge">
       {entries.length > 0 && (
@@ -380,15 +378,9 @@ function App() {
     <main className="workspace" data-platform={state.platform} data-fullscreen={state.fullScreen} style={style}>
       <header className="titlebar" aria-label="客户端标题栏">
         <div className="traffic-space" aria-hidden="true" />
-        <div
-          className="tab-strip"
-          ref={tabStrip}
-          style={stripStyle}
-          data-collapsed={collapsed}
-          data-scrollable={macOverflow}
-        >
-          {macOverflow && tabEdge('left', tabs.slice(0, macScroll.leftCount))}
-          <div className="tabs" ref={macScroll.viewport} role="tablist" aria-label={`${profile.name}的标签页`}>
+        <div className="tab-strip" ref={tabStrip} style={stripStyle} data-scrollable={scrollable}>
+          {scrollable && tabEdge('left', tabs.slice(0, tabScroll.leftCount))}
+          <div className="tabs" ref={tabScroll.viewport} role="tablist" aria-label={`${profile.name}的标签页`}>
             {stripTabs.map((t) => (
               <div
                 key={t.id}
@@ -450,7 +442,7 @@ function App() {
               </div>
             ))}
           </div>
-          {macOverflow && tabEdge('right', tabs.slice(macScroll.rightStart))}
+          {scrollable && tabEdge('right', tabs.slice(tabScroll.rightStart))}
           {menuTabs.length > 0 && (
             <button
               type="button"

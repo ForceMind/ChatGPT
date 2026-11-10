@@ -24,7 +24,7 @@ export function splitTabs<T extends { id: string }>(tabs: readonly T[], activeId
   return { visible, hidden };
 }
 
-export function macTabEdges(count: number, width: number, left: number) {
+export function tabEdges(count: number, width: number, left: number) {
   const step = TAB_MIN_WIDTH + TAB_GAP;
   const tolerance = 0.5;
   const leftCount = Math.max(0, Math.min(count, Math.ceil((left - tolerance) / step)));
