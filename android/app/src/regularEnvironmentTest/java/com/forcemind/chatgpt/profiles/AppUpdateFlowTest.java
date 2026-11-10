@@ -4,6 +4,7 @@ import android.app.Instrumentation;
 import android.app.UiAutomation;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.ParcelFileDescriptor;
 import android.os.SystemClock;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.webkit.WebView;
@@ -217,12 +218,29 @@ public final class AppUpdateFlowTest {
             request.setReadTimeout(5000);
             assertEquals(200, request.getResponseCode());
             try (java.io.InputStream input = request.getInputStream()) {
-                byte[] bytes = new byte[512];
-                int size = input.read(bytes);
-                assertTrue(size > 0);
-                return new JSONObject(new String(bytes, 0, size, StandardCharsets.UTF_8)).getInt(key);
+                return new JSONObject(readOutput(input)).getInt(key);
             }
         } finally { request.disconnect(); }
+    }
+
+    private static String readOutput(java.io.InputStream input) throws java.io.IOException {
+        java.io.ByteArrayOutputStream output = new java.io.ByteArrayOutputStream();
+        byte[] buffer = new byte[512];
+        for (int count; (count = input.read(buffer)) != -1; ) output.write(buffer, 0, count);
+        return new String(output.toByteArray(), StandardCharsets.UTF_8);
+    }
+
+    private String shellOutput(String command) throws java.io.IOException {
+        // Android 9's UiAutomation repeater can die with EPIPE if its output pipe is closed early.
+        try (ParcelFileDescriptor.AutoCloseInputStream stream =
+                     new ParcelFileDescriptor.AutoCloseInputStream(ui.executeShellCommand(command))) {
+            return readOutput(stream);
+        }
+    }
+
+    private void reopenGecko(WorkspaceState.Account account) throws java.io.IOException {
+        String result = shellOutput("am start -W -n " + PACKAGE + "/.MainActivity --es " + EnvironmentLauncher.ACCOUNT_ID + " " + account.id);
+        assertFalse(result, result.contains("Error:") || result.contains("Exception"));
     }
 
     private void expectAutoRequests(String key, int expected) throws Exception {
@@ -251,18 +269,23 @@ public final class AppUpdateFlowTest {
         route.enabled = true;
         new NetworkSettingsStore(context).write(route);
         WorkspaceState state = new StateStore(context.getFilesDir()).update(workspace -> {
-            WorkspaceState.Account legacy = workspace.current();
-            legacy.name = "Owned auto WebView";
+            WorkspaceState.Account legacy = workspace.addAccount("Owned auto WebView", "", WorkspaceState.COLORS[0]);
+            legacy.current().url = "https://chatgpt.com/c/owned-update-auto";
             workspace.addEnvironmentAccount("Owned auto Gecko", "", WorkspaceState.COLORS[1], "en-US", "UTC");
             workspace.activeAccount = legacy.id;
         });
         WorkspaceState.Account gecko = state.accounts.stream().filter(WorkspaceState.Account::isEnvironment).findFirst().get();
         MainActivity.handoffFixture = (owner, request) -> new android.webkit.WebResourceResponse(
-                "text/html", "UTF-8", new ByteArrayInputStream("<p>Owned update fixture</p>".getBytes(StandardCharsets.UTF_8)));
-        instrument.startActivitySync(new Intent(context, MainActivity.class).setAction(Intent.ACTION_MAIN)
+                "text/html", "UTF-8", new ByteArrayInputStream("<!doctype html><title>Owned updater</title><p>Owned update fixture</p>".getBytes(StandardCharsets.UTF_8)));
+        MainActivity main = (MainActivity) instrument.startActivitySync(new Intent(context, MainActivity.class)
+                .setAction(Intent.ACTION_MAIN).putExtra(EnvironmentLauncher.ACCOUNT_ID, state.current().id)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
         expectAutoRequests("feed", 1);
         waitFor("startup check completed", 20, () -> onMain(() -> task().phase() == AppUpdateTask.Phase.IDLE));
+        waitFor("owned WebView page loaded", 25, () -> onMain(() -> {
+            WebView web = main.recoveryCurrentWeb();
+            return web != null && "Owned updater".equals(web.getTitle()) && web.getProgress() == 100;
+        }));
         assertEquals(0, autoRequests("apk"));
 
         click("切换账号，当前：Owned auto WebView", false);
@@ -270,13 +293,14 @@ public final class AppUpdateFlowTest {
         see("切换账号，当前：Owned auto Gecko", false);
         assertEquals(1, autoRequests("feed"));
         mode("resume");
-        ui.executeShellCommand("input keyevent KEYCODE_HOME").close();
+        shellOutput("input keyevent KEYCODE_HOME");
         waitFor("app is backgrounded", 15, () -> {
             AccessibilityNodeInfo root = ui.getRootInActiveWindow();
             return root != null && !PACKAGE.contentEquals(root.getPackageName());
         });
         now.set(java.time.Instant.parse("2026-11-10T04:00:00Z"));
-        ui.executeShellCommand("cmd jobscheduler run -f " + PACKAGE + " " + AppUpdateAuto.JOB).close();
+        String job = shellOutput("cmd jobscheduler run -f " + PACKAGE + " " + AppUpdateAuto.JOB);
+        assertTrue(job, job.contains("Running job"));
         expectAutoRequests("feed", 2);
         waitFor("background update available", 20, () -> onMain(() -> task().phase() == AppUpdateTask.Phase.AVAILABLE));
         AccessibilityNodeInfo root = ui.getRootInActiveWindow();
@@ -284,21 +308,19 @@ public final class AppUpdateFlowTest {
         assertFalse(PACKAGE.contentEquals(root.getPackageName()));
         assertEquals(0, autoRequests("apk"));
 
-        Intent openGecko = new Intent().setClassName(context, "com.forcemind.chatgpt.profiles.EnvironmentBrowserActivity$Slot" + gecko.environmentSlot)
-                .putExtra(EnvironmentLauncher.ACCOUNT_ID, gecko.id).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        context.startActivity(openGecko);
+        reopenGecko(gecko);
         see("发现新版本", false);
         click("稍后", false);
         assertEquals(2, autoRequests("feed"));
         assertEquals(0, autoRequests("apk"));
 
-        ui.executeShellCommand("input keyevent KEYCODE_HOME").close();
+        shellOutput("input keyevent KEYCODE_HOME");
         waitFor("app is backgrounded on the next day", 15, () -> {
             AccessibilityNodeInfo background = ui.getRootInActiveWindow();
             return background != null && !PACKAGE.contentEquals(background.getPackageName());
         });
         now.set(java.time.Instant.parse("2026-11-11T04:30:00Z"));
-        context.startActivity(openGecko);
+        reopenGecko(gecko);
         expectAutoRequests("feed", 3);
         see("发现新版本", false);
         click("查看更新", false);
