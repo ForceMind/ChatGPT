@@ -56,6 +56,8 @@ Android 原生入口涉及 MainActivity、EnvironmentBrowserActivity 和共用�
 
 [Android 9 / 15 合成验收](https://github.com/ForceMind/ChatGPT/actions/runs/42756806400) 使用源码 `fe6fc16`。夹具通过合成 VLESS 节点核对请求来源，给同一更新地址预置账号 Cookie，并要求更新清单和 APK 请求都没有凭据。候选仍待通过运行验收。合成 APK 使用一次性 CI 证书，不能作为正式签名升级包安装。
 
+两轮构建已生成 ARM64 审阅 APK。Android 15 在直连和合成 VLESS 两轮都通过更新入口、下载校验、系统确认和原 UID 覆盖安装，安装后文件摘要一致；原测试 APK 冷启动时缺少 Kotlin 运行时，完整冷启动验收失败。已改用独立验证 APK，继续读取 Cookie、localStorage、IndexedDB，并使用原密钥解密草稿。Android 9 在合法 APK 校验时未进入安装就绪状态。按 Android 9 AOSP 的归档签名收集逻辑同时请求旧标志和 SigningInfo，仍核对当前签名证书。两项修正都等待双版本 Actions 验证。
+
 [官网 Android 清单源码](../site/updates/android.json) 已按已公开的原签名 Android 2026.11.09-1236 发布收据生成，含实际包体大小、SHA-256 和正式证书指纹。清单目前仅在仓库中，部署后才可作为候选的真实检查入口。验收使用模拟器本机夹具，正式 APK 和下载入口沿用当前线上版本。
 
 2026.11.10 已按确认范围正式发布，复用同源码已验收 CI 字节。桌面官网下载、自动更新清单及部署回读见 [正式发布记录](releases/2026.11.10-publication.json)。Android 的公开下载仍为 2026.11.09-1236。以下为第一批桌面候选验收记录。

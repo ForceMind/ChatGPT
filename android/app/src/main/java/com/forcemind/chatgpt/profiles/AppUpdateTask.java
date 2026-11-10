@@ -184,6 +184,8 @@ final class AppUpdateTask {
                     }
                 });
             } catch (Exception failure) {
+                if (BuildConfig.APP_UPDATE_TEST && !job.cancelled())
+                    android.util.Log.w("StudioAppUpdateCI", "Owned update download or verification failed", failure);
                 try { Files.deleteIfExists(partial.toPath()); }
                 catch (IOException ignored) { /* Owned staging will be removed on retry. */ }
                 saved.edit().remove("downloading").apply();

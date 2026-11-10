@@ -17,6 +17,8 @@ from xml.etree import ElementTree
 import regular_environment_upgrade as common
 
 PACKAGE = common.PACKAGE
+VERIFY_PACKAGE = PACKAGE + ".updatecheck"
+VERIFY_RUNNER = VERIFY_PACKAGE + "/androidx.test.runner.AndroidJUnitRunner"
 PORT = 18777
 NODE_PORT = 18778
 PROXY_SOURCE = '127.0.0.2'
@@ -183,9 +185,9 @@ def signer_of(apk):
     return signers[0]
 
 
-def instrument(class_name, signer, label, timeout, extras=()):
+def instrument(class_name, signer, label, timeout, extras=(), runner=common.RUNNER):
     result = common._run(['adb', 'shell', 'am', 'instrument', '-w', '-r', '-e', 'class',
-                          PACKAGE + '.' + class_name, '-e', 'signer', signer, *extras, common.RUNNER],
+                          PACKAGE + '.' + class_name, '-e', 'signer', signer, *extras, runner],
                          timeout=timeout, check=False)
     (common.EVIDENCE / (label + '-instrument.txt')).write_text(result.stdout)
     print(result.stdout, flush=True)
@@ -240,8 +242,10 @@ def run(args):
     assert len(devices) == 1 and re.fullmatch(r'emulator-\d+\s+device', devices[0])
     assert not common._shell('pm', 'list', 'packages', PACKAGE).strip()
     assert not common._shell('pm', 'list', 'packages', common.TEST_PACKAGE).strip()
+    assert not common._shell('pm', 'list', 'packages', VERIFY_PACKAGE).strip()
     block_egress()
-    source, target, test = (args.input / name for name in ('source.apk', 'target.apk', 'source-test.apk'))
+    source, target, test, verifier = (args.input / name for name in
+                                      ('source.apk', 'target.apk', 'source-test.apk', 'installed-test.apk'))
     signer = signer_of(source)
     assert signer not in (common.PRODUCTION_SIGNER, common.BETA_SIGNER)
     tools = common._tools()
@@ -249,6 +253,12 @@ def run(args):
     target_info = common._inspect_apk(target, tools, signer, PACKAGE, 3000038)
     assert 'android:testOnly' not in (common.EVIDENCE / 'target-manifest.txt').read_text()
     common._inspect_apk(test, tools, signer, common.TEST_PACKAGE)
+    common._inspect_apk(verifier, tools, signer, VERIFY_PACKAGE, 1)
+    manifest = (common.EVIDENCE / 'installed-test-manifest.txt').read_text()
+    assert manifest.count('E: instrumentation ') == 1
+    assert any('android:targetPackage' in line and '"' + PACKAGE + '"' in line for line in manifest.splitlines())
+    assert any('android:name' in line and '"androidx.test.runner.AndroidJUnitRunner"' in line
+               for line in manifest.splitlines())
     common._run(['adb', 'install', '-t', str(source)])
     common._run(['adb', 'install', '-t', str(test)])
     common._installed(source_info['sha256'], 'updater-source')
@@ -295,16 +305,22 @@ def run(args):
                 time.sleep(0.5)
             else:
                 raise AssertionError('System confirmation did not replace the app')
-            common._installed(target_info['sha256'], 'updater-installed-target')
+            installed_sha = common._installed(target_info['sha256'], 'updater-installed-target')
             assert old_uid == installed_uid()
             assert original == files_before(golden), 'Owned workspace/recovery/asset bytes changed during replacement'
+            common._write_json(common.EVIDENCE / 'system-install-proof.json', {
+                'api': api, 'uid': old_uid, 'installedSHA256': installed_sha, 'versionCode': 3000038,
+                'preservedFileSHA256': original,
+            })
             common._shell('am', 'force-stop', PACKAGE)
-            instrument('AppUpdateInstalledTest#readLoginAfterInstall', signer, 'installed', 180)
+            common._run(['adb', 'install', str(verifier)])
+            instrument('AppUpdateInstalledTest#readLoginAfterInstall', signer, 'installed', 180, runner=VERIFY_RUNNER)
             assert original == files_before(golden), 'Owned data changed after cold browser read'
             common._write_json(common.EVIDENCE / 'report.json', {
                 'complete': True, 'api': api, 'sourceSHA': os.environ['GITHUB_SHA'],
                 'source': source_info, 'target': target_info, 'temporarySigner': signer, 'uid': old_uid,
                 'preservedFileSHA256': original, 'coldCookieLocalStorageIndexedDb': True,
+                'coldDecryptedRecoveryAndPayload': True,
                 'systemConfirmationTapped': True, 'steps': sorted(steps), 'requests': fixture.requests,
             })
         finally:

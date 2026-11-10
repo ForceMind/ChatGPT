@@ -39,7 +39,11 @@ final class AppUpdatePackage {
             throw new IOException("更新版本、架构或签名与当前应用不符");
         if (Files.isSymbolicLink(file.toPath()) || !file.isFile() || file.length() != release.size)
             throw new IOException("更新文件大小不符");
-        PackageInfo apk = context.getPackageManager().getPackageArchiveInfo(file.getAbsolutePath(), PackageManager.GET_SIGNING_CERTIFICATES);
+        // Some Android versions collect archive certificates only when GET_SIGNATURES is set.
+        // Still compare the actual current signer through SigningInfo, including on Android 9.
+        @SuppressWarnings("deprecation")
+        int archiveFlags = PackageManager.GET_SIGNING_CERTIFICATES | PackageManager.GET_SIGNATURES;
+        PackageInfo apk = context.getPackageManager().getPackageArchiveInfo(file.getAbsolutePath(), archiveFlags);
         if (apk == null || !context.getPackageName().equals(apk.packageName) || apk.getLongVersionCode() != release.code
                 || !release.name.equals(apk.versionName) || !release.certificate.equals(certificate(apk)))
             throw new IOException("APK 包名、版本或证书不符");

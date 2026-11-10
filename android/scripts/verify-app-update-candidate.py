@@ -39,6 +39,7 @@ for api in (28, 35):
         assert report[key]['package'] == receipt['package']
         assert report[key]['signerSHA256'] == report['temporarySigner']
     assert report['systemConfirmationTapped'] and report['coldCookieLocalStorageIndexedDb']
+    assert report['coldDecryptedRecoveryAndPayload']
     assert set(report['steps']) == {'both-entries', 'progress', 'background', 'route-lease', 'cancel', 'bad-packages',
                                     'retry', 'permission', 'live-tabs', 'draft', 'system-confirmation'}
     assert sum(path.startswith('page-recovery/') for path in report['preservedFileSHA256']) == 2

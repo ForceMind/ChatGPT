@@ -74,6 +74,11 @@ jobs:
           cp android/app/build/outputs/apk/release/app-release.apk android/app/build/app-update-ci/source.apk
           cp android/app/build/outputs/apk/androidTest/release/app-release-androidTest.apk android/app/build/app-update-ci/source-test.apk
           cp android/network-poc/corebridge/bin/xray android/app/build/app-update-ci/xray
+      - name: Build and sign the independent post-install verifier
+        run: |
+          python3 android/scripts/prepare-app-update-verifier.py --output "$RUNNER_TEMP/app-update-verifier"
+          bash android/gradlew -p "$RUNNER_TEMP/app-update-verifier" --no-daemon assembleRelease
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" sign --ks "$STUDIO_REGULAR_CI_KEYSTORE_PATH" --ks-key-alias regular-compat-ci --ks-pass env:STUDIO_REGULAR_CI_STORE_PASSWORD --key-pass env:STUDIO_REGULAR_CI_STORE_PASSWORD --out android/app/build/app-update-ci/installed-test.apk "$RUNNER_TEMP"/app-update-verifier/build/outputs/apk/release/*-unsigned.apk
       - uses: actions/upload-artifact@v4
         if: success()
         with:
