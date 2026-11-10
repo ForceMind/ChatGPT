@@ -1,13 +1,13 @@
 {
   "schema": 1,
-  "version": "2026.11.10",
-  "publishedAt": "2026-11-10T03:49:23.073032+00:00",
-  "notes": "2026.11.10：Mac / Windows 更新下载显示百分比、文件大小、阶段及失败重试；Windows 补齐更新配置并修复嵌套程序目录迁移。",
+  "version": "2026.11.11",
+  "publishedAt": "2026-11-10T07:03:24.638507+00:00",
+  "notes": "标签过多时收进「更多标签」，当前标签始终显示。",
   "files": {
     "arm64": {
-      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.10/ChatGPT-Profiles-2026.11.10-mac-arm64.zip",
-      "size": 155190438,
-      "sha256": "8c78b73c40a82cab7918918dd9a982db92908f16306468fc9a677ef7e7df6edc"
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.11/ChatGPT-Profiles-2026.11.11-mac-arm64.zip",
+      "size": 155191338,
+      "sha256": "cf505a6342509914e708f59e47766533a695d89fd306a7dccb0e82e58627b741"
     }
   }
 }

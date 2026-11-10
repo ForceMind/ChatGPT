@@ -38,6 +38,6 @@
 3. 完善更新下载的可见进度。Mac / Windows 2026.11.10 已正式发布，含百分比、文件大小、阶段提示及重试；Android 应用内更新下载器留待第二批。[正式记录与后续方案](update-experience-plan.md)。
 4. 接入 Windows Authenticode。当前公开包与本迭代候选均未配置可信签名，仍会出现“未知发布者”。用户暂无 Windows 代码签名证书或已验证的 Artifact Signing 账号，签名服务及身份条件具备后再接入 Actions，并校验主程序、安装器与卸载器签名。
 5. 继续已列入路线图的真实账号 / 文件验收、通行密钥、稳定 Apple 签名与 Touch ID、iOS 原生客户端、差量更新等工作，按各自批准范围推进。
-6. Mac / Windows 共用标签栏已实现收纳。标签随可用宽度缩小，超出的标签进入「更多标签」，当前标签留在标题栏。菜单沿用现有切换命令和网页实例，退出标签前按原流程保存草稿。已通过桌面完整检查和收纳边界单元测试；两端窄窗、系统菜单定位及真实草稿交互未实测。
+6. Mac / Windows 共用标签栏随 [2026.11.11](https://github.com/ForceMind/ChatGPT/releases/tag/v2026.11.11) 正式发布。标签先缩小，超出的进入「更多标签」，当前标签留在标题栏。[双端 CI](https://github.com/ForceMind/ChatGPT/actions/runs/42771715875) 通过 800 像素窄窗、更新按钮占位、多标签和菜单选择验收。切换后保留原网页实例及未发送草稿；测试通过菜单项目回调完成选择，未检查操作系统菜单的视觉位置。
 
 Android R8 正式优化批次已发布，包体及 CPU/PSS 对照结果见 [Android 优化记录](android-optimization-plan.md)。本次 Windows 候选沿用现有应用功能与保活策略。
