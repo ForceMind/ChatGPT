@@ -80,7 +80,7 @@ export type Command =
   | { type: 'tab:new'; url?: string }
   | { type: 'tab:activate' | 'tab:close' | 'tab:pin' | 'tab:menu' | 'tab:reload'; id: string }
   | { type: 'tab:reorder'; ids: string[] }
-  | { type: 'tab:overflow'; ids: string[]; x: number; y: number }
+  | { type: 'tab:overflow'; ids: string[]; x: number; y: number; side?: 'left' | 'right' }
   | {
       type:
         | 'update:check'

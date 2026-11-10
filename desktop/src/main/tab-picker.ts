@@ -8,7 +8,7 @@ function label(text: string): string {
   return text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
 }
 
-function markup(tabs: Tab[], activeId: string): string {
+function markup(tabs: Tab[], activeId: string, heading: string): string {
   const rows = tabs
     .map((tab) => {
       const selected = tab.id === activeId;
@@ -20,7 +20,7 @@ function markup(tabs: Tab[], activeId: string): string {
     .join('');
   return `<!doctype html><html lang="zh-CN"><meta charset="utf-8">
     <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-studio-tabs';">
-    <title>全部标签</title><style>
+    <title>${label(heading)}</title><style>
     * { box-sizing: border-box }
     html, body { margin:0; height:100%; overflow:hidden }
     body { color:#171717; background:#fff; border:1px solid #dedede;
@@ -37,11 +37,15 @@ function markup(tabs: Tab[], activeId: string): string {
     a:focus-visible { outline:1px dashed #555; outline-offset:-4px }
     .current { font-size:12px; flex:none }
     </style>
-    <header><strong>全部标签</strong><span>${tabs.length} 个</span></header>
-    <div role="menu" aria-label="全部标签">${rows}</div>
+    <header><strong>${label(heading)}</strong><span>${tabs.length} 个</span></header>
+    <div role="menu" aria-label="${label(heading)}">${rows}</div>
     <script nonce="studio-tabs">
       const items = Array.from(document.querySelectorAll('[role=menuitemradio]'));
-      items.find(item => item.getAttribute('aria-checked') === 'true')?.focus();
+      const initial = items.find(item => item.getAttribute('aria-checked') === 'true') || items[0];
+      if (initial) {
+        initial.tabIndex = 0;
+        initial.focus();
+      }
       document.addEventListener('keydown', event => {
         if (event.key === 'Escape') {
           event.preventDefault();
@@ -61,7 +65,8 @@ export function showTabPicker(
   anchor: { x: number; y: number },
   tabs: Tab[],
   activeId: string,
-  select: (id: string) => void
+  select: (id: string) => void,
+  heading: '全部标签' | '左侧标签' | '右侧标签'
 ): BrowserWindow {
   const content = parent.getContentBounds();
   const work = screen.getDisplayMatching(content).workArea;
@@ -114,6 +119,8 @@ export function showTabPicker(
     }
   });
   picker.once('ready-to-show', () => picker.show());
-  void picker.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(markup(tabs, activeId))).catch(dismiss);
+  void picker
+    .loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(markup(tabs, activeId, heading)))
+    .catch(dismiss);
   return picker;
 }

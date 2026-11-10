@@ -23,3 +23,20 @@ export function splitTabs<T extends { id: string }>(tabs: readonly T[], activeId
   }
   return { visible, hidden };
 }
+
+export function macTabEdges(count: number, width: number, left: number) {
+  const step = TAB_MIN_WIDTH + TAB_GAP;
+  const tolerance = 0.5;
+  const leftCount = Math.max(0, Math.min(count, Math.ceil((left - tolerance) / step)));
+  const rightStart = Math.max(0, Math.min(count, Math.floor((left + width - TAB_MIN_WIDTH + tolerance) / step) + 1));
+  return { leftCount, rightStart };
+}
+
+export function verticalTabWheelDelta(
+  event: Pick<WheelEvent, 'deltaX' | 'deltaY' | 'deltaMode' | 'ctrlKey'>,
+  width: number
+) {
+  if (event.ctrlKey || Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return 0;
+  const multiplier = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? width : 1;
+  return event.deltaY * multiplier;
+}

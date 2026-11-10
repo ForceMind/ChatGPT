@@ -19,7 +19,8 @@ import {
   type Snapshot
 } from '../shared/model';
 import { Icon, Mark, type IconName } from './icons';
-import { MORE_TABS_WIDTH, TAB_GAP, TAB_MAX_WIDTH, allTabsFit, splitTabs } from './tab-strip';
+import { MORE_TABS_WIDTH, TAB_GAP, TAB_MAX_WIDTH, TAB_MIN_WIDTH, allTabsFit, splitTabs } from './tab-strip';
+import { useMacTabScroll } from './use-mac-tab-scroll';
 import './style.css';
 const Workbench = lazy(() => import('./Workbench').then((module) => ({ default: module.Workbench })));
 import { BROWSER_LANGUAGES, DEFAULT_LANGUAGE } from '../shared/profile-preferences';
@@ -91,6 +92,10 @@ function App() {
   const tabStrip = useRef<HTMLDivElement>(null);
   const [tabStripWidth, setTabStripWidth] = useState(0);
   const shellReady = !!state && !fatal;
+  const isMac = state?.platform === 'darwin';
+  const activeProfile = state?.profiles.find((p) => p.id === state.activeProfileId);
+  const tabs = state?.tabs.filter((t) => t.profileId === activeProfile?.id) ?? [];
+  const macScroll = useMacTabScroll(shellReady && isMac, activeProfile?.activeTabId, tabs.length, tabStripWidth);
   useLayoutEffect(() => {
     const strip = tabStrip.current;
     if (!shellReady || !strip) return;
@@ -295,17 +300,44 @@ function App() {
         <p>正在恢复账号空间…</p>
       </div>
     );
-  const profile = state.profiles.find((p) => p.id === state.activeProfileId)!;
-  const tabs = state.tabs.filter((t) => t.profileId === profile.id);
+  const profile = activeProfile!;
   const tab = tabs.find((t) => t.id === profile.activeTabId)!;
   const status = state.tabStatus[tab.id];
-  const collapsed = desktopWorkspaceEnabled(state.platform) && !allTabsFit(tabs.length, tabStripWidth);
+  const overflow = !allTabsFit(tabs.length, tabStripWidth);
+  const macOverflow = isMac && overflow;
+  const collapsed = state.platform === 'win32' && overflow;
   const { visible, hidden } = splitTabs(tabs, tab.id, tabStripWidth);
-  const stripTabs = collapsed ? [tab] : visible;
-  const menuTabs = collapsed ? tabs : hidden;
+  const stripTabs = isMac ? tabs : collapsed ? [tab] : visible;
+  const menuTabs = isMac ? [] : collapsed ? tabs : hidden;
+  const tabEdge = (side: 'left' | 'right', entries: typeof tabs) => (
+    <div className="tab-edge">
+      {entries.length > 0 && (
+        <button
+          type="button"
+          className="tab-edge-trigger"
+          aria-haspopup="menu"
+          aria-label={`${side === 'left' ? '左侧' : '右侧'}标签 (${entries.length})`}
+          title={side === 'left' ? '展开左侧标签' : '展开右侧标签'}
+          onClick={(event) => {
+            const bounds = event.currentTarget.getBoundingClientRect();
+            void send({
+              type: 'tab:overflow',
+              side,
+              ids: entries.map((item) => item.id),
+              x: Math.floor(bounds.left),
+              y: Math.ceil(bounds.bottom)
+            });
+          }}
+        >
+          <Icon name="chevron" size={13} />
+        </button>
+      )}
+    </div>
+  );
   const stripStyle = {
     '--tab-strip-ideal': tabs.length * TAB_MAX_WIDTH + (tabs.length - 1) * TAB_GAP + 'px',
     '--tab-max-width': TAB_MAX_WIDTH + 'px',
+    '--tab-min-width': TAB_MIN_WIDTH + 'px',
     '--tab-gap': TAB_GAP + 'px',
     '--more-tabs-width': MORE_TABS_WIDTH + 'px'
   } as CSSProperties;
@@ -348,8 +380,15 @@ function App() {
     <main className="workspace" data-platform={state.platform} data-fullscreen={state.fullScreen} style={style}>
       <header className="titlebar" aria-label="客户端标题栏">
         <div className="traffic-space" aria-hidden="true" />
-        <div className="tab-strip" ref={tabStrip} style={stripStyle} data-collapsed={collapsed}>
-          <div className="tabs" role="tablist" aria-label={`${profile.name}的标签页`}>
+        <div
+          className="tab-strip"
+          ref={tabStrip}
+          style={stripStyle}
+          data-collapsed={collapsed}
+          data-scrollable={macOverflow}
+        >
+          {macOverflow && tabEdge('left', tabs.slice(0, macScroll.leftCount))}
+          <div className="tabs" ref={macScroll.viewport} role="tablist" aria-label={`${profile.name}的标签页`}>
             {stripTabs.map((t) => (
               <div
                 key={t.id}
@@ -411,6 +450,7 @@ function App() {
               </div>
             ))}
           </div>
+          {macOverflow && tabEdge('right', tabs.slice(macScroll.rightStart))}
           {menuTabs.length > 0 && (
             <button
               type="button"

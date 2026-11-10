@@ -111,3 +111,28 @@
 
 .workspace:is([data-platform=win32], [data-platform=darwin]) .tab.active { border: 2px solid #252525; }
 .tab-strip[data-collapsed=true] .tabs { flex: 0 1 var(--tab-max-width); }
+
+.tab-strip[data-scrollable=true] .tabs {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+}
+.tab-strip[data-scrollable=true] .tab {
+  flex: 0 0 var(--tab-min-width);
+}
+.tab-edge {
+  flex: 0 0 24px;
+}
+.tab-edge-trigger {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid #dedede;
+  border-radius: 6px;
+}
+.tab-edge-trigger:focus-visible {
+  outline-offset: 1px;
+}

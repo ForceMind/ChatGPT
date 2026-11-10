@@ -63,6 +63,7 @@ test('narrow tab strip keeps the active tab and switches overflow tabs without l
         { id, draft, origin }
       );
 
+    const mac = process.platform === 'darwin';
     const tabButtons = shell.getByRole('tab');
     const known = new Map<string, { id: string; page: unknown }>();
     let wideCount = 0;
@@ -89,8 +90,10 @@ test('narrow tab strip keeps the active tab and switches overflow tabs without l
 
     await shellWindow(app, { width: 800, height: 640 });
     const more = shell.getByRole('button', { name: /^更多标签 \(\d+\)$/ });
-    await expect(more).toBeVisible();
-    await expect.poll(() => tabButtons.count()).toBeLessThan(wideCount);
+    if (!mac) {
+      await expect(more).toBeVisible();
+      await expect.poll(() => tabButtons.count()).toBeLessThan(wideCount);
+    }
     await expect(shell.getByRole('tab', { selected: true })).toHaveText('Overflow fixture 8');
     const layout = () =>
       shell.locator('.tab-strip').evaluate((strip) => {
@@ -111,7 +114,7 @@ test('narrow tab strip keeps the active tab and switches overflow tabs without l
         JSON.stringify(widths)
       ).toBe(true);
     };
-    await verifyLayout();
+    if (!mac) await verifyLayout();
     await shell.locator('.current-account').evaluate((account) => {
       const update = document.createElement('button');
       update.className = 'update-status-button';
@@ -119,9 +122,20 @@ test('narrow tab strip keeps the active tab and switches overflow tabs without l
       account.before(update);
     });
     await expect(shell.getByRole('tab', { selected: true })).toHaveText('Overflow fixture 8');
-    await verifyLayout();
+    if (!mac) await verifyLayout();
 
-    if (process.platform === 'darwin') {
+    const sendPickerKey = (keyCode: 'Enter' | 'Escape', title = '全部标签') =>
+      app!.evaluate(
+        ({ BrowserWindow }, { key, title }) => {
+          const popup = BrowserWindow.getAllWindows().find((window) => window.getTitle() === title);
+          if (!popup || !popup.isFocused()) throw Error('Tab picker is not focused');
+          popup.webContents.sendInputEvent({ type: 'keyDown', keyCode: key });
+          if (!popup.isDestroyed()) popup.webContents.sendInputEvent({ type: 'keyUp', keyCode: key });
+        },
+        { key: keyCode, title }
+      );
+
+    if (mac) {
       const controls = await shell.locator('.titlebar').evaluate((titlebar) => {
         const traffic = titlebar.querySelector('.traffic-space')!.getBoundingClientRect();
         const tabs = titlebar.querySelector('.tab-strip')!.getBoundingClientRect();
@@ -143,6 +157,69 @@ test('narrow tab strip keeps the active tab and switches overflow tabs without l
       expect(controls.trafficReserved).toBe(true);
       expect(controls.dragWidth).toBeGreaterThanOrEqual(32);
       expect(controls.dragRegion).toBe('drag');
+      const track = shell.getByRole('tablist');
+      const left = shell.getByRole('button', { name: /^左侧标签 / });
+      const right = shell.getByRole('button', { name: /^右侧标签 / });
+      const order = (await snapshot()).tabs.map((item) => item.title);
+      await expect(tabButtons).toHaveCount(order.length);
+      await expect(left).toBeVisible();
+      await expect(right).toHaveCount(0);
+      const position = () =>
+        track.evaluate((viewport) => {
+          const clip = viewport.getBoundingClientRect();
+          const tabs = [...viewport.querySelectorAll('.tab')];
+          return {
+            scroll: viewport.scrollLeft,
+            visible: tabs.filter((tab) => {
+              const rect = tab.getBoundingClientRect();
+              return rect.left >= clip.left - 1 && rect.right <= clip.right + 1;
+            }).length,
+            activeVisible: tabs.some((tab) => {
+              const rect = tab.getBoundingClientRect();
+              return tab.classList.contains('active') && rect.left >= clip.left - 1 && rect.right <= clip.right + 1;
+            }),
+            leftTitles: tabs
+              .filter((tab) => tab.getBoundingClientRect().left < clip.left - 0.5)
+              .map((tab) => tab.querySelector('.tab-select > span:last-of-type')?.textContent),
+            rightTitles: tabs
+              .filter((tab) => tab.getBoundingClientRect().right > clip.right + 0.5)
+              .map((tab) => tab.querySelector('.tab-select > span:last-of-type')?.textContent)
+          };
+        });
+      const chooseFromEdge = async (side: 'left' | 'right', id: string) => {
+        const title = side === 'left' ? '左侧标签' : '右侧标签';
+        const trigger = side === 'left' ? left : right;
+        const expected = (await position())[side === 'left' ? 'leftTitles' : 'rightTitles'];
+        const opening = app!.waitForEvent('window');
+        await trigger.press('Enter');
+        const picker = await opening;
+        await expect(picker.getByRole('menu', { name: title })).toBeVisible();
+        expect(await picker.getByRole('menuitemradio').locator('span:first-child').allTextContents()).toEqual(expected);
+        const target = 'Overflow fixture ' + id;
+        await picker.getByRole('menuitemradio', { name: target, exact: true }).focus();
+        const closed = picker.waitForEvent('close');
+        await sendPickerKey('Enter', title);
+        await closed;
+        const prior = known.get(target)!;
+        await expect.poll(active).toBe(prior.id);
+        await expect.poll(async () => (await position()).activeVisible).toBe(true);
+        expect((await snapshot()).tabs.map((item) => item.title)).toEqual(order);
+        await expect.poll(() => inspectPage(id)).toEqual(prior.page);
+      };
+      await expect.poll(async () => (await position()).visible).toBeGreaterThan(1);
+      await expect.poll(async () => (await position()).activeVisible).toBe(true);
+      await chooseFromEdge('left', '2');
+      await track.hover();
+      await shell.mouse.wheel(0, -10000);
+      await expect.poll(async () => (await position()).scroll).toBe(0);
+      await expect(left).toHaveCount(0);
+      await expect(right).toBeVisible();
+      await shell.mouse.wheel(0, 250);
+      await expect(left).toBeVisible();
+      await expect(right).toBeVisible();
+      await chooseFromEdge('right', '7');
+      for (let number = 1; number <= 8; number++) expect(loads.get(String(number))).toBe(1);
+      return;
     }
 
     await expect(tabButtons).toHaveCount(1);
@@ -169,13 +246,6 @@ test('narrow tab strip keeps the active tab and switches overflow tabs without l
     await selected.press('ArrowUp');
     const target = picker.getByRole('menuitemradio', { name: 'Overflow fixture 7' });
     await expect(target).toBeFocused();
-    const sendPickerKey = (keyCode: 'Enter' | 'Escape') =>
-      app!.evaluate(({ BrowserWindow }, key) => {
-        const popup = BrowserWindow.getAllWindows().find((window) => window.getTitle() === '全部标签');
-        if (!popup || !popup.isFocused()) throw Error('Tab picker is not focused');
-        popup.webContents.sendInputEvent({ type: 'keyDown', keyCode: key });
-        if (!popup.isDestroyed()) popup.webContents.sendInputEvent({ type: 'keyUp', keyCode: key });
-      }, keyCode);
     const closed = picker.waitForEvent('close');
     await sendPickerKey('Enter');
     await closed;

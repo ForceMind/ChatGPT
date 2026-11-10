@@ -1297,7 +1297,8 @@ function validateCommand(value: unknown): asserts value is Command {
       c.ids.length > MAX_TABS ||
       !c.ids.every((id) => typeof id === 'string') ||
       !Number.isSafeInteger(c.x) ||
-      !Number.isSafeInteger(c.y))
+      !Number.isSafeInteger(c.y) ||
+      (c.side !== undefined && c.side !== 'left' && c.side !== 'right'))
   )
     throw Error('无效标签菜单');
   if (c.type === 'update:idle' && typeof c.enabled !== 'boolean') throw Error('无效更新设置');
@@ -1436,10 +1437,18 @@ async function dispatch(c: Command): Promise<void> {
           tabPicker.destroy();
           break;
         }
-        const tabs = store.read().tabs.filter((tab) => tab.profileId === profile.id);
-        tabPicker = showTabPicker(win, c, tabs, profile.activeTabId, (id) => {
-          queueCommandInternal(() => dispatch({ type: 'tab:activate', id }));
-        });
+        const side = process.platform === 'darwin' ? c.side : undefined;
+        const ids = new Set(c.ids);
+        const tabs = store.read().tabs.filter((tab) => tab.profileId === profile.id && (!side || ids.has(tab.id)));
+        if (!tabs.length) break;
+        tabPicker = showTabPicker(
+          win,
+          c,
+          tabs,
+          profile.activeTabId,
+          (id) => queueCommandInternal(() => dispatch({ type: 'tab:activate', id })),
+          side === 'left' ? '左侧标签' : side === 'right' ? '右侧标签' : '全部标签'
+        );
         tabPicker.once('closed', () => {
           tabPicker = undefined;
         });
