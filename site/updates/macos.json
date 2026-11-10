@@ -1,13 +1,13 @@
 {
   "schema": 1,
-  "version": "2026.11.11",
-  "publishedAt": "2026-11-10T07:03:24.638507+00:00",
-  "notes": "标签过多时收进「更多标签」，当前标签始终显示。",
+  "version": "2026.11.12",
+  "publishedAt": "2026-11-10T12:10:11.658959+00:00",
+  "notes": "Mac 标签栏支持滚轮横移与两侧下拉，Windows 窄窗支持全部标签列表。",
   "files": {
     "arm64": {
-      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.11/ChatGPT-Profiles-2026.11.11-mac-arm64.zip",
-      "size": 155191338,
-      "sha256": "cf505a6342509914e708f59e47766533a695d89fd306a7dccb0e82e58627b741"
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.12/ChatGPT-Profiles-2026.11.12-mac-arm64.zip",
+      "size": 155197616,
+      "sha256": "de0a84ed3ac605a5b97dd396f57833419438ac668e169b4aab917bd24a02fb9f"
     }
   }
 }

@@ -1,0 +1,55 @@
+{
+  "schema": 1,
+  "version": "2026.11.12",
+  "sourceSHA": "ad3f89715e6207910824387808f77b23ec74a56d",
+  "sourceRunID": 42812540479,
+  "originalCIBytesVerified": true,
+  "artifacts": [
+    {
+      "file": "ChatGPT-Profiles-2026.11.12-mac-arm64.zip",
+      "sha256": "de0a84ed3ac605a5b97dd396f57833419438ac668e169b4aab917bd24a02fb9f",
+      "bytes": 155197616,
+      "platform": "macos",
+      "purpose": "legacy-updater",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.12/ChatGPT-Profiles-2026.11.12-mac-arm64.zip"
+    },
+    {
+      "file": "ChatGPT-Studio-2026.11.12-mac-arm64.dmg",
+      "sha256": "b997505bee607080be8b94fda1c05837f2d50ca8b63df42d4de624f6412ea92d",
+      "bytes": 155112130,
+      "platform": "macos",
+      "purpose": "installer",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.12/ChatGPT-Studio-2026.11.12-mac-arm64.dmg"
+    },
+    {
+      "file": "ChatGPT-Studio-2026.11.12-mac-arm64.zip",
+      "sha256": "3a3ee9675b09a11001702c40e09f027fcac43638c06f9ce4c6365fa453322cba",
+      "bytes": 155081961,
+      "platform": "macos",
+      "purpose": "portable",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.12/ChatGPT-Studio-2026.11.12-mac-arm64.zip"
+    },
+    {
+      "file": "ChatGPT-Studio-2026.11.12-windows-x64-setup.exe",
+      "bytes": 131373228,
+      "sha256": "c5f6620eb476cc84b2767d475daea961671ef43558fd024ba3fb1c8bbe457321",
+      "sha512": "4+Tsz1H6wtQy5Ed78IhJOSuPjVs5rSRsZZeZrLDkgzKz/qCzgl9NTDNlXiuGOD0+igL0rQePvBtgx/r/8Yyijw==",
+      "platform": "windows",
+      "purpose": "installer",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.12/ChatGPT-Studio-2026.11.12-windows-x64-setup.exe"
+    },
+    {
+      "file": "ChatGPT-Studio-2026.11.12-windows-x64.zip",
+      "bytes": 181307960,
+      "sha256": "9bdfecf697dcf0c03b098e94676316d4730aa59a3e0a717a96d335cc845bff5c",
+      "sha512": "aXyrhcrW5UTwTTLGXdPkACu9OjiuK2/lRYlvMQw8ugOstEHmhSWWtL6pPTGldV2XAV4Rd+hhnK1W4CHNB2hIwA==",
+      "platform": "windows",
+      "purpose": "portable",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.12/ChatGPT-Studio-2026.11.12-windows-x64.zip"
+    }
+  ],
+  "signing": {
+    "macOS": "ad-hoc, not notarized",
+    "Windows": "unsigned"
+  }
+}
