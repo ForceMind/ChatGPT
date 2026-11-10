@@ -40,4 +40,6 @@
 5. 继续已列入路线图的真实账号 / 文件验收、通行密钥、稳定 Apple 签名与 Touch ID、iOS 原生客户端、差量更新等工作，按各自批准范围推进。
 6. Mac / Windows 共用标签栏随 [2026.11.11](https://github.com/ForceMind/ChatGPT/releases/tag/v2026.11.11) 正式发布。标签先缩小，超出的进入「更多标签」，当前标签留在标题栏。[双端 CI](https://github.com/ForceMind/ChatGPT/actions/runs/42771715875) 通过 800 像素窄窗、更新按钮占位、多标签和菜单选择验收。切换后保留原网页实例及未发送草稿；测试通过菜单项目回调完成选择，未检查操作系统菜单的视觉位置。
 
+[2026.11.11 正式包覆盖升级验收](https://github.com/ForceMind/ChatGPT/actions/runs/42776437108) 复用了已发布且按 SHA-256 核对的安装包。Windows Server 2025 从 2026.11.10 标准目录和 2026.11.9 嵌套目录分别升级，安装目录均为 `Programs\ChatGPT Studio`。桌面、开始菜单和合成任务栏快捷方式指向 `ChatGPT Studio.exe`，卸载和更新登记正确，合成数据字节一致。macOS 15 使用 2026.11.10 随包更新助手和 2026.11.11 兼容 ZIP 在临时目录完成替换，保留旧包和合成数据。此轮未启动安装后的客户端；真实账号、系统菜单位置与真机升级仍待验收。
+
 Android R8 正式优化批次已发布，包体及 CPU/PSS 对照结果见 [Android 优化记录](android-optimization-plan.md)。本次 Windows 候选沿用现有应用功能与保活策略。
