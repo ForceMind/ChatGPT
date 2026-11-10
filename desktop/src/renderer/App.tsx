@@ -1,4 +1,14 @@
-import { useCallback, useEffect, useRef, useState, lazy, Suspense, type FormEvent, type CSSProperties } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  lazy,
+  Suspense,
+  type FormEvent,
+  type CSSProperties
+} from 'react';
 import { createRoot } from 'react-dom/client';
 import {
   COLORS,
@@ -9,6 +19,7 @@ import {
   type Snapshot
 } from '../shared/model';
 import { Icon, Mark, type IconName } from './icons';
+import { MORE_TABS_WIDTH, TAB_GAP, TAB_MAX_WIDTH, splitTabs } from './tab-strip';
 import './style.css';
 const Workbench = lazy(() => import('./Workbench').then((module) => ({ default: module.Workbench })));
 import { BROWSER_LANGUAGES, DEFAULT_LANGUAGE } from '../shared/profile-preferences';
@@ -77,6 +88,18 @@ function App() {
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const modal = useRef<HTMLDivElement>(null);
   const dragged = useRef<string | undefined>(undefined);
+  const tabStrip = useRef<HTMLDivElement>(null);
+  const [tabStripWidth, setTabStripWidth] = useState(0);
+  const shellReady = !!state && !fatal;
+  useLayoutEffect(() => {
+    const strip = tabStrip.current;
+    if (!shellReady || !strip) return;
+    const measure = () => setTabStripWidth(strip.clientWidth);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(strip);
+    return () => observer.disconnect();
+  }, [shellReady]);
   const showToast = useCallback((message: string) => {
     setToast(message);
     clearTimeout(toastTimer.current);
@@ -276,6 +299,13 @@ function App() {
   const tabs = state.tabs.filter((t) => t.profileId === profile.id);
   const tab = tabs.find((t) => t.id === profile.activeTabId)!;
   const status = state.tabStatus[tab.id];
+  const { visible, hidden } = splitTabs(tabs, tab.id, tabStripWidth);
+  const stripStyle = {
+    '--tab-strip-ideal': tabs.length * TAB_MAX_WIDTH + (tabs.length - 1) * TAB_GAP + 'px',
+    '--tab-max-width': TAB_MAX_WIDTH + 'px',
+    '--tab-gap': TAB_GAP + 'px',
+    '--more-tabs-width': MORE_TABS_WIDTH + 'px'
+  } as CSSProperties;
   const editing = editor?.kind === 'edit' ? state.profiles.find((p) => p.id === editor.id) : undefined;
   const style = { '--shell-height': SHELL_HEIGHT + 'px' } as CSSProperties;
   const submit = async (event: FormEvent<HTMLFormElement>) => {
@@ -315,67 +345,88 @@ function App() {
     <main className="workspace" data-platform={state.platform} data-fullscreen={state.fullScreen} style={style}>
       <header className="titlebar" aria-label="客户端标题栏">
         <div className="traffic-space" aria-hidden="true" />
-        <div className="tabs" role="tablist" aria-label={`${profile.name}的标签页`}>
-          {tabs.map((t) => (
-            <div
-              key={t.id}
-              className={`tab ${t.id === tab.id ? 'active' : ''} ${t.pinned ? 'pinned' : ''}`}
-              draggable
-              onContextMenu={(e) => {
-                e.preventDefault();
-                void send({ type: 'tab:menu', id: t.id });
-              }}
-              onDragStart={() => {
-                dragged.current = t.id;
-              }}
-              onDragEnd={() => {
-                dragged.current = undefined;
-              }}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={(e) => {
-                e.preventDefault();
-                const from = dragged.current;
-                if (!from || from === t.id) return;
-                const ids = tabs.map((x) => x.id),
-                  index = ids.indexOf(from),
-                  target = ids.indexOf(t.id);
-                if (index < 0 || target < 0) return;
-                ids.splice(index, 1);
-                ids.splice(target, 0, from);
-                void send({ type: 'tab:reorder', ids });
+        <div className="tab-strip" ref={tabStrip} style={stripStyle}>
+          <div className="tabs" role="tablist" aria-label={`${profile.name}的标签页`}>
+            {visible.map((t) => (
+              <div
+                key={t.id}
+                className={`tab ${t.id === tab.id ? 'active' : ''} ${t.pinned ? 'pinned' : ''}`}
+                draggable
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  void send({ type: 'tab:menu', id: t.id });
+                }}
+                onDragStart={() => {
+                  dragged.current = t.id;
+                }}
+                onDragEnd={() => {
+                  dragged.current = undefined;
+                }}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  const from = dragged.current;
+                  if (!from || from === t.id) return;
+                  const ids = tabs.map((x) => x.id),
+                    index = ids.indexOf(from),
+                    target = ids.indexOf(t.id);
+                  if (index < 0 || target < 0) return;
+                  ids.splice(index, 1);
+                  ids.splice(target, 0, from);
+                  void send({ type: 'tab:reorder', ids });
+                }}
+              >
+                <button
+                  className="tab-select"
+                  role="tab"
+                  aria-selected={t.id === tab.id}
+                  title={`${profile.name} · ${t.title}`}
+                  onClick={() => void send({ type: 'tab:activate', id: t.id })}
+                >
+                  {state.tabStatus[t.id]?.loading ? <span className="spinner" /> : <Icon name="chat" size={13} />}
+                  <span>{t.title || 'ChatGPT'}</span>
+                  {t.pinned && <Icon name="pin" size={12} />}
+                </button>
+                {t.id === tab.id && (
+                  <button
+                    className="tab-refresh"
+                    title="强制刷新网页（忽略缓存）"
+                    aria-label={`强制刷新标签 ${t.title}`}
+                    onClick={() => void send({ type: 'tab:reload', id: t.id })}
+                  >
+                    <Icon name="refresh" size={13} />
+                  </button>
+                )}
+                <button
+                  className="tab-close"
+                  title="关闭标签页"
+                  aria-label={`关闭标签 ${t.title}`}
+                  onClick={() => void send({ type: 'tab:close', id: t.id })}
+                >
+                  <Icon name="close" size={13} />
+                </button>
+              </div>
+            ))}
+          </div>
+          {hidden.length > 0 && (
+            <button
+              type="button"
+              className="more-tabs"
+              aria-haspopup="menu"
+              onClick={(event) => {
+                const bounds = event.currentTarget.getBoundingClientRect();
+                void send({
+                  type: 'tab:overflow',
+                  ids: hidden.map((item) => item.id),
+                  x: Math.floor(bounds.left),
+                  y: Math.ceil(bounds.bottom)
+                });
               }}
             >
-              <button
-                className="tab-select"
-                role="tab"
-                aria-selected={t.id === tab.id}
-                title={`${profile.name} · ${t.title}`}
-                onClick={() => void send({ type: 'tab:activate', id: t.id })}
-              >
-                {state.tabStatus[t.id]?.loading ? <span className="spinner" /> : <Icon name="chat" size={13} />}
-                <span>{t.title || 'ChatGPT'}</span>
-                {t.pinned && <Icon name="pin" size={12} />}
-              </button>
-              {t.id === tab.id && (
-                <button
-                  className="tab-refresh"
-                  title="强制刷新网页（忽略缓存）"
-                  aria-label={`强制刷新标签 ${t.title}`}
-                  onClick={() => void send({ type: 'tab:reload', id: t.id })}
-                >
-                  <Icon name="refresh" size={13} />
-                </button>
-              )}
-              <button
-                className="tab-close"
-                title="关闭标签页"
-                aria-label={`关闭标签 ${t.title}`}
-                onClick={() => void send({ type: 'tab:close', id: t.id })}
-              >
-                <Icon name="close" size={13} />
-              </button>
-            </div>
-          ))}
+              更多标签 ({hidden.length})
+              <Icon name="chevron" size={12} />
+            </button>
+          )}
         </div>
         <Tool icon="plus" label="新建标签页" onClick={() => void send({ type: 'tab:new' })} />
         <div className="drag-space" aria-label="窗口拖动区域" />

@@ -1,4 +1,4 @@
-"""Promote the verified 2026.11.10 desktop packages without rebuilding them."""
+"""Promote verified desktop packages without rebuilding them."""
 import base64
 from datetime import datetime, timezone
 import hashlib
@@ -37,30 +37,65 @@ def digest(file, algorithm='sha256'):
     return result
 
 
-candidate = read('docs/releases/desktop-update-experience-2026.11.10-candidate.json')
-version = candidate['version']
-assert version == '2026.11.10' == read('desktop/package.json')['version']
-source = candidate['sourceSHA']
-run = api('actions/runs/' + str(candidate['runID']))
+tab_strip = os.environ.get('PUBLISH_TAB_STRIP') == 'true'
+version = read('desktop/package.json')['version']
+step_name = 'Approved narrow tab strip interaction' if tab_strip else 'Approved owned update interaction and installation regression'
+if tab_strip:
+    assert version == '2026.11.11'
+    source = os.environ['GITHUB_SHA']
+    run = api('actions/runs/' + os.environ['GITHUB_RUN_ID'])
+    assert run['head_sha'] == source and run['status'] == 'in_progress'
+    available = api('actions/runs/' + str(run['id']) + '/artifacts?per_page=100')['artifacts']
+    artifact_metadata = [
+        row for row in available
+        if row['name'] in ('ChatGPT-Studio-Update-Candidate-macOS', 'ChatGPT-Studio-Update-Candidate-Windows')
+    ]
+    assert len(artifact_metadata) == 2
+    platform_reports = []
+    for platform, folder, info_file, architecture, signing in (
+        ('macOS', 'promotion/update-mac', 'build-info.json', 'arm64', 'ad-hoc, not notarized'),
+        ('Windows', 'promotion/update-windows', 'windows-build-info.json', 'x64', 'unsigned'),
+    ):
+        info = read(unique(folder, info_file))
+        expected = (
+            {f'ChatGPT-Studio-{version}-mac-arm64.dmg', f'ChatGPT-Studio-{version}-mac-arm64.zip',
+             f'ChatGPT-Profiles-{version}-mac-arm64.zip'}
+            if platform == 'macOS'
+            else {f'ChatGPT-Studio-{version}-windows-x64-setup.exe', f'ChatGPT-Studio-{version}-windows-x64.zip'}
+        )
+        rows = [item for item in info['artifacts'] if item['file'] in expected]
+        assert len(rows) == len(expected) and {a['file'] for a in rows} == expected
+        proof = Path('promotion/tab-strip-evidence') / ('update-experience-evidence-' + platform)
+        assert all(f.suffix not in {'.png', '.jpg', '.webm', '.zip'} for f in proof.rglob('*') if f.is_file())
+        result = read(unique(proof, 'tab-strip.json'))['stats']
+        assert result['expected'] == 1 and result['unexpected'] == 0 and result['skipped'] == 0 and result['flaky'] == 0
+        platform_reports.append({'platform': platform, 'architecture': architecture, 'signing': signing, 'artifacts': rows})
+else:
+    candidate = read('docs/releases/desktop-update-experience-2026.11.10-candidate.json')
+    assert version == '2026.11.10' == candidate['version']
+    source = candidate['sourceSHA']
+    run = api('actions/runs/' + str(candidate['runID']))
+    assert run['status'] == 'completed' and run['conclusion'] == 'success'
+    artifact_metadata = candidate['artifactMetadata']
+    platform_reports = candidate['platformReports']
 assert run['head_sha'] == source and run['head_branch'] == 'dev'
 assert run['event'] == 'workflow_dispatch' and run['path'] == '.github/workflows/desktop-ci.yml'
-assert run['status'] == 'completed' and run['conclusion'] == 'success'
 jobs = api('actions/runs/' + str(run['id']) + '/jobs?filter=latest&per_page=100')['jobs']
 for platform in ('macos-15', 'windows-2025'):
     job, = [j for j in jobs if j['name'] == 'update-candidates (' + platform + ')']
     assert job['conclusion'] == 'success'
-    for name in ('Full required check', 'Approved owned update interaction and installation regression'):
+    for name in ('Full required check', step_name):
         step, = [s for s in job['steps'] if s['name'] == name]
         assert step['conclusion'] == 'success'
 
 out = Path('promotion/desktop-update-output')
 out.mkdir(parents=True, exist_ok=False)
 artifacts = []
-for report in candidate['platformReports']:
+for report in platform_reports:
     platform = report['platform']
     folder = Path('promotion/update-mac' if platform == 'macOS' else 'promotion/update-windows')
     artifact_name = 'ChatGPT-Studio-Update-Candidate-' + platform
-    expected, = [a for a in candidate['artifactMetadata'] if a['name'] == artifact_name]
+    expected, = [a for a in artifact_metadata if a['name'] == artifact_name]
     actual = api('actions/artifacts/' + str(expected['id']))
     assert not actual['expired'] and actual['workflow_run']['head_sha'] == source
     assert actual['workflow_run']['id'] == run['id'] and actual['digest'] == expected['digest']
@@ -88,7 +123,7 @@ for report in candidate['platformReports']:
 assert len(artifacts) == 5
 manifest = {'schema': 1, 'version': version, 'sourceSHA': source, 'sourceRunID': run['id'],
             'originalCIBytesVerified': True, 'artifacts': artifacts,
-            'signing': {r['platform']: r['signing'] for r in candidate['platformReports']}}
+            'signing': {r['platform']: r['signing'] for r in platform_reports}}
 (out / 'release-info.json').write_text(json.dumps(manifest, indent=2) + '\n')
 (out / 'SHA256SUMS.txt').write_text(''.join(a['sha256'] + '  ' + a['file'] + '\n' for a in artifacts))
 notes = '''ChatGPT Studio 2026.11.10 · Mac / Windows
@@ -104,6 +139,16 @@ Mac 为 Apple Silicon 临时签名包，未公证。Windows 尚未配置 Authent
 候选来源与更新验收 https://github.com/ForceMind/ChatGPT/actions/runs/42749099128
 目录迁移验收 https://github.com/ForceMind/ChatGPT/actions/runs/42588467252
 '''
+if tab_strip:
+    notes = f"""ChatGPT Studio {version} · Mac / Windows
+
+- 标签随窗口缩小，放不下的收进「更多标签」。当前标签始终显示在标题栏。
+- 从更多标签切换会复用已打开的页面，并沿用原有草稿保存流程。
+- Mac 和 Windows 通过 GitHub Actions 窄窗、多标签、切换和草稿合成验收。测试不截图，不访问真实账号。
+
+Mac 为 Apple Silicon 临时签名包，未公证。Windows 未配置 Authenticode。
+验收记录 https://github.com/ForceMind/ChatGPT/actions/runs/{run['id']}
+"""
 (out / 'notes.txt').write_text(notes)
 tag = 'v' + version
 releases = api('releases?per_page=100')
@@ -140,12 +185,13 @@ metadata.mkdir()
 date = datetime.now(timezone.utc).isoformat()
 compat, = [a for a in artifacts if a['purpose'] == 'legacy-updater']
 feed = {'schema': 1, 'version': version, 'publishedAt': date,
-        'notes': '2026.11.10：Mac / Windows 更新下载显示百分比、文件大小、阶段及失败重试；Windows 补齐更新配置并修复嵌套程序目录迁移。',
+        'notes': '标签过多时收进「更多标签」，当前标签始终显示。' if tab_strip else
+                 '2026.11.10：Mac / Windows 更新下载显示百分比、文件大小、阶段及失败重试；Windows 补齐更新配置并修复嵌套程序目录迁移。',
         'files': {'arm64': {'url': compat['url'], 'size': compat['bytes'], 'sha256': compat['sha256']}}}
 (metadata / 'macos.json').write_text(json.dumps(feed, indent=2, ensure_ascii=False) + '\n')
 subprocess.run(['node', 'desktop/scripts/windows-update-feed.mjs', str(unique('promotion/update-windows', 'windows-build-info.json')),
                 str(metadata / 'alpha.yml'), str(out / 'notes.txt')], check=True)
-(metadata / '2026.11.10.json').write_text(json.dumps(manifest, indent=2) + '\n')
+(metadata / (version + '.json')).write_text(json.dumps(manifest, indent=2) + '\n')
 (metadata / 'publication.json').write_text(json.dumps({'sourceSHA': source, 'sourceRunID': run['id'],
     'promotionRunID': int(os.environ['GITHUB_RUN_ID']), 'release': release, 'bytesRebuilt': False}, indent=2) + '\n')
 print(json.dumps({'published': True, 'tag': tag, 'assets': len(files), 'originalCIBytesVerified': True}))

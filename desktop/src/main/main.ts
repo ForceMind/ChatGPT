@@ -1232,6 +1232,7 @@ function validateCommand(value: unknown): asserts value is Command {
     'tab:close',
     'tab:pin',
     'tab:menu',
+    'tab:overflow',
     'tab:reload',
     'tab:reorder',
     'tab:restore',
@@ -1287,6 +1288,16 @@ function validateCommand(value: unknown): asserts value is Command {
     (!Array.isArray(c.ids) || c.ids.length > MAX_TABS || !c.ids.every((v) => typeof v === 'string'))
   )
     throw new Error('无效排序');
+  if (
+    c.type === 'tab:overflow' &&
+    (!Array.isArray(c.ids) ||
+      c.ids.length < 1 ||
+      c.ids.length > MAX_TABS ||
+      !c.ids.every((id) => typeof id === 'string') ||
+      !Number.isSafeInteger(c.x) ||
+      !Number.isSafeInteger(c.y))
+  )
+    throw Error('无效标签菜单');
   if (c.type === 'update:idle' && typeof c.enabled !== 'boolean') throw Error('无效更新设置');
   if (c.type === 'overlay' && typeof c.open !== 'boolean') throw new Error('无效窗口状态');
   if (c.type === 'overlay:ready' && (!Number.isSafeInteger(c.id) || Number(c.id) < 1)) throw Error('无效绘制序号');
@@ -1413,6 +1424,30 @@ async function dispatch(c: Command): Promise<void> {
         { type: 'separator' },
         { label: '恢复关闭的标签页', click: run({ type: 'tab:restore' }) }
       ]).popup({ window: win });
+      break;
+    }
+    case 'tab:overflow': {
+      if (!win || win.isDestroyed()) break;
+      const profile = activeProfile();
+      const ids = new Set(c.ids);
+      const hidden = store
+        .read()
+        .tabs.filter((tab) => tab.profileId === profile.id && tab.id !== profile.activeTabId && ids.has(tab.id));
+      if (!hidden.length) break;
+      const [width, height] = win.getContentSize();
+      Menu.buildFromTemplate(
+        hidden.map((tab) => {
+          const title = tab.title || 'ChatGPT';
+          return {
+            label: process.platform === 'win32' ? title.replaceAll('&', '&&') : title,
+            click: () => queueCommandInternal(() => dispatch({ type: 'tab:activate', id: tab.id }))
+          };
+        })
+      ).popup({
+        window: win,
+        x: Math.max(0, Math.min(c.x, width - 1)),
+        y: Math.max(0, Math.min(c.y, height - 1))
+      });
       break;
     }
     case 'tab:activate': {
