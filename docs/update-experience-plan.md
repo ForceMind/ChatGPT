@@ -35,6 +35,13 @@
 
 Android 原生入口涉及 MainActivity、EnvironmentBrowserActivity 和共用更新组件，安装权限、文件 provider 及通知按所选系统下载实现定点加入。新增官网更新接口先在候选夹具使用，公开客户端与域名发布在候选验收后处理。
 
+### 第二批实现前核对
+
+- `EnvironmentBrowserActivity` 的各环境槽可运行在独立进程，更新任务需由主进程统一管理；两个引擎通过现有桥接结构查询和操作同一任务，避免重复下载。入口沿用现有更多菜单。
+- `NetworkDownload` 的 FileJob 带账号 CookieManager 与资产归属。更新下载单独复用 `NetworkRoute.Snapshot.openConnection` 和线路代次校验，使用无账号 Cookie 的请求和独立暂存空间。线路失效或变更时终止当前请求，用户重试后才使用新线路。
+- 拟由用户点击下载时启动有明确进度通知的系统前台任务，完成、取消或失败后结束该任务。进程终止后重新读取状态和已校验文件，未完成下载进入重试。安装采用系统 PackageInstaller 会话与用户确认，重新核对包名、递增版本、完整摘要及已安装应用证书；Android 9 / 15 分别验证权限与取消行为。
+- 上述为实施前的代码核对和建议。第二批新增权限、界面交互及合成安装验收范围在实施前确认；原公开 Android APK、已有签名和用户数据继续保留。
+
 ## 拟定验收
 
 所有构建与运行放在 GitHub Actions。桌面完整 npm run check 必须通过。合成交互仅使用自有页面与更新文件，不截图、不访问真实 ChatGPT 或个人账号，不安装个人设备。

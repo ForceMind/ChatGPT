@@ -295,7 +295,103 @@
     ],
     "tarball_url": "https://api.github.com/repos/ForceMind/ChatGPT/tarball/v2026.11.10",
     "zipball_url": "https://api.github.com/repos/ForceMind/ChatGPT/zipball/v2026.11.10",
-    "body": "ChatGPT Studio 2026.11.10 \u00b7 Mac / Windows\n\n- \u66f4\u65b0\u4e0b\u8f7d\u663e\u793a\u771f\u5b9e\u767e\u5206\u6bd4\u3001\u5df2\u4e0b\u8f7d / \u603b\u5927\u5c0f\u548c\u660e\u786e\u9636\u6bb5\uff0c\u68c0\u67e5\u53ca\u4e0b\u8f7d\u5931\u8d25\u53ef\u91cd\u8bd5\u3002\n- Windows \u8bc6\u522b\u5e76\u4fee\u590d\u6807\u51c6 Programs\\ChatGPT Studio\\ChatGPT Profiles \u5d4c\u5957\u76ee\u5f55\uff0c\u66f4\u65b0\u5feb\u6377\u65b9\u5f0f\u3001\u5378\u8f7d\u548c\u81ea\u52a8\u66f4\u65b0\u8bb0\u5f55\uff0c\u4fdd\u7559\u73b0\u6709\u7528\u6237\u6570\u636e\u3002\n- \u8865\u9f50 Windows \u5b89\u88c5\u5305\u4e2d\u7684\u66f4\u65b0\u914d\u7f6e\u53ca\u5b8c\u6574\u56de\u9000\u6587\u4ef6\u6e05\u5355\uff0c\u5408\u6210\u5931\u8d25\u56de\u9000\u540e\u53ef\u76f4\u63a5\u91cd\u8bd5\u3002\n\nGitHub Actions \u4e24\u7aef\u5b8c\u6574 npm run check \u901a\u8fc7\u3002Mac 108 \u9879\u5355\u5143\u30014 \u9879\u9002\u7528\u66f4\u65b0 E2E \u901a\u8fc7\uff1bWindows 107 \u9879\u5355\u5143\u901a\u8fc7\u30011 \u9879\u5e73\u53f0\u8df3\u8fc7\uff0c2 \u9879\u9002\u7528\u66f4\u65b0 E2E \u901a\u8fc7\u3002Windows \u76ee\u5f55\u8fc1\u79fb\u53e6\u6709\u524d\u6279 11 \u573a\u666f\u8bc1\u636e\uff0c\u4ee3\u7801\u6cbf\u7528\uff1b\u672c\u6279\u9a8c\u8bc1\u4e3a\u81ea\u6709\u5408\u6210\u66f4\u65b0\u53ca\u5b89\u88c5\u6d41\u7a0b\uff0c\u672a\u64cd\u4f5c\u4e2a\u4eba\u8d26\u53f7\u6216\u8bbe\u5907\u3002\n\nMac \u4e3a Apple Silicon \u4e34\u65f6\u7b7e\u540d\u5305\uff0c\u672a\u516c\u8bc1\u3002Windows \u5c1a\u672a\u914d\u7f6e Authenticode\uff0c\u4ecd\u53ef\u80fd\u663e\u793a\u672a\u77e5\u53d1\u5e03\u8005\u3002\u5b8c\u6574\u5e94\u7528\u66f4\u65b0\u9700\u8981\u9000\u51fa\u6216\u91cd\u542f\u3002Android \u5f53\u524d\u6b63\u5f0f\u7248\u672c\u7ee7\u7eed\u4e3a 2026.11.09-1236\uff0c\u5e94\u7528\u5185\u66f4\u65b0\u5668\u4ecd\u5f85\u4e0b\u4e00\u6279\u5b9e\u73b0\u3002\n\n\u5019\u9009\u6765\u6e90\u4e0e\u66f4\u65b0\u9a8c\u6536 https://github.com/ForceMind/ChatGPT/actions/runs/42749099128\n\u76ee\u5f55\u8fc1\u79fb\u9a8c\u6536 https://github.com/ForceMind/ChatGPT/actions/runs/42588467252\n"
+    "body": "ChatGPT Studio 2026.11.10 · Mac / Windows\n\n- 更新下载显示真实百分比、已下载 / 总大小和明确阶段，检查及下载失败可重试。\n- Windows 识别并修复标准 Programs\\ChatGPT Studio\\ChatGPT Profiles 嵌套目录，更新快捷方式、卸载和自动更新记录，保留现有用户数据。\n- 补齐 Windows 安装包中的更新配置及完整回退文件清单，合成失败回退后可直接重试。\n\nGitHub Actions 两端完整 npm run check 通过。Mac 108 项单元、4 项适用更新 E2E 通过；Windows 107 项单元通过、1 项平台跳过，2 项适用更新 E2E 通过。Windows 目录迁移另有前批 11 场景证据，代码沿用；本批验证为自有合成更新及安装流程，未操作个人账号或设备。\n\nMac 为 Apple Silicon 临时签名包，未公证。Windows 尚未配置 Authenticode，仍可能显示未知发布者。完整应用更新需要退出或重启。Android 当前正式版本继续为 2026.11.09-1236，应用内更新器仍待下一批实现。\n\n候选来源与更新验收 https://github.com/ForceMind/ChatGPT/actions/runs/42749099128\n目录迁移验收 https://github.com/ForceMind/ChatGPT/actions/runs/42588467252\n"
   },
-  "bytesRebuilt": false
+  "bytesRebuilt": false,
+  "website": {
+    "deployment": "https://82e24a63.chatgpt-studio.pages.dev",
+    "checks": [
+      {
+        "url": "https://82e24a63.chatgpt-studio.pages.dev/",
+        "status": 200,
+        "sha256": "1c7988088659e85dd6164b47c65d8eeb3354157941b9c30e498f9e06ae3d6c58",
+        "matchesLocal": true,
+        "emailProtectionNormalizationMatchesLocal": false
+      },
+      {
+        "url": "https://82e24a63.chatgpt-studio.pages.dev/updates/macos.json",
+        "status": 200,
+        "sha256": "062b8b0bf1e3c09419c7c246a56625c21db6e7e2c7e52760e4c8c78170974914",
+        "matchesLocal": true,
+        "emailProtectionNormalizationMatchesLocal": false
+      },
+      {
+        "url": "https://82e24a63.chatgpt-studio.pages.dev/updates/windows/alpha.yml",
+        "status": 200,
+        "sha256": "bf3153349fcc1f562b05a243e3a624ae1e420bcec32cb938d76b1029d82f9b7a",
+        "matchesLocal": true,
+        "emailProtectionNormalizationMatchesLocal": false
+      },
+      {
+        "url": "https://chatgpt-studio.pages.dev/",
+        "status": 200,
+        "sha256": "1c7988088659e85dd6164b47c65d8eeb3354157941b9c30e498f9e06ae3d6c58",
+        "matchesLocal": true,
+        "emailProtectionNormalizationMatchesLocal": false
+      },
+      {
+        "url": "https://chatgpt-studio.pages.dev/updates/macos.json",
+        "status": 200,
+        "sha256": "062b8b0bf1e3c09419c7c246a56625c21db6e7e2c7e52760e4c8c78170974914",
+        "matchesLocal": true,
+        "emailProtectionNormalizationMatchesLocal": false
+      },
+      {
+        "url": "https://chatgpt-studio.pages.dev/updates/windows/alpha.yml",
+        "status": 200,
+        "sha256": "bf3153349fcc1f562b05a243e3a624ae1e420bcec32cb938d76b1029d82f9b7a",
+        "matchesLocal": true,
+        "emailProtectionNormalizationMatchesLocal": false
+      },
+      {
+        "url": "https://chatgpt.xincreates.com/",
+        "status": 200,
+        "sha256": "41219781cb63b8887009a10e68b70d374f8e010c4b1019ee2986134da80f3417",
+        "matchesLocal": false,
+        "emailProtectionNormalizationMatchesLocal": true
+      },
+      {
+        "url": "https://chatgpt.xincreates.com/updates/macos.json",
+        "status": 200,
+        "sha256": "062b8b0bf1e3c09419c7c246a56625c21db6e7e2c7e52760e4c8c78170974914",
+        "matchesLocal": true,
+        "emailProtectionNormalizationMatchesLocal": false
+      },
+      {
+        "url": "https://chatgpt.xincreates.com/updates/windows/alpha.yml",
+        "status": 200,
+        "sha256": "bf3153349fcc1f562b05a243e3a624ae1e420bcec32cb938d76b1029d82f9b7a",
+        "matchesLocal": true,
+        "emailProtectionNormalizationMatchesLocal": false
+      }
+    ],
+    "browserRenderingVerified": false
+  },
+  "downloads": [
+    {
+      "file": "ChatGPT-Profiles-2026.11.10-mac-arm64.zip",
+      "publicRangeVerified": true
+    },
+    {
+      "file": "ChatGPT-Studio-2026.11.10-mac-arm64.dmg",
+      "publicRangeVerified": true,
+      "acceleratedRangeVerified": true
+    },
+    {
+      "file": "ChatGPT-Studio-2026.11.10-mac-arm64.zip",
+      "publicRangeVerified": true,
+      "acceleratedRangeVerified": true
+    },
+    {
+      "file": "ChatGPT-Studio-2026.11.10-windows-x64-setup.exe",
+      "publicRangeVerified": true,
+      "acceleratedRangeVerified": true
+    },
+    {
+      "file": "ChatGPT-Studio-2026.11.10-windows-x64.zip",
+      "publicRangeVerified": true,
+      "acceleratedRangeVerified": true
+    }
+  ],
+  "websiteSourceCommit": "de5d5288b65e24bb129d07e1d99df9e7a40bfc8c"
 }
