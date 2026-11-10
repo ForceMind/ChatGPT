@@ -88,18 +88,34 @@ test('narrow tab strip keeps the active tab and switches overflow tabs without l
     await expect(more).toBeVisible();
     await expect.poll(() => tabButtons.count()).toBeLessThan(wideCount);
     await expect(shell.getByRole('tab', { selected: true })).toHaveText('Overflow fixture 8');
-    const layout = await shell.locator('.tab-strip').evaluate((strip) => {
-      const bounds = strip.getBoundingClientRect();
-      const items = [...strip.querySelectorAll('.tab, .more-tabs')].map((node) => node.getBoundingClientRect());
-      return {
-        fullyVisible: items.every((item) => item.left >= bounds.left - 1 && item.right <= bounds.right + 1),
-        withinWindow: bounds.left >= 0 && bounds.right <= innerWidth,
-        widths: items.slice(0, -1).map((item) => item.width)
-      };
+    const layout = () =>
+      shell.locator('.tab-strip').evaluate((strip) => {
+        const bounds = strip.getBoundingClientRect();
+        const items = [...strip.querySelectorAll('.tab, .more-tabs')].map((node) => node.getBoundingClientRect());
+        return {
+          fullyVisible: items.every((item) => item.left >= bounds.left - 1 && item.right <= bounds.right + 1),
+          withinWindow: bounds.left >= 0 && bounds.right <= innerWidth,
+          widths: items.slice(0, -1).map((item) => item.width)
+        };
+      });
+    const verifyLayout = async () => {
+      await expect.poll(layout).toMatchObject({ fullyVisible: true, withinWindow: true });
+      const { widths } = await layout();
+      expect(widths.length).toBeGreaterThan(0);
+      expect(
+        widths.every((width) => width >= 131 && width <= 220),
+        JSON.stringify(widths)
+      ).toBe(true);
+    };
+    await verifyLayout();
+    await shell.locator('.current-account').evaluate((account) => {
+      const update = document.createElement('button');
+      update.className = 'update-status-button';
+      update.textContent = '模拟更新进度';
+      account.before(update);
     });
-    expect(layout.fullyVisible).toBe(true);
-    expect(layout.withinWindow).toBe(true);
-    expect(layout.widths.every((width) => width >= 131 && width <= 220)).toBe(true);
+    await expect(shell.getByRole('tab', { selected: true })).toHaveText('Overflow fixture 8');
+    await verifyLayout();
 
     // Intercept only this fixture's platform popup at the native boundary.
     // The real shell command builds the menu and its real item callback performs selection.

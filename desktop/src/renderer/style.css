@@ -99,4 +99,12 @@
   .titlebar { gap: 5px; }
   .current-account { min-width: 106px; max-width: 124px; }
   .workspace-action { padding-inline: 6px; }
+  .titlebar:has(.update-status-button) .workspace-action {
+    width: 32px;
+    padding: 0;
+    gap: 0;
+    font-size: 0;
+    justify-content: center;
+  }
+  .titlebar:has(.update-status-button) .current-account { max-width: 106px; }
 }

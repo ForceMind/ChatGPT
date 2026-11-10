@@ -435,6 +435,7 @@ function App() {
             <button
               className={'workspace-action ' + (state.panel === 'assets' ? 'active' : '')}
               aria-label="资产中心"
+              title="资产中心"
               aria-pressed={state.panel === 'assets'}
               onClick={() => void send({ type: 'panel', panel: state.panel === 'assets' ? undefined : 'assets' })}
             >
@@ -444,6 +445,7 @@ function App() {
             <button
               className={'workspace-action ' + (state.panel === 'skills' || state.panel === 'agents' ? 'active' : '')}
               aria-label="能力库"
+              title="能力库"
               aria-pressed={state.panel === 'skills' || state.panel === 'agents'}
               onClick={() =>
                 void send({
