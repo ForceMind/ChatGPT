@@ -6,6 +6,11 @@ on:
     paths: ['desktop/**', '.github/workflows/desktop-ci.yml']
   workflow_dispatch:
     inputs:
+      update_platform:
+        description: Select the update candidate platform while retaining successful evidence from the other OS
+        type: choice
+        options: [both, windows, macos]
+        default: both
       update_candidates:
         description: Build Mac and Windows update progress candidates with owned update tests
         type: boolean
@@ -39,7 +44,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-15, windows-2025]
+        os: ${{ fromJSON(inputs.update_platform == 'windows' && '["windows-2025"]' || inputs.update_platform == 'macos' && '["macos-15"]' || '["macos-15","windows-2025"]') }}
     defaults:
       run:
         working-directory: desktop

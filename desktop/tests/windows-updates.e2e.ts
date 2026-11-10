@@ -162,12 +162,26 @@ for (const mode of ['automatic', 'manual'] as const)
         );
       });
       await app.evaluate(({ app }) => {
-        (app as any).acceptDownload = true;
+        const target = app as any;
+        target.acceptDownload = true;
+        target.updateTransferEvents = [];
+        const prototype = require('electron-updater').NsisUpdater.prototype;
+        const emit = prototype.emit;
+        prototype.emit = function (event: string, ...args: any[]) {
+          if (event === 'download-progress') target.updateTransferEvents.push({ event, progress: args[0] });
+          if (event === 'error')
+            target.updateTransferEvents.push({ event, code: args[0]?.code, message: args[0]?.message });
+          return Reflect.apply(emit, this, [event, ...args]);
+        };
       });
       await shell.evaluate(() => window.profiles.command({ type: 'update:check' }));
       if (mode === 'automatic') {
         await expect
-          .poll(async () => (await shell.evaluate(() => window.profiles.snapshot())).update?.transferredBytes || 0)
+          .poll(async () => {
+            const status = (await shell.evaluate(() => window.profiles.snapshot())).update;
+            if (status?.phase === 'error') throw Error(JSON.stringify(status));
+            return status?.transferredBytes || 0;
+          })
           .toBeGreaterThan(0);
         const header = shell.getByRole('button', { name: '查看应用更新', exact: true });
         await header.click();
@@ -221,6 +235,19 @@ for (const mode of ['automatic', 'manual'] as const)
         expect(args).not.toContain('--force-run');
       } else expect(existsSync(marker)).toBe(false);
     } finally {
+      if (app) {
+        try {
+          const shell = await shellWindow(app);
+          const status = (await shell.evaluate(() => window.profiles.snapshot())).update;
+          const events = await app.evaluate(({ app }) => (app as any).updateTransferEvents);
+          await info.attach('actual-update-transfer.json', {
+            contentType: 'application/json',
+            body: JSON.stringify({ status, events, exeRequests, zipRequests })
+          });
+        } catch {
+          /* Preserve the original failure if the test application already exited. */
+        }
+      }
       release();
       finishDownload();
       await app?.close().catch(() => {});
