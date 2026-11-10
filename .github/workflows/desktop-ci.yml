@@ -6,6 +6,10 @@ on:
     paths: ['desktop/**', '.github/workflows/desktop-ci.yml']
   workflow_dispatch:
     inputs:
+      public_upgrade:
+        description: Verify exact public desktop installers in disposable runners
+        type: boolean
+        default: false
       tab_strip_release:
         description: Verify the narrow tab strip on Mac and Windows, then publish the tested packages
         type: boolean
@@ -42,11 +46,50 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: desktop-ci-${{ github.ref }}-${{ github.event_name == 'workflow_dispatch' && inputs.tab_strip_release && 'tab-strip-release' || github.event_name == 'workflow_dispatch' && inputs.publish_update_experience && 'publish-updates' || github.event_name == 'workflow_dispatch' && inputs.update_candidates && 'updates' || github.event_name == 'workflow_dispatch' && inputs.windows_candidate && 'windows' || github.event_name == 'workflow_dispatch' && ((inputs.cpu_validation && inputs.candidate_package) || (inputs.promote_release && (inputs.cpu_validation || inputs.candidate_package))) && 'invalid' || github.event_name == 'workflow_dispatch' && inputs.promote_release && 'promotion' || github.event_name == 'workflow_dispatch' && inputs.candidate_package && 'package' || github.event_name == 'workflow_dispatch' && inputs.cpu_validation && 'cpu' || 'checks' }}
+  group: desktop-ci-${{ github.ref }}-${{ github.event_name == 'workflow_dispatch' && inputs.public_upgrade && 'public-upgrade' || github.event_name == 'workflow_dispatch' && inputs.tab_strip_release && 'tab-strip-release' || github.event_name == 'workflow_dispatch' && inputs.publish_update_experience && 'publish-updates' || github.event_name == 'workflow_dispatch' && inputs.update_candidates && 'updates' || github.event_name == 'workflow_dispatch' && inputs.windows_candidate && 'windows' || github.event_name == 'workflow_dispatch' && ((inputs.cpu_validation && inputs.candidate_package) || (inputs.promote_release && (inputs.cpu_validation || inputs.candidate_package))) && 'invalid' || github.event_name == 'workflow_dispatch' && inputs.promote_release && 'promotion' || github.event_name == 'workflow_dispatch' && inputs.candidate_package && 'package' || github.event_name == 'workflow_dispatch' && inputs.cpu_validation && 'cpu' || 'checks' }}
   cancel-in-progress: ${{ !(github.event_name == 'workflow_dispatch' && (inputs.promote_release || inputs.publish_update_experience || inputs.tab_strip_release)) }}
 jobs:
+  public-upgrade:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/dev' && inputs.public_upgrade && !inputs.tab_strip_release && !inputs.update_candidates && !inputs.publish_update_experience && !inputs.windows_candidate && !inputs.cpu_validation && !inputs.candidate_package && !inputs.promote_release
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, windows-2025]
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '26.7.0'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Fetch and hash exact public installer assets
+        run: python scripts/fetch-public-upgrade-inputs.py ${{ runner.os }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Install locked archive dependencies
+        if: runner.os == 'macOS'
+        run: npm ci --ignore-scripts
+      - name: Upgrade with the published Mac helper and compatibility ZIP
+        if: runner.os == 'macOS'
+        run: node --import tsx scripts/check-public-mac-upgrade.mjs
+      - name: Verify published Windows EXE upgrades, shortcuts and registry
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./scripts/check-public-windows-upgrade.ps1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: public-desktop-upgrade-${{ runner.os }}
+          path: desktop/test-results/*.json
+          if-no-files-found: warn
   publish-update-experience:
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/dev' && inputs.publish_update_experience && !inputs.update_candidates && !inputs.windows_candidate && !inputs.cpu_validation && !inputs.candidate_package && !inputs.promote_release && !inputs.tab_strip_release
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/dev' && inputs.publish_update_experience && !inputs.update_candidates && !inputs.windows_candidate && !inputs.cpu_validation && !inputs.candidate_package && !inputs.promote_release && !inputs.tab_strip_release && !inputs.public_upgrade
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -83,7 +126,7 @@ jobs:
           path: promotion/desktop-update-metadata/
           if-no-files-found: warn
   update-candidates:
-    if: github.event_name == 'workflow_dispatch' && (inputs.update_candidates || (inputs.tab_strip_release && github.ref == 'refs/heads/dev' && inputs.update_platform == 'both')) && !(inputs.update_candidates && inputs.tab_strip_release) && !inputs.windows_candidate && !inputs.cpu_validation && !inputs.candidate_package && !inputs.promote_release && !inputs.publish_update_experience
+    if: github.event_name == 'workflow_dispatch' && (inputs.update_candidates || (inputs.tab_strip_release && github.ref == 'refs/heads/dev' && inputs.update_platform == 'both')) && !(inputs.update_candidates && inputs.tab_strip_release) && !inputs.windows_candidate && !inputs.cpu_validation && !inputs.candidate_package && !inputs.promote_release && !inputs.publish_update_experience && !inputs.public_upgrade
     runs-on: ${{ matrix.os }}
     timeout-minutes: 50
     strategy:
@@ -148,7 +191,7 @@ jobs:
           name: update-experience-evidence-${{ runner.os }}
           path: desktop/test-results/
   publish-tab-strip:
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/dev' && inputs.tab_strip_release
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/dev' && inputs.tab_strip_release && !inputs.public_upgrade
     needs: update-candidates
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -185,7 +228,7 @@ jobs:
           path: promotion/desktop-update-metadata/
           if-no-files-found: warn
   windows-candidate:
-    if: github.event_name == 'workflow_dispatch' && inputs.windows_candidate && !inputs.cpu_validation && !inputs.candidate_package && !inputs.promote_release && !inputs.update_candidates && !inputs.publish_update_experience && !inputs.tab_strip_release
+    if: github.event_name == 'workflow_dispatch' && inputs.windows_candidate && !inputs.cpu_validation && !inputs.candidate_package && !inputs.promote_release && !inputs.update_candidates && !inputs.publish_update_experience && !inputs.tab_strip_release && !inputs.public_upgrade
     name: Windows nested installation candidate
     runs-on: windows-2025
     timeout-minutes: 45
@@ -254,7 +297,7 @@ jobs:
             desktop/release/windows/windows-build-info.json
             desktop/assets/windows-payload.generated.json
   check:
-    if: github.event_name != 'workflow_dispatch' || (!inputs.cpu_validation && !inputs.candidate_package && !inputs.promote_release && !inputs.windows_candidate && !inputs.update_candidates && !inputs.publish_update_experience && !inputs.tab_strip_release)
+    if: github.event_name != 'workflow_dispatch' || (!inputs.cpu_validation && !inputs.candidate_package && !inputs.promote_release && !inputs.windows_candidate && !inputs.update_candidates && !inputs.publish_update_experience && !inputs.tab_strip_release && !inputs.public_upgrade)
     name: Typecheck, lint, format and unit tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -279,7 +322,7 @@ jobs:
       - name: Unit tests
         run: npm test
   build:
-    if: github.event_name != 'workflow_dispatch' || (!inputs.cpu_validation && !inputs.candidate_package && !inputs.promote_release && !inputs.windows_candidate && !inputs.update_candidates && !inputs.publish_update_experience && !inputs.tab_strip_release)
+    if: github.event_name != 'workflow_dispatch' || (!inputs.cpu_validation && !inputs.candidate_package && !inputs.promote_release && !inputs.windows_candidate && !inputs.update_candidates && !inputs.publish_update_experience && !inputs.tab_strip_release && !inputs.public_upgrade)
     name: Build on macOS
     runs-on: macos-15
     timeout-minutes: 20
@@ -298,7 +341,7 @@ jobs:
       - name: Build main process, native helpers and renderer
         run: npm run build
   cpu-validation:
-    if: github.event_name == 'workflow_dispatch' && inputs.cpu_validation && !inputs.candidate_package && !inputs.promote_release && !inputs.windows_candidate && !inputs.update_candidates && !inputs.publish_update_experience && !inputs.tab_strip_release
+    if: github.event_name == 'workflow_dispatch' && inputs.cpu_validation && !inputs.candidate_package && !inputs.promote_release && !inputs.windows_candidate && !inputs.update_candidates && !inputs.publish_update_experience && !inputs.tab_strip_release && !inputs.public_upgrade
     name: Native macOS CPU comparison and background retention
     runs-on: macos-15
     timeout-minutes: 120
@@ -382,7 +425,7 @@ jobs:
             desktop/test-results/
             desktop/playwright-report/
   invalid-manual-inputs:
-    if: github.event_name == 'workflow_dispatch' && ((inputs.cpu_validation && inputs.candidate_package) || (inputs.promote_release && (inputs.cpu_validation || inputs.candidate_package)) || (inputs.windows_candidate && (inputs.cpu_validation || inputs.candidate_package || inputs.promote_release)) || (inputs.update_candidates && (inputs.windows_candidate || inputs.cpu_validation || inputs.candidate_package || inputs.promote_release)) || (inputs.publish_update_experience && (inputs.update_candidates || inputs.windows_candidate || inputs.cpu_validation || inputs.candidate_package || inputs.promote_release))) && !inputs.tab_strip_release
+    if: github.event_name == 'workflow_dispatch' && ((inputs.cpu_validation && inputs.candidate_package) || (inputs.promote_release && (inputs.cpu_validation || inputs.candidate_package)) || (inputs.windows_candidate && (inputs.cpu_validation || inputs.candidate_package || inputs.promote_release)) || (inputs.update_candidates && (inputs.windows_candidate || inputs.cpu_validation || inputs.candidate_package || inputs.promote_release)) || (inputs.publish_update_experience && (inputs.update_candidates || inputs.windows_candidate || inputs.cpu_validation || inputs.candidate_package || inputs.promote_release))) && !inputs.tab_strip_release && !inputs.public_upgrade
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
@@ -391,7 +434,7 @@ jobs:
           echo '::error::Select only one of cpu_validation, candidate_package, promote_release or windows_candidate.'
           exit 1
   candidate-package:
-    if: github.event_name == 'workflow_dispatch' && inputs.candidate_package && !inputs.cpu_validation && !inputs.promote_release && !inputs.windows_candidate && !inputs.update_candidates && !inputs.publish_update_experience && !inputs.tab_strip_release
+    if: github.event_name == 'workflow_dispatch' && inputs.candidate_package && !inputs.cpu_validation && !inputs.promote_release && !inputs.windows_candidate && !inputs.update_candidates && !inputs.publish_update_experience && !inputs.tab_strip_release && !inputs.public_upgrade
     name: Validate and package local macOS arm64 candidate
     runs-on: macos-15
     timeout-minutes: 60
@@ -521,7 +564,7 @@ jobs:
             desktop/test-results/
             desktop/playwright-report/
   promote-release:
-    if: github.event_name == 'workflow_dispatch' && inputs.promote_release && !inputs.cpu_validation && !inputs.candidate_package && !inputs.windows_candidate && !inputs.update_candidates && !inputs.publish_update_experience && !inputs.tab_strip_release
+    if: github.event_name == 'workflow_dispatch' && inputs.promote_release && !inputs.cpu_validation && !inputs.candidate_package && !inputs.windows_candidate && !inputs.update_candidates && !inputs.publish_update_experience && !inputs.tab_strip_release && !inputs.public_upgrade
     name: Promote verified original alpha.23 macOS artifacts
     runs-on: ubuntu-latest
     timeout-minutes: 40
