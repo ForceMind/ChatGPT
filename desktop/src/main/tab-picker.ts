@@ -24,7 +24,7 @@ function markup(tabs: Tab[], activeId: string): string {
     * { box-sizing: border-box }
     html, body { margin:0; height:100%; overflow:hidden }
     body { color:#171717; background:#fff; border:1px solid #dedede;
-      font:14px "Segoe UI","Microsoft YaHei UI",sans-serif; display:flex; flex-direction:column }
+      font:14px -apple-system,"Segoe UI","Microsoft YaHei UI",sans-serif; display:flex; flex-direction:column }
     header { height:42px; flex:none; padding:0 13px; display:flex; justify-content:space-between; align-items:center;
       border-bottom:1px solid #eee }
     header span { color:#565656; font-size:12px }
@@ -56,7 +56,7 @@ function markup(tabs: Tab[], activeId: string): string {
     </script></html>`;
 }
 
-export function showWindowsTabPicker(
+export function showTabPicker(
   parent: BrowserWindow,
   anchor: { x: number; y: number },
   tabs: Tab[],
@@ -88,7 +88,7 @@ export function showWindowsTabPicker(
     backgroundColor: '#ffffff',
     webPreferences: { sandbox: true, contextIsolation: true, nodeIntegration: false }
   });
-  picker.setMenuBarVisibility(false);
+  if (process.platform === 'win32') picker.setMenuBarVisibility(false);
   const dismiss = () => {
     if (!picker.isDestroyed()) picker.destroy();
   };

@@ -299,7 +299,7 @@ function App() {
   const tabs = state.tabs.filter((t) => t.profileId === profile.id);
   const tab = tabs.find((t) => t.id === profile.activeTabId)!;
   const status = state.tabStatus[tab.id];
-  const collapsed = state.platform === 'win32' && !allTabsFit(tabs.length, tabStripWidth);
+  const collapsed = desktopWorkspaceEnabled(state.platform) && !allTabsFit(tabs.length, tabStripWidth);
   const { visible, hidden } = splitTabs(tabs, tab.id, tabStripWidth);
   const stripTabs = collapsed ? [tab] : visible;
   const menuTabs = collapsed ? tabs : hidden;

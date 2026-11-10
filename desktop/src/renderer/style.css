@@ -109,5 +109,5 @@
   .titlebar:has(.update-status-button) .current-account { max-width: 106px; }
 }
 
-.workspace[data-platform=win32] .tab.active { border: 2px solid #252525; }
+.workspace:is([data-platform=win32], [data-platform=darwin]) .tab.active { border: 2px solid #252525; }
 .tab-strip[data-collapsed=true] .tabs { flex: 0 1 var(--tab-max-width); }

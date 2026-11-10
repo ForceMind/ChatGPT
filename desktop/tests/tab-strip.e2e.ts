@@ -63,7 +63,6 @@ test('narrow tab strip keeps the active tab and switches overflow tabs without l
         { id, draft, origin }
       );
 
-    const windows = process.platform === 'win32';
     const tabButtons = shell.getByRole('tab');
     const known = new Map<string, { id: string; page: unknown }>();
     let wideCount = 0;
@@ -81,12 +80,11 @@ test('narrow tab strip keeps the active tab and switches overflow tabs without l
       const page = await inspectPage(suffix, draft);
       expect(page).toMatchObject({ draft, instance: expect.any(String), contentsId: expect.any(Number) });
       known.set(title, { id: await active(), page });
-      if (windows && number === 2) {
+      if (number === 2) {
         await expect(tabButtons).toHaveCount(3);
         wideCount = await tabButtons.count();
       }
     }
-    if (!windows) wideCount = await tabButtons.count();
     expect(wideCount).toBeGreaterThan(1);
 
     await shellWindow(app, { width: 800, height: 640 });
@@ -123,92 +121,76 @@ test('narrow tab strip keeps the active tab and switches overflow tabs without l
     await expect(shell.getByRole('tab', { selected: true })).toHaveText('Overflow fixture 8');
     await verifyLayout();
 
-    if (windows) {
-      await expect(tabButtons).toHaveCount(1);
-      expect(await shell.locator('.tab.active').evaluate((item) => getComputedStyle(item).borderTopWidth)).toBe('2px');
-      const order = (await snapshot()).tabs.map((item) => item.title);
-      await expect(more).toContainText('(' + order.length + ')');
-      const openPicker = async () => {
-        const opening = app!.waitForEvent('window');
-        await more.focus();
-        await more.press('Enter');
-        const picker = await opening;
-        await expect(picker.getByRole('menu', { name: '全部标签' })).toBeVisible();
-        return picker;
-      };
-      const picker = await openPicker();
-      const items = picker.getByRole('menuitemradio');
-      const titles = () => items.locator('span:first-child').allTextContents();
-      expect(await titles()).toEqual(order);
-      const selected = picker.getByRole('menuitemradio', { checked: true });
-      await expect(selected).toContainText('✓ 当前');
-      await expect(selected).toContainText('Overflow fixture 8');
-      expect(await selected.evaluate((item) => getComputedStyle(item).borderTopColor)).toBe('rgb(37, 37, 37)');
-      await expect(selected).toBeFocused();
-      await selected.press('ArrowUp');
-      const target = picker.getByRole('menuitemradio', { name: 'Overflow fixture 7' });
-      await expect(target).toBeFocused();
-      const sendPickerKey = (keyCode: 'Enter' | 'Escape') =>
-        app!.evaluate(({ BrowserWindow }, key) => {
-          const popup = BrowserWindow.getAllWindows().find((window) => window.getTitle() === '全部标签');
-          if (!popup || !popup.isFocused()) throw Error('Tab picker is not focused');
-          popup.webContents.sendInputEvent({ type: 'keyDown', keyCode: key });
-          if (!popup.isDestroyed()) popup.webContents.sendInputEvent({ type: 'keyUp', keyCode: key });
-        }, keyCode);
-      const closed = picker.waitForEvent('close');
-      await sendPickerKey('Enter');
-      await closed;
-      const prior = known.get('Overflow fixture 7')!;
-      await expect.poll(active).toBe(prior.id);
-      await expect(shell.getByRole('tab', { selected: true })).toHaveText('Overflow fixture 7');
-      await expect.poll(() => inspectPage('7')).toEqual(prior.page);
-      const reopened = await openPicker();
-      expect(await reopened.getByRole('menuitemradio').locator('span:first-child').allTextContents()).toEqual(order);
-      const current = reopened.getByRole('menuitemradio', { checked: true });
-      await expect(current).toContainText('Overflow fixture 7');
-      const dismissed = reopened.waitForEvent('close');
-      await sendPickerKey('Escape');
-      await dismissed;
-      expect(await active()).toBe(prior.id);
-      for (let number = 1; number <= 8; number++) expect(loads.get(String(number))).toBe(1);
-      return;
+    if (process.platform === 'darwin') {
+      const controls = await shell.locator('.titlebar').evaluate((titlebar) => {
+        const traffic = titlebar.querySelector('.traffic-space')!.getBoundingClientRect();
+        const tabs = titlebar.querySelector('.tab-strip')!.getBoundingClientRect();
+        const drag = titlebar.querySelector('.drag-space')!;
+        return {
+          trafficReserved: traffic.width >= 80 && tabs.left >= traffic.right,
+          dragWidth: drag.getBoundingClientRect().width,
+          dragRegion: getComputedStyle(drag).getPropertyValue('-webkit-app-region')
+        };
+      });
+      const nativeButtons = await app.evaluate(({ BrowserWindow }) =>
+        BrowserWindow.getAllWindows()
+          .find((window) => window.webContents.getURL() === 'app://shell/index.html')!
+          .getWindowButtonPosition()
+      );
+      expect(nativeButtons).not.toBeNull();
+      expect(nativeButtons!.x).toBeGreaterThanOrEqual(0);
+      expect(nativeButtons!.x).toBeLessThan(80);
+      expect(controls.trafficReserved).toBe(true);
+      expect(controls.dragWidth).toBeGreaterThanOrEqual(32);
+      expect(controls.dragRegion).toBe('drag');
     }
 
-    // Intercept only this fixture's platform popup at the native boundary.
-    // The real shell command builds the menu and its real item callback performs selection.
-    await app.evaluate(({ Menu }) => {
-      const nativePopup = Menu.prototype.popup;
-      Menu.prototype.popup = function (this: Electron.Menu, options) {
-        if (this.items.some((item) => item.label.startsWith('Overflow fixture '))) {
-          (globalThis as { studioFixtureOverflow?: Electron.Menu }).studioFixtureOverflow = this;
-          return;
-        }
-        nativePopup.call(this, options);
-      };
-    });
-    await more.focus();
-    await more.press('Enter');
-    const menuLabels = () =>
-      app!.evaluate(() =>
-        (globalThis as { studioFixtureOverflow?: Electron.Menu }).studioFixtureOverflow?.items.map((item) => item.label)
-      );
-    await expect.poll(menuLabels).toBeTruthy();
-    const labels = (await menuLabels())!;
-    const shown = await tabButtons.allTextContents();
-    expect(labels).toEqual((await snapshot()).tabs.map((tab) => tab.title).filter((title) => !shown.includes(title)));
-    expect(await more.textContent()).toContain('(' + labels.length + ')');
-    const target = labels.find((title) => known.has(title));
-    expect(target).toBeTruthy();
-    const prior = known.get(target!)!;
-    await app.evaluate((_electron, title) => {
-      const menu = (globalThis as { studioFixtureOverflow?: Electron.Menu }).studioFixtureOverflow;
-      const item = menu?.items.find((row) => row.label === title);
-      if (!item) throw Error('Overflow menu target missing');
-      item.click();
-    }, target!);
+    await expect(tabButtons).toHaveCount(1);
+    expect(await shell.locator('.tab.active').evaluate((item) => getComputedStyle(item).borderTopWidth)).toBe('2px');
+    const order = (await snapshot()).tabs.map((item) => item.title);
+    await expect(more).toContainText('(' + order.length + ')');
+    const openPicker = async () => {
+      const opening = app!.waitForEvent('window');
+      await more.focus();
+      await more.press('Enter');
+      const picker = await opening;
+      await expect(picker.getByRole('menu', { name: '全部标签' })).toBeVisible();
+      return picker;
+    };
+    const picker = await openPicker();
+    const items = picker.getByRole('menuitemradio');
+    const titles = () => items.locator('span:first-child').allTextContents();
+    expect(await titles()).toEqual(order);
+    const selected = picker.getByRole('menuitemradio', { checked: true });
+    await expect(selected).toContainText('✓ 当前');
+    await expect(selected).toContainText('Overflow fixture 8');
+    expect(await selected.evaluate((item) => getComputedStyle(item).borderTopColor)).toBe('rgb(37, 37, 37)');
+    await expect(selected).toBeFocused();
+    await selected.press('ArrowUp');
+    const target = picker.getByRole('menuitemradio', { name: 'Overflow fixture 7' });
+    await expect(target).toBeFocused();
+    const sendPickerKey = (keyCode: 'Enter' | 'Escape') =>
+      app!.evaluate(({ BrowserWindow }, key) => {
+        const popup = BrowserWindow.getAllWindows().find((window) => window.getTitle() === '全部标签');
+        if (!popup || !popup.isFocused()) throw Error('Tab picker is not focused');
+        popup.webContents.sendInputEvent({ type: 'keyDown', keyCode: key });
+        if (!popup.isDestroyed()) popup.webContents.sendInputEvent({ type: 'keyUp', keyCode: key });
+      }, keyCode);
+    const closed = picker.waitForEvent('close');
+    await sendPickerKey('Enter');
+    await closed;
+    const prior = known.get('Overflow fixture 7')!;
     await expect.poll(active).toBe(prior.id);
-    await expect(shell.getByRole('tab', { selected: true })).toHaveText(target!);
-    await expect.poll(() => inspectPage(target!.split(' ').at(-1)!)).toEqual(prior.page);
+    await expect(shell.getByRole('tab', { selected: true })).toHaveText('Overflow fixture 7');
+    await expect.poll(() => inspectPage('7')).toEqual(prior.page);
+    const reopened = await openPicker();
+    expect(await reopened.getByRole('menuitemradio').locator('span:first-child').allTextContents()).toEqual(order);
+    const current = reopened.getByRole('menuitemradio', { checked: true });
+    await expect(current).toContainText('Overflow fixture 7');
+    const dismissed = reopened.waitForEvent('close');
+    await sendPickerKey('Escape');
+    await dismissed;
+    expect(await active()).toBe(prior.id);
     for (let number = 1; number <= 8; number++) expect(loads.get(String(number))).toBe(1);
   } finally {
     await app?.close();

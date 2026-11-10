@@ -33,7 +33,7 @@ import {
   type IpcMainInvokeEvent
 } from 'electron';
 import { installImageContextMenu } from './image-context-menu';
-import { showWindowsTabPicker } from './windows-tab-picker';
+import { showTabPicker } from './tab-picker';
 import { pageProtocol, type NativeAgentMetadata, type PageEnvironment } from './page-protocol';
 import {
   DEFAULT_LANGUAGE,
@@ -170,7 +170,7 @@ const savedPages = new Map<string, PageSnapshot>(),
   recoveryCheckpoints = new RecoveryCheckpoints();
 
 const status = new Map<string, TabStatus>();
-let windowsTabPicker: BrowserWindow | undefined;
+let tabPicker: BrowserWindow | undefined;
 const popups = new Map<BrowserWindow, string>();
 const hiddenPopups = new Set<BrowserWindow>();
 const configuredSessions = new Set<string>();
@@ -1431,17 +1431,17 @@ async function dispatch(c: Command): Promise<void> {
     case 'tab:overflow': {
       if (!win || win.isDestroyed()) break;
       const profile = activeProfile();
-      if (process.platform === 'win32') {
-        if (windowsTabPicker && !windowsTabPicker.isDestroyed()) {
-          windowsTabPicker.destroy();
+      if (desktopWorkspace) {
+        if (tabPicker && !tabPicker.isDestroyed()) {
+          tabPicker.destroy();
           break;
         }
         const tabs = store.read().tabs.filter((tab) => tab.profileId === profile.id);
-        windowsTabPicker = showWindowsTabPicker(win, c, tabs, profile.activeTabId, (id) => {
+        tabPicker = showTabPicker(win, c, tabs, profile.activeTabId, (id) => {
           queueCommandInternal(() => dispatch({ type: 'tab:activate', id }));
         });
-        windowsTabPicker.once('closed', () => {
-          windowsTabPicker = undefined;
+        tabPicker.once('closed', () => {
+          tabPicker = undefined;
         });
         break;
       }
