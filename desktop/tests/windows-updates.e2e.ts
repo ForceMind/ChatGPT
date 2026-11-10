@@ -30,6 +30,9 @@ for (const mode of ['automatic', 'manual'] as const)
       ['/nologo', '/target:winexe', '/out:' + installer, source],
       { stdio: 'pipe' }
     );
+    // A valid PE overlay exercises the SDK's streamed download path; version
+    // inspection and actual execution below still validate this exact file.
+    writeFileSync(installer, Buffer.concat([readFileSync(installer), Buffer.alloc(4 * 1024 * 1024, 0xa7)]));
     const eventHook = path.join(root, 'observe-updater.cjs');
     writeFileSync(
       eventHook,
@@ -98,9 +101,10 @@ for (const mode of ['automatic', 'manual'] as const)
         r.writeHead(200, { 'Content-Length': body.length });
         if (mode === 'automatic' && q.url === '/installer.exe') {
           r.flushHeaders();
-          r.write(body.subarray(0, 1));
+          const warmup = 256 * 1024;
+          r.write(body.subarray(0, warmup));
           await new Promise((resolve) => setTimeout(resolve, 1200));
-          r.write(body.subarray(1, Math.floor(body.length / 2)));
+          r.write(body.subarray(warmup, Math.floor(body.length / 2)));
           await transferGate;
           if (!r.destroyed) r.end(body.subarray(Math.floor(body.length / 2)));
           return;
