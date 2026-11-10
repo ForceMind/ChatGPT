@@ -33,6 +33,7 @@ import {
   type IpcMainInvokeEvent
 } from 'electron';
 import { installImageContextMenu } from './image-context-menu';
+import { showWindowsTabPicker } from './windows-tab-picker';
 import { pageProtocol, type NativeAgentMetadata, type PageEnvironment } from './page-protocol';
 import {
   DEFAULT_LANGUAGE,
@@ -169,6 +170,7 @@ const savedPages = new Map<string, PageSnapshot>(),
   recoveryCheckpoints = new RecoveryCheckpoints();
 
 const status = new Map<string, TabStatus>();
+let windowsTabPicker: BrowserWindow | undefined;
 const popups = new Map<BrowserWindow, string>();
 const hiddenPopups = new Set<BrowserWindow>();
 const configuredSessions = new Set<string>();
@@ -1429,6 +1431,20 @@ async function dispatch(c: Command): Promise<void> {
     case 'tab:overflow': {
       if (!win || win.isDestroyed()) break;
       const profile = activeProfile();
+      if (process.platform === 'win32') {
+        if (windowsTabPicker && !windowsTabPicker.isDestroyed()) {
+          windowsTabPicker.destroy();
+          break;
+        }
+        const tabs = store.read().tabs.filter((tab) => tab.profileId === profile.id);
+        windowsTabPicker = showWindowsTabPicker(win, c, tabs, profile.activeTabId, (id) => {
+          queueCommandInternal(() => dispatch({ type: 'tab:activate', id }));
+        });
+        windowsTabPicker.once('closed', () => {
+          windowsTabPicker = undefined;
+        });
+        break;
+      }
       const ids = new Set(c.ids);
       const hidden = store
         .read()
@@ -1439,7 +1455,7 @@ async function dispatch(c: Command): Promise<void> {
         hidden.map((tab) => {
           const title = tab.title || 'ChatGPT';
           return {
-            label: process.platform === 'win32' ? title.replaceAll('&', '&&') : title,
+            label: title,
             click: () => queueCommandInternal(() => dispatch({ type: 'tab:activate', id: tab.id }))
           };
         })

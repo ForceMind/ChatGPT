@@ -3,8 +3,12 @@ export const TAB_MAX_WIDTH = 220;
 export const TAB_GAP = 4;
 export const MORE_TABS_WIDTH = 104;
 
+export function allTabsFit(count: number, width: number): boolean {
+  return count <= 1 || count * TAB_MIN_WIDTH + (count - 1) * TAB_GAP <= width;
+}
+
 function visibleTabCount(count: number, width: number): number {
-  if (count <= 1 || count * TAB_MIN_WIDTH + (count - 1) * TAB_GAP <= width) return count;
+  if (allTabsFit(count, width)) return count;
   return Math.max(1, Math.floor((width - MORE_TABS_WIDTH) / (TAB_MIN_WIDTH + TAB_GAP)));
 }
 

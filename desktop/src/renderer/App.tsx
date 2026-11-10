@@ -19,7 +19,7 @@ import {
   type Snapshot
 } from '../shared/model';
 import { Icon, Mark, type IconName } from './icons';
-import { MORE_TABS_WIDTH, TAB_GAP, TAB_MAX_WIDTH, splitTabs } from './tab-strip';
+import { MORE_TABS_WIDTH, TAB_GAP, TAB_MAX_WIDTH, allTabsFit, splitTabs } from './tab-strip';
 import './style.css';
 const Workbench = lazy(() => import('./Workbench').then((module) => ({ default: module.Workbench })));
 import { BROWSER_LANGUAGES, DEFAULT_LANGUAGE } from '../shared/profile-preferences';
@@ -299,7 +299,10 @@ function App() {
   const tabs = state.tabs.filter((t) => t.profileId === profile.id);
   const tab = tabs.find((t) => t.id === profile.activeTabId)!;
   const status = state.tabStatus[tab.id];
+  const collapsed = state.platform === 'win32' && !allTabsFit(tabs.length, tabStripWidth);
   const { visible, hidden } = splitTabs(tabs, tab.id, tabStripWidth);
+  const stripTabs = collapsed ? [tab] : visible;
+  const menuTabs = collapsed ? tabs : hidden;
   const stripStyle = {
     '--tab-strip-ideal': tabs.length * TAB_MAX_WIDTH + (tabs.length - 1) * TAB_GAP + 'px',
     '--tab-max-width': TAB_MAX_WIDTH + 'px',
@@ -345,9 +348,9 @@ function App() {
     <main className="workspace" data-platform={state.platform} data-fullscreen={state.fullScreen} style={style}>
       <header className="titlebar" aria-label="客户端标题栏">
         <div className="traffic-space" aria-hidden="true" />
-        <div className="tab-strip" ref={tabStrip} style={stripStyle}>
+        <div className="tab-strip" ref={tabStrip} style={stripStyle} data-collapsed={collapsed}>
           <div className="tabs" role="tablist" aria-label={`${profile.name}的标签页`}>
-            {visible.map((t) => (
+            {stripTabs.map((t) => (
               <div
                 key={t.id}
                 className={`tab ${t.id === tab.id ? 'active' : ''} ${t.pinned ? 'pinned' : ''}`}
@@ -408,7 +411,7 @@ function App() {
               </div>
             ))}
           </div>
-          {hidden.length > 0 && (
+          {menuTabs.length > 0 && (
             <button
               type="button"
               className="more-tabs"
@@ -417,13 +420,13 @@ function App() {
                 const bounds = event.currentTarget.getBoundingClientRect();
                 void send({
                   type: 'tab:overflow',
-                  ids: hidden.map((item) => item.id),
+                  ids: menuTabs.map((item) => item.id),
                   x: Math.floor(bounds.left),
                   y: Math.ceil(bounds.bottom)
                 });
               }}
             >
-              更多标签 ({hidden.length})
+              更多标签 ({menuTabs.length})
               <Icon name="chevron" size={12} />
             </button>
           )}
