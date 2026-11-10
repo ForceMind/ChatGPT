@@ -8,6 +8,7 @@ import android.os.SystemClock;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.webkit.WebView;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.webkit.WebViewCompat;
 import androidx.test.platform.app.InstrumentationRegistry;
 import java.io.ByteArrayInputStream;
 import java.net.HttpURLConnection;
@@ -127,6 +128,15 @@ public final class AppUpdateFlowTest {
         RegularEnvironmentUpgradeTest.registryBarrier(golden, true);
         RegularEnvironmentUpgradeTest.verifyNative(golden, false);
 
+        String node = RegularEnvironmentUpgradeTest.args().getString("ownedUpdateNode");
+        assertNotNull(node);
+        assertTrue(node.matches("vless://[0-9a-f-]{36}@127\\.0\\.0\\.1:18778"));
+        NetworkSettingsStore.Data routeSettings = new NetworkSettingsStore.Data();
+        routeSettings.nodes.add(NetworkNode.parse(node, "Owned update line"));
+        routeSettings.selected = 0;
+        routeSettings.enabled = true;
+        new NetworkSettingsStore(context).write(routeSettings);
+
         StateStore store = new StateStore(context.getFilesDir());
         WorkspaceState state = store.update(workspace -> {
             WorkspaceState.Account legacy = workspace.addAccount("Owned update WebView", "", WorkspaceState.COLORS[0]);
@@ -149,7 +159,8 @@ public final class AppUpdateFlowTest {
         MainActivity main = (MainActivity) instrument.startActivitySync(new Intent(context, MainActivity.class)
                 .putExtra(EnvironmentLauncher.ACCOUNT_ID, state.current().id).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
         NetworkRoute route = onMain(() -> BrowserMemory.get(context).network().routes);
-        waitFor("current route ready", 30, () -> route.snapshot().ready());
+        waitFor("owned route connected", 30, () -> route.snapshot().state == NetworkRoute.State.CONNECTED);
+        assertEquals("Owned update line", route.snapshot().node.name);
         waitFor("second WebView exists", 30, () -> onMain(main::recoveryCurrentWeb) != null);
         WebView second = onMain(main::recoveryCurrentWeb);
         waitFor("second inline fixture committed", 25, () -> onMain(second::getProgress) == 100);
@@ -163,6 +174,13 @@ public final class AppUpdateFlowTest {
         String firstDoc = RegularEnvironmentUpgradeTest.js(first,
                 "document.querySelector('textarea').value='owned draft';window.ownedDocument");
         assertNotEquals("null", firstDoc);
+
+        AtomicReference<Boolean> cookieSet = new AtomicReference<>();
+        instrument.runOnMainSync(() -> WebViewCompat.getProfile(first).getCookieManager().setCookie(
+                ORIGIN, "owned_updater_auth=synthetic; Path=/; HttpOnly", cookieSet::set));
+        waitFor("account cookie recorded for exact update origin", 10, () -> Boolean.TRUE.equals(cookieSet.get()));
+        assertEquals("owned_updater_auth=synthetic",
+                onMain(() -> WebViewCompat.getProfile(first).getCookieManager().getCookie(ORIGIN)));
 
         openUpdate();
         mode("current");
@@ -223,6 +241,8 @@ public final class AppUpdateFlowTest {
         assertSame(first, onMain(main::recoveryCurrentWeb));
         assertEquals(firstDoc, RegularEnvironmentUpgradeTest.js(first, "window.ownedDocument"));
         assertEquals("\"owned draft\"", RegularEnvironmentUpgradeTest.js(first, "document.querySelector('textarea').value"));
+        assertEquals("owned_updater_auth=synthetic",
+                onMain(() -> WebViewCompat.getProfile(first).getCookieManager().getCookie(ORIGIN)));
         click("切换标签页：Owned update second", false);
         waitFor("second retained WebView", 20, () -> onMain(main::recoveryCurrentWeb) == second);
         assertEquals(secondDoc, RegularEnvironmentUpgradeTest.js(second, "window.ownedDocument"));

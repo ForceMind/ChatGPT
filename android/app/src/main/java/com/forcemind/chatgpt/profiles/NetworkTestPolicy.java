@@ -16,7 +16,10 @@ final class NetworkTestPolicy {
         } catch (IllegalArgumentException error) { return false; }
     }
     static String home() { return BuildConfig.NETWORK_TEST ? BuildConfig.NETWORK_HOME_URL : "https://chatgpt.com/"; }
-    static String probeURL() { return BuildConfig.NETWORK_TEST ? BuildConfig.NETWORK_PROBE_URL : "https://chatgpt.com/"; }
+    static String probeURL() {
+        if (BuildConfig.APP_UPDATE_TEST) return BuildConfig.APP_UPDATE_TEST_ORIGIN + "/probe";
+        return BuildConfig.NETWORK_TEST ? BuildConfig.NETWORK_PROBE_URL : "https://chatgpt.com/";
+    }
     static void applyTrust(JSONObject tls, NetworkNode node) throws org.json.JSONException {
         if (!BuildConfig.NETWORK_TEST || !"10.0.2.2".equals(node.host) || (node.port != 19443 && node.port != 19444)) return;
         try {

@@ -73,6 +73,7 @@ jobs:
           bash android/environment-poc/gradlew -p android --no-daemon -PenvironmentClient -PregularEnvironmentClient -PregularEnvironmentCi -PenvironmentTest -PappUpdateCandidate -PappUpdateTest -PandroidVersionFile=android/app/build/app-update-version.json :app:assembleRelease :app:assembleReleaseAndroidTest
           cp android/app/build/outputs/apk/release/app-release.apk android/app/build/app-update-ci/source.apk
           cp android/app/build/outputs/apk/androidTest/release/app-release-androidTest.apk android/app/build/app-update-ci/source-test.apk
+          cp android/network-poc/corebridge/bin/xray android/app/build/app-update-ci/xray
       - uses: actions/upload-artifact@v4
         if: success()
         with:
@@ -122,8 +123,10 @@ jobs:
           run-id: 41993581770
           github-token: ${{ github.token }}
           path: android/app/build/environment-provider-input
-      - name: Enable acceleration for the owned emulator
-        run: sudo chmod a+rw /dev/kvm
+      - name: Prepare the owned emulator and fixture executable
+        run: |
+          sudo chmod a+rw /dev/kvm
+          chmod +x android/app/build/app-update-ci/xray
       - name: Run the two-engine update and actual system installation
         uses: reactivecircus/android-emulator-runner@v2
         with:

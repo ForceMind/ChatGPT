@@ -7,14 +7,19 @@ import json
 import os
 from pathlib import Path
 import re
+import socket
+import subprocess
 import threading
 import time
+import uuid
 from xml.etree import ElementTree
 
 import regular_environment_upgrade as common
 
 PACKAGE = common.PACKAGE
 PORT = 18777
+NODE_PORT = 18778
+PROXY_SOURCE = '127.0.0.2'
 ORIGIN = f'http://127.0.0.1:{PORT}'
 DATA = '/data/user/0/' + PACKAGE
 EXPECTED = DATA + '/files/regular-environment-upgrade-expected.json'
@@ -82,11 +87,19 @@ class Handler(BaseHTTPRequestHandler):
             self.reply(204, 0)
             return
 
+        if self.path == '/probe':
+            through_line = self.client_address[0] == PROXY_SOURCE
+            self.server.requests.append({'path': self.path, 'throughSelectedLine': through_line})
+            self.reply(204 if through_line else 503, 0)
+            return
+
         mode = self.server.mode
         credentials = any(self.headers.get(name) is not None for name in ('Cookie', 'Cookie2', 'Authorization'))
-        self.server.requests.append({'path': self.path, 'mode': mode, 'credentialHeader': credentials})
-        if credentials:
-            self.reply(403, 0)
+        through_line = self.client_address[0] == PROXY_SOURCE
+        self.server.requests.append({'path': self.path, 'mode': mode, 'credentialHeader': credentials,
+                                     'throughSelectedLine': through_line})
+        if credentials or not through_line:
+            self.reply(503, 0)
             return
         try:
             if self.path == '/android.json':
@@ -119,7 +132,41 @@ def block_egress():
         common._shell(binary, '-C', 'OUTPUT', '-o', 'lo', '-j', 'ACCEPT')
     rules = common._shell('iptables-save') + common._shell('ip6tables-save')
     (common.EVIDENCE / 'native-egress.txt').write_text(rules)
-    common._run(['adb', 'reverse', f'tcp:{PORT}', f'tcp:{PORT}'])
+    for port in (PORT, NODE_PORT):
+        common._run(['adb', 'reverse', f'tcp:{port}', f'tcp:{port}'])
+
+
+def start_node(core, identity):
+    config = common.EVIDENCE / 'owned-route.json'
+    common._write_json(config, {
+        'log': {'loglevel': 'warning'},
+        'inbounds': [{'listen': '127.0.0.1', 'port': NODE_PORT, 'protocol': 'vless',
+                      'settings': {'clients': [{'id': identity}], 'decryption': 'none'},
+                      'streamSettings': {'network': 'raw', 'security': 'none'}}],
+        'outbounds': [{'tag': 'blocked', 'protocol': 'blackhole'},
+                      {'tag': 'fixture', 'protocol': 'freedom', 'sendThrough': PROXY_SOURCE,
+                       'settings': {'finalRules': [{'action': 'allow', 'ip': ['127.0.0.1/32'],
+                                                    'port': str(PORT)}]}}],
+        'routing': {'rules': [{'type': 'field', 'ip': ['127.0.0.1/32'],
+                               'port': str(PORT), 'outboundTag': 'fixture'}]},
+    })
+    with (common.EVIDENCE / 'owned-route.log').open('w') as output:
+        process = subprocess.Popen([str(core.resolve()), 'run', '-config', str(config)],
+                                   stdout=output, stderr=subprocess.STDOUT)
+    try:
+        until = time.monotonic() + 10
+        while time.monotonic() < until:
+            assert process.poll() is None, 'Owned VLESS node exited during startup'
+            try:
+                with socket.create_connection(('127.0.0.1', NODE_PORT), timeout=0.5):
+                    return process
+            except OSError:
+                time.sleep(0.1)
+        raise AssertionError('Owned VLESS node did not start')
+    except BaseException:
+        process.kill()
+        process.wait()
+        raise
 
 
 def signer_of(apk):
@@ -129,9 +176,9 @@ def signer_of(apk):
     return signers[0]
 
 
-def instrument(class_name, signer, label, timeout):
+def instrument(class_name, signer, label, timeout, extras=()):
     result = common._run(['adb', 'shell', 'am', 'instrument', '-w', '-r', '-e', 'class',
-                          PACKAGE + '.' + class_name, '-e', 'signer', signer, common.RUNNER],
+                          PACKAGE + '.' + class_name, '-e', 'signer', signer, *extras, common.RUNNER],
                          timeout=timeout, check=False)
     (common.EVIDENCE / (label + '-instrument.txt')).write_text(result.stdout)
     print(result.stdout, flush=True)
@@ -199,17 +246,25 @@ def run(args):
     old_uid = installed_uid()
     common._shell('appops', 'set', PACKAGE, 'REQUEST_INSTALL_PACKAGES', 'deny')
 
+    identity = str(uuid.uuid4())
+    node = f'vless://{identity}@127.0.0.1:{NODE_PORT}'
     with Fixture(target, test, signer, source_info['versionName'], target_info['versionName']) as fixture:
         worker = threading.Thread(target=fixture.serve_forever, daemon=True)
         worker.start()
+        process = None
         try:
-            result = instrument('AppUpdateFlowTest#downloadAndRequestSystemConfirmation', signer, 'source', 480)
+            process = start_node(args.input / 'xray', identity)
+            result = instrument('AppUpdateFlowTest#downloadAndRequestSystemConfirmation', signer, 'source', 480,
+                                extras=('-e', 'ownedUpdateNode', node))
             assert 'INSTRUMENTATION_RESULT: appUpdateSourceProof=' in result
             assert fixture.authorized
-            assert not any(row['credentialHeader'] for row in fixture.requests)
+            assert any(row['path'] == '/probe' for row in fixture.requests)
+            assert all(row['throughSelectedLine'] for row in fixture.requests)
+            update_requests = [row for row in fixture.requests if 'mode' in row]
+            assert not any(row['credentialHeader'] for row in update_requests)
             for mode in MODES:
-                assert sum(row['mode'] == mode and row['path'] == '/android.json' for row in fixture.requests) == 1
-                assert sum(row['mode'] == mode and row['path'] == '/update.apk' for row in fixture.requests) == int(mode not in NO_DOWNLOAD)
+                assert sum(row['mode'] == mode and row['path'] == '/android.json' for row in update_requests) == 1
+                assert sum(row['mode'] == mode and row['path'] == '/update.apk' for row in update_requests) == int(mode not in NO_DOWNLOAD)
             golden = json.loads(common._shell('cat', EXPECTED))
             original = files_before(golden)
             for row in golden['recoveries']:
@@ -237,6 +292,13 @@ def run(args):
                 'systemConfirmationTapped': True, 'requests': fixture.requests,
             })
         finally:
+            if process is not None and process.poll() is None:
+                process.terminate()
+                try:
+                    process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    process.wait()
             fixture.shutdown()
             common._write_json(common.EVIDENCE / 'fixture-requests.json', fixture.requests)
 
