@@ -148,8 +148,15 @@ test('narrow tab strip keeps the active tab and switches overflow tabs without l
       await selected.press('ArrowUp');
       const target = picker.getByRole('menuitemradio', { name: 'Overflow fixture 7' });
       await expect(target).toBeFocused();
+      const sendPickerKey = (keyCode: 'Enter' | 'Escape') =>
+        app!.evaluate(({ BrowserWindow }, key) => {
+          const popup = BrowserWindow.getAllWindows().find((window) => window.getTitle() === '全部标签');
+          if (!popup || !popup.isFocused()) throw Error('Tab picker is not focused');
+          popup.webContents.sendInputEvent({ type: 'keyDown', keyCode: key });
+          if (!popup.isDestroyed()) popup.webContents.sendInputEvent({ type: 'keyUp', keyCode: key });
+        }, keyCode);
       const closed = picker.waitForEvent('close');
-      await target.press('Enter');
+      await sendPickerKey('Enter');
       await closed;
       const prior = known.get('Overflow fixture 7')!;
       await expect.poll(active).toBe(prior.id);
@@ -160,7 +167,7 @@ test('narrow tab strip keeps the active tab and switches overflow tabs without l
       const current = reopened.getByRole('menuitemradio', { checked: true });
       await expect(current).toContainText('Overflow fixture 7');
       const dismissed = reopened.waitForEvent('close');
-      await current.press('Escape');
+      await sendPickerKey('Escape');
       await dismissed;
       expect(await active()).toBe(prior.id);
       for (let number = 1; number <= 8; number++) expect(loads.get(String(number))).toBe(1);
