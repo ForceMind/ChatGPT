@@ -1,6 +1,6 @@
 {
   "name": "chatgpt-profiles",
-  "version": "2026.11.12-rc.2",
+  "version": "2026.11.12",
   "private": true,
   "description": "ChatGPT Studio — independent accounts, immersive browsing and local asset workflows",
   "author": "ForceMind",

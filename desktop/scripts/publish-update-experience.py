@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+import time
 
 REPO = 'ForceMind/ChatGPT'
 assert os.environ.get('GITHUB_ACTIONS') == 'true'
@@ -41,7 +42,7 @@ tab_strip = os.environ.get('PUBLISH_TAB_STRIP') == 'true'
 version = read('desktop/package.json')['version']
 step_name = 'Approved narrow tab strip interaction' if tab_strip else 'Approved owned update interaction and installation regression'
 if tab_strip:
-    assert version == '2026.11.11'
+    assert version in ('2026.11.11', '2026.11.12')
     source = os.environ['GITHUB_SHA']
     run = api('actions/runs/' + os.environ['GITHUB_RUN_ID'])
     assert run['head_sha'] == source and run['status'] == 'in_progress'
@@ -149,16 +150,45 @@ if tab_strip:
 Mac 为 Apple Silicon 临时签名包，未公证。Windows 未配置 Authenticode。
 验收记录 https://github.com/ForceMind/ChatGPT/actions/runs/{run['id']}
 """
+if tab_strip and version == '2026.11.12':
+    notes = f"""ChatGPT Studio {version} · Mac / Windows
+
+- Mac 窄窗保留多标签横排，滚轮可横移。左、右下拉分别列出该侧被遮住的标签，切换会把目标标签滚入视野。
+- Windows 窄窗显示当前标签和「更多标签」，列表显示全部标签。选中项有边框和对勾，列表顺序保持一致。
+- 两端合成验收确认切换复用原网页并保留未发送草稿。Mac rc.2 的滚动、双侧下拉与草稿已由用户在本机验收。
+
+Mac 为 Apple Silicon 临时签名包，未公证。Windows 尚未配置 Authenticode。Android 延续 2026.11.10-1309。
+验收记录 https://github.com/ForceMind/ChatGPT/actions/runs/{run['id']}
+"""
 (out / 'notes.txt').write_text(notes)
 tag = 'v' + version
 releases = api('releases?per_page=100')
 matches = [r for r in releases if r['tag_name'] == tag]
 assert len(matches) <= 1
-if not matches:
-    subprocess.run(['gh', 'release', 'create', tag, '--repo', REPO, '--draft', '--target', source,
-                    '--title', 'ChatGPT Studio ' + version, '--notes-file', str(out / 'notes.txt')], check=True)
-    matches = [r for r in api('releases?per_page=100') if r['tag_name'] == tag]
-release, = matches
+if matches:
+    release, = matches
+else:
+    release = json.loads(subprocess.check_output(
+        ['gh', 'api', '-X', 'POST', 'repos/' + REPO + '/releases', '--input', '-'],
+        input=json.dumps({
+            'tag_name': tag, 'target_commitish': source, 'name': 'ChatGPT Studio ' + version,
+            'body': notes, 'draft': True, 'prerelease': False
+        }).encode()
+    ))
+    assert release['draft']
+    # The tag lookup used by the uploader may lag the creation response.
+    for _ in range(12):
+        visible = subprocess.run(
+            ['gh', 'release', 'view', tag, '--repo', REPO, '--json', 'isDraft,targetCommitish'],
+            capture_output=True
+        )
+        if visible.returncode == 0:
+            current = json.loads(visible.stdout)
+            assert current['isDraft'] and current['targetCommitish'] == source
+            break
+        time.sleep(2)
+    else:
+        raise RuntimeError('The new release draft is not yet visible to the uploader')
 assert release['target_commitish'] == source and not release['prerelease']
 files = [out / a['file'] for a in artifacts] + [out / 'release-info.json', out / 'SHA256SUMS.txt']
 existing = {a['name']: a for a in release['assets']}
@@ -185,7 +215,8 @@ metadata.mkdir()
 date = datetime.now(timezone.utc).isoformat()
 compat, = [a for a in artifacts if a['purpose'] == 'legacy-updater']
 feed = {'schema': 1, 'version': version, 'publishedAt': date,
-        'notes': '标签过多时收进「更多标签」，当前标签始终显示。' if tab_strip else
+        'notes': 'Mac 标签栏支持滚轮横移与两侧下拉，Windows 窄窗支持全部标签列表。' if version == '2026.11.12' else
+                 '标签过多时收进「更多标签」，当前标签始终显示。' if tab_strip else
                  '2026.11.10：Mac / Windows 更新下载显示百分比、文件大小、阶段及失败重试；Windows 补齐更新配置并修复嵌套程序目录迁移。',
         'files': {'arm64': {'url': compat['url'], 'size': compat['bytes'], 'sha256': compat['sha256']}}}
 (metadata / 'macos.json').write_text(json.dumps(feed, indent=2, ensure_ascii=False) + '\n')
