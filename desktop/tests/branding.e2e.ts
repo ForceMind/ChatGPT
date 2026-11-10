@@ -217,12 +217,14 @@ test('Studio website renders canonical pages and preserves legacy update feeds',
     expect(await page.locator('a[href^="mailto:me@xincreates.com"]').count()).toBeGreaterThan(0);
     for (const item of release.artifacts) {
       expect(await page.locator('a[href="' + item.url + '"]').count()).toBe(1);
-      expect(await page.locator('a[href="https://gh-proxy.org/' + item.url + '"]').count()).toBe(
-        item.platform === 'android' ? 0 : 1
-      );
+      expect(await page.locator('a[href="https://gh-proxy.org/' + item.url + '"]').count()).toBe(1);
       expect(await page.locator('[data-copy="' + item.sha256 + '"]').count()).toBe(1);
     }
-    await expect(page.locator('#download-android a[href$=".apk"]')).toHaveCount(1);
+    const androidURL = release.artifacts.find((item: { platform: string }) => item.platform === 'android').url;
+    const androidURLs = await page
+      .locator('#download-android a[href$=".apk"]')
+      .evaluateAll((links) => links.map((link) => link.getAttribute('href')));
+    expect(androidURLs).toEqual([androidURL, 'https://gh-proxy.org/' + androidURL]);
     for (const [width, height] of [
       [1440, 1000],
       [390, 844]
@@ -383,7 +385,7 @@ test('Studio website renders canonical pages and preserves legacy update feeds',
         platformVersions,
         macosUpdateVersion: feed.version,
         downloadFiles: release.artifacts.length,
-        acceleratedFiles: release.artifacts.filter((item: { platform: string }) => item.platform !== 'android').length,
+        acceleratedFiles: release.artifacts.length,
         widths: [1440, 390],
         mobilePlatformRouting: {
           android: true,
