@@ -34,7 +34,7 @@ function fixture(broken = false) {
         calls.push(path);
         if (path === '/private/source.json') return Response.json(metadata);
         const bytes = new TextEncoder().encode(path.endsWith('000.bin') ? 'abc' : 'def');
-        return new Response(bytes, { headers: { 'Content-Length': broken ? '2' : String(bytes.length) } });
+        return new Response(broken ? bytes.slice(0, 2) : bytes);
       }
     }
   };

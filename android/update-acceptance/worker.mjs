@@ -26,17 +26,37 @@ async function asset(env, request, path) {
 }
 
 async function writePackage(env, request, parts, writable) {
+  const writer = writable.getWriter();
   try {
     for (const part of parts) {
       if (!/^\/private\/part-[0-9]{3}\.bin$/.test(part.path) || !Number.isSafeInteger(part.size) || part.size <= 0)
         throw Error('Acceptance part metadata invalid');
       const response = await asset(env, request, part.path);
-      if (Number(response.headers.get('Content-Length')) !== part.size) throw Error('Acceptance part size differs');
-      await response.body.pipeTo(writable, { preventClose: true });
+      const reader = response.body.getReader();
+      let received = 0;
+      try {
+        for (;;) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          received += value.byteLength;
+          if (received > part.size) throw Error('Acceptance part has excess bytes');
+          await writer.write(value);
+        }
+        if (received !== part.size) throw Error('Acceptance part is truncated');
+      } catch (error) {
+        await reader.cancel(error);
+        throw error;
+      } finally {
+        reader.releaseLock();
+      }
     }
-    await writable.getWriter().close();
+    await writer.close();
   } catch (error) {
-    await writable.abort(error);
+    console.error('Acceptance stream failed', error.message);
+    try { await writer.abort(error); }
+    catch { /* A disconnected client can have already aborted this writer. */ }
+  } finally {
+    writer.releaseLock();
   }
 }
 
