@@ -76,7 +76,7 @@ jobs:
           PY
       - name: Run private-source contract unit tests
         if: inputs.device_acceptance
-        run: bash android/environment-poc/gradlew -p android --no-daemon -PenvironmentClient -PregularEnvironmentClient -PappUpdateCandidate -PappUpdateAuto -PappUpdateAcceptance -PunsignedRelease -PandroidVersionFile=android/app/build/app-update-version.json :app:testDebugUnitTest
+        run: bash android/environment-poc/gradlew -p android --no-daemon -PenvironmentClient -PregularEnvironmentClient -PappUpdateCandidate -PappUpdateAuto -PappUpdateAcceptance -PunsignedRelease -PandroidVersionFile=android/app/build/app-update-version.json :app:testReleaseUnitTest
       - name: Create a disposable same-signer upgrade fixture
         run: |
           password=$(openssl rand -hex 24)
