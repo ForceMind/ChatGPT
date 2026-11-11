@@ -141,7 +141,7 @@ public final class NetworkPanelTest {
             until("Edited route did not update live", () -> shows("重命名线路"));
             assertSame(original, sheet);
             click("重命名线路", true); click("删除", false);
-            node("删除此线路？", false); click("删除", false);
+            node("删除「重命名线路」？", false); click("确认删除", false);
             until("Deletion did not update live", () -> ui(() -> session.nodes().size()) == 1 && !shows("重命名线路"));
             main(() -> session.routes.block("合成连接中断，保留页面"));
             until("Failure reason/retry did not appear", () -> shows("合成连接中断，保留页面") && shows("重新连接"));
