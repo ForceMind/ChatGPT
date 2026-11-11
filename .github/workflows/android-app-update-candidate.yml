@@ -18,6 +18,9 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
       - uses: actions/download-artifact@v4
         with:
           name: android-app-update-ci-inputs
