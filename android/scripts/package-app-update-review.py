@@ -20,7 +20,7 @@ private = os.environ.get('STUDIO_APP_UPDATE_ACCEPTANCE') == 'true'
 assert not args.target or private
 version = json.loads((root / ('app-update-human-target.json' if args.target else 'app-update-version.json')).read_text())
 auto = os.environ.get('STUDIO_APP_UPDATE_AUTO') == 'true'
-code = (3000040 if args.target else 3000039) if private else 3000038 if auto else 3000037
+code = (3000040 if args.target else 3000039) if private else 3000041 if auto else 3000037
 assert version['versionCode'] == code and version['sourceSHA'] == os.environ['GITHUB_SHA']
 stamp = version['versionName']
 assert re.fullmatch(r'\d{4}\.\d{2}\.\d{2}-\d{4}', stamp)
@@ -44,6 +44,8 @@ with zipfile.ZipFile(source) as apk:
     assert any(name.endswith('/libxul.so') for name in libs), 'Missing Gecko native engine'
     dex = [name for name in apk.namelist() if name.endswith('.dex')]
     assert dex and all(b'http://127.0.0.1:18777' not in apk.read(name) for name in dex)
+    if not private:
+        assert all(b'studio-android-acceptance.pages.dev' not in apk.read(name) for name in dex)
 assert subprocess.run([str(tools / 'apksigner'), 'verify', str(source)], capture_output=True).returncode != 0
 subprocess.run([str(tools / 'zipalign'), '-c', '-P', '16', '4', str(source)], check=True)
 out = root / 'app-update-review'

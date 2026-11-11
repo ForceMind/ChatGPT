@@ -283,7 +283,7 @@ public final class AppUpdateFlowTest {
 
     @Test public void automaticNoonAndExplicitDownload() throws Exception {
         assertTrue(BuildConfig.APP_UPDATE_TEST && BuildConfig.APP_UPDATE_AUTO);
-        assertEquals(BuildConfig.APP_UPDATE_ACCEPTANCE ? 3000039 : 3000038, code());
+        assertEquals(BuildConfig.APP_UPDATE_ACCEPTANCE ? 3000039 : 3000041, code());
         assertEquals(RegularEnvironmentUpgradeTest.args().getString("signer"), RegularEnvironmentUpgradeTest.signer());
         AtomicReference<java.time.Instant> now = new AtomicReference<>(java.time.Instant.parse("2026-11-10T03:50:00Z"));
         AppUpdateAuto.clockForTest(now::get);

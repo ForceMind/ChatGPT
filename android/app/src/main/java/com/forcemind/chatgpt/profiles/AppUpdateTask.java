@@ -44,6 +44,15 @@ final class AppUpdateTask {
     private AppUpdateTask(Context context) {
         this.context = context;
         saved = context.getSharedPreferences("app-update-v1", Context.MODE_PRIVATE);
+        if (!BuildConfig.APP_UPDATE_ACCEPTANCE && saved.contains("acceptanceKey")) {
+            SharedPreferences.Editor migration = saved.edit().remove("acceptanceKey")
+                    .remove("lastAutoCheck").remove("lastAutoReason");
+            if (!saved.getString("acceptanceKey", "").isEmpty()) {
+                migration.remove("ready").remove("offer").remove("available")
+                        .remove("installSession").remove("downloading");
+            }
+            migration.apply();
+        }
         File files = context.getFilesDir();
         try { files = files.getCanonicalFile(); }
         catch (IOException unavailable) { /* The worker fails closed if the directory cannot be verified. */ }

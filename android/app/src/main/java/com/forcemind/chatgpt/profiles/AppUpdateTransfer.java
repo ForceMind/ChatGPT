@@ -50,7 +50,8 @@ final class AppUpdateTransfer implements AutoCloseable {
         next.setUseCaches(false);
         next.setInstanceFollowRedirects(false);
         next.setRequestProperty("Accept-Encoding", "identity");
-        if (!acceptanceKey.isEmpty() && (AppUpdateAcceptance.FEED.equals(url) || AppUpdateAcceptance.APK.equals(url)))
+        if (BuildConfig.APP_UPDATE_ACCEPTANCE && !acceptanceKey.isEmpty()
+                && (AppUpdateAcceptance.FEED.equals(url) || AppUpdateAcceptance.APK.equals(url)))
             next.setRequestProperty(AppUpdateAcceptance.HEADER, acceptanceKey);
         connection = next;
         return next;
@@ -68,7 +69,8 @@ final class AppUpdateTransfer implements AutoCloseable {
     }
 
     String feed(boolean fixture) throws Exception {
-        String source = acceptanceKey.isEmpty() ? AppUpdateRelease.FEED : AppUpdateAcceptance.FEED;
+        String source = BuildConfig.APP_UPDATE_ACCEPTANCE && !acceptanceKey.isEmpty()
+                ? AppUpdateAcceptance.FEED : AppUpdateRelease.FEED;
         HttpURLConnection request = open(fixture ? AppUpdateRelease.FIXTURE + "/android.json" : source);
         try {
             request.setRequestProperty("Accept", "application/json");
