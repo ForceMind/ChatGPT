@@ -25,12 +25,16 @@ name: Android App Update Candidate
         description: Verify route selection, deletion and independent probes with owned VLESS nodes
         type: boolean
         default: false
+      delta_validation:
+        description: Verify valid APK deltas and malformed delta fallback
+        type: boolean
+        default: false
 permissions:
   contents: read
   actions: read
 jobs:
   build:
-    if: github.event_name == 'workflow_dispatch' && (github.ref == 'refs/heads/dev' || (startsWith(github.ref, 'refs/heads/release/android-') && inputs.auto_only && !inputs.device_acceptance)) && (!(inputs.network_import && inputs.network_selection) && (!(inputs.network_import || inputs.network_selection) || (inputs.auto_only && !inputs.device_acceptance))) && !(inputs.auto_only && inputs.recovery_only) && (!inputs.device_acceptance || inputs.auto_only)
+    if: github.event_name == 'workflow_dispatch' && (!inputs.delta_validation || (inputs.auto_only && !inputs.device_acceptance && !inputs.network_import && !inputs.network_selection)) && (github.ref == 'refs/heads/dev' || (startsWith(github.ref, 'refs/heads/release/android-') && inputs.auto_only && !inputs.device_acceptance)) && (!(inputs.network_import && inputs.network_selection) && (!(inputs.network_import || inputs.network_selection) || (inputs.auto_only && !inputs.device_acceptance))) && !(inputs.auto_only && inputs.recovery_only) && (!inputs.device_acceptance || inputs.auto_only)
     env:
       STUDIO_APP_UPDATE_AUTO: ${{ inputs.auto_only }}
       STUDIO_APP_UPDATE_ACCEPTANCE: ${{ inputs.device_acceptance }}
@@ -79,7 +83,7 @@ jobs:
           root=pathlib.Path('android/app/build')
           stamp=datetime.now(ZoneInfo('Asia/Shanghai')).strftime('%Y.%m.%d-%H%M')
           private=os.environ.get('STUDIO_APP_UPDATE_ACCEPTANCE')=='true'
-          offset=2 if private else 8 if os.environ.get('STUDIO_APP_UPDATE_AUTO')=='true' else 0
+          offset=2 if private else 9 if os.environ.get('STUDIO_APP_UPDATE_AUTO')=='true' else 0
           for file,code,name in [('app-update-version.json',3000037+offset,stamp),('app-update-target.json',3000038+offset,'2099.01.01-0000')]:
               (root/file).write_text(json.dumps({'schema':1,'versionCode':code,'versionName':name,'timeZone':'Asia/Shanghai','sourceSHA':os.environ['GITHUB_SHA']},indent=2)+'\n')
           if private:
@@ -155,6 +159,7 @@ jobs:
       fail-fast: false
       matrix:
         api: [28, 35]
+        delta: ${{ fromJSON(inputs.delta_validation && '["valid","corrupt"]' || '["none"]') }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -210,7 +215,7 @@ jobs:
           emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader -feature -Vulkan -writable-system
           script: |
             if [ '${{ matrix.api }}' = 28 ]; then python3 android/network-poc/scripts/install-webview.py --provider android/app/build/environment-provider-input/provider --output android/app/build/app-update-provider; fi
-            python3 android/scripts/run-app-update-candidate.py --input android/app/build/app-update-ci --output android/app/build/app-update-evidence --api ${{ matrix.api }} ${{ inputs.recovery_only && '--recovery-only' || inputs.auto_only && '--auto-only' || '' }} ${{ inputs.device_acceptance && '--device-acceptance' || '' }}
+            python3 android/scripts/run-app-update-candidate.py --input android/app/build/app-update-ci --output android/app/build/app-update-evidence --api ${{ matrix.api }} ${{ inputs.recovery_only && '--recovery-only' || inputs.auto_only && '--auto-only' || '' }} ${{ inputs.device_acceptance && '--device-acceptance' || '' }} --delta-mode ${{ matrix.delta }}
       - name: Verify clipboard and actual camera import without web access
         if: inputs.network_import
         uses: reactivecircus/android-emulator-runner@v2
@@ -238,7 +243,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: android-app-update-api-${{ matrix.api }}
+          name: android-app-update-api-${{ matrix.api }}${{ inputs.delta_validation && format('-{0}', matrix.delta) || '' }}
           retention-days: 14
           if-no-files-found: error
           path: |
@@ -265,6 +270,7 @@ jobs:
           STUDIO_APP_UPDATE_ACCEPTANCE: ${{ inputs.device_acceptance }}
           STUDIO_NETWORK_IMPORT: ${{ inputs.network_import }}
           STUDIO_NETWORK_SELECTION: ${{ inputs.network_selection }}
+          STUDIO_UPDATE_DELTA_VALIDATION: ${{ inputs.delta_validation }}
         run: |
           python3 android/scripts/verify-app-update-candidate.py \
             --review android/app/build/app-update-review \

@@ -112,10 +112,10 @@ public final class AppUpdateActivity extends Activity {
         progress.setIndeterminate(!showProgress);
         bytes.setVisibility(showProgress ? View.VISIBLE : View.GONE);
         if (showProgress) {
-            int percent = (int) Math.min(100, task.received() * 100 / release.size);
+            int percent = (int) Math.min(100, task.received() * 100 / Math.max(1, task.transferSize()));
             progress.setProgress(percent);
             bytes.setText(String.format(Locale.ROOT, "%d%% · %.1f / %.1f MiB", percent,
-                    task.received() / 1048576.0, release.size / 1048576.0));
+                    task.received() / 1048576.0, task.transferSize() / 1048576.0));
         }
         secondary.setVisibility(View.GONE);
         check.setVisibility(View.GONE);

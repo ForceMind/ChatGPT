@@ -25,7 +25,7 @@ assert receipt['versionMetadata']['sourceSHA'] == os.environ['GITHUB_SHA']
 assert receipt['package'] == 'com.forcemind.chatgpt.profiles'
 auto = os.environ.get('STUDIO_APP_UPDATE_AUTO') == 'true'
 private = os.environ.get('STUDIO_APP_UPDATE_ACCEPTANCE') == 'true'
-source_code = 3000039 if private else 3000045 if auto else 3000037
+source_code = 3000039 if private else 3000046 if auto else 3000037
 assert receipt['versionMetadata']['versionCode'] == source_code
 assert receipt['signing'] == 'UNSIGNED_REVIEW_ONLY' and receipt['abi'] == 'arm64-v8a'
 assert receipt['r8'] and receipt['alignment16KiB'] and not receipt['ciEndpointIncluded']
@@ -48,9 +48,13 @@ network_import = os.environ.get('STUDIO_NETWORK_IMPORT') == 'true'
 network_selection = os.environ.get('STUDIO_NETWORK_SELECTION') == 'true'
 assert not (network_import and network_selection)
 assert not (network_import or network_selection) or (auto and not private)
+delta_validation = os.environ.get('STUDIO_UPDATE_DELTA_VALIDATION') == 'true'
+assert not delta_validation or (auto and not private and not network_import and not network_selection)
 results = []
-for api in (28, 35):
-    evidence = args.evidence / f'android-app-update-api-{api}'
+cases = [(api, mode) for api in (28, 35) for mode in (('valid','corrupt') if delta_validation else ('none',))]
+for api, delta_mode in cases:
+    suffix = '-' + delta_mode if delta_validation else ''
+    evidence = args.evidence / f'android-app-update-api-{api}{suffix}'
     report_name = ('network-selection-report.json' if network_selection else 'network-import-report.json'
                    if network_import else 'auto-report.json' if auto else 'report.json')
     paths = evidence.rglob(report_name)
@@ -83,7 +87,12 @@ for api in (28, 35):
         assert set(report['steps']) == {'startup', 'engine-dedupe', 'noon-job', 'foreground-notice',
                                         'missed-slot', 'manual-check', 'explicit-download', 'fixed-tab-entry',
                                         'full-title', 'live-tab-draft', 'gecko-tab-list'}
-        assert [row['path'] for row in report['requests']] == ['/android.json'] * 4 + ['/update.apk']
+        downloads = {'none': ['/update.apk'], 'valid': ['/update.delta'],
+                     'corrupt': ['/update.delta', '/update.apk']}[delta_mode]
+        assert [row['path'] for row in report['requests']] == ['/android.json'] * 4 + downloads
+        assert report.get('deltaMode', 'none') == delta_mode
+        if delta_validation:
+            assert report['deltaBytes'] > 0 and len(report['stagedTargetSHA256']) == 64
         assert all(row['throughSelectedLine'] and not row['credentialHeader'] for row in report['requests'])
         assert not any(path.suffix.lower() in {'.png','.jpg','.jpeg','.webm','.mp4'}
                        for path in evidence.rglob('*') if path.is_file())
@@ -104,7 +113,7 @@ for api in (28, 35):
     results.append(report)
 
 for key in (('source',) if auto else ('source', 'target', 'temporarySigner')):
-    assert results[0][key] == results[1][key]
+    assert all(report[key] == results[0][key] for report in results)
 assert args.out.parent.is_dir() and not args.out.exists()
 args.out.write_text(json.dumps({
     'schema': 1,
@@ -113,6 +122,7 @@ args.out.write_text(json.dumps({
     'android9And15SyntheticAcceptance': True,
     'automaticChecks': auto and not network_import and not network_selection,
     'networkSelection': network_selection,
+    'deltaValidation': delta_validation,
     'networkImport': network_import,
     'privateSourceCandidate': private,
     'targetReview': target if private else None,

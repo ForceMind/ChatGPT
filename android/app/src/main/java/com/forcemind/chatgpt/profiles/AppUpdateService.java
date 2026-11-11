@@ -50,7 +50,7 @@ public final class AppUpdateService extends Service {
 
     private Notification notification() {
         AppUpdateRelease release = task.release();
-        int percent = release == null ? 0 : (int) Math.min(100, task.received() * 100 / release.size);
+        int percent = release == null ? 0 : (int) Math.min(100, task.received() * 100 / Math.max(1, task.transferSize()));
         PendingIntent open = PendingIntent.getActivity(this, 2418, new Intent(this, AppUpdateActivity.class),
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         PendingIntent cancel = PendingIntent.getService(this, 2419, new Intent(this, AppUpdateService.class).setAction("cancel"),

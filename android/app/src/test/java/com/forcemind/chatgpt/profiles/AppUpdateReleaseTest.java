@@ -40,6 +40,21 @@ public class AppUpdateReleaseTest {
         assertFalse(AppUpdateAcceptance.validKey("a".repeat(64) + "\n"));
     }
 
+    @Test public void optionalDeltaPinsExactAssetAndKeepsFullFallback() throws Exception {
+        JSONObject value = feed();
+        String full = value.getString("url");
+        String patch = full.substring(0, full.length() - 4) + "-from-3000035.delta";
+        JSONObject delta = new JSONObject().put("fromVersionCode", 3000035).put("baseSHA256", "2".repeat(64))
+                .put("size", 12345).put("sha256", "3".repeat(64)).put("url", patch);
+        AppUpdateRelease release = AppUpdateRelease.parse(value.put("delta", delta).toString(), false);
+        assertEquals(patch, release.delta.url());
+        assertEquals(release.delta, AppUpdateRelease.parse(release.metadata.toString(), false).delta);
+        delta.put("url", "https://example.invalid/update.delta");
+        AppUpdateRelease fallback = AppUpdateRelease.parse(value.toString(), false);
+        assertNull(fallback.delta);
+        assertEquals(full, fallback.url);
+    }
+
     @Test public void rejectsTamperedManifestContract() throws Exception {
         Object[][] changes = {{"versionCode", "3000036"}, {"versionCode", 3000036.5}, {"versionName", "2026.02.31-1236"},
                 {"packageName", "other.app"}, {"abi", "x86_64"}, {"size", AppUpdateRelease.MAX_BYTES + 1},

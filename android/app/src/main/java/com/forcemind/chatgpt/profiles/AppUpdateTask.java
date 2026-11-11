@@ -27,7 +27,7 @@ final class AppUpdateTask {
 
     private final Context context;
     private final SharedPreferences saved;
-    private final File directory, partial, apk;
+    private final File directory, partial, deltaPart, apk;
     private final Handler main = new Handler(Looper.getMainLooper());
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
     private final ArrayList<Runnable> observers = new ArrayList<>();
@@ -39,7 +39,7 @@ final class AppUpdateTask {
     private boolean installPreparing;
     private Phase phase = Phase.IDLE;
     private String message = "可以手动检查更新";
-    private long received;
+    private long received, transferSize;
 
     private AppUpdateTask(Context context) {
         this.context = context;
@@ -58,6 +58,7 @@ final class AppUpdateTask {
         catch (IOException unavailable) { /* The worker fails closed if the directory cannot be verified. */ }
         directory = new File(files, "app-update").getAbsoluteFile();
         partial = new File(directory, "download.part.apk");
+        deltaPart = new File(directory, "download.part.delta");
         apk = new File(directory, "ready.apk");
         try {
             long installed = AppUpdatePackage.installed(context).getLongVersionCode();
@@ -105,6 +106,7 @@ final class AppUpdateTask {
                 if (!directory.exists()) return;
                 HandoffFiles.directory(directory, false);
                 Files.deleteIfExists(partial.toPath());
+                Files.deleteIfExists(deltaPart.toPath());
                 if (!keepApk) Files.deleteIfExists(apk.toPath());
             } catch (IOException ignored) { /* The next task rechecks the directory before writing. */ }
         });
@@ -135,6 +137,7 @@ final class AppUpdateTask {
     String message() { return message; }
     AppUpdateRelease release() { return ready != null ? ready : offer; }
     long received() { return received; }
+    long transferSize() { return transferSize; }
     boolean downloading() { return phase == Phase.DOWNLOADING || phase == Phase.CANCELLING || phase == Phase.VERIFYING; }
     boolean canDownload() { return transfer == null && !installPreparing && installSession < 0 && ready == null && offer != null; }
     boolean canCheck() { return transfer == null && !installPreparing && installSession < 0 && ready == null; }
@@ -237,6 +240,7 @@ final class AppUpdateTask {
         if (!canDownload()) return false;
         AppUpdateRelease release = offer;
         received = 0;
+        transferSize = release.size;
         AppUpdateTransfer job = start(Phase.DOWNLOADING, "正在连接下载源");
         if (job == null) return false;
         worker.execute(() -> {
@@ -248,11 +252,11 @@ final class AppUpdateTask {
                 Files.deleteIfExists(partial.toPath());
                 if (!saved.edit().putString("offer", release.metadata.toString()).putBoolean("downloading", true).commit())
                     throw new IOException("下载状态未能保存");
-                owned.download(release, partial, accelerated, BuildConfig.APP_UPDATE_TEST, count -> main.post(() -> {
-                    if (transfer != job || job.cancelled()) return;
-                    received = count;
-                    state(Phase.DOWNLOADING, "正在下载更新");
-                }));
+                if (!tryDelta(current, release, owned, accelerated)) {
+                    reportDownload(owned, 0, release.size, "正在下载完整更新");
+                    owned.download(release, partial, accelerated, BuildConfig.APP_UPDATE_TEST,
+                            count -> reportDownload(owned, count, release.size, "正在下载更新"));
+                }
                 main.post(() -> { if (!job.cancelled()) state(Phase.VERIFYING, "正在校验安装包"); });
                 AppUpdatePackage.verify(context, release, partial);
                 owned.check();
@@ -284,6 +288,40 @@ final class AppUpdateTask {
             }
         });
         return true;
+    }
+
+    private void reportDownload(AppUpdateTransfer job, long count, long total, String text) {
+        main.post(() -> {
+            if (transfer != job || job.cancelled()) return;
+            received = count;
+            transferSize = total;
+            state(Phase.DOWNLOADING, text);
+        });
+    }
+
+    private boolean tryDelta(android.content.pm.PackageInfo current, AppUpdateRelease release,
+                             AppUpdateTransfer owned, boolean accelerated) throws Exception {
+        AppUpdateRelease.Delta delta = release.delta;
+        if (delta == null || delta.fromVersionCode() != current.getLongVersionCode()
+                || current.applicationInfo == null || current.applicationInfo.sourceDir == null) return false;
+        File base = new File(current.applicationInfo.sourceDir);
+        try {
+            if (!AppUpdateDelta.matchesBase(base, delta.baseSHA256(), owned::check)) return false;
+            Files.deleteIfExists(deltaPart.toPath());
+            reportDownload(owned, 0, delta.size(), "正在下载差量更新");
+            owned.downloadDelta(delta, deltaPart, accelerated, BuildConfig.APP_UPDATE_TEST,
+                    count -> reportDownload(owned, count, delta.size(), "正在下载差量更新"));
+            main.post(() -> { if (!owned.cancelled()) state(Phase.VERIFYING, "正在重建和校验安装包"); });
+            AppUpdateDelta.apply(base, deltaPart, partial, release.size, release.sha256, owned::check);
+            return true;
+        } catch (Exception unusable) {
+            owned.check();
+            Files.deleteIfExists(partial.toPath());
+            if (BuildConfig.APP_UPDATE_TEST) android.util.Log.i("StudioAppUpdateCI", "Owned delta rejected; using full APK");
+            return false;
+        } finally {
+            Files.deleteIfExists(deltaPart.toPath());
+        }
     }
 
     void cancelDownload() {

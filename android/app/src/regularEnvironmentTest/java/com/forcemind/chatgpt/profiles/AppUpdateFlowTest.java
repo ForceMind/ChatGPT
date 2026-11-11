@@ -312,7 +312,7 @@ public final class AppUpdateFlowTest {
 
     @Test public void automaticNoonAndExplicitDownload() throws Exception {
         assertTrue(BuildConfig.APP_UPDATE_TEST && BuildConfig.APP_UPDATE_AUTO);
-        assertEquals(BuildConfig.APP_UPDATE_ACCEPTANCE ? 3000039 : 3000045, code());
+        assertEquals(BuildConfig.APP_UPDATE_ACCEPTANCE ? 3000039 : 3000046, code());
         assertEquals(RegularEnvironmentUpgradeTest.args().getString("signer"), RegularEnvironmentUpgradeTest.signer());
         AtomicReference<java.time.Instant> now = new AtomicReference<>(java.time.Instant.parse("2026-11-10T03:50:00Z"));
         AppUpdateAuto.clockForTest(now::get);
@@ -426,9 +426,13 @@ public final class AppUpdateFlowTest {
         expectAutoRequests("feed", 4);
         see("下载更新", false);
         assertEquals(0, autoRequests("apk"));
+        assertEquals(0, autoRequests("delta"));
         click("下载更新", false);
-        expectAutoRequests("apk", 1);
+        String deltaMode = RegularEnvironmentUpgradeTest.args().getString("ownedDeltaMode", "none");
+        if (!"none".equals(deltaMode)) expectAutoRequests("delta", 1);
+        if (!"valid".equals(deltaMode)) expectAutoRequests("apk", 1);
         see("安装更新", false);
+        assertEquals("valid".equals(deltaMode) ? 0 : 1, autoRequests("apk"));
         assertTrue(RegularEnvironmentUpgradeTest.file("app-update/ready.apk").isFile());
         Bundle result = new Bundle();
         result.putString("appUpdateAutoProof", "startup,engine-dedupe,noon-job,foreground-notice,missed-slot,manual-check,explicit-download,fixed-tab-entry,full-title,live-tab-draft,gecko-tab-list");

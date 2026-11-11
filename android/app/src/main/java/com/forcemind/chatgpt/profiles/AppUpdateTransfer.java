@@ -92,9 +92,20 @@ final class AppUpdateTransfer implements AutoCloseable {
 
     void download(AppUpdateRelease release, File part, boolean accelerated, boolean fixture, LongConsumer progress)
             throws Exception {
-        String url = release.downloadUrl(accelerated, fixture);
+        downloadAsset(release.url, release.size, release.sha256, part, accelerated, fixture, progress);
+    }
+
+    void downloadDelta(AppUpdateRelease.Delta delta, File part, boolean accelerated, boolean fixture,
+                       LongConsumer progress) throws Exception {
+        downloadAsset(delta.url(), delta.size(), delta.sha256(), part, accelerated, fixture, progress);
+    }
+
+    private void downloadAsset(String address, long size, String digest, File part, boolean accelerated,
+                               boolean fixture, LongConsumer progress) throws Exception {
+        String url = accelerated && !fixture ? "https://gh-proxy.org/" + address : address;
         for (int redirects = 0; redirects <= 5; redirects++) {
-            if (!release.allowsDownload(url, accelerated, fixture)) throw new IOException("更新包下载地址不受支持");
+            if (!AppUpdateRelease.allowsAsset(address, url, accelerated, fixture))
+                throw new IOException("更新包下载地址不受支持");
             HttpURLConnection request = open(url);
             try {
                 request.setRequestProperty("Accept", "application/octet-stream");
@@ -108,7 +119,7 @@ final class AppUpdateTransfer implements AutoCloseable {
                 }
                 if (status != 200) throw new IOException("下载源暂不可用");
                 long length = request.getContentLengthLong();
-                if (length >= 0 && length != release.size) throw new IOException("更新文件大小不符");
+                if (length >= 0 && length != size) throw new IOException("更新文件大小不符");
                 String encoding = request.getContentEncoding();
                 if (encoding != null && !"identity".equalsIgnoreCase(encoding)) throw new IOException("更新文件编码不符");
                 MessageDigest sha = MessageDigest.getInstance("SHA-256");
@@ -119,17 +130,17 @@ final class AppUpdateTransfer implements AutoCloseable {
                     for (int count; (count = input.read(buffer)) != -1;) {
                         check();
                         bytes += count;
-                        if (bytes > release.size) throw new IOException("更新文件超出声明大小");
+                        if (bytes > size) throw new IOException("更新文件超出声明大小");
                         sha.update(buffer, 0, count);
                         output.write(buffer, 0, count);
                         long now = SystemClock.elapsedRealtime();
-                        if (bytes == release.size || now - notified >= 500) {
+                        if (bytes == size || now - notified >= 500) {
                             progress.accept(bytes);
                             notified = now;
                         }
                     }
                     check();
-                    if (bytes != release.size || !release.sha256.equals(hex(sha.digest())))
+                    if (bytes != size || !digest.equals(hex(sha.digest())))
                         throw new IOException("更新文件完整性校验失败");
                     output.getFD().sync();
                 }

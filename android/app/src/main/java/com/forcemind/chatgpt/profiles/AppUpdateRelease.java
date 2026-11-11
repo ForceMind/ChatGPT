@@ -20,6 +20,8 @@ final class AppUpdateRelease {
     final long code, size;
     final boolean privateSource;
     final JSONObject metadata;
+    final Delta delta;
+    record Delta(long fromVersionCode, String baseSHA256, long size, String sha256, String url) {}
 
     private AppUpdateRelease(JSONObject data, boolean fixture) throws Exception {
         if (integer(data, "schema") != 1 || !PACKAGE.equals(data.getString("packageName")))
@@ -50,6 +52,29 @@ final class AppUpdateRelease {
         metadata = new JSONObject().put("schema", 1).put("packageName", PACKAGE).put("versionName", name)
                 .put("versionCode", code).put("size", size).put("abi", abi).put("sha256", sha256)
                 .put("certificateSHA256", certificate).put("url", url);
+        delta = optionalDelta(data.optJSONObject("delta"), fixture);
+        if (delta != null) metadata.put("delta", new JSONObject()
+                .put("fromVersionCode", delta.fromVersionCode()).put("baseSHA256", delta.baseSHA256())
+                .put("size", delta.size()).put("sha256", delta.sha256()).put("url", delta.url()));
+    }
+
+    private Delta optionalDelta(JSONObject data, boolean fixture) {
+        if (data == null) return null;
+        try {
+            long from = integer(data, "fromVersionCode");
+            long patchSize = integer(data, "size");
+            String base = data.getString("baseSHA256");
+            String digest = data.getString("sha256");
+            String address = data.getString("url");
+            String expected = fixture ? FIXTURE + "/update.delta"
+                    : url.substring(0, url.length() - 4) + "-from-" + from + ".delta";
+            if (from < 1 || from >= code || patchSize < 1 || patchSize >= size
+                    || !base.matches("[a-f0-9]{64}") || !digest.matches("[a-f0-9]{64}") || !expected.equals(address))
+                return null;
+            return new Delta(from, base, patchSize, digest, address);
+        } catch (Exception invalid) {
+            return null;
+        }
     }
 
     static AppUpdateRelease parse(String text, boolean fixture) throws Exception {

@@ -3,6 +3,7 @@
 import argparse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -54,9 +55,11 @@ class Fixture(ThreadingHTTPServer):
         self.requests = []
         self.authorized = False
         self.valid_downloads = 0
+        self.delta = None
+        self.delta_mode = "none"
 
     def metadata(self, mode):
-        return {
+        value = {
             'schema': 1, 'packageName': PACKAGE,
             'versionName': self.source_name if mode == 'current' else self.target_name,
             'versionCode': {'current': self.source_code, 'wrong-version': self.target_code + 1}.get(mode, self.target_code),
@@ -66,6 +69,9 @@ class Fixture(ThreadingHTTPServer):
             'certificateSHA256': '0' * 64 if mode == 'wrong-certificate' else self.signer,
             'abi': 'x86_64', 'url': ORIGIN + '/update.apk',
         }
+        if mode == 'resume' and self.delta is not None:
+            value['delta'] = self.delta[1]
+        return value
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -83,7 +89,8 @@ class Handler(BaseHTTPRequestHandler):
             action = self.path.removeprefix('/control/')
             if action == 'stats':
                 stats = {'feed': sum(row['path']=='/android.json' for row in self.server.requests),
-                         'apk': sum(row['path']=='/update.apk' for row in self.server.requests)}
+                         'apk': sum(row['path']=='/update.apk' for row in self.server.requests),
+                         'delta': sum(row['path']=='/update.delta' for row in self.server.requests)}
                 body = json.dumps(stats).encode()
                 self.reply(200, len(body), 'application/json')
                 self.wfile.write(body)
@@ -118,6 +125,12 @@ class Handler(BaseHTTPRequestHandler):
                 data = json.dumps(self.server.metadata(mode)).encode()
                 self.reply(200, len(data), 'application/json')
                 self.wfile.write(data)
+            elif self.path == '/update.delta' and mode == 'resume' and self.server.delta is not None:
+                file, _ = self.server.delta
+                self.reply(200, file.stat().st_size)
+                with file.open('rb') as patch:
+                    while block := patch.read(256 * 1024):
+                        self.wfile.write(block)
             elif self.path == '/update.apk' and mode == 'not-an-apk':
                 self.reply(200, len(CORRUPT))
                 self.wfile.write(CORRUPT)
@@ -352,15 +365,18 @@ def verify_auto(fixture, signer, node, api, source_info, target_info, old_uid, p
         assert 'INSTRUMENTATION_RESULT: privateUpdateSourceProof=enabled,official,closed' in result
         common._shell('am', 'force-stop', PACKAGE)
     log = instrument('AppUpdateFlowTest#automaticNoonAndExplicitDownload', signer, 'auto-check', 360,
-                     extras=('-e', 'ownedUpdateNode', node))
+                     extras=('-e', 'ownedUpdateNode', node, '-e', 'ownedDeltaMode', fixture.delta_mode))
     steps, = re.findall(r'(?m)^INSTRUMENTATION_RESULT: appUpdateAutoProof=([^\r\n]+)$', log)
     assert set(steps.split(',')) == {'startup', 'engine-dedupe', 'noon-job', 'foreground-notice',
                                      'missed-slot', 'manual-check', 'explicit-download', 'fixed-tab-entry',
                                         'full-title', 'live-tab-draft', 'gecko-tab-list'}
     requests = [row for row in fixture.requests if 'mode' in row]
+    downloads = {'none': ['/update.apk'], 'valid': ['/update.delta'],
+                 'corrupt': ['/update.delta', '/update.apk']}[fixture.delta_mode]
     assert [(row['path'], row['mode']) for row in requests] == [
         ('/android.json', 'current'), ('/android.json', 'resume'), ('/android.json', 'resume'),
-        ('/android.json', 'resume'), ('/update.apk', 'resume')]
+        ('/android.json', 'resume')] + [(path, 'resume') for path in downloads]
+    assert not common._shell('find', DATA + '/files/app-update', '-name', '*.part.*').strip()
     assert all(row['throughSelectedLine'] and not row['credentialHeader'] for row in requests)
     ready = common._shell('sha256sum', DATA + '/files/app-update/ready.apk').split()[0]
     assert ready == target_info['sha256']
@@ -369,6 +385,8 @@ def verify_auto(fixture, signer, node, api, source_info, target_info, old_uid, p
     common._write_json(common.EVIDENCE / 'auto-report.json', {
         'complete': True, 'api': api, 'sourceSHA': os.environ['GITHUB_SHA'],
         'source': source_info, 'steps': steps.split(','), 'requests': requests,
+        'deltaMode': fixture.delta_mode, 'stagedTargetSHA256': ready,
+        'deltaBytes': fixture.delta[1]['size'] if fixture.delta is not None else 0,
         'screenshots': False, 'syntheticOnly': True, 'privateSourceControl': private_source,
     })
 
@@ -385,7 +403,7 @@ def run_network_import(args):
     signer = signer_of(source)
     assert signer not in (common.PRODUCTION_SIGNER, common.BETA_SIGNER)
     tools = common._tools()
-    source_info = common._inspect_apk(source, tools, signer, PACKAGE, 3000045, test_only=True)
+    source_info = common._inspect_apk(source, tools, signer, PACKAGE, 3000046, test_only=True)
     common._inspect_apk(test, tools, signer, common.TEST_PACKAGE)
     common._run(['adb', 'install', '-t', str(source)])
     common._run(['adb', 'install', '-t', str(test)])
@@ -414,7 +432,7 @@ def run_network_selection(args):
     signer = signer_of(source)
     assert signer not in (common.PRODUCTION_SIGNER, common.BETA_SIGNER)
     tools = common._tools()
-    source_info = common._inspect_apk(source, tools, signer, PACKAGE, 3000045, test_only=True)
+    source_info = common._inspect_apk(source, tools, signer, PACKAGE, 3000046, test_only=True)
     common._inspect_apk(test, tools, signer, common.TEST_PACKAGE)
     common._run(['adb', 'install', '-t', str(source)])
     common._run(['adb', 'install', '-t', str(test)])
@@ -482,7 +500,7 @@ def run(args):
     signer = signer_of(source)
     assert signer not in (common.PRODUCTION_SIGNER, common.BETA_SIGNER)
     tools = common._tools()
-    source_code = 3000039 if args.device_acceptance else 3000045 if args.auto_only else 3000037
+    source_code = 3000039 if args.device_acceptance else 3000046 if args.auto_only else 3000037
     target_code = source_code + 1
     source_info = common._inspect_apk(source, tools, signer, PACKAGE, source_code, test_only=True)
     target_info = common._inspect_apk(target, tools, signer, PACKAGE, target_code)
@@ -507,6 +525,22 @@ def run(args):
     identity = str(uuid.uuid4())
     node = f'vless://{identity}@127.0.0.1:{NODE_PORT}'
     with Fixture(target, test, signer, source_info['versionName'], target_info['versionName'], source_code, target_code) as fixture:
+        if args.delta_mode != 'none':
+            assert args.auto_only and not args.device_acceptance
+            spec = importlib.util.spec_from_file_location('apk_delta_fixture', Path(__file__).with_name('build-apk-delta.py'))
+            generator = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(generator)
+            patch = common.EVIDENCE / 'owned.delta'
+            proof = generator.build(source, target, patch)
+            if args.delta_mode == 'corrupt':
+                with patch.open('r+b') as stream:
+                    stream.truncate(patch.stat().st_size // 2)
+            fixture.delta = (patch, {'fromVersionCode': source_code, 'baseSHA256': source_info['sha256'],
+                                     'url': ORIGIN + '/update.delta', 'size': patch.stat().st_size,
+                                     'sha256': common._sha(patch)})
+            fixture.delta_mode = args.delta_mode
+            common._write_json(common.EVIDENCE / 'delta-fixture.json', {
+                'mode': args.delta_mode, 'receipt': proof, 'advertised': fixture.delta[1]})
         worker = threading.Thread(target=fixture.serve_forever, daemon=True)
         worker.start()
         process = None
@@ -586,6 +620,7 @@ if __name__ == '__main__':
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--api', type=int, choices=(28, 35), required=True)
     parser.add_argument('--device-acceptance', action='store_true')
+    parser.add_argument('--delta-mode', choices=('none','valid','corrupt'), default='none')
     modes = parser.add_mutually_exclusive_group()
     modes.add_argument('--recovery-only', action='store_true')
     modes.add_argument('--auto-only', action='store_true')
