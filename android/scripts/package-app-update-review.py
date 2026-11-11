@@ -45,6 +45,8 @@ assert 'com.journeyapps.barcodescanner.CaptureActivity' in manifest
 for name in ('android:testOnly', 'EnvironmentAcceptanceActivity', 'app_update_test_security'):
     assert name not in manifest
 with zipfile.ZipFile(source) as apk:
+    for license_name in ('ZXing-Android-Embedded.txt', 'ZXing-Core.txt'):
+        assert b'Apache License' in apk.read('assets/licenses/' + license_name)
     libs = [name for name in apk.namelist() if name.startswith('lib/') and name.endswith('.so')]
     assert libs and all(name.startswith('lib/arm64-v8a/') for name in libs), 'Expected ARM64-only native libraries'
     assert any(name.endswith('/libxul.so') for name in libs), 'Missing Gecko native engine'
