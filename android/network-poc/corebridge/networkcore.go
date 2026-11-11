@@ -10,7 +10,22 @@ import (
     xlog "github.com/xtls/xray-core/common/log"
     "github.com/xtls/xray-core/common/session"
     "github.com/xtls/xray-core/core"
-    _ "github.com/xtls/xray-core/main/distro/all"
+    _ "github.com/xtls/xray-core/app/dispatcher"
+    _ "github.com/xtls/xray-core/app/dns"
+    _ "github.com/xtls/xray-core/app/policy"
+    _ "github.com/xtls/xray-core/app/proxyman/inbound"
+    _ "github.com/xtls/xray-core/app/proxyman/outbound"
+    _ "github.com/xtls/xray-core/app/stats"
+    _ "github.com/xtls/xray-core/main/json"
+    _ "github.com/xtls/xray-core/proxy/http"
+    _ "github.com/xtls/xray-core/proxy/vless/outbound"
+    _ "github.com/xtls/xray-core/transport/internet/headers/http"
+    _ "github.com/xtls/xray-core/transport/internet/headers/noop"
+    _ "github.com/xtls/xray-core/transport/internet/reality"
+    _ "github.com/xtls/xray-core/transport/internet/tagged/taggedimpl"
+    _ "github.com/xtls/xray-core/transport/internet/tcp"
+    _ "github.com/xtls/xray-core/transport/internet/tls"
+    _ "github.com/xtls/xray-core/transport/internet/websocket"
 )
 
 var mu sync.Mutex
