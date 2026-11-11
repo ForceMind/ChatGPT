@@ -4,6 +4,7 @@ import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, existsSync, rmSync
 import os from 'node:os';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
+import { IdleUpdate } from '../src/main/idle-update';
 import { WindowsUpdateManager, type WindowsUpdateBackend } from '../src/main/windows-update-manager';
 import { windowsRelease } from '../src/shared/windows-updates';
 import { registeredWindowsDirectory } from '../src/main/windows-update-platform';
@@ -233,6 +234,53 @@ test('Windows idle install is opt-in, rechecks activity after byte verification 
   assert.equal(s.manager.status.phase, 'ready');
   assert.equal(s.manager.status.idleEnabled, true);
   await s.manager.installOnQuit(true, async () => true);
+  assert.deepEqual(s.calls.installs, [false]);
+});
+
+test('the shared app-idle countdown commits a verified Windows update without reopening it', async (t) => {
+  const s = setup(t);
+  await s.manager.check();
+  await s.manager.download();
+  s.manager.setIdleAllowed(true);
+  let now = 0;
+  let focused = false;
+  let safe = false;
+  let notice: number | undefined;
+  let installation: Promise<void> | undefined;
+  const idle = new IdleUpdate({
+    now: () => now,
+    eligible: () => s.manager.status.phase === 'ready' && s.manager.status.idleEnabled === true,
+    focused: () => focused,
+    safe: async () => safe,
+    countdown: (deadline) => {
+      notice = deadline;
+      s.manager.setIdleDeadline(deadline);
+    },
+    visible: () => notice !== undefined,
+    install: (epoch) => {
+      installation = s.manager.installOnQuit(false, () => idle.permit(epoch));
+    }
+  });
+  now = 1_800_000;
+  await idle.tick();
+  assert.equal(notice, undefined);
+  safe = true;
+  await idle.tick();
+  assert.equal(notice, 1_860_000);
+  focused = true;
+  idle.activity();
+  assert.equal(s.manager.status.idleDeadline, undefined);
+  now = 1_860_000;
+  await idle.tick();
+  assert.deepEqual(s.calls.installs, []);
+  focused = false;
+  now = 3_600_000;
+  await idle.tick();
+  assert.equal(notice, 3_660_000);
+  now = 3_660_000;
+  await idle.tick();
+  assert(installation);
+  await installation;
   assert.deepEqual(s.calls.installs, [false]);
 });
 
