@@ -8,11 +8,15 @@ function unavailable(status = 404) {
   return new Response('Not found', { status, headers });
 }
 
+function hex(bytes) {
+  return [...new Uint8Array(bytes)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
 async function authorized(request, expected) {
   const key = request.headers.get('X-Studio-Acceptance') || '';
   if (!/^[a-f0-9]{64}$/.test(key) || !/^[a-f0-9]{64}$/.test(expected || '')) return false;
   const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(key));
-  const actual = [...new Uint8Array(bytes)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+  const actual = hex(bytes);
   let difference = 0;
   for (let index = 0; index < actual.length; index++) difference |= actual.charCodeAt(index) ^ expected.charCodeAt(index);
   return difference === 0;
@@ -98,8 +102,16 @@ export default {
         status = 206;
         responseHeaders['Content-Range'] = 'bytes ' + offset + '-' + (offset + size - 1) + '/' + metadata.feed.size;
       }
+      const digestOnly = request.headers.get('X-Studio-Acceptance-Digest') === 'sha256';
+      if (digestOnly && status !== 206) return unavailable(416);
       const stream = new FixedLengthStream(size);
       context.waitUntil(writePackage(env, request, parts, stream.writable));
+      if (digestOnly) {
+        const hasher = new crypto.DigestStream('SHA-256');
+        const [, digest] = await Promise.all([stream.readable.pipeTo(hasher), hasher.digest]);
+        return new Response(JSON.stringify({ range: responseHeaders['Content-Range'], size, sha256: hex(digest) }),
+          { headers: { ...headers, 'Content-Type': 'application/json' } });
+      }
       return new Response(stream.readable, { status, headers: responseHeaders });
     } catch {
       return unavailable(503);

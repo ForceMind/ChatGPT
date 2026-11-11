@@ -21,6 +21,19 @@ globalThis.FixedLengthStream = class {
   }
 };
 
+crypto.DigestStream = class {
+  constructor(algorithm) {
+    const hash = createHash(algorithm);
+    let resolve, reject;
+    const digest = new Promise((ok, fail) => { resolve = ok; reject = fail; });
+    return Object.assign(new WritableStream({
+      write(bytes) { hash.update(bytes); },
+      close() { resolve(hash.digest()); },
+      abort(error) { reject(error); }
+    }), { digest });
+  }
+};
+
 function fixture(broken = false) {
   const calls = [], pending = [];
   const metadata = { feed: { versionName: '2026.11.11-1200', size: 6 }, parts: [
@@ -39,10 +52,11 @@ function fixture(broken = false) {
     }
   };
   const context = { waitUntil(promise) { pending.push(promise); } };
-  const get = (path, code, range) => {
+  const get = (path, code, range, digest) => {
     const headers = new Headers();
     if (code) headers.set('X-Studio-Acceptance', code);
     if (range) headers.set('Range', range);
+    if (digest) headers.set('X-Studio-Acceptance-Digest', 'sha256');
     return worker.fetch(new Request(origin + path, { headers }), env, context);
   };
   return { get, calls, pending };
@@ -86,5 +100,17 @@ test('authenticated readback serves only an exact requested part with its origin
   assert.equal(download.status, 206);
   assert.equal(download.headers.get('Content-Range'), 'bytes 3-5/6');
   assert.equal(await download.text(), 'def');
+  await Promise.all(pending);
+});
+
+test('the authorized readback digest binds the actual streamed part', async () => {
+  const { get, pending } = fixture();
+  const response = await get('/update.apk', key, 'bytes=3-5', true);
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), {
+    range: 'bytes 3-5/6',
+    size: 3,
+    sha256: createHash('sha256').update('def').digest('hex')
+  });
   await Promise.all(pending);
 });
