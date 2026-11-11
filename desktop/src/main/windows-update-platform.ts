@@ -6,7 +6,7 @@ import { constants, existsSync, realpathSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
 import { WindowsUpdateManager, type WindowsUpdateBackend } from './windows-update-manager';
-import { WINDOWS_UPDATE_BASE } from '../shared/windows-updates';
+import { WINDOWS_UPDATE_BASE, type WindowsArtifact } from '../shared/windows-updates';
 import { acceleratedURL } from '../shared/updates';
 import { safeDirectory, type FetchUpdate } from './update-download';
 const run = promisify(execFile);
@@ -121,7 +121,7 @@ export async function createWindowsUpdates(options: PlatformOptions): Promise<Wi
     );
     native.updateConfigPath = configFile;
   }
-  const backend = createWindowsUpdateBackend(native, options.fixtureOrigin);
+  const backend = createWindowsUpdateBackend(native, options.fixtureOrigin, options.current);
   return new WindowsUpdateManager({
     dataDir: options.dataDir,
     current: options.current,
@@ -146,7 +146,20 @@ export async function createWindowsUpdates(options: PlatformOptions): Promise<Wi
   });
 }
 
-export function createWindowsUpdateBackend(native: NsisUpdater, fixtureOrigin?: string): WindowsUpdateBackend {
+export function windowsDifferentialEligible(
+  file: WindowsArtifact,
+  current: string | undefined,
+  accelerated: boolean,
+  fixtureOrigin?: string
+): boolean {
+  return file.kind === 'installer' && !!current && file.differentialFrom === current && !accelerated && !fixtureOrigin;
+}
+
+export function createWindowsUpdateBackend(
+  native: NsisUpdater,
+  fixtureOrigin?: string,
+  current?: string
+): WindowsUpdateBackend {
   native.channel = 'alpha';
   native.allowDowngrade = false;
   native.allowPrerelease = true;
@@ -167,6 +180,8 @@ export function createWindowsUpdateBackend(native: NsisUpdater, fixtureOrigin?: 
       };
     },
     download: async (file, accelerated) => {
+      native.disableDifferentialDownload = !windowsDifferentialEligible(file, current, accelerated, fixtureOrigin);
+
       const updaterSession = native.netSession;
       updaterSession.webRequest.onBeforeRequest(
         { urls: ['https://github.com/ForceMind/ChatGPT/releases/download/*'] },

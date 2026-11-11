@@ -157,7 +157,11 @@ export async function downloadUpdate(
     throw new UpdateDownloadError(stage, error);
   }
 }
-export async function verifyUpdate(file: string, expected: UpdateFile, signal?: AbortSignal): Promise<void> {
+export async function verifyUpdate(
+  file: string,
+  expected: Pick<UpdateFile, 'sha256' | 'size'>,
+  signal?: AbortSignal
+): Promise<void> {
   const stat = lstatSync(file);
   if (stat.isSymbolicLink() || !stat.isFile() || stat.size !== expected.size) throw Error('已下载更新包无效');
   const hash = createHash('sha256');

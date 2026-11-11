@@ -191,6 +191,7 @@ jobs:
             desktop/release/*.zip
             desktop/release/build-info.json
             desktop/release/windows/*-setup.exe
+            desktop/release/windows/*.exe.blockmap
             desktop/release/windows/*.zip
             desktop/release/windows/windows-build-info.json
       - uses: actions/upload-artifact@v4

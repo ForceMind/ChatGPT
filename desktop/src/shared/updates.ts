@@ -1,4 +1,4 @@
-export type UpdateFile = { url: string; size: number; sha256: string };
+export type UpdateFile = { url: string; size: number; sha256: string; delta?: unknown; retainAsDeltaBase?: boolean };
 export type UpdateManifest = {
   schema: 1;
   version: string;

@@ -107,12 +107,17 @@ export class WindowsUpdateManager implements UpdateService {
         if (Number.isFinite(value.percent)) {
           const transferredBytes =
             Number.isSafeInteger(value.transferred) && value.transferred! >= 0 ? value.transferred : undefined;
+          const totalBytes =
+            Number.isSafeInteger(value.total) && value.total! > 0 && value.total! >= (transferredBytes ?? 0)
+              ? value.total!
+              : expected.size;
           const percent =
             transferredBytes === undefined
               ? Math.max(0, Math.min(100, Math.floor(value.percent)))
-              : Math.floor((transferredBytes * 100) / expected.size);
+              : Math.floor((transferredBytes * 100) / totalBytes);
           if (
             percent === this.status.progress &&
+            totalBytes === this.status.totalBytes &&
             this.status.stage === 'download' &&
             Date.now() - this.lastProgressAt < 500
           )
@@ -123,8 +128,8 @@ export class WindowsUpdateManager implements UpdateService {
             version: this.release?.version,
             progress: percent,
             transferredBytes,
-            totalBytes: expected.size,
-            stage: percent === 100 ? 'verify' : 'download',
+            totalBytes,
+            stage: percent === 100 && totalBytes === expected.size ? 'verify' : 'download',
             message: '后台下载中，可继续使用'
           });
         }
