@@ -7,6 +7,7 @@ permissions:
   contents: read
 jobs:
   network-core:
+    if: github.event.before == '0000000000000000000000000000000000000000'
     runs-on: macos-26
     timeout-minutes: 28
     env:
@@ -54,4 +55,21 @@ jobs:
           path: |
             ${{ runner.temp }}/studio-ios-core/Networkcore-xcframework.zip
             ${{ runner.temp }}/studio-ios-core/receipt.json
+          if-no-files-found: error
+  workspace-shell:
+    runs-on: macos-26
+    timeout-minutes: 15
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check workspace persistence and compile unsigned iOS and simulator binaries
+        run: bash ios/scripts/build-poc.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: studio-ios26-workspace-poc
+          retention-days: 14
+          path: |
+            ${{ runner.temp }}/studio-ios-poc/ChatGPT-Studio-iOS26-simulator.zip
+            ${{ runner.temp }}/studio-ios-poc/receipt.json
           if-no-files-found: error
