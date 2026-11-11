@@ -130,7 +130,7 @@ TRANSFER_MAX_BODY_BYTES = 262144
 TRANSFER_GATE_TIMEOUT_SECONDS = 45
 TRANSFER_IO_TIMEOUT_SECONDS = 10
 TRANSFER_MAX_OPERATIONS = 128
-TRANSFER_ID = TRANSPORT_PATTERN + r'-(?:http|https)-[a-z][a-z0-9-]{0,47}'
+TRANSFER_ID = rf'(?P<transport>{TRANSPORT_PATTERN})-(?P<origin>http|https)-[a-z][a-z0-9-]{{0,47}}'
 
 
 class TransferGates:
@@ -149,7 +149,7 @@ class TransferGates:
                 return 409, dict(state)
             if len(self.operations) >= self.limit:
                 return 429, {'error': 'operation-limit'}
-            state = {'opid': opid, 'transport': re.match(TRANSPORT_PATTERN, opid).group(),
+            state = {'opid': opid, 'transport': re.fullmatch(TRANSFER_ID, opid)['transport'],
                      'origin': origin, 'kind': kind, 'route': route,
                      'started': True, 'prefix': False, 'bodyComplete': False,
                      'commitCount': 0, 'released': False, 'completed': False,
@@ -288,9 +288,9 @@ class Origin(http.server.BaseHTTPRequestHandler):
 
     def transfer(self, method):
         route = route_name(self.client_address[0])
-        control = re.fullmatch(r'/transfer-control/(' + TRANSFER_ID + r')/(state|release)', self.path)
+        control = re.fullmatch(r'/transfer-control/(?P<opid>' + TRANSFER_ID + r')/(?P<action>state|release)', self.path)
         if control:
-            opid, action = control.groups()
+            opid, action = control['opid'], control['action']
             if isinstance(self.connection, ssl.SSLSocket) or route != 'direct':
                 self.transfer_json(403, {'error': 'direct-http-control-only'}, route)
             elif method == 'GET' and action == 'state':
@@ -305,13 +305,13 @@ class Origin(http.server.BaseHTTPRequestHandler):
             else:
                 self.transfer_json(400, {'error': 'invalid-control-request'}, route)
             return
-        business = re.fullmatch(r'/transfer/(' + TRANSFER_ID + r')/(download|upload)', self.path)
+        business = re.fullmatch(r'/transfer/(?P<opid>' + TRANSFER_ID + r')/(?P<kind>download|upload)', self.path)
         if business is None:
             self.transfer_json(400, {'error': 'invalid-transfer-path'}, route)
             return
-        opid, kind = business.groups()
+        opid, kind = business['opid'], business['kind']
         origin = 'https' if isinstance(self.connection, ssl.SSLSocket) else 'http'
-        if opid.split('-', 2)[1] != origin or method != ('GET' if kind == 'download' else 'POST'):
+        if business['origin'] != origin or method != ('GET' if kind == 'download' else 'POST'):
             self.transfer_json(400, {'error': 'transfer-origin-or-method-mismatch'}, route)
             return
         total = len(TRANSFER_DOWNLOAD)

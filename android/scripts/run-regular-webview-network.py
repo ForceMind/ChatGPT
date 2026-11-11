@@ -26,7 +26,8 @@ try:
     metadata = validate_receipt(receipt)
     assert receipt['ciOnly'] is True
     assert receipt['workbenchFixture' if suite == 'workbench' else 'legacyWebviewFixture'] is True
-    assert metadata['sourceSHA'] == os.environ['GITHUB_SHA']
+    application_sha = os.environ.get('STUDIO_GECKO_APPLICATION_SHA', os.environ['GITHUB_SHA'])
+    assert metadata['sourceSHA'] == application_sha
     apk = Path(os.environ['STUDIO_GECKO_APK'])
     assert receipt['file'] == apk.name and receipt['sha256'] == native._sha(apk) and receipt['bytes'] == apk.stat().st_size
     signer = expected_signer()
@@ -92,7 +93,8 @@ try:
             'realServicesAccessed':False,'productionSignatureVerified':False})
     native._write_json(output/'regular-webview-network.json',{
         'schema':1,'complete':True,'api':api,'transport':transport,'package':PACKAGE,
-        'sourceSHA':metadata['sourceSHA'],'versionMetadata':metadata,'ciReceipt':receipt,'suite':suite,
+        'sourceSHA':os.environ['GITHUB_SHA'],'applicationSourceSHA':application_sha,
+        'versionMetadata':metadata,'ciReceipt':receipt,'suite':suite,
         'candidateInstalledSHA256':installed,'productionSignatureVerified':False,
         'screenshots':False,'realServicesAccessed':False,'backgroundLongTestsRepeated':False})
 except Exception:

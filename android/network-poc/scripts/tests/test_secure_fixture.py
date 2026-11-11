@@ -3,6 +3,7 @@ import hashlib
 import http.client
 import importlib.util
 import json
+import re
 from pathlib import Path
 import ssl
 import tempfile
@@ -213,6 +214,14 @@ class SecureFixtureTests(unittest.TestCase):
                 if security == 'tls':
                     self.assertEqual(stream['tlsSettings']['certificates'][0]['certificate'],
                                      manifest['caCertificateLines'])
+
+    def test_transfer_id_preserves_hyphenated_transport_and_origin(self):
+        for mode in ('ws-tls', 'tcp-http'):
+            for scheme in ('http', 'https'):
+                value = f'{mode}-{scheme}-owned-download'
+                match = re.fullmatch(fixture.TRANSFER_ID, value)
+                self.assertIsNotNone(match)
+                self.assertEqual((match['transport'], match['origin']), (mode, scheme))
 
     def test_origin_uses_verified_tls_and_preserves_payload(self):
         server = fixture.http.server.ThreadingHTTPServer(('127.0.0.1', 0), fixture.Origin)

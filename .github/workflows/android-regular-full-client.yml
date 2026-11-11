@@ -1,4 +1,4 @@
-name: Android 2241 New Transport File Routing Acceptance
+name: Android 2241 Same APK Transport Retry
 'on': workflow_dispatch
 permissions:
   contents: read
@@ -7,119 +7,8 @@ env:
   STUDIO_ANDROID_CI_TARGET: regular
   STUDIO_REGULAR_VALIDATION_SCRIPT: android/scripts/run-regular-environment-client.py
 jobs:
-  build:
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/validation/android-2241-file-routing'
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    outputs:
-      version_name: "${{ steps.version.outputs.version_name }}"
-      version_code: "${{ steps.version.outputs.version_code }}"
-      ci_signer: "${{ steps.regular_signer.outputs.signer }}"
-    steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-java@v4
-      with:
-        distribution: temurin
-        java-version: '17'
-    - uses: actions/setup-go@v5
-      with:
-        go-version: 1.27.3
-        cache: false
-    - uses: android-actions/setup-android@v3
-      with:
-        packages: platform-tools
-    - uses: actions/cache@v4
-      with:
-        path: |
-          android/network-poc/app/libs/
-          android/network-poc/corebridge/bin/
-          android/app/libs/licenses/
-        key: formal-network-core-go1273-ndk282-${{ hashFiles('android/network-poc/corebridge/go.mod',
-          'android/network-poc/corebridge/go.sum', 'android/network-poc/corebridge/**/*.go',
-          'android/network-poc/scripts/build-core.sh', 'android/scripts/prepare-network-core.sh')
-          }}
-    - run: bash android/scripts/prepare-network-core.sh
-    - name: Retry existing checksum-pinned Gradle distributions before compilation
-      env:
-        GH_TOKEN: ${{ github.token }}
-      run: python3 android/scripts/prefetch-regular-gradle.py
-    - name: Prepare Android SDK and confirm isolated signing
-      run: |
-        test ! -f android/keystore.properties
-        sdkmanager 'platforms;android-36' 'platforms;android-37.0' 'build-tools;35.0.0'
-    - name: Freeze one Shanghai timestamp for human and CI packages
-      id: version
-      run: |
-        python3 android/scripts/regular_version.py create --output android/app/build/regular-android-version.json
-        echo "STUDIO_ANDROID_VERSION_FILE=$GITHUB_WORKSPACE/android/app/build/regular-android-version.json" >> "$GITHUB_ENV"
-        echo "version_name=$(python3 android/scripts/regular_version.py read --file android/app/build/regular-android-version.json --field versionName)" >> "$GITHUB_OUTPUT"
-        echo "version_code=$(python3 android/scripts/regular_version.py read --file android/app/build/regular-android-version.json --field versionCode)" >> "$GITHUB_OUTPUT"
-    - name: Create a temporary compatibility signer in runner storage
-      run: |
-        python3 - <<'PY'
-        import os, pathlib, secrets
-        password = secrets.token_hex(32)
-        print('::add-mask::' + password)
-        key = pathlib.Path(os.environ['RUNNER_TEMP'], 'studio-regular-ci.p12')
-        assert not key.exists()
-        with open(os.environ['GITHUB_ENV'], 'a') as env:
-            env.write('STUDIO_REGULAR_CI_KEYSTORE_PATH=' + str(key) + '\n')
-            env.write('STUDIO_REGULAR_CI_STORE_PASSWORD=' + password + '\n')
-        PY
-    - name: Generate the one-run PKCS12 certificate
-      run: |
-        keytool -genkeypair -noprompt -storetype PKCS12 -keystore "$STUDIO_REGULAR_CI_KEYSTORE_PATH" -storepass:env STUDIO_REGULAR_CI_STORE_PASSWORD -keypass:env STUDIO_REGULAR_CI_STORE_PASSWORD -alias regular-compat-ci -keyalg RSA -keysize 3072 -validity 2 -dname 'CN=Temporary regular compatibility CI'
-        chmod 600 "$STUDIO_REGULAR_CI_KEYSTORE_PATH"
-    - name: Bind the one-run certificate
-      id: regular_signer
-      run: |
-        signer=$(keytool -exportcert -storetype PKCS12 -keystore "$STUDIO_REGULAR_CI_KEYSTORE_PATH" -storepass:env STUDIO_REGULAR_CI_STORE_PASSWORD -alias regular-compat-ci | sha256sum | cut -d ' ' -f 1)
-        test "${#signer}" -eq 64
-        echo "STUDIO_REGULAR_CI_CERT_SHA256=$signer" >> "$GITHUB_ENV"
-        echo "signer=$signer" >> "$GITHUB_OUTPUT"
-    - name: Prepare owned nodes and trust
-      run: |
-        python3 -m unittest discover -s android/network-poc/scripts/tests -p test_secure_fixture.py
-        python3 android/network-poc/scripts/fixture.py --prepare-only --output android/network-poc/secure-fixture
-    - name: Compile separately marked regular network fixture
-      run: |
-        bash android/environment-poc/gradlew -p android --no-daemon -PenvironmentClient -PregularEnvironmentClient -PregularEnvironmentCi -PenvironmentTest -PenvironmentNetworkTest -PregularLegacyNetworkTest :app:assembleRelease :app:assembleReleaseAndroidTest
-        mkdir -p android/app/build/regular-network-input
-        cp android/app/build/outputs/apk/release/app-release.apk android/app/build/regular-network-input/gecko-network-x86.apk
-        cp android/app/build/outputs/apk/androidTest/release/app-release-androidTest.apk android/app/build/regular-network-input/network-test.apk
-        python3 android/scripts/gecko-network-package.py
-    - uses: actions/upload-artifact@v4
-      with:
-        name: environment-client-input
-        retention-days: 14
-        if-no-files-found: error
-        path: android/app/build/regular-network-input/
-    - uses: actions/upload-artifact@v4
-      with:
-        name: gecko-network-fixture
-        retention-days: 1
-        if-no-files-found: error
-        path: android/network-poc/secure-fixture/
-    - uses: actions/upload-artifact@v4
-      with:
-        name: gecko-network-host-core
-        retention-days: 14
-        if-no-files-found: error
-        path: android/network-poc/corebridge/bin/xray
-    - name: Remove the one-run signer
-      if: always()
-      run: rm -f "$RUNNER_TEMP/studio-regular-ci.p12"
-    - uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: regular-environment-build-evidence
-        retention-days: 14
-        path: |
-          android/app/build/reports/
-          android/app/build/test-results/
   gecko-network:
-    if: github.event_name == 'workflow_dispatch'
-    needs: build
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/validation/android-2241-file-routing'
     runs-on: ubuntu-latest
     timeout-minutes: 35
     strategy:
@@ -129,17 +18,15 @@ jobs:
         - 28
         - 35
         transport:
-        - ws
         - ws-tls
         - tcp-http
     env:
-      STUDIO_GECKO_APPLICATION_SHA: "${{ github.sha }}"
+      STUDIO_GECKO_APPLICATION_SHA: "65d1ce81bbd96ebad97886e39f4c9c21a558935f"
       STUDIO_GECKO_TRANSPORT: "${{ matrix.transport }}"
       STUDIO_GECKO_FIXTURE: android/network-poc/secure-fixture/fixture.json
       STUDIO_GECKO_APK: android/app/build/environment-client-input/gecko-network-x86.apk
       STUDIO_GECKO_RECEIPT: android/app/build/environment-client-input/gecko-network-receipt.json
       STUDIO_GECKO_OUTPUT: android/app/build/gecko-network-evidence
-      STUDIO_REGULAR_CI_CERT_SHA256: "${{ needs.build.outputs.ci_signer }}"
     steps:
     - uses: actions/checkout@v4
     - uses: actions/setup-java@v4
@@ -156,19 +43,35 @@ jobs:
     - uses: actions/download-artifact@v4
       with:
         name: environment-client-input
-        run-id: "${{ github.run_id }}"
+        run-id: "43069029370"
         github-token: "${{ github.token }}"
         path: android/app/build/environment-client-input
+    - name: Verify the original signed CI fixture identity
+      run: |
+        python3 - <<'PYCODE'
+        import hashlib, json, os, pathlib, re
+        folder = pathlib.Path('android/app/build/environment-client-input')
+        receipt = json.loads((folder / 'gecko-network-receipt.json').read_text())
+        assert receipt['ciOnly'] is True and receipt['sourceSHA'] == os.environ['STUDIO_GECKO_APPLICATION_SHA']
+        apk = folder / 'gecko-network-x86.apk'
+        assert receipt['file'] == apk.name and receipt['bytes'] == apk.stat().st_size
+        with apk.open('rb') as stream:
+            assert hashlib.file_digest(stream, 'sha256').hexdigest() == receipt['sha256']
+        signer = receipt['signerSHA256']
+        assert re.fullmatch('[0-9a-f]{64}', signer)
+        with open(os.environ['GITHUB_ENV'], 'a') as env:
+            env.write(f'STUDIO_REGULAR_CI_CERT_SHA256={signer}\n')
+        PYCODE
     - uses: actions/download-artifact@v4
       with:
         name: gecko-network-fixture
-        run-id: "${{ github.run_id }}"
+        run-id: "43069029370"
         github-token: "${{ github.token }}"
         path: android/network-poc/secure-fixture
     - uses: actions/download-artifact@v4
       with:
         name: gecko-network-host-core
-        run-id: "${{ github.run_id }}"
+        run-id: "43069029370"
         github-token: "${{ github.token }}"
         path: android/network-poc/corebridge/bin
     - uses: actions/download-artifact@v4
@@ -248,8 +151,7 @@ jobs:
         retention-days: 14
         path: android/app/build/gecko-network-evidence/
   webview-network:
-    if: github.event_name == 'workflow_dispatch'
-    needs: build
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/validation/android-2241-file-routing'
     runs-on: ubuntu-latest
     timeout-minutes: 35
     strategy:
@@ -259,17 +161,15 @@ jobs:
         - 28
         - 35
         transport:
-        - ws
         - ws-tls
         - tcp-http
     env:
-      STUDIO_GECKO_APPLICATION_SHA: "${{ github.sha }}"
+      STUDIO_GECKO_APPLICATION_SHA: "65d1ce81bbd96ebad97886e39f4c9c21a558935f"
       STUDIO_GECKO_TRANSPORT: "${{ matrix.transport }}"
       STUDIO_GECKO_FIXTURE: android/network-poc/secure-fixture/fixture.json
       STUDIO_GECKO_APK: android/app/build/environment-client-input/gecko-network-x86.apk
       STUDIO_GECKO_RECEIPT: android/app/build/environment-client-input/gecko-network-receipt.json
       STUDIO_GECKO_OUTPUT: android/app/build/regular-webview-network-evidence
-      STUDIO_REGULAR_CI_CERT_SHA256: "${{ needs.build.outputs.ci_signer }}"
     steps:
     - uses: actions/checkout@v4
     - uses: actions/setup-java@v4
@@ -286,19 +186,35 @@ jobs:
     - uses: actions/download-artifact@v4
       with:
         name: environment-client-input
-        run-id: "${{ github.run_id }}"
+        run-id: "43069029370"
         github-token: "${{ github.token }}"
         path: android/app/build/environment-client-input
+    - name: Verify the original signed CI fixture identity
+      run: |
+        python3 - <<'PYCODE'
+        import hashlib, json, os, pathlib, re
+        folder = pathlib.Path('android/app/build/environment-client-input')
+        receipt = json.loads((folder / 'gecko-network-receipt.json').read_text())
+        assert receipt['ciOnly'] is True and receipt['sourceSHA'] == os.environ['STUDIO_GECKO_APPLICATION_SHA']
+        apk = folder / 'gecko-network-x86.apk'
+        assert receipt['file'] == apk.name and receipt['bytes'] == apk.stat().st_size
+        with apk.open('rb') as stream:
+            assert hashlib.file_digest(stream, 'sha256').hexdigest() == receipt['sha256']
+        signer = receipt['signerSHA256']
+        assert re.fullmatch('[0-9a-f]{64}', signer)
+        with open(os.environ['GITHUB_ENV'], 'a') as env:
+            env.write(f'STUDIO_REGULAR_CI_CERT_SHA256={signer}\n')
+        PYCODE
     - uses: actions/download-artifact@v4
       with:
         name: gecko-network-fixture
-        run-id: "${{ github.run_id }}"
+        run-id: "43069029370"
         github-token: "${{ github.token }}"
         path: android/network-poc/secure-fixture
     - uses: actions/download-artifact@v4
       with:
         name: gecko-network-host-core
-        run-id: "${{ github.run_id }}"
+        run-id: "43069029370"
         github-token: "${{ github.token }}"
         path: android/network-poc/corebridge/bin
     - uses: actions/download-artifact@v4
@@ -308,6 +224,9 @@ jobs:
         run-id: 41993581770
         github-token: "${{ github.token }}"
         path: android/app/build/environment-provider-input
+    - name: Verify transfer identifier and certificate fixtures
+      if: matrix.api == 28 && matrix.transport == 'ws-tls'
+      run: python3 -m unittest discover -s android/network-poc/scripts/tests -p test_secure_fixture.py
     - name: Start owned legacy WebView route fixtures
       run: |
         mkdir -p "$STUDIO_GECKO_OUTPUT"
