@@ -6,6 +6,7 @@ import (
     "crypto/ecdsa"
     "crypto/elliptic"
     "crypto/rand"
+    "crypto/sha256"
     "crypto/tls"
     "crypto/x509"
     "crypto/x509/pkix"
@@ -70,6 +71,91 @@ func testCertificate(t *testing.T) (string, string) {
         string(pem.EncodeToMemory(&pem.Block{Type:"PRIVATE KEY",Bytes:pk}))
 }
 
+var fileProofExits = map[string]string{
+    "ws": "127.0.0.2", "ws-tls": "127.0.0.3", "tcp-http": "127.0.0.4",
+}
+
+var fileProofUpload = bytes.Repeat([]byte{0, 0xff, 0x12, 0x34}, 64*1024)
+var fileProofDownload = bytes.Repeat([]byte{0x56, 0, 0x78, 0xff}, 64*1024)
+
+type fileProofVisit struct {
+    method, exit string
+    status, size int
+    digest [sha256.Size]byte
+}
+
+func serveFileProof(w http.ResponseWriter, r *http.Request, visits chan<- fileProofVisit) bool {
+    mode, ok := strings.CutPrefix(r.URL.Path, "/file-proof/")
+    if !ok { return false }
+    transport, kind, _ := strings.Cut(mode, "/")
+    ip, _, _ := net.SplitHostPort(r.RemoteAddr)
+    visit := fileProofVisit{method:r.Method, exit:ip, status:http.StatusForbidden}
+    var download []byte
+    if fileProofExits[transport] != "" && fileProofExits[transport] == ip &&
+        r.Header.Get("Cookie") == "" && r.Header.Get("Authorization") == "" {
+        switch {
+        case r.Method == http.MethodPost && kind == "upload":
+            body, err := io.ReadAll(io.LimitReader(r.Body, int64(len(fileProofUpload)+1)))
+            visit.size, visit.digest = len(body), sha256.Sum256(body)
+            visit.status = http.StatusUnprocessableEntity
+            if err == nil && bytes.Equal(body, fileProofUpload) {
+                visit.status = http.StatusNoContent
+            }
+        case r.Method == http.MethodGet && kind == "download":
+            download = fileProofDownload
+            visit.size, visit.digest = len(download), sha256.Sum256(download)
+            visit.status = http.StatusOK
+            w.Header().Set("Content-Type", "application/octet-stream")
+        }
+    }
+    visits <- visit
+    w.WriteHeader(visit.status)
+    if download != nil { _, _ = w.Write(download) }
+    return true
+}
+
+func verifyFileProof(t *testing.T, mode, target string, transport *http.Transport, visits <-chan fileProofVisit) {
+    t.Helper()
+    client := &http.Client{Transport:transport, Timeout:15*time.Second}
+    base := target + "/file-proof/" + mode
+    upload, err := client.Post(base+"/upload", "application/octet-stream", bytes.NewReader(fileProofUpload))
+    if err != nil { t.Fatal(err) }
+    upload.Body.Close()
+    if upload.StatusCode != http.StatusNoContent { t.Fatalf("upload status: %d", upload.StatusCode) }
+
+    response, err := client.Get(base+"/download")
+    if err != nil { t.Fatal(err) }
+    body, err := io.ReadAll(io.LimitReader(response.Body, int64(len(fileProofDownload)+1)))
+    response.Body.Close()
+    if err != nil || response.StatusCode != http.StatusOK || !bytes.Equal(body, fileProofDownload) {
+        t.Fatalf("download status=%d bytes=%d err=%v", response.StatusCode, len(body), err)
+    }
+
+    direct := transport.Clone()
+    direct.Proxy = nil
+    defer direct.CloseIdleConnections()
+    rejected, err := (&http.Client{Transport:direct, Timeout:15*time.Second}).Get(base+"/download")
+    if err != nil { t.Fatal(err) }
+    rejected.Body.Close()
+    if rejected.StatusCode != http.StatusForbidden { t.Fatalf("direct request status: %d", rejected.StatusCode) }
+
+    expected := []fileProofVisit{
+        {method:http.MethodPost, exit:fileProofExits[mode], status:http.StatusNoContent, size:len(fileProofUpload), digest:sha256.Sum256(fileProofUpload)},
+        {method:http.MethodGet, exit:fileProofExits[mode], status:http.StatusOK, size:len(fileProofDownload), digest:sha256.Sum256(fileProofDownload)},
+        {method:http.MethodGet, exit:"127.0.0.1", status:http.StatusForbidden},
+    }
+    for _, want := range expected {
+        select {
+        case got := <-visits:
+            if got != want { t.Fatalf("origin proof: got %+v, want %+v", got, want) }
+            t.Logf("file proof %s status=%d exit=%s bytes=%d sha256=%x", got.method, got.status, got.exit, got.size, got.digest)
+        default:
+            t.Fatalf("missing origin proof: %+v", want)
+        }
+    }
+    if len(visits) != 0 { t.Fatal("unexpected additional file request") }
+}
+
 // Every endpoint and key is created inside this test; external services are never contacted.
 func TestOwnedTransportMatrix(t *testing.T) {
     origin := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter,r *http.Request) {
@@ -80,8 +166,11 @@ func TestOwnedTransportMatrix(t *testing.T) {
     cert, key := testCertificate(t)
     pair, err := tls.X509KeyPair([]byte(cert),[]byte(key))
     if err != nil { t.Fatal(err) }
+    fileVisits := make(chan fileProofVisit, 16)
     target := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter,r *http.Request) {
-        _, _ = io.WriteString(w,"owned-https-fixture")
+        if !serveFileProof(w, r, fileVisits) {
+            _, _ = io.WriteString(w,"owned-https-fixture")
+        }
     }))
     target.TLS = &tls.Config{Certificates:[]tls.Certificate{pair},MinVersion:tls.VersionTLS13,NextProtos:[]string{"h2","http/1.1"}}
     target.StartTLS()
@@ -118,10 +207,12 @@ func TestOwnedTransportMatrix(t *testing.T) {
                 clientStream["realitySettings"]=map[string]any{"serverName":"network-fixture.test","fingerprint":"chrome",
                     "password":base64.RawURLEncoding.EncodeToString(private.PublicKey().Bytes()),"shortId":"1234","spiderX":"/"}
             }
+            outbound := map[string]any{"protocol":"freedom",
+                "settings":map[string]any{"finalRules":[]any{map[string]any{"action":"allow","ip":[]string{"127.0.0.1/32"},
+                    "port":strconv.Itoa(origin.Listener.Addr().(*net.TCPAddr).Port)+","+strconv.Itoa(target.Listener.Addr().(*net.TCPAddr).Port)}}}}
+            if exit := fileProofExits[mode]; exit != "" { outbound["sendThrough"] = exit }
             serverJSON:=encode(map[string]any{"log":map[string]any{"loglevel":"debug"},"inbounds":[]any{map[string]any{"listen":"127.0.0.1","port":serverPort,"protocol":"vless",
-                "settings":map[string]any{"clients":[]any{map[string]any{"id":fixtureID}},"decryption":"none"},"streamSettings":serverStream}},"outbounds":[]any{map[string]any{"protocol":"freedom",
-                    "settings":map[string]any{"finalRules":[]any{map[string]any{"action":"allow","ip":[]string{"127.0.0.1/32"},
-                        "port":strconv.Itoa(origin.Listener.Addr().(*net.TCPAddr).Port)+","+strconv.Itoa(target.Listener.Addr().(*net.TCPAddr).Port)}}}}}})
+                "settings":map[string]any{"clients":[]any{map[string]any{"id":fixtureID}},"decryption":"none"},"streamSettings":serverStream}},"outbounds":[]any{outbound}})
             server:=exec.Command(os.Args[0],"-test.run=^TestCoreServerProcess$")
             var serverLog bytes.Buffer
             server.Stdout=&serverLog;server.Stderr=&serverLog
@@ -166,6 +257,7 @@ func TestOwnedTransportMatrix(t *testing.T) {
             if err!=nil { t.Fatal(err) }
             body,_=io.ReadAll(res.Body);res.Body.Close()
             if string(body)!="owned-https-fixture" { t.Fatal("HTTPS CONNECT download differs") }
+            if fileProofExits[mode] != "" { verifyFileProof(t, mode, target.URL, transport, fileVisits) }
             if err=Stop();err!=nil { t.Fatal(err) }
             socket,err:=net.DialTimeout("tcp",net.JoinHostPort("127.0.0.1",strconv.Itoa(proxyPort)),200*time.Millisecond)
             if err==nil { socket.Close();t.Fatal("proxy listener remained open after stop") }
