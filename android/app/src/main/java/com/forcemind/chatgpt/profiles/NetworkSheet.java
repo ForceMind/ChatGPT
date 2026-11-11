@@ -207,7 +207,7 @@ final class NetworkSheet {
                         .setBarcodeImageEnabled(false);
                 scan.setEnabled(false);
                 try { scanner.launch(options); }
-                catch (android.content.ActivityNotFoundException error) {
+                catch (android.content.ActivityNotFoundException unavailable) {
                     scan.setEnabled(true);
                     showError.accept("无法打开扫码，可以粘贴 VLESS 链接");
                 }
