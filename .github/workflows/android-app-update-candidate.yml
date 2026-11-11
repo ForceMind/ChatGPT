@@ -146,7 +146,7 @@ jobs:
   emulator:
     needs: build
     if: ${{ always() && (needs.build.result == 'success' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/release/android-network-import' && inputs.auto_only && inputs.network_import && inputs.resume_network_import && !inputs.device_acceptance && !inputs.recovery_only)) }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.resume_network_import && 'ubuntu-24.04' || 'ubuntu-latest' }}
     timeout-minutes: 35
     strategy:
       fail-fast: false
@@ -231,7 +231,7 @@ jobs:
             android/app/build/app-update-evidence/
             android/app/build/app-update-provider/
   delivery:
-    if: ${{ !inputs.recovery_only }}
+    if: ${{ always() && needs.emulator.result == 'success' && !inputs.recovery_only }}
     needs: emulator
     runs-on: ubuntu-latest
     timeout-minutes: 10
