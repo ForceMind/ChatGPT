@@ -1,0 +1,57 @@
+name: iOS 26 independent PoC
+on:
+  push:
+    branches: ['feature/ios-26-poc']
+    paths: ['ios/**', '.github/workflows/ios-poc.yml']
+permissions:
+  contents: read
+jobs:
+  network-core:
+    runs-on: macos-26
+    timeout-minutes: 28
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+      STUDIO_MOBILE_VERSION: v0.0.0-20261011034528-197770444867
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.3'
+          cache: false
+      - name: Compile the current Go core as a device and simulator XCFramework
+        working-directory: android/network-poc/corebridge
+        shell: bash
+        run: |
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
+          xcrun --sdk iphonesimulator --show-sdk-version
+          go mod tidy
+          go mod verify
+          go install "golang.org/x/mobile/cmd/gomobile@$STUDIO_MOBILE_VERSION"
+          go install "golang.org/x/mobile/cmd/gobind@$STUDIO_MOBILE_VERSION"
+          go get "golang.org/x/mobile@$STUDIO_MOBILE_VERSION"
+          mkdir -p "$RUNNER_TEMP/studio-ios-core"
+          PATH="$(go env GOPATH)/bin:$PATH" gomobile bind -iosversion=26.0 -target=ios/arm64,iossimulator/arm64 -trimpath -ldflags='-checklinkname=0 -s -w' -o "$RUNNER_TEMP/studio-ios-core/Networkcore.xcframework" .
+      - name: Verify the slice identities and exported Go API
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import json, os, plistlib
+          root = Path(os.environ['RUNNER_TEMP']) / 'studio-ios-core'
+          framework = root / 'Networkcore.xcframework'
+          config = plistlib.loads((framework / 'Info.plist').read_bytes())
+          slices = config['AvailableLibraries']
+          assert {(s['SupportedPlatform'], s.get('SupportedPlatformVariant', 'device')) for s in slices} == {('ios','device'), ('ios','simulator')}
+          assert all(s['SupportedArchitectures'] == ['arm64'] for s in slices)
+          headers = [p.read_text() for p in framework.rglob('*.h')]
+          assert headers and all(any(symbol in h for h in headers) for symbol in ('Start(', 'Stop(', 'IsRunning(', 'Version(', 'Probe('))
+          (root / 'receipt.json').write_text(json.dumps({'sourceSHA': os.environ['GITHUB_SHA'], 'slices': slices, 'runtimeTested': False}, indent=2) + '\n')
+          PY
+          ditto -c -k --keepParent "$RUNNER_TEMP/studio-ios-core/Networkcore.xcframework" "$RUNNER_TEMP/studio-ios-core/Networkcore-xcframework.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: studio-ios-go-core-build
+          path: |
+            ${{ runner.temp }}/studio-ios-core/Networkcore-xcframework.zip
+            ${{ runner.temp }}/studio-ios-core/receipt.json
+          if-no-files-found: error
