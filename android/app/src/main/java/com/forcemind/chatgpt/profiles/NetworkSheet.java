@@ -164,7 +164,7 @@ final class NetworkSheet {
             AlertDialog.Builder confirm = new AlertDialog.Builder(activity).setTitle("删除「" + node.name + "」？");
             if (active) confirm.setMessage("删除后将切回系统网络。正在生成或传输的请求可能中断。");
             showPrompt(confirm.setNegativeButton("取消", null)
-                    .setPositiveButton(active ? "切回系统网络并删除" : "删除", (dialog, which) -> {
+                    .setPositiveButton(active ? "切回系统网络并删除" : "确认删除", (dialog, which) -> {
                         if (!unchanged(index, node) || active != selectedRoute(index)) {
                             message = "线路已变更，请重新确认"; render(); return;
                         }

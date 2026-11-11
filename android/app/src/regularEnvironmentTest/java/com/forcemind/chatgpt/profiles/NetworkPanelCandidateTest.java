@@ -132,7 +132,8 @@ public final class NetworkPanelCandidateTest {
                 assertSelection(host, "WebSocket 线路", "原线路");
 
                 clickDescription("删除线路 原线路");
-                click("删除");
+                awaitNode("删除「原线路」？", false, false);
+                click("确认删除");
                 awaitPartialText("线路已删除");
                 assertEquals(0, store.read().selected);
                 assertEquals(2, store.read().nodes.size());
