@@ -154,21 +154,22 @@ def block_egress():
         common._run(['adb', 'reverse', f'tcp:{port}', f'tcp:{port}'])
 
 
-def start_node(core, identity):
-    config = common.EVIDENCE / 'owned-route.json'
+def start_node(core, identity, port=NODE_PORT, stream=None, source_ip=PROXY_SOURCE):
+    name = 'owned-route' if port == NODE_PORT else f'owned-route-{port}'
+    config = common.EVIDENCE / (name + '.json')
     common._write_json(config, {
         'log': {'loglevel': 'warning'},
-        'inbounds': [{'listen': '127.0.0.1', 'port': NODE_PORT, 'protocol': 'vless',
+        'inbounds': [{'listen': '127.0.0.1', 'port': port, 'protocol': 'vless',
                       'settings': {'clients': [{'id': identity}], 'decryption': 'none'},
-                      'streamSettings': {'network': 'raw', 'security': 'none'}}],
+                      'streamSettings': stream or {'network': 'raw', 'security': 'none'}}],
         'outbounds': [{'tag': 'blocked', 'protocol': 'blackhole'},
-                      {'tag': 'fixture', 'protocol': 'freedom', 'sendThrough': PROXY_SOURCE,
+                      {'tag': 'fixture', 'protocol': 'freedom', 'sendThrough': source_ip,
                        'settings': {'finalRules': [{'action': 'allow', 'ip': ['127.0.0.1/32'],
                                                     'port': str(PORT)}]}}],
         'routing': {'rules': [{'type': 'field', 'ip': ['127.0.0.1/32'],
                                'port': str(PORT), 'outboundTag': 'fixture'}]},
     })
-    with (common.EVIDENCE / 'owned-route.log').open('w') as output:
+    with (common.EVIDENCE / (name + '.log')).open('w') as output:
         process = subprocess.Popen([str(core.resolve()), 'run', '-config', str(config)],
                                    stdout=output, stderr=subprocess.STDOUT)
     try:
@@ -176,7 +177,7 @@ def start_node(core, identity):
         while time.monotonic() < until:
             assert process.poll() is None, 'Owned VLESS node exited during startup'
             try:
-                with socket.create_connection(('127.0.0.1', NODE_PORT), timeout=0.5):
+                with socket.create_connection(('127.0.0.1', port), timeout=0.5):
                     return process
             except OSError:
                 time.sleep(0.1)
@@ -384,21 +385,87 @@ def run_network_import(args):
     signer = signer_of(source)
     assert signer not in (common.PRODUCTION_SIGNER, common.BETA_SIGNER)
     tools = common._tools()
-    source_info = common._inspect_apk(source, tools, signer, PACKAGE, 3000044, test_only=True)
+    source_info = common._inspect_apk(source, tools, signer, PACKAGE, 3000045, test_only=True)
     common._inspect_apk(test, tools, signer, common.TEST_PACKAGE)
     common._run(['adb', 'install', '-t', str(source)])
     common._run(['adb', 'install', '-t', str(test)])
     recovery_installed_digest(source_info['sha256'])
     common._shell('pm', 'grant', PACKAGE, 'android.permission.CAMERA')
-    result = instrument('NetworkImportTest#clipboardAndCameraOnlySaveOnConfirmation', signer, 'network-import', 160)
+    result = instrument('NetworkPanelCandidateTest#clipboardAndCameraOnlySaveOnConfirmation', signer, 'network-import', 160)
     proof, = re.findall(r'(?m)^INSTRUMENTATION_RESULT: networkImportProof=([^\r\n]+)$', result)
-    checks = ['clipboard-name', 'camera-name', 'manual-name', 'unsupported-ws', 'explicit-save', 'existing-settings']
+    checks = ['clipboard-name', 'camera-name', 'manual-name', 'unsupported-grpc', 'explicit-save', 'existing-settings']
     assert proof.split(',') == checks
     common._write_json(common.EVIDENCE / 'network-import-report.json', {
         'complete': True, 'api': api, 'sourceSHA': os.environ['GITHUB_SHA'],
         'source': source_info, 'steps': checks, 'cameraFixture': 'videofile',
         'screenshots': False, 'syntheticOnly': True,
     })
+
+
+def run_network_selection(args):
+    api = common._guard()
+    assert api == args.api
+    devices = common._run(['adb', 'devices']).stdout.strip().splitlines()[1:]
+    assert len(devices) == 1 and re.fullmatch(r'emulator-\d+\s+device', devices[0])
+    assert not common._shell('pm', 'list', 'packages', PACKAGE).strip()
+    block_egress()
+    source = args.input / 'source.apk'
+    test = args.input / 'source-test.apk'
+    signer = signer_of(source)
+    assert signer not in (common.PRODUCTION_SIGNER, common.BETA_SIGNER)
+    tools = common._tools()
+    source_info = common._inspect_apk(source, tools, signer, PACKAGE, 3000045, test_only=True)
+    common._inspect_apk(test, tools, signer, common.TEST_PACKAGE)
+    common._run(['adb', 'install', '-t', str(source)])
+    common._run(['adb', 'install', '-t', str(test)])
+    recovery_installed_digest(source_info['sha256'])
+
+    visits = []
+    class Origin(BaseHTTPRequestHandler):
+        def do_GET(self):
+            private_headers = self.headers.get('Cookie') is not None or self.headers.get('Authorization') is not None
+            visits.append({'path': self.path, 'exit': self.client_address[0], 'credentialHeader': private_headers})
+            accepted = self.path == '/probe' and self.client_address[0] in ('127.0.0.2','127.0.0.3','127.0.0.4') and not private_headers
+            self.send_response(204 if accepted else 500)
+            self.end_headers()
+
+    origin = ThreadingHTTPServer(('127.0.0.1', PORT), Origin)
+    threading.Thread(target=origin.serve_forever, daemon=True).start()
+    identity = str(uuid.uuid4())
+    nodes = []
+    try:
+        nodes.append(start_node(args.input / 'xray', identity))
+        for port, source_ip, stream in [
+                (18779, '127.0.0.3', {'network': 'ws', 'security': 'none', 'wsSettings': {'path': '/owned', 'host': 'owned.test'}}),
+                (18780, '127.0.0.4', {'network': 'raw', 'security': 'none', 'rawSettings': {'header': {
+                    'type': 'http', 'request': {'path': ['/owned'], 'headers': {'Host': ['owned.test']}}}}})]:
+            common._run(['adb', 'reverse', f'tcp:{port}', f'tcp:{port}'])
+            nodes.append(start_node(args.input / 'xray', identity, port, stream, source_ip))
+        result = instrument('NetworkPanelCandidateTest#selectionDeletionAndProbePreserveTheActiveRoute', signer,
+                            'network-selection', 210, ('-e', 'nodeIdentity', identity))
+        proof, = re.findall(r'(?m)^INSTRUMENTATION_RESULT: networkSelectionProof=([^\r\n]+)$', result)
+        checks = ['selected-frame', 'ws-probe', 'tcp-http-probe', 'active-route-preserved', 'select-ws',
+                  'delete-inactive', 'delete-active-to-system']
+        assert proof.split(',') == checks
+        assert [visit['exit'] for visit in visits] == ['127.0.0.2', '127.0.0.3', '127.0.0.4', '127.0.0.3']
+        assert all(visit['path'] == '/probe' and not visit['credentialHeader'] for visit in visits)
+        common._write_json(common.EVIDENCE / 'network-selection-report.json', {
+            'complete': True, 'api': api, 'sourceSHA': os.environ['GITHUB_SHA'],
+            'source': source_info, 'steps': checks, 'requests': visits,
+            'screenshots': False, 'syntheticOnly': True,
+        })
+    finally:
+        common._write_json(common.EVIDENCE / 'network-selection-requests.json', visits)
+        for node in nodes:
+            if node.poll() is None:
+                node.terminate()
+                try:
+                    node.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    node.kill()
+                    node.wait()
+        origin.shutdown()
+        origin.server_close()
 
 
 def run(args):
@@ -415,7 +482,7 @@ def run(args):
     signer = signer_of(source)
     assert signer not in (common.PRODUCTION_SIGNER, common.BETA_SIGNER)
     tools = common._tools()
-    source_code = 3000039 if args.device_acceptance else 3000044 if args.auto_only else 3000037
+    source_code = 3000039 if args.device_acceptance else 3000045 if args.auto_only else 3000037
     target_code = source_code + 1
     source_info = common._inspect_apk(source, tools, signer, PACKAGE, source_code, test_only=True)
     target_info = common._inspect_apk(target, tools, signer, PACKAGE, target_code)
@@ -523,12 +590,15 @@ if __name__ == '__main__':
     modes.add_argument('--recovery-only', action='store_true')
     modes.add_argument('--auto-only', action='store_true')
     modes.add_argument('--network-import', action='store_true')
+    modes.add_argument('--network-selection', action='store_true')
     args = parser.parse_args()
     assert os.environ.get('GITHUB_ACTIONS') == 'true'
     common.EVIDENCE = args.output
     args.output.mkdir(parents=True, exist_ok=False)
     try:
-        if args.network_import:
+        if args.network_selection:
+            run_network_selection(args)
+        elif args.network_import:
             run_network_import(args)
         else:
             run(args)

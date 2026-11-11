@@ -1,4 +1,4 @@
-// Package networkcore owns one application-local Xray instance.
+// Package networkcore owns the Android app’s Xray route and independent probes.
 package networkcore
 
 import (

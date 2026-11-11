@@ -8,6 +8,14 @@ public final class NetworkCoreConfig {
     private NetworkCoreConfig() {}
     public static String build(NetworkNode n, int localPort) {
         if (localPort < 1 || localPort > 65535) throw new IllegalArgumentException("本地端口无效");
+        return buildConfig(n, localPort);
+    }
+
+    static String buildProbe(NetworkNode n) {
+        return buildConfig(n, 0);
+    }
+
+    private static String buildConfig(NetworkNode n, int localPort) {
         try {
             JSONObject user = new JSONObject().put("id", n.id).put("encryption", "none");
             if (!n.options.getOrDefault("flow", "").isEmpty()) user.put("flow", n.options.get("flow"));
@@ -15,8 +23,17 @@ public final class NetworkCoreConfig {
             JSONObject stream = new JSONObject().put("network", n.transport).put("security", n.security);
             if ("ws".equals(n.transport)) {
                 JSONObject ws = new JSONObject().put("path", n.options.getOrDefault("path", "/"));
-                if (n.options.containsKey("host")) ws.put("headers", new JSONObject().put("Host", n.options.get("host")));
+                if (n.options.containsKey("host")) ws.put("host", n.options.get("host"));
                 stream.put("wsSettings", ws);
+            }
+            if ("http".equals(n.options.get("headerType"))) {
+                String defaultHost = n.host.contains(":") ? "[" + n.host + "]" : n.host;
+                JSONObject request = new JSONObject()
+                        .put("path", new JSONArray(n.options.getOrDefault("path", "/").split(",")))
+                        .put("headers", new JSONObject()
+                                .put("Host", new JSONArray(n.options.getOrDefault("host", defaultHost).split(","))));
+                stream.put("rawSettings", new JSONObject().put("header",
+                        new JSONObject().put("type", "http").put("request", request)));
             }
             if ("tls".equals(n.security)) {
                 JSONObject tls = new JSONObject().put("allowInsecure", false).put("serverName", n.options.getOrDefault("sni", n.host));
@@ -29,12 +46,16 @@ public final class NetworkCoreConfig {
                     .put("serverName", n.options.get("sni")).put("fingerprint", n.options.getOrDefault("fp", "chrome"))
                     .put("password", n.options.get("pbk")).put("shortId", n.options.getOrDefault("sid", ""))
                     .put("spiderX", n.options.getOrDefault("spx", "/")));
-            JSONObject inbound = new JSONObject().put("tag", "app-http").put("listen", "127.0.0.1").put("port", localPort)
-                    .put("protocol", "http").put("settings", new JSONObject().put("allowTransparent", false));
             JSONObject outbound = new JSONObject().put("tag", "selected").put("protocol", "vless")
                     .put("settings", new JSONObject().put("vnext", new JSONArray().put(server))).put("streamSettings", stream);
-            return new JSONObject().put("log", new JSONObject().put("loglevel", "none"))
-                    .put("inbounds", new JSONArray().put(inbound)).put("outbounds", new JSONArray().put(outbound)).toString();
+            JSONObject config = new JSONObject().put("log", new JSONObject().put("loglevel", "none"))
+                    .put("outbounds", new JSONArray().put(outbound));
+            if (localPort != 0) {
+                JSONObject inbound = new JSONObject().put("tag", "app-http").put("listen", "127.0.0.1").put("port", localPort)
+                        .put("protocol", "http").put("settings", new JSONObject().put("allowTransparent", false));
+                config.put("inbounds", new JSONArray().put(inbound));
+            }
+            return config.toString();
         } catch (JSONException e) { throw new IllegalArgumentException("无法生成线路配置", e); }
     }
 }

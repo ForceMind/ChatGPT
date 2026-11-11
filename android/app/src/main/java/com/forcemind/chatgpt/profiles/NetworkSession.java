@@ -18,6 +18,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /** Process-owned network intent and file ownership. Never mutates workspace/profile/recovery records. */
 final class NetworkSession {
+    private static final ExecutorService PROBE_WORKER = Executors.newSingleThreadExecutor();
     final Context context;
     final NetworkRoute routes = new NetworkRoute();
     private final NetworkSettingsStore store;
@@ -30,7 +31,7 @@ final class NetworkSession {
     private final java.util.Set<Runnable> panelObservers = new java.util.LinkedHashSet<>();
     private NetworkSettingsStore.Data settings = new NetworkSettingsStore.Data();
     private volatile boolean changing = true, saving, closed, unreadable;
-    private boolean booted;
+    private boolean booted, probing;
     private volatile boolean fileStagingReady = true;
     NetworkSession(Context context, Runnable observer) {
         this.context = context.getApplicationContext(); this.observer = observer;
@@ -60,6 +61,37 @@ final class NetworkSession {
     static boolean capable() {
         try { return WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE) && NetworkRoute.supportsWebViewProxy(); }
         catch (RuntimeException unavailable) { return false; }
+    }
+    boolean probing() { return probing; }
+    void testNode(NetworkNode node, NetworkRoute.Listener listener) {
+        if (closed || unreadable || !settings.nodes.contains(node)) {
+            listener.complete(false, "线路已变更，请重新选择");
+            return;
+        }
+        if (probing) {
+            listener.complete(false, "已有线路正在测试");
+            return;
+        }
+        probing = true;
+        notifyPanelChanged();
+        PROBE_WORKER.execute(() -> {
+            long elapsed;
+            try {
+                elapsed = studio.networkcore.Networkcore.probe(NetworkCoreConfig.buildProbe(node), NetworkTestPolicy.probeURL());
+            } catch (Exception | LinkageError unavailable) {
+                elapsed = -1;
+            }
+            long result = elapsed;
+            main.post(() -> {
+                probing = false;
+                if (closed) return;
+                listener.complete(result >= 0, result >= 0 ? "检查目标可达 · " + result + " ms" : "测试失败，无法通过此线路访问检查目标");
+                notifyPanelChanged();
+            });
+        });
+    }
+    boolean systemSelected() {
+        return routes.snapshot().state == NetworkRoute.State.SYSTEM || booted && !unreadable && !settings.enabled;
     }
     boolean ready() { return !closed && !changing && routes.snapshot().ready(); }
     boolean changing() { return changing; }
@@ -162,10 +194,12 @@ final class NetworkSession {
     }
     void removeNode(int index, NetworkRoute.Listener listener) {
         if (index < 0 || index >= settings.nodes.size()) { listener.complete(false, "线路不存在"); return; }
-        if (settings.enabled && settings.selected == index) { listener.complete(false, "请先停用或切换当前线路"); return; }
-        NetworkSettingsStore.Data value = settings.copy(); value.nodes.remove(index);
+        boolean deletingActive = settings.enabled && settings.selected == index;
+        NetworkSettingsStore.Data value = settings.copy();
+        value.nodes.remove(index);
         if (value.selected == index) value.selected = -1; else if (value.selected > index) value.selected--;
-        save(value, false, listener);
+        if (deletingActive) value.enabled = false;
+        save(value, deletingActive, listener);
     }
     void select(int index, NetworkRoute.Listener listener) {
         if (!capable()) { listener.complete(false, "请更新 Android System WebView 后使用内置网络"); return; }

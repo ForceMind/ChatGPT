@@ -25,7 +25,7 @@ assert receipt['versionMetadata']['sourceSHA'] == os.environ['GITHUB_SHA']
 assert receipt['package'] == 'com.forcemind.chatgpt.profiles'
 auto = os.environ.get('STUDIO_APP_UPDATE_AUTO') == 'true'
 private = os.environ.get('STUDIO_APP_UPDATE_ACCEPTANCE') == 'true'
-source_code = 3000039 if private else 3000044 if auto else 3000037
+source_code = 3000039 if private else 3000045 if auto else 3000037
 assert receipt['versionMetadata']['versionCode'] == source_code
 assert receipt['signing'] == 'UNSIGNED_REVIEW_ONLY' and receipt['abi'] == 'arm64-v8a'
 assert receipt['r8'] and receipt['alignment16KiB'] and not receipt['ciEndpointIncluded']
@@ -45,11 +45,14 @@ if private:
         assert hashlib.file_digest(stream, 'sha256').hexdigest() == target['sha256']
 
 network_import = os.environ.get('STUDIO_NETWORK_IMPORT') == 'true'
-assert not network_import or (auto and not private)
+network_selection = os.environ.get('STUDIO_NETWORK_SELECTION') == 'true'
+assert not (network_import and network_selection)
+assert not (network_import or network_selection) or (auto and not private)
 results = []
 for api in (28, 35):
     evidence = args.evidence / f'android-app-update-api-{api}'
-    report_name = 'network-import-report.json' if network_import else 'auto-report.json' if auto else 'report.json'
+    report_name = ('network-selection-report.json' if network_selection else 'network-import-report.json'
+                   if network_import else 'auto-report.json' if auto else 'report.json')
     paths = evidence.rglob(report_name)
     reports = [json.loads(path.read_text()) for path in paths]
     report, = reports if auto else [row for row in reports if 'systemConfirmationTapped' in row]
@@ -58,9 +61,18 @@ for api in (28, 35):
     if auto:
         assert report['source']['versionCode'] == source_code and report['source']['package'] == receipt['package']
         assert report['syntheticOnly'] and not report['screenshots']
+        if network_selection:
+            assert set(report['steps']) == {'selected-frame', 'ws-probe', 'tcp-http-probe', 'active-route-preserved',
+                                            'select-ws', 'delete-inactive', 'delete-active-to-system'}
+            assert [row['exit'] for row in report['requests']] == ['127.0.0.2', '127.0.0.3', '127.0.0.4', '127.0.0.3']
+            assert all(row['path'] == '/probe' and not row['credentialHeader'] for row in report['requests'])
+            assert not any(path.suffix.lower() in {'.png','.jpg','.jpeg','.webm','.mp4'}
+                           for path in evidence.rglob('*') if path.is_file())
+            results.append(report)
+            continue
         if network_import:
             assert report['cameraFixture'] == 'videofile'
-            assert set(report['steps']) == {'clipboard-name', 'camera-name', 'manual-name', 'unsupported-ws',
+            assert set(report['steps']) == {'clipboard-name', 'camera-name', 'manual-name', 'unsupported-grpc',
                                             'explicit-save', 'existing-settings'}
             assert not any(path.suffix.lower() in {'.png','.jpg','.jpeg','.webm','.mp4'}
                            for path in evidence.rglob('*') if path.is_file())
@@ -99,7 +111,8 @@ args.out.write_text(json.dumps({
     'runId': os.environ['GITHUB_RUN_ID'],
     'review': receipt,
     'android9And15SyntheticAcceptance': True,
-    'automaticChecks': auto and not network_import,
+    'automaticChecks': auto and not network_import and not network_selection,
+    'networkSelection': network_selection,
     'networkImport': network_import,
     'privateSourceCandidate': private,
     'targetReview': target if private else None,

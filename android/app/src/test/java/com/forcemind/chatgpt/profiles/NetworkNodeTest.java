@@ -12,7 +12,7 @@ public final class NetworkNodeTest {
         assertEquals("reality",NetworkNode.parse(BASE+"?security=reality&sni=secure.test&pbk=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&sid=0123", "R").security);
     }
     @Test public void unsupportedTransportAndAmbiguityNeverDowngrade() {
-        for(String suffix:new String[]{"?type=ws&security=tls", "?type=grpc", "?type=xhttp", "?type=tcp&type=raw", "?security=tls&allowInsecure=1", "?security=none&sni=x", "?security=tls&unknown=1"}) {
+        for(String suffix:new String[]{"?type=grpc", "?type=xhttp", "?type=tcp&type=raw", "?security=tls&allowInsecure=1", "?security=none&sni=x", "?security=tls&unknown=1"}) {
             try { NetworkNode.parse(BASE+suffix,"x");fail("Unsupported configuration accepted"); }
             catch(IllegalArgumentException expected){assertFalse(expected.getMessage().contains(BASE));assertFalse(expected.getMessage().contains("00000000"));}
         }
@@ -25,7 +25,6 @@ public final class NetworkNodeTest {
     }
     @Test public void unsupportedTransportIsReportedBeforeItsTransportSpecificOptions() {
         String[][] cases = {
-            {"ws&path=%2Fsocket", "WebSocket"},
             {"grpc&serviceName=fixture", "gRPC"},
             {"xhttp&mode=packet-up", "XHTTP"},
             {"httpupgrade&path=%2Fupgrade", "HTTP Upgrade"}
@@ -35,9 +34,27 @@ public final class NetworkNodeTest {
                 NetworkNode.parse(BASE + "?type=" + row[0], null);
                 fail("Unsupported transport accepted");
             } catch (IllegalArgumentException error) {
-                assertEquals("此线路使用 " + row[1] + "，当前版本仅支持 VLESS TCP（RAW）", error.getMessage());
+                assertEquals("此线路使用 " + row[1] + "，当前版本支持 VLESS TCP（RAW）和 WebSocket", error.getMessage());
             }
         }
+    }
+    @Test public void webSocketAndHttpHeaderAreMappedToXray() throws Exception {
+        NetworkNode ws = NetworkNode.parse(BASE + "?type=ws&security=tls&host=front.test&path=%2Fsocket", null);
+        assertEquals("ws", ws.transport);
+        org.json.JSONObject probe = new org.json.JSONObject(NetworkCoreConfig.buildProbe(ws));
+        assertFalse(probe.has("inbounds"));
+        org.json.JSONObject stream = probe.getJSONArray("outbounds").getJSONObject(0).getJSONObject("streamSettings");
+        assertEquals("front.test", stream.getJSONObject("wsSettings").getString("host"));
+        assertEquals("/socket", stream.getJSONObject("wsSettings").getString("path"));
+        assertEquals("tls", stream.getString("security"));
+
+        NetworkNode http = NetworkNode.parse(BASE + "?type=tcp&headerType=http&host=one.test%2Ctwo.test&path=%2Fa%2C%2Fb", null);
+        org.json.JSONObject raw = new org.json.JSONObject(NetworkCoreConfig.build(http, 17654))
+                .getJSONArray("outbounds").getJSONObject(0).getJSONObject("streamSettings");
+        org.json.JSONObject header = raw.getJSONObject("rawSettings").getJSONObject("header");
+        assertEquals("http", header.getString("type"));
+        assertEquals("/b", header.getJSONObject("request").getJSONArray("path").getString(1));
+        assertEquals("two.test", header.getJSONObject("request").getJSONObject("headers").getJSONArray("Host").getString(1));
     }
     @Test public void ipv6RemainsCanonicalAndInvalidPortIsRejected() {
         assertEquals("[2001:db8::1]:443",NetworkNode.parse(BASE.replace("fixture.test","[2001:db8::1]"),"IPv6").endpoint());

@@ -55,21 +55,37 @@ public final class NetworkNode {
             }
             String transport = p.getOrDefault("type", "tcp");
             if ("tcp".equals(transport)) transport = "raw";
-            if (!"raw".equals(transport)) throw bad(unsupportedTransport(transport));
+            if ("websocket".equals(transport)) transport = "ws";
+            boolean webSocket = "ws".equals(transport);
+            if (!"raw".equals(transport) && !webSocket) throw bad(unsupportedTransport(transport));
             if (!allowed.containsAll(p.keySet())) throw bad("地址包含未支持的参数");
             if (!"none".equals(p.getOrDefault("encryption", "none"))) throw bad("仅支持 encryption=none");
-            if (!"none".equals(p.getOrDefault("headerType", "none"))) throw bad("此线路启用了 TCP 头部伪装，当前版本暂不支持");
+            String header = p.getOrDefault("headerType", "none");
+            boolean httpHeader = "http".equals(header);
+            if (!"none".equals(header) && !httpHeader) throw bad("不支持此 TCP 头部类型，目前支持 HTTP 头部伪装");
+            if (webSocket && httpHeader) throw bad("HTTP 头部伪装仅适用于 TCP（RAW）线路");
             String security = p.getOrDefault("security", "none");
             if (!Arrays.asList("none", "tls", "reality").contains(security)) throw bad("不支持此安全协议");
             if ("reality".equals(security) && !"raw".equals(transport)) throw bad("REALITY 仅支持 raw/tcp");
             if (p.containsKey("allowInsecure") && !Arrays.asList("0", "false").contains(p.get("allowInsecure"))) throw bad("不允许跳过证书验证");
             if (p.containsKey("sni") && !p.get("sni").matches("[A-Za-z0-9._:-]+")) throw bad("sni 格式无效");
-            if (p.containsKey("host") && !p.get("host").matches("[A-Za-z0-9.\\[\\]:_-]+")) throw bad("WebSocket host 格式无效");
             if (p.containsKey("spx") && !p.get("spx").startsWith("/")) throw bad("spx 必须以 / 开始");
             String flow = p.getOrDefault("flow", "");
             if (!flow.isEmpty() && (!"xtls-rprx-vision".equals(flow) || !"raw".equals(transport) || "none".equals(security))) throw bad("不支持此 flow 组合");
-            if (!"ws".equals(transport) && (p.containsKey("host") || p.containsKey("path"))) throw bad("host/path 仅适用于 ws");
-            if ("ws".equals(transport) && !p.getOrDefault("path", "/").startsWith("/")) throw bad("WebSocket path 必须以 / 开始");
+            if (!webSocket && !httpHeader && (p.containsKey("host") || p.containsKey("path")))
+                throw bad("host/path 适用于 WebSocket 或 TCP HTTP 头部伪装");
+            if (p.containsKey("host")) {
+                String[] hosts = httpHeader ? p.get("host").split(",", -1) : new String[]{p.get("host")};
+                for (String candidate : hosts) {
+                    if (!candidate.matches("[A-Za-z0-9.\\[\\]:_-]+")) throw bad("host 格式无效");
+                }
+            }
+            if (p.containsKey("path")) {
+                String[] paths = httpHeader ? p.get("path").split(",", -1) : new String[]{p.get("path")};
+                for (String candidate : paths) {
+                    if (!candidate.startsWith("/") || candidate.indexOf(' ') >= 0) throw bad("path 必须以 / 开始，且不能含空格");
+                }
+            }
             if (!"reality".equals(security) && (p.containsKey("pbk") || p.containsKey("sid") || p.containsKey("spx"))) throw bad("REALITY 参数与 security 不一致");
             if ("none".equals(security) && (p.containsKey("sni") || p.containsKey("fp") || p.containsKey("alpn"))) throw bad("TLS 参数与 security 不一致");
             if (p.containsKey("fp") && !Arrays.asList("chrome", "firefox", "safari", "ios", "android", "edge", "360", "qq", "random", "randomized").contains(p.get("fp"))) throw bad("不支持此 TLS 指纹");
@@ -92,7 +108,6 @@ public final class NetworkNode {
     }
     private static String unsupportedTransport(String type) {
         String label = switch (type.toLowerCase(java.util.Locale.ROOT)) {
-            case "ws", "websocket" -> "WebSocket";
             case "grpc" -> "gRPC";
             case "xhttp", "splithttp" -> "XHTTP";
             case "httpupgrade" -> "HTTP Upgrade";
@@ -102,7 +117,7 @@ public final class NetworkNode {
             default -> type.matches("[A-Za-z0-9_-]{1,24}") ? type : "";
         };
         return (label.isEmpty() ? "无法识别此线路的传输方式" : "此线路使用 " + label)
-                + "，当前版本仅支持 VLESS TCP（RAW）";
+                + "，当前版本支持 VLESS TCP（RAW）和 WebSocket";
     }
 
     public String endpoint() { return (host.contains(":") ? "[" + host + "]" : host) + ":" + port; }

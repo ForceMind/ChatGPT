@@ -18,13 +18,14 @@ import org.junit.runner.RunWith;
 import static org.junit.Assert.*;
 
 @RunWith(AndroidJUnit4.class)
-public final class NetworkImportTest {
+public final class NetworkPanelCandidateTest {
     private static final String BASE = "vless://00000000-0000-4000-8000-000000000001@fixture.test:443";
     private static final String PASTE = BASE + "?type=tcp#%E9%A6%99%E6%B8%AF%2001";
     private static final String CAMERA = BASE + "?type=raw#%E7%9B%B8%E6%9C%BA%20%E7%BA%BF%E8%B7%AF";
     private final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
     private final Context context = instrumentation.getTargetContext();
     private NetworkSession session;
+    private StudioSheet sheet;
 
     @Test public void clipboardAndCameraOnlySaveOnConfirmation() throws Exception {
         assertTrue(BuildConfig.ENVIRONMENT_TEST && BuildConfig.APP_UPDATE_TEST);
@@ -46,9 +47,9 @@ public final class NetworkImportTest {
                 click("粘贴链接");
                 expectText("线路名称", "香港 01");
                 replaceText("线路名称", "我改的名称");
-                clipboard(BASE + "?type=ws&path=%2Fsocket#Rejected");
+                clipboard(BASE + "?type=grpc&serviceName=fixture#Rejected");
                 click("粘贴链接");
-                awaitNode("未导入：此线路使用 WebSocket，当前版本仅支持 VLESS TCP（RAW）", false, false);
+                awaitNode("未导入：此线路使用 gRPC，当前版本支持 VLESS TCP（RAW）和 WebSocket", false, false);
                 expectText("线路名称", "我改的名称");
                 assertEquals(1, store.read().nodes.size());
                 click("取消");
@@ -78,12 +79,121 @@ public final class NetworkImportTest {
                 assertEquals(PASTE, store.read().nodes.get(2).link);
                 assertEquals(workspace.current().id, new StateStore(context.getFilesDir()).load().current().id);
                 Bundle result = new Bundle();
-                result.putString("networkImportProof", "clipboard-name,camera-name,manual-name,unsupported-ws,explicit-save,existing-settings");
+                result.putString("networkImportProof", "clipboard-name,camera-name,manual-name,unsupported-grpc,explicit-save,existing-settings");
                 instrumentation.addResults(result);
             } finally {
                 host.onActivity(activity -> session.close());
             }
         }
+    }
+
+    @Test public void selectionDeletionAndProbePreserveTheActiveRoute() throws Exception {
+        assertTrue(BuildConfig.ENVIRONMENT_TEST && BuildConfig.APP_UPDATE_TEST);
+        String id = InstrumentationRegistry.getArguments().getString("nodeIdentity");
+        assertNotNull(id);
+        NetworkSettingsStore store = new NetworkSettingsStore(context);
+        NetworkSettingsStore.Data settings = new NetworkSettingsStore.Data();
+        String base = "vless://" + id + "@127.0.0.1:";
+        settings.nodes.add(NetworkNode.parse(base + "18778?type=raw", "原线路"));
+        settings.nodes.add(NetworkNode.parse(base + "18779?type=ws&path=%2Fowned&host=owned.test", "WebSocket 线路"));
+        settings.nodes.add(NetworkNode.parse(base + "18780?type=tcp&headerType=http&path=%2Fowned&host=owned.test", "TCP HTTP 线路"));
+        settings.enabled = true;
+        settings.selected = 0;
+        store.write(settings);
+        WorkspaceState workspace = new StateStore(context.getFilesDir()).load();
+        Intent intent = new Intent(context, AssetWorkbenchActivity.class)
+                .putExtra(AssetWorkbenchActivity.ACCOUNT, workspace.current().id);
+        try (ActivityScenario<AssetWorkbenchActivity> host = ActivityScenario.launch(intent)) {
+            host.onActivity(activity -> {
+                session = new NetworkSession(context, () -> {});
+                sheet = NetworkSheet.show(activity, session);
+            });
+            try {
+                awaitNode("当前使用 · 已连接 · TCP", false, false);
+                assertSelection(host, "原线路", "WebSocket 线路");
+                NetworkRoute.Snapshot original = session.routes.snapshot();
+                byte[] saved = java.nio.file.Files.readAllBytes(new java.io.File(
+                        context.getNoBackupFilesDir(), "studio-network-v1.enc").toPath());
+
+                clickDescription("测试线路 WebSocket 线路");
+                awaitPartialText("检查目标可达 · ");
+                assertSame("Probe replaced the active route", original, session.routes.snapshot());
+                assertSelection(host, "原线路", "WebSocket 线路");
+                clickDescription("测试线路 TCP HTTP 线路");
+                awaitPartialText("TCP HTTP\n检查目标可达 · ");
+                assertSame("Probe replaced the active route", original, session.routes.snapshot());
+                assertArrayEquals(saved, java.nio.file.Files.readAllBytes(new java.io.File(
+                        context.getNoBackupFilesDir(), "studio-network-v1.enc").toPath()));
+                assertTrue(studio.networkcore.Networkcore.isRunning());
+
+                click("WebSocket 线路");
+                click("继续");
+                awaitNode("当前使用 · 已连接 · WebSocket", false, false);
+                assertSelection(host, "WebSocket 线路", "原线路");
+
+                clickDescription("删除线路 原线路");
+                click("删除");
+                awaitPartialText("线路已删除");
+                assertEquals(0, store.read().selected);
+                assertEquals(2, store.read().nodes.size());
+                assertSelection(host, "WebSocket 线路", "TCP HTTP 线路");
+
+                clickDescription("删除线路 WebSocket 线路");
+                awaitPartialText("删除后将切回系统网络");
+                click("取消");
+                assertEquals(2, store.read().nodes.size());
+                assertTrue(store.read().enabled);
+                clickDescription("删除线路 WebSocket 线路");
+                click("切回系统网络并删除");
+                awaitNode("线路已删除，已切回系统网络", false, false);
+                assertSelection(host, "使用系统网络", "TCP HTTP 线路");
+                NetworkSettingsStore.Data after = store.read();
+                assertFalse(after.enabled);
+                assertEquals(-1, after.selected);
+                assertEquals(1, after.nodes.size());
+                assertEquals("TCP HTTP 线路", after.nodes.get(0).name);
+                assertEquals(NetworkRoute.State.SYSTEM, session.routes.snapshot().state);
+                assertEquals(workspace.current().id, new StateStore(context.getFilesDir()).load().current().id);
+                Bundle result = new Bundle();
+                result.putString("networkSelectionProof", "selected-frame,ws-probe,tcp-http-probe,active-route-preserved,select-ws,delete-inactive,delete-active-to-system");
+                instrumentation.addResults(result);
+            } finally {
+                host.onActivity(activity -> session.close());
+            }
+        }
+    }
+
+    private void assertSelection(ActivityScenario<AssetWorkbenchActivity> host, String active, String other) {
+        host.onActivity(activity -> {
+            android.view.View activeRow = routeRow(active);
+            android.view.View otherRow = routeRow(other);
+            assertTrue(activeRow.isSelected());
+            assertFalse(otherRow.isSelected());
+            android.graphics.drawable.RippleDrawable ripple = (android.graphics.drawable.RippleDrawable) activeRow.getBackground();
+            android.graphics.drawable.GradientDrawable frame = (android.graphics.drawable.GradientDrawable) ripple.getDrawable(0);
+            assertEquals(0xfff4f4f4, frame.getColor().getDefaultColor());
+            assertTrue(((android.widget.LinearLayout) activeRow).getChildAt(0) instanceof android.widget.ImageView);
+        });
+    }
+
+    private android.view.View routeRow(String name) {
+        for (int i = 0; i < sheet.body.getChildCount(); i++) {
+            android.view.View child = sheet.body.getChildAt(i);
+            if (!(child instanceof android.widget.LinearLayout row)) continue;
+            for (int j = 0; j < row.getChildCount(); j++) {
+                if (!(row.getChildAt(j) instanceof android.widget.LinearLayout copy) || copy.getChildCount() == 0) continue;
+                if (copy.getChildAt(0) instanceof android.widget.TextView text && name.contentEquals(text.getText())) return row;
+            }
+        }
+        throw new AssertionError("Route row missing: " + name);
+    }
+
+    private void clickDescription(String label) throws Exception {
+        assertTrue(awaitNode(label, true, true).performAction(AccessibilityNodeInfo.ACTION_CLICK));
+    }
+
+    private void awaitPartialText(String text) throws Exception {
+        waitFor("Visible text: " + text, () -> visibleLabels(root(), 0).contains(text));
     }
 
     private void clipboard(String value) {
@@ -151,7 +261,7 @@ public final class NetworkImportTest {
     }
 
     private static String visibleLabels(AccessibilityNodeInfo node, int depth) {
-        if (node == null || depth > 5) return "";
+        if (node == null || depth > 9) return "";
         StringBuilder labels = new StringBuilder();
         if (!node.isPassword() && !node.isEditable()) {
             CharSequence text = node.getText();

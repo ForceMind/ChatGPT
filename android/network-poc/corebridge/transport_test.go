@@ -86,17 +86,23 @@ func TestOwnedTransportMatrix(t *testing.T) {
     target.TLS = &tls.Config{Certificates:[]tls.Certificate{pair},MinVersion:tls.VersionTLS13,NextProtos:[]string{"h2","http/1.1"}}
     target.StartTLS()
     defer target.Close()
-    for _, mode := range []string{"raw", "ws", "tls", "reality"} {
+    for _, mode := range []string{"raw", "ws", "ws-tls", "tcp-http", "tls", "reality"} {
         t.Run(mode,func(t *testing.T) {
             defer Stop()
             serverPort, proxyPort := freePort(t),freePort(t)
             serverStream := map[string]any{"network":"raw","security":"none"}
             clientStream := map[string]any{"network":"raw","security":"none"}
-            if mode=="ws" {
+            if mode=="ws" || mode=="ws-tls" {
                 serverStream = map[string]any{"network":"ws","security":"none","wsSettings":map[string]any{"path":"/owned"}}
                 clientStream = map[string]any{"network":"ws","security":"none","wsSettings":map[string]any{"path":"/owned"}}
             }
-            if mode=="tls" {
+            if mode=="tcp-http" {
+                header := map[string]any{"type":"http","request":map[string]any{
+                    "path":[]string{"/owned"},"headers":map[string]any{"Host":[]string{"owned.test"}}}}
+                serverStream["rawSettings"] = map[string]any{"header":header}
+                clientStream["rawSettings"] = map[string]any{"header":header}
+            }
+            if mode=="tls" || mode=="ws-tls" {
                 serverStream["security"]="tls"
                 serverStream["tlsSettings"]=map[string]any{"certificates":[]any{map[string]any{"certificate":strings.Split(cert,"\n"),"key":strings.Split(key,"\n")}}}
                 clientStream["security"]="tls"
@@ -133,6 +139,14 @@ func TestOwnedTransportMatrix(t *testing.T) {
                 "outbounds":[]any{map[string]any{"protocol":"vless","settings":map[string]any{"vnext":[]any{map[string]any{"address":"127.0.0.1","port":serverPort,"users":[]any{map[string]any{"id":fixtureID,"encryption":"none"}}}}},"streamSettings":clientStream}}})
             if err=Start(config);err!=nil { t.Fatal(err) }
             if err=Start(config);err==nil { t.Fatal("second start accepted") }
+            var probeConfig map[string]any
+            if err := json.Unmarshal([]byte(config), &probeConfig); err != nil { t.Fatal(err) }
+            delete(probeConfig, "inbounds")
+            if _, err := Probe(encode(probeConfig), origin.URL+"/probe"); err != nil { t.Fatal(err) }
+            if !IsRunning() { t.Fatal("independent probe stopped the primary core") }
+            probeBad := strings.Replace(encode(probeConfig), fixtureID,"00000000-0000-4000-8000-000000000002",1)
+            if _, err := Probe(probeBad, origin.URL+"/probe"); err == nil { t.Fatal("invalid probe credentials reached origin") }
+            if !IsRunning() { t.Fatal("failed probe stopped the primary core") }
             proxy,_:=url.Parse("http://127.0.0.1:"+strconv.Itoa(proxyPort))
             roots:=x509.NewCertPool()
             if !roots.AppendCertsFromPEM([]byte(cert)) { t.Fatal("fixture CA unavailable") }

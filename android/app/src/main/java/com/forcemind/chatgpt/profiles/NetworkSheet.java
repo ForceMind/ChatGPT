@@ -6,7 +6,10 @@ import android.app.AlertDialog;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.pm.PackageManager;
+import android.content.res.ColorStateList;
 import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.RippleDrawable;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.InputFilter;
@@ -45,6 +48,8 @@ final class NetworkSheet {
         AlertDialog editor;
         AlertDialog prompt;
         String message = "";
+        NetworkNode testedNode;
+        String testStatus = "";
         boolean registered;
         Panel(Activity activity, NetworkSession session, Runnable dismissed) {
             this.activity = activity; this.session = session;
@@ -84,22 +89,46 @@ final class NetworkSheet {
                     retry.setEnabled(!busy);
                 }
             } else if (!message.isEmpty()) note(message);
+            boolean systemSelected = session.systemSelected();
             LinearLayout system = sheet.row("使用系统网络", session.unreadable() ? "仅本次，保留原线路配置"
-                    : !session.enabled() && session.ready() ? "当前使用" : "停用应用内线路", "",
-                    () -> confirm(() -> run(() -> session.useSystem(result()))));
+                    : systemSelected ? session.ready() ? "当前使用" : "当前选择" : "停用应用内线路",
+                    systemSelected ? "check" : "", () -> {
+                        if (session.routes.snapshot().state != NetworkRoute.State.SYSTEM)
+                            confirm(() -> run(() -> session.useSystem(result())));
+                    });
+            styleRouteRow(system, systemSelected);
             system.setEnabled(!busy);
             List<NetworkNode> nodes = session.nodes();
             for (int i = 0; i < nodes.size(); i++) {
-                int index = i; NetworkNode node = nodes.get(i);
-                String state = session.connectedTo(i) ? "已连接" : session.enabled() && session.selected() == i
-                        ? session.changing() ? "正在连接" : "已选择 · 未连接" : "点按连接";
-                String detail = state + " · " + ("none".equals(node.security) ? "RAW" : node.security.toUpperCase(java.util.Locale.ROOT)) + " · 长按编辑";
-                LinearLayout row = sheet.row(node.name, detail, "", () -> confirm(() -> {
-                    if (!unchanged(index, node)) { message = "线路已变更，请重新选择"; render(); return; }
-                    run(() -> session.select(index, result()));
-                }));
+                int index = i;
+                NetworkNode node = nodes.get(i);
+                boolean selected = selectedRoute(index);
+                String state = session.connectedTo(i) ? "当前使用 · 已连接" : selected
+                        ? session.changing() ? "当前选择 · 正在连接" : "当前选择 · 未连接" : "点按连接";
+                String transport = "ws".equals(node.transport) ? "WebSocket"
+                        : "http".equals(node.options.get("headerType")) ? "TCP HTTP" : "TCP";
+                String detail = state + " · " + transport;
+                if (!"none".equals(node.security)) detail += " + " + node.security.toUpperCase(java.util.Locale.ROOT);
+                if (node == testedNode) detail += "\n" + testStatus;
+                LinearLayout row = sheet.row(node.name, detail, selected ? "check" : "", () -> {
+                    if (session.connectedTo(index)) return;
+                    confirm(() -> {
+                        if (!unchanged(index, node)) { message = "线路已变更，请重新选择"; render(); return; }
+                        run(() -> session.select(index, result()));
+                    });
+                });
+                styleRouteRow(row, selected);
                 row.setEnabled(!busy);
                 row.setOnLongClickListener(view -> { if (!session.controlsBusy() && !session.unreadable()) edit(index, node); return true; });
+                addRouteAction(row, "测试", "测试线路 " + node.name, !busy && !session.probing()
+                        && !session.unreadable(), () -> {
+                    if (!unchanged(index, node)) { message = "线路已变更，请重新选择"; render(); return; }
+                    testedNode = node;
+                    testStatus = "正在测试…";
+                    session.testNode(node, (ok, text) -> { testStatus = text; render(); });
+                });
+                addRouteAction(row, "删除", "删除线路 " + node.name, !busy && !session.unreadable(),
+                        () -> confirmDelete(index, node));
             }
             sheet.action("添加 VLESS 线路", true, () -> edit(-1, null));
             sheet.footer.getChildAt(0).setEnabled(!busy && !session.unreadable());
@@ -107,6 +136,41 @@ final class NetworkSheet {
                 ScrollView parent = (ScrollView) sheet.body.getParent();
                 parent.post(() -> { if (sheet.isShowing()) parent.scrollTo(0, scroll); });
             }
+        }
+        private void addRouteAction(LinearLayout row, String label, String description, boolean enabled, Runnable action) {
+            Button button = new Button(activity, null, android.R.attr.borderlessButtonStyle);
+            StudioTypography.button(button);
+            button.setText(label);
+            button.setContentDescription(description);
+            button.setEnabled(enabled);
+            button.setOnClickListener(view -> action.run());
+            row.addView(button, new LinearLayout.LayoutParams(-2, -2));
+        }
+        private boolean selectedRoute(int index) {
+            return session.enabled() && session.selected() == index;
+        }
+        private void styleRouteRow(LinearLayout row, boolean selected) {
+            int pad = StudioTypography.dp(activity, 12);
+            row.setPadding(pad, row.getPaddingTop(), pad, row.getPaddingBottom());
+            row.setSelected(selected);
+            GradientDrawable frame = new GradientDrawable();
+            frame.setColor(selected ? 0xfff4f4f4 : Color.WHITE);
+            frame.setCornerRadius(pad);
+            if (selected) frame.setStroke(StudioTypography.dp(activity, 2), StudioTypography.INK);
+            row.setBackground(new RippleDrawable(ColorStateList.valueOf(0x16000000), frame, null));
+        }
+        private void confirmDelete(int index, NetworkNode node) {
+            boolean active = selectedRoute(index);
+            AlertDialog.Builder confirm = new AlertDialog.Builder(activity).setTitle("删除「" + node.name + "」？");
+            if (active) confirm.setMessage("删除后将切回系统网络。正在生成或传输的请求可能中断。");
+            showPrompt(confirm.setNegativeButton("取消", null)
+                    .setPositiveButton(active ? "切回系统网络并删除" : "删除", (dialog, which) -> {
+                        if (!unchanged(index, node) || active != selectedRoute(index)) {
+                            message = "线路已变更，请重新确认"; render(); return;
+                        }
+                        run(() -> session.removeNode(index, (ok, text) -> result().complete(ok, ok
+                                ? (active ? "线路已删除，已切回系统网络" : "线路已删除") : text)));
+                    }).create());
         }
         void note(String text) {
             if (text == null || text.isEmpty()) return;
@@ -162,11 +226,7 @@ final class NetworkSheet {
             scroll.addView(fields);
             AlertDialog.Builder builder = new AlertDialog.Builder(activity).setTitle(index < 0 ? "添加线路" : "编辑线路")
                     .setView(scroll).setNegativeButton("取消", null).setPositiveButton("保存", null);
-            if (index >= 0) builder.setNeutralButton("删除", (dialog, which) -> showPrompt(new AlertDialog.Builder(activity).setTitle("删除此线路？")
-                    .setNegativeButton("取消", null).setPositiveButton("删除", (d, w) -> {
-                        if (!unchanged(index, node)) { message = "线路已变更，请重新打开后编辑"; render(); return; }
-                        run(() -> session.removeNode(index, result()));
-                    }).create()));
+            if (index >= 0) builder.setNeutralButton("删除", (dialog, which) -> confirmDelete(index, node));
             AlertDialog dialog = builder.create(); editor = dialog;
             Consumer<String> importLink = text -> {
                 if (editor != dialog || !dialog.isShowing()) return;
