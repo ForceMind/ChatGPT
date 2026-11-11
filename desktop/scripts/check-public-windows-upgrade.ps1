@@ -35,12 +35,12 @@ foreach ($case in @(
     $before = (Get-FileHash -LiteralPath $marker).Hash
     $pin = Join-Path $env:APPDATA "Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar\Studio-Owned-$($case.name).lnk"
     & $control -Operation Pin -Directory $case.old -Executable 'ChatGPT Studio.exe' -File $pin
-    Install-Public '2026.11.11' '' "$($case.name)-upgrade"
+    Install-Public '2026.11.13' '' "$($case.name)-upgrade"
     $report = Join-Path $out "$($case.name)-inspection.json"
     & $control -Operation Inspect -Directory $modern -RequireUpdater -Output $report
     & $control -Operation CheckPin -Directory $modern -File $pin
     $inspected = Get-Content -Raw $report | ConvertFrom-Json
-    if ($inspected.productVersion -notmatch '^2026\.11\.11($|\.0$)') { throw 'Wrong installed version' }
+    if ($inspected.productVersion -notmatch '^2026\.11\.13($|\.0$)') { throw 'Wrong installed version' }
     if (Test-Path -LiteralPath $nested) { throw 'Nested legacy directory remains' }
     if ((Get-FileHash -LiteralPath $marker).Hash -ne $before) { throw 'Installer changed synthetic data' }
     $rows += @{name=$case.name; from=$baseVersion; to=$inspected.productVersion; inspection=$inspected; dataBytesUnchanged=$true; pinnedShortcutVerified=$true}
