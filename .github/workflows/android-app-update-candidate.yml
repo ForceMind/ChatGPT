@@ -1,30 +1,278 @@
-name: Android new transport file proof
+name: Android App Update Candidate
 'on':
+  push:
+    branches: [dev]
+    paths: ['.github/workflows/android-app-update-candidate.yml']
   workflow_dispatch:
+    inputs:
+      device_acceptance:
+        description: Build the private-source receiver and higher ARM64 target for device acceptance
+        type: boolean
+        default: false
+      auto_only:
+        description: Verify automatic checks and build an unsigned original-package candidate
+        type: boolean
+        default: false
+      recovery_only:
+        description: Run only synthetic exit, restart and install cancellation checks
+        type: boolean
+        default: false
+      network_import:
+        description: Exercise clipboard and camera import with synthetic VLESS data
+        type: boolean
+        default: false
+      network_selection:
+        description: Verify route selection, deletion and independent probes with owned VLESS nodes
+        type: boolean
+        default: false
 permissions:
   contents: read
+  actions: read
 jobs:
-  owned-https-files:
-    if: github.ref == 'refs/heads/validation/android-new-transport-files'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 12
+  build:
+    if: github.event_name == 'workflow_dispatch' && (github.ref == 'refs/heads/dev' || (startsWith(github.ref, 'refs/heads/release/android-') && inputs.auto_only && !inputs.device_acceptance)) && (!(inputs.network_import && inputs.network_selection) && (!(inputs.network_import || inputs.network_selection) || (inputs.auto_only && !inputs.device_acceptance))) && !(inputs.auto_only && inputs.recovery_only) && (!inputs.device_acceptance || inputs.auto_only)
+    env:
+      STUDIO_APP_UPDATE_AUTO: ${{ inputs.auto_only }}
+      STUDIO_APP_UPDATE_ACCEPTANCE: ${{ inputs.device_acceptance }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
       - uses: actions/setup-go@v5
         with:
           go-version: 1.27.3
           cache: false
-      - name: Verify HTTPS upload and download through owned transport fixtures
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools build-tools;35.0.0 platforms;android-36 platforms;android-37.0
+      - uses: actions/cache@v4
+        with:
+          path: |
+            android/network-poc/app/libs/
+            android/network-poc/corebridge/bin/
+            android/app/libs/licenses/
+          key: formal-network-core-go1273-ndk282-${{ hashFiles('android/network-poc/corebridge/go.mod', 'android/network-poc/corebridge/go.sum', 'android/network-poc/corebridge/**/*.go', 'android/network-poc/scripts/build-core.sh', 'android/scripts/prepare-network-core.sh') }}
+      - run: bash android/scripts/prepare-network-core.sh
+      - name: Verify actual transports and independent probes
+        if: inputs.network_selection
         working-directory: android/network-poc/corebridge
-        shell: bash
+        run: go test -v -run '^TestOwnedTransportMatrix$' -count=1 .
+      - run: python3 android/scripts/prefetch-regular-gradle.py
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Verify private source authorization and streaming
+        if: inputs.device_acceptance
+        run: node --test android/update-acceptance/worker.test.mjs
+      - name: Run Android unit tests including the update contract
+        run: bash android/gradlew -p android --no-daemon :app:testDebugUnitTest
+      - name: Freeze candidate and synthetic target metadata
         run: |
-          go mod tidy
-          go mod verify
-          go test -v -count=1 -run '^TestOwnedTransportMatrix$/(ws|ws-tls|tcp-http)$' . | tee "$RUNNER_TEMP/owned-transport-file-proof.log"
+          mkdir -p android/app/build/app-update-review android/app/build/app-update-ci
+          python3 - <<'PY'
+          import json,os,pathlib
+          from datetime import datetime, timedelta
+          from zoneinfo import ZoneInfo
+          root=pathlib.Path('android/app/build')
+          stamp=datetime.now(ZoneInfo('Asia/Shanghai')).strftime('%Y.%m.%d-%H%M')
+          private=os.environ.get('STUDIO_APP_UPDATE_ACCEPTANCE')=='true'
+          offset=2 if private else 8 if os.environ.get('STUDIO_APP_UPDATE_AUTO')=='true' else 0
+          for file,code,name in [('app-update-version.json',3000037+offset,stamp),('app-update-target.json',3000038+offset,'2099.01.01-0000')]:
+              (root/file).write_text(json.dumps({'schema':1,'versionCode':code,'versionName':name,'timeZone':'Asia/Shanghai','sourceSHA':os.environ['GITHUB_SHA']},indent=2)+'\n')
+          if private:
+              target=(datetime.strptime(stamp,'%Y.%m.%d-%H%M')+timedelta(minutes=1)).strftime('%Y.%m.%d-%H%M')
+              (root/'app-update-human-target.json').write_text(json.dumps({'schema':1,'versionCode':3000040,'versionName':target,'timeZone':'Asia/Shanghai','sourceSHA':os.environ['GITHUB_SHA']},indent=2)+'\n')
+          PY
+      - name: Run private-source contract unit tests
+        if: inputs.device_acceptance
+        run: bash android/environment-poc/gradlew -p android --no-daemon -PenvironmentClient -PregularEnvironmentClient -PappUpdateCandidate -PappUpdateAuto -PappUpdateAcceptance -PunsignedRelease -PandroidVersionFile=android/app/build/app-update-version.json :app:testReleaseUnitTest
+      - name: Create a disposable same-signer upgrade fixture
+        run: |
+          password=$(openssl rand -hex 24)
+          echo "::add-mask::$password"
+          key="$RUNNER_TEMP/app-update-ci.p12"
+          STUDIO_REGULAR_CI_STORE_PASSWORD="$password" keytool -genkeypair -noprompt -storetype PKCS12 -keystore "$key" -storepass:env STUDIO_REGULAR_CI_STORE_PASSWORD -keypass:env STUDIO_REGULAR_CI_STORE_PASSWORD -alias regular-compat-ci -keyalg RSA -keysize 3072 -validity 2 -dname 'CN=Temporary application update CI'
+          chmod 600 "$key"
+          echo "STUDIO_REGULAR_CI_STORE_PASSWORD=$password" >> "$GITHUB_ENV"
+          echo "STUDIO_REGULAR_CI_KEYSTORE_PATH=$key" >> "$GITHUB_ENV"
+      - name: Build and sign the independent post-install verifier
+        if: ${{ !inputs.recovery_only && !inputs.auto_only }}
+        run: |
+          python3 android/scripts/prepare-app-update-verifier.py --output "$RUNNER_TEMP/app-update-verifier"
+          bash android/gradlew -p "$RUNNER_TEMP/app-update-verifier" --no-daemon assembleRelease
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" sign --ks "$STUDIO_REGULAR_CI_KEYSTORE_PATH" --ks-key-alias regular-compat-ci --ks-pass env:STUDIO_REGULAR_CI_STORE_PASSWORD --key-pass env:STUDIO_REGULAR_CI_STORE_PASSWORD --out android/app/build/app-update-ci/installed-test.apk "$RUNNER_TEMP"/app-update-verifier/build/outputs/apk/release/*-unsigned.apk
+      - name: Build R8 arm64 original-package review APK
+        if: ${{ !inputs.recovery_only }}
+        run: |
+          test ! -f android/keystore.properties
+          bash android/environment-poc/gradlew -p android --no-daemon -PenvironmentClient -PregularEnvironmentClient -PappUpdateCandidate ${{ inputs.auto_only && '-PappUpdateAuto' || '' }} ${{ inputs.device_acceptance && '-PappUpdateAcceptance' || '' }} -PunsignedRelease -PandroidVersionFile=android/app/build/app-update-version.json :app:lintRelease :app:assembleRelease
+          python3 android/scripts/package-app-update-review.py
+      - name: Build the higher ARM64 private-source target
+        if: inputs.device_acceptance
+        run: |
+          bash android/environment-poc/gradlew -p android --no-daemon -PenvironmentClient -PregularEnvironmentClient -PappUpdateCandidate -PappUpdateAuto -PappUpdateAcceptance -PappUpdateAcceptanceTarget -PunsignedRelease -PandroidVersionFile=android/app/build/app-update-human-target.json :app:assembleRelease
+          python3 android/scripts/package-app-update-review.py --target
+      - name: Build the non-test R8 x86 install target and sign only in CI
+        if: ${{ !inputs.network_import && !inputs.network_selection }}
+        run: |
+          bash android/environment-poc/gradlew -p android --no-daemon -PenvironmentClient -PregularEnvironmentClient -PappUpdateCandidate ${{ inputs.auto_only && '-PappUpdateAuto' || '' }} ${{ inputs.device_acceptance && '-PappUpdateAcceptance' || '' }} -PappUpdateTestTarget -PunsignedRelease -PregularReviewAbi=x86_64 -PandroidVersionFile=android/app/build/app-update-target.json :app:assembleRelease
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" sign --ks "$STUDIO_REGULAR_CI_KEYSTORE_PATH" --ks-key-alias regular-compat-ci --ks-pass env:STUDIO_REGULAR_CI_STORE_PASSWORD --key-pass env:STUDIO_REGULAR_CI_STORE_PASSWORD --out android/app/build/app-update-ci/target.apk android/app/build/outputs/apk/release/app-release-unsigned.apk
+      - name: Build the installed app fixture and instrumentation
+        run: |
+          bash android/environment-poc/gradlew -p android --no-daemon -PenvironmentClient -PregularEnvironmentClient -PregularEnvironmentCi -PenvironmentTest -PappUpdateCandidate ${{ inputs.auto_only && '-PappUpdateAuto' || '' }} ${{ inputs.device_acceptance && '-PappUpdateAcceptance' || '' }} -PappUpdateTest -PandroidVersionFile=android/app/build/app-update-version.json :app:assembleRelease :app:assembleReleaseAndroidTest
+          cp android/app/build/outputs/apk/release/app-release.apk android/app/build/app-update-ci/source.apk
+          cp android/app/build/outputs/apk/androidTest/release/app-release-androidTest.apk android/app/build/app-update-ci/source-test.apk
+          if [ "${{ inputs.network_import }}" != true ]; then cp android/network-poc/corebridge/bin/xray android/app/build/app-update-ci/xray; fi
+      - uses: actions/upload-artifact@v4
+        if: success() && !inputs.recovery_only
+        with:
+          name: android-app-update-unsigned-review
+          path: android/app/build/app-update-review/
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: android-app-update-ci-inputs
+          path: android/app/build/app-update-ci/
+          if-no-files-found: error
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: owned-transport-file-proof
-          path: ${{ runner.temp }}/owned-transport-file-proof.log
-          if-no-files-found: error
+          name: android-app-update-build-evidence
+          path: |
+            android/app/build/test-results/
+            android/app/build/reports/
+      - if: always()
+        run: rm -f "$RUNNER_TEMP/app-update-ci.p12"
+  emulator:
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [28, 35]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools build-tools;35.0.0
+      - uses: actions/download-artifact@v4
+        with:
+          name: android-app-update-ci-inputs
+          path: android/app/build/app-update-ci
+      - uses: actions/download-artifact@v4
+        if: matrix.api == 28 && !inputs.network_import
+        with:
+          name: beta-continuation-input
+          run-id: 41993581770
+          github-token: ${{ github.token }}
+          path: android/app/build/environment-provider-input
+      - name: Prepare the owned emulator and fixture executable
+        run: |
+          sudo chmod a+rw /dev/kvm
+          if [ "${{ inputs.network_import }}" != true ]; then chmod +x android/app/build/app-update-ci/xray; fi
+      - name: Generate an owned QR fixture for the emulator camera
+        if: inputs.network_import
+        run: |
+          if ! command -v qrencode; then sudo apt-get update -qq && sudo apt-get install -y qrencode; fi
+          qrencode -l M -m 4 -s 7 -o "$RUNNER_TEMP/studio-network-symbol.png" 'vless://00000000-0000-4000-8000-000000000001@fixture.test:443?type=raw#%E7%9B%B8%E6%9C%BA%20%E7%BA%BF%E8%B7%AF'
+          if ! /usr/bin/python3 -c 'from PIL import Image'; then sudo apt-get update -qq && sudo apt-get install -y python3-pil; fi
+          /usr/bin/python3 - <<'PYCODE'
+          import os
+          from pathlib import Path
+          from PIL import Image
+          root = Path(os.environ['RUNNER_TEMP'])
+          symbol = Image.open(root / 'studio-network-symbol.png').convert('RGB')
+          frame = Image.new('RGB', (1280, 720), 'white')
+          assert max(symbol.size) < 430
+          frame.paste(symbol, ((1280 - symbol.width) // 2, (720 - symbol.height) // 2))
+          frame.save(root / 'studio-network-qr.png')
+          PYCODE
+          if ! command -v ffmpeg; then sudo apt-get update -qq && sudo apt-get install -y ffmpeg; fi
+          ffmpeg -hide_banner -loglevel error -loop 1 -i "$RUNNER_TEMP/studio-network-qr.png" -c:v libx264 -profile:v baseline -pix_fmt yuv420p -r 15 -t 30 "$RUNNER_TEMP/studio-network-qr.mp4"
+      - name: Run the two-engine update and actual system installation
+        if: ${{ !inputs.network_import && !inputs.network_selection }}
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          target: ${{ matrix.api == 28 && 'default' || 'google_apis' }}
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader -feature -Vulkan -writable-system
+          script: |
+            if [ '${{ matrix.api }}' = 28 ]; then python3 android/network-poc/scripts/install-webview.py --provider android/app/build/environment-provider-input/provider --output android/app/build/app-update-provider; fi
+            python3 android/scripts/run-app-update-candidate.py --input android/app/build/app-update-ci --output android/app/build/app-update-evidence --api ${{ matrix.api }} ${{ inputs.recovery_only && '--recovery-only' || inputs.auto_only && '--auto-only' || '' }} ${{ inputs.device_acceptance && '--device-acceptance' || '' }}
+      - name: Verify clipboard and actual camera import without web access
+        if: inputs.network_import
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          target: ${{ matrix.api == 28 && 'default' || 'google_apis' }}
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader -feature -Vulkan -camera-back videofile:${{ runner.temp }}/studio-network-qr.mp4 -camera-front none
+          script: python3 android/scripts/run-app-update-candidate.py --input android/app/build/app-update-ci --output android/app/build/app-update-evidence --api ${{ matrix.api }} --network-import
+      - name: Verify route selection, deletion and probes without browser access
+        if: inputs.network_selection
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          target: ${{ matrix.api == 28 && 'default' || 'google_apis' }}
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader -feature -Vulkan -writable-system
+          script: |
+            if [ '${{ matrix.api }}' = 28 ]; then python3 android/network-poc/scripts/install-webview.py --provider android/app/build/environment-provider-input/provider --output android/app/build/app-update-provider; fi
+            python3 android/scripts/run-app-update-candidate.py --input android/app/build/app-update-ci --output android/app/build/app-update-evidence --api ${{ matrix.api }} --network-selection
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-app-update-api-${{ matrix.api }}
           retention-days: 14
+          if-no-files-found: error
+          path: |
+            android/app/build/app-update-evidence/
+            android/app/build/app-update-provider/
+  delivery:
+    if: ${{ always() && needs.emulator.result == 'success' && !inputs.recovery_only }}
+    needs: emulator
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: android-app-update-unsigned-review
+          path: android/app/build/app-update-review
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: android-app-update-api-*
+          path: android/app/build/app-update-evidence
+      - name: Bind both acceptance reports to the ARM64 review APK
+        env:
+          STUDIO_APP_UPDATE_AUTO: ${{ inputs.auto_only }}
+          STUDIO_APP_UPDATE_ACCEPTANCE: ${{ inputs.device_acceptance }}
+          STUDIO_NETWORK_IMPORT: ${{ inputs.network_import }}
+          STUDIO_NETWORK_SELECTION: ${{ inputs.network_selection }}
+        run: |
+          python3 android/scripts/verify-app-update-candidate.py \
+            --review android/app/build/app-update-review \
+            --evidence android/app/build/app-update-evidence \
+            --out android/app/build/app-update-acceptance.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-app-update-acceptance
+          retention-days: 14
+          path: android/app/build/app-update-acceptance.json
+          if-no-files-found: error
