@@ -111,6 +111,10 @@ def main():
                 assert sum(state['pageCounts'].values())==pages,'Unexpected extra page loads'
                 assert observed['/c/a1']['visibility']=='visible','The foreground measurement tab must remain visible'
                 return observed
+            # The existing open flow confirms the document and draft, but the
+            # fixture visibility event can arrive one observation later.
+            active.wait('foreground visibility before sampling', active.status,
+                        lambda state: (active.latest(state, '/c/a1') or {}).get('visibility') == 'visible')
             initial=observe();case={'pages':pages,'load':load,'initialDocuments':initial,'windows':[]}
             for window in range(2):
                 print('Warmup 30 seconds; window '+str(window+1)+'/2',flush=True)

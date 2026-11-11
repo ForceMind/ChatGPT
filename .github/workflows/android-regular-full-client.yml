@@ -1,4 +1,4 @@
-name: Android 2241 resource baseline
+name: Android 2241 single-window readiness retry
 'on': workflow_dispatch
 permissions:
   contents: read
@@ -7,104 +7,8 @@ env:
   STUDIO_ANDROID_CI_TARGET: regular
   STUDIO_REGULAR_VALIDATION_SCRIPT: android/scripts/measure-regular-optimization.py
 jobs:
-  build:
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/validation/android-2241-resources'
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    outputs:
-      version_name: "${{ steps.version.outputs.version_name }}"
-      version_code: "${{ steps.version.outputs.version_code }}"
-      ci_signer: "${{ steps.regular_signer.outputs.signer }}"
-    steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-java@v4
-      with:
-        distribution: temurin
-        java-version: '17'
-    - uses: actions/setup-go@v5
-      with:
-        go-version: 1.27.3
-        cache: false
-    - uses: android-actions/setup-android@v3
-      with:
-        packages: platform-tools
-    - uses: actions/cache@v4
-      with:
-        path: |
-          android/network-poc/app/libs/
-          android/network-poc/corebridge/bin/
-          android/app/libs/licenses/
-        key: formal-network-core-go1273-ndk282-${{ hashFiles('android/network-poc/corebridge/go.mod',
-          'android/network-poc/corebridge/go.sum', 'android/network-poc/corebridge/**/*.go',
-          'android/network-poc/scripts/build-core.sh', 'android/scripts/prepare-network-core.sh')
-          }}
-    - run: bash android/scripts/prepare-network-core.sh
-    - name: Retry existing checksum-pinned Gradle distributions before compilation
-      env:
-        GH_TOKEN: ${{ github.token }}
-      run: python3 android/scripts/prefetch-regular-gradle.py
-    - name: Check ordinary debug before selecting regular metadata
-      run: |
-        test ! -f android/keystore.properties
-        sdkmanager 'platforms;android-36' 'platforms;android-37.0' 'build-tools;35.0.0'
-        bash android/gradlew -p android --no-daemon :app:testDebugUnitTest
-    - name: Freeze one Shanghai timestamp for human and CI packages
-      id: version
-      run: |
-        python3 android/scripts/regular_version.py create --output android/app/build/regular-android-version.json
-        echo "STUDIO_ANDROID_VERSION_FILE=$GITHUB_WORKSPACE/android/app/build/regular-android-version.json" >> "$GITHUB_ENV"
-        echo "version_name=$(python3 android/scripts/regular_version.py read --file android/app/build/regular-android-version.json --field versionName)" >> "$GITHUB_OUTPUT"
-        echo "version_code=$(python3 android/scripts/regular_version.py read --file android/app/build/regular-android-version.json --field versionCode)" >> "$GITHUB_OUTPUT"
-    - name: Create a temporary compatibility signer in runner storage
-      run: |
-        python3 - <<'PY'
-        import os, pathlib, secrets
-        password = secrets.token_hex(32)
-        print('::add-mask::' + password)
-        key = pathlib.Path(os.environ['RUNNER_TEMP'], 'studio-regular-ci.p12')
-        assert not key.exists()
-        with open(os.environ['GITHUB_ENV'], 'a') as env:
-            env.write('STUDIO_REGULAR_CI_KEYSTORE_PATH=' + str(key) + '\n')
-            env.write('STUDIO_REGULAR_CI_STORE_PASSWORD=' + password + '\n')
-        PY
-    - name: Generate the one-run PKCS12 certificate
-      run: |
-        keytool -genkeypair -noprompt -storetype PKCS12 -keystore "$STUDIO_REGULAR_CI_KEYSTORE_PATH" -storepass:env STUDIO_REGULAR_CI_STORE_PASSWORD -keypass:env STUDIO_REGULAR_CI_STORE_PASSWORD -alias regular-compat-ci -keyalg RSA -keysize 3072 -validity 2 -dname 'CN=Temporary regular compatibility CI'
-        chmod 600 "$STUDIO_REGULAR_CI_KEYSTORE_PATH"
-    - name: Authenticate original public alpha22 and change signing metadata only
-      env:
-        GH_TOKEN: ${{ github.token }}
-      run: |
-        mkdir -p android/app/build/regular-environment-input
-        python3 android/scripts/download-regular-baseline.py --output android/app/build/regular-environment-input/alpha22-public.apk
-        python3 - <<'PY'
-        import hashlib, pathlib
-        apk = pathlib.Path('android/app/build/regular-environment-input/alpha22-public.apk')
-        assert apk.stat().st_size == 7376521
-        assert hashlib.sha256(apk.read_bytes()).hexdigest() == '39a06004608162884c5d2a11277eee840f5311438376bd7541adc638b1e55e53'
-        PY
-        "$ANDROID_HOME/build-tools/35.0.0/apksigner" sign --ks "$STUDIO_REGULAR_CI_KEYSTORE_PATH" --ks-key-alias regular-compat-ci --ks-pass env:STUDIO_REGULAR_CI_STORE_PASSWORD --key-pass env:STUDIO_REGULAR_CI_STORE_PASSWORD --out android/app/build/regular-environment-input/alpha22-ci-resigned.apk android/app/build/regular-environment-input/alpha22-public.apk
-    - name: Build separately marked temporary-key x86 compatibility inputs
-      run: |
-        studio_navigation_args=(-PregularNavigationTest -PregularWorkbenchTest)
-        bash android/environment-poc/gradlew -p android --no-daemon -PenvironmentClient -PregularEnvironmentClient -PregularEnvironmentCi -PenvironmentTest "${studio_navigation_args[@]}" :app:assembleRelease :app:assembleReleaseAndroidTest
-        python3 android/scripts/prepare-regular-ci-inputs.py
-    - uses: actions/upload-artifact@v4
-      with:
-        name: regular-environment-ci-input
-        retention-days: 14
-        if-no-files-found: error
-        path: android/app/build/regular-environment-input/
-    - name: Bind the one-run certificate
-      id: regular_signer
-      run: |-
-        test -n "$STUDIO_REGULAR_CI_CERT_SHA256"
-        echo "signer=$STUDIO_REGULAR_CI_CERT_SHA256" >> "$GITHUB_OUTPUT"
-    - name: Remove the temporary signer
-      if: always()
-      run: rm -f "$RUNNER_TEMP/studio-regular-ci.p12"
   resources:
-    needs: build
+    if: github.ref == 'refs/heads/validation/android-2241-resources'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     strategy:
@@ -112,12 +16,9 @@ jobs:
       matrix:
         api:
         - 28
-        - 35
         pages:
         - 1
-        - 4
         load:
-        - idle
         - stream
     steps:
     - uses: actions/checkout@v4
@@ -138,6 +39,8 @@ jobs:
     - uses: actions/download-artifact@v4
       with:
         name: regular-environment-ci-input
+        run-id: 43079361850
+        github-token: ${{ github.token }}
         path: android/app/build/regular-environment-input
     - name: Bind the test fixture and the 2241 production source
       run: |
@@ -146,7 +49,7 @@ jobs:
         root = pathlib.Path('android/app/build')
         folder = root / 'regular-environment-input'
         receipt = json.loads((folder / 'receipt.json').read_text())
-        assert receipt['sourceSHA'] == os.environ['GITHUB_SHA'] and receipt['ciOnly'] is True
+        assert receipt['sourceSHA'] == '873b8c8bcfc35f7e090fe402c0a9e475a1d27e8c' and receipt['ciOnly'] is True
         assert receipt['productionSignatureVerified'] is False
         apk = folder / receipt['file']
         with apk.open('rb') as stream:
@@ -154,7 +57,7 @@ jobs:
         signer = receipt['signerSHA256']
         assert re.fullmatch('[a-f0-9]{64}', signer)
         origin = {
-            'schema': 1, 'complete': True, 'mode': 'single', 'parentRun': int(os.environ['GITHUB_RUN_ID']),
+            'schema': 1, 'complete': True, 'mode': 'single', 'parentRun': 43079361850,
             'appSourceSHA': receipt['sourceSHA'], 'productionSourceSHA': 'b1ac1c1182e1fa93ba5e9b10eb547d1f8a128706',
             'productionVersion': '2026.11.11-2241', 'fixtureSHA256': receipt['sha256'],
             'ciSigner': signer, 'releaseAPKInstalled': False, 'minified': False,
