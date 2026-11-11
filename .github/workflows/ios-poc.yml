@@ -73,3 +73,48 @@ jobs:
             ${{ runner.temp }}/studio-ios-poc/ChatGPT-Studio-iOS26-simulator.zip
             ${{ runner.temp }}/studio-ios-poc/receipt.json
           if-no-files-found: error
+  core-link:
+    runs-on: macos-26
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      actions: read
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: studio-ios-go-core-build
+          run-id: 43080535334
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/studio-ios-core-link
+      - name: Link the current Go API from Swift on both iOS targets
+        shell: bash
+        run: |
+          work="$RUNNER_TEMP/studio-ios-core-link"
+          python3 - <<'PY'
+          from pathlib import Path
+          import json, os
+          p = Path(os.environ['RUNNER_TEMP']) / 'studio-ios-core-link/receipt.json'
+          r = json.loads(p.read_text())
+          assert r['sourceSHA'] == '0b40f271b0bf27a430695aacd9dc29fda355bb4e'
+          assert r['runtimeTested'] is False and len(r['slices']) == 2
+          PY
+          ditto -x -k "$work/Networkcore-xcframework.zip" "$work"
+          cat > "$work/link.swift" <<'SWIFT'
+          import Foundation
+          import Networkcore
+          print(NetworkcoreVersion() as Any)
+          SWIFT
+          for sdk in iphoneos iphonesimulator; do
+            target=arm64-apple-ios26.0
+            slice=ios-arm64
+            if [ "$sdk" = iphonesimulator ]; then
+              target="$target-simulator"
+              slice=ios-arm64-simulator
+            fi
+            xcrun --sdk "$sdk" swiftc -target "$target" -sdk "$(xcrun --sdk "$sdk" --show-sdk-path)" \
+              -F "$work/Networkcore.xcframework/$slice" -framework Networkcore "$work/link.swift" -o "$work/linked-$sdk"
+            xcrun vtool -show-build "$work/linked-$sdk"
+          done
