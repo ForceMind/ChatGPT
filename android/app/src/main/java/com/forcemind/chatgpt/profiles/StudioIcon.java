@@ -14,8 +14,10 @@ final class StudioIcon extends Drawable {
             case "plus"->{path(canvas,12,5,12,19);path(canvas,5,12,19,12);}
             case "check"->path(canvas,5,12,9,16,19,6);
             case "refresh" -> {
-                canvas.drawArc(4.5f, 4.5f, 19.5f, 19.5f, 45, 315, false, paint);
-                path(canvas, 16.25f, 8.5f, 19.5f, 12, 22.75f, 8.5f);
+                // The arrow ends at the circle's 330-degree point.
+                float tipX = 19.428203f;
+                canvas.drawArc(4.5f, 4.5f, 20.5f, 20.5f, 40, 290, false, paint);
+                path(canvas, tipX, 3.5f, tipX, 8.5f, tipX - 5, 8.5f);
             }
             case "chat"->{path(canvas,3,4,21,4,21,17,9,17,4,21,4,17,3,17,3,4);path(canvas,7,9,17,9);}
             case "folder"->path(canvas,3,5,10,5,12,8,21,8,21,20,3,20,3,5);

@@ -13,14 +13,19 @@ parser.add_argument('--out', type=Path, required=True)
 args = parser.parse_args()
 assert os.environ.get('GITHUB_ACTIONS') == 'true'
 assert os.environ.get('GITHUB_REPOSITORY') == 'ForceMind/ChatGPT'
-assert os.environ.get('GITHUB_REF') == 'refs/heads/dev'
+ref = os.environ.get('GITHUB_REF', '')
+assert ref == 'refs/heads/dev' or (
+    ref.startswith('refs/heads/release/android-')
+    and os.environ.get('STUDIO_APP_UPDATE_AUTO') == 'true'
+    and os.environ.get('STUDIO_APP_UPDATE_ACCEPTANCE') != 'true'
+)
 
 receipt = json.loads((args.review / 'receipt.json').read_text())
 assert receipt['versionMetadata']['sourceSHA'] == os.environ['GITHUB_SHA']
 assert receipt['package'] == 'com.forcemind.chatgpt.profiles'
 auto = os.environ.get('STUDIO_APP_UPDATE_AUTO') == 'true'
 private = os.environ.get('STUDIO_APP_UPDATE_ACCEPTANCE') == 'true'
-source_code = 3000039 if private else 3000042 if auto else 3000037
+source_code = 3000039 if private else 3000043 if auto else 3000037
 assert receipt['versionMetadata']['versionCode'] == source_code
 assert receipt['signing'] == 'UNSIGNED_REVIEW_ONLY' and receipt['abi'] == 'arm64-v8a'
 assert receipt['r8'] and receipt['alignment16KiB'] and not receipt['ciEndpointIncluded']

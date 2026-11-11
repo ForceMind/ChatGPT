@@ -11,7 +11,12 @@ import zipfile
 
 assert os.environ.get('GITHUB_ACTIONS') == 'true'
 assert os.environ.get('GITHUB_REPOSITORY') == 'ForceMind/ChatGPT'
-assert os.environ.get('GITHUB_REF') == 'refs/heads/dev'
+ref = os.environ.get('GITHUB_REF', '')
+assert ref == 'refs/heads/dev' or (
+    ref.startswith('refs/heads/release/android-')
+    and os.environ.get('STUDIO_APP_UPDATE_AUTO') == 'true'
+    and os.environ.get('STUDIO_APP_UPDATE_ACCEPTANCE') != 'true'
+)
 root = Path('android/app/build')
 parser = argparse.ArgumentParser()
 parser.add_argument('--target', action='store_true')
@@ -20,7 +25,7 @@ private = os.environ.get('STUDIO_APP_UPDATE_ACCEPTANCE') == 'true'
 assert not args.target or private
 version = json.loads((root / ('app-update-human-target.json' if args.target else 'app-update-version.json')).read_text())
 auto = os.environ.get('STUDIO_APP_UPDATE_AUTO') == 'true'
-code = (3000040 if args.target else 3000039) if private else 3000042 if auto else 3000037
+code = (3000040 if args.target else 3000039) if private else 3000043 if auto else 3000037
 assert version['versionCode'] == code and version['sourceSHA'] == os.environ['GITHUB_SHA']
 stamp = version['versionName']
 assert re.fullmatch(r'\d{4}\.\d{2}\.\d{2}-\d{4}', stamp)
