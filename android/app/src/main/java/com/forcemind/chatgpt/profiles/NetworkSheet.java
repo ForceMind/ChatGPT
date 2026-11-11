@@ -163,7 +163,7 @@ final class NetworkSheet {
                     link.setText(value.link);
                     link.setSelection(link.length());
                 } catch (IllegalArgumentException bad) {
-                    link.setError("未导入：" + bad.getMessage());
+                    showLinkError(link, "未导入：" + bad.getMessage());
                 }
             };
             paste.setOnClickListener(view -> {
@@ -172,7 +172,7 @@ final class NetworkSheet {
                 ClipData.Item item = clip == null || clip.getItemCount() == 0 ? null : clip.getItemAt(0);
                 CharSequence text = item == null ? null : item.getText();
                 if (text == null && item != null && item.getUri() != null) text = item.getUri().toString();
-                if (text == null || text.toString().trim().isEmpty()) link.setError("剪贴板里没有可用的链接");
+                if (text == null || text.toString().trim().isEmpty()) showLinkError(link, "剪贴板里没有可用的链接");
                 else importLink.accept(text.toString());
             });
             ActivityResultLauncher<ScanOptions> scanner = activity instanceof ComponentActivity host
@@ -184,7 +184,7 @@ final class NetworkSheet {
                     : null;
             scan.setOnClickListener(view -> {
                 if (scanner == null || !activity.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)) {
-                    link.setError("相机不可用，可以粘贴 VLESS 链接");
+                    showLinkError(link, "相机不可用，可以粘贴 VLESS 链接");
                     return;
                 }
                 ScanOptions options = new ScanOptions()
@@ -197,7 +197,7 @@ final class NetworkSheet {
                 try { scanner.launch(options); }
                 catch (android.content.ActivityNotFoundException error) {
                     scan.setEnabled(true);
-                    link.setError("无法打开扫码，可以粘贴 VLESS 链接");
+                    showLinkError(link, "无法打开扫码，可以粘贴 VLESS 链接");
                 }
             });
             dialog.setOnDismissListener(ignored -> {
@@ -215,10 +215,15 @@ final class NetworkSheet {
                         dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);
                         if (ok) { dialog.dismiss(); message = text; render(); } else name.setError(text);
                     });
-                } catch (IllegalArgumentException bad) { link.setError(bad.getMessage()); }
+                } catch (IllegalArgumentException bad) { showLinkError(link, bad.getMessage()); }
             }));
             dialog.show();
         }
+        void showLinkError(EditText link, String message) {
+            link.requestFocus();
+            link.setError(message);
+        }
+
         Button importButton(LinearLayout row, String title) {
             Button button = new Button(activity);
             StudioTypography.text(button, 14);
