@@ -154,8 +154,6 @@ jobs:
         api: [28, 35]
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.resume_network_import && 'c5f1a1aa694ba2f28f16ffb8e226ce6b971e6975' || github.sha }}
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -197,6 +195,8 @@ jobs:
           frame.paste(symbol, ((1280 - symbol.width) // 2, (720 - symbol.height) // 2))
           frame.save(root / 'studio-network-qr.png')
           PYCODE
+          if ! command -v ffmpeg; then sudo apt-get update -qq && sudo apt-get install -y ffmpeg; fi
+          ffmpeg -hide_banner -loglevel error -loop 1 -i "$RUNNER_TEMP/studio-network-qr.png" -c:v libx264 -profile:v baseline -pix_fmt yuv420p -r 15 -t 30 "$RUNNER_TEMP/studio-network-qr.mp4"
       - name: Run the two-engine update and actual system installation
         if: ${{ !inputs.network_import }}
         uses: reactivecircus/android-emulator-runner@v2
@@ -219,7 +219,7 @@ jobs:
           arch: x86_64
           profile: pixel_2
           disable-animations: true
-          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader -feature -Vulkan -camera-back imagefile:${{ runner.temp }}/studio-network-qr.png -camera-front none
+          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader -feature -Vulkan -camera-back videofile:${{ runner.temp }}/studio-network-qr.mp4 -camera-front none
           script: env GITHUB_SHA=${{ inputs.resume_network_import && 'c5f1a1aa694ba2f28f16ffb8e226ce6b971e6975' || github.sha }} python3 android/scripts/run-app-update-candidate.py --input android/app/build/app-update-ci --output android/app/build/app-update-evidence --api ${{ matrix.api }} --network-import
       - uses: actions/upload-artifact@v4
         if: always()
@@ -237,8 +237,6 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.resume_network_import && 'c5f1a1aa694ba2f28f16ffb8e226ce6b971e6975' || github.sha }}
       - uses: actions/download-artifact@v4
         with:
           name: android-app-update-unsigned-review

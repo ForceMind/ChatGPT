@@ -59,7 +59,7 @@ for api in (28, 35):
         assert report['source']['versionCode'] == source_code and report['source']['package'] == receipt['package']
         assert report['syntheticOnly'] and not report['screenshots']
         if network_import:
-            assert report['cameraFixture'] == 'imagefile'
+            assert report['cameraFixture'] == 'videofile'
             assert set(report['steps']) == {'clipboard-name', 'camera-name', 'manual-name', 'unsupported-ws',
                                             'explicit-save', 'existing-settings'}
             assert not any(path.suffix.lower() in {'.png','.jpg','.jpeg','.webm','.mp4'}

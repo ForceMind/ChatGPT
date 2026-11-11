@@ -396,7 +396,7 @@ def run_network_import(args):
     assert proof.split(',') == checks
     common._write_json(common.EVIDENCE / 'network-import-report.json', {
         'complete': True, 'api': api, 'sourceSHA': os.environ['GITHUB_SHA'],
-        'source': source_info, 'steps': checks, 'cameraFixture': 'imagefile',
+        'source': source_info, 'steps': checks, 'cameraFixture': 'videofile',
         'screenshots': False, 'syntheticOnly': True,
     })
 
