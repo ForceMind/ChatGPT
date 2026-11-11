@@ -175,7 +175,8 @@ jobs:
         if: inputs.network_import
         run: |
           if ! command -v qrencode; then sudo apt-get update -qq && sudo apt-get install -y qrencode; fi
-          qrencode -l M -m 10 -s 12 -o "$RUNNER_TEMP/studio-network-qr.png" 'vless://00000000-0000-4000-8000-000000000001@fixture.test:443?type=raw#%E7%9B%B8%E6%9C%BA%20%E7%BA%BF%E8%B7%AF'
+          qrencode -l M -m 4 -s 7 -o "$RUNNER_TEMP/studio-network-symbol.png" 'vless://00000000-0000-4000-8000-000000000001@fixture.test:443?type=raw#%E7%9B%B8%E6%9C%BA%20%E7%BA%BF%E8%B7%AF'
+          ffmpeg -hide_banner -loglevel error -i "$RUNNER_TEMP/studio-network-symbol.png" -vf 'pad=1280:720:(ow-iw)/2:(oh-ih)/2:color=white,format=rgb24' -frames:v 1 "$RUNNER_TEMP/studio-network-qr.png"
       - name: Run the two-engine update and actual system installation
         if: ${{ !inputs.network_import }}
         uses: reactivecircus/android-emulator-runner@v2

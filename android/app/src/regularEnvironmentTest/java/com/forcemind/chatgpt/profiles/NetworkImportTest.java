@@ -48,10 +48,7 @@ public final class NetworkImportTest {
                 replaceText("线路名称", "我改的名称");
                 clipboard(BASE + "?type=ws&path=%2Fsocket#Rejected");
                 click("粘贴链接");
-                waitFor("WebSocket error", () -> {
-                    AccessibilityNodeInfo link = find(root(), "VLESS 地址", true);
-                    return link != null && link.getError() != null && link.getError().toString().contains("WebSocket");
-                });
+                awaitNode("未导入：此线路使用 WebSocket，当前版本仅支持 VLESS TCP（RAW）", false, false);
                 expectText("线路名称", "我改的名称");
                 assertEquals(1, store.read().nodes.size());
                 click("取消");
@@ -140,12 +137,28 @@ public final class NetworkImportTest {
         return null;
     }
 
-    private static void waitFor(String label, BooleanSupplier predicate) throws Exception {
+    private void waitFor(String label, BooleanSupplier predicate) throws Exception {
         long end = SystemClock.elapsedRealtime() + 20_000;
         while (SystemClock.elapsedRealtime() < end) {
             if (predicate.getAsBoolean()) return;
             Thread.sleep(50);
         }
-        assertTrue(label, predicate.getAsBoolean());
+        if (!predicate.getAsBoolean()) {
+            AccessibilityNodeInfo active = root();
+            fail(label + "; active window: " + (active == null ? "none" : active.getPackageName())
+                    + ", controls: " + visibleLabels(active, 0));
+        }
+    }
+
+    private static String visibleLabels(AccessibilityNodeInfo node, int depth) {
+        if (node == null || depth > 5) return "";
+        StringBuilder labels = new StringBuilder();
+        if (!node.isPassword() && !node.isEditable()) {
+            CharSequence text = node.getText();
+            if (text != null) labels.append(text).append(" | ");
+        }
+        for (int i = 0; i < node.getChildCount() && labels.length() < 1000; i++)
+            labels.append(visibleLabels(node.getChild(i), depth + 1));
+        return labels.toString();
     }
 }

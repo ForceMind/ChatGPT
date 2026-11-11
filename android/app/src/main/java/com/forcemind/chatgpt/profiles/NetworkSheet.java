@@ -6,11 +6,13 @@ import android.app.AlertDialog;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.InputFilter;
 import android.text.InputType;
 import android.text.TextWatcher;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -145,7 +147,17 @@ final class NetworkSheet {
             link.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
             link.setFilters(new InputFilter[]{new InputFilter.LengthFilter(16384)});
             if (node != null) link.setText(node.link); fields.addView(link);
-            watchLink(name, link);
+            TextView error = new TextView(activity);
+            StudioTypography.text(error, 14);
+            error.setTextColor(Color.rgb(165, 35, 35));
+            error.setVisibility(View.GONE);
+            error.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
+            fields.addView(error);
+            Consumer<String> showError = text -> {
+                error.setText(text);
+                error.setVisibility(text.isEmpty() ? View.GONE : View.VISIBLE);
+            };
+            watchLink(name, link, showError);
             ScrollView scroll = new ScrollView(activity);
             scroll.addView(fields);
             AlertDialog.Builder builder = new AlertDialog.Builder(activity).setTitle(index < 0 ? "添加线路" : "编辑线路")
@@ -163,7 +175,7 @@ final class NetworkSheet {
                     link.setText(value.link);
                     link.setSelection(link.length());
                 } catch (IllegalArgumentException bad) {
-                    showLinkError(link, "未导入：" + bad.getMessage());
+                    showError.accept("未导入：" + bad.getMessage());
                 }
             };
             paste.setOnClickListener(view -> {
@@ -172,7 +184,7 @@ final class NetworkSheet {
                 ClipData.Item item = clip == null || clip.getItemCount() == 0 ? null : clip.getItemAt(0);
                 CharSequence text = item == null ? null : item.getText();
                 if (text == null && item != null && item.getUri() != null) text = item.getUri().toString();
-                if (text == null || text.toString().trim().isEmpty()) showLinkError(link, "剪贴板里没有可用的链接");
+                if (text == null || text.toString().trim().isEmpty()) showError.accept("剪贴板里没有可用的链接");
                 else importLink.accept(text.toString());
             });
             ActivityResultLauncher<ScanOptions> scanner = activity instanceof ComponentActivity host
@@ -184,7 +196,7 @@ final class NetworkSheet {
                     : null;
             scan.setOnClickListener(view -> {
                 if (scanner == null || !activity.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)) {
-                    showLinkError(link, "相机不可用，可以粘贴 VLESS 链接");
+                    showError.accept("相机不可用，可以粘贴 VLESS 链接");
                     return;
                 }
                 ScanOptions options = new ScanOptions()
@@ -197,7 +209,7 @@ final class NetworkSheet {
                 try { scanner.launch(options); }
                 catch (android.content.ActivityNotFoundException error) {
                     scan.setEnabled(true);
-                    showLinkError(link, "无法打开扫码，可以粘贴 VLESS 链接");
+                    showError.accept("无法打开扫码，可以粘贴 VLESS 链接");
                 }
             });
             dialog.setOnDismissListener(ignored -> {
@@ -215,15 +227,10 @@ final class NetworkSheet {
                         dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);
                         if (ok) { dialog.dismiss(); message = text; render(); } else name.setError(text);
                     });
-                } catch (IllegalArgumentException bad) { showLinkError(link, bad.getMessage()); }
+                } catch (IllegalArgumentException bad) { showError.accept(bad.getMessage()); }
             }));
             dialog.show();
         }
-        void showLinkError(EditText link, String message) {
-            link.requestFocus();
-            link.setError(message);
-        }
-
         Button importButton(LinearLayout row, String title) {
             Button button = new Button(activity);
             StudioTypography.text(button, 14);
@@ -232,13 +239,13 @@ final class NetworkSheet {
             return button;
         }
 
-        void watchLink(EditText name, EditText link) {
+        void watchLink(EditText name, EditText link, Consumer<String> showError) {
             link.addTextChangedListener(new TextWatcher() {
                 private String suggestedName;
                 @Override public void beforeTextChanged(CharSequence text, int start, int count, int after) {}
                 @Override public void onTextChanged(CharSequence text, int start, int before, int count) {}
                 @Override public void afterTextChanged(Editable text) {
-                    link.setError(null);
+                    showError.accept("");
                     try {
                         String suggestion = NetworkNode.parse(text.toString(), null).name;
                         String current = name.getText().toString();
