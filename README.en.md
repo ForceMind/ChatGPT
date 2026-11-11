@@ -15,9 +15,9 @@
 
 ChatGPT Studio brings independent ChatGPT account spaces, live tabs and local asset workflows into one immersive client. Launch directly into ChatGPT without an address bar or an OpenAI API key.
 
-**Current releases** · [macOS 2026.11.12](https://github.com/ForceMind/ChatGPT/releases/tag/v2026.11.12) · [Windows 2026.11.13](https://github.com/ForceMind/ChatGPT/releases/tag/v2026.11.13) · [Android 2026.11.10-1309](https://github.com/ForceMind/ChatGPT/releases/tag/v2026.11.10-1309).
+**Current releases** · [macOS 2026.11.12](https://github.com/ForceMind/ChatGPT/releases/tag/v2026.11.12) · [Windows 2026.11.13](https://github.com/ForceMind/ChatGPT/releases/tag/v2026.11.13) · [Android 2026.11.11-1401](https://github.com/ForceMind/ChatGPT/releases/tag/v2026.11.11-1401).
 
-Android ships original-signer build **2026.11.10-1309** (code 3000037). Install over the current release to preserve app data. Existing accounts retain WebView and their data; new accounts can select isolated locale/timezone. Includes direct tab selection, reload, back/forward, dual-engine recovery, VLESS routing and file/Skill tasks. Independent Beta data stays separate.
+Android ships original-signer build **2026.11.11-1401** (code 3000041). Install over the current release to preserve app data. Existing accounts retain WebView and their data; new accounts can select isolated locale/timezone. Includes direct tab selection, reload, back/forward, dual-engine recovery, VLESS routing and file/Skill tasks. Independent Beta data stays separate.
 
 Previously named **ChatGPT Profiles**. Legacy storage identities remain for sign-in and encrypted recovery compatibility. Synthetic CI acceptance does not replace real ChatGPT, node or physical-device acceptance; historical intermittent TLS/input issues remain documented.
 
@@ -66,7 +66,7 @@ Devices do not synchronize sign-in credentials. The regular client includes Geck
 | --- | --- | --- | --- |
 | macOS · Apple Silicon | 2026.11.12 | [DMG](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.12/ChatGPT-Studio-2026.11.12-mac-arm64.dmg) · [ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.12/ChatGPT-Studio-2026.11.12-mac-arm64.zip) | macOS 13+ |
 | Windows · x64 | 2026.11.13 | [EXE](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.13/ChatGPT-Studio-2026.11.13-windows-x64-setup.exe) · [Portable ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.13/ChatGPT-Studio-2026.11.13-windows-x64.zip) | Windows 10 / 11 · x64 |
-| Android · Phone/tablet | 2026.11.10-1309 | [APK](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.10-1309/ChatGPT-Studio-2026.11.10-1309-android-arm64.apk) | Android 9+ · ARM64 |
+| Android · Phone/tablet | 2026.11.11-1401 | [APK](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.11-1401/ChatGPT-Studio-2026.11.11-1401-android-arm64.apk) | Android 9+ · ARM64 |
 
 ### Historical Beta
 
@@ -80,9 +80,9 @@ The independent Beta remains in [release history](https://github.com/ForceMind/C
 
 **Android:** allow installation from your chosen download source when prompted. Updates retain the existing release certificate. If the installed WebView lacks multi-profile support, update System WebView/Chrome first; the app does not substitute a shared sign-in space.
 
-The [website](https://chatgpt-studio.pages.dev/) provides GitHub downloads and optional third-party acceleration links. Compare downloads with `SHA256SUMS.txt` in the Release. The current release is a normal Release and is marked Latest. Historical prereleases remain available.
+The [website](https://chatgpt-studio.pages.dev/) provides GitHub downloads and optional third-party acceleration links. Compare downloads with `SHA256SUMS.txt` in the Release. The website lists the current stable release for each platform. Historical prereleases remain available.
 
-Package checksums · [macOS](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.12/SHA256SUMS.txt) · [Windows](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.13/SHA256SUMS.txt) · [Android](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.10-1309/SHA256SUMS.txt).
+Package checksums · [macOS](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.12/SHA256SUMS.txt) · [Windows](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.13/SHA256SUMS.txt) · [Android](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.11-1401/SHA256SUMS.txt).
 
 ### Android alpha.19
 
@@ -193,6 +193,7 @@ Cloudflare Pages uses Direct Upload; a Git push does not deploy the site automat
 | Area | Status |
 | --- | --- |
 | Published: desktop update experience | macOS/Windows 2026.11.10 includes real percentage and byte counts, stage feedback and retries. Full checks and owned update/install tests pass. [Record and next batch](docs/update-experience-plan.md) |
+| Android automatic update checks | 2026.11.11-1401 checks at launch and around noon Shanghai time, with catch-up on reopening. The candidate passed physical-device acceptance. [Release record](docs/releases/2026.11.11-1401.json) |
 | Android in-app updates | Released in 2026.11.10-1309. Supports manual checks, background download progress, verification and system-confirmed installation. Android 9 and 15 synthetic acceptance passed; vendor devices remain to be tested. [Release record](docs/releases/2026.11.10-1309.json) |
 | Awaiting device acceptance: Windows nested installation | Candidate ready. Full check and 11 packaged installation cases pass, including data preservation, rollback/retry and installed updater configuration. [Download and evidence](docs/windows-installation-plan.md) |
 | Windows publisher signing | Pending trusted certificate or verified signing service. Current packages still show an unknown publisher. [Signing prerequisites](docs/windows-installation-plan.md#后续顺序) |
