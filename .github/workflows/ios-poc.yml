@@ -115,6 +115,6 @@ jobs:
               slice=ios-arm64-simulator
             fi
             xcrun --sdk "$sdk" swiftc -target "$target" -sdk "$(xcrun --sdk "$sdk" --show-sdk-path)" \
-              -F "$work/Networkcore.xcframework/$slice" -framework Networkcore "$work/link.swift" -o "$work/linked-$sdk"
+              -F "$work/Networkcore.xcframework/$slice" -framework Networkcore -lresolv "$work/link.swift" -o "$work/linked-$sdk"
             xcrun vtool -show-build "$work/linked-$sdk"
           done
