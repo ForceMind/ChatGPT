@@ -134,7 +134,7 @@ jobs:
           path: promotion/desktop-update-metadata/
           if-no-files-found: warn
   update-candidates:
-    if: github.event_name == 'workflow_dispatch' && (inputs.update_candidates || ((inputs.windows_tabs_candidate || inputs.macos_tabs_candidate) && github.ref == 'refs/heads/dev') || (inputs.tab_strip_release && github.ref == 'refs/heads/dev' && inputs.update_platform == 'both')) && !(inputs.update_candidates && inputs.tab_strip_release) && !((inputs.windows_tabs_candidate || inputs.macos_tabs_candidate) && (inputs.update_candidates || inputs.tab_strip_release)) && !(inputs.windows_tabs_candidate && inputs.macos_tabs_candidate) && !inputs.windows_candidate && !inputs.cpu_validation && !inputs.candidate_package && !inputs.promote_release && !inputs.publish_update_experience && !inputs.public_upgrade
+    if: github.event_name == 'workflow_dispatch' && (inputs.update_candidates || ((inputs.windows_tabs_candidate || inputs.macos_tabs_candidate) && github.ref == 'refs/heads/dev') || (inputs.windows_tabs_candidate && startsWith(github.ref, 'refs/heads/release/windows-')) || (inputs.tab_strip_release && github.ref == 'refs/heads/dev' && inputs.update_platform == 'both')) && !(inputs.update_candidates && inputs.tab_strip_release) && !((inputs.windows_tabs_candidate || inputs.macos_tabs_candidate) && (inputs.update_candidates || inputs.tab_strip_release)) && !(inputs.windows_tabs_candidate && inputs.macos_tabs_candidate) && !inputs.windows_candidate && !inputs.cpu_validation && !inputs.candidate_package && !inputs.promote_release && !inputs.publish_update_experience && !inputs.public_upgrade
     runs-on: ${{ matrix.os }}
     timeout-minutes: 50
     strategy:
