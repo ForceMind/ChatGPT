@@ -254,6 +254,33 @@ public final class AppUpdateFlowTest {
         assertEquals(key, expected, count);
     }
 
+    @Test public void configurePrivateUpdateSource() {
+        assertTrue(BuildConfig.APP_UPDATE_ACCEPTANCE && BuildConfig.APP_UPDATE_TEST);
+        AppUpdateActivity update = (AppUpdateActivity) instrument.startActivitySync(
+                new Intent(context, AppUpdateActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+        see("应用更新", false);
+        click("验收更新源", false);
+        see("真机验收更新源", false);
+        AccessibilityNodeInfo input = find(ui.getRootInActiveWindow(), "验收访问码", false);
+        assertNotNull(input);
+        String syntheticKey = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+        Bundle key = new Bundle();
+        key.putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, syntheticKey);
+        assertTrue(input.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, key));
+        click("启用", false);
+        assertEquals(syntheticKey, onMain(() -> task().acceptanceKey()));
+        see("当前使用真机验收更新源", true);
+        click("验收更新源", false);
+        click("使用官网", false);
+        assertEquals("", onMain(() -> task().acceptanceKey()));
+        see("当前使用官网更新源", true);
+        click("关闭弹层", false);
+        waitFor("update sheet finished", 15, () -> onMain(() -> update.isFinishing() || update.isDestroyed()));
+        Bundle evidence = new Bundle();
+        evidence.putString("privateUpdateSourceProof", "enabled,official,closed");
+        instrument.addResults(evidence);
+    }
+
     @Test public void automaticNoonAndExplicitDownload() throws Exception {
         assertTrue(BuildConfig.APP_UPDATE_TEST && BuildConfig.APP_UPDATE_AUTO);
         assertEquals(BuildConfig.APP_UPDATE_ACCEPTANCE ? 3000039 : 3000038, code());
@@ -287,23 +314,6 @@ public final class AppUpdateFlowTest {
             return web != null && "Owned updater".equals(web.getTitle()) && web.getProgress() == 100;
         }));
         assertEquals(0, autoRequests("apk"));
-
-        if (BuildConfig.APP_UPDATE_ACCEPTANCE) {
-            openUpdate();
-            click("验收更新源", false);
-            see("真机验收更新源", false);
-            AccessibilityNodeInfo input = find(ui.getRootInActiveWindow(), "验收访问码", false);
-            assertNotNull(input);
-            Bundle key = new Bundle();
-            key.putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef");
-            assertTrue(input.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, key));
-            click("启用", false);
-            assertEquals("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef", onMain(() -> task().acceptanceKey()));
-            click("验收更新源", false);
-            click("使用官网", false);
-            assertEquals("", onMain(() -> task().acceptanceKey()));
-            back();
-        }
 
         click("切换账号，当前：Owned auto WebView", false);
         click("Owned auto Gecko", false);

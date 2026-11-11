@@ -345,7 +345,11 @@ def verify_recovery(fixture, signer, node, api, source_info, target_info, old_ui
     })
 
 
-def verify_auto(fixture, signer, node, api, source_info, target_info, old_uid):
+def verify_auto(fixture, signer, node, api, source_info, target_info, old_uid, private_source):
+    if private_source:
+        result = instrument('AppUpdateFlowTest#configurePrivateUpdateSource', signer, 'private-source-control', 120)
+        assert 'INSTRUMENTATION_RESULT: privateUpdateSourceProof=enabled,official,closed' in result
+        common._shell('am', 'force-stop', PACKAGE)
     log = instrument('AppUpdateFlowTest#automaticNoonAndExplicitDownload', signer, 'auto-check', 360,
                      extras=('-e', 'ownedUpdateNode', node))
     steps, = re.findall(r'(?m)^INSTRUMENTATION_RESULT: appUpdateAutoProof=([^\r\n]+)$', log)
@@ -363,7 +367,7 @@ def verify_auto(fixture, signer, node, api, source_info, target_info, old_uid):
     common._write_json(common.EVIDENCE / 'auto-report.json', {
         'complete': True, 'api': api, 'sourceSHA': os.environ['GITHUB_SHA'],
         'source': source_info, 'steps': steps.split(','), 'requests': requests,
-        'screenshots': False, 'syntheticOnly': True,
+        'screenshots': False, 'syntheticOnly': True, 'privateSourceControl': private_source,
     })
 
 
@@ -412,7 +416,7 @@ def run(args):
         try:
             process = start_node(args.input / 'xray', identity)
             if args.auto_only:
-                verify_auto(fixture, signer, node, api, source_info, target_info, old_uid)
+                verify_auto(fixture, signer, node, api, source_info, target_info, old_uid, args.device_acceptance)
                 return
             if args.recovery_only:
                 verify_recovery(fixture, signer, node, api, source_info, target_info, old_uid)

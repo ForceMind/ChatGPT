@@ -50,6 +50,8 @@ for api in (28, 35):
     if auto:
         assert report['source']['versionCode'] == source_code and report['source']['package'] == receipt['package']
         assert report['syntheticOnly'] and not report['screenshots']
+        if private:
+            assert report['privateSourceControl'] is True
         assert set(report['steps']) == {'startup', 'engine-dedupe', 'noon-job', 'foreground-notice',
                                         'missed-slot', 'manual-check', 'explicit-download'}
         assert [row['path'] for row in report['requests']] == ['/android.json'] * 4 + ['/update.apk']
