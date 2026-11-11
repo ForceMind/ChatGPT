@@ -18,6 +18,8 @@ jobs:
         working-directory: android/network-poc/corebridge
         shell: bash
         run: |
+          go mod tidy
+          go mod verify
           go test -v -count=1 -run '^TestOwnedTransportMatrix$/(ws|ws-tls|tcp-http)$' . | tee "$RUNNER_TEMP/owned-transport-file-proof.log"
       - uses: actions/upload-artifact@v4
         if: always()
