@@ -3,7 +3,7 @@ from pathlib import Path
 import hashlib,json,os
 assert os.environ.get('GITHUB_ACTIONS')=='true'
 assert os.environ.get('GITHUB_REPOSITORY')=='ForceMind/ChatGPT'
-assert os.environ.get('GITHUB_WORKFLOW')=='Android regular optimization resource comparison'
+assert os.environ.get('GITHUB_WORKFLOW')=='Android regular optimization resource comparison' or os.environ.get('GITHUB_REF')=='refs/heads/validation/android-2241-resources'
 out=Path('android/app/build/regular-resource-evidence');out.mkdir(parents=True,exist_ok=True)
 changes=[]
 for api,var in [(28,'studio_target'),(35,'studio_validation_script')]:
