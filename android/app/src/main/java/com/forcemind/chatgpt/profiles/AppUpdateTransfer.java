@@ -20,8 +20,12 @@ final class AppUpdateTransfer implements AutoCloseable {
     private final long started = SystemClock.elapsedRealtime();
     private volatile boolean cancelled;
     private HttpURLConnection connection;
+    private final String acceptanceKey;
 
-    AppUpdateTransfer(NetworkRoute route) {
+    AppUpdateTransfer(NetworkRoute route, String acceptanceKey) {
+        if (!acceptanceKey.isEmpty() && (!BuildConfig.APP_UPDATE_ACCEPTANCE || !AppUpdateAcceptance.validKey(acceptanceKey)))
+            throw new IllegalArgumentException("验收更新源访问码无效");
+        this.acceptanceKey = acceptanceKey;
         this.route = route;
         snapshot = route.beginTransfer();
     }
@@ -46,6 +50,8 @@ final class AppUpdateTransfer implements AutoCloseable {
         next.setUseCaches(false);
         next.setInstanceFollowRedirects(false);
         next.setRequestProperty("Accept-Encoding", "identity");
+        if (!acceptanceKey.isEmpty() && (AppUpdateAcceptance.FEED.equals(url) || AppUpdateAcceptance.APK.equals(url)))
+            next.setRequestProperty(AppUpdateAcceptance.HEADER, acceptanceKey);
         connection = next;
         return next;
     }
@@ -62,7 +68,8 @@ final class AppUpdateTransfer implements AutoCloseable {
     }
 
     String feed(boolean fixture) throws Exception {
-        HttpURLConnection request = open(fixture ? AppUpdateRelease.FIXTURE + "/android.json" : AppUpdateRelease.FEED);
+        String source = acceptanceKey.isEmpty() ? AppUpdateRelease.FEED : AppUpdateAcceptance.FEED;
+        HttpURLConnection request = open(fixture ? AppUpdateRelease.FIXTURE + "/android.json" : source);
         try {
             request.setRequestProperty("Accept", "application/json");
             if (request.getResponseCode() != 200) throw new IOException("无法读取版本清单");

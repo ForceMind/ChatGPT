@@ -381,7 +381,7 @@ def run(args):
     signer = signer_of(source)
     assert signer not in (common.PRODUCTION_SIGNER, common.BETA_SIGNER)
     tools = common._tools()
-    source_code = 3000038 if args.auto_only else 3000037
+    source_code = 3000039 if args.device_acceptance else 3000038 if args.auto_only else 3000037
     target_code = source_code + 1
     source_info = common._inspect_apk(source, tools, signer, PACKAGE, source_code, test_only=True)
     target_info = common._inspect_apk(target, tools, signer, PACKAGE, target_code)
@@ -484,6 +484,7 @@ if __name__ == '__main__':
     parser.add_argument('--input', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--api', type=int, choices=(28, 35), required=True)
+    parser.add_argument('--device-acceptance', action='store_true')
     modes = parser.add_mutually_exclusive_group()
     modes.add_argument('--recovery-only', action='store_true')
     modes.add_argument('--auto-only', action='store_true')

@@ -22,6 +22,24 @@ public class AppUpdateReleaseTest {
         assertFalse(release.allowsDownload("https://gh-proxy.org/" + release.url, false, false));
     }
 
+    @Test public void privateSourceIsCandidateOnlyAndCannotRedirectOrProxy() throws Exception {
+        String metadata = feed().put("url", AppUpdateAcceptance.APK).toString();
+        if (!BuildConfig.APP_UPDATE_ACCEPTANCE) {
+            assertThrows(IllegalArgumentException.class, () -> AppUpdateRelease.parse(metadata, false));
+            return;
+        }
+        AppUpdateRelease release = AppUpdateRelease.parse(metadata, false);
+        assertTrue(release.privateSource);
+        assertEquals(AppUpdateAcceptance.APK, release.downloadUrl(true, false));
+        assertTrue(release.allowsDownload(AppUpdateAcceptance.APK, false, false));
+        assertFalse(release.allowsDownload(AppUpdateAcceptance.APK + "?other=1", false, false));
+        assertFalse(release.allowsDownload("https://release-assets.githubusercontent.com/file", false, false));
+        assertFalse(release.allowsDownload("https://gh-proxy.org/" + release.url, true, false));
+        assertTrue(AppUpdateAcceptance.validKey("a".repeat(64)));
+        assertFalse(AppUpdateAcceptance.validKey("a".repeat(63)));
+        assertFalse(AppUpdateAcceptance.validKey("a".repeat(64) + "\n"));
+    }
+
     @Test public void rejectsTamperedManifestContract() throws Exception {
         Object[][] changes = {{"versionCode", "3000036"}, {"versionCode", 3000036.5}, {"versionName", "2026.02.31-1236"},
                 {"packageName", "other.app"}, {"abi", "x86_64"}, {"size", AppUpdateRelease.MAX_BYTES + 1},

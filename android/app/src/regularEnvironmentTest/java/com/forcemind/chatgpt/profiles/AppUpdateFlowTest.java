@@ -256,7 +256,7 @@ public final class AppUpdateFlowTest {
 
     @Test public void automaticNoonAndExplicitDownload() throws Exception {
         assertTrue(BuildConfig.APP_UPDATE_TEST && BuildConfig.APP_UPDATE_AUTO);
-        assertEquals(3000038, code());
+        assertEquals(BuildConfig.APP_UPDATE_ACCEPTANCE ? 3000039 : 3000038, code());
         assertEquals(RegularEnvironmentUpgradeTest.args().getString("signer"), RegularEnvironmentUpgradeTest.signer());
         AtomicReference<java.time.Instant> now = new AtomicReference<>(java.time.Instant.parse("2026-11-10T03:50:00Z"));
         AppUpdateAuto.clockForTest(now::get);
@@ -287,6 +287,23 @@ public final class AppUpdateFlowTest {
             return web != null && "Owned updater".equals(web.getTitle()) && web.getProgress() == 100;
         }));
         assertEquals(0, autoRequests("apk"));
+
+        if (BuildConfig.APP_UPDATE_ACCEPTANCE) {
+            openUpdate();
+            click("验收更新源", false);
+            see("真机验收更新源", false);
+            AccessibilityNodeInfo input = find(ui.getRootInActiveWindow(), "验收访问码", false);
+            assertNotNull(input);
+            Bundle key = new Bundle();
+            key.putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, "a".repeat(64));
+            assertTrue(input.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, key));
+            click("启用", false);
+            assertEquals("a".repeat(64), onMain(() -> task().acceptanceKey()));
+            click("验收更新源", false);
+            click("使用官网", false);
+            assertEquals("", onMain(() -> task().acceptanceKey()));
+            back();
+        }
 
         click("切换账号，当前：Owned auto WebView", false);
         click("Owned auto Gecko", false);

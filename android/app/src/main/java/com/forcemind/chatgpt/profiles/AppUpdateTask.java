@@ -101,6 +101,27 @@ final class AppUpdateTask {
         });
     }
 
+    String acceptanceKey() { return BuildConfig.APP_UPDATE_ACCEPTANCE ? saved.getString("acceptanceKey", "") : ""; }
+
+    String acceptanceStatus() {
+        String source = acceptanceKey().isEmpty() ? "当前使用官网更新源" : "当前使用真机验收更新源";
+        long time = saved.getLong("lastAutoCheck", 0);
+        if (time == 0) return source;
+        java.text.DateFormat format = new java.text.SimpleDateFormat("MM-dd HH:mm:ss", java.util.Locale.ROOT);
+        format.setTimeZone(java.util.TimeZone.getTimeZone("Asia/Shanghai"));
+        return source + "\n上次自动检查 " + format.format(new java.util.Date(time)) + "（上海）· "
+                + saved.getString("lastAutoReason", "自动检查");
+    }
+
+    void configureAcceptance(String key) throws IOException {
+        if (!BuildConfig.APP_UPDATE_ACCEPTANCE || !canCheck()
+                || !key.isEmpty() && !AppUpdateAcceptance.validKey(key))
+            throw new IOException("请先完成当前更新任务，并核对访问码");
+        if (!saved.edit().putString("acceptanceKey", key).remove("available").remove("lastAutoCheck")
+                .remove("lastAutoReason").commit()) throw new IOException("验收来源未能保存，请重试");
+        discard();
+    }
+
     Phase phase() { return phase; }
     String message() { return message; }
     AppUpdateRelease release() { return ready != null ? ready : offer; }
@@ -120,7 +141,7 @@ final class AppUpdateTask {
 
     private AppUpdateTransfer start(Phase phase, String text) {
         try {
-            transfer = new AppUpdateTransfer(BrowserMemory.get(context).network().routes);
+            transfer = new AppUpdateTransfer(BrowserMemory.get(context).network().routes, acceptanceKey());
             state(phase, text);
             return transfer;
         } catch (RuntimeException unavailable) {
@@ -131,22 +152,22 @@ final class AppUpdateTask {
 
     void check() {
         if (!canCheck()) return;
-        check(BrowserMemory.get(context).network().routes, null);
+        check(BrowserMemory.get(context).network().routes, "", null);
     }
 
-    boolean checkAutomatically(NetworkRoute route, java.util.function.Consumer<Boolean> finished) {
+    boolean checkAutomatically(NetworkRoute route, String reason, java.util.function.Consumer<Boolean> finished) {
         if (!canCheck() || saved.getBoolean("downloading", false) || phase == Phase.ERROR && offer != null)
             return false;
-        return check(route, finished);
+        return check(route, reason, finished);
     }
 
     void cancelAutomaticCheck() {
         if (automaticCheck && phase == Phase.CHECKING && transfer != null) transfer.cancel();
     }
 
-    private boolean check(NetworkRoute route, java.util.function.Consumer<Boolean> finished) {
+    private boolean check(NetworkRoute route, String reason, java.util.function.Consumer<Boolean> finished) {
         final AppUpdateTransfer job;
-        try { job = new AppUpdateTransfer(route); }
+        try { job = new AppUpdateTransfer(route, acceptanceKey()); }
         catch (RuntimeException unavailable) {
             if (finished == null) state(Phase.ERROR, "当前线路尚未就绪，请连接后重试");
             return false;
@@ -182,6 +203,8 @@ final class AppUpdateTask {
                     finished.accept(false);
                     return;
                 }
+                if (BuildConfig.APP_UPDATE_ACCEPTANCE && finished != null)
+                    saved.edit().putLong("lastAutoCheck", System.currentTimeMillis()).putString("lastAutoReason", reason).apply();
                 offer = found;
                 if (BuildConfig.APP_UPDATE_AUTO) {
                     if (offer == null) saved.edit().remove("available").apply();

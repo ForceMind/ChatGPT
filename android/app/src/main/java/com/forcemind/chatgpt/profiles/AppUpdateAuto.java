@@ -111,7 +111,8 @@ final class AppUpdateAuto {
         if (route == null || !route.ready()) return false;
         boolean noon = AppUpdateSchedule.due(now, saved.getString("noonDay", ""));
         String day = AppUpdateSchedule.day(now).toString();
-        checking = task.checkAutomatically(route.routes, success -> {
+        String reason = startupPending ? (noon ? "启动及中午补查" : "启动检查") : "中午检查或补查";
+        checking = task.checkAutomatically(route.routes, reason, success -> {
             checking = false;
             if (success) {
                 startupPending = false;

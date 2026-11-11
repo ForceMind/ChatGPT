@@ -20,7 +20,8 @@ public final class AppUpdateActivity extends Activity {
     private AppUpdateTask task;
     private TextView status, bytes;
     private ProgressBar progress;
-    private Button primary, secondary, check;
+    private Button primary, secondary, check, acceptance;
+    private TextView acceptanceStatus;
     private final Runnable changed = this::render;
 
     static void open(Context context) {
@@ -47,6 +48,13 @@ public final class AppUpdateActivity extends Activity {
         primary = button(true);
         secondary = button(false);
         check = button(false);
+        if (BuildConfig.APP_UPDATE_ACCEPTANCE) {
+            acceptanceStatus = sheet.text("", 13);
+            sheet.body.addView(acceptanceStatus, new LinearLayout.LayoutParams(-1, -2));
+            acceptance = button(false);
+            acceptance.setText("验收更新源");
+            acceptance.setOnClickListener(view -> configureAcceptance());
+        }
         sheet.setOnDismissListener(dialog -> finish());
         sheet.show();
         render();
@@ -95,6 +103,10 @@ public final class AppUpdateActivity extends Activity {
         AppUpdateTask.Phase phase = task.phase();
         AppUpdateRelease release = task.release();
         status.setText(task.message());
+        if (acceptance != null) {
+            acceptance.setEnabled(task.canCheck());
+            acceptanceStatus.setText(task.acceptanceStatus());
+        }
         boolean showProgress = task.downloading() && release != null;
         progress.setVisibility(showProgress || phase == AppUpdateTask.Phase.CHECKING ? View.VISIBLE : View.GONE);
         progress.setIndeterminate(!showProgress);
@@ -133,10 +145,40 @@ public final class AppUpdateActivity extends Activity {
             default:
                 if (task.canDownload()) {
                     show(primary, phase == AppUpdateTask.Phase.ERROR ? "重试下载" : "下载更新", () -> download(false));
-                    if (!BuildConfig.APP_UPDATE_TEST) show(secondary, "国内加速下载", () -> download(true));
+                    if (!BuildConfig.APP_UPDATE_TEST && !release.privateSource)
+                        show(secondary, "国内加速下载", () -> download(true));
                     show(check, "重新检查", task::check);
                 } else show(primary, "检查更新", task::check);
         }
+    }
+
+    private void configureAcceptance() {
+        android.widget.EditText input = new android.widget.EditText(this);
+        input.setSingleLine(true);
+        input.setHint("输入验收访问码");
+        input.setContentDescription("验收访问码");
+        input.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        input.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(64)});
+        android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(this)
+                .setTitle("真机验收更新源").setMessage("输入提供给你的访问码以启用。可随时切回官网更新源。")
+                .setView(input).setNegativeButton("取消", null).setPositiveButton("启用", null)
+                .setNeutralButton("使用官网", null).create();
+        dialog.setOnShowListener(ignored -> {
+            dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener(view -> {
+                try {
+                    String key = input.getText().toString().trim();
+                    if (!AppUpdateAcceptance.validKey(key)) { input.setError("请输入完整的 64 位访问码"); return; }
+                    task.configureAcceptance(key);
+                    dialog.dismiss();
+                    render();
+                } catch (java.io.IOException failure) { input.setError(failure.getMessage()); }
+            });
+            dialog.getButton(android.app.AlertDialog.BUTTON_NEUTRAL).setOnClickListener(view -> {
+                try { task.configureAcceptance(""); dialog.dismiss(); render(); }
+                catch (java.io.IOException failure) { input.setError(failure.getMessage()); }
+            });
+        });
+        dialog.show();
     }
 
     private void download(boolean accelerated) {

@@ -7,6 +7,12 @@ def environmentClient = project.hasProperty('environmentClient')
 def environmentTest = project.hasProperty('environmentTest')
 def appUpdateCandidate = project.hasProperty('appUpdateCandidate')
 def appUpdateAuto = project.hasProperty('appUpdateAuto')
+def appUpdateAcceptance = project.hasProperty('appUpdateAcceptance')
+def appUpdateAcceptanceTarget = project.hasProperty('appUpdateAcceptanceTarget')
+if (appUpdateAcceptance && !appUpdateAuto)
+    throw new GradleException('Private update acceptance requires automatic updates')
+if (appUpdateAcceptanceTarget && !appUpdateAcceptance)
+    throw new GradleException('Private update target requires the acceptance candidate')
 def appUpdateTest = project.hasProperty('appUpdateTest')
 def appUpdateTestTarget = project.hasProperty('appUpdateTestTarget')
 if (appUpdateAuto && !appUpdateCandidate)
@@ -48,7 +54,7 @@ if (regularNavigationTest && project.hasProperty('environmentNetworkTest'))
     throw new GradleException('Navigation and network fixtures use distinct CI APKs')
 def environmentBuildType = regularEnvironmentClient ? 'release' : 'networkBeta'
 def environmentPreBuild = regularEnvironmentClient ? 'preReleaseBuild' : 'preNetworkBetaBuild'
-def expectedCandidateVersionCode = regularEnvironmentClient ? (appUpdateCandidate ? ((appUpdateTestTarget ? 3000038 : 3000037) + (appUpdateAuto ? 1 : 0)) : 3000035) : 3000034
+def expectedCandidateVersionCode = appUpdateAcceptance ? ((appUpdateAcceptanceTarget || appUpdateTestTarget) ? 3000040 : 3000039) : regularEnvironmentClient ? (appUpdateCandidate ? ((appUpdateTestTarget ? 3000038 : 3000037) + (appUpdateAuto ? 1 : 0)) : 3000035) : 3000034
 
 // One Actions-generated minute is shared by every candidate ABI and CI mode.
 // Never read the clock during Gradle configuration or reconstruct a reused version.
@@ -94,6 +100,7 @@ android {
         buildConfigField 'boolean', 'ENVIRONMENT_TEST', 'false'
         buildConfigField 'boolean', 'APP_UPDATES_ENABLED', 'false'
         buildConfigField 'boolean', 'APP_UPDATE_AUTO', 'false'
+        buildConfigField 'boolean', 'APP_UPDATE_ACCEPTANCE', appUpdateAcceptance.toString()
         buildConfigField 'boolean', 'APP_UPDATE_TEST', 'false'
         buildConfigField 'String', 'APP_UPDATE_TEST_ORIGIN', '""'
         buildConfigField 'boolean', 'ENVIRONMENT_NETWORK_TEST', 'false'

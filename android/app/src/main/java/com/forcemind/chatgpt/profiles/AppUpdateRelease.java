@@ -18,6 +18,7 @@ final class AppUpdateRelease {
 
     final String name, abi, sha256, certificate, url;
     final long code, size;
+    final boolean privateSource;
     final JSONObject metadata;
 
     private AppUpdateRelease(JSONObject data, boolean fixture) throws Exception {
@@ -43,7 +44,8 @@ final class AppUpdateRelease {
         String expected = "https://github.com/ForceMind/ChatGPT/releases/download/" + tag
                 + "/ChatGPT-Studio-" + name + "-android-arm64.apk";
         url = data.getString("url");
-        if (!(fixture ? FIXTURE + "/update.apk" : expected).equals(url))
+        privateSource = !fixture && BuildConfig.APP_UPDATE_ACCEPTANCE && AppUpdateAcceptance.APK.equals(url);
+        if (!privateSource && !(fixture ? FIXTURE + "/update.apk" : expected).equals(url))
             throw new IllegalArgumentException("更新包地址无效");
         metadata = new JSONObject().put("schema", 1).put("packageName", PACKAGE).put("versionName", name)
                 .put("versionCode", code).put("size", size).put("abi", abi).put("sha256", sha256)
@@ -63,11 +65,11 @@ final class AppUpdateRelease {
     }
 
     String downloadUrl(boolean accelerated, boolean fixture) {
-        return accelerated && !fixture ? "https://gh-proxy.org/" + url : url;
+        return accelerated && !fixture && !privateSource ? "https://gh-proxy.org/" + url : url;
     }
 
     boolean allowsDownload(String candidate, boolean accelerated, boolean fixture) {
-        if (fixture) return url.equals(candidate);
+        if (fixture || privateSource) return url.equals(candidate);
         if (downloadUrl(accelerated, false).equals(candidate) || url.equals(candidate)) return true;
         try {
             URI uri = URI.create(candidate);

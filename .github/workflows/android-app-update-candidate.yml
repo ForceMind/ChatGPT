@@ -5,6 +5,10 @@ name: Android App Update Candidate
     paths: ['.github/workflows/android-app-update-candidate.yml']
   workflow_dispatch:
     inputs:
+      device_acceptance:
+        description: Build the private-source receiver and higher ARM64 target for device acceptance
+        type: boolean
+        default: false
       auto_only:
         description: Verify automatic checks and build an unsigned original-package candidate
         type: boolean
@@ -18,9 +22,10 @@ permissions:
   actions: read
 jobs:
   build:
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/dev' && !(inputs.auto_only && inputs.recovery_only)
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/dev' && !(inputs.auto_only && inputs.recovery_only) && (!inputs.device_acceptance || inputs.auto_only)
     env:
       STUDIO_APP_UPDATE_AUTO: ${{ inputs.auto_only }}
+      STUDIO_APP_UPDATE_ACCEPTANCE: ${{ inputs.device_acceptance }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -54,14 +59,21 @@ jobs:
           mkdir -p android/app/build/app-update-review android/app/build/app-update-ci
           python3 - <<'PY'
           import json,os,pathlib
-          from datetime import datetime
+          from datetime import datetime, timedelta
           from zoneinfo import ZoneInfo
           root=pathlib.Path('android/app/build')
           stamp=datetime.now(ZoneInfo('Asia/Shanghai')).strftime('%Y.%m.%d-%H%M')
-          offset=int(os.environ.get('STUDIO_APP_UPDATE_AUTO')=='true')
+          private=os.environ.get('STUDIO_APP_UPDATE_ACCEPTANCE')=='true'
+          offset=2 if private else int(os.environ.get('STUDIO_APP_UPDATE_AUTO')=='true')
           for file,code,name in [('app-update-version.json',3000037+offset,stamp),('app-update-target.json',3000038+offset,'2099.01.01-0000')]:
               (root/file).write_text(json.dumps({'schema':1,'versionCode':code,'versionName':name,'timeZone':'Asia/Shanghai','sourceSHA':os.environ['GITHUB_SHA']},indent=2)+'\n')
+          if private:
+              target=(datetime.strptime(stamp,'%Y.%m.%d-%H%M')+timedelta(minutes=1)).strftime('%Y.%m.%d-%H%M')
+              (root/'app-update-human-target.json').write_text(json.dumps({'schema':1,'versionCode':3000040,'versionName':target,'timeZone':'Asia/Shanghai','sourceSHA':os.environ['GITHUB_SHA']},indent=2)+'\n')
           PY
+      - name: Run private-source contract unit tests
+        if: inputs.device_acceptance
+        run: bash android/environment-poc/gradlew -p android --no-daemon -PenvironmentClient -PregularEnvironmentClient -PappUpdateCandidate -PappUpdateAuto -PappUpdateAcceptance -PunsignedRelease -PandroidVersionFile=android/app/build/app-update-version.json :app:testDebugUnitTest
       - name: Create a disposable same-signer upgrade fixture
         run: |
           password=$(openssl rand -hex 24)
@@ -81,15 +93,20 @@ jobs:
         if: ${{ !inputs.recovery_only }}
         run: |
           test ! -f android/keystore.properties
-          bash android/environment-poc/gradlew -p android --no-daemon -PenvironmentClient -PregularEnvironmentClient -PappUpdateCandidate ${{ inputs.auto_only && '-PappUpdateAuto' || '' }} -PunsignedRelease -PandroidVersionFile=android/app/build/app-update-version.json :app:lintRelease :app:assembleRelease
+          bash android/environment-poc/gradlew -p android --no-daemon -PenvironmentClient -PregularEnvironmentClient -PappUpdateCandidate ${{ inputs.auto_only && '-PappUpdateAuto' || '' }} ${{ inputs.device_acceptance && '-PappUpdateAcceptance' || '' }} -PunsignedRelease -PandroidVersionFile=android/app/build/app-update-version.json :app:lintRelease :app:assembleRelease
           python3 android/scripts/package-app-update-review.py
+      - name: Build the higher ARM64 private-source target
+        if: inputs.device_acceptance
+        run: |
+          bash android/environment-poc/gradlew -p android --no-daemon -PenvironmentClient -PregularEnvironmentClient -PappUpdateCandidate -PappUpdateAuto -PappUpdateAcceptance -PappUpdateAcceptanceTarget -PunsignedRelease -PandroidVersionFile=android/app/build/app-update-human-target.json :app:assembleRelease
+          python3 android/scripts/package-app-update-review.py --target
       - name: Build the non-test R8 x86 install target and sign only in CI
         run: |
-          bash android/environment-poc/gradlew -p android --no-daemon -PenvironmentClient -PregularEnvironmentClient -PappUpdateCandidate ${{ inputs.auto_only && '-PappUpdateAuto' || '' }} -PappUpdateTestTarget -PunsignedRelease -PregularReviewAbi=x86_64 -PandroidVersionFile=android/app/build/app-update-target.json :app:assembleRelease
+          bash android/environment-poc/gradlew -p android --no-daemon -PenvironmentClient -PregularEnvironmentClient -PappUpdateCandidate ${{ inputs.auto_only && '-PappUpdateAuto' || '' }} ${{ inputs.device_acceptance && '-PappUpdateAcceptance' || '' }} -PappUpdateTestTarget -PunsignedRelease -PregularReviewAbi=x86_64 -PandroidVersionFile=android/app/build/app-update-target.json :app:assembleRelease
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" sign --ks "$STUDIO_REGULAR_CI_KEYSTORE_PATH" --ks-key-alias regular-compat-ci --ks-pass env:STUDIO_REGULAR_CI_STORE_PASSWORD --key-pass env:STUDIO_REGULAR_CI_STORE_PASSWORD --out android/app/build/app-update-ci/target.apk android/app/build/outputs/apk/release/app-release-unsigned.apk
       - name: Build the installed app fixture and instrumentation
         run: |
-          bash android/environment-poc/gradlew -p android --no-daemon -PenvironmentClient -PregularEnvironmentClient -PregularEnvironmentCi -PenvironmentTest -PappUpdateCandidate ${{ inputs.auto_only && '-PappUpdateAuto' || '' }} -PappUpdateTest -PandroidVersionFile=android/app/build/app-update-version.json :app:assembleRelease :app:assembleReleaseAndroidTest
+          bash android/environment-poc/gradlew -p android --no-daemon -PenvironmentClient -PregularEnvironmentClient -PregularEnvironmentCi -PenvironmentTest -PappUpdateCandidate ${{ inputs.auto_only && '-PappUpdateAuto' || '' }} ${{ inputs.device_acceptance && '-PappUpdateAcceptance' || '' }} -PappUpdateTest -PandroidVersionFile=android/app/build/app-update-version.json :app:assembleRelease :app:assembleReleaseAndroidTest
           cp android/app/build/outputs/apk/release/app-release.apk android/app/build/app-update-ci/source.apk
           cp android/app/build/outputs/apk/androidTest/release/app-release-androidTest.apk android/app/build/app-update-ci/source-test.apk
           cp android/network-poc/corebridge/bin/xray android/app/build/app-update-ci/xray
@@ -157,7 +174,7 @@ jobs:
           emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader -feature -Vulkan -writable-system
           script: |
             if [ '${{ matrix.api }}' = 28 ]; then python3 android/network-poc/scripts/install-webview.py --provider android/app/build/environment-provider-input/provider --output android/app/build/app-update-provider; fi
-            python3 android/scripts/run-app-update-candidate.py --input android/app/build/app-update-ci --output android/app/build/app-update-evidence --api ${{ matrix.api }} ${{ inputs.recovery_only && '--recovery-only' || inputs.auto_only && '--auto-only' || '' }}
+            python3 android/scripts/run-app-update-candidate.py --input android/app/build/app-update-ci --output android/app/build/app-update-evidence --api ${{ matrix.api }} ${{ inputs.recovery_only && '--recovery-only' || inputs.auto_only && '--auto-only' || '' }} ${{ inputs.device_acceptance && '--device-acceptance' || '' }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -185,6 +202,7 @@ jobs:
       - name: Bind both acceptance reports to the ARM64 review APK
         env:
           STUDIO_APP_UPDATE_AUTO: ${{ inputs.auto_only }}
+          STUDIO_APP_UPDATE_ACCEPTANCE: ${{ inputs.device_acceptance }}
         run: |
           python3 android/scripts/verify-app-update-candidate.py \
             --review android/app/build/app-update-review \

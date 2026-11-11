@@ -19,7 +19,9 @@ receipt = json.loads((args.review / 'receipt.json').read_text())
 assert receipt['versionMetadata']['sourceSHA'] == os.environ['GITHUB_SHA']
 assert receipt['package'] == 'com.forcemind.chatgpt.profiles'
 auto = os.environ.get('STUDIO_APP_UPDATE_AUTO') == 'true'
-assert receipt['versionMetadata']['versionCode'] == (3000038 if auto else 3000037)
+private = os.environ.get('STUDIO_APP_UPDATE_ACCEPTANCE') == 'true'
+source_code = 3000039 if private else 3000038 if auto else 3000037
+assert receipt['versionMetadata']['versionCode'] == source_code
 assert receipt['signing'] == 'UNSIGNED_REVIEW_ONLY' and receipt['abi'] == 'arm64-v8a'
 assert receipt['r8'] and receipt['alignment16KiB'] and not receipt['ciEndpointIncluded']
 assert Path(receipt['file']).name == receipt['file']
@@ -27,6 +29,15 @@ apk = args.review / receipt['file']
 assert apk.stat().st_size == receipt['bytes']
 with apk.open('rb') as stream:
     assert hashlib.file_digest(stream, 'sha256').hexdigest() == receipt['sha256']
+
+if private:
+    target = json.loads((args.review / 'target/receipt.json').read_text())
+    assert target['versionMetadata']['versionCode'] == 3000040
+    assert target['versionMetadata']['sourceSHA'] == os.environ['GITHUB_SHA'] and target['privateSourceEnabled']
+    target_apk = args.review / 'target' / target['file']
+    assert target_apk.stat().st_size == target['bytes']
+    with target_apk.open('rb') as stream:
+        assert hashlib.file_digest(stream, 'sha256').hexdigest() == target['sha256']
 
 results = []
 for api in (28, 35):
@@ -37,7 +48,7 @@ for api in (28, 35):
     assert report['complete'] is True and report['api'] == api and report['sourceSHA'] == os.environ['GITHUB_SHA']
     assert report['source']['versionName'] == receipt['versionMetadata']['versionName']
     if auto:
-        assert report['source']['versionCode'] == 3000038 and report['source']['package'] == receipt['package']
+        assert report['source']['versionCode'] == source_code and report['source']['package'] == receipt['package']
         assert report['syntheticOnly'] and not report['screenshots']
         assert set(report['steps']) == {'startup', 'engine-dedupe', 'noon-job', 'foreground-notice',
                                         'missed-slot', 'manual-check', 'explicit-download'}
@@ -70,6 +81,8 @@ args.out.write_text(json.dumps({
     'review': receipt,
     'android9And15SyntheticAcceptance': True,
     'automaticChecks': auto,
+    'privateSourceCandidate': private,
+    'targetReview': target if private else None,
     'physicalDeviceTested': False,
     'productionSignatureUpgradeTested': False,
     'reports': results,
