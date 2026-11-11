@@ -1620,8 +1620,9 @@ async function dispatch(c: Command): Promise<void> {
       break;
     }
     case 'update:idle':
-      if (process.platform !== 'darwin' || !updates?.setIdleAllowed) throw Error('当前平台请在退出时安装更新');
-      updates.setIdleAllowed?.(c.enabled);
+      if (!updates?.setIdleAllowed || typeof updates.status.idleEnabled !== 'boolean')
+        throw Error('当前更新请在退出时安装');
+      updates.setIdleAllowed(c.enabled);
       break;
     case 'update:check':
       void checkUpdates(true).catch(report);
@@ -1969,11 +1970,13 @@ function showIdleNotice(deadline?: number): void {
   note.once('closed', () => {
     if (idleNoticeWindow === note) idleNoticeWindow = undefined;
   });
-  void note.loadURL('app://shell/update-notice.html?deadline=' + deadline).catch(() => {
-    updates?.setIdleAllowed?.(false);
-    recordAppActivity();
-    notice('自动安装提示无法显示，已延后到下次退出时安装。');
-  });
+  void note
+    .loadURL('app://shell/update-notice.html?deadline=' + deadline + '&platform=' + process.platform)
+    .catch(() => {
+      updates?.setIdleAllowed?.(false);
+      recordAppActivity();
+      notice('自动安装提示无法显示，已延后到下次退出时安装。');
+    });
 }
 function initializeIdleUpdate(): void {
   const fast = testMode && process.env.PROFILES_IDLE_FAST === '1';
@@ -1988,7 +1991,8 @@ function initializeIdleUpdate(): void {
     visible: () => idleNoticeWindow?.isVisible() === true,
     install: (epoch) => {
       idleInstallEpoch = epoch;
-      updates?.restartAfterInstall(true);
+      if (process.platform === 'win32') updates?.cancelRestart();
+      else updates?.restartAfterInstall(true);
       app.quit();
     }
   });
@@ -2052,13 +2056,14 @@ async function offerUpdate(manual = false): Promise<void> {
         title: '更新已准备',
         message: `${state.version} 已下载并校验`,
         detail:
-          process.platform === 'darwin'
-            ? '可以保存草稿和工作区后立即重启，或下次退出时安装。请先完成生成与文件任务；未完成任务不会自动重发。勾选空闲安装后，仅在本 App 处于后台且 30 分钟无操作、所有标签确认无生成和文件任务时，提前 60 秒提示；回到应用或取消会延后。其他软件的操作不影响计时。'
-            : '将先保存工作区，再退出并运行更新安装程序。也可等下次真正退出应用时安装。',
-        ...(process.platform === 'darwin'
+          '可以保存草稿和工作区后立即重启，或下次退出时安装。勾选空闲安装后，应用在后台连续 30 分钟无操作、所有标签确认无任务时，会提前 60 秒提示。回到应用或取消会延后。',
+        ...(typeof state.idleEnabled === 'boolean'
           ? {
-              checkboxLabel: '允许本 App 空闲 30 分钟后保存、安装并在后台重新打开',
-              checkboxChecked: updates.idleChoiceMade?.() ? state.idleEnabled === true : true
+              checkboxLabel:
+                process.platform === 'win32'
+                  ? '允许本 App 空闲 30 分钟后保存、退出并安装'
+                  : '允许本 App 空闲 30 分钟后保存、安装并在后台重新打开',
+              checkboxChecked: updates.idleChoiceMade?.() ? state.idleEnabled === true : process.platform === 'darwin'
             }
           : {}),
         buttons: ['下次退出时安装', '保存并立即重启安装'],
@@ -2068,7 +2073,7 @@ async function offerUpdate(manual = false): Promise<void> {
       if (choice.response === 1) {
         updates.restartAfterInstall();
         app.quit();
-      } else if (process.platform === 'darwin') updates.setIdleAllowed?.(choice.checkboxChecked);
+      } else if (typeof state.idleEnabled === 'boolean') updates.setIdleAllowed?.(choice.checkboxChecked);
     } finally {
       updateDialog = false;
       recordAppActivity();
@@ -2662,12 +2667,19 @@ if (single) {
                 updateFixture ? fixtureOrigin + (url.endsWith('.zip') ? '/archive.zip' : '/installer.exe') : url,
                 options
               ),
-            changed: () => publish(),
+            changed: () => {
+              publish();
+              syncIdleTimer();
+            },
             fixtureOrigin: updateFixture ? fixtureOrigin : undefined,
             fixtureMode: updateFixture && process.env.PROFILES_WINDOWS_UPDATE_MANUAL === '1' ? 'manual' : undefined
           });
+          initializeIdleUpdate();
           updates.start(() => void checkUpdates().catch(report));
-          powerMonitor.on('resume', () => updates?.resume(() => void checkUpdates().catch(report)));
+          powerMonitor.on('resume', () => {
+            recordAppActivity();
+            updates?.resume(() => void checkUpdates().catch(report));
+          });
           win?.once('show', () => void offerUpdate().catch(report));
           publish();
         } catch (error) {
@@ -2709,7 +2721,7 @@ if (single) {
       )
         .then(async () => {
           if (!(await permitted())) throw Error('应用状态已变化');
-          await updates?.installOnQuit(!testMode);
+          await updates?.installOnQuit(!testMode, epoch === undefined ? undefined : permitted);
           quitting = true;
           quitPending = false;
           app.quit();

@@ -210,6 +210,32 @@ test('installed updates verify bytes and package version before a quit-triggered
   assert.deepEqual(s.calls.installs, [true]);
   assert.equal(s.calls.verified, 2);
 });
+test('Windows idle install is opt-in, rechecks activity after byte verification and keeps a deferred package', async (t) => {
+  const s = setup(t);
+  await s.manager.check();
+  await s.manager.download();
+  assert.equal(s.manager.status.idleEnabled, false);
+  assert.equal(s.manager.idleChoiceMade(), false);
+  s.manager.setIdleAllowed(true);
+  s.manager.setIdleDeadline(100_000);
+  assert.equal(s.manager.status.idleDeadline, 100_000);
+  const saved = JSON.parse(readFileSync(path.join(s.manager.directory, 'state.json'), 'utf8'));
+  assert.equal(saved.idleAllowed, true);
+  assert.match(saved.approved, /^[a-f0-9]{64}$/);
+  await assert.rejects(
+    s.manager.installOnQuit(true, async () => {
+      assert.equal(s.calls.verified, 2);
+      return false;
+    }),
+    /空闲安装已延后/
+  );
+  assert.deepEqual(s.calls.installs, []);
+  assert.equal(s.manager.status.phase, 'ready');
+  assert.equal(s.manager.status.idleEnabled, true);
+  await s.manager.installOnQuit(true, async () => true);
+  assert.deepEqual(s.calls.installs, [false]);
+});
+
 test('tampered cached installers cannot execute and leave a recoverable update error', async (t) => {
   const s = setup(t);
   await s.manager.check();
@@ -236,6 +262,10 @@ test('portable downloads are verified and saved as a new file without running an
   writeFileSync(original, 'keep');
   await s.manager.check();
   await s.manager.download();
+  s.manager.setIdleAllowed(true);
+  s.manager.setIdleDeadline(100_000);
+  assert.equal(s.manager.status.idleEnabled, undefined);
+  assert.equal(s.manager.status.idleDeadline, undefined);
   await s.manager.installOnQuit();
   assert.deepEqual(s.calls.installs, []);
   assert.equal(s.calls.fetches, 1);

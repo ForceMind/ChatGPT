@@ -9,7 +9,7 @@ export interface UpdateService {
   resume(check: () => void): void;
   download(accelerated?: boolean): Promise<void>;
   stopForQuit(): Promise<void>;
-  installOnQuit(allowRelaunch?: boolean): Promise<void>;
+  installOnQuit(allowRelaunch?: boolean, permitIdleInstall?: () => Promise<boolean>): Promise<void>;
   restartAfterInstall(background?: boolean): void;
   cancelRestart(): void;
   dispose(): void;
