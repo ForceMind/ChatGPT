@@ -184,6 +184,36 @@ class SecureFixtureTests(unittest.TestCase):
         self.assertEqual(self.manifest['certificateSha256'], hashlib.sha256(
             fixture.openssl('x509', '-in', str(self.folder / 'ca.pem'), '-outform', 'DER')).hexdigest())
 
+    def test_new_file_transport_configs_preserve_egress_and_tls_ports(self):
+        manifest = fixture.prepare(self.folder)
+        expected = {
+            'ws': ((18443, 18444), 'ws', 'none'),
+            'ws-tls': ((19443, 19444), 'ws', 'tls'),
+            'tcp-http': ((20443, 20444), 'raw', 'none'),
+        }
+        for mode, (ports, network, security) in expected.items():
+            nodes = manifest['transports'][mode]
+            self.assertEqual(nodes['expectedSecurity'], security)
+            for tag, port, source in zip(('A', 'B'), ports, ('127.0.0.2', '127.0.0.3')):
+                uri = urlsplit(nodes['node' + tag])
+                query = parse_qs(uri.query)
+                self.assertEqual((uri.hostname, uri.port), ('10.0.2.2', port))
+                self.assertEqual(query['security'], [security])
+                self.assertNotIn('allowInsecure', query)
+                config = json.loads((self.folder / f'{mode}-{tag}.json').read_text())
+                stream = config['inbounds'][0]['streamSettings']
+                self.assertEqual((stream['network'], stream['security']), (network, security))
+                self.assertEqual(config['outbounds'][1]['sendThrough'], source)
+                if network == 'ws':
+                    self.assertEqual(query['path'], ['/owned-ws'])
+                    self.assertEqual(stream['wsSettings'], {'host': fixture.SERVER_NAME, 'path': '/owned-ws'})
+                else:
+                    self.assertEqual(query['headerType'], ['http'])
+                    self.assertEqual(stream['rawSettings']['header']['request']['path'], ['/owned-tcp'])
+                if security == 'tls':
+                    self.assertEqual(stream['tlsSettings']['certificates'][0]['certificate'],
+                                     manifest['caCertificateLines'])
+
     def test_origin_uses_verified_tls_and_preserves_payload(self):
         server = fixture.http.server.ThreadingHTTPServer(('127.0.0.1', 0), fixture.Origin)
         server.socket = fixture.tls_context(self.folder).wrap_socket(server.socket, server_side=True)

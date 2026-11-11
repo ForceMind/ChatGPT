@@ -39,8 +39,11 @@ try:
     assert test_receipt['sourceSHA'] == metadata['sourceSHA'] and test_receipt['sha256'] == native._sha(test)
     native._inspect_apk(test, native._tools(), signer, PACKAGE+'.test')
     transport = os.environ['STUDIO_GECKO_TRANSPORT']
-    assert transport in ('raw', 'tls', 'reality')
-    fixture = native._json(Path(os.environ['STUDIO_GECKO_FIXTURE']))
+    assert transport in ('raw', 'tls', 'reality', 'ws', 'ws-tls', 'tcp-http')
+    fixture_path = Path(os.environ['STUDIO_GECKO_FIXTURE'])
+    fixture = native._json(fixture_path)
+    fixture_ready = native._json(fixture_path.parent / 'ready.json')
+    assert fixture_ready['ready'] is True and transport in fixture_ready['activeTransports']
     native._root_and_block()
     # Owned fixture gates and PAC only; the business origin 18480 stays blocked.
     native._shell('iptables','-I','OUTPUT','1','-p','tcp','-d','10.0.2.2','--dport','18080','-j','ACCEPT')

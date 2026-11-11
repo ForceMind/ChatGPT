@@ -2,6 +2,8 @@
 """Owned, ephemeral CI VLESS fixtures. Never accepts external node credentials."""
 import argparse
 import base64
+from email import policy
+from email.parser import BytesParser
 import hashlib
 import http.server
 from http.cookies import SimpleCookie, CookieError
@@ -30,6 +32,12 @@ REALITY_TARGET_PORT = 18481
 UNTRUSTED_TLS_PORT = 19543
 TRANSPORT_PORTS = {'raw': (18443, 18444), 'tls': (19443, 19444),
                    'reality': (20443, 20444)}
+# Keep the established Android egress allowlist and two TLS trust ports.
+# Each runner starts the legacy set or this set, never two modes on the same socket.
+NEW_FILE_TRANSPORTS = {'ws': TRANSPORT_PORTS['raw'], 'ws-tls': TRANSPORT_PORTS['tls'],
+                       'tcp-http': TRANSPORT_PORTS['reality']}
+ALL_TRANSPORTS = {**TRANSPORT_PORTS, **NEW_FILE_TRANSPORTS}
+TRANSPORT_PATTERN = r'(?:ws-tls|tcp-http|raw|tls|reality|ws)'
 SCHEMA_VERSION = 2
 
 
@@ -122,7 +130,7 @@ TRANSFER_MAX_BODY_BYTES = 262144
 TRANSFER_GATE_TIMEOUT_SECONDS = 45
 TRANSFER_IO_TIMEOUT_SECONDS = 10
 TRANSFER_MAX_OPERATIONS = 128
-TRANSFER_ID = r'(?:raw|tls|reality)-(?:http|https)-[a-z][a-z0-9-]{0,47}'
+TRANSFER_ID = TRANSPORT_PATTERN + r'-(?:http|https)-[a-z][a-z0-9-]{0,47}'
 
 
 class TransferGates:
@@ -141,7 +149,7 @@ class TransferGates:
                 return 409, dict(state)
             if len(self.operations) >= self.limit:
                 return 429, {'error': 'operation-limit'}
-            state = {'opid': opid, 'transport': opid.split('-', 1)[0],
+            state = {'opid': opid, 'transport': re.match(TRANSPORT_PATTERN, opid).group(),
                      'origin': origin, 'kind': kind, 'route': route,
                      'started': True, 'prefix': False, 'bodyComplete': False,
                      'commitCount': 0, 'released': False, 'completed': False,
@@ -395,7 +403,39 @@ class Origin(http.server.BaseHTTPRequestHandler):
             data, kind = json.dumps({'route': route}).encode(), 'application/json'
         self.finite_response(200, data, route, kind)
 
+    def webview_upload(self, expected_route, expected_account):
+        route, account = route_name(self.client_address[0]), self.joint_account()
+        content_type = self.headers.get('Content-Type', '')
+        try:
+            length = int(self.headers.get('Content-Length', '0'))
+            if not isinstance(self.connection, ssl.SSLSocket) or not (0 < length <= 65536):
+                raise ValueError('owned HTTPS multipart required')
+            if route != expected_route or account != expected_account or not content_type.startswith('multipart/form-data;'):
+                raise ValueError('owned route, account or body type differs')
+            raw = self.rfile.read(length)
+            if len(raw) != length:
+                raise ValueError('incomplete multipart body')
+            parsed = BytesParser(policy=policy.default).parsebytes(
+                b'Content-Type: ' + content_type.encode('ascii') + b'\r\n\r\n' + raw)
+            part, = list(parsed.iter_parts())
+            if part.get_param('name', header='content-disposition') != 'file' or part.get_filename() != 'owned.bin':
+                raise ValueError('owned file part missing')
+            body = part.get_payload(decode=True)
+            expected = f'owned WebView bytes for account {account} via route {route}\n'.encode()
+            if body != expected:
+                raise ValueError('owned upload bytes differ')
+        except (OSError, UnicodeError, ValueError, TypeError):
+            self.finite_response(400, b'owned upload rejected', route)
+            return
+        result = {'route':route,'account':account,'fileBytes':len(body),'fileSha256':hashlib.sha256(body).hexdigest()}
+        print(json.dumps({'event':'owned-webview-upload','path':self.path,**result},sort_keys=True),flush=True)
+        self.finite_response(200, json.dumps(result).encode(), route, 'application/json', body_len=length)
+
     def do_POST(self):
+        upload = re.fullmatch(rf'/joint/formal-{TRANSPORT_PATTERN}-upload-([AB])-([AB])/upload', self.path)
+        if upload:
+            self.webview_upload(*upload.groups())
+            return
         if self.path.startswith(('/transfer/', '/transfer-control/')):
             self.transfer('POST')
             return
@@ -463,24 +503,42 @@ def x25519_pair():
     return encode(private_der[-32:]), encode(public_der[-32:])
 
 
+def transport_security(mode):
+    if mode in ('tls', 'ws-tls'):
+        return 'tls'
+    return 'reality' if mode == 'reality' else 'none'
+
+
 def node_uri(mode, port, tag, public_key=None, short_id='1234'):
-    query = {'encryption': 'none', 'type': 'tcp',
-             'security': 'none' if mode == 'raw' else mode}
-    if mode != 'raw':
+    security = transport_security(mode)
+    websocket = mode in ('ws', 'ws-tls')
+    query = {'encryption': 'none', 'type': 'ws' if websocket else 'tcp', 'security': security}
+    if websocket:
+        query.update({'host': SERVER_NAME, 'path': '/owned-ws'})
+    if mode == 'tcp-http':
+        query.update({'headerType': 'http', 'host': SERVER_NAME, 'path': '/owned-tcp'})
+    if security != 'none':
         query['sni'] = SERVER_NAME
-    if mode == 'tls':
+    if security == 'tls':
         query['alpn'] = 'http/1.1'
-    if mode == 'reality':
+    if security == 'reality':
         query.update({'pbk': public_key, 'fp': 'chrome', 'sid': short_id, 'spx': '/'})
     return f'vless://{IDENTITY}@10.0.2.2:{port}?{urlencode(query)}#{mode}-{tag}'
 
 
 def fixture_config(mode, port, source, certificate, key, private_key):
-    stream = {'network': 'raw', 'security': 'none' if mode == 'raw' else mode}
-    if mode == 'tls':
+    security = transport_security(mode)
+    websocket = mode in ('ws', 'ws-tls')
+    stream = {'network': 'ws' if websocket else 'raw', 'security': security}
+    if websocket:
+        stream['wsSettings'] = {'host': SERVER_NAME, 'path': '/owned-ws'}
+    if mode == 'tcp-http':
+        stream['rawSettings'] = {'header': {'type': 'http', 'request': {
+            'path': ['/owned-tcp'], 'headers': {'Host': [SERVER_NAME]}}}}
+    if security == 'tls':
         stream['tlsSettings'] = {'alpn': ['http/1.1'], 'minVersion': '1.2',
                                  'certificates': [{'certificate': certificate, 'key': key}]}
-    if mode == 'reality':
+    if security == 'reality':
         stream['realitySettings'] = {'target': f'127.0.0.1:{REALITY_TARGET_PORT}',
                                      'serverNames': [SERVER_NAME], 'privateKey': private_key,
                                      'shortIds': ['1234']}
@@ -532,8 +590,8 @@ def prepare(folder):
                 'certificateSha256': hashlib.sha256(certificate_der).hexdigest(),
                 'transports': {}}
     reality_a_public_key = None
-    for mode, ports in TRANSPORT_PORTS.items():
-        nodes = {'expectedSecurity': 'none' if mode == 'raw' else mode}
+    for mode, ports in ALL_TRANSPORTS.items():
+        nodes = {'expectedSecurity': transport_security(mode)}
         for tag, port, source in zip(('A', 'B'), ports, ('127.0.0.2', '127.0.0.3')):
             private_key, public_key = x25519_pair() if mode == 'reality' else (None, None)
             if mode == 'reality' and tag == 'A':
@@ -574,11 +632,11 @@ def load_prepared(folder):
         raise ValueError('Prepared fixture public certificate differs from manifest')
     if not (folder / 'key.pem').is_file():
         raise ValueError('Prepared fixture private key missing')
-    for mode in TRANSPORT_PORTS:
+    for mode in ALL_TRANSPORTS:
         for tag in ('A', 'B', 'untrusted') if mode == 'tls' else ('A', 'B'):
             name = f'{tag}.json' if mode == 'raw' else f'{mode}-{tag}.json'
             config = json.loads((folder / name).read_text())
-            if mode == 'tls' and config['inbounds'][0]['streamSettings']['tlsSettings'][
+            if transport_security(mode) == 'tls' and config['inbounds'][0]['streamSettings']['tlsSettings'][
                     'certificates'][0]['certificate'] != manifest['caCertificateLines']:
                 raise ValueError('Prepared VLESS certificate differs from manifest')
     return manifest
@@ -657,7 +715,8 @@ def wait_ready(children, folder, timeout=20):
     return ports
 
 
-def run(core, folder, manifest, gecko_network=False, gecko_local_exports=False, gecko_handoff=False):
+def run(core, folder, manifest, gecko_network=False, gecko_local_exports=False, gecko_handoff=False,
+        new_file_transports=False):
     marker = folder / 'ready.json'
     marker.unlink(missing_ok=True)
     manifest['ready'] = False
@@ -693,19 +752,21 @@ def run(core, folder, manifest, gecko_network=False, gecko_local_exports=False, 
         servers.append(pac_proxy)
         threading.Thread(target=pac_proxy.serve_forever, daemon=True).start()
         servers.append(CamouflageServer(tls_context(folder, camouflage=True)))
-        for mode in TRANSPORT_PORTS:
-            for tag in ('A', 'B', 'untrusted') if mode == 'tls' else ('A', 'B'):
-                config_name = f'{tag}.json' if mode == 'raw' else f'{mode}-{tag}.json'
-                log = (folder / f'fixture-{mode}-{tag}.log').open('ab')
-                logs.append(log)
-                children.append(subprocess.Popen([core, 'run', '-config', str(folder / config_name)],
-                                                 stdout=log, stderr=subprocess.STDOUT))
+        active_modes = NEW_FILE_TRANSPORTS if new_file_transports else TRANSPORT_PORTS
+        configs = [(mode, tag) for mode in active_modes for tag in ('A', 'B')]
+        configs.append(('tls', 'untrusted'))
+        for mode, tag in configs:
+            config_name = f'{tag}.json' if mode == 'raw' else f'{mode}-{tag}.json'
+            log = (folder / f'fixture-{mode}-{tag}.log').open('ab')
+            logs.append(log)
+            children.append(subprocess.Popen([core, 'run', '-config', str(folder / config_name)],
+                                             stdout=log, stderr=subprocess.STDOUT))
         ports = wait_ready(children, folder)
         manifest['ready'] = True
         write_json(folder / 'fixture.json', manifest)
         write_json(marker, {'ready': True, 'ports': ports,
-                            'certificateSha256': manifest['certificateSha256']})
-        print('Owned raw/TLS/REALITY fixtures ready', flush=True)
+                            'certificateSha256': manifest['certificateSha256'], 'activeTransports': list(active_modes)})
+        print(f'Owned fixtures ready: {list(active_modes)}', flush=True)
         while not stopped.wait(0.5):
             if any(child.poll() is not None for child in children):
                 raise RuntimeError('VLESS fixture exited; inspect fixture-*.log')
@@ -740,6 +801,7 @@ def main():
     parser.add_argument('--gecko-network', action='store_true', help='Owned Gecko file-picker page extension only')
     parser.add_argument('--gecko-local-exports', action='store_true', help='Owned stage-one browser Blob/data exports only')
     parser.add_argument('--gecko-handoff', action='store_true', help='Owned asset/Skill tasks with real files and once-only sends')
+    parser.add_argument('--new-file-transports', action='store_true', help='Bind the three owned new file transports')
     args = parser.parse_args()
     if sum((args.gecko_network, args.gecko_local_exports, args.gecko_handoff)) > 1:
         parser.error('Choose one optional Gecko fixture mode')
@@ -752,7 +814,8 @@ def main():
         if not args.core:
             parser.error('--core is required when starting fixtures')
         # Never rotate the CA after the Android CI build has embedded its public trust.
-        run(args.core, folder, load_prepared(folder), args.gecko_network, args.gecko_local_exports, args.gecko_handoff)
+        run(args.core, folder, load_prepared(folder), args.gecko_network, args.gecko_local_exports,
+            args.gecko_handoff, args.new_file_transports)
 
 
 if __name__ == '__main__':

@@ -1,5 +1,5 @@
 """Real formal activity on a fresh CI emulator; no screenshots or external service access."""
-import argparse,json,os,re,shlex,subprocess
+import argparse,hashlib,json,os,re,shlex,subprocess
 from pathlib import Path
 REGULAR=os.environ.get('STUDIO_ANDROID_CI_TARGET')=='regular'
 PACKAGE='com.forcemind.chatgpt.profiles' if REGULAR else 'com.forcemind.chatgpt.profiles.networkci'
@@ -9,7 +9,7 @@ def report_command(name):
  assert name in ('formal-network-result.json','formal-network-files.json')
  return ['adb','exec-out','cat','/data/user/0/'+PACKAGE+'/files/'+name] if REGULAR else ['adb','exec-out','run-as',PACKAGE,'cat','files/'+name]
 def main():
- p=argparse.ArgumentParser();p.add_argument('--transport',choices=['raw','tls','reality'],required=True);p.add_argument('--output',required=True);p.add_argument('--regular-files-only',action='store_true');a=p.parse_args()
+ p=argparse.ArgumentParser();p.add_argument('--transport',choices=['raw','tls','reality','ws','ws-tls','tcp-http'],required=True);p.add_argument('--output',required=True);p.add_argument('--regular-files-only',action='store_true');a=p.parse_args()
  assert a.regular_files_only is REGULAR, 'Explicit regular scope required; legacy default remains unchanged'
  assert os.environ.get('GITHUB_ACTIONS')=='true' and adb('shell','getprop','ro.kernel.qemu').strip()=='1'
  output=Path(a.output);output.mkdir(parents=True,exist_ok=True)
@@ -41,9 +41,29 @@ def main():
   try:e=json.loads(line)
   except json.JSONDecodeError:continue
   if isinstance(e,dict) and e.get('event')=='owned-origin-access' and e.get('path','').startswith('/joint/formal-'+a.transport+'-'):events.append(e)
- expected=evidence['expectedRequests'];assert len(expected)==17 and len(events)==len(expected)
+ expected=evidence['expectedRequests'];assert len(expected)==19 and len(events)==len(expected)
  for item in expected:assert len([e for e in events if all(e.get(k)==v for k,v in item.items())])==1,'Missing/replayed/mismatched formal request: '+item['path']
- (output/'verified.json').write_text(json.dumps({'complete':True,'sourceSHA':os.environ['GITHUB_SHA'],'api':evidence['api'],'transport':a.transport,'exactRequests':len(events),'successfulFiles':12,'screenshots':False,'realChatGPT':False},indent=2)+'\n')
+ uploads=[]
+ for line in Path(os.environ['RUNNER_TEMP'],'formal-network-fixture.log').read_text().splitlines():
+  try:e=json.loads(line)
+  except json.JSONDecodeError:continue
+  if isinstance(e,dict) and e.get('event')=='owned-webview-upload':uploads.append(e)
+ assert len(uploads)==len(evidence['uploads'])==2
+ assert {(u['route'],u['account']) for u in evidence['uploads']}=={('A','A'),('B','B')}
+ for upload in evidence['uploads']:
+  payload=f"owned WebView bytes for account {upload['account']} via route {upload['route']}\n".encode()
+  assert upload['fileBytes']==len(payload) and upload['fileSha256']==hashlib.sha256(payload).hexdigest()
+  assert sum(all(event.get(k)==v for k,v in upload.items()) for event in uploads)==1
+ assets=[file for file in evidence['files'] if file['exit']=='asset']
+ assert len(assets)==6
+ for file in assets:
+  body=file['body']
+  expected_body={'route':file['route'],'account':file['account'],'operation':body['operation']}
+  assert body==expected_body
+  assert any(item['path']==f"/joint/{body['operation']}/download" and item['route']==file['route']
+             and item['syntheticAccount']==file['account'] for item in expected)
+  assert file['sha256']==hashlib.sha256(json.dumps(expected_body).encode()).hexdigest()
+ (output/'verified.json').write_text(json.dumps({'complete':True,'sourceSHA':os.environ['GITHUB_SHA'],'api':evidence['api'],'transport':a.transport,'exactRequests':len(events),'successfulFiles':12,'webviewMultipartUploads':2,'assetContentDigests':6,'screenshots':False,'realChatGPT':False},indent=2)+'\n')
  print('FORMAL_NETWORK_VERIFIED '+json.dumps(evidence))
  subprocess.run(['adb','shell','am','force-stop',PACKAGE],check=True,capture_output=True,timeout=15)
  file_arguments=dict(arguments,**{'class':'com.forcemind.chatgpt.profiles.NetworkFileSafetyTest'})

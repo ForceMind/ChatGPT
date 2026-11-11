@@ -83,7 +83,7 @@ def handler_for(base, route_name):
     evidence.state.update(networkRequests=[], uploads=[], transport=None, runId=None)
     gate = base._transfer_gates
     lock = threading.RLock()
-    upload_pattern = re.compile(r'/gecko-network/((?:raw|tls|reality)-https-[a-z][a-z0-9-]{0,47})/upload')
+    upload_pattern = re.compile(r'/gecko-network/((?:ws-tls|tcp-http|raw|tls|reality|ws)-https-[a-z][a-z0-9-]{0,47})/upload')
 
     class Handler(base):
         def setup(self):
@@ -175,7 +175,7 @@ def handler_for(base, route_name):
             if path == '/worker.js':
                 self.finite_response(200, page.WORKER_JS.encode(), route_name(self.client_address[0]), 'application/javascript')
                 return
-            echo = re.fullmatch(r'/gecko-network/((?:raw|tls|reality)-https-[a-z][a-z0-9-]{0,47})/echo', path)
+            echo = re.fullmatch(r'/gecko-network/((?:ws-tls|tcp-http|raw|tls|reality|ws)-https-[a-z][a-z0-9-]{0,47})/echo', path)
             if echo:
                 route = route_name(self.client_address[0]);self.record(kind='browser-probe', operation=echo[1])
                 self.transfer_json(200, {'operation': echo[1], 'route': route, 'identity': self.joint_account()}, route);return
@@ -185,7 +185,7 @@ def handler_for(base, route_name):
                 return super().do_GET()
             with lock:
                 transport = evidence.state['transport']
-                if transport not in ('raw', 'tls', 'reality'):
+                if transport not in ('raw', 'tls', 'reality', 'ws', 'ws-tls', 'tcp-http'):
                     self.transfer_json(503, {'error': 'owned configuration required'}, 'direct')
                     return
                 evidence.state['pageCounts'][path] += 1
@@ -226,7 +226,7 @@ document.getElementById('network-probe').addEventListener('click',async()=>{cons
                 if self.server.server_port != 18080 or route_name(self.client_address[0]) != 'direct':
                     self.transfer_json(403, {'error': 'host-only control'}, 'direct');return
                 value = json.loads(self.body(4096))
-                if set(value) != {'transport', 'runId'} or value['transport'] not in ('raw', 'tls', 'reality') or str(uuid.UUID(value['runId'])) != value['runId']:
+                if set(value) != {'transport', 'runId'} or value['transport'] not in ('raw', 'tls', 'reality', 'ws', 'ws-tls', 'tcp-http') or str(uuid.UUID(value['runId'])) != value['runId']:
                     self.transfer_json(400, {'error': 'invalid owned configuration'}, 'direct');return
                 with lock:
                     if evidence.state['runId'] is not None:

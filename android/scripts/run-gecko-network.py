@@ -26,7 +26,7 @@ PACKAGE = native.PACKAGE
 HOST = 'network-fixture.test'
 UPLOAD = b'owned-gecko-network-upload\n' * 1024
 DOWNLOAD = b'D' * 262144
-OPERATION = re.compile(r'(?:raw|tls|reality)-https-gecko-[a-f0-9]{32}')
+OPERATION = re.compile(r'(?:ws-tls|tcp-http|raw|tls|reality|ws)-https-gecko-[a-f0-9]{32}')
 PICKER_PACKAGES = ('com.android.documentsui', 'com.google.android.documentsui')
 
 
@@ -503,6 +503,9 @@ class NetworkAcceptance(AcknowledgedNativeInput, common.Acceptance):
 
     def download(self, route):
         before = self.ledger();known = {row['id'] for row in before['records']} if before else set()
+        other_accounts = [self.manifest['accounts'][key]['id'] for key in ('B', 'C')]
+        other_paths = ['assets/'+account+'/index.json' for account in other_accounts]
+        other_ledgers = [self.optional_json(path) for path in other_paths]
         previous = self.latest(self.status(), '/c/a1')['network']['downloadOperation']
         self.tap_native_action('保存合成文件', description=True)
         status = self.wait('single native download request', self.status,
@@ -522,8 +525,9 @@ class NetworkAcceptance(AcknowledgedNativeInput, common.Acceptance):
         assert result.stdout == DOWNLOAD and asset['sha256'] == hashlib.sha256(result.stdout).hexdigest()
         final = self.gate(operation);assert final['completed'] is True and final['attemptCount'] == final['opCount'] == 1
         assert final['responseBytesWritten'] == len(DOWNLOAD) and final['route'] == route
+        assert [self.optional_json(path) for path in other_paths] == other_ledgers, 'Download entered another account ledger'
         proof = {'kind':'download','operation':operation,'route':route,'accountId':account,'assetId':asset['id'],
-                 'bytes':len(result.stdout),'sha256':asset['sha256'],'gate':final}
+                 'bytes':len(result.stdout),'sha256':asset['sha256'],'gate':final,'otherAccountLedgersPreserved':True}
         self.business.append(proof);return proof
 
     def probe(self, route):
@@ -563,12 +567,12 @@ class NetworkAcceptance(AcknowledgedNativeInput, common.Acceptance):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--transport', choices=('raw','tls','reality'), default=os.environ.get('STUDIO_GECKO_TRANSPORT'))
+    parser.add_argument('--transport', choices=('raw','tls','reality','ws','ws-tls','tcp-http'), default=os.environ.get('STUDIO_GECKO_TRANSPORT'))
     parser.add_argument('--fixture', type=Path, default=Path(os.environ.get('STUDIO_GECKO_FIXTURE','android/network-poc/secure-fixture/fixture.json')))
     parser.add_argument('--apk', type=Path, default=Path(os.environ.get('STUDIO_GECKO_APK','android/app/build/environment-client-input/gecko-network-x86.apk')))
     parser.add_argument('--receipt', type=Path, default=Path(os.environ.get('STUDIO_GECKO_RECEIPT','android/app/build/environment-client-input/gecko-network-receipt.json')))
     parser.add_argument('--output', type=Path, default=Path(os.environ.get('STUDIO_GECKO_OUTPUT','android/app/build/gecko-network-evidence')))
-    args = parser.parse_args();assert args.transport in ('raw','tls','reality')
+    args = parser.parse_args();assert args.transport in ('raw','tls','reality','ws','ws-tls','tcp-http')
     acceptance = None;guarded = False
     native.EVIDENCE=args.output;common.EVIDENCE=args.output
     try:
@@ -578,7 +582,8 @@ def main():
         args.output.mkdir(parents=True,exist_ok=True);native.EVIDENCE=args.output;common.EVIDENCE=args.output
         assert not native._shell('pm','list','packages',PACKAGE).strip(), 'Fresh package installation only'
         manifest = native._json(args.fixture);assert manifest['schemaVersion']==2 and manifest['ready'] is True
-        assert native._json(args.fixture.parent/'ready.json')['ready'] is True
+        fixture_ready = native._json(args.fixture.parent/'ready.json')
+        assert fixture_ready['ready'] is True and args.transport in fixture_ready['activeTransports']
         signer = expected_signer()
         receipt = native._json(args.receipt)
         version_metadata=validate_receipt(receipt)

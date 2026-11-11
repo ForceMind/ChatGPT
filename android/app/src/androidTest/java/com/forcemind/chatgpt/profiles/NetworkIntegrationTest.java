@@ -47,7 +47,7 @@ public final class NetworkIntegrationTest {
     private final Map<String,String> profileNames=new LinkedHashMap<>();
     private final Map<String,WebView> live=new LinkedHashMap<>();
     private final Map<String,String> documents=new LinkedHashMap<>();
-    private final JSONArray files=new JSONArray(),requests=new JSONArray();
+    private final JSONArray files=new JSONArray(),requests=new JSONArray(),uploads=new JSONArray();
     private MainActivity activity;
     private BrowserMemory memory;
     private NetworkSession session;
@@ -103,11 +103,39 @@ public final class NetworkIntegrationTest {
         CountDownLatch done=new CountDownLatch(1);AtomicReference<String> error=new AtomicReference<>();main(()->session.select(index,(ok,message)->{if(!ok)error.set(message);done.countDown();}));
         assertTrue(done.await(35,TimeUnit.SECONDS));assertNull(error.get());assertTrue(session.ready());assertEquals(NetworkRoute.State.CONNECTED,session.routes.snapshot().state);
     }
+    private void upload(String account, String tab, String expectedRoute) throws Exception {
+        select(tab);
+        WebView web = view(tab);
+        String target = path("upload-" + expectedRoute + "-" + account, "upload");
+        String payload = "owned WebView bytes for account " + account + " via route " + expectedRoute + "\n";
+        byte[] bytes = payload.getBytes(StandardCharsets.UTF_8);
+        StringBuilder sha = new StringBuilder();
+        for (byte value : java.security.MessageDigest.getInstance("SHA-256").digest(bytes))
+            sha.append(String.format(java.util.Locale.ROOT, "%02x", value & 255));
+
+        js(web, "window.__ownedUpload=null;(()=>{let form=new FormData();form.append('file',new File(["
+                + JSONObject.quote(payload) + "],'owned.bin',{type:'application/octet-stream'}));"
+                + "fetch(" + JSONObject.quote(target) + ",{method:'POST',body:form}).then(async response=>"
+                + "window.__ownedUpload={status:response.status,body:await response.json()})"
+                + ".catch(()=>window.__ownedUpload={status:0});})();true");
+        await(web, "window.__ownedUpload!==null", "true");
+        JSONObject response = new JSONObject(js(web, "window.__ownedUpload"));
+        assertEquals(200, response.getInt("status"));
+        JSONObject result = response.getJSONObject("body");
+        assertEquals(expectedRoute, result.getString("route"));
+        assertEquals(account, result.getString("account"));
+        assertEquals(bytes.length, result.getInt("fileBytes"));
+        assertEquals(sha.toString(), result.getString("fileSha256"));
+        uploads.put(result.put("path", target));
+        requests.put(new JSONObject().put("path",target).put("route",expectedRoute)
+                .put("syntheticAccount",account).put("method","POST").put("status",200));
+    }
+
     private void asset(String account,String tab,String name,String expectedRoute)throws Exception{
         AssetLedger ledger=new AssetLedger(context.getFilesDir(),accounts.get(account));int before=ledger.list().size();select(tab);
         main(()->{if(memory.assetDownloads==null)memory.assetDownloads=new AssetDownloads(context);memory.assetDownloads.start(viewOnMain(tab),accounts.get(account),"Synthetic "+account,origin+path(name,"download"),"CI-owned","attachment; filename=\""+name+".json\"","application/json");});
-        select("C1");until("file task terminal",()->!session.busy(),30);List<JSONObject> after=ledger.list();assertEquals(before+1,after.size());JSONObject entry=after.get(0);assertEquals("ready",entry.getString("status"));
-        JSONObject body=new JSONObject(new String(Files.readAllBytes(ledger.verifiedFile(entry.getString("id")).toPath()),StandardCharsets.UTF_8));assertEquals(expectedRoute,body.getString("route"));assertEquals(account,body.getString("account"));
+        select("C1");until("file task terminal",()->!session.busy(),30);List<JSONObject> after=ledger.list();assertEquals(before+1,after.size());JSONObject entry=after.get(0);assertEquals("ready",entry.getString("status"));assertEquals(accounts.get(account),entry.getString("accountId"));
+        JSONObject body=new JSONObject(new String(Files.readAllBytes(ledger.verifiedFile(entry.getString("id")).toPath()),StandardCharsets.UTF_8));assertEquals(expectedRoute,body.getString("route"));assertEquals(account,body.getString("account"));assertEquals(prefix+name,body.getString("operation"));
         files.put(new JSONObject().put("exit","asset").put("account",account).put("route",expectedRoute).put("body",body).put("id",entry.getString("id")).put("sha256",entry.getString("sha256")));request(path(name,"download"),expectedRoute,account);
     }
     private void export(String account,String tab,String name,String expectedRoute)throws Exception{
@@ -139,7 +167,7 @@ public final class NetworkIntegrationTest {
     }
     private WebView viewOnMain(String tab){return memory.views.get(tabs.get(tab));}
     private void preserved(String tab)throws Exception{select(tab);assertSame(live.get(tab),view(tab));assertEquals(documents.get(tab),document(tab));}
-    private void save(boolean complete)throws Exception{File evidence=new File(context.getFilesDir(),"network-document-evidence.json");if(evidence.isFile())report.put("lastDocumentEvidence",new JSONObject(new String(Files.readAllBytes(evidence.toPath()),StandardCharsets.UTF_8)));report.put("complete",complete).put("files",files).put("expectedRequests",requests);Files.write(new File(context.getFilesDir(),reportFile).toPath(),report.toString().getBytes(StandardCharsets.UTF_8));}
+    private void save(boolean complete)throws Exception{File evidence=new File(context.getFilesDir(),"network-document-evidence.json");if(evidence.isFile())report.put("lastDocumentEvidence",new JSONObject(new String(Files.readAllBytes(evidence.toPath()),StandardCharsets.UTF_8)));report.put("complete",complete).put("files",files).put("uploads",uploads).put("expectedRequests",requests);Files.write(new File(context.getFilesDir(),reportFile).toPath(),report.toString().getBytes(StandardCharsets.UTF_8));}
     @Test public void formalPagesAndAssetsRetainTheirAccountAndRoute()throws Exception{
         assertTrue(BuildConfig.NETWORK_TEST);assertTrue(BuildConfig.APPLICATION_ID.endsWith(".networkci"));assertTrue(NetworkTestPolicy.owned(NavigationPolicy.HOME));
         origin=args.getString("origin");String transport=args.getString("transport");prefix="formal-"+transport+"-";
@@ -151,10 +179,12 @@ public final class NetworkIntegrationTest {
             scenario.onActivity(current->{activity=current;memory=BrowserMemory.get(context);session=memory.network();});until("restored selected route before pages",()->session.ready(),35);assertEquals("A",session.routes.snapshot().node.name);
             page("A1",false);page("A2",true);page("B1",false);page("C1",false);popup();
             assertEquals(3,new java.util.HashSet<>(profileNames.values()).size());
+            upload("A","A1","A");
             for(String account:accounts.keySet()){asset(account,account.equals("A")?"A1":account+"1","asset-A-"+account,"A");export(account,account.equals("A")?"A1":account+"1","doc-A-"+account,"A");}
             MainActivity previous=activity;NetworkSession same=session;scenario.recreate();scenario.onActivity(current->{assertNotSame(previous,current);activity=current;assertSame(same,BrowserMemory.get(context).network());});
             for(String tab:tabs.keySet())preserved(tab);
             route(1);for(String tab:tabs.keySet())preserved(tab);
+            upload("B","B1","B");
             for(String account:accounts.keySet()){asset(account,account.equals("A")?"A1":account+"1","asset-B-"+account,"B");export(account,account.equals("A")?"A1":account+"1","doc-B-"+account,"B");}
             select("B1");WebView web=view("B1");long generation=session.routes.snapshot().generation;Networkcore.stop();until("stopped core must fail closed",()->session.routes.snapshot().state==NetworkRoute.State.FAILED,6);assertFalse(session.ready());
             AtomicReference<Boolean> blocked=new AtomicReference<>(true);main(()->{for(WebView held:memory.views.values())if(!held.getSettings().getBlockNetworkLoads())blocked.set(false);});assertTrue(blocked.get());
