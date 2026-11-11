@@ -54,7 +54,7 @@ if (regularNavigationTest && project.hasProperty('environmentNetworkTest'))
     throw new GradleException('Navigation and network fixtures use distinct CI APKs')
 def environmentBuildType = regularEnvironmentClient ? 'release' : 'networkBeta'
 def environmentPreBuild = regularEnvironmentClient ? 'preReleaseBuild' : 'preNetworkBetaBuild'
-def expectedCandidateVersionCode = appUpdateAcceptance ? ((appUpdateAcceptanceTarget || appUpdateTestTarget) ? 3000040 : 3000039) : regularEnvironmentClient ? (appUpdateCandidate ? (appUpdateAuto ? (appUpdateTestTarget ? 3000044 : 3000043) : (appUpdateTestTarget ? 3000038 : 3000037)) : 3000035) : 3000034
+def expectedCandidateVersionCode = appUpdateAcceptance ? ((appUpdateAcceptanceTarget || appUpdateTestTarget) ? 3000040 : 3000039) : regularEnvironmentClient ? (appUpdateCandidate ? (appUpdateAuto ? (appUpdateTestTarget ? 3000045 : 3000044) : (appUpdateTestTarget ? 3000038 : 3000037)) : 3000035) : 3000034
 
 // One Actions-generated minute is shared by every candidate ABI and CI mode.
 // Never read the clock during Gradle configuration or reconstruct a reused version.
@@ -193,6 +193,7 @@ tasks.matching { it.name == 'preReleaseBuild' }.configureEach { dependsOn 'requi
 dependencies {
     implementation files('libs/networkcore.aar')
     implementation 'androidx.activity:activity:1.13.0'
+    implementation 'com.journeyapps:zxing-android-embedded:4.3.0'
     implementation 'androidx.webkit:webkit:1.17.1'
     implementation 'com.google.code.gson:gson:2.13.2'
     implementation 'org.apache.commons:commons-csv:1.14.1'

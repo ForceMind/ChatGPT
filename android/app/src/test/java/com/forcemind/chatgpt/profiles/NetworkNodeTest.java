@@ -17,6 +17,28 @@ public final class NetworkNodeTest {
             catch(IllegalArgumentException expected){assertFalse(expected.getMessage().contains(BASE));assertFalse(expected.getMessage().contains("00000000"));}
         }
     }
+    @Test public void linkNameDecodesAndManualNameTakesPrecedence() {
+        String link = BASE + "#%E9%A6%99%E6%B8%AF%20A+B";
+        assertEquals("香港 A+B", NetworkNode.parse(link, null).name);
+        assertEquals("自定义", NetworkNode.parse(link, "自定义").name);
+        assertEquals("线路", NetworkNode.parse(BASE, "").name);
+    }
+    @Test public void unsupportedTransportIsReportedBeforeItsTransportSpecificOptions() {
+        String[][] cases = {
+            {"ws&path=%2Fsocket", "WebSocket"},
+            {"grpc&serviceName=fixture", "gRPC"},
+            {"xhttp&mode=packet-up", "XHTTP"},
+            {"httpupgrade&path=%2Fupgrade", "HTTP Upgrade"}
+        };
+        for (String[] row : cases) {
+            try {
+                NetworkNode.parse(BASE + "?type=" + row[0], null);
+                fail("Unsupported transport accepted");
+            } catch (IllegalArgumentException error) {
+                assertEquals("此线路使用 " + row[1] + "，当前版本仅支持 VLESS TCP（RAW）", error.getMessage());
+            }
+        }
+    }
     @Test public void ipv6RemainsCanonicalAndInvalidPortIsRejected() {
         assertEquals("[2001:db8::1]:443",NetworkNode.parse(BASE.replace("fixture.test","[2001:db8::1]"),"IPv6").endpoint());
         try {NetworkNode.parse(BASE.replace(":443",":0"),"x");fail();}catch(IllegalArgumentException expected){}

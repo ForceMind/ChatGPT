@@ -50,15 +50,15 @@ public final class NetworkNode {
             if (uri.getRawQuery() != null && !uri.getRawQuery().isEmpty()) for (String part : uri.getRawQuery().split("&", -1)) {
                 String[] pair = part.split("=", 2);
                 String key = decode(pair[0]); String value = pair.length == 2 ? decode(pair[1]) : "";
-                if (!allowed.contains(key)) throw bad("地址包含未支持的参数");
                 if (p.put(key, value) != null) throw bad("地址包含重复参数");
                 if (value.chars().anyMatch(c -> c < 32 || c == 127)) throw bad("参数包含控制字符");
             }
-            if (!"none".equals(p.getOrDefault("encryption", "none"))) throw bad("仅支持 encryption=none");
-            if (!"none".equals(p.getOrDefault("headerType", "none"))) throw bad("首版不支持 TCP 头部伪装");
             String transport = p.getOrDefault("type", "tcp");
             if ("tcp".equals(transport)) transport = "raw";
-            if (!"raw".equals(transport)) throw bad("首版仅开放已验证的 raw/tcp 传输");
+            if (!"raw".equals(transport)) throw bad(unsupportedTransport(transport));
+            if (!allowed.containsAll(p.keySet())) throw bad("地址包含未支持的参数");
+            if (!"none".equals(p.getOrDefault("encryption", "none"))) throw bad("仅支持 encryption=none");
+            if (!"none".equals(p.getOrDefault("headerType", "none"))) throw bad("此线路启用了 TCP 头部伪装，当前版本暂不支持");
             String security = p.getOrDefault("security", "none");
             if (!Arrays.asList("none", "tls", "reality").contains(security)) throw bad("不支持此安全协议");
             if ("reality".equals(security) && !"raw".equals(transport)) throw bad("REALITY 仅支持 raw/tcp");
@@ -80,7 +80,7 @@ public final class NetworkNode {
                 if (publicKey.length != 32 || !java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(publicKey).equals(p.get("pbk"))) throw bad("REALITY pbk 编码无效");
                 if (!p.getOrDefault("sid", "").matches("(?:[0-9a-fA-F]{2}){0,8}")) throw bad("REALITY sid 必须为至多 8 字节十六进制");
                 if (p.getOrDefault("sni", "").isEmpty()) throw bad("REALITY 需要 sni");
-                if (p.containsKey("alpn")) throw bad("首版 REALITY 不接受 alpn");
+                if (p.containsKey("alpn")) throw bad("REALITY 线路暂不支持 ALPN 参数");
             }
             String name = displayName == null ? "" : displayName.trim();
             if (name.isEmpty()) name = uri.getRawFragment() == null ? "线路" : decode(uri.getRawFragment()).trim();
@@ -90,6 +90,21 @@ public final class NetworkNode {
         } catch (IllegalArgumentException e) { throw e; }
         catch (Exception e) { throw bad("VLESS 地址格式无效"); }
     }
+    private static String unsupportedTransport(String type) {
+        String label = switch (type.toLowerCase(java.util.Locale.ROOT)) {
+            case "ws", "websocket" -> "WebSocket";
+            case "grpc" -> "gRPC";
+            case "xhttp", "splithttp" -> "XHTTP";
+            case "httpupgrade" -> "HTTP Upgrade";
+            case "kcp", "mkcp" -> "mKCP";
+            case "http", "h2" -> "HTTP/2";
+            case "quic" -> "QUIC";
+            default -> type.matches("[A-Za-z0-9_-]{1,24}") ? type : "";
+        };
+        return (label.isEmpty() ? "无法识别此线路的传输方式" : "此线路使用 " + label)
+                + "，当前版本仅支持 VLESS TCP（RAW）";
+    }
+
     public String endpoint() { return (host.contains(":") ? "[" + host + "]" : host) + ":" + port; }
     private static IllegalArgumentException bad(String message) { return new IllegalArgumentException(message); }
 }

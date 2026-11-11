@@ -372,6 +372,35 @@ def verify_auto(fixture, signer, node, api, source_info, target_info, old_uid, p
     })
 
 
+def run_network_import(args):
+    api = common._guard()
+    assert api == args.api
+    devices = common._run(['adb', 'devices']).stdout.strip().splitlines()[1:]
+    assert len(devices) == 1 and re.fullmatch(r'emulator-\d+\s+device', devices[0])
+    assert not common._shell('pm', 'list', 'packages', PACKAGE).strip()
+    common._root_and_block()
+    source = args.input / 'source.apk'
+    test = args.input / 'source-test.apk'
+    signer = signer_of(source)
+    assert signer not in (common.PRODUCTION_SIGNER, common.BETA_SIGNER)
+    tools = common._tools()
+    source_info = common._inspect_apk(source, tools, signer, PACKAGE, 3000044, test_only=True)
+    common._inspect_apk(test, tools, signer, common.TEST_PACKAGE)
+    common._run(['adb', 'install', '-t', str(source)])
+    common._run(['adb', 'install', '-t', str(test)])
+    recovery_installed_digest(source_info['sha256'])
+    common._shell('pm', 'grant', PACKAGE, 'android.permission.CAMERA')
+    result = instrument('NetworkImportTest#clipboardAndCameraOnlySaveOnConfirmation', signer, 'network-import', 160)
+    proof, = re.findall(r'(?m)^INSTRUMENTATION_RESULT: networkImportProof=([^\r\n]+)$', result)
+    checks = ['clipboard-name', 'camera-name', 'manual-name', 'unsupported-ws', 'explicit-save', 'existing-settings']
+    assert proof.split(',') == checks
+    common._write_json(common.EVIDENCE / 'network-import-report.json', {
+        'complete': True, 'api': api, 'sourceSHA': os.environ['GITHUB_SHA'],
+        'source': source_info, 'steps': checks, 'cameraFixture': 'imagefile',
+        'screenshots': False, 'syntheticOnly': True,
+    })
+
+
 def run(args):
     api = common._guard()
     assert api == args.api
@@ -386,7 +415,7 @@ def run(args):
     signer = signer_of(source)
     assert signer not in (common.PRODUCTION_SIGNER, common.BETA_SIGNER)
     tools = common._tools()
-    source_code = 3000039 if args.device_acceptance else 3000043 if args.auto_only else 3000037
+    source_code = 3000039 if args.device_acceptance else 3000044 if args.auto_only else 3000037
     target_code = source_code + 1
     source_info = common._inspect_apk(source, tools, signer, PACKAGE, source_code, test_only=True)
     target_info = common._inspect_apk(target, tools, signer, PACKAGE, target_code)
@@ -493,12 +522,16 @@ if __name__ == '__main__':
     modes = parser.add_mutually_exclusive_group()
     modes.add_argument('--recovery-only', action='store_true')
     modes.add_argument('--auto-only', action='store_true')
+    modes.add_argument('--network-import', action='store_true')
     args = parser.parse_args()
     assert os.environ.get('GITHUB_ACTIONS') == 'true'
     common.EVIDENCE = args.output
     args.output.mkdir(parents=True, exist_ok=False)
     try:
-        run(args)
+        if args.network_import:
+            run_network_import(args)
+        else:
+            run(args)
     except Exception:
         common._record_failure()
         raise

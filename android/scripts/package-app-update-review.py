@@ -25,7 +25,7 @@ private = os.environ.get('STUDIO_APP_UPDATE_ACCEPTANCE') == 'true'
 assert not args.target or private
 version = json.loads((root / ('app-update-human-target.json' if args.target else 'app-update-version.json')).read_text())
 auto = os.environ.get('STUDIO_APP_UPDATE_AUTO') == 'true'
-code = (3000040 if args.target else 3000039) if private else 3000043 if auto else 3000037
+code = (3000040 if args.target else 3000039) if private else 3000044 if auto else 3000037
 assert version['versionCode'] == code and version['sourceSHA'] == os.environ['GITHUB_SHA']
 stamp = version['versionName']
 assert re.fullmatch(r'\d{4}\.\d{2}\.\d{2}-\d{4}', stamp)
@@ -41,6 +41,7 @@ manifest = subprocess.check_output([str(tools / 'aapt'), 'dump', 'xmltree', str(
 for name in ('AppUpdateActivity', 'AppUpdateService', 'AppUpdateInstallReceiver', 'REQUEST_INSTALL_PACKAGES'):
     assert name in manifest
 assert ('AppUpdateCheckJob' in manifest) == auto
+assert 'com.journeyapps.barcodescanner.CaptureActivity' in manifest
 for name in ('android:testOnly', 'EnvironmentAcceptanceActivity', 'app_update_test_security'):
     assert name not in manifest
 with zipfile.ZipFile(source) as apk:

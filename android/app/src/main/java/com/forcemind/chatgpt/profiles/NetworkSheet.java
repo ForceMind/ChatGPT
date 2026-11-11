@@ -3,14 +3,26 @@ package com.forcemind.chatgpt.profiles;
 import android.app.Activity;
 import android.app.Application;
 import android.app.AlertDialog;
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.text.Editable;
 import android.text.InputFilter;
 import android.text.InputType;
+import android.text.TextWatcher;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import androidx.activity.ComponentActivity;
+import androidx.activity.result.ActivityResultLauncher;
+import com.journeyapps.barcodescanner.ScanContract;
+import com.journeyapps.barcodescanner.ScanOptions;
 import java.util.List;
+import java.util.UUID;
+import java.util.function.Consumer;
 
 /** Event-driven controls keep the same sheet open across save, switch and failure transitions. */
 final class NetworkSheet {
@@ -122,6 +134,10 @@ final class NetworkSheet {
             if (session.controlsBusy() || session.unreadable()) return;
             LinearLayout fields = new LinearLayout(activity); fields.setOrientation(LinearLayout.VERTICAL);
             int pad = StudioTypography.dp(activity, 20); fields.setPadding(pad, pad / 2, pad, 0);
+            LinearLayout imports = new LinearLayout(activity);
+            Button paste = importButton(imports, "粘贴链接");
+            Button scan = importButton(imports, "扫码导入");
+            fields.addView(imports);
             EditText name = new EditText(activity); StudioTypography.text(name, 15); name.setHint("线路名称"); name.setContentDescription("线路名称");
             name.setSingleLine(true); name.setFilters(new InputFilter[]{new InputFilter.LengthFilter(80)});
             if (node != null) name.setText(node.name); fields.addView(name);
@@ -129,15 +145,65 @@ final class NetworkSheet {
             link.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
             link.setFilters(new InputFilter[]{new InputFilter.LengthFilter(16384)});
             if (node != null) link.setText(node.link); fields.addView(link);
+            watchLink(name, link);
+            ScrollView scroll = new ScrollView(activity);
+            scroll.addView(fields);
             AlertDialog.Builder builder = new AlertDialog.Builder(activity).setTitle(index < 0 ? "添加线路" : "编辑线路")
-                    .setView(fields).setNegativeButton("取消", null).setPositiveButton("保存", null);
+                    .setView(scroll).setNegativeButton("取消", null).setPositiveButton("保存", null);
             if (index >= 0) builder.setNeutralButton("删除", (dialog, which) -> showPrompt(new AlertDialog.Builder(activity).setTitle("删除此线路？")
                     .setNegativeButton("取消", null).setPositiveButton("删除", (d, w) -> {
                         if (!unchanged(index, node)) { message = "线路已变更，请重新打开后编辑"; render(); return; }
                         run(() -> session.removeNode(index, result()));
                     }).create()));
             AlertDialog dialog = builder.create(); editor = dialog;
-            dialog.setOnDismissListener(ignored -> { if (editor == dialog) editor = null; });
+            Consumer<String> importLink = text -> {
+                if (editor != dialog || !dialog.isShowing()) return;
+                try {
+                    NetworkNode value = NetworkNode.parse(text, null);
+                    link.setText(value.link);
+                    link.setSelection(link.length());
+                } catch (IllegalArgumentException bad) {
+                    link.setError("未导入：" + bad.getMessage());
+                }
+            };
+            paste.setOnClickListener(view -> {
+                ClipboardManager clipboard = activity.getSystemService(ClipboardManager.class);
+                ClipData clip = clipboard == null ? null : clipboard.getPrimaryClip();
+                ClipData.Item item = clip == null || clip.getItemCount() == 0 ? null : clip.getItemAt(0);
+                CharSequence text = item == null ? null : item.getText();
+                if (text == null && item != null && item.getUri() != null) text = item.getUri().toString();
+                if (text == null || text.toString().trim().isEmpty()) link.setError("剪贴板里没有可用的链接");
+                else importLink.accept(text.toString());
+            });
+            ActivityResultLauncher<ScanOptions> scanner = activity instanceof ComponentActivity host
+                    ? host.getActivityResultRegistry().register("studio-network-qr-" + UUID.randomUUID(),
+                            new ScanContract(), result -> {
+                                scan.setEnabled(true);
+                                if (result.getContents() != null) importLink.accept(result.getContents());
+                            })
+                    : null;
+            scan.setOnClickListener(view -> {
+                if (scanner == null || !activity.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)) {
+                    link.setError("相机不可用，可以粘贴 VLESS 链接");
+                    return;
+                }
+                ScanOptions options = new ScanOptions()
+                        .setDesiredBarcodeFormats(ScanOptions.QR_CODE)
+                        .setPrompt("将 VLESS 二维码放入取景框")
+                        .setOrientationLocked(false)
+                        .setBeepEnabled(false)
+                        .setBarcodeImageEnabled(false);
+                scan.setEnabled(false);
+                try { scanner.launch(options); }
+                catch (android.content.ActivityNotFoundException error) {
+                    scan.setEnabled(true);
+                    link.setError("无法打开扫码，可以粘贴 VLESS 链接");
+                }
+            });
+            dialog.setOnDismissListener(ignored -> {
+                if (scanner != null) scanner.unregister();
+                if (editor == dialog) editor = null;
+            });
             dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(view -> {
                 if (!unchanged(index, node)) { name.setError("线路已变更，请重新打开后编辑"); return; }
                 try {
@@ -153,6 +219,35 @@ final class NetworkSheet {
             }));
             dialog.show();
         }
+        Button importButton(LinearLayout row, String title) {
+            Button button = new Button(activity);
+            StudioTypography.text(button, 14);
+            button.setText(title);
+            row.addView(button, new LinearLayout.LayoutParams(0, -2, 1));
+            return button;
+        }
+
+        void watchLink(EditText name, EditText link) {
+            link.addTextChangedListener(new TextWatcher() {
+                private String suggestedName;
+                @Override public void beforeTextChanged(CharSequence text, int start, int count, int after) {}
+                @Override public void onTextChanged(CharSequence text, int start, int before, int count) {}
+                @Override public void afterTextChanged(Editable text) {
+                    link.setError(null);
+                    try {
+                        String suggestion = NetworkNode.parse(text.toString(), null).name;
+                        String current = name.getText().toString();
+                        if (current.trim().isEmpty() || current.equals(suggestedName)) {
+                            name.setText(suggestion);
+                            suggestedName = suggestion;
+                        }
+                    } catch (IllegalArgumentException incomplete) {
+                        // The save or import action reports errors for a completed input.
+                    }
+                }
+            });
+        }
+
         @Override public void onActivityDestroyed(Activity target) { if (target == activity) { sheet.dismiss(); stop(); } }
         @Override public void onActivityCreated(Activity target, Bundle state) {}
         @Override public void onActivityStarted(Activity target) {}
