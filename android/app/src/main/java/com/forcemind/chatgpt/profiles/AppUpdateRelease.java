@@ -59,7 +59,7 @@ final class AppUpdateRelease {
     }
 
     private Delta optionalDelta(JSONObject data, boolean fixture) {
-        if (data == null) return null;
+        if (data == null || privateSource) return null;
         try {
             long from = integer(data, "fromVersionCode");
             long patchSize = integer(data, "size");
@@ -94,8 +94,13 @@ final class AppUpdateRelease {
     }
 
     boolean allowsDownload(String candidate, boolean accelerated, boolean fixture) {
-        if (fixture || privateSource) return url.equals(candidate);
-        if (downloadUrl(accelerated, false).equals(candidate) || url.equals(candidate)) return true;
+        return allowsAsset(url, candidate, accelerated, fixture || privateSource);
+    }
+
+    static boolean allowsAsset(String original, String candidate, boolean accelerated, boolean exactOnly) {
+        if (exactOnly) return original.equals(candidate);
+        if (original.equals(candidate) || accelerated && ("https://gh-proxy.org/" + original).equals(candidate))
+            return true;
         try {
             URI uri = URI.create(candidate);
             return "https".equals(uri.getScheme()) && uri.getRawUserInfo() == null && uri.getPort() == -1

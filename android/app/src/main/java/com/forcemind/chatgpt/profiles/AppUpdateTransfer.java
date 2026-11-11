@@ -92,7 +92,7 @@ final class AppUpdateTransfer implements AutoCloseable {
 
     void download(AppUpdateRelease release, File part, boolean accelerated, boolean fixture, LongConsumer progress)
             throws Exception {
-        downloadAsset(release.url, release.size, release.sha256, part, accelerated, fixture, progress);
+        downloadAsset(release.url, release.size, release.sha256, part, accelerated, fixture || release.privateSource, progress);
     }
 
     void downloadDelta(AppUpdateRelease.Delta delta, File part, boolean accelerated, boolean fixture,
