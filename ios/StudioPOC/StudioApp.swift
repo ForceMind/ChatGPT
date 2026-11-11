@@ -71,8 +71,13 @@ private struct StudioRoot: View {
                     Label("新建账号", systemImage: "person.badge.plus")
                 }
             } label: {
-                Image(systemName: "person.crop.circle")
-                    .frame(minWidth: 44, minHeight: 44)
+                HStack(spacing: 6) {
+                    Circle().fill(.secondary).frame(width: 6, height: 6)
+                    Text(browser.workspace.currentAccount.name)
+                        .font(.subheadline)
+                        .lineLimit(1)
+                }
+                .frame(maxWidth: 104, minHeight: 44)
             }
             .accessibilityLabel("账号，\(browser.workspace.currentAccount.name)")
             .buttonStyle(.glass)
