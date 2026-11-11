@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { macTabEdges, splitTabs, verticalTabWheelDelta } from '../src/renderer/tab-strip';
+import { tabEdges, splitTabs, verticalTabWheelDelta, windowsTabWidth } from '../src/renderer/tab-strip';
 
 const tabs = ['a', 'b', 'c', 'd', 'e'].map((id) => ({ id }));
 
@@ -33,15 +33,23 @@ test('the current tab stays visible at minimum width and before the initial meas
   assert.deepEqual(splitTabs([tabs[0]], 'a', 100), { visible: [tabs[0]], hidden: [] });
 });
 
-test('Mac side menus contain exactly the tabs clipped at each end', () => {
-  assert.deepEqual(macTabEdges(5, 268, 0), { leftCount: 0, rightStart: 2 });
-  assert.deepEqual(macTabEdges(5, 268, 68), { leftCount: 1, rightStart: 2 });
-  assert.deepEqual(macTabEdges(5, 268, 136), { leftCount: 1, rightStart: 3 });
-  assert.deepEqual(macTabEdges(5, 268, 408), { leftCount: 3, rightStart: 5 });
-  assert.deepEqual(macTabEdges(2, 268, 0), { leftCount: 0, rightStart: 2 });
+test('Side menus contain exactly the tabs clipped at each end', () => {
+  assert.deepEqual(tabEdges(5, 268, 0), { leftCount: 0, rightStart: 2 });
+  assert.deepEqual(tabEdges(5, 268, 68), { leftCount: 1, rightStart: 2 });
+  assert.deepEqual(tabEdges(5, 268, 136), { leftCount: 1, rightStart: 3 });
+  assert.deepEqual(tabEdges(5, 268, 408), { leftCount: 3, rightStart: 5 });
+  assert.deepEqual(tabEdges(2, 268, 0), { leftCount: 0, rightStart: 2 });
 });
 
-test('Mac maps vertical mouse-wheel input without intercepting horizontal trackpad input or zoom', () => {
+test('Windows can fit a pair of compact tabs beside both edge controls', () => {
+  assert.equal(windowsTabWidth(400), 132);
+  assert.equal(windowsTabWidth(284), 112);
+  assert.equal(windowsTabWidth(200), 108);
+  assert.deepEqual(tabEdges(5, 228, 0, 112), { leftCount: 0, rightStart: 2 });
+  assert.deepEqual(tabEdges(5, 228, 348, 112), { leftCount: 3, rightStart: 5 });
+});
+
+test('The strip maps vertical mouse-wheel input without intercepting horizontal trackpad input or zoom', () => {
   const event = { deltaX: 0, deltaY: -2, deltaMode: 0, ctrlKey: false };
   assert.equal(verticalTabWheelDelta(event, 300), -2);
   assert.equal(verticalTabWheelDelta({ ...event, deltaMode: 1 }, 300), -32);

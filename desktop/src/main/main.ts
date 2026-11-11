@@ -1437,7 +1437,7 @@ async function dispatch(c: Command): Promise<void> {
           tabPicker.destroy();
           break;
         }
-        const side = process.platform === 'darwin' ? c.side : undefined;
+        const side = c.side;
         const ids = new Set(c.ids);
         const tabs = store.read().tabs.filter((tab) => tab.profileId === profile.id && (!side || ids.has(tab.id)));
         if (!tabs.length) break;

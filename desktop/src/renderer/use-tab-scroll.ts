@@ -1,7 +1,13 @@
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
-import { macTabEdges, verticalTabWheelDelta } from './tab-strip';
+import { tabEdges, verticalTabWheelDelta } from './tab-strip';
 
-export function useMacTabScroll(enabled: boolean, activeId: string | undefined, count: number, stripWidth: number) {
+export function useTabScroll(
+  enabled: boolean,
+  activeId: string | undefined,
+  count: number,
+  stripWidth: number,
+  tabWidth: number
+) {
   const viewport = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState({ left: 0, width: 0 });
   const measure = useCallback(() => {
@@ -45,5 +51,5 @@ export function useMacTabScroll(enabled: boolean, activeId: string | undefined, 
     measure();
   }, [enabled, activeId, count, stripWidth, measure]);
 
-  return { viewport, ...macTabEdges(count, position.width, position.left) };
+  return { viewport, ...tabEdges(count, position.width, position.left, tabWidth) };
 }
