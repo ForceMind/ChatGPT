@@ -114,7 +114,6 @@ public class EnvironmentBrowserActivity extends ComponentActivity implements Env
         });
         header=new StudioBrowserHeader(this,new StudioBrowserHeader.Host(){
             public void accounts(){EnvironmentBrowserActivity.this.accounts();}
-            public void select(String tabId){selectTab(tabId);}
             public void tabs(){EnvironmentBrowserActivity.this.tabs();}
             public void refresh(){pageAction(current,PageCommand.REFRESH);}
             public void stop(){stopPage();}
@@ -195,7 +194,7 @@ public class EnvironmentBrowserActivity extends ComponentActivity implements Env
             @Override public void onPageStop(GeckoSession session,boolean success){e.loadingUrl=null;e.requestedUrl=null;if(!success)e.resumeAfterDocument=null;EnvironmentBrowserActivity ownerActivity=target.get();if(ownerActivity==null||ownerActivity.destroyed){return;}if(!success)ownerActivity.documents.request(e);ownerActivity.renderHeader();if(e==ownerActivity.current&&success&&ownerActivity.routeReady){ownerActivity.status.setVisibility(View.GONE);}else if(e==ownerActivity.current&&!success&&ownerActivity.routeReady){ownerActivity.status.setText("页面加载未完成，可在更多中刷新");ownerActivity.status.setVisibility(View.VISIBLE);}}
         });
         e.session.setContentDelegate(new GeckoSession.ContentDelegate(){
-            @Override public void onTitleChange(GeckoSession session,String title){EnvironmentBrowserActivity ownerActivity=target.get();if(ownerActivity==null||ownerActivity.destroyed){return;}if(title==null||!ownerActivity.owns(e)||EnvironmentUrls.recoverable(e.url)==null)return;try{ownerActivity.state=ownerActivity.store.update(s->{WorkspaceState.Account a=s.find(e.accountId);if(!a.storageId.equals(e.storageId))return;for(WorkspaceState.Tab t:a.tabs)if(t.id.equals(e.tabId)&&!t.customTitle)t.title=title.substring(0,Math.min(120,title.length()));});ownerActivity.renderHeader();}catch(Exception ignored){}}
+            @Override public void onTitleChange(GeckoSession session,String title){EnvironmentBrowserActivity ownerActivity=target.get();if(ownerActivity==null||ownerActivity.destroyed){return;}if(title==null||!ownerActivity.owns(e)||EnvironmentUrls.recoverable(e.url)==null)return;try{ownerActivity.state=ownerActivity.store.update(s->{WorkspaceState.Account a=s.find(e.accountId);if(!a.storageId.equals(e.storageId))return;for(WorkspaceState.Tab t:a.tabs)if(t.id.equals(e.tabId))t.rememberPageTitle(title);});ownerActivity.renderHeader();}catch(Exception ignored){}}
             @Override public void onExternalResponse(GeckoSession session,WebResponse response){EnvironmentBrowserActivity ownerActivity=target.get();if(ownerActivity==null||ownerActivity.destroyed){try{if(response.body!=null)response.body.close();}catch(Exception ignored){}return;}ownerActivity.download(e,response);}
             @Override public void onCrash(GeckoSession session){EnvironmentBrowserActivity ownerActivity=target.get();if(ownerActivity==null||ownerActivity.destroyed){return;}if(ownerActivity.handoff!=null&&ownerActivity.handoff.entry==e)ownerActivity.cancelHandoff("目标页面进程已停止；不会自动重发");e.started=false;ownerActivity.documents.invalidate(e);ownerActivity.renderHeader();ownerActivity.notice("页面进程已停止，本地恢复副本已保留");}
             @Override public void onKill(GeckoSession session){EnvironmentBrowserActivity ownerActivity=target.get();if(ownerActivity==null||ownerActivity.destroyed){return;}if(ownerActivity.handoff!=null&&ownerActivity.handoff.entry==e)ownerActivity.cancelHandoff("目标页面已释放；不会自动重发");e.started=false;ownerActivity.documents.invalidate(e);ownerActivity.renderHeader();ownerActivity.notice("页面已释放，可重新打开恢复");}
@@ -287,8 +286,31 @@ public class EnvironmentBrowserActivity extends ComponentActivity implements Env
         sheet.action("恢复本地草稿",true,()->{if(!conflictStillCurrent(e,approvedToken,approvedEpoch,approvedDraft)){sheet.dismiss();if(e==current&&e.liveDocument!=null)ui.post(()->conflict(e,e.liveDocument));return;}try{JSONObject localCopy=e.conflictLocal;documents.cancelRestore(e);e.record.put("alternativeDraft",e.liveDocument);e.pendingRestore=null;e.conflictLocal=null;documents.restore(e,localCopy,e.liveDocument);queueSave(e);}catch(Exception error){notice("草稿恢复未完成");}sheet.dismiss();});sheet.setOnDismissListener(d->{conflictShowing=false;renderHeader();});sheet.show();
     }
     private boolean conflictStillCurrent(Entry e,String token,long epoch,String draft){return e==current&&owns(e)&&e.liveDocument!=null&&e.port!=null&&token.equals(e.token)&&epoch==e.epoch&&draft.equals(e.liveDocument.optString("draft"));}
-    private void tabs(){
-        try{reconcile();WorkspaceState.Account a=state.find(accountId);StudioSheet sheet=new StudioSheet(this,"标签页",a.name);for(WorkspaceState.Tab t:a.tabs){sheet.row((t.id.equals(a.activeTab)?"当前 · ":"")+t.title,"","",()->{sheet.dismiss();selectTab(t.id);});}sheet.action("新建标签页",true,()->{sheet.dismiss();newTab();});if(a.tabs.size()>1)sheet.action("关闭当前标签页",false,()->{sheet.dismiss();update(s->{WorkspaceState.Account owner=s.find(accountId);s.closeTab(owner,owner.activeTab);});});sheet.show();}catch(Exception error){notice("标签列表不可用");}
+    private void tabs() {
+        try {
+            reconcile();
+            WorkspaceState.Account account = state.find(accountId);
+            StudioSheet sheet = new StudioSheet(this, "标签页", account.name);
+            for (WorkspaceState.Tab tab : account.tabs) {
+                String title = tab.displayTitle();
+                boolean active = tab.id.equals(account.activeTab);
+                sheet.row(title, account.name, active ? "check" : "chat", () -> {
+                    sheet.dismiss();
+                    selectTab(tab.id);
+                }).setContentDescription("标签页：" + title + "，账号：" + account.name);
+            }
+            sheet.action("新建标签页", true, () -> { sheet.dismiss(); newTab(); });
+            if (account.tabs.size() > 1) sheet.action("关闭当前标签页", false, () -> {
+                sheet.dismiss();
+                update(next -> {
+                    WorkspaceState.Account owner = next.find(accountId);
+                    next.closeTab(owner, owner.activeTab);
+                });
+            });
+            sheet.show();
+        } catch (Exception error) {
+            notice("标签列表不可用");
+        }
     }
     private void accounts(){
         try{if(runtime!=null&&documents!=null)reconcile();else state=store.load();StudioSheet sheet=new StudioSheet(this,"账号空间","每个环境账号保留独立登录与标签");for(WorkspaceState.Account a:state.accounts)sheet.row(a.name,a.isEnvironment()?a.language+" · "+a.timeZone:"原网页登录空间","",()->{sheet.dismiss();EnvironmentLauncher.open(this,a.id);});sheet.action("创建账号",true,()->{sheet.dismiss();AccountEditor.show(this,store,null,saved->{state=saved;EnvironmentLauncher.open(this,saved.activeAccount);});});sheet.action("编辑当前账号",false,()->{sheet.dismiss();AccountEditor.show(this,store,accountId,saved->{state=saved;showCurrent();});});sheet.show();}catch(Exception error){notice("账号列表不可用");}

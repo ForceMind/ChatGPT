@@ -354,7 +354,8 @@ def verify_auto(fixture, signer, node, api, source_info, target_info, old_uid, p
                      extras=('-e', 'ownedUpdateNode', node))
     steps, = re.findall(r'(?m)^INSTRUMENTATION_RESULT: appUpdateAutoProof=([^\r\n]+)$', log)
     assert set(steps.split(',')) == {'startup', 'engine-dedupe', 'noon-job', 'foreground-notice',
-                                     'missed-slot', 'manual-check', 'explicit-download'}
+                                     'missed-slot', 'manual-check', 'explicit-download', 'fixed-tab-entry',
+                                        'full-title', 'live-tab-draft', 'gecko-tab-list'}
     requests = [row for row in fixture.requests if 'mode' in row]
     assert [(row['path'], row['mode']) for row in requests] == [
         ('/android.json', 'current'), ('/android.json', 'resume'), ('/android.json', 'resume'),
@@ -385,7 +386,7 @@ def run(args):
     signer = signer_of(source)
     assert signer not in (common.PRODUCTION_SIGNER, common.BETA_SIGNER)
     tools = common._tools()
-    source_code = 3000039 if args.device_acceptance else 3000041 if args.auto_only else 3000037
+    source_code = 3000039 if args.device_acceptance else 3000042 if args.auto_only else 3000037
     target_code = source_code + 1
     source_info = common._inspect_apk(source, tools, signer, PACKAGE, source_code, test_only=True)
     target_info = common._inspect_apk(target, tools, signer, PACKAGE, target_code)

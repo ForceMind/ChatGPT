@@ -10,6 +10,22 @@ public class WorkspaceStateTest {
         WorkspaceState reloaded = WorkspaceState.parse(s.json().toString());
         assertEquals(2, reloaded.accounts.size()); assertNotEquals(a, reloaded.current().storageId); assertEquals("工作", reloaded.current().name);
     }
+    @Test public void longPageTitlesRoundTripWithTheLegacyShortTitleAndCustomName() throws Exception {
+        WorkspaceState state = WorkspaceState.fresh();
+        WorkspaceState.Tab tab = state.current().current();
+        String full = "A complete webpage title ".repeat(10);
+        tab.rememberPageTitle(full);
+        assertEquals(full.substring(0, 120), tab.title);
+        WorkspaceState.Tab restored = WorkspaceState.parse(state.json().toString()).current().current();
+        assertEquals(full, restored.displayTitle());
+        assertFalse(restored.hasNewPageTitle(full));
+        restored.title = "My tab";
+        restored.customTitle = true;
+        restored.rememberPageTitle("Updated webpage");
+        assertEquals("My tab", restored.displayTitle());
+        assertFalse(restored.json().has("pageTitle"));
+    }
+
     @Test public void clearRotatesOnlySelectedProfile() {
         WorkspaceState s = WorkspaceState.fresh(); WorkspaceState.Account first = s.current(); String old = first.storageId;
         WorkspaceState.Account second = s.addAccount("工作", "", WorkspaceState.COLORS[1]); String keep = second.storageId;

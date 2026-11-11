@@ -20,7 +20,7 @@ assert receipt['versionMetadata']['sourceSHA'] == os.environ['GITHUB_SHA']
 assert receipt['package'] == 'com.forcemind.chatgpt.profiles'
 auto = os.environ.get('STUDIO_APP_UPDATE_AUTO') == 'true'
 private = os.environ.get('STUDIO_APP_UPDATE_ACCEPTANCE') == 'true'
-source_code = 3000039 if private else 3000041 if auto else 3000037
+source_code = 3000039 if private else 3000042 if auto else 3000037
 assert receipt['versionMetadata']['versionCode'] == source_code
 assert receipt['signing'] == 'UNSIGNED_REVIEW_ONLY' and receipt['abi'] == 'arm64-v8a'
 assert receipt['r8'] and receipt['alignment16KiB'] and not receipt['ciEndpointIncluded']
@@ -53,7 +53,8 @@ for api in (28, 35):
         if private:
             assert report['privateSourceControl'] is True
         assert set(report['steps']) == {'startup', 'engine-dedupe', 'noon-job', 'foreground-notice',
-                                        'missed-slot', 'manual-check', 'explicit-download'}
+                                        'missed-slot', 'manual-check', 'explicit-download', 'fixed-tab-entry',
+                                        'full-title', 'live-tab-draft', 'gecko-tab-list'}
         assert [row['path'] for row in report['requests']] == ['/android.json'] * 4 + ['/update.apk']
         assert all(row['throughSelectedLine'] and not row['credentialHeader'] for row in report['requests'])
         assert not any(path.suffix.lower() in {'.png','.jpg','.jpeg','.webm','.mp4'}

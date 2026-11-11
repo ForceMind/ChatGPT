@@ -238,8 +238,8 @@ public final class BrowserChromeNavigationTest {
             if(!timingCase.isEmpty())waitFor("declared timing fixture restoration ready",()->{JSONObject r=nativeEvidence().getJSONObject("recovery");return r.getBoolean("liveReady")&&!r.getBoolean("restoring")&&!r.getBoolean("inflight");});
             click("更多功能");AccessibilityNodeInfo back=control("后退"),forward=control("前进");assertFalse(back.isEnabled());assertFalse(forward.isEnabled());back.recycle();forward.recycle();click("关闭弹层");
             String original=snapshot(web()).getString("document");String draft="OwnedLegacyDraft";type(draft);
-            phase("switch-two");click("切换标签页：旧页二");loaded("two");
-            phase("switch-one");click("切换标签页：旧页一");loaded("one");assertEquals(original,snapshot(web()).getString("document"));assertEquals(1,firstLoads.get());assertEquals(1,secondLoads.get());assertDraft(draft);
+            phase("switch-two");click("查看标签页：旧页一，2 个");click("标签页：旧页二，账号：网页测试");loaded("two");
+            phase("switch-one");click("查看标签页：旧页二，2 个");click("标签页：旧页一，账号：网页测试");loaded("one");assertEquals(original,snapshot(web()).getString("document"));assertEquals(1,firstLoads.get());assertEquals(1,secondLoads.get());assertDraft(draft);
             phase("link-next");tapWeb("next");loaded("next");
             if(timingCase.equals("fixed-early-poll")){phase("early-poll-back-refusal");earlyPollRefusesBack("OwnedTimingDraft");phase("complete");saveNavigationEvidence("none");return;}
             phase("first-back-one");click("更多功能");click("后退");loaded("one");assertDraft(draft);

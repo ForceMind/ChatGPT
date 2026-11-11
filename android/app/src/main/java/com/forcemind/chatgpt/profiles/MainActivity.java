@@ -173,8 +173,10 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
         header=new LinearLayout(this);header.setBackgroundColor(Color.WHITE);root.addView(header,new LinearLayout.LayoutParams(-1,-2));
         browserHeader=new StudioBrowserHeader(this,new StudioBrowserHeader.Host(){
             @Override public void accounts(){chooseAccount();}
-            @Override public void select(String tabId){selectHeaderTab(tabId);}
             @Override public void tabs(){showTabOverview();}
+            @Override public void tabMenu(){
+                if(ready&&!fatal)showTabMenu(state.activeAccount,state.current().activeTab);
+            }
             @Override public void refresh(){refreshPage(false);}
             @Override public void stop(){stopPage();}
             @Override public void more(){showAccountMenu();}
@@ -190,10 +192,6 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
     private void renderHeader(){
         if(!ready||fatal||state==null||state.current().isEnvironment())return;
         WebView web=currentWeb();browserHeader.render(state.current(),navigationPending||web!=null&&loadingPages.getOrDefault(web,web.getProgress()<100),web!=null&&overview==null&&offlineSnapshot==null&&!nativePageBusy(web));
-    }
-    private void selectHeaderTab(String tabId){
-        if(!ready||fatal||state.current().activeTab.equals(tabId))return;
-        if(change(next->{WorkspaceState.Account account=next.current();if(account.tabs.stream().noneMatch(tab->tab.id.equals(tabId)))throw new IllegalStateException("标签页已关闭");account.activeTab=tabId;})){closeOverview();showCurrent();}
     }
     private boolean nativePageBusy(WebView web){
         HandoffController controller=handoffs==null?null:handoffs.controller();
@@ -403,8 +401,12 @@ public final class MainActivity extends ComponentActivity implements HandoffCont
         });
         web.setWebChromeClient(new WebChromeClient() {
             @Override public void onReceivedTitle(WebView view, String title) {
-                if (snapshotOwner==view||title == null || title.trim().isEmpty() || !exists(accountId, tabId)||state.find(accountId).tabs.stream().anyMatch(t->t.id.equals(tabId)&&(t.customTitle||t.title.equals(title.substring(0,Math.min(120,title.length())))))) return;
-                if (change(s -> s.find(accountId).tabs.stream().filter(t -> t.id.equals(tabId)).findFirst().orElseThrow(() -> new IllegalStateException("Missing account or tab")).title = title.substring(0, Math.min(120, title.length()))) && active(tabId)) renderHeader();
+                if (snapshotOwner == view || !exists(accountId, tabId)) return;
+                WorkspaceState.Tab tab = state.find(accountId).tabs.stream()
+                        .filter(entry -> entry.id.equals(tabId)).findFirst().orElse(null);
+                if (tab == null || !tab.hasNewPageTitle(title)) return;
+                if (change(next -> next.find(accountId).tabs.stream().filter(entry -> entry.id.equals(tabId))
+                        .findFirst().orElseThrow().rememberPageTitle(title))) refreshTabs();
             }
             @Override public void onProgressChanged(WebView view, int value) {
                 loadingPages.put(view,value<100);if (active(tabId)) { progress.setProgress(value); progress.setVisibility(value >= 100 ? View.INVISIBLE : View.VISIBLE);renderHeader(); }

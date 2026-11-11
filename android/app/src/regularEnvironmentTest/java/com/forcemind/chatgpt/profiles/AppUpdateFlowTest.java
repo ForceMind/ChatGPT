@@ -281,9 +281,38 @@ public final class AppUpdateFlowTest {
         instrument.addResults(evidence);
     }
 
+    private static final String LONG_PAGE_TITLE =
+            "Owned updater with a long webpage title. The vertical list keeps every word of the original title "
+            + "and its account visible after wrapping, including the final part beyond the old character limit.";
+
+    private void selectTabFromList(String title, String account) {
+        click("查看标签页：", true);
+        click("标签页：" + title + "，账号：" + account, false);
+    }
+
+    private static boolean showsWholeWrappedTitle(android.view.View view, String title) {
+        if (view instanceof android.widget.TextView) {
+            android.widget.TextView text = (android.widget.TextView) view;
+            android.text.Layout layout = text.getLayout();
+            if (title.contentEquals(text.getText()) && layout != null && layout.getLineCount() > 2) {
+                for (int line = 0; line < layout.getLineCount(); line++) {
+                    if (layout.getEllipsisCount(line) > 0) return false;
+                }
+                return layout.getLineEnd(layout.getLineCount() - 1) == title.length();
+            }
+        }
+        if (view instanceof android.view.ViewGroup) {
+            android.view.ViewGroup group = (android.view.ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                if (showsWholeWrappedTitle(group.getChildAt(i), title)) return true;
+            }
+        }
+        return false;
+    }
+
     @Test public void automaticNoonAndExplicitDownload() throws Exception {
         assertTrue(BuildConfig.APP_UPDATE_TEST && BuildConfig.APP_UPDATE_AUTO);
-        assertEquals(BuildConfig.APP_UPDATE_ACCEPTANCE ? 3000039 : 3000041, code());
+        assertEquals(BuildConfig.APP_UPDATE_ACCEPTANCE ? 3000039 : 3000042, code());
         assertEquals(RegularEnvironmentUpgradeTest.args().getString("signer"), RegularEnvironmentUpgradeTest.signer());
         AtomicReference<java.time.Instant> now = new AtomicReference<>(java.time.Instant.parse("2026-11-10T03:50:00Z"));
         AppUpdateAuto.clockForTest(now::get);
@@ -297,13 +326,25 @@ public final class AppUpdateFlowTest {
         new NetworkSettingsStore(context).write(route);
         WorkspaceState state = new StateStore(context.getFilesDir()).update(workspace -> {
             WorkspaceState.Account legacy = workspace.addAccount("Owned auto WebView", "", WorkspaceState.COLORS[0]);
-            legacy.current().url = "https://chatgpt.com/c/owned-update-auto";
-            workspace.addEnvironmentAccount("Owned auto Gecko", "", WorkspaceState.COLORS[1], "en-US", "UTC");
+            WorkspaceState.Tab first = legacy.current();
+            first.url = "https://chatgpt.com/c/owned-update-auto";
+            workspace.addTab(legacy).url = "https://chatgpt.com/c/owned-update-auto-second";
+            legacy.activeTab = first.id;
+            WorkspaceState.Account geckoOwner = workspace.addEnvironmentAccount(
+                    "Owned auto Gecko", "", WorkspaceState.COLORS[1], "en-US", "UTC");
+            String firstGeckoId = geckoOwner.activeTab;
+            workspace.addTab(geckoOwner).rememberPageTitle(LONG_PAGE_TITLE);
+            geckoOwner.activeTab = firstGeckoId;
             workspace.activeAccount = legacy.id;
         });
         WorkspaceState.Account gecko = state.accounts.stream().filter(WorkspaceState.Account::isEnvironment).findFirst().get();
-        MainActivity.handoffFixture = (owner, request) -> new android.webkit.WebResourceResponse(
-                "text/html", "UTF-8", new ByteArrayInputStream("<!doctype html><title>Owned updater</title><p>Owned update fixture</p>".getBytes(StandardCharsets.UTF_8)));
+        MainActivity.handoffFixture = (owner, request) -> {
+            String title = "/c/owned-update-auto-second".equals(request.getUrl().getPath())
+                    ? "Owned second tab" : LONG_PAGE_TITLE;
+            String html = "<!doctype html><title>" + title + "</title><textarea id='prompt-textarea'></textarea>";
+            return new android.webkit.WebResourceResponse("text/html", "UTF-8",
+                    new ByteArrayInputStream(html.getBytes(StandardCharsets.UTF_8)));
+        };
         MainActivity main = (MainActivity) instrument.startActivitySync(new Intent(context, MainActivity.class)
                 .setAction(Intent.ACTION_MAIN).putExtra(EnvironmentLauncher.ACCOUNT_ID, state.current().id)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
@@ -311,13 +352,41 @@ public final class AppUpdateFlowTest {
         waitFor("startup check completed", 20, () -> onMain(() -> task().phase() == AppUpdateTask.Phase.IDLE));
         waitFor("owned WebView page loaded", 25, () -> onMain(() -> {
             WebView web = main.recoveryCurrentWeb();
-            return web != null && "Owned updater".equals(web.getTitle()) && web.getProgress() == 100;
+            return web != null && LONG_PAGE_TITLE.equals(web.getTitle()) && web.getProgress() == 100;
         }));
         assertEquals(0, autoRequests("apk"));
+
+        see("查看标签页：" + LONG_PAGE_TITLE + "，2 个", false);
+        WebView first = onMain(main::recoveryCurrentWeb);
+        assertEquals("true", RegularEnvironmentUpgradeTest.js(first,
+                "window.ownedTabIdentity='original';document.querySelector('textarea').value='owned draft';true"));
+        AtomicReference<Boolean> cookie = new AtomicReference<>();
+        instrument.runOnMainSync(() -> WebViewCompat.getProfile(first).getCookieManager().setCookie(
+                ORIGIN, "owned_tabs=retained; Path=/", cookie::set));
+        waitFor("owned login marker written", 15, () -> Boolean.TRUE.equals(cookie.get()));
+
+        click("查看标签页：", true);
+        see("标签页：" + LONG_PAGE_TITLE + "，账号：Owned auto WebView", false);
+        waitFor("full title wraps in the vertical list", 20, () -> onMain(
+                () -> showsWholeWrappedTitle(main.getWindow().getDecorView(), LONG_PAGE_TITLE)));
+        click("关闭", false);
+        selectTabFromList("ChatGPT", "Owned auto WebView");
+        see("查看标签页：Owned second tab，2 个", false);
+        selectTabFromList(LONG_PAGE_TITLE, "Owned auto WebView");
+        see("查看标签页：" + LONG_PAGE_TITLE + "，2 个", false);
+        assertSame(first, onMain(main::recoveryCurrentWeb));
+        assertEquals(JSONObject.quote("original|owned draft"), RegularEnvironmentUpgradeTest.js(first,
+                "window.ownedTabIdentity+'|'+document.querySelector('textarea').value"));
+        assertEquals("owned_tabs=retained",
+                onMain(() -> WebViewCompat.getProfile(first).getCookieManager().getCookie(ORIGIN)));
 
         click("切换账号，当前：Owned auto WebView", false);
         click("Owned auto Gecko", false);
         see("切换账号，当前：Owned auto Gecko", false);
+        click("查看标签页：", true);
+        see("标签页：" + LONG_PAGE_TITLE + "，账号：Owned auto Gecko", false);
+        click("关闭弹层", false);
+
         assertEquals(1, autoRequests("feed"));
         mode("resume");
         shellOutput("input keyevent KEYCODE_HOME");
@@ -362,7 +431,7 @@ public final class AppUpdateFlowTest {
         see("安装更新", false);
         assertTrue(RegularEnvironmentUpgradeTest.file("app-update/ready.apk").isFile());
         Bundle result = new Bundle();
-        result.putString("appUpdateAutoProof", "startup,engine-dedupe,noon-job,foreground-notice,missed-slot,manual-check,explicit-download");
+        result.putString("appUpdateAutoProof", "startup,engine-dedupe,noon-job,foreground-notice,missed-slot,manual-check,explicit-download,fixed-tab-entry,full-title,live-tab-draft,gecko-tab-list");
         instrument.addResults(result);
     }
 
@@ -413,7 +482,7 @@ public final class AppUpdateFlowTest {
         waitFor("second inline fixture committed", 25, () -> onMain(second::getProgress) == 100);
         String secondDoc = RegularEnvironmentUpgradeTest.js(second, "window.ownedDocument");
         assertNotEquals("null", secondDoc);
-        click("切换标签页：Owned update first", false);
+        selectTabFromList("Owned update first", "Owned update WebView");
         waitFor("first WebView exists", 20, () -> onMain(main::recoveryCurrentWeb) != second);
         WebView first = onMain(main::recoveryCurrentWeb);
         assertNotNull(first);
@@ -494,7 +563,7 @@ public final class AppUpdateFlowTest {
         assertEquals("\"owned draft\"", RegularEnvironmentUpgradeTest.js(first, "document.querySelector('textarea').value"));
         assertEquals("owned_updater_auth=synthetic",
                 onMain(() -> WebViewCompat.getProfile(first).getCookieManager().getCookie(ORIGIN)));
-        click("切换标签页：Owned update second", false);
+        selectTabFromList("Owned update second", "Owned update WebView");
         waitFor("second retained WebView", 20, () -> onMain(main::recoveryCurrentWeb) == second);
         assertEquals(secondDoc, RegularEnvironmentUpgradeTest.js(second, "window.ownedDocument"));
         RegularEnvironmentUpgradeTest.verifyNative(golden, true);

@@ -35,7 +35,40 @@ public final class WorkspaceState {
     public static final class Tab {
         public String id = WorkspaceState.id(), url = NavigationPolicy.HOME, title = "ChatGPT";
         public boolean pinned,customTitle;
-        JSONObject json() throws JSONException { JSONObject value=new JSONObject().put("id", id).put("url", url).put("title", title).put("pinned", pinned);if(customTitle)value.put("customTitle",true);return value; }
+        private String longPageTitle = "";
+
+        String displayTitle() {
+            String label = !customTitle && !longPageTitle.isEmpty() ? longPageTitle : title;
+            return label.trim().isEmpty() ? "新标签页" : label;
+        }
+
+        boolean hasNewPageTitle(String value) {
+            String page = boundedPageTitle(value);
+            return !customTitle && !page.isEmpty() && !page.equals(displayTitle());
+        }
+
+        void rememberPageTitle(String value) {
+            String page = boundedPageTitle(value);
+            if (customTitle || page.isEmpty()) return;
+            title = prefix(page, 120);
+            longPageTitle = page.equals(title) ? "" : page;
+        }
+
+        private static String boundedPageTitle(String value) {
+            return value == null || value.trim().isEmpty() ? "" : prefix(value, 4096);
+        }
+
+        private static String prefix(String value, int max) {
+            if (value.length() <= max) return value;
+            return value.substring(0, Character.isHighSurrogate(value.charAt(max - 1)) ? max - 1 : max);
+        }
+
+        JSONObject json() throws JSONException {
+            JSONObject value = new JSONObject().put("id", id).put("url", url).put("title", title).put("pinned", pinned);
+            if (customTitle) value.put("customTitle", true);
+            if (!customTitle && !longPageTitle.isEmpty()) value.put("pageTitle", longPageTitle);
+            return value;
+        }
     }
     public static final class Account {
         public String id = WorkspaceState.id(), storageId = WorkspaceState.id(), name = "个人账号", email = "", color = COLORS[0], activeTab;
@@ -137,7 +170,10 @@ public final class WorkspaceState {
         if (list.length() > max) throw new IllegalArgumentException("Too many tabs");
         for (int i = 0; i < list.length(); i++) {
             JSONObject j = list.getJSONObject(i); Tab t = new Tab(); t.id = j.getString("id"); t.url = j.getString("url");
-            t.title = j.getString("title"); t.pinned = j.getBoolean("pinned");if(j.has("customTitle")&&!(j.get("customTitle") instanceof Boolean))throw new IllegalArgumentException("Invalid custom title flag");t.customTitle=j.optBoolean("customTitle",false);into.add(t);
+            t.title = j.getString("title"); t.pinned = j.getBoolean("pinned");if(j.has("customTitle")&&!(j.get("customTitle") instanceof Boolean))throw new IllegalArgumentException("Invalid custom title flag");t.customTitle=j.optBoolean("customTitle",false);
+            Object pageTitle = j.opt("pageTitle");
+            if (pageTitle instanceof String && !t.customTitle) t.longPageTitle = Tab.boundedPageTitle((String) pageTitle);
+            into.add(t);
         }
     }
     public void validate() {

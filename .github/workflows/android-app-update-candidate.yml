@@ -67,7 +67,7 @@ jobs:
           root=pathlib.Path('android/app/build')
           stamp=datetime.now(ZoneInfo('Asia/Shanghai')).strftime('%Y.%m.%d-%H%M')
           private=os.environ.get('STUDIO_APP_UPDATE_ACCEPTANCE')=='true'
-          offset=2 if private else 4 if os.environ.get('STUDIO_APP_UPDATE_AUTO')=='true' else 0
+          offset=2 if private else 5 if os.environ.get('STUDIO_APP_UPDATE_AUTO')=='true' else 0
           for file,code,name in [('app-update-version.json',3000037+offset,stamp),('app-update-target.json',3000038+offset,'2099.01.01-0000')]:
               (root/file).write_text(json.dumps({'schema':1,'versionCode':code,'versionName':name,'timeZone':'Asia/Shanghai','sourceSHA':os.environ['GITHUB_SHA']},indent=2)+'\n')
           if private:
