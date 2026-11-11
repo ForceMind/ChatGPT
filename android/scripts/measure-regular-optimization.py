@@ -51,22 +51,16 @@ def configure():
 
 
 def owned_processes(raw,parsers):
-    processes,_,excluded=parsers.attributable_processes(raw,PACKAGE)
-    starts=list(re.finditer(r'^\s*\*(?:APP|PERS|ISOLATED)\*[^\n]*ProcessRecord\{[^\n]*',raw,re.M))
-    gecko=[]
-    for index,start in enumerate(starts):
-        block=raw[start.start():starts[index+1].start() if index+1<len(starts) else len(raw)]
-        identity=re.search(r'ProcessRecord\{\S+\s+(\d+):([^/\s}]+)',start.group())
-        assert identity is not None
-        pid,name=int(identity[1]),identity[2]
-        service_owned=re.search(re.escape(PACKAGE)+r'/[^\s}\]]*GeckoChildProcessServices[^\s}\]]*',block)
-        if (name.startswith(PACKAGE+':') and ('tab' in name or 'gecko' in name.lower())) or service_owned and name!=PACKAGE:
-            gecko.append(pid)
-            if pid not in {p['pid'] for p in processes}:processes.append({'pid':pid,'name':name,'kind':'gecko_renderer','clientPackage':PACKAGE})
+    # ActivityManager appends a global service list after its process records.
+    # That footer cannot establish ownership of the last listed process.
+    cutoff = re.search(r'^  Isolated process list \(sorted by uid\):', raw, re.M)
+    assert cutoff is not None, 'Process table boundary unavailable'
+    processes, _, excluded = parsers.attributable_processes(raw[:cutoff.start()], PACKAGE)
+    gecko = [row['pid'] for row in processes
+             if row['name'].startswith((PACKAGE + ':tab', PACKAGE + ':gecko'))]
     assert any(p['name']==PACKAGE for p in processes) and gecko,'Complete app and owned Gecko renderer attribution required'
     assert len({p['pid'] for p in processes})==len(processes)
-    return sorted(processes,key=lambda p:p['pid']),gecko,excluded
-
+    return processes, gecko, excluded
 
 def main():
     os.chdir(ROOT);origin=configure()
