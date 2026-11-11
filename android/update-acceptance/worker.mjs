@@ -70,7 +70,7 @@ export default {
       const source = await asset(env, request, '/private/source.json');
       const metadata = await source.json();
       if (!metadata.feed || !Number.isSafeInteger(metadata.feed.size) || metadata.feed.size <= 0
-          || !Array.isArray(metadata.parts) || metadata.parts.length === 0 || metadata.parts.length > 32
+          || !Array.isArray(metadata.parts) || metadata.parts.length === 0 || metadata.parts.length > 48
           || metadata.parts.reduce((total, part) => total + part.size, 0) !== metadata.feed.size)
         throw Error('Acceptance source metadata invalid');
       if (url.pathname === '/android.json')

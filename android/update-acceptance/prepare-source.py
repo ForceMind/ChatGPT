@@ -30,7 +30,7 @@ private.mkdir()
 parts = []
 with apk.open('rb') as stream:
     index = 0
-    while block := stream.read(20 * 1024 * 1024):
+    while block := stream.read(5 * 1024 * 1024):
         file = private / f'part-{index:03}.bin'
         file.write_bytes(block)
         parts.append({'path': '/private/' + file.name, 'size': len(block)})
