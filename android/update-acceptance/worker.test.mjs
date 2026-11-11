@@ -1,0 +1,75 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
+import worker from './worker.mjs';
+
+const key = 'a'.repeat(64);
+const origin = 'https://studio-android-acceptance.pages.dev';
+globalThis.FixedLengthStream = class {
+  constructor(expected) {
+    let count = 0;
+    const stream = new TransformStream({
+      transform(chunk, controller) {
+        count += chunk.byteLength;
+        if (count > expected) throw Error('Too many bytes');
+        controller.enqueue(chunk);
+      },
+      flush() { if (count !== expected) throw Error('Too few bytes'); }
+    });
+    this.readable = stream.readable;
+    this.writable = stream.writable;
+  }
+};
+
+function fixture(broken = false) {
+  const calls = [], pending = [];
+  const metadata = { feed: { versionName: '2026.11.11-1200', size: 6 }, parts: [
+    { path: '/private/part-000.bin', size: 3 }, { path: '/private/part-001.bin', size: 3 }
+  ] };
+  const env = {
+    ACCEPTANCE_CODE_SHA256: createHash('sha256').update(key).digest('hex'),
+    ASSETS: {
+      async fetch(request) {
+        const path = new URL(request.url).pathname;
+        calls.push(path);
+        if (path === '/private/source.json') return Response.json(metadata);
+        const bytes = new TextEncoder().encode(path.endsWith('000.bin') ? 'abc' : 'def');
+        return new Response(bytes, { headers: { 'Content-Length': broken ? '2' : String(bytes.length) } });
+      }
+    }
+  };
+  const context = { waitUntil(promise) { pending.push(promise); } };
+  const get = (path, code) => worker.fetch(new Request(origin + path, {
+    headers: code ? { 'X-Studio-Acceptance': code } : {}
+  }), env, context);
+  return { get, calls, pending };
+}
+
+test('the private source rejects missing or wrong access codes and all direct asset requests', async () => {
+  const { get, calls } = fixture();
+  for (const [path, code] of [
+    ['/android.json', undefined], ['/update.apk', 'b'.repeat(64)],
+    ['/private/source.json', key], ['/private/part-000.bin', key], ['/', key]
+  ]) assert.equal((await get(path, code)).status, 404);
+  assert.deepEqual(calls, []);
+});
+
+test('authorized metadata and APK bytes use the guarded source and stream in order', async () => {
+  const { get, calls, pending } = fixture();
+  const feed = await get('/android.json', key);
+  assert.equal(feed.status, 200);
+  assert.equal((await feed.json()).size, 6);
+  const download = await get('/update.apk', key);
+  assert.equal(download.status, 200);
+  assert.equal(await download.text(), 'abcdef');
+  await Promise.all(pending);
+  assert.deepEqual(calls, ['/private/source.json', '/private/source.json', '/private/part-000.bin', '/private/part-001.bin']);
+  assert.match(download.headers.get('Cache-Control'), /no-store/);
+});
+
+test('a changed part aborts the streamed package instead of returning a successful truncated APK', async () => {
+  const { get, pending } = fixture(true);
+  const download = await get('/update.apk', key);
+  await assert.rejects(download.arrayBuffer());
+  await Promise.all(pending);
+});

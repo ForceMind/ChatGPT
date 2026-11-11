@@ -295,10 +295,10 @@ public final class AppUpdateFlowTest {
             AccessibilityNodeInfo input = find(ui.getRootInActiveWindow(), "验收访问码", false);
             assertNotNull(input);
             Bundle key = new Bundle();
-            key.putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, "a".repeat(64));
+            key.putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef");
             assertTrue(input.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, key));
             click("启用", false);
-            assertEquals("a".repeat(64), onMain(() -> task().acceptanceKey()));
+            assertEquals("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef", onMain(() -> task().acceptanceKey()));
             click("验收更新源", false);
             click("使用官网", false);
             assertEquals("", onMain(() -> task().acceptanceKey()));

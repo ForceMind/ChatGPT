@@ -52,6 +52,9 @@ jobs:
       - run: python3 android/scripts/prefetch-regular-gradle.py
         env:
           GH_TOKEN: ${{ github.token }}
+      - name: Verify private source authorization and streaming
+        if: inputs.device_acceptance
+        run: node --test android/update-acceptance/worker.test.mjs
       - name: Run Android unit tests including the update contract
         run: bash android/gradlew -p android --no-daemon :app:testDebugUnitTest
       - name: Freeze candidate and synthetic target metadata
