@@ -75,16 +75,32 @@ export default {
         throw Error('Acceptance source metadata invalid');
       if (url.pathname === '/android.json')
         return new Response(JSON.stringify(metadata.feed), { headers: { ...headers, 'Content-Type': 'application/json' } });
-      if (request.headers.has('Range')) return unavailable(416);
-      const stream = new FixedLengthStream(metadata.feed.size);
-      context.waitUntil(writePackage(env, request, metadata.parts, stream.writable));
-      return new Response(stream.readable, {
-        headers: {
-          ...headers,
-          'Content-Type': 'application/vnd.android.package-archive',
-          'Content-Disposition': 'attachment; filename="ChatGPT-Studio-' + metadata.feed.versionName + '-android-arm64.apk"'
-        }
-      });
+      const responseHeaders = {
+        ...headers,
+        'Content-Type': 'application/vnd.android.package-archive',
+        'Content-Disposition': 'attachment; filename="ChatGPT-Studio-' + metadata.feed.versionName + '-android-arm64.apk"'
+      };
+      let parts = metadata.parts;
+      let size = metadata.feed.size;
+      let status = 200;
+      const requested = request.headers.get('Range');
+      if (requested !== null) {
+        // Readback can verify the exact same protected bytes in independent part-sized requests.
+        let offset = 0;
+        const part = parts.find((entry) => {
+          const matches = requested === 'bytes=' + offset + '-' + (offset + entry.size - 1);
+          if (!matches) offset += entry.size;
+          return matches;
+        });
+        if (!part) return unavailable(416);
+        parts = [part];
+        size = part.size;
+        status = 206;
+        responseHeaders['Content-Range'] = 'bytes ' + offset + '-' + (offset + size - 1) + '/' + metadata.feed.size;
+      }
+      const stream = new FixedLengthStream(size);
+      context.waitUntil(writePackage(env, request, parts, stream.writable));
+      return new Response(stream.readable, { status, headers: responseHeaders });
     } catch {
       return unavailable(503);
     }

@@ -39,9 +39,12 @@ function fixture(broken = false) {
     }
   };
   const context = { waitUntil(promise) { pending.push(promise); } };
-  const get = (path, code) => worker.fetch(new Request(origin + path, {
-    headers: code ? { 'X-Studio-Acceptance': code } : {}
-  }), env, context);
+  const get = (path, code, range) => {
+    const headers = new Headers();
+    if (code) headers.set('X-Studio-Acceptance', code);
+    if (range) headers.set('Range', range);
+    return worker.fetch(new Request(origin + path, { headers }), env, context);
+  };
   return { get, calls, pending };
 }
 
@@ -71,5 +74,17 @@ test('a changed part aborts the streamed package instead of returning a successf
   const { get, pending } = fixture(true);
   const download = await get('/update.apk', key);
   await assert.rejects(download.arrayBuffer());
+  await Promise.all(pending);
+});
+
+
+test('authenticated readback serves only an exact requested part with its original offset', async () => {
+  const { get, pending } = fixture();
+  assert.equal((await get('/update.apk', undefined, 'bytes=3-5')).status, 404);
+  assert.equal((await get('/update.apk', key, 'bytes=2-5')).status, 416);
+  const download = await get('/update.apk', key, 'bytes=3-5');
+  assert.equal(download.status, 206);
+  assert.equal(download.headers.get('Content-Range'), 'bytes 3-5/6');
+  assert.equal(await download.text(), 'def');
   await Promise.all(pending);
 });
