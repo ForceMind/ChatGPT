@@ -22,10 +22,12 @@ import {
 } from '../shared/updates';
 import { readManifest, downloadUpdate, safeDirectory, UpdateDownloadError, type FetchUpdate } from './update-download';
 import { stageUpdate, launchInstaller, readInstallResult, type StagedUpdate } from './update-install';
+import { downloadMacDelta, maximumDeltaBaseBytes, type DeltaBase } from './update-delta';
 type Saved = {
   schema: 1;
   noonDay: string;
   backup?: string;
+  deltaBase?: DeltaBase;
   ready?: { idleAllowed?: boolean; manifest: UpdateManifest; zip: string; staged: StagedUpdate };
 };
 export class UpdateManager {
@@ -62,6 +64,8 @@ export class UpdateManager {
           path.dirname(v) === path.dirname(bundle) &&
           /^\.ChatGPT-Profiles-update-[a-f0-9-]{36}\.app$/.test(path.basename(v));
         if (ownedCandidate(s.backup)) this.saved.backup = s.backup;
+        const priorBase = this.ownedDeltaBase(s.deltaBase);
+        if (priorBase?.version === current) this.saved.deltaBase = priorBase;
         const r = s.ready;
         // A completed legacy updater installs at Profiles.app, then the new signed
         // app moves to Studio.app. Recognize only that completed same-parent handoff.
@@ -96,19 +100,29 @@ export class UpdateManager {
               message: '更新已下载，下次退出时安装'
             };
           } else if (r.manifest.version === current && readInstallResult(this.directory) === true) {
-            // Keep one previous app, but remove its obsolete predecessor and the ZIP.
+            // Keep one previous app and only a ZIP explicitly designated as a future delta base.
             const prior = this.saved.backup;
             if (prior && prior !== r.staged.candidate && existsSync(prior)) {
               if (lstatSync(prior).isSymbolicLink() || realpathSync(prior) !== prior) throw Error('旧版备份路径无效');
               rmSync(prior, { recursive: true, force: true });
             }
             this.saved.backup = r.staged.candidate;
-            if (existsSync(r.zip)) {
-              if (lstatSync(r.zip).isSymbolicLink()) throw Error('旧更新包路径无效');
-              unlinkSync(r.zip);
+            const archive = r.manifest.files[this.arch as 'arm64' | 'x64'];
+            if (archive?.retainAsDeltaBase === true) {
+              this.saved.deltaBase = this.ownedDeltaBase({
+                version: current,
+                zip: r.zip,
+                size: archive.size,
+                sha256: archive.sha256
+              });
             }
             this.persist();
+            if (this.saved.deltaBase?.zip !== r.zip) this.removeOwnedDeltaZip(r.zip);
           }
+        }
+        if (priorBase && this.saved.deltaBase?.zip !== priorBase.zip && this.saved.ready?.zip !== priorBase.zip) {
+          this.persist();
+          this.removeOwnedDeltaZip(priorBase.zip);
         }
       }
       if (readInstallResult(this.directory) === false)
@@ -121,6 +135,32 @@ export class UpdateManager {
           : { phase: 'error', message: '上次更新未能安装，当前 App 与登录数据已保留。请重试或手动安装。' };
     } catch {
       this.status = { phase: 'error', stage: 'check', message: '更新记录无法读取，请重新检查更新。' };
+    }
+  }
+  private ownedDeltaBase(value: DeltaBase | undefined): DeltaBase | undefined {
+    if (
+      !value ||
+      typeof value.zip !== 'string' ||
+      path.dirname(value.zip) !== this.directory ||
+      !/^[a-f0-9-]{36}\.zip$/.test(path.basename(value.zip)) ||
+      typeof value.version !== 'string' ||
+      !Number.isSafeInteger(value.size) ||
+      value.size < 1 ||
+      value.size > maximumDeltaBaseBytes ||
+      typeof value.sha256 !== 'string' ||
+      !/^[a-f0-9]{64}$/.test(value.sha256) ||
+      !existsSync(value.zip)
+    )
+      return;
+    const stat = lstatSync(value.zip);
+    if (stat.isSymbolicLink() || !stat.isFile() || stat.size !== value.size) return;
+    return value;
+  }
+  private removeOwnedDeltaZip(file: string): void {
+    if (existsSync(file)) {
+      const stat = lstatSync(file);
+      if (stat.isSymbolicLink() || !stat.isFile()) throw Error('旧更新包路径无效');
+      unlinkSync(file);
     }
   }
   private persist(): void {
@@ -212,23 +252,46 @@ export class UpdateManager {
     });
     let zip: string | undefined, staged: StagedUpdate | undefined;
     try {
-      zip = await downloadUpdate(
-        this.fetch,
-        accelerated ? acceleratedURL(file.url) : file.url,
-        file,
-        this.directory,
-        (p, transferredBytes, totalBytes) =>
+      const signal = this.controller.signal;
+      const progress = (p: number, transferredBytes: number, totalBytes: number) =>
+        this.set({
+          phase: 'downloading',
+          version: manifest.version,
+          progress: p,
+          transferredBytes,
+          totalBytes,
+          stage: p === 100 ? 'verify' : 'download',
+          message: p === 100 ? '正在校验并准备更新' : '后台下载中，可继续使用'
+        });
+      zip = await downloadMacDelta({
+        base: this.saved.deltaBase,
+        current: this.current,
+        target: file,
+        directory: this.directory,
+        fetch: this.fetch,
+        accelerated,
+        signal,
+        progress,
+        fallback: () =>
           this.set({
             phase: 'downloading',
+            stage: 'connect',
             version: manifest.version,
-            progress: p,
-            transferredBytes,
-            totalBytes,
-            stage: p === 100 ? 'verify' : 'download',
-            message: p === 100 ? '正在校验并准备更新' : '后台下载中，可继续使用'
-          }),
-        this.controller.signal
-      );
+            progress: 0,
+            transferredBytes: 0,
+            totalBytes: file.size,
+            message: '正在改用完整更新包'
+          })
+      });
+      if (!zip)
+        zip = await downloadUpdate(
+          this.fetch,
+          accelerated ? acceleratedURL(file.url) : file.url,
+          file,
+          this.directory,
+          progress,
+          signal
+        );
       this.set({
         ...this.status,
         phase: 'downloading',

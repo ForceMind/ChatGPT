@@ -58,7 +58,7 @@ concurrency:
   cancel-in-progress: ${{ !(github.event_name == 'workflow_dispatch' && (inputs.promote_release || inputs.publish_update_experience || inputs.tab_strip_release)) }}
 jobs:
   public-upgrade:
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/dev' && inputs.public_upgrade && !inputs.tab_strip_release && !inputs.update_candidates && !inputs.publish_update_experience && !inputs.windows_candidate && !inputs.cpu_validation && !inputs.candidate_package && !inputs.promote_release && !inputs.windows_tabs_candidate && !inputs.macos_tabs_candidate
+    if: github.event_name == 'workflow_dispatch' && (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/feature/desktop-update-mainline') && inputs.public_upgrade && !inputs.tab_strip_release && !inputs.update_candidates && !inputs.publish_update_experience && !inputs.windows_candidate && !inputs.cpu_validation && !inputs.candidate_package && !inputs.promote_release && !inputs.windows_tabs_candidate && !inputs.macos_tabs_candidate
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     strategy:
@@ -191,6 +191,7 @@ jobs:
             desktop/release/*.zip
             desktop/release/build-info.json
             desktop/release/windows/*-setup.exe
+            desktop/release/windows/*.exe.blockmap
             desktop/release/windows/*.zip
             desktop/release/windows/windows-build-info.json
       - uses: actions/upload-artifact@v4

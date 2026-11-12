@@ -4,9 +4,13 @@ import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, existsSync, rmSync
 import os from 'node:os';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
+import { createRequire } from 'node:module';
+import http from 'node:http';
+import { once } from 'node:events';
+import { IdleUpdate } from '../src/main/idle-update';
 import { WindowsUpdateManager, type WindowsUpdateBackend } from '../src/main/windows-update-manager';
 import { windowsRelease } from '../src/shared/windows-updates';
-import { registeredWindowsDirectory } from '../src/main/windows-update-platform';
+import { registeredWindowsDirectory, windowsDifferentialEligible } from '../src/main/windows-update-platform';
 const version = '3.0.0-alpha.22',
   exe = Buffer.from('owned installer fixture bytes'),
   zip = Buffer.from('owned ZIP fixture bytes');
@@ -144,6 +148,80 @@ test('Windows metadata pins app, architecture, repository, platform suffix, size
     assert.throws(() => windowsRelease(value), /清单/);
   }
 });
+test('Windows differential updates require an explicitly matching base on the original download path', () => {
+  const base = '3.0.0-alpha.21';
+  const plain = windowsRelease(info());
+  assert.equal(windowsDifferentialEligible(plain.installer, base, false), false);
+  const value = info();
+  Object.assign(value.files[0], { differentialFrom: base });
+  Object.assign(value.files[1], { differentialFrom: base });
+  const selected = windowsRelease(value);
+  assert.equal(windowsDifferentialEligible(selected.installer, base, false), true);
+  assert.equal(windowsDifferentialEligible(selected.installer, '3.0.0-alpha.20', false), false);
+  assert.equal(windowsDifferentialEligible(selected.installer, base, true), false);
+  assert.equal(windowsDifferentialEligible(selected.installer, base, false, 'http://127.0.0.1:3333'), false);
+  assert.equal(windowsDifferentialEligible(selected.zip, base, false), false);
+});
+
+test('the locked Windows differential downloader reads only changed bytes and rejects the wrong cached installer', async (t) => {
+  const s = setup(t);
+  const common = Buffer.alloc(32768, 0x41);
+  const before = Buffer.alloc(32768, 0x42);
+  const after = Buffer.alloc(32768, 0x43);
+  const target = Buffer.concat([common, after]);
+  writeFileSync(s.file, Buffer.concat([common, before]));
+  const map = (second: Buffer) => ({
+    version: '2',
+    files: [
+      {
+        name: 'file',
+        offset: 0,
+        sizes: [common.length, second.length],
+        checksums: [hash(common), hash(second)]
+      }
+    ]
+  });
+  const ranges: string[] = [];
+  const server = http.createServer((req, res) => {
+    const range = req.headers.range || '';
+    ranges.push(range);
+    if (range !== 'bytes=32768-65535') {
+      res.writeHead(416).end();
+      return;
+    }
+    res.writeHead(206, { 'content-range': 'bytes 32768-65535/65536', 'content-length': after.length }).end(after);
+  });
+  server.listen(0, '127.0.0.1');
+  await once(server, 'listening');
+  t.after(() => server.close());
+  const address = server.address();
+  assert(address && typeof address === 'object');
+  const { GenericDifferentialDownloader } = createRequire(import.meta.url)(
+    'electron-updater/out/differentialDownloader/GenericDifferentialDownloader.js'
+  );
+  const executor = {
+    createRequest: http.request,
+    addErrorAndTimeoutHandlers: (request: http.ClientRequest, reject: (reason: Error) => void) => {
+      request.on('error', reject);
+      request.setTimeout(5000, () => request.destroy(Error('owned range timeout')));
+    }
+  };
+  const rebuild = (file: string) =>
+    new GenericDifferentialDownloader({ size: target.length, sha512: hash(target, 'sha512', 'base64') }, executor, {
+      newUrl: new URL('http://127.0.0.1:' + address.port + '/owned.exe'),
+      oldFile: s.file,
+      newFile: file,
+      isUseMultipleRangeRequest: false,
+      logger: { info: () => {}, warn: () => {}, error: () => {}, debug: () => {} }
+    }).download(map(before), map(after));
+  const output = path.join(s.root, 'rebuilt.exe');
+  await rebuild(output);
+  assert.deepEqual(readFileSync(output), target);
+  assert.deepEqual(ranges, ['bytes=32768-65535']);
+  writeFileSync(s.file, Buffer.concat([Buffer.alloc(common.length, 0x11), before]));
+  await assert.rejects(rebuild(path.join(s.root, 'wrong.exe')), /checksum|sha512/i);
+});
+
 test('registered installers must match this executable directory and never claim a broad user folder or network share', () => {
   const dir = 'C:\\Users\\测试\\Programs\\ChatGPT Studio',
     exe = dir + '\\ChatGPT Profiles.exe',
@@ -210,6 +288,79 @@ test('installed updates verify bytes and package version before a quit-triggered
   assert.deepEqual(s.calls.installs, [true]);
   assert.equal(s.calls.verified, 2);
 });
+test('Windows idle install is opt-in, rechecks activity after byte verification and keeps a deferred package', async (t) => {
+  const s = setup(t);
+  await s.manager.check();
+  await s.manager.download();
+  assert.equal(s.manager.status.idleEnabled, false);
+  assert.equal(s.manager.idleChoiceMade(), false);
+  s.manager.setIdleAllowed(true);
+  s.manager.setIdleDeadline(100_000);
+  assert.equal(s.manager.status.idleDeadline, 100_000);
+  const saved = JSON.parse(readFileSync(path.join(s.manager.directory, 'state.json'), 'utf8'));
+  assert.equal(saved.idleAllowed, true);
+  assert.match(saved.approved, /^[a-f0-9]{64}$/);
+  await assert.rejects(
+    s.manager.installOnQuit(true, async () => {
+      assert.equal(s.calls.verified, 2);
+      return false;
+    }),
+    /空闲安装已延后/
+  );
+  assert.deepEqual(s.calls.installs, []);
+  assert.equal(s.manager.status.phase, 'ready');
+  assert.equal(s.manager.status.idleEnabled, true);
+  await s.manager.installOnQuit(true, async () => true);
+  assert.deepEqual(s.calls.installs, [false]);
+});
+
+test('the shared app-idle countdown commits a verified Windows update without reopening it', async (t) => {
+  const s = setup(t);
+  await s.manager.check();
+  await s.manager.download();
+  s.manager.setIdleAllowed(true);
+  let now = 0;
+  let focused = false;
+  let safe = false;
+  let notice: number | undefined;
+  let installation: Promise<void> | undefined;
+  const idle = new IdleUpdate({
+    now: () => now,
+    eligible: () => s.manager.status.phase === 'ready' && s.manager.status.idleEnabled === true,
+    focused: () => focused,
+    safe: async () => safe,
+    countdown: (deadline) => {
+      notice = deadline;
+      s.manager.setIdleDeadline(deadline);
+    },
+    visible: () => notice !== undefined,
+    install: (epoch) => {
+      installation = s.manager.installOnQuit(false, () => idle.permit(epoch));
+    }
+  });
+  now = 1_800_000;
+  await idle.tick();
+  assert.equal(notice, undefined);
+  safe = true;
+  await idle.tick();
+  assert.equal(notice, 1_860_000);
+  focused = true;
+  idle.activity();
+  assert.equal(s.manager.status.idleDeadline, undefined);
+  now = 1_860_000;
+  await idle.tick();
+  assert.deepEqual(s.calls.installs, []);
+  focused = false;
+  now = 3_600_000;
+  await idle.tick();
+  assert.equal(notice, 3_660_000);
+  now = 3_660_000;
+  await idle.tick();
+  assert(installation);
+  await installation;
+  assert.deepEqual(s.calls.installs, [false]);
+});
+
 test('tampered cached installers cannot execute and leave a recoverable update error', async (t) => {
   const s = setup(t);
   await s.manager.check();
@@ -236,6 +387,10 @@ test('portable downloads are verified and saved as a new file without running an
   writeFileSync(original, 'keep');
   await s.manager.check();
   await s.manager.download();
+  s.manager.setIdleAllowed(true);
+  s.manager.setIdleDeadline(100_000);
+  assert.equal(s.manager.status.idleEnabled, undefined);
+  assert.equal(s.manager.status.idleDeadline, undefined);
   await s.manager.installOnQuit();
   assert.deepEqual(s.calls.installs, []);
   assert.equal(s.calls.fetches, 1);

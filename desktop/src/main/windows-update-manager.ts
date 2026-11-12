@@ -23,7 +23,7 @@ export type WindowsUpdateBackend = {
   error: (listener: (error: Error) => void) => () => void;
   dispose?: () => void;
 };
-type Saved = { schema: 1; noonDay: string; approved?: string; zip?: string };
+type Saved = { schema: 1; noonDay: string; approved?: string; zip?: string; idleAllowed?: boolean };
 type Options = {
   dataDir: string;
   current: string;
@@ -69,10 +69,17 @@ export class WindowsUpdateManager implements UpdateService {
           typeof raw.noonDay !== 'string' ||
           (raw.noonDay && !/^\d{4}-\d{2}-\d{2}$/.test(raw.noonDay)) ||
           (raw.approved !== undefined && !/^[a-f0-9]{64}$/.test(raw.approved)) ||
+          (raw.idleAllowed !== undefined && (typeof raw.idleAllowed !== 'boolean' || !raw.approved)) ||
           (raw.zip !== undefined && !/^[a-f0-9-]{36}\.zip$/.test(raw.zip))
         )
           throw Error('invalid');
-        this.saved = { schema: 1, noonDay: raw.noonDay, approved: raw.approved, zip: raw.zip };
+        this.saved = {
+          schema: 1,
+          noonDay: raw.noonDay,
+          approved: raw.approved,
+          zip: raw.zip,
+          idleAllowed: raw.idleAllowed
+        };
       } catch {
         if (!lstatSync(file).isSymbolicLink()) renameSync(file, file + '.corrupt-' + randomUUID());
         this.status = {
@@ -100,12 +107,17 @@ export class WindowsUpdateManager implements UpdateService {
         if (Number.isFinite(value.percent)) {
           const transferredBytes =
             Number.isSafeInteger(value.transferred) && value.transferred! >= 0 ? value.transferred : undefined;
+          const totalBytes =
+            Number.isSafeInteger(value.total) && value.total! > 0 && value.total! >= (transferredBytes ?? 0)
+              ? value.total!
+              : expected.size;
           const percent =
             transferredBytes === undefined
               ? Math.max(0, Math.min(100, Math.floor(value.percent)))
-              : Math.floor((transferredBytes * 100) / expected.size);
+              : Math.floor((transferredBytes * 100) / totalBytes);
           if (
             percent === this.status.progress &&
+            totalBytes === this.status.totalBytes &&
             this.status.stage === 'download' &&
             Date.now() - this.lastProgressAt < 500
           )
@@ -116,8 +128,8 @@ export class WindowsUpdateManager implements UpdateService {
             version: this.release?.version,
             progress: percent,
             transferredBytes,
-            totalBytes: expected.size,
-            stage: percent === 100 ? 'verify' : 'download',
+            totalBytes,
+            stage: percent === 100 && totalBytes === expected.size ? 'verify' : 'download',
             message: '后台下载中，可继续使用'
           });
         }
@@ -262,7 +274,9 @@ export class WindowsUpdateManager implements UpdateService {
     try {
       if (this.options.mode === 'automatic') await this.options.preflight();
       this.set({ ...this.status, stage: 'connect', message: '正在连接下载源' });
-      this.saved.approved = this.fingerprint(release);
+      const approval = this.fingerprint(release);
+      if (previousApproval !== approval || this.options.mode !== 'automatic') this.saved.idleAllowed = undefined;
+      this.saved.approved = approval;
       this.persist();
       let file: string;
       if (this.options.mode === 'automatic') {
@@ -327,6 +341,7 @@ export class WindowsUpdateManager implements UpdateService {
       this.set({
         phase: 'ready',
         version: release.version,
+        idleEnabled: this.options.mode === 'automatic' ? this.saved.idleAllowed === true : undefined,
         message:
           this.options.mode === 'manual'
             ? '免安装 ZIP 已校验，可以另存；退出后手动替换。'
@@ -334,6 +349,7 @@ export class WindowsUpdateManager implements UpdateService {
       });
     } catch (error) {
       this.saved.approved = undefined;
+      this.saved.idleAllowed = undefined;
       this.persist();
       const aborted = this.controller.signal.aborted && !this.oversized;
       const stage = this.oversized ? 'verify' : error instanceof UpdateDownloadError ? error.stage : this.status.stage;
@@ -360,7 +376,7 @@ export class WindowsUpdateManager implements UpdateService {
       await this.preparing;
     }
   }
-  async installOnQuit(allowRelaunch = true) {
+  async installOnQuit(allowRelaunch = true, permitIdleInstall?: () => Promise<boolean>) {
     if (
       this.sessionEnding ||
       this.options.mode !== 'automatic' ||
@@ -369,18 +385,26 @@ export class WindowsUpdateManager implements UpdateService {
       !this.release
     )
       return;
+    let checkingIdle = false;
     try {
       await this.options.preflight();
       await verifyUpdate(this.cached, this.release.installer);
       await this.options.verifyInstaller(this.cached, this.release.version);
+      if (permitIdleInstall) {
+        checkingIdle = true;
+        if (!(await permitIdleInstall())) throw Error('应用状态已变化，空闲安装已延后');
+        checkingIdle = false;
+      }
       if (this.sessionEnding) return;
       this.installing = true;
       this.installFailure = undefined;
       this.options.backend.install(allowRelaunch && this.restart);
       if (this.installFailure) throw this.installFailure;
     } catch (error) {
+      if (checkingIdle) throw error;
       this.installing = false;
       this.saved.approved = undefined;
+      this.saved.idleAllowed = undefined;
       this.persist();
       this.set({
         phase: 'error',
@@ -396,12 +420,27 @@ export class WindowsUpdateManager implements UpdateService {
     if (background) throw Error('Windows 更新请在退出或立即重启时安装');
     this.restart = true;
   }
+  idleChoiceMade(): boolean {
+    return typeof this.saved.idleAllowed === 'boolean';
+  }
+  setIdleAllowed(allowed: boolean): void {
+    if (this.options.mode !== 'automatic' || this.status.phase !== 'ready' || this.sessionEnding) return;
+    this.saved.idleAllowed = allowed;
+    this.persist();
+    this.set({ ...this.status, idleEnabled: allowed });
+  }
+  setIdleDeadline(deadline?: number): void {
+    if (this.options.mode === 'automatic' && this.status.phase === 'ready') {
+      this.set({ ...this.status, idleDeadline: deadline });
+    }
+  }
   cancelRestart() {
     this.restart = false;
   }
   sessionEnd() {
     this.sessionEnding = true;
     this.restart = false;
+    if (this.status.idleEnabled) this.set({ ...this.status, idleEnabled: false });
   }
   async exportPackage(destination: string) {
     if (this.options.mode !== 'manual' || this.status.phase !== 'ready' || !this.cached || !this.release)
@@ -421,6 +460,7 @@ export class WindowsUpdateManager implements UpdateService {
     this.cached = undefined;
     this.saved.zip = undefined;
     this.saved.approved = undefined;
+    this.saved.idleAllowed = undefined;
     this.persist();
     this.set({
       phase: 'available',

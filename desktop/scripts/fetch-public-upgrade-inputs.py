@@ -14,13 +14,13 @@ platform = sys.argv[1]
 if platform == 'Windows':
     files = [
         (version, f'ChatGPT-Studio-{version}-windows-x64-setup.exe')
-        for version in ('2026.11.9', '2026.11.10', '2026.11.11')
+        for version in ('2026.11.9', '2026.11.10', '2026.11.13')
     ]
 else:
     assert platform == 'macOS'
     files = [
-        ('2026.11.10', 'ChatGPT-Studio-2026.11.10-mac-arm64.zip'),
-        ('2026.11.11', 'ChatGPT-Profiles-2026.11.11-mac-arm64.zip'),
+        ('2026.11.11', 'ChatGPT-Studio-2026.11.11-mac-arm64.zip'),
+        ('2026.11.12', 'ChatGPT-Profiles-2026.11.12-mac-arm64.zip'),
     ]
 for version, name in files:
     record = json.loads(Path(f'../docs/releases/{version}.json').read_text())

@@ -795,7 +795,7 @@ function App() {
                 }}
               />
             )}
-            {state.platform === 'darwin' && state.update?.phase === 'ready' && (
+            {state.update?.phase === 'ready' && typeof state.update.idleEnabled === 'boolean' && (
               <button
                 className="menu-action"
                 role="menuitemcheckbox"

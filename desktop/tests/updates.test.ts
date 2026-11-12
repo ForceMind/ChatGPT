@@ -24,6 +24,7 @@ import {
 } from '../src/shared/updates';
 import { downloadUpdate, readManifest, UPDATE_FEED, type FetchUpdate } from '../src/main/update-download';
 import { UpdateManager } from '../src/main/update-manager';
+import { downloadMacDelta } from '../src/main/update-delta';
 test('quitting cancels a pending download and waits for partial file cleanup', async () => {
   const root = mkdtempSync(path.join(realpathSync(os.tmpdir()), 'update-abort-'));
   let began!: () => void;
@@ -83,6 +84,65 @@ const manifest = (): UpdateManifest => ({
     }
   }
 });
+test('Mac delta verifies the exact retained archive and clears a malformed patch for full fallback', async () => {
+  const root = mkdtempSync(path.join(realpathSync(os.tmpdir()), 'mac-delta-'));
+  try {
+    const current = '3.0.0-alpha.11';
+    const base = Buffer.alloc(256, 0x22);
+    const target = Buffer.from(base);
+    target[255] = 0x33;
+    const zip = path.join(root, randomUUID() + '.zip');
+    writeFileSync(zip, base);
+    const hash = (value: Buffer) => createHash('sha256').update(value).digest('hex');
+    const copy = Buffer.alloc(13);
+    copy[0] = 1;
+    copy.writeUInt32BE(255, 9);
+    const patch = Buffer.concat([Buffer.from('STUDIOD1'), copy, Buffer.from([0, 0, 0, 0, 1, 0x33, 255])]);
+    const file = manifest().files.arm64!;
+    const requests: string[] = [];
+    let offered = patch;
+    let fallback = 0;
+    const attempt = () =>
+      downloadMacDelta({
+        current,
+        base: { version: current, zip, size: base.length, sha256: hash(base) },
+        target: {
+          ...file,
+          size: target.length,
+          sha256: hash(target),
+          delta: {
+            fromVersion: current,
+            url: file.url.slice(0, -4) + '-from-' + current + '.delta',
+            baseSHA256: hash(base),
+            size: offered.length,
+            sha256: hash(offered)
+          }
+        },
+        directory: root,
+        fetch: async (url) => {
+          requests.push(url);
+          return new Response(new Uint8Array(offered));
+        },
+        accelerated: false,
+        signal: new AbortController().signal,
+        progress: () => {},
+        fallback: () => fallback++
+      });
+    const rebuilt = await attempt();
+    assert(rebuilt);
+    assert.deepEqual(readFileSync(rebuilt), target);
+    rmSync(rebuilt);
+    offered = patch.subarray(0, patch.length - 1);
+    assert.equal(await attempt(), undefined);
+    assert.equal(fallback, 1);
+    assert.equal(requests.length, 2);
+    assert(requests.every((url) => url.endsWith('-from-' + current + '.delta')));
+    assert.deepEqual(readdirSync(root), [path.basename(zip)]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('version ordering prevents alpha lexical mistakes, downgrades and invalid versions', () => {
   assert(newerVersion('3.0.0-alpha.12', '3.0.0-alpha.9'));
   assert(!newerVersion('3.0.0-alpha.9', '3.0.0-alpha.12'));
@@ -326,6 +386,53 @@ test('a successful new launch keeps one rollback app and removes only its obsole
     const saved = JSON.parse(readFileSync(path.join(directory, 'state.json'), 'utf8'));
     assert.equal(saved.ready, undefined);
     assert.equal(saved.backup, candidate);
+    manager.dispose();
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('a completed Mac update retains only the archive opted into as its next delta base', () => {
+  const root = mkdtempSync(path.join(realpathSync(os.tmpdir()), 'update-delta-cache-'));
+  try {
+    const directory = path.join(root, 'updates');
+    const bundle = path.join(root, 'Installed.app');
+    const candidate = path.join(root, '.ChatGPT-Profiles-update-' + randomUUID() + '.app');
+    const previous = path.join(directory, randomUUID() + '.zip');
+    const current = path.join(directory, randomUUID() + '.zip');
+    mkdirSync(directory);
+    mkdirSync(candidate);
+    for (const file of [previous, current]) writeFileSync(file, bytes);
+    const update = manifest();
+    const file = update.files.arm64!;
+    file.retainAsDeltaBase = true;
+    writeFileSync(path.join(directory, 'install-result.json'), JSON.stringify({ ok: true }));
+    writeFileSync(
+      path.join(directory, 'state.json'),
+      JSON.stringify({
+        schema: 1,
+        noonDay: '',
+        deltaBase: { version: '3.0.0-alpha.11', zip: previous, sha256: file.sha256, size: file.size },
+        ready: {
+          manifest: update,
+          zip: current,
+          staged: { bundle, candidate, version, fromVersion: '3.0.0-alpha.11', directory }
+        }
+      })
+    );
+    const manager = new UpdateManager(
+      root,
+      version,
+      'arm64',
+      async () => new Response('unused'),
+      () => {},
+      bundle
+    );
+    assert.equal(manager.status.phase, 'idle');
+    assert.equal(existsSync(previous), false);
+    assert.equal(existsSync(current), true);
+    const saved = JSON.parse(readFileSync(path.join(directory, 'state.json'), 'utf8'));
+    assert.deepEqual(saved.deltaBase, { version, zip: current, size: file.size, sha256: file.sha256 });
     manager.dispose();
   } finally {
     rmSync(root, { recursive: true, force: true });

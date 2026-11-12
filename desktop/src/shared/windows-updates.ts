@@ -1,6 +1,6 @@
-import { versionParts, type UpdateFile } from './updates';
+import { newerVersion, versionParts, type UpdateFile } from './updates';
 export const WINDOWS_UPDATE_BASE = 'https://chatgpt.xincreates.com/updates/windows/';
-export type WindowsArtifact = UpdateFile & { sha512: string; kind: 'installer' | 'zip' };
+export type WindowsArtifact = UpdateFile & { sha512: string; kind: 'installer' | 'zip'; differentialFrom?: string };
 export type WindowsRelease = {
   version: string;
   publishedAt: string;
@@ -54,7 +54,20 @@ export function windowsRelease(value: unknown): WindowsRelease {
         `https://github.com/ForceMind/ChatGPT/releases/download/v${value.version}/ChatGPT-${name}-${value.version}-windows-x64${suffix}`
     );
     if (!valid) return bad();
-    files[kind] = { url: file.url, size: file.size as number, sha256: file.sha256, sha512: file.sha512, kind };
+    const differentialFrom =
+      kind === 'installer' &&
+      typeof file.differentialFrom === 'string' &&
+      newerVersion(value.version, file.differentialFrom)
+        ? file.differentialFrom
+        : undefined;
+    files[kind] = {
+      url: file.url,
+      size: file.size as number,
+      sha256: file.sha256,
+      sha512: file.sha512,
+      kind,
+      differentialFrom
+    };
   }
   if (!files.installer || !files.zip) return bad();
   return {
