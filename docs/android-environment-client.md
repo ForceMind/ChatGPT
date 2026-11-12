@@ -1,6 +1,10 @@
 # Android 独立环境客户端：文件与任务主线
 
-## 当前发布：常规 Android 2026.11.08-1923
+## 当前正式版
+
+Android `2026.11.12-0325`（版本码 `3000046`）使用原包名和签名，可覆盖现有常规版。Android 9 和 15 的差量重建及坏补丁回退通过合成验收，本轮更新使用完整 APK。真实节点的上传、下载和资产归属仍待真机验收。[官网 APK](https://chatgpt.xincreates.com/#download-android) · [发布与验收记录](releases/2026.11.12-0325.json)
+
+## 常规 Android 2026.11.08-1923（历史）
 
 已纳入三平台正常 Release [v2026.11.9](https://github.com/ForceMind/ChatGPT/releases/tag/v2026.11.9)。[公开 APK](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.9/ChatGPT-Studio-2026.11.08-1923-android-arm64.apk) 保留原签名与原包名，可覆盖 alpha.22；请勿先卸载。官网每个平台只有一个最新下载入口，临时 Actions 候选和独立 Beta 从主下载区撤下。APK 字节与下述原签验收完全一致，未重编或重签；独立 Beta 数据不自动搬迁。实际 CI OS、文件摘要与验证边界见[统一发布清单](releases/2026.11.9.json)。真实手机、ChatGPT 与节点仍待验收，历史间歇问题没有宣称全部解决。
 

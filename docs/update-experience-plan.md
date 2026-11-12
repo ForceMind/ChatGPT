@@ -1,8 +1,18 @@
 # 三端更新体验计划
 
-第一批 Mac / Windows 更新体验已正式发布为 2026.11.10，第二批 Android 继续按下文推进。沿用白灰黑、无地址栏和现有沉浸布局。Windows 嵌套目录与更新下载仍待实机验收，可信发布者签名的前置条件见 [Windows 计划](windows-installation-plan.md)。
+## 当前正式版
 
-## 现有代码与缺口
+| 平台 | 正式版 | 已验证范围 |
+| --- | --- | --- |
+| macOS · Apple Silicon | [2026.11.14](releases/2026.11.14.json) | macOS 15 的完整检查、120 项单元测试和 4 项适用更新端到端测试通过 |
+| Windows · x64 | [2026.11.14](releases/2026.11.14.json) | Windows Server 2025 的完整检查通过，119 项单元测试通过、1 项平台跳过，2 项适用更新端到端测试通过 |
+| Android · ARM64 | [2026.11.12-0325](releases/2026.11.12-0325.json)，版本码 `3000046` | Android 9 和 15 的有效补丁重建及损坏补丁回退通过合成验收 |
+
+本轮自动更新使用完整包。三端新客户端已支持在后续版本提供适用补丁时尝试差量下载，并在失败时回退到完整包。Windows 当前用户 EXE 安装可选择应用空闲时安装。Android 沿用原包名和签名，可直接覆盖安装。
+
+[官网](https://chatgpt.xincreates.com/#downloads)和 [Pages 域名](https://chatgpt-studio.pages.dev/#downloads)的下载、国内加速及三端自动更新清单均已回读。Mac 包尚未公证，Windows 安装包尚未签名。本批真实设备覆盖升级、真实账号和 Android 线路文件传输留待用户统一验收。iPhone / iPad 仍处于[模拟器 PoC](https://github.com/ForceMind/ChatGPT/actions/runs/43090705273)阶段，真机签名与分发待配置。
+
+## 首批实施前的代码与缺口（历史）
 
 - 桌面共用 `desktop/src/renderer/UpdateStatus.tsx`，已有顶部状态按钮和账号菜单内的更新卡片。
 - `desktop/src/shared/updates.ts` 仅传百分比、下载阶段和提示，尚无已下载 / 总字节及独立失败阶段。
