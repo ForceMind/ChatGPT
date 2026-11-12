@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "versionMetadata": {
+    "schema": 1,
+    "versionCode": 3000046,
+    "versionName": "2026.11.12-0325",
+    "timeZone": "Asia/Shanghai",
+    "sourceSHA": "2a4b5223760d52cc45e41b6d7fa6f15c50cd67b8"
+  },
+  "file": "ChatGPT-Studio-2026.11.12-0325-android-arm64.apk",
+  "bytes": 228717230,
+  "sha256": "42caabe8302a296e9a27bc3250efc0f60f173f261a6b19dabeb0834072a3c3f9",
+  "inputSHA256": "81aa942591a6405452f77270c7564cdec4e57653ec3c09f4df21e63f79cceffa",
+  "certificateSHA256": "8b6eef928fded91f291ad954e20976b2cc6011b55e8cbec0152695fe1f05cf19",
+  "preservedNonSigningEntries": 297,
+  "sourceRunID": 43086437641,
+  "validationRunID": 43090352271,
+  "syntheticEmulatorAPIs": [
+    28,
+    35
+  ],
+  "deltaValidation": true,
+  "publicRelease": true,
+  "privateKeyUploaded": false,
+  "physicalDeviceTested": false,
+  "productionSignatureUpgradeTestedForThisBuild": false,
+  "package": "com.forcemind.chatgpt.profiles",
+  "release": "https://github.com/ForceMind/ChatGPT/releases/tag/v2026.11.12-0325",
+  "releaseID": 442448563,
+  "artifactID": 737890349,
+  "publishedAt": "2026-11-12T03:22:42Z",
+  "url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.12-0325/ChatGPT-Studio-2026.11.12-0325-android-arm64.apk",
+  "promotionRunID": 43147640983,
+  "signedBytesVerified": true
+}

@@ -15,9 +15,9 @@
 
 ChatGPT Studio brings independent ChatGPT account spaces, live tabs and local asset workflows into one immersive client. Launch directly into ChatGPT without an address bar or an OpenAI API key.
 
-**Current releases** · [macOS 2026.11.12](https://github.com/ForceMind/ChatGPT/releases/tag/v2026.11.12) · [Windows 2026.11.13](https://github.com/ForceMind/ChatGPT/releases/tag/v2026.11.13) · [Android 2026.11.11-2241](https://github.com/ForceMind/ChatGPT/releases/tag/v2026.11.11-2241).
+**Current releases** · [macOS 2026.11.14](https://github.com/ForceMind/ChatGPT/releases/tag/v2026.11.14) · [Windows 2026.11.14](https://github.com/ForceMind/ChatGPT/releases/tag/v2026.11.14) · [Android 2026.11.12-0325](https://github.com/ForceMind/ChatGPT/releases/tag/v2026.11.12-0325).
 
-Android ships original-signer build **2026.11.11-2241** (code 3000045). Install over the current release to preserve app data. Existing accounts retain WebView and their data; new accounts can select isolated locale/timezone. Includes a fixed title entry, a vertical tab list, reload, back/forward, dual-engine recovery, VLESS routing and file/Skill tasks. Independent Beta data stays separate. Network routes support clipboard and QR import, VLESS WebSocket, TCP HTTP headers, and independent tests.
+Android ships original-signer build **2026.11.12-0325** (code 3000046). Install over the current release to preserve app data. Existing accounts retain WebView and their data; new accounts can select isolated locale/timezone. Includes a fixed title entry, a vertical tab list, reload, back/forward, dual-engine recovery, VLESS routing and file/Skill tasks. Independent Beta data stays separate. Network routes support clipboard and QR import, VLESS WebSocket, TCP HTTP headers, and independent tests.
 
 Previously named **ChatGPT Profiles**. Legacy storage identities remain for sign-in and encrypted recovery compatibility. Synthetic CI acceptance does not replace real ChatGPT, node or physical-device acceptance; historical intermittent TLS/input issues remain documented.
 
@@ -58,15 +58,15 @@ flowchart LR
   Android --> Recovery
 ```
 
-Devices do not synchronize sign-in credentials. The regular client includes Gecko with original-signer synthetic upgrade acceptance. Existing alpha.22 accounts remain on WebView, and independent Beta data stays separate. iPhone/iPad, proxy support and delta updates remain in the roadmap.
+Devices do not synchronize sign-in credentials. The regular client includes Gecko with original-signer synthetic upgrade acceptance. Existing alpha.22 accounts remain on WebView, and independent Beta data stays separate. See the roadmap for iPhone/iPad and the validation scope of proxy and delta support.
 
 ## Download and install
 
 | Platform | Version | Downloads | Requirements |
 | --- | --- | --- | --- |
-| macOS · Apple Silicon | 2026.11.12 | [DMG](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.12/ChatGPT-Studio-2026.11.12-mac-arm64.dmg) · [ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.12/ChatGPT-Studio-2026.11.12-mac-arm64.zip) | macOS 13+ |
-| Windows · x64 | 2026.11.13 | [EXE](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.13/ChatGPT-Studio-2026.11.13-windows-x64-setup.exe) · [Portable ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.13/ChatGPT-Studio-2026.11.13-windows-x64.zip) | Windows 10 / 11 · x64 |
-| Android · Phone/tablet | 2026.11.11-2241 | [APK](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.11-2241/ChatGPT-Studio-2026.11.11-2241-android-arm64.apk) | Android 9+ · ARM64 |
+| macOS · Apple Silicon | 2026.11.14 | [DMG](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.14/ChatGPT-Studio-2026.11.14-mac-arm64.dmg) · [ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.14/ChatGPT-Studio-2026.11.14-mac-arm64.zip) | macOS 13+ |
+| Windows · x64 | 2026.11.14 | [EXE](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.14/ChatGPT-Studio-2026.11.14-windows-x64-setup.exe) · [Portable ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.14/ChatGPT-Studio-2026.11.14-windows-x64.zip) | Windows 10 / 11 · x64 |
+| Android · Phone/tablet | 2026.11.12-0325 | [APK](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.12-0325/ChatGPT-Studio-2026.11.12-0325-android-arm64.apk) | Android 9+ · ARM64 |
 
 ### Historical Beta
 
@@ -82,7 +82,7 @@ The independent Beta remains in [release history](https://github.com/ForceMind/C
 
 The [website](https://chatgpt-studio.pages.dev/) provides GitHub downloads and optional third-party acceleration links. Compare downloads with `SHA256SUMS.txt` in the Release. The website lists the current stable release for each platform. Historical prereleases remain available.
 
-Package checksums · [macOS](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.12/SHA256SUMS.txt) · [Windows](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.13/SHA256SUMS.txt) · [Android](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.11-2241/SHA256SUMS.txt).
+Package checksums · [Desktop](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.14/SHA256SUMS.txt) · [Android](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.12-0325/SHA256SUMS.txt).
 
 ### Android alpha.19
 
@@ -94,7 +94,7 @@ App-owned desktop UI now uses clearer type and contrast, with 15px body text, 14
 
 Android opens directly into the webpage with account, tabs and more controls. A searchable tab sheet supports pinning, renaming, sorting, closing and restoring recent tabs. Browser-style bottom controls and developer diagnostics are removed from normal menus. Foreground switches reuse the original webpage, draft, scroll and generation context without a background service. Window recreation reuses pages; process termination requires reloading before restoring saved drafts and positions. See the [macOS alpha.20 release manifest](docs/releases/3.0.0-alpha.20.json), [Windows alpha.18 manifest](docs/releases/3.0.0-alpha.18.json) and [Android alpha.19 record](docs/releases/3.0.0-alpha.19-android.json) for exact binaries, sources and signatures.
 
-macOS checks for updates at launch and at noon in Shanghai time. After confirmation it downloads and verifies a complete ZIP. Installation can run immediately, on exit or after the app has been idle under the configured safeguards. Native application updates require a restart; delta updates are not implemented. Windows alpha.21 current-user EXE installations check at launch and Shanghai noon, download after confirmation, then install on exit or explicit restart. ZIP/shared/unrecognized installations provide verified saving for manual replacement. Windows idle and delta updates are not implemented. Android can check for updates in More → App updates, download in the background, and open the system installation prompt. Earlier versions need a manual in-place upgrade first.
+macOS, Windows and Android check for updates at launch, at noon in Shanghai time and on demand. Download starts after confirmation. macOS and current-user Windows EXE installations support immediate, on-exit or opt-in idle installation. Windows ZIP updates can be verified and saved. Android asks for system installation confirmation. Each platform now supports applicable delta downloads with full-package fallback. This upgrade uses full packages, and native application updates require a restart.
 
 ## Getting started
 
@@ -120,8 +120,8 @@ Closing a macOS window retains pages in the background. A full process exit requ
 | Skills and file tasks | Available | Available | Available; real-service acceptance pending |
 | Draft and reading-position recovery | Available | Available | Available |
 | Encrypted conversation snapshots/offline reading | Available | Available in alpha.21 | Available in alpha.22 |
-| Confirmed download and exit/idle installation | Available | alpha.21 current-user EXE; no idle installation | Planned |
-| Per-account language/timezone | Available | Available | Integrated and synthetically verified in the regular original-signer client; public package remains alpha.22 |
+| Confirmed download and installation | Immediate, on exit or opt-in idle installation | Same options for current-user EXE | System-confirmed in-place installation |
+| Per-account language/timezone | Available | Available | Integrated and synthetically verified in the regular original-signer release |
 
 Conversion options include PNG/JPEG/WebP, SVG rasterization, HTML/Markdown to PDF, selected PDF pages to images, and CSV/JSON conversion. Details and limits are documented in the [desktop](desktop/README.md) and [Android](android/README.md) guides.
 
@@ -215,8 +215,8 @@ Cloudflare Pages uses Direct Upload; a Git push does not deploy the site automat
 | Original agent presets and design-patch Skill | Published in desktop alpha.21: 32 roles, standalone/combined tasks, favorites and task recovery |
 | In-app proxy/VLESS | Published with regular Android: synthetic Android 9/15 RAW/TLS/REALITY webpage, upload/download, ownership, busy protection, core failure and recovery checks pass. No free nodes supplied; real nodes/services/OEM devices remain pending. Historical TLS resets are not all root-caused. [Evidence](docs/android-environment-client.md) |
 | Historical standalone Android tests / Beta | Retained in release history with separate package, signature and data spaces; no automatic data migration. They are no longer parallel recommended downloads. [History and evidence](docs/android-environment-client.md) |
-| iPhone/iPad, Intel Mac, Linux and store distribution | Outside the current iteration; no packages |
-| Delta updates | Not implemented; native updates require restart |
+| iPhone/iPad, Intel Mac, Linux and store distribution | [iOS simulator PoC build and checks passed](https://github.com/ForceMind/ChatGPT/actions/runs/43090705273). Device signing and distribution pending. No packages for the other targets |
+| Delta updates with full-package fallback | Published after synthetic acceptance. This upgrade uses full packages. [Desktop](docs/releases/2026.11.14.json) · [Android](docs/releases/2026.11.12-0325.json) |
 
 ## FAQ
 

@@ -1,0 +1,133 @@
+{
+  "schema": 1,
+  "version": "2026.11.14",
+  "sourceSHA": "6d0c4e0d85182a843118faed9eaf4919038ece4b",
+  "sourceRunID": 43145929641,
+  "originalCIBytesVerified": true,
+  "evidence": {
+    "macOS": {
+      "runner": "macos-15",
+      "jobID": 130943600113,
+      "tests": {
+        "startTime": "2026-11-12T03:08:08.559Z",
+        "duration": 34820.051,
+        "expected": 4,
+        "skipped": 2,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "signing": "ad-hoc, not notarized",
+      "artifacts": [
+        {
+          "name": "ChatGPT-Studio-Update-Candidate-macOS",
+          "id": 13911571907,
+          "digest": "sha256:9595ff2ce32e08cbe3ba8d45a2394248b68eaf20d98b7615b5f5965c5ce638cd"
+        },
+        {
+          "name": "update-experience-evidence-macOS",
+          "id": 13911856535,
+          "digest": "sha256:874c27b60e417bd4f337d85d0a3c48e3fc16d8456d789840728c551faf08f292"
+        }
+      ]
+    },
+    "Windows": {
+      "runner": "windows-2025",
+      "jobID": 130943599757,
+      "tests": {
+        "startTime": "2026-11-12T03:08:22.478Z",
+        "duration": 10276.247,
+        "expected": 2,
+        "skipped": 4,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "signing": "unsigned",
+      "artifacts": [
+        {
+          "name": "ChatGPT-Studio-Update-Candidate-Windows",
+          "id": 13911169774,
+          "digest": "sha256:20996782fbafd3e68f34b4e52c549742c594c3bb190bf927add7a4076dffda90"
+        },
+        {
+          "name": "update-experience-evidence-Windows",
+          "id": 13911164996,
+          "digest": "sha256:0d4827ba03027a9fa626911b8d8b57b886f2145c57ed898fa26b79f5ec624425"
+        }
+      ]
+    }
+  },
+  "artifacts": [
+    {
+      "file": "ChatGPT-Studio-2026.11.14-mac-arm64.dmg",
+      "sha256": "7e904436554af9cb4b67d4f7a5c9b0a4e958f6b9eeb66922b345439ded865195",
+      "bytes": 155139645,
+      "platform": "macOS",
+      "purpose": "installer",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.14/ChatGPT-Studio-2026.11.14-mac-arm64.dmg",
+      "releaseAssetID": 737866466
+    },
+    {
+      "file": "ChatGPT-Studio-2026.11.14-mac-arm64.zip",
+      "sha256": "cf56ff89ce434820861926015e0a4db43039107c2be888eb8163f611674e92dc",
+      "bytes": 155089560,
+      "platform": "macOS",
+      "purpose": "portable",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.14/ChatGPT-Studio-2026.11.14-mac-arm64.zip",
+      "releaseAssetID": 737866464
+    },
+    {
+      "file": "ChatGPT-Profiles-2026.11.14-mac-arm64.zip",
+      "sha256": "200c66f6be15064139e5b67a45c014cd99f8d27055ceda9b38b22685e37cfb86",
+      "bytes": 155206132,
+      "platform": "macOS",
+      "purpose": "legacy-updater",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.14/ChatGPT-Profiles-2026.11.14-mac-arm64.zip",
+      "releaseAssetID": 737866465
+    },
+    {
+      "file": "ChatGPT-Studio-2026.11.14-windows-x64-setup.exe",
+      "bytes": 131367949,
+      "sha256": "a63737a917863a707fa9ceff12bd0f00e6f88f4f54b1e527b2831fc96dfecad4",
+      "sha512": "Th0vpZ97ep1KKBw+WzlYfQ0eKlzun+rvSLWPs53wjUoBAB9+4WFIGYCnj/NzHycyn56S5I8k5GQFXOhpuh0orQ==",
+      "platform": "Windows",
+      "purpose": "installer",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.14/ChatGPT-Studio-2026.11.14-windows-x64-setup.exe",
+      "releaseAssetID": 737866463
+    },
+    {
+      "file": "ChatGPT-Studio-2026.11.14-windows-x64.zip",
+      "bytes": 181316707,
+      "sha256": "9da6993ebb64419ea3d4fa1ce6a873b12fcb1d11084dfb22b04f00740c6d0849",
+      "sha512": "FK+1YU7wzS4d+ayh/kkMFUU74KkBBuS8q/rLIJxuzIrFgQBuVl7B1ixFBFx6L8Ea8Mx5heeX7E0+QTcPaks2Qg==",
+      "platform": "Windows",
+      "purpose": "portable",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.14/ChatGPT-Studio-2026.11.14-windows-x64.zip",
+      "releaseAssetID": 737866468
+    },
+    {
+      "file": "ChatGPT-Studio-2026.11.14-windows-x64-setup.exe.blockmap",
+      "bytes": 137557,
+      "sha256": "38db507f95839891a1f0385766edd24ca3c14d08a59358941876c287a1a7475c",
+      "sha512": "Cj4RfunyNn2LeV91pQTOlqUM0XbHf3UHM5prqy46z1pOIAgQc7nltFsxD05wXx4CuU1jVjGG/1i0288b7mhTwg==",
+      "platform": "Windows",
+      "purpose": "blockmap",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.14/ChatGPT-Studio-2026.11.14-windows-x64-setup.exe.blockmap",
+      "releaseAssetID": 737866639
+    }
+  ],
+  "unitTests": {
+    "macOS": {
+      "passed": 120,
+      "skipped": 0
+    },
+    "Windows": {
+      "passed": 119,
+      "skipped": 1
+    }
+  },
+  "promotionRunID": 43146684317,
+  "release": "https://github.com/ForceMind/ChatGPT/releases/tag/v2026.11.14",
+  "releaseID": 442449499,
+  "publishedAt": "2026-11-12T03:14:20Z",
+  "physicalDeviceTested": false
+}

@@ -15,9 +15,9 @@
 
 在独立账号空间中使用 ChatGPT，管理保持在线的标签、会话与本地资产。启动直接进入网页，白灰黑界面、无地址栏，无需配置 OpenAI API Key。
 
-**当前正式版** · [macOS 2026.11.12](https://github.com/ForceMind/ChatGPT/releases/tag/v2026.11.12) · [Windows 2026.11.13](https://github.com/ForceMind/ChatGPT/releases/tag/v2026.11.13) · [Android 2026.11.11-2241](https://github.com/ForceMind/ChatGPT/releases/tag/v2026.11.11-2241)。
+**当前正式版** · [macOS 2026.11.14](https://github.com/ForceMind/ChatGPT/releases/tag/v2026.11.14) · [Windows 2026.11.14](https://github.com/ForceMind/ChatGPT/releases/tag/v2026.11.14) · [Android 2026.11.12-0325](https://github.com/ForceMind/ChatGPT/releases/tag/v2026.11.12-0325)。
 
-Android 使用原签 **2026.11.11-2241**（构建号 3000045），可覆盖安装，请勿先卸载。旧账号沿用原 WebView 和登录，新账号可选独立语言 / 时区；包含顶部当前标题入口、竖向标签列表、刷新、后退 / 前进、双内核恢复、VLESS 同路由及文件 / Skill 任务。独立 Beta 的数据空间仍保留，不自动迁移。 线路支持粘贴与扫码导入、VLESS WebSocket、TCP HTTP 头部伪装和独立测试。
+Android 使用原签 **2026.11.12-0325**（构建号 3000046），可覆盖安装，请勿先卸载。旧账号沿用原 WebView 和登录，新账号可选独立语言 / 时区；包含顶部当前标题入口、竖向标签列表、刷新、后退 / 前进、双内核恢复、VLESS 同路由及文件 / Skill 任务。独立 Beta 的数据空间仍保留，不自动迁移。 线路支持粘贴与扫码导入、VLESS WebSocket、TCP HTTP 头部伪装和独立测试。
 
 项目已从 **ChatGPT Profiles** 更名为 **ChatGPT Studio**；内部存储身份保留用于兼容登录与加密恢复。合成 CI 通过不替代真实 ChatGPT、节点及手机验收，历史间歇 TLS / 输入问题保留原记录。
 
@@ -66,9 +66,9 @@ flowchart LR
 
 | 平台 | 版本 | 下载 | 要求 |
 | --- | --- | --- | --- |
-| macOS · Apple Silicon | 2026.11.12 | [DMG](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.12/ChatGPT-Studio-2026.11.12-mac-arm64.dmg) · [ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.12/ChatGPT-Studio-2026.11.12-mac-arm64.zip) | macOS 13+ |
-| Windows · x64 | 2026.11.13 | [EXE](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.13/ChatGPT-Studio-2026.11.13-windows-x64-setup.exe) · [免安装 ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.13/ChatGPT-Studio-2026.11.13-windows-x64.zip) | Windows 10 / 11 · x64 |
-| Android · 手机 / 平板 | 2026.11.11-2241 | [APK](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.11-2241/ChatGPT-Studio-2026.11.11-2241-android-arm64.apk) | Android 9+ · ARM64 |
+| macOS · Apple Silicon | 2026.11.14 | [DMG](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.14/ChatGPT-Studio-2026.11.14-mac-arm64.dmg) · [ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.14/ChatGPT-Studio-2026.11.14-mac-arm64.zip) | macOS 13+ |
+| Windows · x64 | 2026.11.14 | [EXE](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.14/ChatGPT-Studio-2026.11.14-windows-x64-setup.exe) · [免安装 ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.14/ChatGPT-Studio-2026.11.14-windows-x64.zip) | Windows 10 / 11 · x64 |
+| Android · 手机 / 平板 | 2026.11.12-0325 | [APK](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.12-0325/ChatGPT-Studio-2026.11.12-0325-android-arm64.apk) | Android 9+ · ARM64 |
 
 ### 历史 Beta
 
@@ -84,7 +84,7 @@ flowchart LR
 
 [官网](https://chatgpt-studio.pages.dev/)提供原始 GitHub 下载和可选国内加速入口。第三方加速不可用时可改用原始链接；下载后可与对应 Release 的 SHA256SUMS.txt 核对。
 
-安装包校验清单 · [macOS](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.12/SHA256SUMS.txt) · [Windows](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.13/SHA256SUMS.txt) · [Android](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.11-2241/SHA256SUMS.txt)。
+安装包校验清单 · [桌面端](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.14/SHA256SUMS.txt) · [Android](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.12-0325/SHA256SUMS.txt)。
 
 各平台的当前正式版本以官网为准。历史预发布与校验清单继续保留。
 
@@ -96,7 +96,7 @@ flowchart LR
 
 Android 默认进入网页，顶部仅保留账号、标签和更多；按需展开可搜索的标签清单，支持重命名、固定、排序、关闭和最近关闭恢复。主页移除浏览器式底栏，普通菜单移除开发诊断。App 前台切换已载入页面会复用同一网页、草稿、滚动和生成上下文，无需开启后台服务；窗口重建保留原页面，进程终止后需加载一次再恢复已保存草稿与阅读位置。Mac 安装包、兼容更新与签名见[alpha.20 发布索引](docs/releases/3.0.0-alpha.20.json)，Windows 见[alpha.18 发布索引](docs/releases/3.0.0-alpha.18.json)，Android 见[alpha.19 记录](docs/releases/3.0.0-alpha.19-android.json)。
 
-Mac 从 alpha.12 起支持启动与每天上海时间 12:00 检查更新，确认后后台下载、校验完整 ZIP，可选择立即、下次退出或应用空闲时安装。Windows alpha.21 当前用户 EXE 安装同样支持启动与上海中午检查、确认后台下载、退出安装或立即重启；ZIP、共享安装和无法确认的位置提供校验与另存。Windows 空闲安装、差量更新尚未实现。Android 可在「更多 → 应用更新」手动检查，后台下载后由系统确认覆盖安装；更早版本需先手动覆盖安装此版。原生程序更新需要重启。
+Mac、Windows 和 Android 支持启动、上海时间中午和手动检查，发现新版后由用户确认下载。Mac 和 Windows 当前用户 EXE 支持立即、退出时或开启后在应用空闲时安装，Windows ZIP 可校验另存。Android 通过系统确认覆盖安装。三端现已支持发布提供适用补丁时的差量下载与完整包回退，本次升级使用完整包。原生程序更新需要重启。
 
 ## 开始使用
 
@@ -122,7 +122,7 @@ Android 常规客户端可点击顶部当前网页标题打开竖向标签列表
 | Skill 与带文件任务 | 支持 | 支持 | 支持，实站兼容仍待验收 |
 | 草稿与阅读位置恢复 | 支持 | 支持 | 支持 |
 | 加密对话快照、离线阅读 | 已公开 | alpha.21 已公开 | alpha.22 已公开 |
-| 确认下载与退出 / 空闲安装 | 已公开 | alpha.21 当前用户 EXE；无空闲安装 | 后续 |
+| 确认下载与安装 | 立即、退出或可选空闲安装 | 当前用户 EXE 支持立即、退出或可选空闲安装 | Android 系统确认覆盖安装 |
 | 每账号语言 / 时区选择 | 支持 | 支持 | 已在正常发布中接入并通过 Android 9/15 合成验收 |
 
 图片支持 PNG / JPEG / WebP、SVG 转图片；文档支持 HTML / Markdown 导出 PDF、PDF 选页转图片；数据支持 CSV 与 JSON 互转。具体选项和格式差异见[桌面说明](desktop/README.md)与[Android 说明](android/README.md)。
@@ -228,8 +228,8 @@ cd android
 | 已发布 | 自有智能体与设计补丁 Skill | alpha.21 桌面含 32 个角色，支持单独使用、组合 Skill、收藏与任务恢复 |
 | 已发布 / 待实站验收 | Android 应用内代理与 VLESS 配置 | 已随常规 Android 正常发布；RAW/TLS/REALITY 网页、上传 / 下载同路由、字节与账号归属、在途保护、核心停止与恢复通过 Android 9/15 合成验收。历史 TLS reset 未全部归因，真实节点、服务与手机待验收，不提供免费节点。[证据](docs/android-environment-client.md) |
 | 历史验证 | Android 独立测试包与固定签名 Beta | 保留历史 Release 和证据，不再作为并列推荐下载；包名、签名及数据空间独立，常规客户端不自动迁移其数据。[历史与范围](docs/android-environment-client.md) |
-| 新平台 | iPhone / iPad 后续开发；Intel Mac、Linux 与商店发行 | 未纳入当前迭代，暂无对应安装包 |
-| 更新能力 | 差量下载 | 尚未实现；alpha.23 已提供下载进度与手动入口，完整原生程序更新仍需重启 |
+| 新平台 | iPhone / iPad；Intel Mac、Linux 与商店发行 | iOS 已通过[模拟器 PoC 构建与检查](https://github.com/ForceMind/ChatGPT/actions/runs/43090705273)，真机签名和分发待配置；其余暂无安装包 |
+| 已发布 | 三端差量下载与完整包回退 | 已通过合成验收，本轮升级使用完整包。[桌面](docs/releases/2026.11.14.json) · [Android](docs/releases/2026.11.12-0325.json) |
 
 已完成的历史工作与每批验证边界保留在开发记录中；本表列的是当前缺口，不代表已开始全部后续开发。
 
