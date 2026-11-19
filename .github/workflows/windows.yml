@@ -37,6 +37,10 @@ jobs:
         run: npm ci
       - name: Typecheck, state tests and build
         run: npm run check
+      - name: Package Windows x64
+        run: |
+          node scripts/icon.mjs
+          node scripts/package-win.mjs
       - name: Windows isolation and interface acceptance
         run: npx playwright test --max-failures=1 --reporter=list,json
         env:
@@ -44,10 +48,6 @@ jobs:
           PLAYWRIGHT_JSON_OUTPUT_FILE: test-results/windows-ui.json
       - name: Native first-script language and login popup acceptance
         run: node scripts/check-native-preferences.mjs
-      - name: Package Windows x64
-        run: |
-          node scripts/icon.mjs
-          node scripts/package-win.mjs
       - name: Install, launch and uninstall acceptance
         shell: pwsh
         run: ./scripts/check-windows-install.ps1
