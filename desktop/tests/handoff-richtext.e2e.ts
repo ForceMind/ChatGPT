@@ -9,9 +9,9 @@ import { shellWindow } from './helpers/shell';
 import { StateStore } from '../src/main/state';
 import { AssetStore } from '../src/main/asset-store';
 const desktop = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
-for (const mode of ['normal', 'remount', 'partial', 'blocked', 'disabled', 'manual'])
+for (const mode of ['normal', 'unlabelled-id', 'remount', 'partial', 'blocked', 'disabled', 'manual'])
   test('real ProseMirror handoff: ' + mode, async ({}, info) => {
-    test.skip(process.platform !== 'darwin');
+    test.skip(!['darwin', 'win32'].includes(process.platform));
     test.setTimeout(90000);
     const root = mkdtempSync(path.join(os.tmpdir(), 'profiles-richtext-'));
     let app: ElectronApplication | undefined;
@@ -19,10 +19,10 @@ for (const mode of ['normal', 'remount', 'partial', 'blocked', 'disabled', 'manu
     const compiled = await build({
       stdin: {
         contents: `import {EditorState} from 'prosemirror-state';import {EditorView} from 'prosemirror-view';import {schema} from 'prosemirror-schema-basic';
- const mode=${JSON.stringify(mode)};let first=true;const button=document.querySelector('[data-testid="send-button"]');document.querySelector('input').addEventListener('change',async event=>{const fd=new FormData();for(const f of event.target.files)fd.append('file',f);await fetch('/upload',{method:'POST',body:fd});for(const f of event.target.files){const chip=document.createElement('div');chip.dataset.testid='attachment';chip.title=f.name;chip.textContent=f.name;const remove=document.createElement('button');remove.type='button';remove.setAttribute('aria-label','Remove '+f.name);chip.append(remove);document.querySelector('#files').append(chip);}});
+ const mode=${JSON.stringify(mode)};let first=true;const button=document.querySelector('[data-testid="send-button"]');document.querySelector('input').addEventListener('change',async event=>{const fd=new FormData();for(const f of event.target.files)fd.append('file',f);await fetch('/upload',{method:'POST',body:fd});for(const f of event.target.files){const chip=document.createElement('div');chip.dataset.testid='attachment';const displayName=mode==='unlabelled-id'?f.name.replace('.txt','(2).txt'):f.name;chip.title=displayName;chip.textContent=displayName;const remove=document.createElement('button');remove.type='button';remove.setAttribute('aria-label','Remove '+displayName);chip.append(remove);document.querySelector('#files').append(chip);}});
  const doc=text=>schema.node('doc',null,text.split('\\n').map(t=>schema.node('paragraph',null,t?schema.text(t):null)));
- const mount=text=>{const view=new EditorView(document.querySelector('#prompt-textarea'),{state:EditorState.create({schema,doc:doc(text)}),handleDOMEvents:{beforeinput:(_view,event)=>{if(mode==='blocked'){event.preventDefault();return true;}return false;}},dispatchTransaction(tr){view.updateState(view.state.apply(tr));const value=view.state.doc.textBetween(0,view.state.doc.content.size,'\\n');if(first&&value){first=false;if(mode==='remount'){view.destroy();window.fixtureView=mount('');return;}if(mode==='partial'||mode==='manual'){view.updateState(EditorState.create({schema,doc:doc(value.slice(0,80))}));}}if(mode!=='disabled')setTimeout(()=>{button.disabled=false;button.setAttribute('aria-disabled','false');},1600);}});view.dom.setAttribute('role','textbox');return view;};window.fixtureView=mount('');
- button.addEventListener('click',async()=>{if(button.disabled)return;const view=window.fixtureView,value=view.state.doc.textBetween(0,view.state.doc.content.size,'\\n');await fetch('/sent',{method:'POST',body:value});const m=document.createElement('div');m.dataset.messageAuthorRole='user';m.textContent=value;document.querySelector('#messages').append(m);view.dispatch(view.state.tr.delete(0,view.state.doc.content.size));history.pushState({},'','/c/richtext');});`,
+ const mount=text=>{const view=new EditorView(document.querySelector('[data-fixture-editor]'),{state:EditorState.create({schema,doc:doc(text)}),handleDOMEvents:{beforeinput:(_view,event)=>{if(mode==='blocked'){event.preventDefault();return true;}return false;}},dispatchTransaction(tr){view.updateState(view.state.apply(tr));const value=view.state.doc.textBetween(0,view.state.doc.content.size,'\\n');if(first&&value){first=false;if(mode==='remount'){view.destroy();window.fixtureView=mount('');return;}if(mode==='partial'||mode==='manual'){view.updateState(EditorState.create({schema,doc:doc(value.slice(0,80))}));}}if(mode!=='disabled')setTimeout(()=>{button.disabled=false;button.setAttribute('aria-disabled','false');},1600);}});view.dom.setAttribute('role','textbox');if(mode==='unlabelled-id')view.dom.setAttribute('aria-label','询问 ChatGPT');return view;};window.fixtureView=mount('');
+ button.addEventListener('click',async()=>{if(button.disabled)return;const view=window.fixtureView,value=view.state.doc.textBetween(0,view.state.doc.content.size,'\\n');await fetch('/sent',{method:'POST',body:value});const m=document.createElement('div');if(mode==='unlabelled-id'){m.className='bg-user-message';const text=document.createElement('div');text.className='whitespace-pre-wrap';text.textContent=value;m.append(text);}else{m.dataset.messageAuthorRole='user';m.textContent=value;}document.querySelector('#messages').append(m);view.dispatch(view.state.tr.delete(0,view.state.doc.content.size));history.pushState({},'','/c/richtext');});`,
         resolveDir: desktop
       },
       bundle: true,
@@ -53,7 +53,13 @@ for (const mode of ['normal', 'remount', 'partial', 'blocked', 'disabled', 'manu
       }
       res.setHeader('Content-Type', 'text/html');
       res.end(
-        '<!doctype html><meta charset="utf-8"><h1>本地真实 ProseMirror 编辑器夹具 · 非 ChatGPT</h1><form><input type="file" hidden multiple><div id="files"></div><div id="prompt-textarea"></div><button type="button" data-testid="send-button" disabled aria-disabled="true">Send</button></form><section id="messages"></section><script src="/editor.js"></script>'
+        '<!doctype html><meta charset="utf-8"><h1>本地真实 ProseMirror 编辑器夹具 · 非 ChatGPT</h1>' +
+          (mode === 'unlabelled-id' ? '<div><button aria-label="添加文件等内容"></button>' : '<form>') +
+          '<input type="file" hidden multiple><div id="files"></div><div ' +
+          (mode === 'unlabelled-id' ? '' : 'id="prompt-textarea" ') +
+          'data-fixture-editor></div><button type="button" data-testid="send-button" disabled aria-disabled="true">Send</button>' +
+          (mode === 'unlabelled-id' ? '</div>' : '</form>') +
+          '<main id="messages"></main><script src="/editor.js"></script>'
       );
     });
     await new Promise<void>((r) => server.listen(0, '127.0.0.1', r));
@@ -99,13 +105,17 @@ for (const mode of ['normal', 'remount', 'partial', 'blocked', 'disabled', 'manu
         await expect
           .poll(async () => (await jobs()).find((j) => j.id === job.id)?.progress?.at(-1)?.note)
           .toContain('80/');
+        await shell.evaluate(({ profile, id }) => window.profiles.workbench.openHandoff(profile, id), {
+          profile,
+          id: job.id
+        });
         await app.evaluate(({ BrowserWindow }) => {
           const w = BrowserWindow.getAllWindows().find((w) => w.webContents.getURL() === 'app://shell/index.html')!;
-          const view = (w.contentView.children as Electron.WebContentsView[])
-            .filter((v) => v.webContents.getURL().startsWith('http:'))
-            .at(-1)!;
+          const view = (w.contentView.children as Electron.WebContentsView[]).find(
+            (v) => v.getVisible() && v.webContents.getURL().startsWith('http:')
+          )!;
           return view.webContents.executeJavaScript(
-            `(()=>{const view=window.fixtureView;view.dispatch(view.state.tr.insertText('HUMAN CONTENT MUST STAY',0,view.state.doc.content.size));})()`
+            `(()=>{const view=window.fixtureView;if(view.state.doc.textBetween(0,view.state.doc.content.size,'\\n').length!==80)throw Error('Expected the target task draft');view.dispatch(view.state.tr.insertText('HUMAN CONTENT MUST STAY',0,view.state.doc.content.size));})()`
           );
         });
       }
@@ -120,6 +130,18 @@ for (const mode of ['normal', 'remount', 'partial', 'blocked', 'disabled', 'manu
       );
       if (mode === 'blocked') expect(result.message).toContain('指令写入未完成');
       if (mode === 'disabled') expect(result.message).toContain('发送按钮仍不可用');
+      if (mode === 'manual') {
+        const retainedDraft = await app.evaluate(({ BrowserWindow }) => {
+          const w = BrowserWindow.getAllWindows().find((w) => w.webContents.getURL() === 'app://shell/index.html')!;
+          const view = (w.contentView.children as Electron.WebContentsView[]).find(
+            (v) => v.getVisible() && v.webContents.getURL().startsWith('http:')
+          )!;
+          return view.webContents.executeJavaScript(
+            `window.fixtureView.state.doc.textBetween(0,window.fixtureView.state.doc.content.size,'\\n')`
+          );
+        });
+        expect(retainedDraft).toBe('HUMAN CONTENT MUST STAY');
+      }
       if (!failed) {
         expect(result.progress).toHaveLength(7);
         expect(result.progress?.every((p) => p.completedAt !== undefined)).toBe(true);

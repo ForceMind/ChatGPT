@@ -196,7 +196,8 @@ export class HandoffRunner {
       const target = this.host.open(job.request.targetProfileId);
       this.publish(job.id, { tabId: target.tabId });
       page = new ChatPage(target.contents, this.host.fixtureOrigin, check);
-      await page.ready();
+      const prompt = this.instructions(job, basePrompt);
+      await page.ready(prompt);
       this.publish(job.id, {
         stage: 'attachments',
         note: paths.length ? `${paths.length} 个附件` : '本次不附文件',
@@ -210,7 +211,6 @@ export class HandoffRunner {
         );
       }
       this.publish(job.id, { status: 'drafting', stage: 'instructions', message: '正在写入完整处理指令。' });
-      const prompt = this.instructions(job, basePrompt);
       let written = -1;
       await page.draft(prompt, (count, total) => {
         if (count === written) return;

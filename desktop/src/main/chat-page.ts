@@ -9,6 +9,7 @@ export type PageObservation = {
   send: boolean;
   text: string;
   attachments: string[];
+  namedAttachmentControls: string[];
   removers: number;
   busy: boolean;
   error: boolean;
@@ -38,7 +39,12 @@ function observe(): PageObservation {
   ]
     .filter(visible)
     .map((e) => e.getAttribute('data-attachment-name') || e.getAttribute('title') || e.innerText || '');
-  const messages = [...document.querySelectorAll<HTMLElement>('[data-message-author-role="user"]')];
+  const legacyMessages = [...document.querySelectorAll<HTMLElement>('[data-message-author-role="user"]')];
+  const currentMessages =
+    legacyMessages.length || !location.pathname.startsWith('/c/')
+      ? []
+      : [...document.querySelectorAll<HTMLElement>('main .bg-user-message .whitespace-pre-wrap')].filter(visible);
+  const messages = legacyMessages.length ? legacyMessages : currentMessages;
   return {
     composer: !!composer,
     input: !!inputs.length,
@@ -48,13 +54,17 @@ function observe(): PageObservation {
       ...attachments,
       ...removes.map((e) => (e.getAttribute('aria-label') || '') + ' ' + (e.parentElement?.textContent || ''))
     ],
+    namedAttachmentControls: removes.flatMap((e) => {
+      const name = e.getAttribute('aria-label')?.match(/^(?:remove|移除|删除附件)\s+(.+)$/i)?.[1];
+      return name ? [name.trim()] : [];
+    }),
     removers: removes.length,
     busy: !!scope?.querySelector(
       '[role="progressbar"],button[aria-label*="Cancel upload"],button[aria-label*="取消上传"]'
     ),
     error: !!scope?.querySelector('[role="alert"]'),
     messages: messages.length,
-    lastMessage: messages.at(-1)?.innerText || '',
+    lastMessage: messages.at(-1)?.innerText || messages.at(-1)?.textContent || '',
     generating: !!document.querySelector('[data-testid="stop-button"]'),
     login:
       !composer &&
@@ -64,6 +74,35 @@ function observe(): PageObservation {
     url: location.href
   };
 }
+function attachedFilesMatch(state: PageObservation, names: string[]): boolean {
+  if (state.removers !== names.length) return false;
+  const available = [...state.namedAttachmentControls];
+  if (available.length !== names.length)
+    return names.every((name) => state.attachments.some((label) => label.includes(name)));
+
+  // Match exact names first so one renamed attachment cannot account for two originals.
+  const renamed = names.filter((name) => {
+    const exact = available.indexOf(name);
+    if (exact === -1) return true;
+    available.splice(exact, 1);
+    return false;
+  });
+  return renamed.every((name) => {
+    const dot = name.lastIndexOf('.');
+    const stem = dot > 0 ? name.slice(0, dot) : name;
+    const extension = dot > 0 ? name.slice(dot) : '';
+    const match = available.findIndex(
+      (label) =>
+        label.startsWith(stem) &&
+        label.endsWith(extension) &&
+        /^ ?\([1-9]\d*\)$/.test(label.slice(stem.length, label.length - extension.length))
+    );
+    if (match === -1) return false;
+    available.splice(match, 1);
+    return true;
+  });
+}
+
 export class ChatPage {
   private readonly token = randomUUID();
   private usedChooser = false;
@@ -85,12 +124,17 @@ export class ChatPage {
   }
   private async script<T>(body: string): Promise<T> {
     this.guard();
-    const result = await this.contents.executeJavaScript(
-      '(()=>{const chatDOM=' + chatDOM.toString() + ';return ' + body + '})()',
+    const result = (await this.contents.executeJavaScript(
+      '(()=>{try{const chatDOM=' +
+        chatDOM.toString() +
+        ';return {ok:true,value:' +
+        body +
+        '};}catch(error){return {ok:false,message:error instanceof Error?error.message.slice(0,900):"网页脚本执行失败"};}})()',
       true
-    );
+    )) as { ok: true; value: T } | { ok: false; message: string };
     this.guard();
-    return result as T;
+    if (!result.ok) throw Error(result.message);
+    return result.value;
   }
   state(): Promise<PageObservation> {
     return this.script('(' + observe.toString() + ')()');
@@ -120,16 +164,20 @@ export class ChatPage {
     }
     throw Error(message);
   }
-  async ready(): Promise<void> {
-    await this.wait((s) => s.composer, 45000, '未能找到 ChatGPT 输入框，可能需要登录或网页结构已更新。');
+  async ready(prompt: string): Promise<void> {
+    const state = await this.wait((s) => s.composer, 45000, '未能找到 ChatGPT 输入框，可能需要登录或网页结构已更新。');
+    this.checkExistingDraft(state.text, prompt);
+  }
+  private checkExistingDraft(text: string, prompt: string): void {
+    const existing = normalizedPrompt(text);
+    if (existing && existing !== normalizedPrompt(prompt))
+      throw Error('新标签页输入框已有内容，为避免覆盖草稿已停止。');
   }
   async upload(files: string[], names: string[]): Promise<void> {
     const state = await this.state();
     if (!state.input) {
       await this.command('Page.setInterceptFileChooserDialog', { enabled: true });
-      await this.script(
-        `(()=>{const b=document.querySelector('button[data-testid="composer-plus-btn"]');if(b)b.click();})()`
-      );
+      await this.script(`(()=>{chatDOM().add?.click();})()`);
       if (!(await this.state()).input)
         await this.script(
           `(()=>{const b=[...document.querySelectorAll('[role="menuitem"],button')].find(e=>/upload (photos|files)|add (photos|files)|上传照片|上传文件|添加照片|添加文件/i.test(e.textContent||''));if(b)b.click();})()`
@@ -150,8 +198,7 @@ export class ChatPage {
     let stable = 0;
     await this.wait(
       (s) => {
-        const all = names.every((name) => s.attachments.some((t) => t.includes(name)));
-        const ready = !s.busy && s.removers === names.length && all;
+        const ready = !s.busy && attachedFilesMatch(s, names);
         stable = ready ? stable + 1 : 0;
         return stable >= 3;
       },
@@ -160,7 +207,7 @@ export class ChatPage {
     );
   }
   async draft(prompt: string, progress: (written: number, total: number) => void = () => {}): Promise<void> {
-    if ((await this.state()).text.trim()) throw Error('新标签页输入框已有内容，为避免覆盖草稿已停止。');
+    this.checkExistingDraft((await this.state()).text, prompt);
     const token = JSON.stringify(this.token),
       expected = normalizedPrompt(prompt);
     await this.script(
@@ -176,23 +223,17 @@ export class ChatPage {
       }
       if (current && !expected.startsWith(current))
         throw Error('输入框内容与处理指令不一致，已保留现有文字并停止；可复制完整指令手动处理。');
-      const result = await this.command('Runtime.evaluate', {
-        expression: '(' + chatDOM.toString() + ')().composer',
-        returnByValue: false
-      });
-      const objectId = result.result?.objectId;
-      if (!objectId) throw Error('指令输入框正在重新加载，已停止；附件与现有草稿保留。');
       try {
-        await this.command('DOM.focus', { objectId });
+        // Resolve and focus in the same page context used to check the draft.
+        // A debugger RemoteObject is unnecessary for native text insertion.
         await this.script(
-          `(()=>{const state=window.__profilesHandoffInput,{composer:e,text}=chatDOM();if(!state||state.token!==${token}||state.edited)throw Error('检测到你正在编辑目标页面，已停止自动填写并保留草稿。');if(!e||text!==${JSON.stringify(existing.text)})throw Error('输入框已变化，已停止自动填写并保留草稿。');e.focus();if(e instanceof HTMLTextAreaElement)e.setSelectionRange(e.value.length,e.value.length);else{const range=document.createRange();range.selectNodeContents(e);range.collapse(false);const selection=getSelection();selection.removeAllRanges();selection.addRange(range);}state.writing=true;})()`
+          `(()=>{const state=window.__profilesHandoffInput,{composer:e,text}=chatDOM();if(!state||state.token!==${token}||state.edited)throw Error('检测到你正在编辑目标页面，已停止自动填写并保留草稿。');if(!e||text!==${JSON.stringify(existing.text)})throw Error('输入框已变化，已停止自动填写并保留草稿。');e.focus();if(document.activeElement!==e&&!e.contains(document.activeElement))throw Error('无法聚焦目标输入框，已停止自动填写；请打开目标标签页检查。');if(e instanceof HTMLTextAreaElement)e.setSelectionRange(e.value.length,e.value.length);else{const range=document.createRange();range.selectNodeContents(e);range.collapse(false);const selection=getSelection();selection.removeAllRanges();selection.addRange(range);}state.writing=true;})()`
         );
         const raw = existing.text.replace(/\r\n?/g, '\n').replace(/\u00a0/g, ' '),
           normalized = prompt.replace(/\r\n?/g, '\n');
         if (raw && !normalized.startsWith(raw)) throw Error('指令格式与网页内容不一致，已停止自动补写；请手动检查。');
         await this.command('Input.insertText', { text: raw ? normalized.slice(raw.length) : prompt });
       } finally {
-        await this.command('Runtime.releaseObject', { objectId }).catch(() => {});
         await this.script(
           `(()=>{const s=window.__profilesHandoffInput;if(s?.token===${token})s.writing=false;})()`
         ).catch(() => {});
@@ -219,24 +260,22 @@ export class ChatPage {
     beforeClick: () => void,
     afterClick: () => void = () => {}
   ): Promise<string> {
-    const filesReady = (s: PageObservation) =>
-      s.removers === names.length && names.every((n) => s.attachments.some((a) => a.includes(n)));
     const before = await this.wait(
       (s) => {
         if (normalizedPrompt(s.text) !== normalizedPrompt(prompt))
           throw Error('发送检查时指令已改变，已保留现有草稿并停止。');
-        return s.send && !s.busy && filesReady(s);
+        return s.send && !s.busy && attachedFilesMatch(s, names);
       },
       15000,
       '指令已完整写入，但发送按钮仍不可用或附件仍在处理；未点击发送，请打开目标对话检查。'
     );
     beforeClick();
     await this.script(
-      `(()=>{const now=(${observe.toString()})();const names=${JSON.stringify(names)},norm=${normalizedPrompt.toString()};if(norm(now.text)!==${JSON.stringify(normalizedPrompt(prompt))}||now.busy||now.removers!==names.length||!names.every(n=>now.attachments.some(a=>a.includes(n))))throw Error('发送前内容或附件已改变');if(window.__profilesHandoffInput?.edited)throw Error('检测到手动编辑，已停止自动发送');const b=chatDOM().send;if(!b||b.disabled||b.getAttribute('aria-disabled')==='true')throw Error('发送控件已改变');b.click();})()`
+      `(()=>{const now=(${observe.toString()})();const names=${JSON.stringify(names)},norm=${normalizedPrompt.toString()},matches=${attachedFilesMatch.toString()};if(norm(now.text)!==${JSON.stringify(normalizedPrompt(prompt))}||now.busy||!matches(now,names))throw Error('发送前内容或附件已改变');if(window.__profilesHandoffInput?.edited)throw Error('检测到手动编辑，已停止自动发送');const b=chatDOM().send;if(!b||b.disabled||b.getAttribute('aria-disabled')==='true')throw Error('发送控件已改变');b.click();})()`
     );
     afterClick();
     const normalize = (s: string) => s.replace(/\s+/g, ' ').trim();
-    const needle = normalize(prompt).slice(0, 160);
+    const needle = normalize(prompt);
     const ack = await this.wait(
       (s) => s.messages > before.messages && normalize(s.lastMessage).includes(needle) && !s.text.trim(),
       25000,

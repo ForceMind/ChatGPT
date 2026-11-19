@@ -3,7 +3,7 @@ export function chatDOM() {
   const visible = (e: Element) => !!e.getClientRects().length;
   const candidates = [
     ...document.querySelectorAll<HTMLElement>(
-      '#prompt-textarea,textarea[data-testid="prompt-textarea"],textarea[placeholder*="Message"],textarea[placeholder*="询问"],[data-type="unified-composer"] [contenteditable="true"][role="textbox"]'
+      '#prompt-textarea,textarea[data-testid="prompt-textarea"],textarea[placeholder*="Message"],textarea[placeholder*="询问"],[data-type="unified-composer"] [contenteditable="true"][role="textbox"],.ProseMirror[contenteditable="true"][role="textbox"][aria-label="询问 ChatGPT"],.ProseMirror[contenteditable="true"][role="textbox"][aria-label="Ask ChatGPT"]'
     )
   ];
   const editable = (e: HTMLElement) =>
@@ -11,9 +11,16 @@ export function chatDOM() {
   const composer = candidates
     .flatMap((e) => (editable(e) ? [e] : [...e.querySelectorAll<HTMLElement>('textarea,[contenteditable="true"]')]))
     .find((e) => visible(e) && editable(e));
+  const addSelector =
+    'button[data-testid="composer-plus-btn"],button[aria-label="添加文件等内容"],button[aria-label="添加文件等"],button[aria-label="Add files and more"]';
+  let controlGroup = composer?.parentElement;
+  while (controlGroup && !controlGroup.matches('main,body,html') && !controlGroup.querySelector(addSelector))
+    controlGroup = controlGroup.parentElement;
+  if (controlGroup?.matches('main,body,html')) controlGroup = null;
   const scope =
     composer?.closest('[data-type="unified-composer"]') ||
     composer?.closest('form') ||
+    controlGroup ||
     composer?.parentElement?.parentElement;
   const buttons = [
     ...(scope?.querySelectorAll<HTMLButtonElement>(
@@ -54,6 +61,9 @@ export function chatDOM() {
     send,
     text,
     input: inputs[0],
+    add: [...(scope?.querySelectorAll<HTMLButtonElement>(addSelector) || [])].find(
+      (button) => visible(button) && !button.disabled
+    ),
     sendPresent: buttons.length > 0,
     focused: !!composer && (document.activeElement === composer || composer.contains(document.activeElement))
   };
