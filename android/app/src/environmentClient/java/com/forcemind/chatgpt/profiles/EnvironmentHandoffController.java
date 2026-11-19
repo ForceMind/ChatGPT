@@ -118,7 +118,7 @@ final class EnvironmentHandoffController {
                 Uri url=Uri.parse(boundUrl);if(!(url.getPath()==null||url.getPath().isEmpty()||"/".equals(url.getPath())))throw new IOException();
                 rpc("bound",new JSONObject(),ignored->{
                     try {boolean images=!names.isEmpty();for(int i=0;i<metadata.length();i++)images&=metadata.getJSONObject(i).getString("uploadMime").startsWith("image/");
-                        post(new JSONObject().put("type","auth").put("request",WorkspaceState.id()).put("url",boundUrl).put("names",new JSONArray(names)).put("mimeMarker",mimeMarker).put("allImages",images).put("diagnostics",diagnostics()));
+                        post(new JSONObject().put("type","auth").put("request",WorkspaceState.id()).put("url",boundUrl).put("names",new JSONArray(names)).put("prompt",prompt).put("mimeMarker",mimeMarker).put("allImages",images).put("diagnostics",diagnostics()));
                         ui.postDelayed(()->{if(!closed&&!authenticated)fail("目标网页未确认任务授权，任务未发送");},5000);
                     }catch(Exception failed){fail("无法验证目标网页，任务未发送");}
                 });return;
@@ -156,15 +156,15 @@ final class EnvironmentHandoffController {
     }
     private void later(Runnable action){ui.postDelayed(()->{if(!closed){if(valid())action.run();else fail("目标账号、标签或网页已改变");}},300);}
     private boolean timedOut(){return SystemClock.elapsedRealtime()>deadline;}
-    private static String normal(String text){return text.replace("\r\n","\n");}
+    private static String normal(String text){return text.replace("\r\n","\n").replace('\r','\n').replace('\u00a0',' ').trim();}
     private static boolean sameOrigin(String first,String second){try{java.net.URI a=java.net.URI.create(first),b=java.net.URI.create(second);return a.getScheme().equals(b.getScheme())&&a.getHost().equals(b.getHost())&&a.getPort()==b.getPort();}catch(Exception invalid){return false;}}
     private boolean filesReady(JSONObject state) {
         if(state.optBoolean("busy")||state.optBoolean("error")||state.optInt("removers")!=names.size())return false;
-        JSONArray actual=state.optJSONArray("attachments");for(String name:names){boolean found=false;if(actual!=null)for(int i=0;i<actual.length();i++)if(actual.optString(i).contains(name))found=true;if(!found)return false;}return true;
+        return state.optBoolean("filesMatch");
     }
     private void ready(JSONObject state) {
         if(!state.optBoolean("composer")){if(timedOut())fail("未找到聊天输入框，请先登录");else later(()->page("state",this::ready));return;}
-        if(!state.optBoolean("fresh")||!state.optString("text").isEmpty()||state.optInt("messages")!=0||state.optBoolean("generating")||state.optBoolean("error")){fail("目标页面已有内容，为避免覆盖或重复发送已停止");return;}
+        if(!state.optBoolean("fresh")||(!normal(state.optString("text")).isEmpty()&&!normal(state.optString("text")).equals(normal(prompt)))||state.optInt("messages")!=0||state.optBoolean("generating")||state.optBoolean("error")){fail("目标页面已有内容，为避免覆盖或重复发送已停止");return;}
         if(names.isEmpty()){draft();return;}
         rpc("files",new JSONObject(),result->{
             try{JSONArray values=result.getJSONArray("uris");if(values.length()!=names.size())throw new IOException();granted=new Uri[values.length()];for(int i=0;i<granted.length;i++){Uri uri=Uri.parse(values.getString(i));List<String> parts=uri.getPathSegments();if(!"content".equals(uri.getScheme())||!(context.getPackageName()+".handoff").equals(uri.getAuthority())||uri.getQuery()!=null||uri.getFragment()!=null||parts.size()!=3||!id.equals(parts.get(0))||!metadata.getJSONObject(i).getString("stageId").equals(parts.get(2)))throw new IOException();granted[i]=uri;}deadline=SystemClock.elapsedRealtime()+9000;upload();}
@@ -234,7 +234,7 @@ final class EnvironmentHandoffController {
             if(state.optBoolean("error")){fail("网页提示附件上传失败，任务未发送");return;}stable=chooserUsed&&activeResult==null&&filesReady(state)?stable+1:0;if(stable>=3)page("restore",ignored->draft());else later(this::attachments);
         });
     }
-    private void draft(){rpc("drafting",new JSONObject(),ignored->page("focus",value->{deadline=SystemClock.elapsedRealtime()+5000;later(this::insert);}));}
+    private void draft(){rpc("drafting",new JSONObject(),ignored->page("focus",value->{if(value.optBoolean("reused")){deadline=SystemClock.elapsedRealtime()+15000;verifyDraft();return;}deadline=SystemClock.elapsedRealtime()+5000;later(this::insert);}));}
     private void insert() {
         if(timedOut()){fail("输入框尚未就绪，任务未发送");return;}
         page("state",state->{

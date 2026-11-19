@@ -5,9 +5,71 @@
   let port, auth = null, sequence = 0, previous = null, menuOpened = false, uploadMenuOpened = false, closed = false;
   let pageErrors = 0, rejections = 0, inputEvents = 0, trustedInputEvents = 0;
   const visible = node => !!node && !!node.getClientRects().length && getComputedStyle(node).visibility !== 'hidden';
-  const editor = () => Array.from(document.querySelectorAll('textarea#prompt-textarea,#prompt-textarea[contenteditable="true"],textarea[data-testid="prompt-textarea"]')).find(node => visible(node) && !node.closest('[data-private],[autocomplete="one-time-code"]') && !['password','email'].includes(node.getAttribute('type')) && node.getAttribute('autocomplete') !== 'one-time-code');
-  const scope = node => node && (node.closest('form') || node.closest('[data-type="unified-composer"]') || node.parentElement?.parentElement);
-  const text = node => !node ? '' : ('value' in node ? String(node.value) : String(node.innerText || ''));
+  const editor = () => Array.from(document.querySelectorAll('textarea#prompt-textarea,#prompt-textarea[contenteditable="true"],textarea[data-testid="prompt-textarea"],.ProseMirror[contenteditable="true"][role="textbox"][aria-label="询问 ChatGPT"],.ProseMirror[contenteditable="true"][role="textbox"][aria-label="Ask ChatGPT"]')).find(node => visible(node) && (node.tagName === 'TEXTAREA' ? !node.disabled && !node.readOnly : node.isContentEditable) && !node.closest('[data-private],[autocomplete="one-time-code"]') && !['password','email'].includes(node.getAttribute('type')) && node.getAttribute('autocomplete') !== 'one-time-code');
+  const addSelector = "button[data-testid=\"composer-plus-btn\"],button[aria-label=\"添加文件等内容\"],button[aria-label=\"添加文件等\"],button[aria-label=\"Add files and more\"]";
+  const sendSelector = "button[data-testid=\"send-button\"],button[aria-label=\"Send prompt\"],button[aria-label=\"Send message\"],button[aria-label=\"发送提示\"],button[aria-label=\"发送消息\"],button[aria-label=\"发送\"]";
+  function scope(node) {
+    if (!node) return null;
+    const form = node.closest('[data-type="unified-composer"],form');
+    if (form) return form;
+    for (let group = node.parentElement; group && !group.matches('main,body,html'); group = group.parentElement)
+      if (group.querySelector(addSelector)) return group;
+    return node.parentElement && node.parentElement.parentElement;
+  }
+  function userMessages() {
+    const legacy = Array.from(document.querySelectorAll('[data-message-author-role="user"]'));
+    if (legacy.length || !location.pathname.startsWith('/c/')) return legacy;
+    return Array.from(document.querySelectorAll('main .bg-user-message .whitespace-pre-wrap')).filter(visible);
+  }
+  function readEditor(node) {
+    if (!node) return '';
+    if (node.tagName === 'TEXTAREA') return node.value;
+    function readChildren(parent) {
+      let value = '';
+      const children = Array.from(parent.childNodes);
+      children.forEach((child, index) => {
+        if (child.nodeType === Node.TEXT_NODE) { value += child.nodeValue || ''; return; }
+        if (child.nodeType !== Node.ELEMENT_NODE) return;
+        if (child.tagName === 'BR') { if (!child.classList.contains('ProseMirror-trailingBreak')) value += '\n'; return; }
+        const block = /^(P|DIV|LI|PRE|BLOCKQUOTE)$/.test(child.tagName);
+        if (block && value && !value.endsWith('\n')) value += '\n';
+        value += readChildren(child);
+        if (block && index < children.length - 1) value += '\n';
+      });
+      return value;
+    }
+    return readChildren(node);
+  }
+  function filesMatch(removers, labels, expected) {
+    if (removers.length !== expected.length) return false;
+    const reported = removers.map(button => {
+      const match = (button.getAttribute('aria-label') || '').match(/^(?:remove|移除|删除附件)\s+(.+)$/i);
+      const label = match && match[1].trim();
+      return label && !/^(?:attachment|file|附件)$/i.test(label) ? label : null;
+    }).filter(Boolean);
+    if (reported.length !== expected.length) return expected.every(name => labels.some(label => label.includes(name)));
+    const withoutKind = label => label.replace(/^(?:attachment|file|附件)\s+/i, '');
+    const renamed = expected.filter(name => {
+      let exact = reported.indexOf(name);
+      if (exact < 0) exact = reported.findIndex(label => withoutKind(label) === name);
+      if (exact < 0) return true;
+      reported.splice(exact, 1);
+      return false;
+    });
+    return renamed.every(name => {
+      const dot = name.lastIndexOf('.');
+      const stem = dot > 0 ? name.slice(0, dot) : name;
+      const extension = dot > 0 ? name.slice(dot) : '';
+      const match = reported.findIndex(label => [label, withoutKind(label)].some(candidate =>
+        candidate.startsWith(stem) && candidate.endsWith(extension) &&
+        /^ ?\([1-9]\d*\)$/.test(candidate.slice(stem.length, candidate.length - extension.length))));
+      if (match < 0) return false;
+      reported.splice(match, 1);
+      return true;
+    });
+  }
+  const enabledSend = form => Array.from(form ? form.querySelectorAll(sendSelector) : []).find(button => visible(button) && !button.disabled && button.getAttribute('aria-disabled') !== 'true');
+  const normalDraft = value => String(value || '').replace(/\r\n?/g, '\n').replace(/\u00a0/g, ' ').trim();
   const allowed = () => {
     const url = new URL(location.href);
     return url.protocol === 'https:' && url.searchParams.get('temporary-chat') !== 'true' && !document.querySelector('[data-testid="temporary-chat-on"],[data-testid="temporary-chat-badge"],[data-is-temporary-chat="true"]') && !/^\/(auth|api|backend-api|login|logout|signup|signin)(\/|$)/.test(url.pathname);
@@ -25,23 +87,23 @@
   }
   function state() {
     if (!allowed()) throw new Error('document');
-    const input = editor(), form = scope(input), value = text(input);
-    const messages = Array.from(document.querySelectorAll('main [data-message-author-role="user"]'));
-    const last = messages.length ? String(messages[messages.length - 1].innerText || '') : '';
+    const input = editor(), form = scope(input), value = readEditor(input);
+    const messages = userMessages();
+    const last = messages.length ? String(messages[messages.length - 1].innerText || messages[messages.length - 1].textContent || '') : '';
     if (value.length > 70000 || last.length > 70000) throw new Error('text-limit');
-    const removers = Array.from((form || document).querySelectorAll('button[aria-label*="Remove attachment"],button[aria-label*="Remove file"],button[aria-label*="移除附件"],button[aria-label*="删除附件"]')).filter(visible);
+    const removers = Array.from((form || document).querySelectorAll('button[aria-label*="Remove"],button[aria-label*="remove"],button[aria-label*="移除"],button[aria-label*="删除附件"],[data-testid="remove-file"]')).filter(visible);
     const attachments = Array.from((form || document).querySelectorAll('[data-testid="attachment"],[data-testid="file-thumbnail"],[data-attachment-name]')).filter(visible).map(node => String(node.getAttribute('data-attachment-name') || node.getAttribute('title') || node.innerText || '').slice(0,1000));
     removers.forEach(node => attachments.push(String((node.getAttribute('aria-label') || '') + ' ' + (node.parentElement?.textContent || '')).slice(0,1000)));
-    const send = form?.querySelector('button[data-testid="send-button"],button[aria-label="Send prompt"],button[aria-label="Send message"],button[aria-label="发送提示"],button[aria-label="发送消息"]');
+    const send = enabledSend(form);
     const busy = !!Array.from((form || document).querySelectorAll('[role="progressbar"],button[aria-label*="Cancel upload"],button[aria-label*="取消上传"]')).find(visible);
     const error = !!Array.from((form || document).querySelectorAll('[role="alert"]')).find(visible);
     const generating = !!Array.from(document.querySelectorAll('[data-testid="stop-button"],[data-testid="stop-generation-button"],button[aria-label="Stop generating"],button[aria-label="停止生成"]')).find(visible);
-    const result = {composer: !!input, focused: !!input && (document.activeElement === input || input.contains(document.activeElement)), text: value, messages: messages.length, last, attachments, removers: removers.length, busy, error, generating, fresh: location.pathname === '/', send: visible(send) && !send.disabled};
+    const result = {composer: !!input, focused: !!input && (document.activeElement === input || input.contains(document.activeElement)), text: value, messages: messages.length, last, attachments, removers: removers.length, filesMatch: filesMatch(removers, attachments, auth?.names || []), busy, error, generating, fresh: location.pathname === '/', send: visible(send) && !send.disabled};
     if (auth?.diagnostics) {const selected = document.querySelector('input[type="file"]');result.diagnostics = {selectedFiles:selected?.files?.length || 0,pageErrors,rejections,inputEvents,trustedInputEvents};}
     return result;
   }
   function filesReady(value) {
-    return !value.busy && !value.error && value.removers === auth.names.length && auth.names.every(name => value.attachments.some(label => label.includes(name)));
+    return !value.busy && !value.error && value.filesMatch;
   }
   function restore() {
     if (!previous) return;
@@ -52,10 +114,10 @@
   }
   function upload() {
     const current = state();
-    if (!current.fresh || current.text || current.messages || current.generating || current.error) throw new Error('existing-content');
+    if (!current.fresh || (normalDraft(current.text) && normalDraft(current.text) !== normalDraft(auth.prompt)) || current.messages || current.generating || current.error) throw new Error('existing-content');
     const input = Array.from(document.querySelectorAll('input[type="file"]')).find(node => !node.webkitdirectory && !node.disabled && (!/^image\/[^,]+$/.test(node.accept) || auth.allImages));
     if (!input) {
-      if (!menuOpened) {const plus = document.querySelector('button[data-testid="composer-plus-btn"]'); if (plus) {menuOpened = true; return {wait: true, menu: point(plus)};}}
+      if (!menuOpened) {const plus = scope(editor())?.querySelector(addSelector); if (plus) {menuOpened = true; return {wait: true, menu: point(plus)};}}
       if (!uploadMenuOpened) {
         const item = Array.from(document.querySelectorAll('[role="menuitem"],button')).find(node => visible(node) && /upload (photos|files)|add (photos|files)|上传照片|上传文件|添加照片|添加文件/i.test(node.textContent || ''));
         if (item) {uploadMenuOpened = true; return {wait: true, menu: point(item)};}
@@ -82,14 +144,15 @@
         case 'restore': restore(); value = {ok:true}; break;
         case 'focus': {
           const current = state();
-          if (!current.fresh || !current.composer || current.text || current.messages || current.generating || !filesReady(current)) throw new Error('existing-content');
-          editor().focus(); value = {ok:true}; break;
+          if (!current.fresh || !current.composer || (normalDraft(current.text) && normalDraft(current.text) !== normalDraft(auth.prompt)) || current.messages || current.generating || !filesReady(current)) throw new Error('existing-content');
+          const reused = !!normalDraft(current.text);
+          if (!reused) editor().focus(); value = {ok:true,reused}; break;
         }
         case 'send-point': {
           const current = state();
           if (!current.fresh || !current.send || current.messages || current.generating || !filesReady(current)) throw new Error('changed');
           const form = scope(editor());
-          const button=form.querySelector('button[data-testid="send-button"],button[aria-label="Send prompt"],button[aria-label="Send message"],button[aria-label="发送提示"],button[aria-label="发送消息"]');
+          const button=enabledSend(form);
           button.scrollIntoView({block:'center',inline:'nearest',behavior:'instant'});
           try {value=Object.assign({state:current},point(button));}
           catch (error) {if(error.message!=='control-covered'&&error.message!=='control-hidden')throw error;value={state:current,wait:true};}
@@ -105,7 +168,7 @@
     port = browser.runtime.connectNative(channel);
     port.onMessage.addListener(message => {
       if (!message || typeof message !== 'object') return;
-      if (message.type === 'auth' && !auth && message.document === documentId && message.url === location.href && typeof message.token === 'string' && Number.isSafeInteger(message.epoch) && Array.isArray(message.names) && message.names.length <= 20 && message.names.every(name => typeof name === 'string') && typeof message.mimeMarker === 'string') {
+      if (message.type === 'auth' && !auth && message.document === documentId && message.url === location.href && typeof message.token === 'string' && Number.isSafeInteger(message.epoch) && Array.isArray(message.names) && message.names.length <= 20 && message.names.every(name => typeof name === 'string') && typeof message.mimeMarker === 'string' && typeof message.prompt === 'string' && message.prompt.length <= 70000) {
         auth = message;
         if (auth.diagnostics) {addEventListener('error',()=>{pageErrors++;},true);addEventListener('unhandledrejection',()=>{rejections++;},true);addEventListener('input',event=>{const node=editor();if(node&&(node===event.target||node.contains(event.target))){inputEvents++;if(event.isTrusted)trustedInputEvents++;}},true);}
         reply('ready', message.request, {value:state()});
