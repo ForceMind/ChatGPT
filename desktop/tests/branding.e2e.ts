@@ -142,11 +142,14 @@ test('Studio website renders canonical pages and preserves legacy update feeds',
     artifacts: [
       ...mac.artifacts.filter(
         (item: { platform: string; file: string; purpose?: string }) =>
-          item.platform === 'macos' &&
+          item.platform.toLowerCase() === 'macos' &&
           item.purpose !== 'legacy-updater' &&
           /^ChatGPT-Studio-.*\.(dmg|zip)$/.test(item.file)
       ),
-      ...windows.artifacts.filter((item: { platform: string }) => item.platform === 'windows'),
+      ...windows.artifacts.filter(
+        (item: { platform: string; purpose?: string }) =>
+          item.platform.toLowerCase() === 'windows' && (item.purpose === 'installer' || item.purpose === 'portable')
+      ),
       {
         file: android.file,
         platform: 'android',
@@ -158,11 +161,12 @@ test('Studio website renders canonical pages and preserves legacy update feeds',
   // Unified release manifests store filenames; derive each platform's public URL from its version.
   release.artifacts = release.artifacts.map((item: { file: string; platform: string }) => ({
     ...item,
+    platform: item.platform.toLowerCase(),
     url:
       item.platform === 'android'
         ? android.url
         : 'https://github.com/ForceMind/ChatGPT/releases/download/v' +
-          platformVersions[item.platform as keyof typeof platformVersions] +
+          platformVersions[item.platform.toLowerCase() as keyof typeof platformVersions] +
           '/' +
           item.file
   }));
