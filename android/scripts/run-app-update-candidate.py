@@ -403,7 +403,7 @@ def run_network_import(args):
     signer = signer_of(source)
     assert signer not in (common.PRODUCTION_SIGNER, common.BETA_SIGNER)
     tools = common._tools()
-    source_info = common._inspect_apk(source, tools, signer, PACKAGE, 3000046, test_only=True)
+    source_info = common._inspect_apk(source, tools, signer, PACKAGE, 3000048, test_only=True)
     common._inspect_apk(test, tools, signer, common.TEST_PACKAGE)
     common._run(['adb', 'install', '-t', str(source)])
     common._run(['adb', 'install', '-t', str(test)])
@@ -432,7 +432,7 @@ def run_network_selection(args):
     signer = signer_of(source)
     assert signer not in (common.PRODUCTION_SIGNER, common.BETA_SIGNER)
     tools = common._tools()
-    source_info = common._inspect_apk(source, tools, signer, PACKAGE, 3000046, test_only=True)
+    source_info = common._inspect_apk(source, tools, signer, PACKAGE, 3000048, test_only=True)
     common._inspect_apk(test, tools, signer, common.TEST_PACKAGE)
     common._run(['adb', 'install', '-t', str(source)])
     common._run(['adb', 'install', '-t', str(test)])
@@ -500,7 +500,7 @@ def run(args):
     signer = signer_of(source)
     assert signer not in (common.PRODUCTION_SIGNER, common.BETA_SIGNER)
     tools = common._tools()
-    source_code = 3000039 if args.device_acceptance else 3000046 if args.auto_only else 3000037
+    source_code = 3000039 if args.device_acceptance else 3000048 if args.auto_only else 3000037
     target_code = source_code + 1
     source_info = common._inspect_apk(source, tools, signer, PACKAGE, source_code, test_only=True)
     target_info = common._inspect_apk(target, tools, signer, PACKAGE, target_code)

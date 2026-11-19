@@ -25,7 +25,7 @@ assert receipt['versionMetadata']['sourceSHA'] == os.environ['GITHUB_SHA']
 assert receipt['package'] == 'com.forcemind.chatgpt.profiles'
 auto = os.environ.get('STUDIO_APP_UPDATE_AUTO') == 'true'
 private = os.environ.get('STUDIO_APP_UPDATE_ACCEPTANCE') == 'true'
-source_code = 3000039 if private else 3000046 if auto else 3000037
+source_code = 3000039 if private else 3000048 if auto else 3000037
 assert receipt['versionMetadata']['versionCode'] == source_code
 assert receipt['signing'] == 'UNSIGNED_REVIEW_ONLY' and receipt['abi'] == 'arm64-v8a'
 assert receipt['r8'] and receipt['alignment16KiB'] and not receipt['ciEndpointIncluded']

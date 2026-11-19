@@ -118,22 +118,26 @@ test('Studio website renders canonical pages and preserves legacy update feeds',
     windows: versionFor('windows'),
     android: versionFor('android')
   };
-  for (const version of Object.values(platformVersions)) {
+  for (const version of [platformVersions.macos, platformVersions.windows]) {
     expect(typeof version).toBe('string');
     expect(versionParts(version!)).toBeDefined();
   }
+  const androidFeed = JSON.parse(readFileSync(path.join(site, 'updates/android.json'), 'utf8'));
+  expect(platformVersions.android).toMatch(/^\d{4}\.\d{2}\.\d{2}-\d{4}$/);
+  expect(platformVersions.android).toBe(androidFeed.versionName);
   expect(platformVersions.macos).toBe(feed.version);
   const manifest = (version: string) =>
     JSON.parse(readFileSync(path.join(desktop, '../docs/releases', version + '.json'), 'utf8'));
   const mac = manifest(platformVersions.macos!),
     windows = manifest(platformVersions.windows!);
   const android = manifest(platformVersions.android!);
-  expect(android.version).toBe(platformVersions.android);
-  const androidDownloads = android.artifacts.filter(
-    (item: { platform: string; purpose?: string }) => item.platform === 'android' && item.purpose === 'installer'
-  );
-  expect(androidDownloads).toHaveLength(1);
-  const androidDownload = androidDownloads[0];
+  expect(android.versionMetadata.versionName).toBe(platformVersions.android);
+  expect(android.versionMetadata.versionCode).toBe(androidFeed.versionCode);
+  expect(android.package).toBe(androidFeed.packageName);
+  expect(android.url).toBe(androidFeed.url);
+  expect(android.sha256).toBe(androidFeed.sha256);
+  expect(android.bytes).toBe(androidFeed.size);
+  expect(android.certificateSHA256).toBe(androidFeed.certificateSHA256);
   const release = {
     artifacts: [
       ...mac.artifacts.filter(
@@ -144,9 +148,10 @@ test('Studio website renders canonical pages and preserves legacy update feeds',
       ),
       ...windows.artifacts.filter((item: { platform: string }) => item.platform === 'windows'),
       {
-        ...androidDownload,
+        file: android.file,
         platform: 'android',
-        url: 'https://github.com/ForceMind/ChatGPT/releases/download/v' + android.version + '/' + androidDownload.file
+        sha256: android.sha256,
+        url: android.url
       }
     ]
   };
@@ -154,10 +159,12 @@ test('Studio website renders canonical pages and preserves legacy update feeds',
   release.artifacts = release.artifacts.map((item: { file: string; platform: string }) => ({
     ...item,
     url:
-      'https://github.com/ForceMind/ChatGPT/releases/download/v' +
-      platformVersions[item.platform as keyof typeof platformVersions] +
-      '/' +
-      item.file
+      item.platform === 'android'
+        ? android.url
+        : 'https://github.com/ForceMind/ChatGPT/releases/download/v' +
+          platformVersions[item.platform as keyof typeof platformVersions] +
+          '/' +
+          item.file
   }));
   expect(release.artifacts).toHaveLength(5);
   const updateFile = mac.artifacts.find((item: { file: string }) => feed.files.arm64?.url.endsWith('/' + item.file));
@@ -281,7 +288,7 @@ test('Studio website renders canonical pages and preserves legacy update feeds',
     expect(await page.evaluate(() => navigator.userAgent)).toContain('Android');
     await expect.poll(() => new URL(page.url()).hash).toBe('#download-android');
     await expect(page.locator('#primary-download')).toHaveAttribute('href', '#download-android');
-    await expect(page.locator('#download-android .version')).toHaveText('v' + android.version);
+    await expect(page.locator('#download-android .version')).toHaveText('v' + androidFeed.versionName);
     await expect(page.locator('#download-android > a')).toHaveAttribute(
       'href',
       release.artifacts.find((a: { platform: string }) => a.platform === 'android').url
