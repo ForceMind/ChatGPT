@@ -173,13 +173,11 @@ jobs:
         with:
           name: android-app-update-ci-inputs
           path: android/app/build/app-update-ci
-      - uses: actions/download-artifact@v4
+      - name: Prepare pinned Android 9 WebView
         if: matrix.api == 28 && !inputs.network_import
-        with:
-          name: beta-continuation-input
-          run-id: 41993581770
-          github-token: ${{ github.token }}
-          path: android/app/build/environment-provider-input
+        run: |
+          sdkmanager 'build-tools;36.0.0'
+          python3 android/network-poc/scripts/prepare-webview.py --output android/app/build/environment-provider-input/provider
       - name: Prepare the owned emulator and fixture executable
         run: |
           sudo chmod a+rw /dev/kvm
