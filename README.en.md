@@ -78,6 +78,8 @@ The independent Beta remains in [release history](https://github.com/ForceMind/C
 
 **Windows:** run the EXE or extract the ZIP. Current builds use `ChatGPT Studio.exe` and Studio names for the default installation directory, uninstaller and shortcuts. Both variants use the current user's data directory. Authenticode signing is not configured.
 
+**Windows isolated launch:** starting in `2026.11.22`, double-click `Start-Isolated.cmd` in the directory created by the EXE installer. Both instances can run side by side. The isolated instance creates `%APPDATA%\ChatGPT Profiles Isolated` at first launch and reuses it on later launches. Close both instances before installing an update.
+
 **Android:** allow installation from your chosen download source when prompted. Updates retain the existing release certificate. If the installed WebView lacks multi-profile support, update System WebView/Chrome first; the app does not substitute a shared sign-in space.
 
 The [website](https://chatgpt-studio.pages.dev/) provides GitHub downloads and optional third-party acceleration links. Compare downloads with `SHA256SUMS.txt` in the Release. The website lists the current stable release for each platform. Historical prereleases remain available.

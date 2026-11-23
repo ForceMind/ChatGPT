@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
+import { copyFileSync, readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
@@ -67,8 +67,13 @@ execFileSync(
   ],
   builderOptions
 );
-// NSIS adds the updater config and elevation helper after the unpacked build.
-// Rebuild the installer with those exact bytes included in its rollback manifest.
+// The isolated launcher ships only with the installer. Include its exact bytes in the rollback manifest.
+copyFileSync(path.join(root, 'assets/Start-Isolated.cmd'), path.join(unpacked, 'Start-Isolated.cmd'));
+writeFileSync(
+  path.join(unpacked, 'resources/app-update-isolated.yml'),
+  JSON.stringify({ ...publish, updaterCacheDirName: pkg.name + '-isolated-updater' }, null, 2) + '\n'
+);
+// Also include the updater config and elevation helper added by NSIS.
 const finalInventory = writeInventory();
 execFileSync(
   process.execPath,

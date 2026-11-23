@@ -80,6 +80,7 @@ export async function verifyWindowsInstaller(file: string, version: string): Pro
 }
 type PlatformOptions = {
   dataDir: string;
+  isolatedInstance?: boolean;
   current: string;
   arch: string;
   executable: string;
@@ -120,6 +121,8 @@ export async function createWindowsUpdates(options: PlatformOptions): Promise<Wi
       { mode: 0o600 }
     );
     native.updateConfigPath = configFile;
+  } else if (options.isolatedInstance) {
+    native.updateConfigPath = path.join(process.resourcesPath, 'app-update-isolated.yml');
   }
   const backend = createWindowsUpdateBackend(native, options.fixtureOrigin, options.current);
   return new WindowsUpdateManager({

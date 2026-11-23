@@ -80,6 +80,8 @@ flowchart LR
 
 **Windows**：运行 EXE 安装，或解压 ZIP 后启动应用。当前主程序为 ChatGPT Studio.exe，新装目录和卸载程序已统一 Studio；免安装版同样使用当前用户的数据目录。当前未配置 Authenticode 签名。
 
+**Windows 独立启动**：从 `2026.11.22` 开始，使用 EXE 安装后，可双击安装目录里的 `Start-Isolated.cmd`。普通实例和独立实例可以同时运行。独立实例首次启动创建 `%APPDATA%\ChatGPT Profiles Isolated`，后续启动沿用该目录。入口位于 EXE 安装目录。覆盖安装前请退出两个实例。
+
 **Android**：按系统提示允许该下载来源安装；升级时沿用同一应用签名。WebView 不支持多档案时应先更新系统 WebView / Chrome，应用不会退回共享登录空间。
 
 [官网](https://chatgpt-studio.pages.dev/)提供原始 GitHub 下载和可选国内加速入口。第三方加速不可用时可改用原始链接；下载后可与对应 Release 的 SHA256SUMS.txt 核对。

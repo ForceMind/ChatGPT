@@ -42,7 +42,7 @@ import {
   validTimeZone
 } from '../shared/profile-preferences';
 import { randomUUID } from 'node:crypto';
-import { mkdirSync, realpathSync } from 'node:fs';
+import { existsSync, mkdirSync, realpathSync } from 'node:fs';
 import path from 'node:path';
 import {
   APP_VERSION,
@@ -76,6 +76,11 @@ import { migrateBundleName } from './bundle-name';
 
 const desktopWorkspace = desktopWorkspaceEnabled(process.platform);
 const testMode = !app.isPackaged && process.env.PROFILES_E2E === '1';
+const isolatedWindowsInstance =
+  process.platform === 'win32' &&
+  app.isPackaged &&
+  process.argv.includes('--studio-isolated-instance') &&
+  existsSync(path.join(process.resourcesPath, 'app-update-isolated.yml'));
 if (testMode) app.commandLine.appendSwitch('use-mock-keychain');
 const fixtureOrigin = testMode ? process.env.PROFILES_FIXTURE_ORIGIN : undefined;
 if (fixtureOrigin && !/^http:\/\/127\.0\.0\.1:\d+$/.test(fixtureOrigin))
@@ -83,11 +88,12 @@ if (fixtureOrigin && !/^http:\/\/127\.0\.0\.1:\d+$/.test(fixtureOrigin))
 const dataDir = testMode
   ? process.env.PROFILES_TEST_DATA
   : app.isPackaged
-    ? path.join(app.getPath('appData'), 'ChatGPT Profiles')
+    ? path.join(app.getPath('appData'), isolatedWindowsInstance ? 'ChatGPT Profiles Isolated' : 'ChatGPT Profiles')
     : path.join(app.getAppPath(), '.local-data');
 if (!dataDir || !path.isAbsolute(dataDir)) throw new Error('无效的数据目录');
 mkdirSync(dataDir, { recursive: true, mode: 0o700 });
 app.setPath('userData', dataDir);
+if (isolatedWindowsInstance) app.setPath('sessionData', dataDir);
 // Keep the internal name stable for Chromium/Keychain identity across rebranding.
 app.setName('ChatGPT Profiles');
 if (process.platform === 'win32') app.setAppUserModelId('com.forcemind.chatgpt.profiles');
@@ -2656,6 +2662,7 @@ if (single) {
           const updateSession = session.fromPartition('updates-windows', { cache: false });
           updates = await createWindowsUpdates({
             dataDir,
+            isolatedInstance: isolatedWindowsInstance,
             current: APP_VERSION,
             arch: process.arch,
             executable: process.execPath,
