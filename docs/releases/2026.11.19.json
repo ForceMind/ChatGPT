@@ -2,7 +2,11 @@
   "schema": 1,
   "version": "2026.11.19",
   "sourceCommit": "846b1c34f9bff1d9a75f002982b19157f065f088",
-  "releaseDate": "2026-11-23T02:47:33.889Z",
+  "releaseDate": "2026-11-23T02:52:32Z",
+  "publishedAt": "2026-11-23T02:52:32Z",
+  "release": "https://github.com/ForceMind/ChatGPT/releases/tag/v2026.11.19",
+  "releaseID": 454931938,
+  "originalCIBytesVerified": true,
   "prerelease": false,
   "windowsNotes": "## ChatGPT Studio 2026.11.19 · macOS / Windows\n\n修复「交给 GPT」在输入框重新加载时写入指令失败的问题，继续核对重名附件，并在网页确认收到完整指令后报告已发送。\n\n两端通过合成测试。Windows 完整运行还验证了安装、覆盖升级、账号数据保留和后台标签保活。此次应用内更新使用完整包。\n\nmacOS 安装包支持 Apple Silicon，采用临时签名，尚未经过 Apple 公证。Windows x64 安装包尚未进行 Authenticode 签名。Windows 免安装 ZIP 下载后手动替换。\n\n[macOS 验收](https://github.com/ForceMind/ChatGPT/actions/runs/44574728050) · [Windows 验收](https://github.com/ForceMind/ChatGPT/actions/runs/44538625564)\n",
   "signing": {
@@ -44,7 +48,8 @@
       "purpose": "installer",
       "bytes": 155149610,
       "sha256": "831a563bb49eb607e1f58ccd80e82fb2d2b4d48c8ddeb763bee949c3e70ef625",
-      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.19/ChatGPT-Studio-2026.11.19-mac-arm64.dmg"
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.19/ChatGPT-Studio-2026.11.19-mac-arm64.dmg",
+      "releaseAssetID": 781277506
     },
     {
       "file": "ChatGPT-Studio-2026.11.19-mac-arm64.zip",
@@ -52,7 +57,8 @@
       "purpose": "portable",
       "bytes": 155091937,
       "sha256": "e83b9462654e249a9cd6be25121277cca10bc1f08873ea84d2c3359a3fa4c90c",
-      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.19/ChatGPT-Studio-2026.11.19-mac-arm64.zip"
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.19/ChatGPT-Studio-2026.11.19-mac-arm64.zip",
+      "releaseAssetID": 781277771
     },
     {
       "file": "ChatGPT-Profiles-2026.11.19-mac-arm64.zip",
@@ -60,7 +66,8 @@
       "purpose": "legacy-updater",
       "bytes": 155207561,
       "sha256": "d31356148e659cf500d130fcfb58eb7d76490913302269e964cabcb79b37f3e6",
-      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.19/ChatGPT-Profiles-2026.11.19-mac-arm64.zip"
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.19/ChatGPT-Profiles-2026.11.19-mac-arm64.zip",
+      "releaseAssetID": 781277293
     },
     {
       "file": "ChatGPT-Studio-2026.11.19-windows-x64-setup.exe",
@@ -69,7 +76,8 @@
       "sha512": "0gBxVUGNz/3coQaj5+u6G4xcubN8BLV7w4l82L+3PApIMac++N8h0j0BPt0r6mgHdx7ssMtLqYxyUFd/DASu2g==",
       "platform": "windows",
       "purpose": "installer",
-      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.19/ChatGPT-Studio-2026.11.19-windows-x64-setup.exe"
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.19/ChatGPT-Studio-2026.11.19-windows-x64-setup.exe",
+      "releaseAssetID": 781278080
     },
     {
       "file": "ChatGPT-Studio-2026.11.19-windows-x64.zip",
@@ -78,7 +86,8 @@
       "sha512": "c0qrJuRV2/qKLRGN5j3GAYGhlCdSV4s1Z6R/l2BXKmY/mcU9IRyS3dCYVGdFl62FFOLgwh3HgKghIc7UJuXOHQ==",
       "platform": "windows",
       "purpose": "portable",
-      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.19/ChatGPT-Studio-2026.11.19-windows-x64.zip"
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.19/ChatGPT-Studio-2026.11.19-windows-x64.zip",
+      "releaseAssetID": 781278351
     }
   ]
 }
