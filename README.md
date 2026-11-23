@@ -15,7 +15,7 @@
 
 在独立账号空间中使用 ChatGPT，管理保持在线的标签、会话与本地资产。启动直接进入网页，白灰黑界面、无地址栏，无需配置 OpenAI API Key。
 
-**当前正式版** · [macOS 2026.11.14](https://github.com/ForceMind/ChatGPT/releases/tag/v2026.11.14) · [Windows 2026.11.14](https://github.com/ForceMind/ChatGPT/releases/tag/v2026.11.14) · [Android 2026.11.12-0325](https://github.com/ForceMind/ChatGPT/releases/tag/v2026.11.12-0325)。
+**当前正式版** · [macOS 2026.11.19](https://github.com/ForceMind/ChatGPT/releases/tag/v2026.11.19) · [Windows 2026.11.22](https://github.com/ForceMind/ChatGPT/releases/tag/v2026.11.22) · [Android 2026.11.20-0113](https://github.com/ForceMind/ChatGPT/releases/tag/v2026.11.20-0113)。
 
 Android 使用原签 **2026.11.12-0325**（构建号 3000046），可覆盖安装，请勿先卸载。旧账号沿用原 WebView 和登录，新账号可选独立语言 / 时区；包含顶部当前标题入口、竖向标签列表、刷新、后退 / 前进、双内核恢复、VLESS 同路由及文件 / Skill 任务。独立 Beta 的数据空间仍保留，不自动迁移。 线路支持粘贴与扫码导入、VLESS WebSocket、TCP HTTP 头部伪装和独立测试。
 
@@ -66,9 +66,9 @@ flowchart LR
 
 | 平台 | 版本 | 下载 | 要求 |
 | --- | --- | --- | --- |
-| macOS · Apple Silicon | 2026.11.14 | [DMG](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.14/ChatGPT-Studio-2026.11.14-mac-arm64.dmg) · [ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.14/ChatGPT-Studio-2026.11.14-mac-arm64.zip) | macOS 13+ |
-| Windows · x64 | 2026.11.14 | [EXE](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.14/ChatGPT-Studio-2026.11.14-windows-x64-setup.exe) · [免安装 ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.14/ChatGPT-Studio-2026.11.14-windows-x64.zip) | Windows 10 / 11 · x64 |
-| Android · 手机 / 平板 | 2026.11.12-0325 | [APK](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.12-0325/ChatGPT-Studio-2026.11.12-0325-android-arm64.apk) | Android 9+ · ARM64 |
+| macOS · Apple Silicon | 2026.11.19 | [DMG](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.19/ChatGPT-Studio-2026.11.19-mac-arm64.dmg) · [ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.19/ChatGPT-Studio-2026.11.19-mac-arm64.zip) | macOS 13+ |
+| Windows · x64 | 2026.11.22 | [EXE](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.22/ChatGPT-Studio-2026.11.22-windows-x64-setup.exe) · [免安装 ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.22/ChatGPT-Studio-2026.11.22-windows-x64.zip) | Windows 10 / 11 · x64 |
+| Android · 手机 / 平板 | 2026.11.20-0113 | [APK](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.20-0113/ChatGPT-Studio-2026.11.20-0113-android-arm64.apk) | Android 9+ · ARM64 |
 
 ### 历史 Beta
 
@@ -86,7 +86,7 @@ flowchart LR
 
 [官网](https://chatgpt-studio.pages.dev/)提供原始 GitHub 下载和可选国内加速入口。第三方加速不可用时可改用原始链接；下载后可与对应 Release 的 SHA256SUMS.txt 核对。
 
-安装包校验清单 · [桌面端](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.14/SHA256SUMS.txt) · [Android](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.12-0325/SHA256SUMS.txt)。
+安装包校验清单 · [macOS](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.19/SHA256SUMS.txt) · [Windows](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.22/SHA256SUMS.txt) · [Android](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.20-0113/SHA256SUMS.txt)。
 
 各平台的当前正式版本以官网为准。历史预发布与校验清单继续保留。
 

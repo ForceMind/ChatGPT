@@ -1,0 +1,48 @@
+{
+  "schema": 1,
+  "version": "2026.11.22",
+  "sourceCommit": "90b59e7337cacad44e7dcceb9db81f9367dd8f84",
+  "prerelease": false,
+  "publishedAt": "2026-11-23T03:51:08Z",
+  "release": "https://github.com/ForceMind/ChatGPT/releases/tag/v2026.11.22",
+  "releaseID": 454958802,
+  "signing": {
+    "windows": "unsigned"
+  },
+  "evidence": {
+    "windows": {
+      "sourceCommit": "90b59e7337cacad44e7dcceb9db81f9367dd8f84",
+      "version": "2026.11.22",
+      "upgradeFrom": "2026.11.19",
+      "launcherInInstall": true,
+      "launcherAbsentFromZip": true,
+      "launcherRemovedOnUninstall": true,
+      "separateUpdateCaches": true,
+      "bothDataDirectoriesRetained": true,
+      "runId": 45107847438,
+      "url": "https://github.com/ForceMind/ChatGPT/actions/runs/45107847438"
+    }
+  },
+  "artifacts": [
+    {
+      "file": "ChatGPT-Studio-2026.11.22-windows-x64-setup.exe",
+      "bytes": 131367752,
+      "sha256": "2d1f23e0b967259003a257c083d9133fc12bce985159c57f1d20257958f2d89e",
+      "sha512": "UXldYDv59gen9kGQuqJXVMnq+hrKYoHsaHlr1be4uJ7X06mvscP3xmIPYXqcPEpowny5b0oWrYKJvLqR5IazoA==",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.22/ChatGPT-Studio-2026.11.22-windows-x64-setup.exe",
+      "platform": "windows",
+      "purpose": "installer",
+      "releaseAssetID": 781422544
+    },
+    {
+      "file": "ChatGPT-Studio-2026.11.22-windows-x64.zip",
+      "bytes": 181320196,
+      "sha256": "abc04427030024d2a442d80a593281538af12d9a5ae1c2acd2d69a34a0876ddd",
+      "sha512": "Ny2I5IVR2erVphYSaxLQgz8st8g5Mn2WOmYCkXsFmOXGdjKBno1SKz8hcBCdT5sgRr2YWbb/7HmHYV50cyAjHg==",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.22/ChatGPT-Studio-2026.11.22-windows-x64.zip",
+      "platform": "windows",
+      "purpose": "portable",
+      "releaseAssetID": 781422547
+    }
+  ]
+}

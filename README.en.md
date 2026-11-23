@@ -15,7 +15,7 @@
 
 ChatGPT Studio brings independent ChatGPT account spaces, live tabs and local asset workflows into one immersive client. Launch directly into ChatGPT without an address bar or an OpenAI API key.
 
-**Current releases** · [macOS 2026.11.14](https://github.com/ForceMind/ChatGPT/releases/tag/v2026.11.14) · [Windows 2026.11.14](https://github.com/ForceMind/ChatGPT/releases/tag/v2026.11.14) · [Android 2026.11.12-0325](https://github.com/ForceMind/ChatGPT/releases/tag/v2026.11.12-0325).
+**Current releases** · [macOS 2026.11.19](https://github.com/ForceMind/ChatGPT/releases/tag/v2026.11.19) · [Windows 2026.11.22](https://github.com/ForceMind/ChatGPT/releases/tag/v2026.11.22) · [Android 2026.11.20-0113](https://github.com/ForceMind/ChatGPT/releases/tag/v2026.11.20-0113).
 
 Android ships original-signer build **2026.11.12-0325** (code 3000046). Install over the current release to preserve app data. Existing accounts retain WebView and their data; new accounts can select isolated locale/timezone. Includes a fixed title entry, a vertical tab list, reload, back/forward, dual-engine recovery, VLESS routing and file/Skill tasks. Independent Beta data stays separate. Network routes support clipboard and QR import, VLESS WebSocket, TCP HTTP headers, and independent tests.
 
@@ -64,9 +64,9 @@ Devices do not synchronize sign-in credentials. The regular client includes Geck
 
 | Platform | Version | Downloads | Requirements |
 | --- | --- | --- | --- |
-| macOS · Apple Silicon | 2026.11.14 | [DMG](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.14/ChatGPT-Studio-2026.11.14-mac-arm64.dmg) · [ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.14/ChatGPT-Studio-2026.11.14-mac-arm64.zip) | macOS 13+ |
-| Windows · x64 | 2026.11.14 | [EXE](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.14/ChatGPT-Studio-2026.11.14-windows-x64-setup.exe) · [Portable ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.14/ChatGPT-Studio-2026.11.14-windows-x64.zip) | Windows 10 / 11 · x64 |
-| Android · Phone/tablet | 2026.11.12-0325 | [APK](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.12-0325/ChatGPT-Studio-2026.11.12-0325-android-arm64.apk) | Android 9+ · ARM64 |
+| macOS · Apple Silicon | 2026.11.19 | [DMG](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.19/ChatGPT-Studio-2026.11.19-mac-arm64.dmg) · [ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.19/ChatGPT-Studio-2026.11.19-mac-arm64.zip) | macOS 13+ |
+| Windows · x64 | 2026.11.22 | [EXE](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.22/ChatGPT-Studio-2026.11.22-windows-x64-setup.exe) · [Portable ZIP](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.22/ChatGPT-Studio-2026.11.22-windows-x64.zip) | Windows 10 / 11 · x64 |
+| Android · Phone/tablet | 2026.11.20-0113 | [APK](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.20-0113/ChatGPT-Studio-2026.11.20-0113-android-arm64.apk) | Android 9+ · ARM64 |
 
 ### Historical Beta
 
@@ -84,7 +84,7 @@ The independent Beta remains in [release history](https://github.com/ForceMind/C
 
 The [website](https://chatgpt-studio.pages.dev/) provides GitHub downloads and optional third-party acceleration links. Compare downloads with `SHA256SUMS.txt` in the Release. The website lists the current stable release for each platform. Historical prereleases remain available.
 
-Package checksums · [Desktop](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.14/SHA256SUMS.txt) · [Android](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.12-0325/SHA256SUMS.txt).
+Package checksums · [macOS](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.19/SHA256SUMS.txt) · [Windows](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.22/SHA256SUMS.txt) · [Android](https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.20-0113/SHA256SUMS.txt).
 
 ### Android alpha.19
 
