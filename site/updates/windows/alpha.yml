@@ -3,21 +3,21 @@
   "appId": "com.forcemind.chatgpt.profiles",
   "platform": "win32",
   "architecture": "x64",
-  "version": "2026.11.14",
-  "releaseDate": "2026-11-12T03:14:20Z",
-  "releaseNotes": "## ChatGPT Studio · Mac / Windows\n\n- Mac 和 Windows 支持带完整包校验和回退的可选差量下载。此次更新仍由现有客户端先下载完整包。\n- Windows EXE 版新增应用空闲安装。需明确开启，本 App 后台空闲且标签没有任务时会提前 60 秒提示。安装后下次打开进入新版。\n- 版本号升至 `2026.11.14`，支持从当前正式版检查和覆盖升级。\n\nMac 安装包为 Apple Silicon 临时签名版，未公证。Windows 安装包未做 Authenticode 签名。\n\n[Actions 构建与验收](https://github.com/ForceMind/ChatGPT/actions/runs/43145929641)\n",
+  "version": "2026.11.19",
+  "releaseDate": "2026-11-23T02:47:33.889Z",
+  "releaseNotes": "## ChatGPT Studio 2026.11.19 · macOS / Windows\n\n修复「交给 GPT」在输入框重新加载时写入指令失败的问题，继续核对重名附件，并在网页确认收到完整指令后报告已发送。\n\n两端通过合成测试。Windows 完整运行还验证了安装、覆盖升级、账号数据保留和后台标签保活。此次应用内更新使用完整包。\n\nmacOS 安装包支持 Apple Silicon，采用临时签名，尚未经过 Apple 公证。Windows x64 安装包尚未进行 Authenticode 签名。Windows 免安装 ZIP 下载后手动替换。\n\n[macOS 验收](https://github.com/ForceMind/ChatGPT/actions/runs/44574728050) · [Windows 验收](https://github.com/ForceMind/ChatGPT/actions/runs/44538625564)\n",
   "files": [
     {
-      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.14/ChatGPT-Studio-2026.11.14-windows-x64-setup.exe",
-      "size": 131367949,
-      "sha256": "a63737a917863a707fa9ceff12bd0f00e6f88f4f54b1e527b2831fc96dfecad4",
-      "sha512": "Th0vpZ97ep1KKBw+WzlYfQ0eKlzun+rvSLWPs53wjUoBAB9+4WFIGYCnj/NzHycyn56S5I8k5GQFXOhpuh0orQ=="
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.19/ChatGPT-Studio-2026.11.19-windows-x64-setup.exe",
+      "size": 131367297,
+      "sha256": "612a01d65357a197b7ec90c0d3701c89acb9528ce606e4f97e49f6cb3a974df9",
+      "sha512": "0gBxVUGNz/3coQaj5+u6G4xcubN8BLV7w4l82L+3PApIMac++N8h0j0BPt0r6mgHdx7ssMtLqYxyUFd/DASu2g=="
     },
     {
-      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.14/ChatGPT-Studio-2026.11.14-windows-x64.zip",
-      "size": 181316707,
-      "sha256": "9da6993ebb64419ea3d4fa1ce6a873b12fcb1d11084dfb22b04f00740c6d0849",
-      "sha512": "FK+1YU7wzS4d+ayh/kkMFUU74KkBBuS8q/rLIJxuzIrFgQBuVl7B1ixFBFx6L8Ea8Mx5heeX7E0+QTcPaks2Qg=="
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.19/ChatGPT-Studio-2026.11.19-windows-x64.zip",
+      "size": 181320170,
+      "sha256": "2c18570b1d40b4dcc02906f5b092238f5a6d3e6b2687a3d1952ad32bd7e5e2a4",
+      "sha512": "c0qrJuRV2/qKLRGN5j3GAYGhlCdSV4s1Z6R/l2BXKmY/mcU9IRyS3dCYVGdFl62FFOLgwh3HgKghIc7UJuXOHQ=="
     }
   ]
 }

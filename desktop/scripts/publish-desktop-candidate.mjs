@@ -131,7 +131,7 @@ for (const a of m.artifacts) {
 }
 const exe = m.artifacts.find((a) => a.file.endsWith('.exe'));
 assert.equal(upgrade.prepared.installerSHA256, exe.sha256);
-const feed = windowsUpdateFeed(win, m.windowsNotes, m.publishedAt);
+const feed = windowsUpdateFeed(win, m.windowsNotes, m.releaseDate ?? m.publishedAt);
 assert.deepEqual(feed, JSON.parse(fs.readFileSync('site/updates/windows/alpha.yml', 'utf8')));
 fs.writeFileSync(path.join(out, 'windows-update-feed.yml'), JSON.stringify(feed, null, 2) + '\n');
 for (const name of [

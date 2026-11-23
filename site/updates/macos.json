@@ -1,13 +1,13 @@
 {
   "schema": 1,
-  "version": "2026.11.14",
-  "publishedAt": "2026-11-12T03:14:20Z",
-  "notes": "支持可选差量下载和完整包回退。本次更新使用完整 ZIP。",
+  "version": "2026.11.19",
+  "publishedAt": "2026-11-23T02:47:33.889Z",
+  "notes": "修复「交给 GPT」在输入框重新加载时写入指令失败的问题，继续核对重名附件，并在网页确认收到完整指令后报告已发送。",
   "files": {
     "arm64": {
-      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.14/ChatGPT-Profiles-2026.11.14-mac-arm64.zip",
-      "size": 155206132,
-      "sha256": "200c66f6be15064139e5b67a45c014cd99f8d27055ceda9b38b22685e37cfb86",
+      "url": "https://github.com/ForceMind/ChatGPT/releases/download/v2026.11.19/ChatGPT-Profiles-2026.11.19-mac-arm64.zip",
+      "size": 155207561,
+      "sha256": "d31356148e659cf500d130fcfb58eb7d76490913302269e964cabcb79b37f3e6",
       "retainAsDeltaBase": true
     }
   }

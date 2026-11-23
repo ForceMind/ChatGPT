@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "version": "2026.11.19",
+  "status": "verified-candidate-not-public",
+  "macos": {
+    "runId": 44574728050,
+    "sourceCommit": "5e9adf1a35fdc9c84a0e20537b04f84d7f7ee2e4"
+  },
+  "windows": {
+    "packagingRunId": 44538625564,
+    "binarySourceCommit": "2c20152a970cfdacd5b304f4b4b8b6b534108ef5",
+    "acceptance": {
+      "runId": 44538625564,
+      "sourceCommit": "2c20152a970cfdacd5b304f4b4b8b6b534108ef5",
+      "artifact": "windows-acceptance-evidence"
+    }
+  }
+}

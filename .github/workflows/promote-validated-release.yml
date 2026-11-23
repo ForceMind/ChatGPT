@@ -37,6 +37,11 @@ jobs:
           const modern=fs.existsSync('docs/releases/'+p.version+'-desktop-candidate.json');
           const c=JSON.parse(fs.readFileSync('docs/releases/'+p.version+(modern?'-desktop-candidate.json':'-ci.json'),'utf8'));
           const values=modern?[['mac_run',c.macos.runId],['windows_run',c.windows.packagingRunId],['acceptance_run',c.windows.acceptance.runId]]:[['mac_run',c.macos.package.runId],['windows_run',c.windows.runId]];
+          if (modern) {
+            const evidence = c.windows.acceptance.artifact ?? 'windows-upgrade-acceptance';
+            assert(['windows-upgrade-acceptance', 'windows-acceptance-evidence'].includes(evidence));
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, 'acceptance_artifact='+evidence+'\n');
+          }
           fs.appendFileSync(process.env.GITHUB_OUTPUT,'desktop_candidate='+modern+'\n');
           for(const [key,value] of values){assert(Number.isSafeInteger(value)&&value>0);fs.appendFileSync(process.env.GITHUB_OUTPUT,key+'='+value+'\n');}
           NODE
@@ -79,7 +84,7 @@ jobs:
       - uses: actions/download-artifact@v4
         if: steps.settings.outputs.desktop_candidate == 'true'
         with:
-          name: windows-upgrade-acceptance
+          name: ${{ steps.settings.outputs.acceptance_artifact }}
           run-id: ${{ steps.settings.outputs.acceptance_run }}
           github-token: ${{ github.token }}
           path: promotion/windows-acceptance
