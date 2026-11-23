@@ -69,10 +69,17 @@ foreach ($directory in @([Environment]::GetFolderPath('DesktopDirectory'), [Envi
 }
 $uninstaller = Join-Path $destination 'Uninstall ChatGPT Studio.exe'
 $remove = Start-Process -FilePath $uninstaller -ArgumentList '/S' -WindowStyle Hidden -PassThru
-if (!$remove.WaitForExit(120000) -or $remove.ExitCode -ne 0 -or
-    (Test-Path -LiteralPath "$destination/$launcher") -or (Test-Path -LiteralPath "$destination/$config")) {
-    throw 'Uninstall failed to remove the isolated launcher or configuration.'
+if (!$remove.WaitForExit(120000) -or $remove.ExitCode -ne 0) {
+    throw 'NSIS uninstall did not return successfully.'
 }
+$installedFiles = @("$destination/ChatGPT Studio.exe", "$destination/$launcher", "$destination/$config")
+$deadline = [DateTime]::UtcNow.AddSeconds(30)
+do {
+    $remaining = @($installedFiles | Where-Object { Test-Path -LiteralPath $_ })
+    if ($remaining.Count -eq 0) { break }
+    Start-Sleep -Milliseconds 250
+} until ([DateTime]::UtcNow -ge $deadline)
+if ($remaining.Count) { throw ('Uninstall left program files behind: ' + ($remaining -join ', ')) }
 foreach ($data in $dataPaths) {
     if ([IO.File]::ReadAllText((Join-Path $data 'fixture.txt')) -cne $data) { throw 'Application data changed during install or uninstall.' }
 }
